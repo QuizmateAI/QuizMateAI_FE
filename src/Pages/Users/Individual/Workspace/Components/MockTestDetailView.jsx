@@ -65,6 +65,19 @@ function getSectionTitle(section, fallbackTitle) {
   return fallbackTitle;
 }
 
+function isQuestionGroupSection(section) {
+  const sectionType = String(section?.sectionType || "").trim().toUpperCase();
+  return sectionType === "QUESTION_GROUP" || sectionType === "GROUP_QUESTION";
+}
+
+function isRootSection(section) {
+  return String(section?.sectionType || "").trim().toUpperCase() === "ROOT";
+}
+
+function getSectionSharedContext(section) {
+  return typeof section?.sharedContext === "string" ? section.sharedContext.trim() : "";
+}
+
 function countSectionQuestions(section) {
   return getSectionQuestions(section).length + getSectionChildren(section).reduce(
     (total, child) => total + countSectionQuestions(child),
@@ -73,19 +86,19 @@ function countSectionQuestions(section) {
 }
 
 function normalizeDisplaySections(sectionList) {
-  if (!Array.isArray(sectionList) || sectionList.length !== 1) {
-    return Array.isArray(sectionList) ? sectionList : [];
-  }
+  return (Array.isArray(sectionList) ? sectionList : []).flatMap((section) => {
+    if (!section) return [];
+    if (!isRootSection(section)) return [section];
 
-  const [rootSection] = sectionList;
-  const sectionType = String(rootSection?.sectionType || "").toUpperCase();
-  const children = getSectionChildren(rootSection);
+    const children = getSectionChildren(section);
+    if (children.length > 0) return children;
 
-  if (children.length > 0 && getSectionQuestions(rootSection).length === 0 && sectionType === "ROOT") {
-    return children;
-  }
+    if (getSectionQuestions(section).length > 0) {
+      return [{ ...section, sectionType: "SECTION", content: "", title: "" }];
+    }
 
-  return sectionList;
+    return [];
+  });
 }
 
 function updateQuestionInSectionTree(sectionList, questionId, updater) {
@@ -405,16 +418,80 @@ function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEd
     );
   };
 
+  const renderSharedContext = (sharedContext) => {
+    if (!sharedContext) return null;
+
+    return (
+      <div className={`rounded-lg border px-4 py-3 text-sm leading-6 ${
+        isDarkMode
+          ? "border-purple-900/40 bg-slate-950/40 text-slate-300"
+          : "border-purple-100 bg-purple-50/40 text-gray-700"
+      }`}>
+        <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${
+          isDarkMode ? "text-purple-300" : "text-purple-600"
+        }`}>
+          {t("mockTestForms.detail.sharedContext", "Shared context")}
+        </p>
+        <MixedMathText as="div">{sharedContext}</MixedMathText>
+      </div>
+    );
+  };
+
   const renderSectionNode = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
     const sectionKey = getSectionKey(section, `section-${pathLabel}`);
     const isExpanded = expandedSections[sectionKey];
-    const childSections = getSectionChildren(section);
+    const childSections = normalizeDisplaySections(getSectionChildren(section));
     const questions = getSectionQuestions(section);
     const totalQuestions = countSectionQuestions(section);
+    const isQuestionGroup = isQuestionGroupSection(section);
+    const sharedContext = getSectionSharedContext(section);
+    const isSharedContextGroup = isQuestionGroup && Boolean(sharedContext);
     const sectionTitle = getSectionTitle(
       section,
       `${t("mockTestForms.detail.section", "Section")} ${pathLabel}`,
     );
+
+    if (isSharedContextGroup) {
+      return (
+        <div
+          key={sectionKey}
+          className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-purple-900/40" : "border-purple-200"}`}
+          style={depth > 0 ? { marginLeft: `${Math.min(depth, 3) * 16}px` } : undefined}
+        >
+          <div className={`px-4 py-3 flex items-center justify-between ${isDarkMode ? "bg-purple-950/20" : "bg-purple-50/50"}`}>
+            <div className="flex items-center gap-2 min-w-0">
+              <BookOpen className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-purple-400" : "text-purple-500"}`} />
+              <span className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
+                {sectionTitle}
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${isDarkMode ? "bg-purple-900/50 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
+                {totalQuestions} {t("mockTestForms.detail.questions", "questions")}
+              </span>
+            </div>
+          </div>
+
+          <div className={`space-y-3 px-3 py-3 ${isDarkMode ? "bg-slate-950/30" : "bg-white"}`}>
+            {renderSharedContext(sharedContext)}
+
+            {childSections.length > 0 && (
+              <div className="space-y-3">
+                {childSections.map((childSection, childIndex) => renderSectionNode(childSection, childIndex, depth + 1, `${pathLabel}.${childIndex + 1}`))}
+              </div>
+            )}
+
+            {questions.length > 0 ? (
+              <div className={`overflow-hidden rounded-lg divide-y ${isDarkMode ? "divide-slate-800" : "divide-purple-100"}`}>
+                {questions.map((question, questionIndex) => renderQuestionItem(question, questionIndex, section.sectionId))}
+              </div>
+            ) : childSections.length === 0 ? (
+              <div className={`px-4 py-6 text-center text-sm ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                {t("mockTestForms.detail.noQuestions", "No questions in this section.")}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div

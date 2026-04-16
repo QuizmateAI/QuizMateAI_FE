@@ -12,10 +12,11 @@ import ExamPerQuestion from './components/ExamPerQuestion';
 import QuizHeader from './components/QuizHeader';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { getQuizFullForAttemptInProgress, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
-import { buildQuestionSectionPathMap, buildSubmitPayload, collectAllSectionKeys, countSectionQuestions, getAttemptRemainingSeconds, getSectionChildren, getSectionKey, getSectionTitle, hasAnswerValue, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
+import { buildQuestionSectionPathMap, buildSubmitPayload, collectAllSectionKeys, countSectionQuestions, getAttemptRemainingSeconds, getSectionChildren, getSectionKey, getSectionSharedContext, getSectionTitle, hasAnswerValue, isQuestionGroupSection, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 import { buildQuizResultPath } from '@/lib/routePaths';
+import MixedMathText from '@/Components/math/MixedMathText';
 
 export default function ExamQuizPage() {
   const { quizId } = useParams();
@@ -566,6 +567,19 @@ export default function ExamQuizPage() {
     }));
   }, []);
 
+  const renderSharedContext = (sharedContext) => {
+    if (!sharedContext) return null;
+
+    return (
+      <div className="rounded-2xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-sm leading-6 text-slate-700 shadow-sm dark:border-blue-800/50 dark:bg-blue-950/20 dark:text-slate-200">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-blue-700 dark:text-blue-300">
+          {t('mockTestForms.detail.sharedContext', 'Shared context')}
+        </p>
+        <MixedMathText as="div">{sharedContext}</MixedMathText>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
@@ -598,10 +612,55 @@ export default function ExamQuizPage() {
     const childSections = getSectionChildren(section);
     const sectionKey = getSectionKey(section, `exam-section-${pathLabel}`);
     const isExpanded = expandedMockSections[sectionKey] ?? true;
+    const isQuestionGroup = isQuestionGroupSection(section);
+    const sharedContext = getSectionSharedContext(section);
+    const isSharedContextGroup = isQuestionGroup && Boolean(sharedContext);
     const sectionTitle = getSectionTitle(
       section,
-      `${t('workspace.mockTestForms.detail.section', 'Section')} ${pathLabel}`,
+      `${t('mockTestForms.detail.section', 'Section')} ${pathLabel}`,
     );
+
+    if (isSharedContextGroup) {
+      return (
+        <section
+          key={section.sectionId ?? `mock-section-${pathLabel}`}
+          className={cn(
+            'space-y-4',
+            depth === 0
+              ? 'rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-blue-950/20'
+              : 'pl-5 border-l-2 border-slate-200 dark:border-slate-700',
+          )}
+        >
+          <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl text-left">
+            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                {sectionTitle}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {countSectionQuestions(section)} {t('mockTestForms.detail.questions', 'questions')}
+              </p>
+            </div>
+          </div>
+
+          {renderSharedContext(sharedContext)}
+
+          {Array.isArray(section?.questions) && section.questions.length > 0 && (
+            <div className="space-y-4">
+              {section.questions.map((question) => renderMockTestQuestionCard(question))}
+            </div>
+          )}
+
+          {childSections.length > 0 && (
+            <div className="space-y-6">
+              {childSections.map((childSection, childIndex) => renderMockTestSection(childSection, childIndex, depth + 1, `${pathLabel}.${childIndex + 1}`))}
+            </div>
+          )}
+        </section>
+      );
+    }
 
     return (
       <section
@@ -629,7 +688,7 @@ export default function ExamQuizPage() {
               {sectionTitle}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {countSectionQuestions(section)} {t('workspace.mockTestForms.detail.questions', 'questions')}
+              {countSectionQuestions(section)} {t('mockTestForms.detail.questions', 'questions')}
             </p>
           </div>
         </button>

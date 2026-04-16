@@ -1,105 +1,93 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, BarChart3, Brain, Trophy, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { getMockTestCohortStats } from '@/api/QuizAPI';
 
-const BLOOM_LABELS = {
-  REMEMBER: 'Nhớ',
-  UNDERSTAND: 'Hiểu',
-  APPLY: 'Vận dụng',
-  ANALYZE: 'Phân tích',
-  EVALUATE: 'Đánh giá',
-  CREATE: 'Sáng tạo',
+const BLOOM_LABEL_KEY_BY_NORMALIZED = {
+  REMEMBER: 'bloomRemember',
+  UNDERSTAND: 'bloomUnderstand',
+  APPLY: 'bloomApply',
+  ANALYZE: 'bloomAnalyze',
+  EVALUATE: 'bloomEvaluate',
 };
 
-function normalizeBloom(raw) {
-  if (!raw && raw !== 0) return 'UNKNOWN';
-  const key = String(raw).toUpperCase();
-  if (BLOOM_LABELS[key]) return key;
-  if (raw === 1 || raw === '1') return 'REMEMBER';
-  if (raw === 2 || raw === '2') return 'UNDERSTAND';
-  if (raw === 3 || raw === '3') return 'APPLY';
-  if (raw === 4 || raw === '4') return 'ANALYZE';
-  if (raw === 5 || raw === '5') return 'EVALUATE';
-  if (raw === 6 || raw === '6') return 'CREATE';
-  return 'UNKNOWN';
+const BLOOM_LABEL_KEY_BY_ID = {
+  1: 'bloomRemember',
+  2: 'bloomUnderstand',
+  3: 'bloomApply',
+  4: 'bloomAnalyze',
+  5: 'bloomEvaluate',
+};
+
+function normalizeNumber(value, fallback = 0) {
+  const normalized = Number(value);
+  return Number.isFinite(normalized) ? normalized : fallback;
 }
 
-/**
- * Walk quiz sections tree → trả về Map<questionId, { sectionName, bloomKey }>.
- * quizDetails là normalized shape từ `normalizeQuizData`.
- * Fallback: nếu không có quizRaw → chỉ có bloom từ attemptQuestion.
- */
-function buildQuestionMetaMap(quizRaw) {
-  const map = new Map();
-  if (!quizRaw || !Array.isArray(quizRaw.sections)) return map;
-
-  function walkSection(section, inheritedName) {
-    const sectionName = section.content || section.sectionContent || section.name || inheritedName || 'Section';
-    (section.questions || []).forEach((q) => {
-      if (q?.questionId == null) return;
-      map.set(q.questionId, {
-        sectionName,
-        bloomKey: normalizeBloom(q.bloomId ?? q.bloom),
-      });
-    });
-    (section.children || section.subSections || []).forEach((child) => walkSection(child, sectionName));
+function normalizeBloomLabelKey(entry) {
+  const bloomId = Number(entry?.bloomId);
+  if (Number.isInteger(bloomId) && BLOOM_LABEL_KEY_BY_ID[bloomId]) {
+    return BLOOM_LABEL_KEY_BY_ID[bloomId];
   }
 
-  quizRaw.sections.forEach((section) => walkSection(section, null));
-  return map;
+  const raw = String(entry?.bloomName || entry?.label || entry?.key || '').trim().toUpperCase();
+  return BLOOM_LABEL_KEY_BY_NORMALIZED[raw] || null;
 }
 
-function aggregateBySection(reviewQuestions, metaMap) {
-  const byName = new Map();
-  reviewQuestions.forEach((q) => {
-    const meta = metaMap.get(q.id);
-    const name = meta?.sectionName || 'Không rõ';
-    const bucket = byName.get(name) || { name, total: 0, correct: 0, pending: 0 };
-    bucket.total += 1;
-    if (q.isCorrect === true) bucket.correct += 1;
-    else if (q.isCorrect == null) bucket.pending += 1;
-    byName.set(name, bucket);
-  });
-  return Array.from(byName.values()).map((b) => ({
-    ...b,
-    accuracy: b.total > 0 ? (b.correct * 100) / b.total : 0,
-  }));
+function normalizeSectionStatEntries(sectionStats) {
+  if (!Array.isArray(sectionStats)) return [];
+  return sectionStats
+    .map((entry, index) => ({
+      key: entry.sectionId ?? `${entry.sectionName || 'section'}-${index}`,
+      name: entry.sectionName || entry.name || '',
+      total: normalizeNumber(entry.totalQuestion ?? entry.total),
+      correct: normalizeNumber(entry.correctQuestion ?? entry.correct),
+      pending: normalizeNumber(entry.pendingQuestion ?? entry.pending),
+      failed: normalizeNumber(entry.failedQuestion ?? entry.failed),
+      accuracy: normalizeNumber(entry.accuracyPercent ?? entry.accuracy),
+      orderIndex: normalizeNumber(entry.orderIndex, index),
+    }))
+    .filter((entry) => entry.total > 0);
 }
 
-function aggregateByBloom(reviewQuestions, metaMap) {
-  const byKey = new Map();
-  reviewQuestions.forEach((q) => {
-    const meta = metaMap.get(q.id);
-    const key = meta?.bloomKey || 'UNKNOWN';
-    const bucket = byKey.get(key) || { key, total: 0, correct: 0 };
-    bucket.total += 1;
-    if (q.isCorrect === true) bucket.correct += 1;
-    byKey.set(key, bucket);
-  });
-  return Array.from(byKey.values()).map((b) => ({
-    ...b,
-    label: BLOOM_LABELS[b.key] || b.key,
-    accuracy: b.total > 0 ? (b.correct * 100) / b.total : 0,
-  }));
+function normalizeBloomStatEntries(bloomStats) {
+  if (!Array.isArray(bloomStats)) return [];
+  return bloomStats
+    .map((entry, index) => ({
+      key: entry.bloomId ?? `${entry.bloomName || 'bloom'}-${index}`,
+      label: entry.bloomName || entry.label || '',
+      labelKey: normalizeBloomLabelKey(entry),
+      total: normalizeNumber(entry.totalQuestion ?? entry.total),
+      correct: normalizeNumber(entry.correctQuestion ?? entry.correct),
+      pending: normalizeNumber(entry.pendingQuestion ?? entry.pending),
+      failed: normalizeNumber(entry.failedQuestion ?? entry.failed),
+      accuracy: normalizeNumber(entry.accuracyPercent ?? entry.accuracy),
+    }))
+    .filter((entry) => entry.total > 0);
 }
 
 function SectionBreakdownPanel({ entries }) {
+  const { t } = useTranslation();
   if (!entries || entries.length === 0) return null;
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-purple-500" />
-          <span className="text-sm font-semibold">Phân tích theo phần</span>
+          <span className="text-sm font-semibold">
+            {t('mockTestForms.reviewExtensions.sectionTitle', 'Section analysis')}
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
         {entries.map((entry) => (
-          <div key={entry.name} className="space-y-1">
+          <div key={entry.key ?? entry.name} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="truncate font-medium">{entry.name}</span>
+              <span className="truncate font-medium">
+                {entry.name || t('mockTestForms.reviewExtensions.unknownSection', 'Unknown section')}
+              </span>
               <span className="text-muted-foreground">
                 {entry.correct}/{entry.total} ({entry.accuracy.toFixed(0)}%)
               </span>
@@ -111,7 +99,14 @@ function SectionBreakdownPanel({ entries }) {
               />
             </div>
             {entry.pending > 0 && (
-              <p className="text-[10px] text-amber-600">{entry.pending} câu đang chờ chấm</p>
+              <p className="text-[10px] text-amber-600">
+                {t('mockTestForms.reviewExtensions.pendingQuestions', '{{count}} pending questions', { count: entry.pending })}
+              </p>
+            )}
+            {entry.failed > 0 && (
+              <p className="text-[10px] text-red-500">
+                {t('mockTestForms.reviewExtensions.failedQuestions', '{{count}} questions failed grading', { count: entry.failed })}
+              </p>
             )}
           </div>
         ))}
@@ -121,20 +116,27 @@ function SectionBreakdownPanel({ entries }) {
 }
 
 function BloomBreakdownPanel({ entries }) {
+  const { t } = useTranslation();
   if (!entries || entries.length === 0) return null;
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-blue-500" />
-          <span className="text-sm font-semibold">Phân tích theo kỹ năng Bloom</span>
+          <span className="text-sm font-semibold">
+            {t('mockTestForms.reviewExtensions.bloomTitle', 'Bloom skill analysis')}
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
         {entries.map((entry) => (
           <div key={entry.key} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium">{entry.label}</span>
+              <span className="font-medium">
+                {entry.labelKey
+                  ? t(`mockTestForms.common.${entry.labelKey}`, entry.label || entry.labelKey)
+                  : entry.label || t('mockTestForms.reviewExtensions.unknownBloom', 'Unknown Bloom level')}
+              </span>
               <span className="text-muted-foreground">
                 {entry.correct}/{entry.total} ({entry.accuracy.toFixed(0)}%)
               </span>
@@ -145,6 +147,16 @@ function BloomBreakdownPanel({ entries }) {
                 style={{ width: `${Math.min(100, Math.max(0, entry.accuracy)).toFixed(1)}%` }}
               />
             </div>
+            {entry.pending > 0 && (
+              <p className="text-[10px] text-amber-600">
+                {t('mockTestForms.reviewExtensions.pendingQuestions', '{{count}} pending questions', { count: entry.pending })}
+              </p>
+            )}
+            {entry.failed > 0 && (
+              <p className="text-[10px] text-red-500">
+                {t('mockTestForms.reviewExtensions.failedQuestions', '{{count}} questions failed grading', { count: entry.failed })}
+              </p>
+            )}
           </div>
         ))}
       </CardContent>
@@ -154,6 +166,7 @@ function BloomBreakdownPanel({ entries }) {
 
 
 function CohortPanel({ stats, reviewQuestions }) {
+  const { t } = useTranslation();
   if (!stats) return null;
   const isGroup = stats.workspaceKind === 'GROUP' && (stats.totalAttempts || 0) > 0;
   if (!isGroup) return null;
@@ -166,24 +179,34 @@ function CohortPanel({ stats, reviewQuestions }) {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-indigo-500" />
-          <span className="text-sm font-semibold">So với cả lớp</span>
-          <Badge className="ml-auto bg-indigo-100 text-indigo-800">{stats.totalAttempts} attempt</Badge>
+          <span className="text-sm font-semibold">
+            {t('mockTestForms.reviewExtensions.cohortTitle', 'Compared with the class')}
+          </span>
+          <Badge className="ml-auto bg-indigo-100 text-indigo-800">
+            {t('mockTestForms.reviewExtensions.attemptCount', '{{count}} attempts', { count: stats.totalAttempts })}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
-            <p className="text-[11px] text-muted-foreground">Điểm TB lớp</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t('mockTestForms.reviewExtensions.classAverage', 'Class average')}
+            </p>
             <p className="text-base font-bold">{stats.classAverageAccuracy?.toFixed(1) ?? '-'}%</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">Của bạn</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t('mockTestForms.reviewExtensions.yourScore', 'You')}
+            </p>
             <p className="text-base font-bold text-indigo-600">
               {stats.callerAccuracy != null ? `${stats.callerAccuracy.toFixed(1)}%` : '-'}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">Xếp hạng</p>
+            <p className="text-[11px] text-muted-foreground">
+              {t('mockTestForms.reviewExtensions.rank', 'Rank')}
+            </p>
             <p className="text-base font-bold">
               {stats.callerRank != null ? (
                 <span className="flex items-center justify-center gap-1">
@@ -199,7 +222,7 @@ function CohortPanel({ stats, reviewQuestions }) {
           <div>
             <div className="mb-2 flex items-center gap-1 text-xs font-medium">
               <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-              <span>Câu cả lớp sai nhiều</span>
+              <span>{t('mockTestForms.reviewExtensions.topWrongTitle', 'Questions most missed by the class')}</span>
             </div>
             <div className="space-y-1">
               {topWrong.map((item) => {
@@ -210,10 +233,14 @@ function CohortPanel({ stats, reviewQuestions }) {
                     className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs dark:bg-slate-900/40"
                   >
                     <span className="font-medium">
-                      Câu {pos ?? `#${item.questionId}`}
+                      {t('mockTestForms.reviewExtensions.questionShort', 'Question')} {pos ?? `#${item.questionId}`}
                     </span>
                     <span className="text-red-600">
-                      {item.errorRatePercent?.toFixed(0)}% sai ({item.wrongCount}/{item.totalAttempted})
+                      {t('mockTestForms.reviewExtensions.wrongSummary', '{{percent}}% wrong ({{wrong}}/{{total}})', {
+                        percent: item.errorRatePercent?.toFixed(0),
+                        wrong: item.wrongCount,
+                        total: item.totalAttempted,
+                      })}
                     </span>
                   </div>
                 );
@@ -236,18 +263,18 @@ function CohortPanel({ stats, reviewQuestions }) {
  * - reviewQuestions: mảng review item đã build trong QuizResultPage
  * - quizId
  */
-export function MockTestReviewExtensions({ result, quizRaw, reviewQuestions, quizId }) {
+export function MockTestReviewExtensions({ result, reviewQuestions, quizId }) {
+  const { t } = useTranslation();
   const [cohortStats, setCohortStats] = useState(null);
   const [cohortError, setCohortError] = useState(null);
 
-  const metaMap = useMemo(() => buildQuestionMetaMap(quizRaw), [quizRaw]);
   const sectionEntries = useMemo(
-    () => aggregateBySection(reviewQuestions || [], metaMap),
-    [reviewQuestions, metaMap],
+    () => normalizeSectionStatEntries(result?.sectionStats),
+    [result?.sectionStats],
   );
   const bloomEntries = useMemo(
-    () => aggregateByBloom(reviewQuestions || [], metaMap),
-    [reviewQuestions, metaMap],
+    () => normalizeBloomStatEntries(result?.bloomStats),
+    [result?.bloomStats],
   );
 
   useEffect(() => {
@@ -264,13 +291,13 @@ export function MockTestReviewExtensions({ result, quizRaw, reviewQuestions, qui
         // 403 = user chưa có attempt hoặc không thuộc group. Không phải lỗi hiển thị.
         const code = Number(e?.statusCode);
         if (code !== 403 && code !== 409) {
-          setCohortError(e?.message || 'Không tải được thống kê cohort');
+          setCohortError(e?.message || t('mockTestForms.reviewExtensions.cohortLoadFailed', 'Could not load class statistics'));
         }
         setCohortStats(null);
       }
     })();
     return () => { cancelled = true; };
-  }, [quizId]);
+  }, [quizId, t]);
 
   if (!result || !reviewQuestions || reviewQuestions.length === 0) return null;
 

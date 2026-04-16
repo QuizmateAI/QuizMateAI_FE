@@ -22,7 +22,6 @@ export const BLOOM_SKILL_LABEL_FALLBACKS = {
   APPLY: "Apply",
   ANALYZE: "Analyze",
   EVALUATE: "Evaluate",
-  CREATE: "Create",
   UNSPECIFIED: "Unspecified",
 };
 

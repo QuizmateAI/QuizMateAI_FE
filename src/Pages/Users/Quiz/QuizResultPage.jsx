@@ -14,9 +14,10 @@ import {
   getCurrentRoadmapPhaseProgress,
   submitRoadmapPhaseSkipDecision,
 } from '@/api/RoadmapPhaseAPI';
-import { buildQuestionSectionPathMap, collectAllSectionKeys, countSectionQuestions, getSectionChildren, getSectionKey, getSectionTitle, normalizeQuizData } from './utils/quizTransform';
+import { buildQuestionSectionPathMap, collectAllSectionKeys, countSectionQuestions, getSectionChildren, getSectionKey, getSectionSharedContext, getSectionTitle, isQuestionGroupSection, normalizeQuizData, normalizeVisibleSectionGroups } from './utils/quizTransform';
 import { MockTestReviewExtensions } from '@/Pages/Users/MockTest/components/MockTestReviewExtensions';
 import { useToast } from '@/context/ToastContext';
+import MixedMathText from '@/Components/math/MixedMathText';
 import {
   buildGroupWorkspaceSectionPath,
   buildQuizAttemptPath,
@@ -1190,14 +1191,72 @@ handleBack,
     );
   };
 
+  const renderSharedContext = (sharedContext) => {
+    if (!sharedContext) return null;
+
+    return (
+      <div className="rounded-2xl border border-sky-200 bg-sky-50/70 px-4 py-3 text-sm leading-6 text-slate-700 shadow-sm dark:border-sky-800/50 dark:bg-sky-950/20 dark:text-slate-200">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-sky-700 dark:text-sky-300">
+          {t('mockTestForms.detail.sharedContext', 'Shared context')}
+        </p>
+        <MixedMathText as="div">{sharedContext}</MixedMathText>
+      </div>
+    );
+  };
+
   const renderReviewSection = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
     const childSections = getSectionChildren(section);
     const sectionKey = getSectionKey(section, `review-section-${pathLabel}`);
     const isExpanded = expandedReviewSections[sectionKey] ?? true;
+    const isQuestionGroup = isQuestionGroupSection(section);
+    const sharedContext = getSectionSharedContext(section);
+    const isSharedContextGroup = isQuestionGroup && Boolean(sharedContext);
     const sectionTitle = getSectionTitle(
       section,
-      t('workspace.mockTestForms.detail.section', 'Section'),
+      t('mockTestForms.detail.section', 'Section'),
     );
+
+    if (isSharedContextGroup) {
+      return (
+        <section
+          key={section.sectionId ?? `review-section-${pathLabel}`}
+          className={cn(
+            'space-y-4',
+            depth === 0
+              ? 'rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-blue-950/20'
+              : 'pl-5 border-l-2 border-slate-200 dark:border-slate-700',
+          )}
+        >
+          <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl text-left">
+            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                {sectionTitle}
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {countSectionQuestions(section)} {t('mockTestForms.detail.questions', 'questions')}
+              </p>
+            </div>
+          </div>
+
+          {renderSharedContext(sharedContext)}
+
+          {Array.isArray(section?.questions) && section.questions.length > 0 && (
+            <div className="space-y-4">
+              {section.questions.map((question) => renderReviewQuestionCard(question))}
+            </div>
+          )}
+
+          {childSections.length > 0 && (
+            <div className="space-y-6">
+              {childSections.map((childSection, childIndex) => renderReviewSection(childSection, childIndex, depth + 1, `${pathLabel}.${childIndex + 1}`))}
+            </div>
+          )}
+        </section>
+      );
+    }
 
     return (
       <section
@@ -1225,7 +1284,7 @@ handleBack,
               {sectionTitle}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {countSectionQuestions(section)} {t('workspace.mockTestForms.detail.questions', 'questions')}
+              {countSectionQuestions(section)} {t('mockTestForms.detail.questions', 'questions')}
             </p>
           </div>
         </button>
@@ -1273,24 +1332,33 @@ handleBack,
   };
 
   const renderReviewNavSection = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
-    const childSections = getSectionChildren(section);
+    const childSections = normalizeVisibleSectionGroups(getSectionChildren(section));
+    const isQuestionGroup = isQuestionGroupSection(section);
+    const isSharedContextGroup = isQuestionGroup && Boolean(getSectionSharedContext(section));
     const sectionTitle = getSectionTitle(
       section,
-      `${t('workspace.mockTestForms.detail.section', 'Section')} ${pathLabel}`,
+      `${t('mockTestForms.detail.section', 'Section')} ${pathLabel}`,
     );
 
     return (
       <div
         key={section.sectionId ?? `review-nav-section-${pathLabel}`}
-        className={cn('space-y-2', depth > 0 && 'pl-4 border-l border-slate-200 dark:border-slate-700')}
+        className={cn('space-y-2', depth > 0 && !isSharedContextGroup && 'pl-4 border-l border-slate-200 dark:border-slate-700')}
       >
         <div className="flex items-center justify-between gap-2">
-          <p className="min-w-0 truncate text-sm font-semibold text-slate-700 dark:text-slate-100">
+          <p className={cn(
+            'min-w-0 truncate',
+            isSharedContextGroup
+              ? 'text-xs font-medium text-slate-500 dark:text-slate-400'
+              : 'text-sm font-semibold text-slate-700 dark:text-slate-100',
+          )}>
             {sectionTitle}
           </p>
-          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
-            {countSectionQuestions(section)}
-          </span>
+          {!isSharedContextGroup && (
+            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
+              {countSectionQuestions(section)}
+            </span>
+          )}
         </div>
 
         {Array.isArray(section?.questions) && section.questions.length > 0 && (

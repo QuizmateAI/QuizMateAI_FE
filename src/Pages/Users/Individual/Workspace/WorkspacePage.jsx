@@ -64,6 +64,11 @@ import {
 } from "@/Pages/Users/Individual/Workspace/utils/viewRouting";
 import { useWorkspaceMockTestGeneration } from "@/Pages/Users/Individual/Workspace/hooks/useWorkspaceMockTestGeneration";
 import { useWorkspaceRoadmapManager } from "@/Pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager";
+import {
+  getMockTestRealtimeMessage,
+  isMockTestCompletedSignal,
+  isMockTestErrorSignal,
+} from "@/Pages/Users/MockTest/utils/mockTestRealtime";
 
 const LazyUploadSourceDialog = React.lazy(
   () =>
@@ -1020,6 +1025,37 @@ function WorkspacePage() {
     setSelectedRoadmapKnowledgeId(null);
   }, []);
 
+  const invalidateMockTestQueries = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["workspace-mock-tests"] });
+  }, [queryClient]);
+
+  const handleMockTestRealtime = useCallback(
+    (signal, rawPayload = null) => {
+      invalidateMockTestQueries();
+
+      if (isMockTestCompletedSignal(signal, rawPayload)) {
+        showSuccess(
+          t(
+            "mockTestForms.common.generatedSuccess",
+            "Mock test generated successfully.",
+          ),
+        );
+        return;
+      }
+
+      if (isMockTestErrorSignal(signal, rawPayload)) {
+        showError(
+          getMockTestRealtimeMessage(signal, rawPayload) ||
+            t(
+              "mockTestForms.common.generateFailed",
+              "Failed to generate mock test.",
+            ),
+        );
+      }
+    },
+    [invalidateMockTestQueries, showError, showSuccess, t],
+  );
+
   const {
     wsConnected,
 
@@ -1098,6 +1134,8 @@ function WorkspacePage() {
     openRoadmapView: openRoadmapWorkspaceView,
 
     clearSelectedRoadmapPhase: clearRoadmapPhaseSelection,
+
+    onMockTestRealtime: handleMockTestRealtime,
 
     showError,
   });
@@ -2169,8 +2207,9 @@ function WorkspacePage() {
   // Return to the mock-test list after creation succeeds
 
   const handleCreateMockTest = useCallback(async () => {
+    invalidateMockTestQueries();
     setActiveView("mockTest");
-  }, []);
+  }, [invalidateMockTestQueries]);
 
   const handleCreatePostLearning = useCallback(async (payload) => {
     const quizId = Number(payload?.quizId);
