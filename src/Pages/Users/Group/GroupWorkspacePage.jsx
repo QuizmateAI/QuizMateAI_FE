@@ -97,9 +97,16 @@ import {
   resolveGroupWorkspaceSectionFromSubPath,
 } from '@/lib/routePaths';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
+import {
+  getMockTestRealtimeMessage,
+  isMockTestCompletedSignal,
+  isMockTestErrorSignal,
+  isMockTestRealtimeSignal,
+} from '@/Pages/Users/MockTest/utils/mockTestRealtime';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
+import { buildGroupMemberSeatSummary, normalizePendingInvitationSummary, resolveGroupMemberSeatLimit } from './utils/memberSeatLimit';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 const LEARNING_SNAPSHOT_PERIOD = 'DAILY';
@@ -118,6 +125,7 @@ const GROUP_UPLOAD_ACCEPTED_EXTENSIONS = new Set([
   '.mp3',
   '.mp4',
 ]);
+const EMPTY_PENDING_INVITATION_SUMMARY = Object.freeze({ count: 0, invitations: [] });
 
 function clampPercent(percent) {
   return Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
@@ -471,6 +479,33 @@ function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t, lang = 'v
   return String(planDisplayName || planCode || '').trim();
 }
 
+function buildMemberSeatLimitErrorMessage(t, seatSummary) {
+  const limit = Number(seatSummary?.limit);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return t('groupWorkspacePage.errors.memberSeatLimitUnknown', 'Nhóm đã đạt giới hạn thành viên của gói hiện tại.');
+  }
+
+  const used = Number.isFinite(Number(seatSummary?.usedCount)) ? Number(seatSummary.usedCount) : limit;
+  const pending = Number.isFinite(Number(seatSummary?.pendingCount)) ? Number(seatSummary.pendingCount) : 0;
+  const overLimitBy = Number.isFinite(Number(seatSummary?.overLimitBy)) ? Number(seatSummary.overLimitBy) : 0;
+
+  if (overLimitBy > 0) {
+    return t('groupWorkspacePage.errors.memberSeatLimitExceeded', {
+      used,
+      limit,
+      overLimitBy,
+      defaultValue: `Nhóm đang vượt ${overLimitBy} slot thành viên so với giới hạn ${limit}. Hãy giảm thành viên hoặc hủy lời mời chờ trước khi mời thêm.`,
+    });
+  }
+
+  return t('groupWorkspacePage.errors.memberSeatLimitReached', {
+    used,
+    limit,
+    pending,
+    defaultValue: `Nhóm đã dùng hết ${used}/${limit} slot thành viên. Hãy hủy ${pending > 0 ? 'lời mời chờ hoặc ' : ''}nâng cấp gói trước khi mời thêm.`,
+  });
+}
+
 function shouldTrackInLeaderReviewQueue(status, needReview) {
   return isProcessingMaterialStatus(status) || Boolean(needReview);
 }
@@ -800,6 +835,7 @@ function GroupWorkspacePage() {
   const refreshPendingMaterialTimersRef = useRef({});
   const uploadNotificationsRef = useRef(new Set());
   const groupRealtimeRefreshTimerRef = useRef(null);
+  const recoveredMockTestTaskRef = useRef(false);
   const skipRoadmapStoredRestoreRef = useRef(false);
   const skipNextRoadmapCanonicalizeRef = useRef(false);
 
@@ -1154,6 +1190,54 @@ function GroupWorkspacePage() {
   const canCreateContent = isLeader || isContributor;
   const canUploadSource = isLeader || isContributor;
   const canManageMembers = isLeader;
+  const resolvedWorkspaceId = currentGroupWorkspace?.workspaceId
+    ?? (isCreating ? null : workspaceId);
+  const pendingInvitationsQueryKey = useMemo(
+    () => ['group-pending-invitations', resolvedWorkspaceId],
+    [resolvedWorkspaceId],
+  );
+  const {
+    data: pendingInvitationSummary = EMPTY_PENDING_INVITATION_SUMMARY,
+  } = useQuery({
+    queryKey: pendingInvitationsQueryKey,
+    queryFn: async () => normalizePendingInvitationSummary(await fetchPendingInvitations(resolvedWorkspaceId)),
+    enabled: Boolean(canManageMembers && resolvedWorkspaceId && !isCreating),
+    staleTime: 15 * 1000,
+  });
+  const acceptedMemberFallbackCount = useMemo(() => {
+    const candidates = [
+      members.length,
+      currentGroupFromGroups?.memberCount,
+      currentGroupWorkspace?.memberCount,
+      currentWorkspaceFromList?.memberCount,
+      currentWorkspace?.memberCount,
+    ].map((candidate) => Number(candidate))
+      .filter((candidate) => Number.isFinite(candidate) && candidate >= 0);
+
+    return candidates.length > 0 ? Math.max(...candidates) : members.length;
+  }, [
+    currentGroupFromGroups?.memberCount,
+    currentGroupWorkspace?.memberCount,
+    currentWorkspace?.memberCount,
+    currentWorkspaceFromList?.memberCount,
+    members.length,
+  ]);
+  const memberSeatSummary = useMemo(
+    () => buildGroupMemberSeatSummary({
+      groupProfile,
+      groupSubscription,
+      members,
+      fallbackAcceptedCount: acceptedMemberFallbackCount,
+      pendingInvitations: pendingInvitationSummary,
+    }),
+    [
+      acceptedMemberFallbackCount,
+      groupProfile,
+      groupSubscription,
+      members,
+      pendingInvitationSummary,
+    ],
+  );
 
   useEffect(() => {
     if (activeSection === 'dashboard' && isLeader) {
@@ -1215,8 +1299,6 @@ function GroupWorkspacePage() {
     }
   }, [planUpgradeModalOpen]);
 
-  const resolvedWorkspaceId = currentGroupWorkspace?.workspaceId
-    ?? (isCreating ? null : workspaceId);
   const groupPlanUpgradePath = resolvedWorkspaceId
     ? `/plans?planType=GROUP&workspaceId=${resolvedWorkspaceId}`
     : '/plans';
@@ -1847,10 +1929,36 @@ function GroupWorkspacePage() {
     }
   }, [currentLang, isLeader, showError, showInfo, showSuccess, showWarning, t]);
 
+  const invalidateMockTestQueries = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['workspace-mock-tests'] });
+  }, [queryClient]);
+
+  const handleMockTestRealtime = useCallback((signal, rawPayload = null) => {
+    invalidateMockTestQueries();
+
+    if (isMockTestCompletedSignal(signal, rawPayload)) {
+      showSuccess(t('createGroupMockTestForm.toast.generatedSuccess', 'Mock test generated successfully.'));
+      return;
+    }
+
+    if (isMockTestErrorSignal(signal, rawPayload)) {
+      showError(
+        getMockTestRealtimeMessage(signal, rawPayload)
+        || t('createGroupMockTestForm.errors.createMockTestFailed', 'Failed to create mock test. Please try again.'),
+      );
+    }
+  }, [invalidateMockTestQueries, showError, showSuccess, t]);
+
   const handleRealtimeProgress = useCallback((progressPayload) => {
     const signal = normalizeRuntimeTaskSignal(progressPayload, { source: 'websocket' });
     const normalizedStatus = String(signal.status || '').toUpperCase();
     const normalizedTaskType = String(signal.taskType || '').toUpperCase();
+
+    if (isMockTestRealtimeSignal(signal, progressPayload)) {
+      handleMockTestRealtime(signal, progressPayload);
+      return;
+    }
+
     const isRoadmapTaskSignal = Boolean(
       signal.hasExplicitRoadmapPhaseSignal
       || signal.hasGenericRoadmapPhaseSignal
@@ -1984,6 +2092,7 @@ function GroupWorkspacePage() {
     isLeader,
     loadGroupRoadmapConfig,
     materialProgress,
+    handleMockTestRealtime,
     patchSessionUpload,
     removeSessionUpload,
     roadmapPhaseGenerationTaskId,
@@ -2111,6 +2220,11 @@ function GroupWorkspacePage() {
     const tasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
 
     if (!hasActiveTask || tasks.length === 0) {
+      if (recoveredMockTestTaskRef.current) {
+        recoveredMockTestTaskRef.current = false;
+        handleMockTestRealtime({ status: 'MOCKTEST_REFRESH', taskType: 'MOCKTEST' });
+      }
+
       setSessionUploadQueue((current) => current.filter((item) => !isProcessingMaterialStatus(item?.status)));
       if (isGeneratingRoadmapPhases) {
         setIsGeneratingRoadmapPhases(false);
@@ -2124,7 +2238,10 @@ function GroupWorkspacePage() {
 
     tasks.forEach((task) => {
       const signal = normalizeRuntimeTaskSignal(task, { source: 'active-task' });
-      if (!signal.taskId && !signal.materialId) return;
+      if (!signal.taskId && !signal.materialId && !isMockTestRealtimeSignal(signal, task)) return;
+      if (isMockTestRealtimeSignal(signal, task)) {
+        recoveredMockTestTaskRef.current = true;
+      }
 
       handleRealtimeProgress({
         ...task,
@@ -2138,6 +2255,7 @@ function GroupWorkspacePage() {
     });
   }, [
     bumpRoadmapReloadToken,
+    handleMockTestRealtime,
     handleRealtimeProgress,
     isGeneratingRoadmapPhases,
     refreshGroupMaterialViews,
@@ -2198,6 +2316,8 @@ function GroupWorkspacePage() {
       void loadGroupLogs();
       void queryClient.invalidateQueries({ queryKey: ['group-pending-invitations', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['workspace-members', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-members-review', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-dashboard-summary', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-dashboard-member-cards', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-member-dashboard-detail', resolvedWorkspaceId] });
@@ -2273,16 +2393,124 @@ function GroupWorkspacePage() {
     void refreshActiveTaskSnapshot('page-reload');
   }, [isCreating, refreshActiveTaskSnapshot, workspaceId]);
 
+  const resolveLatestMemberSeatLimit = useCallback(async () => {
+    const currentLimit = resolveGroupMemberSeatLimit({ groupProfile, groupSubscription });
+    if (currentLimit != null || hasLoadedGroupSubscription || !resolvedWorkspaceId) {
+      return currentLimit;
+    }
+
+    try {
+      const response = await getWorkspaceCurrentPlan(resolvedWorkspaceId);
+      const latestSubscription = unwrapApiData(response);
+      setGroupSubscription(latestSubscription);
+      setHasLoadedGroupSubscription(true);
+      return resolveGroupMemberSeatLimit({
+        groupProfile,
+        groupSubscription: latestSubscription,
+      });
+    } catch {
+      return currentLimit;
+    }
+  }, [
+    groupProfile,
+    groupSubscription,
+    hasLoadedGroupSubscription,
+    resolvedWorkspaceId,
+  ]);
+
   // Invite handler
   const handleInvite = useCallback(async (email) => {
     if (!canManageGroup || !canManageMembers) {
       throw new Error(t('groupWorkspacePage.errors.leaderOnlyInvite', 'Only leaders can invite members to the group.'));
     }
-    await inviteMemberHook(resolvedWorkspaceId, email);
+    const latestSeatLimit = await resolveLatestMemberSeatLimit();
+    if (latestSeatLimit != null) {
+      let latestPendingInvitationSummary = pendingInvitationSummary;
+
+      try {
+        latestPendingInvitationSummary = normalizePendingInvitationSummary(
+          await fetchPendingInvitations(resolvedWorkspaceId)
+        );
+        queryClient.setQueryData(
+          pendingInvitationsQueryKey,
+          latestPendingInvitationSummary,
+        );
+      } catch {
+        const cachedPendingInvitations = queryClient.getQueryData(pendingInvitationsQueryKey);
+        latestPendingInvitationSummary = normalizePendingInvitationSummary(
+          cachedPendingInvitations ?? pendingInvitationSummary
+        );
+      }
+
+      const latestSeatSummary = {
+        limit: latestSeatLimit,
+        pendingCount: latestPendingInvitationSummary.count,
+        usedCount: acceptedMemberFallbackCount + latestPendingInvitationSummary.count,
+      };
+      latestSeatSummary.overLimitBy = Math.max(0, latestSeatSummary.usedCount - latestSeatSummary.limit);
+
+      if (latestSeatSummary.limit != null && latestSeatSummary.usedCount >= latestSeatSummary.limit) {
+        throw new Error(buildMemberSeatLimitErrorMessage(t, latestSeatSummary));
+      }
+    }
+
+    const invitation = await inviteMemberHook(resolvedWorkspaceId, email);
+    queryClient.setQueryData(['group-pending-invitations', resolvedWorkspaceId], (current) => {
+      const currentInvitations = Array.isArray(current?.invitations) ? current.invitations : [];
+      if (!invitation || typeof invitation !== 'object') {
+        return {
+          count: Number.isFinite(Number(current?.count)) ? Number(current.count) : currentInvitations.length,
+          invitations: currentInvitations,
+        };
+      }
+
+      const nextIdentity = String(
+        invitation?.invitationId
+        || invitation?.id
+        || invitation?.inviteId
+        || invitation?.token
+        || invitation?.invitedEmail
+        || email
+      );
+      const nextInvitations = [
+        invitation,
+        ...currentInvitations.filter((item) => String(
+          item?.invitationId
+          || item?.id
+          || item?.inviteId
+          || item?.token
+          || item?.invitedEmail
+          || item?.email
+          || ''
+        ) !== nextIdentity),
+      ];
+
+      return {
+        count: nextInvitations.length,
+        invitations: nextInvitations,
+      };
+    });
+    void queryClient.invalidateQueries({ queryKey: ['group-pending-invitations', resolvedWorkspaceId] });
+    void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', resolvedWorkspaceId] });
     showInfo(t('groupWorkspacePage.toast.inviteSent', 'Invitation sent successfully!'));
-    await loadMembers();
+    void loadMembers({ silent: true });
     await loadGroupLogs();
-  }, [resolvedWorkspaceId, canManageGroup, canManageMembers, inviteMemberHook, showInfo, loadMembers, loadGroupLogs, t]);
+  }, [
+    acceptedMemberFallbackCount,
+    canManageGroup,
+    canManageMembers,
+    fetchPendingInvitations,
+    inviteMemberHook,
+    loadGroupLogs,
+    loadMembers,
+    pendingInvitationSummary,
+    pendingInvitationsQueryKey,
+    queryClient,
+    resolveLatestMemberSeatLimit,
+    resolvedWorkspaceId,
+    showInfo,
+    t,
+  ]);
 
   // Upload files
   const handleUploadFiles = useCallback(async (files) => {
@@ -3246,8 +3474,9 @@ function GroupWorkspacePage() {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateMockTest', 'Member cannot create mock tests.'));
       return;
     }
+    invalidateMockTestQueries();
     setActiveView('mockTest');
-  }, [canCreateContent, currentLang, showInfo, t]);
+  }, [canCreateContent, invalidateMockTestQueries, showInfo, t]);
   const handleViewMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('mockTestDetail'); }, []);
   const handleEditMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('editMockTest'); }, []);
   const handleSaveMockTest = useCallback((updatedMt) => { setSelectedMockTest((p) => ({ ...p, ...updatedMt })); setActiveView('mockTestDetail'); }, []);
@@ -3970,6 +4199,7 @@ function GroupWorkspacePage() {
             isDarkMode={isDarkMode}
             workspaceId={workspaceId}
             members={members}
+            totalMemberCount={acceptedMemberFallbackCount}
             membersLoading={membersLoading}
             isLeader={isLeader}
             onReload={loadMembers}
@@ -3982,6 +4212,10 @@ function GroupWorkspacePage() {
             fetchPendingInvitations={fetchPendingInvitations}
             onCancelInvitation={cancelInvitation}
             onResendInvitation={resendInvitation}
+            memberSeatLimit={memberSeatSummary.limit}
+            memberSeatUsage={memberSeatSummary.usedCount}
+            memberSeatRemaining={memberSeatSummary.remainingCount}
+            isMemberSeatLimitReached={memberSeatSummary.isAtLimit}
             />
           </React.Suspense>
         );
@@ -4217,6 +4451,10 @@ function GroupWorkspacePage() {
             onOpenChange={setInviteDialogOpen}
             onInvite={handleInvite}
             isDarkMode={isDarkMode}
+            memberSeatLimit={memberSeatSummary.limit}
+            memberSeatUsage={memberSeatSummary.usedCount}
+            memberSeatRemaining={memberSeatSummary.remainingCount}
+            isMemberSeatLimitReached={memberSeatSummary.isAtLimit}
           />
         </React.Suspense>
       ) : null}

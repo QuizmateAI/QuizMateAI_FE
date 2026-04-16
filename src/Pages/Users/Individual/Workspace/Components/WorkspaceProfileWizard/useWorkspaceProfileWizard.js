@@ -85,6 +85,20 @@ function hasTextValue(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function normalizeWorkspacePurpose(value, fallback = '') {
+  const normalized = ensureString(value).trim().toUpperCase();
+
+  if (normalized === 'MOCK_TEST') {
+    return 'REVIEW';
+  }
+
+  if (normalized === 'STUDY_NEW' || normalized === 'REVIEW') {
+    return normalized;
+  }
+
+  return fallback;
+}
+
 function normalizeLiveInput(value) {
   return ensureString(value).replace(/\r\n/g, '\n').trim();
 }
@@ -248,10 +262,9 @@ function hasProfileData(initialData) {
 function createInitialValues(initialData) {
   const hasExistingProfile = hasProfileData(initialData);
   const purpose =
-    initialData?.workspacePurpose ||
-    initialData?.learningMode ||
+    normalizeWorkspacePurpose(initialData?.workspacePurpose || initialData?.learningMode) ||
     (initialData?.mockExamName || initialData?.mockExamCatalogId || initialData?.targetScore
-      ? 'MOCK_TEST'
+      ? 'REVIEW'
       : initialData?.weakAreas || initialData?.strongAreas
         ? 'REVIEW'
         : hasExistingProfile
@@ -833,10 +846,8 @@ function createSavedStepSnapshots(initialData, values, initialStep, totalSteps =
 }
 
 function mapLearningModeForApi(purpose) {
-  if (purpose === 'STUDY_NEW') return 'STUDY_NEW';
-  if (purpose === 'REVIEW') return 'REVIEW';
-  if (purpose === 'MOCK_TEST') return 'MOCK_TEST';
-  return 'STUDY_NEW';
+  const normalizedPurpose = normalizeWorkspacePurpose(purpose, 'STUDY_NEW');
+  return normalizedPurpose === 'REVIEW' ? 'REVIEW' : 'STUDY_NEW';
 }
 
 function getLiveFieldErrorMessage(field, value, t) {
@@ -1642,12 +1653,12 @@ export function useWorkspaceProfileWizard({
       } else if (learningGoalError) {
         nextErrors.learningGoal = learningGoalError;
       }
-      if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !beginnerMode && !values.strongAreas.trim()) {
+      if (values.workspacePurpose === 'REVIEW' && !beginnerMode && !values.strongAreas.trim()) {
         nextErrors.strongAreas = t('workspace.profileConfig.validation.strongAreasRequired');
       } else if (values.strongAreas.trim() && strongAreasError) {
         nextErrors.strongAreas = strongAreasError;
       }
-      if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !beginnerMode && !values.weakAreas.trim()) {
+      if (values.workspacePurpose === 'REVIEW' && !beginnerMode && !values.weakAreas.trim()) {
         nextErrors.weakAreas = t('workspace.profileConfig.validation.weakAreasRequired');
       } else if (values.weakAreas.trim() && weakAreasError) {
         nextErrors.weakAreas = weakAreasError;

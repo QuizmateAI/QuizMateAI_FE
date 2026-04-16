@@ -43,9 +43,6 @@ export default function QuizHeader({ onBack, title, showConfirm, confirmTitle, c
               <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
             </Button>
             <div className="min-w-0">
-              <p className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:block dark:text-slate-500">
-                {t('workspace.quiz.header.sessionLabel', 'Quiz session')}
-              </p>
               <h2 className="truncate text-lg font-semibold text-slate-800 dark:text-slate-100 sm:max-w-[320px] md:max-w-xl">{title}</h2>
             </div>
           </div>

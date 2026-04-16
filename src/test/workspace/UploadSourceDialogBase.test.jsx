@@ -131,6 +131,10 @@ describe('UploadSourceDialogBase', () => {
     });
 
     fireEvent.click(screen.getByText('Community PDF Source'));
+    expect(screen.getAllByText('Community PDF Source')).toHaveLength(2);
+    expect(screen.getByText('workspace.upload.aiSuggestedBadge')).toBeInTheDocument();
+    expect(screen.queryByText('0.0 MB')).not.toBeInTheDocument();
+    expect(screen.getAllByText('https://example.com/source')).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.uploadAllSources' }));
 
     await waitFor(() => {
@@ -141,6 +145,58 @@ describe('UploadSourceDialogBase', () => {
       });
     });
 
+    expect(onSuggestedImported).toHaveBeenCalled();
+  });
+
+  it('switches the primary CTA to suggested-only import and shows the suggestion in the shared selected list', async () => {
+    const onUploadFiles = vi.fn().mockResolvedValue(undefined);
+    const onSuggestedImported = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <UploadSourceDialogBase
+        open
+        onOpenChange={vi.fn()}
+        isDarkMode={false}
+        workspaceId={42}
+        onUploadFiles={onUploadFiles}
+        onSuggestedImported={onSuggestedImported}
+        planEntitlements={{
+          canUploadPdf: true,
+          canUploadWord: true,
+          canUploadSlide: true,
+          canUploadExcel: true,
+          canUploadText: true,
+          canUploadImage: true,
+          canUploadAudio: true,
+          canUploadVideo: true,
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.suggestMore' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Community PDF Source')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Community PDF Source'));
+
+    expect(screen.getAllByText('Community PDF Source')).toHaveLength(2);
+    expect(screen.getByText('workspace.upload.aiSuggestedBadge')).toBeInTheDocument();
+    expect(screen.getAllByText('https://example.com/source')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'workspace.upload.importSuggested' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'workspace.upload.uploadAllSources' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.importSuggested' }));
+
+    await waitFor(() => {
+      expect(importSuggestedResources).toHaveBeenCalledWith({
+        workspaceId: 42,
+        suggestionIds: [11],
+      });
+    });
+
+    expect(onUploadFiles).not.toHaveBeenCalled();
     expect(onSuggestedImported).toHaveBeenCalled();
   });
 

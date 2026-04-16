@@ -10,7 +10,6 @@ import {
   Compass,
   Loader2,
   RefreshCw,
-  ScrollText,
   Sparkles,
   Users,
   X,
@@ -38,7 +37,6 @@ import {
 const LEARNING_MODES = [
   { value: 'STUDY_NEW', labelKey: 'groupWorkspaceProfileConfigMirror.learningModes.studyNew', labelFallback: 'Study New', icon: BrainCircuit },
   { value: 'REVIEW', labelKey: 'groupWorkspaceProfileConfigMirror.learningModes.review', labelFallback: 'Group Review', icon: Sparkles },
-  { value: 'MOCK_TEST', labelKey: 'groupWorkspaceProfileConfigMirror.learningModes.mockTest', labelFallback: 'Group Mock Test', icon: ScrollText },
 ];
 
 const GROUP_NAME_PLACEHOLDERS = new Set(['group name null']);
@@ -66,6 +64,20 @@ function normalizeGroupNameValue(value) {
   const trimmed = value.trim();
   if (!trimmed) return '';
   return GROUP_NAME_PLACEHOLDERS.has(trimmed.toLowerCase()) ? '' : trimmed;
+}
+
+function normalizeGroupLearningMode(value) {
+  const normalized = (value || '').toString().trim().toUpperCase();
+
+  if (normalized === 'MOCK_TEST') {
+    return 'REVIEW';
+  }
+
+  if (normalized === 'STUDY_NEW' || normalized === 'REVIEW') {
+    return normalized;
+  }
+
+  return '';
 }
 
 function normalizeReasonText(value) {
@@ -197,7 +209,7 @@ function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled,
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'h-full rounded-[22px] border p-4 text-left transition-all duration-200 hover:scale-[1.02]',
+        'h-full rounded-[24px] border p-5 text-left transition-all duration-200 hover:scale-[1.02]',
         active
           ? isDarkMode
             ? 'border-cyan-400/40 bg-cyan-500/10'
@@ -210,7 +222,7 @@ function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled,
     >
       <div className="flex h-full items-start gap-3">
         <div className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-2xl border',
+          'flex h-11 w-11 items-center justify-center rounded-2xl border',
           active
             ? isDarkMode ? 'border-cyan-300/35 bg-cyan-400/20 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
             : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)] text-slate-600'
@@ -232,7 +244,7 @@ function ToggleTile({ checked, onChange, title, description, badge, disabled, is
   return (
     <label
       className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-[22px] border p-4 transition-all duration-200',
+        'flex cursor-pointer items-start gap-3 rounded-[24px] border p-5 transition-all duration-200',
         checked
           ? isDarkMode
             ? 'border-cyan-400/30 bg-cyan-500/10'
@@ -291,7 +303,7 @@ function GroupWorkspaceProfileConfigMirror({
   const textareaClass = cn(inputClass, 'min-h-[156px] resize-none rounded-[24px] px-4 py-4');
   const compactTextareaClass = cn(inputClass, 'min-h-[72px] overflow-hidden resize-none');
   const fieldShellClass = cn(
-    'rounded-[26px] border p-4 md:p-5',
+    'rounded-[28px] border p-5 md:p-6',
     isDarkMode
       ? 'border-white/10 bg-white/[0.035]'
       : 'border-[color:var(--surface-border-soft)] bg-[linear-gradient(180deg,var(--design-30)_0%,var(--design-60)_100%)] shadow-[var(--surface-shadow-soft)]'
@@ -324,7 +336,6 @@ function GroupWorkspaceProfileConfigMirror({
   const [learningMode, setLearningMode] = useState('');
   const [roadmapEnabled, setRoadmapEnabled] = useState(false);
   const [groupLearningGoal, setGroupLearningGoal] = useState('');
-  const [examName, setExamName] = useState('');
   const [preLearningRequired, setPreLearningRequired] = useState(false);
   const analysisTimerRef = useRef(null);
   const analysisAbortRef = useRef(null);
@@ -398,7 +409,6 @@ function GroupWorkspaceProfileConfigMirror({
     && domain.trim()
     && learningMode
     && groupLearningGoal.trim()
-    && (learningMode !== 'MOCK_TEST' || examName.trim())
   );
 
   const hasAnalysisSummary = analysisStatus === 'success' && Boolean(
@@ -430,9 +440,6 @@ function GroupWorkspaceProfileConfigMirror({
           { id: 'knowledge', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.knowledgeLabel', 'Shared knowledge scope'), value: knowledge.trim() || emptyLabel },
           { id: 'domain', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.domainLabel', 'Domain'), value: domain.trim() || emptyLabel },
           { id: 'mode', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.modeLabel', 'Learning mode'), value: summary.mode || emptyLabel },
-          ...(learningMode === 'MOCK_TEST'
-            ? [{ id: 'exam', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.examLabel', 'Exam name'), value: examName.trim() || emptyLabel }]
-            : []),
         ],
       },
       {
@@ -456,7 +463,6 @@ function GroupWorkspaceProfileConfigMirror({
     ];
   }, [
     domain,
-    examName,
     groupLearningGoal,
     groupName,
     knowledge,
@@ -480,19 +486,19 @@ function GroupWorkspaceProfileConfigMirror({
         const response = await getGroupWorkspaceProfile(workspaceId);
         const profile = normalizeGroupWorkspaceProfile(extractApiData(response));
         if (cancelled || !profile) return;
+        const normalizedLearningMode = normalizeGroupLearningMode(profile.learningMode);
         setGroupName(normalizeGroupNameValue(profile.groupName));
         setRules(profile.rules || '');
         setMaxMemberOverride(profile.maxMemberOverride ?? null);
         setDomain(profile.domain || '');
         setKnowledge(profile.knowledge || '');
-        setLearningMode(profile.learningMode || '');
+        setLearningMode(normalizedLearningMode);
         setRoadmapEnabled(
-          profile.learningMode === 'STUDY_NEW'
+          normalizedLearningMode === 'STUDY_NEW'
             ? Boolean(profile.roadmapEnabled ?? true)
             : Boolean(profile.roadmapEnabled)
         );
         setGroupLearningGoal(profile.groupLearningGoal || '');
-        setExamName(profile.examName || '');
         setPreLearningRequired(Boolean(profile.preLearningRequired));
         const nextStep = Math.min(Math.max(Number(profile.currentStep) || 1, 1), 2);
         setStep(nextStep);
@@ -618,9 +624,6 @@ function GroupWorkspaceProfileConfigMirror({
     }
     if (!learningMode) nextErrors.learningMode = t('groupProfileConfig.validation.learningMode');
     if (!groupLearningGoal.trim()) nextErrors.groupLearningGoal = t('groupProfileConfig.validation.groupGoal');
-    if (learningMode === 'MOCK_TEST' && !examName.trim()) {
-      nextErrors.examName = t('groupProfileConfig.validation.examName');
-    }
     setErrors((prev) => ({ ...prev, ...nextErrors }));
     if (Object.keys(nextErrors).length > 0) {
       setSaveError(
@@ -670,10 +673,10 @@ function GroupWorkspaceProfileConfigMirror({
       await saveGroupConfigStep(workspaceId, {
         domain,
         knowledge,
-        learningMode,
+        learningMode: normalizeGroupLearningMode(learningMode),
         roadmapEnabled,
         groupLearningGoal,
-        examName,
+        examName: null,
         preLearningRequired,
       });
       await confirmGroupWorkspaceProfile(workspaceId);
@@ -821,7 +824,7 @@ function GroupWorkspaceProfileConfigMirror({
               </div>
             </div>
           ) : (
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
               {stepTabs.map((item) => {
                 const active = step === item.id;
                 const unlocked = item.id <= maxUnlockedStep;
@@ -833,7 +836,7 @@ function GroupWorkspaceProfileConfigMirror({
                     disabled={!unlocked || loading || submitting}
                     onClick={() => setStep(item.id)}
                     className={cn(
-                      'rounded-[24px] border px-4 py-4 text-left transition-all duration-200',
+                      'rounded-[24px] border px-5 py-5 text-left transition-all duration-200',
                       active
                         ? isDarkMode
                           ? 'border-cyan-400/40 bg-cyan-500/10 shadow-[0_22px_48px_-36px_rgba(34,211,238,0.45)]'
@@ -948,7 +951,7 @@ function GroupWorkspaceProfileConfigMirror({
               </div>
             </div>
           ) : step === 1 ? (
-            <section className={cn('rounded-[30px] border p-5', panelClass)}>
+              <section className={cn('rounded-[30px] border p-6', panelClass)}>
               <div className="space-y-4">
                 <div className={fieldShellClass}>
                   <div className="mb-4 space-y-1.5">
@@ -982,7 +985,7 @@ function GroupWorkspaceProfileConfigMirror({
             </section>
           ) : (
             <div className={cn('grid gap-5', step === 2 && 'lg:grid-cols-[minmax(0,1.2fr)_320px]')}>
-              <section className={cn('rounded-[30px] border p-4 md:p-5', panelClass)}>
+              <section className={cn('rounded-[30px] border p-5 md:p-6', panelClass)}>
                 <div className="space-y-5">
                   <div className="space-y-3 pb-3 md:pb-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -991,28 +994,23 @@ function GroupWorkspaceProfileConfigMirror({
                         {t('groupProfileConfig.stepTwo.modePrompt')}
                       </span>
                     </div>
-                    <div className="grid gap-3 md:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2">
                       {LEARNING_MODES.map((item) => (
                         <ChoiceCard
                           key={item.value}
                           active={learningMode === item.value}
                           onClick={() => {
                             setLearningMode(item.value);
-                            setErrors((prev) => ({ ...prev, learningMode: undefined, examName: undefined }));
+                            setErrors((prev) => ({ ...prev, learningMode: undefined }));
                             if (item.value === 'STUDY_NEW') {
                               setRoadmapEnabled(true);
-                            }
-                            if (item.value !== 'MOCK_TEST') {
-                              setExamName('');
                             }
                           }}
                           icon={item.icon}
                           title={t(item.labelKey, item.labelFallback)}
                           description={item.value === 'STUDY_NEW'
                             ? t('groupProfileConfig.stepTwo.studyNewDescription')
-                            : item.value === 'REVIEW'
-                              ? t('groupProfileConfig.stepTwo.reviewDescription')
-                              : t('groupProfileConfig.stepTwo.mockTestDescription')}
+                            : t('groupProfileConfig.stepTwo.reviewDescription')}
                           disabled={loading || submitting}
                           isDarkMode={isDarkMode}
                         />
@@ -1204,14 +1202,6 @@ function GroupWorkspaceProfileConfigMirror({
                   ) : null}
 
                   {analysisStatus !== 'success' ? <FieldError message={errors.domain} /> : null}
-
-                  {learningMode === 'MOCK_TEST' ? (
-                    <div className="space-y-3">
-                      <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.examName')} <span className="text-rose-500">*</span></label>
-                      <input value={examName} onChange={(e) => { setExamName(e.target.value); setErrors((prev) => ({ ...prev, examName: undefined })); }} className={inputClass} placeholder={t('groupProfileConfig.stepTwo.examNamePlaceholder')} />
-                      <FieldError message={errors.examName} />
-                    </div>
-                  ) : null}
 
                   <div className="space-y-3">
                     <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.groupGoal')} <span className="text-rose-500">*</span></label>

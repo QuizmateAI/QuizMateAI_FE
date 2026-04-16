@@ -5,6 +5,7 @@ import {
   AI_VALIDATION_SECTION_ORDER,
   DIFFICULTY_LEVELS,
 } from "./createQuizForm.constants";
+import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 
 export const shuffle = (items) => {
   const clone = [...items];
@@ -259,13 +260,16 @@ export const buildAiValidationState = ({
   customDifficulty,
   difficultyDefs,
   minimumAiDurationMinutes,
+  hasAdvanceQuizConfig,
   questionTypeUnit,
+  questionTypeDefinitions,
   questionUnit,
   quizTitleMaxLength,
   selectedBloomSkills,
   selectedDifficultyId,
   selectedMaterialIds,
   selectedQTypes,
+  structureItems,
   t,
 }) => {
   const nextFieldErrors = {};
@@ -366,8 +370,30 @@ export const buildAiValidationState = ({
   }
 
   const questionTypeTarget = questionTypeUnit ? normalizedTotalQuestions : 100;
+  const restrictedAdvancedQuestionTypes = !hasAdvanceQuizConfig
+    ? selectedQTypes.filter((item) => {
+        const detail = (Array.isArray(questionTypeDefinitions) ? questionTypeDefinitions : []).find(
+          (questionType) => Number(questionType?.questionTypeId) === Number(item?.questionTypeId),
+        );
+        return isAdvancedQuizQuestionType(detail?.questionType);
+      })
+    : [];
+  const restrictedAdvancedStructureItems = !hasAdvanceQuizConfig
+    ? (Array.isArray(structureItems) ? structureItems : []).filter((item) => (
+        isAdvancedQuizQuestionType(item?.questionType)
+      ))
+    : [];
+
   if (selectedQTypes.length === 0) {
     registerError("questionTypes", "selectedQTypes", t("workspace.quiz.validation.questionTypeRequired"));
+  } else if (restrictedAdvancedQuestionTypes.length > 0 || restrictedAdvancedStructureItems.length > 0) {
+    registerError(
+      "questionTypes",
+      "selectedQTypes",
+      t("workspace.quiz.validation.advancedQuestionTypePlanRequired", {
+        defaultValue: "Advanced question types require a plan with advanced quiz configuration.",
+      }),
+    );
   } else if ((!questionTypeUnit || hasValidTotalQuestions) && !isNearlyEqual(sumRatios(selectedQTypes), questionTypeTarget)) {
     registerError(
       "questionTypes",
