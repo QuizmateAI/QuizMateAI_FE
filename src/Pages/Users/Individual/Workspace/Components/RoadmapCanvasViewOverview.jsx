@@ -411,6 +411,20 @@ function RoadmapCanvasViewOverview({
     [roadmapPhases, selectedPhaseDetail?.phaseId],
   );
 
+  const selectedPhaseVisualState = useMemo(() => {
+    if (!selectedPhaseDetail || selectedPhaseIndex < 0) return "locked";
+
+    const resolvedCurrentIndex = getCurrentIndex(roadmapPhases, currentPhaseProgress);
+    const resolvedPayloadDoneThroughIndex = getPayloadDoneThroughIndex(roadmapPhases, currentPhaseProgress);
+
+    return getVisualState(
+      selectedPhaseDetail,
+      selectedPhaseIndex,
+      resolvedCurrentIndex,
+      resolvedPayloadDoneThroughIndex,
+    );
+  }, [currentPhaseProgress, roadmapPhases, selectedPhaseDetail, selectedPhaseIndex]);
+
   const isSelectedPhaseCurrentByPayload = useMemo(() => {
     const normalizedSelectedPhaseId = Number(selectedPhaseDetail?.phaseId);
     return isStudyNewRoadmap
@@ -431,14 +445,13 @@ function RoadmapCanvasViewOverview({
     Array.isArray(selectedPhaseDetail?.preLearningQuizzes) && selectedPhaseDetail.preLearningQuizzes.length > 0;
 
   const isSelectedPhaseLocked = useMemo(
-    () => selectedPhaseIndex > maxUnlockedPhaseIndex
+    () => selectedPhaseVisualState === "locked"
       && !selectedPhaseHasExistingPreLearning
       && !isSelectedPhaseCurrentByPayload,
     [
       isSelectedPhaseCurrentByPayload,
-      maxUnlockedPhaseIndex,
       selectedPhaseHasExistingPreLearning,
-      selectedPhaseIndex,
+      selectedPhaseVisualState,
     ],
   );
 
@@ -454,8 +467,8 @@ function RoadmapCanvasViewOverview({
     : -1;
 
   const isSelectedPhaseEffectivelyDone = useMemo(
-    () => isPhaseEffectivelyDone(selectedPhaseDetail),
-    [selectedPhaseDetail],
+    () => isPhaseEffectivelyDone(selectedPhaseDetail) || selectedPhaseVisualState === "done",
+    [selectedPhaseDetail, selectedPhaseVisualState],
   );
 
   const selectedPhaseKnowledgeStates = useMemo(
@@ -479,6 +492,15 @@ function RoadmapCanvasViewOverview({
           && currentKnowledgeIndexInSelectedPhase >= 0
           && knowledgeIndex > currentKnowledgeIndexInSelectedPhase + (isCurrentKnowledgeDoneStatus ? 1 : 0);
         if (isSelectedPhaseLocked || isKnowledgeLockedBySequence) return "locked";
+        if (
+          Number.isInteger(currentKnowledgePhaseId)
+          && currentKnowledgePhaseId > 0
+          && currentKnowledgePhaseId === Number(selectedPhaseDetail?.phaseId)
+          && currentKnowledgeIndexInSelectedPhase === knowledgeIndex
+          && isCurrentKnowledgeDoneStatus
+        ) {
+          return "done";
+        }
         if (
           Number.isInteger(currentKnowledgePhaseId)
           && currentKnowledgePhaseId > 0
