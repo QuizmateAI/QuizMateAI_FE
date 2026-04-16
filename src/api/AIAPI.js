@@ -47,7 +47,7 @@ export const generateAIQuiz = async (data) => {
 
 // Preview cau truc quiz du kien bang AI
 export const previewAIQuizStructure = async (data) => {
-  const response = await api.post('/ai/quiz-structure:preview', data);
+  const response = await api.post('/ai/quiz-structure:preview', data, { timeout: 120000 });
   return response;
 };
 

@@ -3206,7 +3206,9 @@
         "additionalPrompt": "Yêu cầu bổ sung",
         "promptPlaceholder": "Nhập yêu cầu bổ sung cho AI...",
         "byCount": "Theo số lượng",
-        "byPercent": "Theo phần trăm"
+        "byPercent": "Theo phần trăm",
+        "singleMaterialHint": "Chỉ được chọn 1 tài liệu để tạo flashcard.",
+        "selectedSingleMaterialCount": "{{count}}/1 tài liệu đã được chọn."
       },
       "create": "Tạo Flashcard",
       "creating": "Đang tạo...",
@@ -3238,6 +3240,7 @@
       "statusDRAFT": "Bản nháp",
       "statusACTIVE": "Đang hoạt động",
       "createVia": "Tạo bởi",
+      "feedback": "Phản hồi",
       "contextType": "Ngữ cảnh",
       "assign": "Giao bài",
       "assignComingSoon": "Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!",

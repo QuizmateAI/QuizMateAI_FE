@@ -19,6 +19,28 @@ import HomeButton from "@/Components/ui/HomeButton";
 import { getFlashcardsByScope, getFlashcardsByUser } from "@/api/FlashcardAPI";
 
 const ITEMS_PER_PAGE = 6;
+const CREATING_STATUSES = new Set(["PENDING", "PROCESSING", "GENERATING", "IN_PROGRESS", "QUEUED"]);
+
+function isFlashcardCreating(item) {
+  if (!item) return false;
+
+  const status = String(item?.status || "").toUpperCase();
+  const generationStatus = String(item?.generationStatus || item?.processingStatus || "").toUpperCase();
+  const createVia = String(item?.createVia || "").toUpperCase();
+  const hasNumericItemCount = Number.isFinite(Number(item?.itemCount));
+  const itemCount = hasNumericItemCount ? Number(item?.itemCount) : null;
+
+  if (CREATING_STATUSES.has(generationStatus) || CREATING_STATUSES.has(status)) {
+    return true;
+  }
+
+  // Fallback for optimistic AI-created DRAFT records while generation is still in progress.
+  if (status === "DRAFT" && createVia === "AI" && hasNumericItemCount) {
+    return itemCount <= 0;
+  }
+
+  return false;
+}
 
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
@@ -60,6 +82,12 @@ function FlashcardListView({
         : await getFlashcardsByUser();
       return response?.data || [];
     },
+    refetchInterval: ({ state }) => {
+      const currentData = state?.data;
+      if (!Array.isArray(currentData) || currentData.length === 0) return false;
+      return currentData.some((item) => isFlashcardCreating(item)) ? 5000 : false;
+    },
+    refetchIntervalInBackground: false,
   });
 
   const filtered = useMemo(
