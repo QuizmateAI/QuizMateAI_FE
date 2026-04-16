@@ -271,7 +271,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
               </Button>
-              <Button
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
@@ -280,7 +280,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
               >
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
