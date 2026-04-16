@@ -2381,6 +2381,7 @@
       "refreshSuggested": "Làm mới",
       "getSuggestedResources": "Lấy gợi ý",
       "importSuggested": "Tải tài liệu gợi ý",
+      "aiSuggestedBadge": "AI gợi ý",
       "suggestMissingWorkspace": "Không tìm thấy workspace. Không thể tải gợi ý.",
       "suggestLoadError": "Không thể tải tài liệu gợi ý.",
       "suggestGenerateSuccess": "Đã tạo danh sách gợi ý thành công.",
