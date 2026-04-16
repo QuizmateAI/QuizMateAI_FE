@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import QuizListView from '@/Pages/Users/Individual/Workspace/Components/QuizListView';
+import QuizListView from '@/Pages/Users/Group/Components/QuizListView';
 import { getQuizzesByScope } from '@/api/QuizAPI';
 import { getGroupMembers } from '@/api/GroupAPI';
 
@@ -73,29 +73,38 @@ describe('QuizListView group roadmap coverage', () => {
     });
   });
 
-  it('shows roadmap-linked quizzes in the group tab and keeps the card metadata stable', async () => {
+  it('hides roadmap-linked quizzes from the group quiz tab', async () => {
     render(
       <QuizListView
         isDarkMode={false}
         onCreateQuiz={vi.fn()}
         onViewQuiz={vi.fn()}
-        contextType="GROUP"
         contextId={42}
         groupRole="LEADER"
         groupCurrentUserId={7}
       />,
     );
 
+    await waitFor(() => {
+      expect(getQuizzesByScope).toHaveBeenCalledWith('GROUP', 42);
+    });
+    expect(screen.queryByText('Roadmap-linked group quiz')).not.toBeInTheDocument();
+    expect(screen.getByText('No quiz yet')).toBeInTheDocument();
+  });
+
+  it('keeps roadmap-linked quizzes visible inside roadmap phase panels', async () => {
+    render(
+      <QuizListView
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onViewQuiz={vi.fn()}
+        contextType="PHASE"
+        contextId={77}
+      />,
+    );
+
     const title = await screen.findByText('Roadmap-linked group quiz');
     expect(title).toBeInTheDocument();
-    expect(getQuizzesByScope).toHaveBeenCalledWith('GROUP', 42);
-    expect(screen.getByText('DRAFT')).toBeInTheDocument();
-
-    const titleHeading = title.closest('h3');
-    expect(titleHeading?.className).toContain('line-clamp-2');
-    expect(titleHeading?.className).toContain('min-h-[3.5rem]');
-
-    const createdAt = screen.getByText('25/03/2026 10:00');
-    expect(createdAt.closest('span')?.className).toContain('whitespace-nowrap');
+    expect(getQuizzesByScope).toHaveBeenCalledWith('PHASE', 77);
   });
 });

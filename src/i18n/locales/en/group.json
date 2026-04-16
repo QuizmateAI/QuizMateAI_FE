@@ -1157,6 +1157,12 @@
     "noUsageRecords": "No usage records yet.",
     "recent": "Recent",
     "balanceAfter": "Balance after",
+    "pagination": {
+      "summary": "Showing {{start}} - {{end}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{page}} / {{totalPages}}"
+    },
     "creditLabels": {
       "WELCOME": "Welcome credits",
       "TOPUP": "Top up",
@@ -1558,6 +1564,12 @@
     },
     "validation": {
       "completeRequired": "Please complete the required fields before reviewing the final setup."
+    },
+    "stepOne": {
+      "previewEyebrow": "Quick overview",
+      "previewTitle": "This group will start with",
+      "previewDescription": "Review the display name, group size, and shared ground rules before moving to the learning profile.",
+      "previewSeatLimit": "Group size"
     },
     "confirm": {
       "badge": "PROFILE CONFIRMATION",

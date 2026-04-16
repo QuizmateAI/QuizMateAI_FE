@@ -39,6 +39,11 @@ function normalizeNumericRoadmapValue(value) {
   return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : '';
 }
 
+function normalizeNullableBoolean(value) {
+  if (value === undefined || value === null) return null;
+  return Boolean(value);
+}
+
 function translateOrFallback(t, key, fallback) {
   const translated = t?.(key);
   return translated && translated !== key ? translated : fallback;
@@ -61,6 +66,7 @@ function resolveRoadmapDefaults(values = {}) {
     roadmapSpeedMode,
     estimatedTotalDays,
     recommendedMinutesPerDay,
+    preLearningRequired: normalizeNullableBoolean(values.preLearningRequired),
   };
 }
 
@@ -73,6 +79,7 @@ export function extractRoadmapConfigValues(source = {}) {
     recommendedMinutesPerDay: normalizeNumericRoadmapValue(
       source?.recommendedMinutesPerDay ?? source?.estimatedMinutesPerDay
     ),
+    preLearningRequired: normalizeNullableBoolean(source?.preLearningRequired),
   };
 }
 
@@ -91,11 +98,47 @@ export function hasMeaningfulRoadmapConfig(source = {}) {
 export function buildInitialRoadmapValues(initialValues = {}) {
   const normalizedValues = resolveRoadmapDefaults(extractRoadmapConfigValues(initialValues));
 
-  return {
+  const nextValues = {
     workspacePurpose: 'STUDY_NEW',
     enableRoadmap: true,
-    ...normalizedValues,
   };
+
+  nextValues.knowledgeLoad = normalizedValues.knowledgeLoad;
+  nextValues.adaptationMode = normalizedValues.adaptationMode;
+  nextValues.roadmapSpeedMode = normalizedValues.roadmapSpeedMode;
+  nextValues.estimatedTotalDays = normalizedValues.estimatedTotalDays;
+  nextValues.recommendedMinutesPerDay = normalizedValues.recommendedMinutesPerDay;
+
+  if (normalizedValues.preLearningRequired != null) {
+    nextValues.preLearningRequired = normalizedValues.preLearningRequired;
+  }
+
+  return nextValues;
+}
+
+export function applyRoadmapSuggestionValues(currentValues = {}, suggestion = {}) {
+  const nextValues = buildInitialRoadmapValues({
+    ...currentValues,
+    knowledgeLoad: suggestion?.knowledgeLoad ?? currentValues?.knowledgeLoad,
+    adaptationMode: suggestion?.adaptationMode ?? currentValues?.adaptationMode,
+    roadmapSpeedMode:
+      suggestion?.speedMode
+      ?? suggestion?.roadmapSpeedMode
+      ?? currentValues?.roadmapSpeedMode,
+    estimatedTotalDays: suggestion?.estimatedTotalDays ?? currentValues?.estimatedTotalDays,
+    recommendedMinutesPerDay:
+      suggestion?.estimatedMinutesPerDay
+      ?? suggestion?.recommendedMinutesPerDay
+      ?? currentValues?.recommendedMinutesPerDay,
+  });
+
+  if (suggestion?.preLearningRequired !== undefined && suggestion?.preLearningRequired !== null) {
+    nextValues.preLearningRequired = Boolean(suggestion.preLearningRequired);
+  } else if (currentValues?.preLearningRequired !== undefined && currentValues?.preLearningRequired !== null) {
+    nextValues.preLearningRequired = Boolean(currentValues.preLearningRequired);
+  }
+
+  return nextValues;
 }
 
 export function syncRoadmapConfigFieldValues(currentValues = {}, field, value) {

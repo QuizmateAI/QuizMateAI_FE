@@ -43,6 +43,7 @@ function WorkspaceProfileStepThree({
   onFieldChange,
   roadmapTitle,
   roadmapDescription,
+  canCreateRoadmap = true,
 }) {
   const inputClass = cn(
     'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all',
@@ -54,7 +55,7 @@ function WorkspaceProfileStepThree({
     ? 'border-white/10 bg-white/[0.04] text-white'
     : 'border-slate-200 bg-white text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
-  const showRoadmap = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
+  const showRoadmap = canCreateRoadmap !== false && (values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap);
   const recommendedRoadmapDays = getRecommendedRoadmapDays(values.knowledgeLoad, values.roadmapSpeedMode);
   const estimatedTotalDays = Number(values.estimatedTotalDays) || null;
   const recommendedRoadmapMinutesPerDay = getRecommendedRoadmapMinutesPerDay(

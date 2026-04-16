@@ -8,10 +8,11 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
-import { AlertTriangle, Loader2, Save, X } from 'lucide-react';
+import { AlertTriangle, BrainCircuit, CheckCircle2, Loader2, Save, Sparkles, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import WorkspaceProfileStepThree from '@/Pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/WorkspaceProfileStepThree';
 import {
+  applyRoadmapSuggestionValues,
   buildInitialRoadmapValues,
   syncRoadmapConfigFieldValues,
   validateRoadmapConfigValues,
@@ -25,6 +26,7 @@ function RoadmapConfigEditDialog({
   mode = 'edit',
   hasExistingRoadmap = false,
   onSave,
+  onSuggest,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -34,11 +36,17 @@ function RoadmapConfigEditDialog({
   const [errors, setErrors] = useState({});
   const [saveError, setSaveError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState('');
+  const [suggestionMeta, setSuggestionMeta] = useState(null);
+  const canSuggest = typeof onSuggest === 'function';
   const closeLabel = t('roadmapConfigEditDialog.close', 'Close');
   const saveLabel = isSetupMode
     ? t('roadmapConfigEditDialog.setupButton', 'Set up roadmap')
     : t('roadmapConfigEditDialog.saveChanges', 'Save changes');
   const savingLabel = t('roadmapConfigEditDialog.saving', 'Saving...');
+  const suggestLabel = t('roadmapConfigEditDialog.suggestButton', 'Suggest with AI');
+  const suggestingLabel = t('roadmapConfigEditDialog.suggesting', 'Generating suggestion...');
   const confirmBackLabel = t('roadmapConfigEditDialog.confirmBack', 'Go back');
   const confirmActionLabel = isSetupMode
     ? t('roadmapConfigEditDialog.setupConfirmAction', 'Confirm setup')
@@ -91,12 +99,16 @@ function RoadmapConfigEditDialog({
       setErrors({});
       setSaveError('');
       setConfirmOpen(false);
+      setSuggesting(false);
+      setSuggestError('');
+      setSuggestionMeta(null);
     }
   }, [open, initialValues]);
 
   const handleFieldChange = useCallback((field, value) => {
     setLocalValues((prev) => syncRoadmapConfigFieldValues(prev, field, value));
     setSaveError('');
+    setSuggestError('');
     setErrors((prev) => {
       if (!prev || Object.keys(prev).length === 0) return prev;
 
@@ -149,6 +161,50 @@ function RoadmapConfigEditDialog({
     setConfirmOpen(true);
   };
 
+  const handleSuggest = useCallback(async () => {
+    if (!canSuggest || saving || suggesting) return;
+
+    setSuggesting(true);
+    setSuggestError('');
+
+    try {
+      const suggestion = await onSuggest();
+      if (!suggestion || typeof suggestion !== 'object') {
+        throw new Error(
+          t(
+            'roadmapConfigEditDialog.suggestInvalid',
+            'AI did not return a valid roadmap suggestion.'
+          )
+        );
+      }
+
+      setLocalValues((current) => applyRoadmapSuggestionValues(current, suggestion));
+      setErrors({});
+      setSaveError('');
+      setSuggestionMeta({
+        rationale: String(suggestion?.rationale || '').trim(),
+        recommendations: Array.isArray(suggestion?.recommendations)
+          ? suggestion.recommendations.filter(Boolean)
+          : [],
+        preLearningRequired:
+          suggestion?.preLearningRequired === undefined || suggestion?.preLearningRequired === null
+            ? null
+            : Boolean(suggestion.preLearningRequired),
+      });
+    } catch (error) {
+      console.error('Failed to suggest roadmap config:', error);
+      setSuggestError(
+        error?.message
+        || t(
+          'roadmapConfigEditDialog.suggestFailed',
+          'Unable to generate an AI suggestion right now.'
+        )
+      );
+    } finally {
+      setSuggesting(false);
+    }
+  }, [canSuggest, onSuggest, saving, suggesting, t]);
+
   const handleDialogOpenChange = useCallback((nextOpen) => {
     if (!nextOpen) {
       setConfirmOpen(false);
@@ -193,12 +249,117 @@ function RoadmapConfigEditDialog({
 
           <div className="min-h-0 overflow-y-auto px-1 py-5 sm:px-2 sm:py-6 lg:px-2">
             <div className="w-full">
+              {canSuggest ? (
+                <div className={`mb-5 rounded-[24px] border p-5 ${
+                  isDarkMode ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-slate-50/80'
+                }`}>
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
+                        isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-50 text-cyan-700'
+                      }`}>
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">
+                          {t('roadmapConfigEditDialog.suggestTitle', 'Use AI to prefill this roadmap')}
+                        </p>
+                        <p className={`mt-1 text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                          {t(
+                            'roadmapConfigEditDialog.suggestDescription',
+                            'The suggestion uses the saved group profile to estimate depth, pacing, study days, and daily workload.'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSuggest}
+                      disabled={saving || suggesting}
+                      className={`h-11 rounded-2xl px-5 text-sm font-semibold ${
+                        isDarkMode ? 'border-slate-700 hover:bg-slate-800' : 'hover:bg-white'
+                      }`}
+                    >
+                      {suggesting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {suggestingLabel}
+                        </>
+                      ) : (
+                        <>
+                          <BrainCircuit className="mr-2 h-4 w-4" />
+                          {suggestLabel}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {suggestError ? (
+                    <p className="mt-4 text-sm font-medium text-rose-500">{suggestError}</p>
+                  ) : null}
+
+                  {suggestionMeta ? (
+                    <div className={`mt-4 rounded-[20px] border px-4 py-4 ${
+                      isDarkMode ? 'border-emerald-400/15 bg-emerald-500/10' : 'border-emerald-200 bg-white'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className={`mt-0.5 h-5 w-5 shrink-0 ${
+                          isDarkMode ? 'text-emerald-200' : 'text-emerald-600'
+                        }`} />
+                        <div className="min-w-0 flex-1 space-y-3">
+                          {suggestionMeta.rationale ? (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.08em] opacity-75">
+                                {t('roadmapConfigEditDialog.suggestRationaleLabel', 'Why this setup')}
+                              </p>
+                              <p className={`mt-1 text-sm leading-6 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                                {suggestionMeta.rationale}
+                              </p>
+                            </div>
+                          ) : null}
+
+                          {suggestionMeta.preLearningRequired != null ? (
+                            <p className={`text-sm font-medium ${
+                              isDarkMode ? 'text-amber-200' : 'text-amber-700'
+                            }`}>
+                              {suggestionMeta.preLearningRequired
+                                ? t('roadmapConfigEditDialog.preLearningRequired', 'AI recommends enabling a pre-learning check before the roadmap starts.')
+                                : t('roadmapConfigEditDialog.preLearningNotRequired', 'AI suggests the group can enter the roadmap directly.')}
+                            </p>
+                          ) : null}
+
+                          {suggestionMeta.recommendations.length > 0 ? (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.08em] opacity-75">
+                                {t('roadmapConfigEditDialog.suggestRecommendationsLabel', 'Leader notes')}
+                              </p>
+                              <ul className={`mt-2 space-y-2 text-sm leading-6 ${
+                                isDarkMode ? 'text-slate-200' : 'text-slate-700'
+                              }`}>
+                                {suggestionMeta.recommendations.map((item) => (
+                                  <li key={item} className="flex gap-2">
+                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <WorkspaceProfileStepThree
                 t={t}
                 isDarkMode={isDarkMode}
                 values={localValues}
                 errors={errors}
-                disabled={saving}
+                disabled={saving || suggesting}
                 onFieldChange={handleFieldChange}
                 roadmapTitle={dialogTitle}
                 roadmapDescription={dialogDescription}
@@ -211,7 +372,7 @@ function RoadmapConfigEditDialog({
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={saving}
+              disabled={saving || suggesting}
               className={`h-11 rounded-2xl px-7 text-base font-medium ${
                 isDarkMode ? 'border-slate-700 hover:bg-slate-800' : 'hover:bg-slate-100'
               }`}
@@ -223,7 +384,7 @@ function RoadmapConfigEditDialog({
             <Button
               type="button"
               onClick={handleRequestSave}
-              disabled={saving}
+              disabled={saving || suggesting}
               className="h-11 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-9 text-base font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.98]"
             >
               {saving ? (

@@ -92,7 +92,7 @@ function mapPlanCatalogToCard(plan) {
     planName: plan.displayName,
     price: plan.price ?? 0,
     type,
-    durationInDay: 999999,
+    durationInDay: Number(plan.durationInDay) || 0,
     entitlement: e,
     planFeature: {
       processPdf: e.canProcessPdf,
@@ -360,7 +360,7 @@ function PlanTierCard({
             <p className={`text-base font-semibold ${isDarkMode ? "text-white" : "text-slate-950"}`}>
               {plan.planName}
             </p>
-            <p className={`mt-2 max-w-[24ch] text-sm leading-6 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
+            <p className={`mt-2 max-w-[24ch] min-h-[4.5rem] text-sm leading-6 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
               {description}
             </p>
           </div>

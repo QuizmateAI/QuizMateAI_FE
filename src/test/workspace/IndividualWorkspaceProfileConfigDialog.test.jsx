@@ -141,6 +141,14 @@ function clickPurposeButtonByText(text) {
   return target;
 }
 
+function getPurposeButtonByText(text) {
+  const expected = normalizeText(text);
+  return getPurposeButtons().find((button) => {
+    const actual = normalizeText(button.textContent || '');
+    return actual.includes(expected);
+  });
+}
+
 function getFooterPrimaryButton() {
   return screen.getAllByRole('button').find((button) => {
     const className = typeof button.className === 'string' ? button.className : '';
@@ -357,6 +365,38 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
         inferredDomain: 'React',
       })
     );
+  });
+
+  it('locks STUDY_NEW behind VIP and defaults the wizard to REVIEW when roadmap creation is unavailable', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['React', 'Frontend Development', 'JavaScript']),
+    });
+
+    const { onSave } = renderDialog({ canCreateRoadmap: false });
+
+    const studyNewButton = getPurposeButtonByText(i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'));
+    expect(studyNewButton).toBeDisabled();
+    expect(within(studyNewButton).getByText(i18n.t('workspace.profileConfig.stepOne.vipBadge'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.stepOne.studyNewLockedHint'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepOne.roadmapQuestion'))).not.toBeInTheDocument();
+
+    await finishKnowledgeAnalysis('React hooks nang cao', 'React');
+    clickButtonByText('React');
+
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onSave).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        workspacePurpose: 'REVIEW',
+        enableRoadmap: false,
+      })
+    );
+    expect(screen.getAllByText(i18n.t('workspace.profileConfig.footerHint', { current: 2, total: 2 })).length).toBeGreaterThan(0);
   });
 
   it('reveals step-two AI suggestions progressively and only suggests learning goals after current context is filled', async () => {
