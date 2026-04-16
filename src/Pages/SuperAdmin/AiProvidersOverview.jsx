@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Activity, Archive, Bot, Coins, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Coins, RefreshCw } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import {
@@ -306,19 +306,7 @@ function AiProvidersOverview() {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                      <MetricPill icon={Bot} label={t('aiProviders.metrics.models', { defaultValue: 'Models' })} value={activeProviderCard.models.length} isDarkMode={isDarkMode} />
-                      <MetricPill icon={ShieldCheck} label={t('aiProviders.metrics.active', { defaultValue: 'Active' })} value={activeProviderCard.activeCount} isDarkMode={isDarkMode} />
-                      <MetricPill icon={Archive} label={t('aiProviders.metrics.archived', { defaultValue: 'Archived' })} value={activeProviderCard.archivedCount} isDarkMode={isDarkMode} />
-                      <MetricPill
-                        icon={Activity}
-                        label={t('aiProviders.metrics.requests', { defaultValue: 'Requests' })}
-                        value={activeProviderCard.summary?.requestCount ?? 0}
-                        isDarkMode={isDarkMode}
-                      />
-                    </div>
-
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <MetricPill
                         icon={Coins}
                         label={t('aiProviders.metrics.providerCost', { defaultValue: 'Provider cost' })}

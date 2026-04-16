@@ -134,6 +134,7 @@
     "saving": "Saving...",
     "updateSuccess": "Policy updated successfully",
     "descriptionPlaceholder": "Policy description...",
+    "unitField": "Unit",
     "baseCost": "Base cost",
     "unitCost": "Unit cost",
     "unitSize": "Unit size",
@@ -1248,12 +1249,14 @@
     "metrics": {
       "totalRequests": "Total requests",
       "totalRequestsHint": "Based on the current filters",
+      "totalTokens": "Total tokens",
+      "totalTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "pageTokens": "Tokens on this page",
       "pageTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "averageTokens": "Avg tokens / request",
-      "averageTokensHint": "Calculated from the visible logs",
+      "averageTokensHint": "Calculated from all matching requests",
       "errors": "Errors",
-      "errorsHint": "Errored requests on the current page"
+      "errorsHint": "Errored requests matching the current filters"
     },
     "filters": {
       "title": "AI audit filters",

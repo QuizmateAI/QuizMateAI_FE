@@ -34,6 +34,12 @@ const STATUS_CONFIG = {
   CANCELLED: { label: 'Đã huỷ', color: 'red', icon: null },
 };
 
+const MATCH_MODE_LABELS = {
+  FREE_FOR_ALL: 'Đua cá nhân',
+  TEAM_BATTLE: 'Đấu đội',
+  SOLO_BRACKET: 'Đấu cúp 1v1',
+};
+
 function formatDateTime(dt) {
   if (!dt) return '-';
   const d = new Date(dt);
@@ -77,6 +83,11 @@ function ChallengeCard({ challenge, isDarkMode, onSelect }) {
                 Mời riêng
               </span>
             )}
+            <span className={`rounded-full px-2 py-0.5 text-xs ${
+              isDarkMode ? 'bg-teal-500/15 text-teal-200' : 'bg-teal-50 text-teal-700'
+            }`}>
+              {MATCH_MODE_LABELS[challenge.matchMode] || 'Đua cá nhân'}
+            </span>
             {challenge.published === false && (
               <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                 isDarkMode ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-800'

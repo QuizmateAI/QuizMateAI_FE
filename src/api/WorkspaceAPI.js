@@ -1,6 +1,15 @@
 import api from './api';
 import i18n from '@/i18n';
 
+const buildUrl = (path, params = {}) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    search.set(key, String(value));
+  });
+  const query = search.toString();
+  return query ? `${path}?${query}` : path;
+};
 
 const QUESTION_TYPE_SINGLE_CHOICE_ID = 1;
 const MOCK_TEST_DIFFICULTY = 'MEDIUM';
@@ -258,9 +267,14 @@ async function waitForMockTestPersonalInfoDone(workspaceId) {
   throw new Error(i18n.t('workspace.mockTest.onboardingIncomplete', 'Mock test onboarding is not complete at step 2. Please try again in a few minutes.'));
 }
 
-// Lấy danh sách workspace theo user đang đăng nhập (có hỗ trợ phân trang)
-export const getWorkspacesByUser = async (page = 0, size = 10) => {
-  const response = await api.get(`/workspace/getByUser?page=${page}&size=${size}`);
+// Lấy danh sách workspace theo user đang đăng nhập (có hỗ trợ phân trang + sort)
+export const getWorkspacesByUser = async (page = 0, size = 10, sort = 'recent') => {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+    sort: sort === 'created' ? 'created' : 'recent',
+  });
+  const response = await api.get(`/workspace/getByUser?${params.toString()}`);
   return response;
 };
 
@@ -316,6 +330,11 @@ export const getWorkspaceById = async (workspaceId) => {
   return response;
 };
 
+export const markWorkspaceAccess = async (workspaceId) => {
+  const response = await api.post(`/workspace/${workspaceId}/access`);
+  return response;
+};
+
 /** CurrentPlanResponse — gói hiện tại của group workspace (member/leader có quyền truy cập) */
 export const getWorkspaceCurrentPlan = async (workspaceId) => {
   const response = await api.get(`/workspace/${workspaceId}/current-plan`);
@@ -329,6 +348,39 @@ export const getWorkspaceQuizRecommendations = async (workspaceId) => {
 
 export const getWorkspacePersonalization = async (workspaceId) => {
   const response = await api.get(`/workspace/${workspaceId}/personalization`);
+  return response;
+};
+
+export const getWorkspaceLearningSnapshotMeLatest = async (workspaceId, { period = 'DAILY' } = {}) => {
+  const response = await api.get(buildUrl(`/workspace/${workspaceId}/learning-snapshots/me/latest`, {
+    period,
+  }));
+  return response;
+};
+
+export const getWorkspaceLearningSnapshotsMe = async (
+  workspaceId,
+  { period = 'DAILY', from, to, page = 0, size = 20 } = {},
+) => {
+  const response = await api.get(buildUrl(`/workspace/${workspaceId}/learning-snapshots/me`, {
+    period,
+    from,
+    to,
+    page,
+    size,
+  }));
+  return response;
+};
+
+export const getWorkspaceLearningSnapshotMeTrend = async (
+  workspaceId,
+  { period = 'DAILY', from, to } = {},
+) => {
+  const response = await api.get(buildUrl(`/workspace/${workspaceId}/learning-snapshots/me/trend`, {
+    period,
+    from,
+    to,
+  }));
   return response;
 };
 
@@ -366,6 +418,11 @@ export const getRoadmapsByWorkspace = async (workspaceId, page = 0, size = 10) =
 
 export const saveIndividualWorkspaceBasicStep = async (workspaceId, data) => {
   const response = await api.put(`/workspace-profile/individual/${workspaceId}/steps/basic`, buildBasicStepRequest(data));
+  return response;
+};
+
+export const createIndividualWorkspaceWithBasicStep = async (data) => {
+  const response = await api.post('/workspace-profile/individual/steps/basic', buildBasicStepRequest(data));
   return response;
 };
 
