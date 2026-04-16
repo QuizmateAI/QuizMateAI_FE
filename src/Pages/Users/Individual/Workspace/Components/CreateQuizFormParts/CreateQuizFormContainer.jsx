@@ -10,6 +10,7 @@ import { useCreateQuizAiForm } from "./useCreateQuizAiForm";
 import { useInlineQuizRecommendations } from "./useInlineQuizRecommendations";
 import { getBloomSkillLabel, getQuizDifficultyLabel, getQuizQuestionTypeLabel } from "@/lib/quizQuestionTypes";
 import useWorkspaceMaterialSelection from "../useWorkspaceMaterialSelection";
+import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
 
 function resolvePersonalizationFocusTopic(preset) {
   const reviewTopic = String(preset?.reviewTopic || "").trim();
@@ -57,6 +58,10 @@ function CreateQuizForm({
   existingQuizId = null,
   seedQuizTitle = '',
   workspaceMaterialsEmptyMessage: workspaceMaterialsEmptyMessageProp,
+  quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
+  planUpgradeScope = "INDIVIDUAL",
+  currentPlanSummaryOverride = null,
+  planUpgradeWorkspaceId = null,
 }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -154,6 +159,7 @@ function CreateQuizForm({
     hasImageMaterials,
     i18nLanguage: i18n.language,
     onCreateQuiz,
+    quizTitleMaxLength,
     selectedMaterialIds,
     t,
     existingQuizId,
@@ -364,6 +370,7 @@ function CreateQuizForm({
             workspaceMaterialsError,
             workspaceMaterialsLoading,
             workspaceSources,
+            quizTitleMaxLength,
           }}
           ui={{
             fontClass,
@@ -375,8 +382,11 @@ function CreateQuizForm({
             t,
             hasAdvanceQuizConfig: planEntitlements?.hasAdvanceQuizConfig ?? false,
             onClearSelectedMaterials: clearSelectedSources,
+            currentPlanSummaryOverride,
             onSelectAllMaterials: selectAllSources,
             onToggleMaterialSelection: toggleSourceSelection,
+            planUpgradeScope,
+            planUpgradeWorkspaceId,
             readOnly,
             workspaceMaterialsEmptyMessage,
           }}

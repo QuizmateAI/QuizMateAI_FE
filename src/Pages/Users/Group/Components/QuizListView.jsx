@@ -45,7 +45,6 @@ function QuizListView({
       {...restProps}
       contextType={contextType}
       contextId={contextId}
-      includeRoadmapLinkedQuizzes={normalizedContextType === "GROUP"}
       returnToPath={resolvedReturnToPath}
     />
   );

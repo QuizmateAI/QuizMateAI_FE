@@ -85,12 +85,13 @@ function normalizeDisplayValue(value) {
   return String(value).trim();
 }
 
-function createConfirmationSummary(t, values) {
+function createConfirmationSummary(t, values, options = {}) {
   const emptyValueLabel = t(
     'individualWorkspaceProfileConfigDialog.emptyValue',
     'Not set yet'
   );
-  const shouldShowRoadmapConfig = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
+  const shouldShowRoadmapConfig = options?.canCreateRoadmap !== false
+    && (values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap);
   const beginnerScope = getBeginnerScopeLabel(
     values,
     t('individualWorkspaceProfileConfigDialog.beginnerFallbackScope', 'this topic')
@@ -357,6 +358,7 @@ function IndividualWorkspaceProfileConfigDialog({
   isDarkMode,
   initialData,
   workspaceId,
+  canCreateRoadmap = true,
   isReadOnly = false,
   forceStartAtStepOne = false,
   mockTestGenerationState = 'idle',
@@ -370,6 +372,7 @@ function IndividualWorkspaceProfileConfigDialog({
     initialData,
     onSave,
     storageKey: workspaceId ? `workspace-profile-wizard-${workspaceId}` : undefined,
+    canCreateRoadmap,
     forceStartAtStepOne,
     mockTestGenerationState,
     mockTestGenerationMessage,
@@ -418,8 +421,8 @@ function IndividualWorkspaceProfileConfigDialog({
     'Are you sure you want to use this profile? Once confirmed, the system will save the current configuration for this learning workspace.'
   );
   const confirmationSummary = React.useMemo(
-    () => createConfirmationSummary(t, wizard.values),
-    [t, wizard.values]
+    () => createConfirmationSummary(t, wizard.values, { canCreateRoadmap }),
+    [t, wizard.values, canCreateRoadmap]
   );
 
   React.useEffect(() => {
@@ -494,6 +497,7 @@ function IndividualWorkspaceProfileConfigDialog({
           needsKnowledgeDescription={wizard.needsKnowledgeDescription}
           knowledgeAnalysis={wizard.knowledgeAnalysis}
           disabled={isReadOnly}
+          canCreateRoadmap={canCreateRoadmap}
           onPurposeChange={wizard.setPurpose}
           onFieldChange={wizard.updateField}
           onDomainSelect={wizard.selectInferredDomain}
@@ -536,6 +540,7 @@ function IndividualWorkspaceProfileConfigDialog({
         errors={wizard.errors}
         selectedExam={wizard.selectedExam}
         disabled={isReadOnly}
+        canCreateRoadmap={canCreateRoadmap}
         onFieldChange={wizard.updateField}
       />
     );

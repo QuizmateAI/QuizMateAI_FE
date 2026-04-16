@@ -530,6 +530,25 @@ export const saveGroupConfigStep = async (workspaceId, data) => {
   return response;
 };
 
+export const updateGroupConfigStep = async (workspaceId, data) => {
+  const payload = {
+    domain: trimToNullSafe(data.domain),
+    knowledge: trimToNullSafe(data.knowledge),
+    learningMode: data.learningMode || null,
+    roadmapEnabled: Boolean(data.roadmapEnabled),
+    groupLearningGoal: trimToNullSafe(data.groupLearningGoal),
+    examName: trimToNullSafe(data.examName),
+    preLearningRequired: Boolean(data.preLearningRequired),
+  };
+  const response = await api.put(`/workspace-profile/group/${workspaceId}/config`, payload);
+  return response;
+};
+
+export const suggestGroupRoadmapConfig = async (workspaceId) => {
+  const response = await api.post(`/workspace-profile/group/${workspaceId}/roadmap-config/suggest`);
+  return response;
+};
+
 export const confirmGroupWorkspaceProfile = async (workspaceId) => {
   const response = await api.post(`/workspace-profile/group/${workspaceId}/steps/confirm`);
   return response;

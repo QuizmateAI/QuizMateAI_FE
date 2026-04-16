@@ -85,10 +85,15 @@ function hasTextValue(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function normalizeWorkspacePurpose(value, fallback = '') {
+function normalizeWorkspacePurpose(value, fallback = '', options = {}) {
+  const roadmapLockedByPlan = options?.canCreateRoadmap === false;
   const normalized = ensureString(value).trim().toUpperCase();
 
   if (normalized === 'MOCK_TEST') {
+    return 'REVIEW';
+  }
+
+  if (roadmapLockedByPlan && normalized === 'STUDY_NEW') {
     return 'REVIEW';
   }
 
@@ -259,17 +264,22 @@ function hasProfileData(initialData) {
   );
 }
 
-function createInitialValues(initialData) {
+function createInitialValues(initialData, options = {}) {
+  const roadmapLockedByPlan = options?.canCreateRoadmap === false;
   const hasExistingProfile = hasProfileData(initialData);
   const purpose =
-    normalizeWorkspacePurpose(initialData?.workspacePurpose || initialData?.learningMode) ||
+    normalizeWorkspacePurpose(
+      initialData?.workspacePurpose || initialData?.learningMode,
+      '',
+      options,
+    ) ||
     (initialData?.mockExamName || initialData?.mockExamCatalogId || initialData?.targetScore
       ? 'REVIEW'
       : initialData?.weakAreas || initialData?.strongAreas
         ? 'REVIEW'
         : hasExistingProfile
-          ? 'STUDY_NEW'
-          : '');
+          ? (roadmapLockedByPlan ? 'REVIEW' : 'STUDY_NEW')
+          : (roadmapLockedByPlan ? 'REVIEW' : ''));
   const roadmapSpeedMode = normalizeRoadmapSpeedMode(
     ensureString(initialData?.roadmapSpeedMode || initialData?.speedMode || 'STANDARD')
   );
@@ -290,17 +300,20 @@ function createInitialValues(initialData) {
     knowledgeDescription: ensureString(initialData?.knowledgeDescription || initialData?.customSchemeDescription || ''),
     inferredDomain: ensureString(initialData?.inferredDomain || initialData?.domain || initialData?.customDomain || ''),
     selectedKnowledgeOption: ensureString(initialData?.selectedKnowledgeOption || initialData?.knowledgeInput || initialData?.knowledge || initialData?.customKnowledge || ''),
-    enableRoadmap:
-      initialData?.enableRoadmap ??
-      initialData?.roadmapEnabled ??
-      Boolean(
-        purpose === 'STUDY_NEW' ||
-        initialData?.knowledgeLoad ||
-        initialData?.adaptationMode ||
-        initialData?.speedMode ||
-        initialData?.roadmapSpeedMode ||
-        initialData?.estimatedTotalDays ||
-        initialData?.recommendedMinutesPerDay
+    enableRoadmap: roadmapLockedByPlan
+      ? false
+      : (
+        initialData?.enableRoadmap ??
+        initialData?.roadmapEnabled ??
+        Boolean(
+          purpose === 'STUDY_NEW' ||
+          initialData?.knowledgeLoad ||
+          initialData?.adaptationMode ||
+          initialData?.speedMode ||
+          initialData?.roadmapSpeedMode ||
+          initialData?.estimatedTotalDays ||
+          initialData?.recommendedMinutesPerDay
+        )
       ),
     currentLevel: ensureString(initialData?.currentLevel || initialData?.customCurrentLevel || ''),
     learningGoal: ensureString(initialData?.learningGoal || ''),
@@ -360,12 +373,16 @@ function getInitialStep(initialData, isReadOnly, storageKey, totalSteps = ROADMA
   return baseStep;
 }
 
-function shouldShowRoadmapFields(values) {
+function shouldShowRoadmapFields(values, options = {}) {
+  if (options?.canCreateRoadmap === false) {
+    return false;
+  }
+
   return values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
 }
 
-function getTotalStepsForValues(values) {
-  return shouldShowRoadmapFields(values)
+function getTotalStepsForValues(values, options = {}) {
+  return shouldShowRoadmapFields(values, options)
     ? ROADMAP_FLOW_TOTAL_STEPS
     : NO_ROADMAP_FLOW_TOTAL_STEPS;
 }
@@ -630,23 +647,26 @@ function buildConsistencyFingerprint(values) {
   return buildRequestFingerprint(buildConsistencyPayload(values));
 }
 
-function buildPayload(values) {
+function buildPayload(values, options = {}) {
+  const shouldPersistRoadmapFields = shouldShowRoadmapFields(values, options);
   const sharedPayload = {
     workspacePurpose: values.workspacePurpose,
     knowledgeInput: values.knowledgeInput.trim(),
     knowledgeDescription: values.knowledgeDescription.trim() || null,
     inferredDomain: values.inferredDomain || null,
     selectedKnowledgeOption: values.knowledgeInput.trim() || null,
-    enableRoadmap: values.workspacePurpose === 'STUDY_NEW' ? true : Boolean(values.enableRoadmap),
+    enableRoadmap: options?.canCreateRoadmap === false
+      ? false
+      : (values.workspacePurpose === 'STUDY_NEW' ? true : Boolean(values.enableRoadmap)),
     currentLevel: values.currentLevel.trim(),
     learningGoal: values.learningGoal.trim(),
     strongAreas: values.strongAreas.trim() || null,
     weakAreas: values.weakAreas.trim() || null,
-    knowledgeLoad: shouldShowRoadmapFields(values) ? values.knowledgeLoad || null : null,
-    adaptationMode: shouldShowRoadmapFields(values) ? values.adaptationMode || null : null,
-    roadmapSpeedMode: shouldShowRoadmapFields(values) ? values.roadmapSpeedMode || null : null,
-    estimatedTotalDays: shouldShowRoadmapFields(values) ? Number(values.estimatedTotalDays) || null : null,
-    recommendedMinutesPerDay: shouldShowRoadmapFields(values) ? Number(values.recommendedMinutesPerDay) || null : null,
+    knowledgeLoad: shouldPersistRoadmapFields ? values.knowledgeLoad || null : null,
+    adaptationMode: shouldPersistRoadmapFields ? values.adaptationMode || null : null,
+    roadmapSpeedMode: shouldPersistRoadmapFields ? values.roadmapSpeedMode || null : null,
+    estimatedTotalDays: shouldPersistRoadmapFields ? Number(values.estimatedTotalDays) || null : null,
+    recommendedMinutesPerDay: shouldPersistRoadmapFields ? Number(values.recommendedMinutesPerDay) || null : null,
     improvementFocus: [],
   };
 
@@ -758,7 +778,7 @@ function buildRequestFingerprint(payload) {
   return JSON.stringify(normalizeFingerprintValue(payload));
 }
 
-function buildStepSnapshot(stepNumber, values) {
+function buildStepSnapshot(stepNumber, values, options = {}) {
   if (!values || typeof values !== 'object') {
     return null;
   }
@@ -797,14 +817,16 @@ function buildStepSnapshot(stepNumber, values) {
   }
 
   if (stepNumber === 3) {
+    const showRoadmapFields = shouldShowRoadmapFields(values, options);
+
     return {
-      showRoadmapFields: shouldShowRoadmapFields(values),
-      knowledgeLoad: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.knowledgeLoad) : '',
-      adaptationMode: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.adaptationMode) : '',
-      roadmapSpeedMode: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.roadmapSpeedMode) : '',
-      estimatedTotalDays: shouldShowRoadmapFields(values) ? normalizeSnapshotNumber(values.estimatedTotalDays) : null,
+      showRoadmapFields,
+      knowledgeLoad: showRoadmapFields ? normalizeSnapshotText(values.knowledgeLoad) : '',
+      adaptationMode: showRoadmapFields ? normalizeSnapshotText(values.adaptationMode) : '',
+      roadmapSpeedMode: showRoadmapFields ? normalizeSnapshotText(values.roadmapSpeedMode) : '',
+      estimatedTotalDays: showRoadmapFields ? normalizeSnapshotNumber(values.estimatedTotalDays) : null,
       recommendedMinutesPerDay:
-        shouldShowRoadmapFields(values) ? normalizeSnapshotNumber(values.recommendedMinutesPerDay) : null,
+        showRoadmapFields ? normalizeSnapshotNumber(values.recommendedMinutesPerDay) : null,
     };
   }
 
@@ -815,7 +837,7 @@ function areStepSnapshotsEqual(leftSnapshot, rightSnapshot) {
   return JSON.stringify(leftSnapshot ?? null) === JSON.stringify(rightSnapshot ?? null);
 }
 
-function createSavedStepSnapshots(initialData, values, initialStep, totalSteps = ROADMAP_FLOW_TOTAL_STEPS) {
+function createSavedStepSnapshots(initialData, values, initialStep, totalSteps = ROADMAP_FLOW_TOTAL_STEPS, options = {}) {
   if (!values || typeof values !== 'object') {
     return {};
   }
@@ -823,11 +845,11 @@ function createSavedStepSnapshots(initialData, values, initialStep, totalSteps =
   const snapshots = {};
 
   if (initialStep >= 2 || hasBasicStepData(initialData)) {
-    snapshots[1] = buildStepSnapshot(1, values);
+    snapshots[1] = buildStepSnapshot(1, values, options);
   }
 
   if (initialStep >= 3 || hasPersonalInfoStepData(initialData)) {
-    snapshots[2] = buildStepSnapshot(2, values);
+    snapshots[2] = buildStepSnapshot(2, values, options);
   }
 
   if (
@@ -839,7 +861,7 @@ function createSavedStepSnapshots(initialData, values, initialStep, totalSteps =
     || initialData?.onboardingCompleted
     )
   ) {
-    snapshots[3] = buildStepSnapshot(3, values);
+    snapshots[3] = buildStepSnapshot(3, values, options);
   }
 
   return snapshots;
@@ -1004,6 +1026,7 @@ export function useWorkspaceProfileWizard({
   initialData,
   onSave,
   storageKey,
+  canCreateRoadmap = true,
   forceStartAtStepOne = false,
   mockTestGenerationState = 'idle',
   mockTestGenerationMessage = '',
@@ -1013,8 +1036,8 @@ export function useWorkspaceProfileWizard({
 }) {
   const [step, setStep] = useState(1);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
-  const [values, setValues] = useState(createInitialValues(initialData));
-  const totalSteps = getTotalStepsForValues(values);
+  const [values, setValues] = useState(() => createInitialValues(initialData, { canCreateRoadmap }));
+  const totalSteps = getTotalStepsForValues(values, { canCreateRoadmap });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -1104,15 +1127,21 @@ export function useWorkspaceProfileWizard({
       window.sessionStorage.removeItem(storageKey);
     }
 
-    const nextValues = createInitialValues(initialData);
+    const nextValues = createInitialValues(initialData, { canCreateRoadmap });
 
-    const initialTotalSteps = getTotalStepsForValues(nextValues);
+    const initialTotalSteps = getTotalStepsForValues(nextValues, { canCreateRoadmap });
     const initialStepValue = forceStartAtStepOne
       ? 1
       : getInitialStep(initialData, isReadOnly, storageKey, initialTotalSteps);
     savedStepSnapshotsRef.current = forceStartAtStepOne
       ? {}
-      : createSavedStepSnapshots(initialData, nextValues, initialStepValue, initialTotalSteps);
+      : createSavedStepSnapshots(
+        initialData,
+        nextValues,
+        initialStepValue,
+        initialTotalSteps,
+        { canCreateRoadmap },
+      );
     prevStepRef.current = null;
     setStep(initialStepValue);
     setMaxUnlockedStep(Math.max(1, initialStepValue));
@@ -1142,7 +1171,32 @@ export function useWorkspaceProfileWizard({
         : null
     );
     setExamSearch(canPrimeMockTemplate ? nextValues.mockExamName || '' : '');
-  }, [open, initialData, isReadOnly, storageKey, forceStartAtStepOne]);
+  }, [open, initialData, isReadOnly, storageKey, forceStartAtStepOne, canCreateRoadmap]);
+
+  useEffect(() => {
+    if (!open || canCreateRoadmap !== false) {
+      return;
+    }
+
+    setValues((current) => {
+      const nextPurpose = current.workspacePurpose === 'STUDY_NEW' || !current.workspacePurpose
+        ? 'REVIEW'
+        : current.workspacePurpose;
+
+      if (nextPurpose === current.workspacePurpose && current.enableRoadmap === false) {
+        return current;
+      }
+
+      return {
+        ...current,
+        workspacePurpose: nextPurpose,
+        enableRoadmap: false,
+      };
+    });
+
+    setStep((current) => Math.min(current, NO_ROADMAP_FLOW_TOTAL_STEPS));
+    setMaxUnlockedStep((current) => Math.min(Math.max(current, 1), NO_ROADMAP_FLOW_TOTAL_STEPS));
+  }, [open, canCreateRoadmap]);
 
   // Persist step to sessionStorage
   useEffect(() => {
@@ -1476,22 +1530,29 @@ export function useWorkspaceProfileWizard({
   function updateField(field, value) {
     setValues((current) => {
       const roadmapConfigPatch = syncRoadmapConfigFields(current, field, value);
+      const normalizedPurposeValue =
+        field === 'workspacePurpose'
+          ? normalizeWorkspacePurpose(value, current.workspacePurpose || 'REVIEW', { canCreateRoadmap })
+          : current.workspacePurpose;
       const enableRoadmapNext =
-        field === 'enableRoadmap'
-          ? Boolean(value)
-          : field === 'workspacePurpose'
-            ? (value === 'STUDY_NEW' ? true : current.enableRoadmap)
-            : current.enableRoadmap;
+        canCreateRoadmap === false
+          ? false
+          : field === 'enableRoadmap'
+            ? Boolean(value)
+            : field === 'workspacePurpose'
+              ? (normalizedPurposeValue === 'STUDY_NEW' ? true : current.enableRoadmap)
+              : current.enableRoadmap;
       const next = {
         ...current,
         [field]: value,
+        workspacePurpose: normalizedPurposeValue,
         enableRoadmap: enableRoadmapNext,
         ...roadmapConfigPatch,
       };
 
       const savedBasic = savedStepSnapshotsRef.current?.[1];
       const nextKnowledge = field === 'knowledgeInput' ? ensureString(value) : next.knowledgeInput;
-      const nextPurpose = field === 'workspacePurpose' ? ensureString(value) : next.workspacePurpose;
+      const nextPurpose = ensureString(next.workspacePurpose);
       const savedKnowledge = ensureString(savedBasic?.knowledgeInput);
       const savedPurpose = ensureString(savedBasic?.workspacePurpose);
 
@@ -1552,6 +1613,10 @@ export function useWorkspaceProfileWizard({
   }
 
   function setPurpose(purpose) {
+    if (canCreateRoadmap === false && purpose === 'STUDY_NEW') {
+      return;
+    }
+
     setSaveError('');
     updateField('workspacePurpose', purpose);
   }
@@ -1674,7 +1739,7 @@ export function useWorkspaceProfileWizard({
     }
 
     if (targetStep === 3) {
-      if (shouldShowRoadmapFields(values)) {
+      if (shouldShowRoadmapFields(values, { canCreateRoadmap })) {
         if (!values.knowledgeLoad) nextErrors.knowledgeLoad = t('workspace.profileConfig.validation.knowledgeLoadRequired');
         if (!values.adaptationMode) nextErrors.adaptationMode = t('workspace.profileConfig.validation.adaptationModeRequired');
         if (!values.roadmapSpeedMode) nextErrors.roadmapSpeedMode = t('workspace.profileConfig.validation.roadmapSpeedModeRequired');
@@ -1697,12 +1762,12 @@ export function useWorkspaceProfileWizard({
   function isStepDirty(targetStep) {
     return !areStepSnapshotsEqual(
       savedStepSnapshotsRef.current[targetStep],
-      buildStepSnapshot(targetStep, values)
+      buildStepSnapshot(targetStep, values, { canCreateRoadmap })
     );
   }
 
   function markStepAsSaved(targetStep) {
-    savedStepSnapshotsRef.current[targetStep] = buildStepSnapshot(targetStep, values);
+    savedStepSnapshotsRef.current[targetStep] = buildStepSnapshot(targetStep, values, { canCreateRoadmap });
     if (targetStep < totalSteps) {
       setMaxUnlockedStep((current) => Math.max(current, targetStep + 1));
     }
@@ -1768,7 +1833,7 @@ export function useWorkspaceProfileWizard({
     setSaveError('');
 
     try {
-      const result = await onSave(stepToPersist, buildPayload(values));
+      const result = await onSave(stepToPersist, buildPayload(values, { canCreateRoadmap }));
       markStepAsSaved(stepToPersist);
       return { ok: true, result };
     } catch (error) {

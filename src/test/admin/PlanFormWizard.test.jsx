@@ -115,7 +115,7 @@ function renderStatefulWizard(overrides = {}) {
         functionAssignmentMap={{}}
         availableAiModels={[]}
         creditUnitPrice={200}
-        highestActiveUserPlanEntitlement={null}
+        highestActiveUserPlanEntitlement={overrides.highestActiveUserPlanEntitlement ?? null}
         onSubmit={vi.fn()}
         onValidationError={onValidationError}
       />
@@ -155,5 +155,49 @@ describe('PlanFormWizard', () => {
 
     expect(onValidationError).not.toHaveBeenCalled();
     expect(screen.getByText('Default models by capability')).toBeInTheDocument();
+  });
+
+  it('does not apply inherited group entitlements for level 0 workspace plans', () => {
+    renderStatefulWizard({
+      formData: {
+        planScope: 'WORKSPACE',
+        planLevel: '0',
+      },
+      entitlement: {
+        canProcessPdf: false,
+      },
+      highestActiveUserPlanEntitlement: {
+        canProcessPdf: true,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    expect(screen.queryByText(/Gói group tự động kế thừa toàn bộ quyền lợi/i)).not.toBeInTheDocument();
+
+    const pdfSwitch = screen.getByRole('switch', { name: /pdf/i });
+    expect(pdfSwitch).not.toBeDisabled();
+  });
+
+  it('keeps inherited group entitlements locked for workspace plans above level 0', () => {
+    renderStatefulWizard({
+      formData: {
+        planScope: 'WORKSPACE',
+        planLevel: '1',
+      },
+      entitlement: {
+        canProcessPdf: false,
+      },
+      highestActiveUserPlanEntitlement: {
+        canProcessPdf: true,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    expect(screen.getByText(/Gói group tự động kế thừa toàn bộ quyền lợi/i)).toBeInTheDocument();
+
+    const pdfSwitch = screen.getByRole('switch', { name: /pdf/i });
+    expect(pdfSwitch).toBeDisabled();
   });
 });

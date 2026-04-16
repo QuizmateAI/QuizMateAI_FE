@@ -1131,6 +1131,12 @@
     "noUsageRecords": "Chưa có lịch sử sử dụng.",
     "recent": "Gần đây",
     "balanceAfter": "Số dư sau",
+    "pagination": {
+      "summary": "Hiển thị {{start}} - {{end}} trên {{total}}",
+      "previous": "Trước",
+      "next": "Sau",
+      "page": "Trang {{page}} / {{totalPages}}"
+    },
     "creditLabels": {
       "WELCOME": "QMC chào mừng",
       "TOPUP": "Nạp QMC",
@@ -1532,6 +1538,12 @@
     },
     "validation": {
       "completeRequired": "Vui lòng hoàn thành các mục bắt buộc trước khi kiểm tra lại để hoàn tất."
+    },
+    "stepOne": {
+      "previewEyebrow": "Tổng quan nhanh",
+      "previewTitle": "Nhóm này sẽ bắt đầu với",
+      "previewDescription": "Kiểm tra lại tên hiển thị, quy mô nhóm và nguyên tắc chung trước khi chuyển sang hồ sơ học tập.",
+      "previewSeatLimit": "Quy mô nhóm"
     },
     "confirm": {
       "badge": "XÁC NHẬN HỒ SƠ",

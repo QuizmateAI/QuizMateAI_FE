@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import i18nInstance from '@/i18n';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
-import { usePlanEntitlements } from '@/hooks/usePlanEntitlements';
+import { buildPlanEntitlementFlags } from '@/hooks/usePlanEntitlements';
 import PlanUpgradeModal from '@/Components/plan/PlanUpgradeModal';
 import GroupWorkspaceCreditGateModal from './Components/GroupWorkspaceCreditGateModal';
 import { useGroup } from '@/hooks/useGroup';
@@ -79,6 +79,7 @@ import {
 } from '@/api/MaterialAPI';
 import {
   getGroupWorkspaceProfile,
+  suggestGroupRoadmapConfig,
   getWorkspaceCurrentPlan,
   getWorkspaceLearningSnapshotMeLatest,
   normalizeGroupWorkspaceProfile,
@@ -107,6 +108,7 @@ import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 import { buildGroupMemberSeatSummary, normalizePendingInvitationSummary, resolveGroupMemberSeatLimit } from './utils/memberSeatLimit';
+import { resolveGroupQuizTitleMaxLength } from './utils/groupQuizTitleLimit';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 const LEARNING_SNAPSHOT_PERIOD = 'DAILY';
@@ -368,6 +370,37 @@ function extractGroupCreatedQuizPayload(payload) {
     }
   }
   return null;
+}
+
+function isRealtimeProcessingQuizPayload(payload) {
+  if (payload == null || typeof payload !== 'object') return false;
+  let current = payload;
+
+  for (let depth = 0; depth < 4; depth += 1) {
+    const taskId = String(current?.websocketTaskId ?? current?.taskId ?? '').trim();
+    const status = String(current?.status ?? current?.final_status ?? '').toUpperCase();
+    const percent = Number(
+      current?.percent
+      ?? current?.progressPercent
+      ?? current?.processingPercent
+      ?? current?.data?.percent
+      ?? current?.data?.progressPercent
+      ?? 0
+    );
+
+    if (taskId) return true;
+    if (['PROCESSING', 'PENDING', 'QUEUED'].includes(status)) return true;
+    if (Number.isFinite(percent) && percent > 0 && percent < 100) return true;
+
+    if (current?.data != null && typeof current.data === 'object') {
+      current = current.data;
+      continue;
+    }
+
+    break;
+  }
+
+  return false;
 }
 
 /** Các tab studio / section hợp lệ trong URL `?section=` — không dùng cho sub-view (createQuiz, ...). */
@@ -717,7 +750,6 @@ function GroupWorkspacePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const planEntitlements = usePlanEntitlements();
   const [planUpgradeModalOpen, setPlanUpgradeModalOpen] = useState(false);
   const [planUpgradeFeatureName, setPlanUpgradeFeatureName] = useState(undefined);
   const [roadmapConfigEditOpen, setRoadmapConfigEditOpen] = useState(false);
@@ -786,6 +818,8 @@ function GroupWorkspacePage() {
   const bumpQuizListRefreshToken = useCallback(() => {
     setQuizListRefreshToken((n) => n + 1);
   }, []);
+  const [quizGenerationTaskByQuizId, setQuizGenerationTaskByQuizId] = useState({});
+  const [quizGenerationProgressByQuizId, setQuizGenerationProgressByQuizId] = useState({});
 
   // Create mode
   const isCreating = workspaceId === 'new';
@@ -836,6 +870,7 @@ function GroupWorkspacePage() {
   const uploadNotificationsRef = useRef(new Set());
   const groupRealtimeRefreshTimerRef = useRef(null);
   const recoveredMockTestTaskRef = useRef(false);
+  const processingQuizRefreshIdsRef = useRef(new Set());
   const skipRoadmapStoredRestoreRef = useRef(false);
   const skipNextRoadmapCanonicalizeRef = useRef(false);
 
@@ -846,6 +881,37 @@ function GroupWorkspacePage() {
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const currentUser = readCurrentUser();
+  const planEntitlements = useMemo(
+    () => buildPlanEntitlementFlags(groupSubscription?.plan?.entitlement ?? groupSubscription?.entitlement ?? null),
+    [groupSubscription],
+  );
+  const groupQuizTitleMaxLength = useMemo(
+    () => resolveGroupQuizTitleMaxLength(groupSubscription),
+    [groupSubscription],
+  );
+  const groupCurrentPlanSummary = useMemo(() => {
+    const planName = String(
+      groupSubscription?.plan?.displayName
+      || groupSubscription?.plan?.planName
+      || groupSubscription?.plan?.code
+      || ''
+    ).trim();
+
+    if (!planName) {
+      return null;
+    }
+
+    const planId = groupSubscription?.plan?.planCatalogId
+      ?? groupSubscription?.plan?.planId
+      ?? groupSubscription?.plan?.id
+      ?? '';
+
+    return {
+      planId: planId ? String(planId) : '',
+      planName,
+      planType: 'GROUP',
+    };
+  }, [groupSubscription]);
   const roadmapSelectionStorageKey = useMemo(
     () =>
       workspaceId
@@ -1953,6 +2019,13 @@ function GroupWorkspacePage() {
     const signal = normalizeRuntimeTaskSignal(progressPayload, { source: 'websocket' });
     const normalizedStatus = String(signal.status || '').toUpperCase();
     const normalizedTaskType = String(signal.taskType || '').toUpperCase();
+    const progressQuizId = Number(signal.quizId ?? 0);
+    const progressPercent = clampPercent(
+      signal.percent
+      ?? progressPayload?.percent
+      ?? progressPayload?.progressPercent,
+    );
+    const signalTaskId = String(signal.taskId || '').trim();
 
     if (isMockTestRealtimeSignal(signal, progressPayload)) {
       handleMockTestRealtime(signal, progressPayload);
@@ -1967,13 +2040,59 @@ function GroupWorkspacePage() {
       || (roadmapPhaseGenerationTaskId && String(signal.taskId || '') === String(roadmapPhaseGenerationTaskId))
     );
 
+    if (signal.isQuizSignal && Number.isInteger(progressQuizId) && progressQuizId > 0) {
+      if (signalTaskId) {
+        setQuizGenerationTaskByQuizId((current) => {
+          if (current[progressQuizId] === signalTaskId) return current;
+          return {
+            ...current,
+            [progressQuizId]: signalTaskId,
+          };
+        });
+      }
+
+      setQuizGenerationProgressByQuizId((current) => {
+        const nextPercent = progressPercent > 0
+          ? progressPercent
+          : (normalizedStatus.includes('COMPLETED') ? 100 : Number(current?.[progressQuizId] ?? 0));
+
+        if (Number(current?.[progressQuizId] ?? 0) === nextPercent) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [progressQuizId]: nextPercent,
+        };
+      });
+
+      const isTerminalQuizSignal = (
+        normalizedStatus.includes('COMPLETED')
+        || normalizedStatus === 'ERROR'
+        || normalizedStatus.includes('FAILED')
+        || normalizedStatus.includes('CANCEL')
+      );
+
+      if (!processingQuizRefreshIdsRef.current.has(progressQuizId) || isTerminalQuizSignal) {
+        if (isTerminalQuizSignal) {
+          processingQuizRefreshIdsRef.current.delete(progressQuizId);
+        } else {
+          processingQuizRefreshIdsRef.current.add(progressQuizId);
+        }
+        bumpQuizListRefreshToken();
+      }
+
+      if (!isRoadmapTaskSignal) {
+        return;
+      }
+    }
+
     if (isRoadmapTaskSignal) {
       const phasePercent = clampPercent(
         signal.percent
         ?? progressPayload?.percent
         ?? progressPayload?.progressPercent,
       );
-      const signalTaskId = String(signal.taskId || '').trim();
 
       if (
         normalizedStatus === 'ROADMAP_STRUCTURE_STARTED'
@@ -2087,6 +2206,7 @@ function GroupWorkspacePage() {
     }
   }, [
     bumpRoadmapReloadToken,
+    bumpQuizListRefreshToken,
     announceRealtimeMaterialStatus,
     currentLang,
     isLeader,
@@ -2225,6 +2345,9 @@ function GroupWorkspacePage() {
         handleMockTestRealtime({ status: 'MOCKTEST_REFRESH', taskType: 'MOCKTEST' });
       }
 
+      processingQuizRefreshIdsRef.current.clear();
+      setQuizGenerationTaskByQuizId({});
+      setQuizGenerationProgressByQuizId({});
       setSessionUploadQueue((current) => current.filter((item) => !isProcessingMaterialStatus(item?.status)));
       if (isGeneratingRoadmapPhases) {
         setIsGeneratingRoadmapPhases(false);
@@ -2354,6 +2477,38 @@ function GroupWorkspacePage() {
     void queryClient.invalidateQueries({ queryKey: ['challenge-bracket'] });
   }, [isCreating, queryClient, workspaceId]);
 
+  const handleGroupWalletRealtime = useCallback((event = null) => {
+    if (isCreating || !resolvedWorkspaceId || !workspaceId || workspaceId === 'new') return;
+
+    const normalizedWorkspaceId = Number(event?.workspaceId ?? resolvedWorkspaceId);
+    if (Number.isInteger(normalizedWorkspaceId) && normalizedWorkspaceId !== Number(resolvedWorkspaceId)) {
+      return;
+    }
+
+    const hasWalletSnapshot = [
+      event?.totalAvailableCredits,
+      event?.balance,
+      event?.regularCreditBalance,
+      event?.planCreditBalance,
+    ].some((value) => value != null);
+
+    if (hasWalletSnapshot) {
+      queryClient.setQueryData(['group-wallet-summary', resolvedWorkspaceId], (current) => ({
+        ...(current || {}),
+        ...(event?.balance != null ? { balance: Number(event.balance) || 0 } : {}),
+        ...(event?.totalAvailableCredits != null ? { totalAvailableCredits: Number(event.totalAvailableCredits) || 0 } : {}),
+        ...(event?.regularCreditBalance != null ? { regularCreditBalance: Number(event.regularCreditBalance) || 0 } : {}),
+        ...(event?.planCreditBalance != null ? { planCreditBalance: Number(event.planCreditBalance) || 0 } : {}),
+        ...(event?.hasActivePlan != null ? { hasActivePlan: Boolean(event.hasActivePlan) } : {}),
+        ...(event?.updatedAt ? { updatedAt: event.updatedAt } : {}),
+      }));
+    }
+
+    void queryClient.invalidateQueries({ queryKey: ['group-wallet-summary', resolvedWorkspaceId] });
+    void queryClient.invalidateQueries({ queryKey: ['group-wallet-transactions', resolvedWorkspaceId] });
+    void queryClient.invalidateQueries({ queryKey: ['group-workspace-payments', resolvedWorkspaceId] });
+  }, [isCreating, queryClient, resolvedWorkspaceId, workspaceId]);
+
   const { isConnected: wsConnected, lastMessage: wsLastMessage } = useWebSocket({
     workspaceId: !isCreating ? workspaceId : null,
     enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
@@ -2364,6 +2519,7 @@ function GroupWorkspacePage() {
     onMaterialUpdated: handleRealtimeMaterialUpdate,
     onProgress: handleRealtimeProgress,
     onGroupUpdate: handleGroupRealtime,
+    onWorkspaceWalletUpdate: handleGroupWalletRealtime,
     onChallengeUpdate: handleChallengeRealtime,
   });
 
@@ -2945,12 +3101,8 @@ function GroupWorkspacePage() {
 
   // Xử lý yêu cầu cập nhật onboarding — kiểm tra guard
   const handleRequestGroupProfileUpdate = useCallback(() => {
-    if (profileEditLocked) {
-      setProfileUpdateGuardOpen(true);
-      return;
-    }
     setProfileConfigOpen(true);
-  }, [profileEditLocked]);
+  }, []);
 
   const resetCurrentRoadmapStructure = useCallback(async () => {
     const roadmapId = currentRoadmapId;
@@ -3061,7 +3213,53 @@ function GroupWorkspacePage() {
     t,
   ]);
 
+  const trackQuizGenerationStart = useCallback((payload) => {
+    const quizId = Number(payload?.quizId ?? payload?.id ?? payload?.data?.quizId ?? payload?.data?.id ?? 0);
+    const taskId = String(payload?.websocketTaskId ?? payload?.taskId ?? payload?.data?.websocketTaskId ?? payload?.data?.taskId ?? '').trim();
+    const percent = clampPercent(
+      payload?.percent
+      ?? payload?.progressPercent
+      ?? payload?.processingPercent
+      ?? payload?.data?.percent
+      ?? payload?.data?.progressPercent
+      ?? 0,
+    );
+
+    if (!Number.isInteger(quizId) || quizId <= 0) {
+      return;
+    }
+
+    if (taskId) {
+      setQuizGenerationTaskByQuizId((current) => {
+        if (current[quizId] === taskId) return current;
+        return {
+          ...current,
+          [quizId]: taskId,
+        };
+      });
+      processingQuizRefreshIdsRef.current.add(quizId);
+    }
+
+    if (percent > 0) {
+      setQuizGenerationProgressByQuizId((current) => ({
+        ...current,
+        [quizId]: percent,
+      }));
+    }
+  }, []);
+
   const handleCreateQuiz = useCallback(async (createdPayload) => {
+    trackQuizGenerationStart(createdPayload);
+
+    if (isRealtimeProcessingQuizPayload(createdPayload)) {
+      showInfo(t('groupWorkspacePage.toast.quizGenerationStarted', 'Quiz is being generated. Track progress in the quiz list.'));
+      bumpQuizListRefreshToken();
+      setSelectedQuiz(null);
+      setActiveView('quiz');
+      void refreshActiveTaskSnapshot('group-quiz-create');
+      return;
+    }
+
     const createdQuiz = extractGroupCreatedQuizPayload(createdPayload);
     if (createdQuiz) {
       showSuccess(
@@ -3077,8 +3275,9 @@ function GroupWorkspacePage() {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateQuiz', 'Member cannot create quizzes.'));
       return;
     }
+    void refreshActiveTaskSnapshot('group-quiz-create');
     setActiveView('quiz');
-  }, [bumpQuizListRefreshToken, canCreateContent, currentLang, showInfo, showSuccess, t]);
+  }, [bumpQuizListRefreshToken, canCreateContent, currentLang, refreshActiveTaskSnapshot, showInfo, showSuccess, t, trackQuizGenerationStart]);
   const handleViewQuiz = useCallback((quiz, options = {}) => {
     const normalizedQuizId = Number(quiz?.quizId ?? quiz?.id ?? 0);
     const normalizedQuiz = Number.isInteger(normalizedQuizId) && normalizedQuizId > 0
@@ -3503,6 +3702,16 @@ function GroupWorkspacePage() {
     bumpRoadmapReloadToken,
     t,
   ]);
+
+  const handleSuggestRoadmapConfig = useCallback(async () => {
+    const resolvedGroupWorkspaceId = Number(resolvedWorkspaceId || workspaceId);
+    if (!Number.isInteger(resolvedGroupWorkspaceId) || resolvedGroupWorkspaceId <= 0) {
+      throw new Error(t('groupWorkspacePage.errors.noWorkspace', 'No workspace found'));
+    }
+
+    const response = await suggestGroupRoadmapConfig(resolvedGroupWorkspaceId);
+    return unwrapApiData(response);
+  }, [resolvedWorkspaceId, workspaceId, t]);
 
   const handleCreateMockTest = useCallback(async () => {
     if (!canCreateContent) {
@@ -4072,6 +4281,8 @@ function GroupWorkspacePage() {
         hasRoadmap={Boolean(currentRoadmapId)}
         roadmapReloadToken={roadmapReloadToken}
         quizListRefreshToken={quizListRefreshToken}
+        quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+        quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
         isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
         isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning}
         roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
@@ -4090,6 +4301,8 @@ function GroupWorkspacePage() {
         onEditMockTest={handleEditMockTest}
         onSaveMockTest={handleSaveMockTest}
         planEntitlements={planEntitlements}
+        quizTitleMaxLength={groupQuizTitleMaxLength}
+        currentPlanSummaryOverride={groupCurrentPlanSummary}
         onCreateRoadmapPhases={handleCreateGroupRoadmapPhases}
         roadmapSelectableMaterials={hasGroupRoadmapConfig ? roadmapSelectableSources : []}
         selectedRoadmapMaterialIds={hasGroupRoadmapConfig ? selectedRoadmapSourceIds : []}
@@ -4220,6 +4433,7 @@ function GroupWorkspacePage() {
             onApprove={(item) => handleReviewPendingMaterial(item, true)}
             onReject={(item) => handleReviewPendingMaterial(item, false)}
             onDeleteSource={handleRemoveSource}
+            planEntitlements={planEntitlements}
             />
           </React.Suspense>
         );
@@ -4556,6 +4770,7 @@ function GroupWorkspacePage() {
           mode={roadmapConfigDialogMode}
           hasExistingRoadmap={Boolean(hasGroupRoadmapConfig && currentRoadmapId)}
           onSave={handleSaveRoadmapConfig}
+          onSuggest={handleSuggestRoadmapConfig}
         />
       </React.Suspense>
 

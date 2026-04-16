@@ -844,12 +844,8 @@ export default function GroupReviewWorkspaceShell() {
   }, [canUploadSource, fetchSources, loadGroupLogs, queryClient, resolvedWorkspaceId, shouldForceProfileSetup, showError, showSuccess, t]);
 
   const handleRequestGroupProfileUpdate = useCallback(() => {
-    if (profileEditLocked) {
-      setProfileUpdateGuardOpen(true);
-      return;
-    }
     setProfileConfigOpen(true);
-  }, [profileEditLocked]);
+  }, []);
 
   const handleDeleteMaterialsForGroupProfileUpdate = useCallback(async () => {
     if (!resolvedWorkspaceId || isResettingWorkspaceForProfileUpdate) return;

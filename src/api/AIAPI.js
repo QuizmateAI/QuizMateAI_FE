@@ -41,7 +41,7 @@ export const getBloomSkills = async () => {
 
 // Tạo Quiz AI
 export const generateAIQuiz = async (data) => {
-  const response = await api.post('/ai/quiz:generated', data);
+  const response = await api.post('/ai/quiz:generated', data, { timeout: 0 });
   return response;
 };
 

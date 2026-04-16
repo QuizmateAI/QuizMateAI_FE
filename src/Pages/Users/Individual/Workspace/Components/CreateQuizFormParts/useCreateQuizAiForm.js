@@ -178,6 +178,7 @@ export const useCreateQuizAiForm = ({
   hasImageMaterials,
   i18nLanguage,
   onCreateQuiz,
+  quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
   selectedMaterialIds,
   t,
   existingQuizId = null,
@@ -244,8 +245,12 @@ export const useCreateQuizAiForm = ({
     if (!Number.isInteger(qid) || qid <= 0) return;
     const s = String(seedQuizTitle || "").trim();
     if (!s) return;
-    setAiName((prev) => (String(prev || "").trim() ? prev : normalizeQuizTitleInput(s)));
-  }, [existingQuizId, seedQuizTitle]);
+    setAiName((prev) => (
+      String(prev || "").trim()
+        ? prev
+        : normalizeQuizTitleInput(s, quizTitleMaxLength)
+    ));
+  }, [existingQuizId, quizTitleMaxLength, seedQuizTitle]);
 
   const getTargetTotal = useCallback(
     (unitByCount) => (unitByCount ? Number(aiTotalQuestions || 0) : 100),
@@ -591,7 +596,7 @@ export const useCreateQuizAiForm = ({
     questionTypeUnit,
     questionTypeDefinitions: qTypes,
     questionUnit,
-    quizTitleMaxLength: QUIZ_TITLE_MAX_LENGTH,
+    quizTitleMaxLength,
     selectedBloomSkills,
     selectedDifficultyId,
     selectedMaterialIds,
@@ -616,6 +621,7 @@ export const useCreateQuizAiForm = ({
     questionTypeUnit,
     qTypes,
     questionUnit,
+    quizTitleMaxLength,
     selectedBloomSkills,
     selectedDifficultyId,
     selectedMaterialIds,
@@ -753,8 +759,8 @@ export const useCreateQuizAiForm = ({
   }, [aiValidationState, scrollToAiSection]);
 
   const handleAiNameChange = useCallback((value) => {
-    setAiName(normalizeQuizTitleInput(value));
-  }, []);
+    setAiName(normalizeQuizTitleInput(value, quizTitleMaxLength));
+  }, [quizTitleMaxLength]);
 
   const handleAiPromptChange = useCallback((value) => {
     setAiPrompt(value);
@@ -1554,6 +1560,7 @@ export const useCreateQuizAiForm = ({
       canFetchStructurePreview,
       minimumAiDurationMinutes,
       qTypes,
+      quizTitleMaxLength,
       questionTypeUnit,
       questionUnit,
       selectedBloomSkills,

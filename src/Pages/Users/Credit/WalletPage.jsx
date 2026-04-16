@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -22,6 +22,7 @@ import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/Utils/getErrorMessage";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import {
   getMyWallet,
   getPurchaseableCreditPackages,
@@ -400,6 +401,8 @@ export default function WalletPage() {
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
+  const isMountedRef = useRef(true);
+  const walletRefreshTimerRef = useRef(null);
 
   const subscription = getCachedSubscription();
   const canBuyCredit = subscription?.entitlement?.canBuyCredit !== false;
@@ -421,67 +424,122 @@ export default function WalletPage() {
   }, [isSettingsOpen]);
 
   useEffect(() => {
-    let cancelled = false;
+    isMountedRef.current = true;
 
-    const fetchWalletData = async () => {
-      setIsLoadingWallet(true);
-      setIsLoadingTransactions(true);
-      setIsLoadingPackages(true);
-      try {
-        const [walletRes, packagesRes, txRes] = await Promise.all([
-          getMyWallet(),
-          getPurchaseableCreditPackages(),
-          getMyWalletTransactions(0, 20),
-        ]);
-
-        if (cancelled) return;
-
-        const walletData = walletRes?.data ?? walletRes;
-        const normalizedWallet = normalizeWalletSummary(walletData);
-
-        const pkgData = packagesRes?.data ?? packagesRes;
-
-        const page = txRes?.data ?? txRes;
-        let mappedTx = normalizeTransactions(page);
-        let finalWallet = normalizedWallet;
-
-        const latestTxBalance = mappedTx[0]?.balanceAfter;
-        const walletBalance = normalizedWallet.totalAvailableCredits ?? 0;
-
-        // Avoid showing a split-brain snapshot when balance and history are fetched
-        // around the same moment while multiple AI charges are still committing.
-        if (latestTxBalance != null && latestTxBalance !== walletBalance) {
-          const [walletRetryRes, txRetryRes] = await Promise.all([
-            getMyWallet(),
-            getMyWalletTransactions(0, 20),
-          ]);
-          if (cancelled) return;
-
-          finalWallet = normalizeWalletSummary(walletRetryRes?.data ?? walletRetryRes);
-          mappedTx = normalizeTransactions(txRetryRes?.data ?? txRetryRes);
-        }
-
-        setWalletSummary(finalWallet);
-        setPackages(Array.isArray(pkgData) ? pkgData : []);
-        setTransactions(mappedTx);
-      } catch (err) {
-        if (!cancelled) {
-          showError(getFriendlyError(err));
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingWallet(false);
-          setIsLoadingTransactions(false);
-          setIsLoadingPackages(false);
-        }
+    return () => {
+      isMountedRef.current = false;
+      if (walletRefreshTimerRef.current) {
+        globalThis.clearTimeout(walletRefreshTimerRef.current);
+        walletRefreshTimerRef.current = null;
       }
     };
+  }, []);
 
-    fetchWalletData();
-    return () => {
-      cancelled = true;
-    };
+  const fetchPackages = useCallback(async () => {
+    setIsLoadingPackages(true);
+    try {
+      const packagesRes = await getPurchaseableCreditPackages();
+      if (!isMountedRef.current) return;
+      const pkgData = packagesRes?.data ?? packagesRes;
+      setPackages(Array.isArray(pkgData) ? pkgData : []);
+    } catch (err) {
+      if (isMountedRef.current) {
+        showError(getFriendlyError(err));
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoadingPackages(false);
+      }
+    }
   }, [showError, t]);
+
+  const fetchWalletData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setIsLoadingWallet(true);
+      setIsLoadingTransactions(true);
+    }
+
+    try {
+      const [walletRes, txRes] = await Promise.all([
+        getMyWallet(),
+        getMyWalletTransactions(0, 20),
+      ]);
+
+      if (!isMountedRef.current) return;
+
+      const walletData = walletRes?.data ?? walletRes;
+      const normalizedWallet = normalizeWalletSummary(walletData);
+
+      const page = txRes?.data ?? txRes;
+      let mappedTx = normalizeTransactions(page);
+      let finalWallet = normalizedWallet;
+
+      const latestTxBalance = mappedTx[0]?.balanceAfter;
+      const walletBalance = normalizedWallet.totalAvailableCredits ?? 0;
+
+      if (latestTxBalance != null && latestTxBalance !== walletBalance) {
+        const [walletRetryRes, txRetryRes] = await Promise.all([
+          getMyWallet(),
+          getMyWalletTransactions(0, 20),
+        ]);
+        if (!isMountedRef.current) return;
+
+        finalWallet = normalizeWalletSummary(walletRetryRes?.data ?? walletRetryRes);
+        mappedTx = normalizeTransactions(txRetryRes?.data ?? txRetryRes);
+      }
+
+      setWalletSummary(finalWallet);
+      setTransactions(mappedTx);
+    } catch (err) {
+      if (isMountedRef.current) {
+        showError(getFriendlyError(err));
+      }
+    } finally {
+      if (isMountedRef.current && !silent) {
+        setIsLoadingWallet(false);
+        setIsLoadingTransactions(false);
+      }
+    }
+  }, [showError, t]);
+
+  useEffect(() => {
+    void fetchPackages();
+  }, [fetchPackages]);
+
+  useEffect(() => {
+    void fetchWalletData();
+  }, [fetchWalletData]);
+
+  const handleWalletRealtime = useCallback((payload = {}) => {
+    if (!isMountedRef.current) return;
+
+    const hasWalletSnapshot = [
+      payload?.totalAvailableCredits,
+      payload?.balance,
+      payload?.regularCreditBalance,
+      payload?.planCreditBalance,
+    ].some((value) => value != null);
+
+    if (hasWalletSnapshot) {
+      setWalletSummary((current) => normalizeWalletSummary({
+        ...current,
+        ...payload,
+      }));
+    }
+
+    if (walletRefreshTimerRef.current) {
+      globalThis.clearTimeout(walletRefreshTimerRef.current);
+    }
+    walletRefreshTimerRef.current = globalThis.setTimeout(() => {
+      walletRefreshTimerRef.current = null;
+      void fetchWalletData({ silent: true });
+    }, 120);
+  }, [fetchWalletData]);
+
+  useWebSocket({
+    enabled: true,
+    onWalletUpdate: handleWalletRealtime,
+  });
 
   const buyCredits = (pkg) => {
     if (!pkg?.creditPackageId) return;
