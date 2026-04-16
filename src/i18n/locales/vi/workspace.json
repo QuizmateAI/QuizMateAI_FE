@@ -1456,6 +1456,7 @@
       "fallbackName": "Giai đoạn #{{id}}"
     },
     "roadmap": {
+      "title": "Lộ trình",
       "createTitle": "Tạo Lộ trình học tập",
       "createDesc": "Để AI tạo lộ trình học tập dựa trên mục tiêu của bạn.",
       "setupConfigTitle": "Thiết lập lộ trình",
@@ -1591,8 +1592,8 @@
         "view2RoadmapHint": "Chọn lộ trình, Giai đoạn hoặc Kiến thức ở khung trên để xem đúng thông tin chi tiết bên dưới.",
         "view2PhaseHint": "Bấm vào Giai đoạn ở phía trên để xem mô tả Giai đoạn và danh sách post-learning.",
         "view2KnowledgeHint": "Bấm vào Kiến thức để xem mô tả chi tiết cùng danh sách Bộ câu hỏi và Thẻ ghi nhớ.",
-        "expandTopSection": "Mở rộng sơ đồ",
-        "collapseTopSection": "Thu gọn sơ đồ",
+        "expandTopSection": "Mở rộng lộ trình",
+        "collapseTopSection": "Thu gọn lộ trình",
         "preLearning": "Đánh giá đầu vào",
         "knowledge": "Kiến thức",
         "learningPath": "Lộ trình học tập",
