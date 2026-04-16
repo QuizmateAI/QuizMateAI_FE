@@ -578,6 +578,7 @@
       "refreshSuggested": "Refresh",
       "getSuggestedResources": "Get suggested materials",
       "importSuggested": "Upload suggested files",
+      "aiSuggestedBadge": "AI Suggested",
       "suggestMissingWorkspace": "Workspace not found. Cannot load suggestions.",
       "suggestLoadError": "Cannot load suggested materials.",
       "suggestGenerateSuccess": "Suggested materials generated successfully.",
