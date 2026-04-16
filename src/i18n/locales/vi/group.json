@@ -1672,7 +1672,7 @@
       "structure": "2. Cấu trúc",
       "generating": "3. Sinh câu hỏi"
     },
-    "scopeNotice": "Mock test chỉ sinh câu hỏi khách quan: một đáp án, nhiều đáp án và đúng/sai. Listening, Writing và Speaking hiện chưa được hỗ trợ nên AI sẽ tự bỏ qua. Đề được tạo ở trạng thái DRAFT để leader publish sau.",
+    "scopeNotice": "Mock test chỉ sinh câu hỏi trắc nghiệm một đáp án. Listening, Writing và Speaking hiện chưa được hỗ trợ nên AI sẽ tự bỏ qua. Đề được tạo ở trạng thái DRAFT để leader publish sau.",
     "tabs": {
       "examName": "Tên kỳ thi",
       "custom": "Yêu cầu tuỳ chỉnh"

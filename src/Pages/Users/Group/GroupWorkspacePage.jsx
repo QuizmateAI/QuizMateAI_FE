@@ -97,6 +97,12 @@ import {
   resolveGroupWorkspaceSectionFromSubPath,
 } from '@/lib/routePaths';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
+import {
+  getMockTestRealtimeMessage,
+  isMockTestCompletedSignal,
+  isMockTestErrorSignal,
+  isMockTestRealtimeSignal,
+} from '@/Pages/Users/MockTest/utils/mockTestRealtime';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
@@ -800,6 +806,7 @@ function GroupWorkspacePage() {
   const refreshPendingMaterialTimersRef = useRef({});
   const uploadNotificationsRef = useRef(new Set());
   const groupRealtimeRefreshTimerRef = useRef(null);
+  const recoveredMockTestTaskRef = useRef(false);
   const skipRoadmapStoredRestoreRef = useRef(false);
   const skipNextRoadmapCanonicalizeRef = useRef(false);
 
@@ -1847,10 +1854,36 @@ function GroupWorkspacePage() {
     }
   }, [currentLang, isLeader, showError, showInfo, showSuccess, showWarning, t]);
 
+  const invalidateMockTestQueries = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['workspace-mock-tests'] });
+  }, [queryClient]);
+
+  const handleMockTestRealtime = useCallback((signal, rawPayload = null) => {
+    invalidateMockTestQueries();
+
+    if (isMockTestCompletedSignal(signal, rawPayload)) {
+      showSuccess(t('createGroupMockTestForm.toast.generatedSuccess', 'Mock test generated successfully.'));
+      return;
+    }
+
+    if (isMockTestErrorSignal(signal, rawPayload)) {
+      showError(
+        getMockTestRealtimeMessage(signal, rawPayload)
+        || t('createGroupMockTestForm.errors.createMockTestFailed', 'Failed to create mock test. Please try again.'),
+      );
+    }
+  }, [invalidateMockTestQueries, showError, showSuccess, t]);
+
   const handleRealtimeProgress = useCallback((progressPayload) => {
     const signal = normalizeRuntimeTaskSignal(progressPayload, { source: 'websocket' });
     const normalizedStatus = String(signal.status || '').toUpperCase();
     const normalizedTaskType = String(signal.taskType || '').toUpperCase();
+
+    if (isMockTestRealtimeSignal(signal, progressPayload)) {
+      handleMockTestRealtime(signal, progressPayload);
+      return;
+    }
+
     const isRoadmapTaskSignal = Boolean(
       signal.hasExplicitRoadmapPhaseSignal
       || signal.hasGenericRoadmapPhaseSignal
@@ -1984,6 +2017,7 @@ function GroupWorkspacePage() {
     isLeader,
     loadGroupRoadmapConfig,
     materialProgress,
+    handleMockTestRealtime,
     patchSessionUpload,
     removeSessionUpload,
     roadmapPhaseGenerationTaskId,
@@ -2111,6 +2145,11 @@ function GroupWorkspacePage() {
     const tasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
 
     if (!hasActiveTask || tasks.length === 0) {
+      if (recoveredMockTestTaskRef.current) {
+        recoveredMockTestTaskRef.current = false;
+        handleMockTestRealtime({ status: 'MOCKTEST_REFRESH', taskType: 'MOCKTEST' });
+      }
+
       setSessionUploadQueue((current) => current.filter((item) => !isProcessingMaterialStatus(item?.status)));
       if (isGeneratingRoadmapPhases) {
         setIsGeneratingRoadmapPhases(false);
@@ -2124,7 +2163,10 @@ function GroupWorkspacePage() {
 
     tasks.forEach((task) => {
       const signal = normalizeRuntimeTaskSignal(task, { source: 'active-task' });
-      if (!signal.taskId && !signal.materialId) return;
+      if (!signal.taskId && !signal.materialId && !isMockTestRealtimeSignal(signal, task)) return;
+      if (isMockTestRealtimeSignal(signal, task)) {
+        recoveredMockTestTaskRef.current = true;
+      }
 
       handleRealtimeProgress({
         ...task,
@@ -2138,6 +2180,7 @@ function GroupWorkspacePage() {
     });
   }, [
     bumpRoadmapReloadToken,
+    handleMockTestRealtime,
     handleRealtimeProgress,
     isGeneratingRoadmapPhases,
     refreshGroupMaterialViews,
@@ -3246,8 +3289,9 @@ function GroupWorkspacePage() {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateMockTest', 'Member cannot create mock tests.'));
       return;
     }
+    invalidateMockTestQueries();
     setActiveView('mockTest');
-  }, [canCreateContent, currentLang, showInfo, t]);
+  }, [canCreateContent, invalidateMockTestQueries, showInfo, t]);
   const handleViewMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('mockTestDetail'); }, []);
   const handleEditMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('editMockTest'); }, []);
   const handleSaveMockTest = useCallback((updatedMt) => { setSelectedMockTest((p) => ({ ...p, ...updatedMt })); setActiveView('mockTestDetail'); }, []);

@@ -1698,7 +1698,7 @@
       "structure": "2. Structure",
       "generating": "3. Generate Questions"
     },
-    "scopeNotice": "Mock tests only generate objective questions: single choice, multiple choice, and true/false. Listening, Writing, and Speaking are not supported, so the AI will skip them. The generated test is saved as DRAFT so the leader can publish it later.",
+    "scopeNotice": "Mock tests only generate single-answer multiple-choice questions. Listening, Writing, and Speaking are not supported, so the AI will skip them. The generated test is saved as DRAFT so the leader can publish it later.",
     "tabs": {
       "examName": "Exam name",
       "custom": "Custom request"

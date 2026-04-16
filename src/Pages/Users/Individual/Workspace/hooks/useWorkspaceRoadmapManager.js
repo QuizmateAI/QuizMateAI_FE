@@ -5,6 +5,7 @@ import { uploadMaterial } from "@/api/MaterialAPI";
 import { getRoadmapGraph, getRoadmapStructureById } from "@/api/RoadmapAPI";
 import { inferProcessingRoadmapGenerationIds } from "@/Pages/Users/Individual/Workspace/utils/roadmapProcessing";
 import { normalizeRuntimeTaskSignal } from "@/lib/runtimeTaskSignal";
+import { isMockTestRealtimeSignal } from "@/Pages/Users/MockTest/utils/mockTestRealtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function clampPercent(value) {
@@ -37,6 +38,7 @@ export function useWorkspaceRoadmapManager({
 	openProfileSetup,
 	openRoadmapView,
 	clearSelectedRoadmapPhase,
+	onMockTestRealtime,
 	showError,
 } = {}) {
 	const [quizGenerationTaskByQuizId, setQuizGenerationTaskByQuizId] = useState({});
@@ -72,6 +74,7 @@ export function useWorkspaceRoadmapManager({
 	const knowledgeQuizPollingRef = useRef({});
 	const knowledgeQuizGenerationRequestedRef = useRef({});
 	const knowledgeQuizGenerationRequestedByKnowledgeRef = useRef({});
+	const recoveredMockTestTaskRef = useRef(false);
 	const roadmapReloadThrottleRef = useRef({
 		lastBumpAt: 0,
 		timerId: null,
@@ -917,6 +920,11 @@ export function useWorkspaceRoadmapManager({
 
 		const hasActiveTask = Boolean(snapshot?.hasActiveTask) && tasks.length > 0;
 		if (!hasActiveTask || tasks.length === 0) {
+			if (recoveredMockTestTaskRef.current) {
+				recoveredMockTestTaskRef.current = false;
+				onMockTestRealtime?.({ status: "MOCKTEST_REFRESH", taskType: "MOCKTEST" });
+			}
+
 			clearPreLearningRequestGuard({ all: true });
 			setIsGeneratingRoadmapPhases(false);
 			setRoadmapPhaseGenerationTaskId(null);
@@ -961,6 +969,12 @@ export function useWorkspaceRoadmapManager({
 			const isTaskStillProcessing = signal.isTaskStillProcessing;
 
 			if (taskId) updateTaskProgress?.(taskId, percent);
+
+			if (isMockTestRealtimeSignal(signal, task)) {
+				recoveredMockTestTaskRef.current = true;
+				onMockTestRealtime?.(signal, task);
+				return;
+			}
 
 			if (Number.isInteger(progressQuizId) && progressQuizId > 0) {
 				if (taskId) {
@@ -1063,6 +1077,7 @@ export function useWorkspaceRoadmapManager({
 		progressTracking?.knowledgeProgressByPhaseId,
 		progressTracking?.postLearningProgressByPhaseId,
 		progressTracking?.preLearningProgressByPhaseId,
+		onMockTestRealtime,
 		roadmapAiRoadmapId,
 		setRoadmapAiRoadmapId,
 		sources,
@@ -1116,6 +1131,22 @@ export function useWorkspaceRoadmapManager({
 				if ((current[progressQuizId] ?? 0) === nextPercent) return current;
 				return { ...current, [progressQuizId]: nextPercent };
 			});
+		}
+
+		if (isMockTestRealtimeSignal(signal, progress)) {
+			onMockTestRealtime?.(signal, progress);
+			if (
+				websocketTaskId
+				&& (
+					status.includes("COMPLETED")
+					|| status === "ERROR"
+					|| status.includes("FAILED")
+					|| status.includes("CANCEL")
+				)
+			) {
+				clearProgress?.("task", websocketTaskId);
+			}
+			return;
 		}
 
 		if (progressPercent > 0 && isRoadmapTaskSignal) {
@@ -1360,6 +1391,7 @@ export function useWorkspaceRoadmapManager({
 		generatingKnowledgeQuizPhaseIds,
 		generatingPreLearningPhaseIds,
 		isStudyNewRoadmap,
+		onMockTestRealtime,
 		roadmapAiRoadmapId,
 		setRoadmapAiRoadmapId,
 		skipPreLearningPhaseIds,

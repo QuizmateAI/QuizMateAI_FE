@@ -438,7 +438,7 @@ function SourcesPanel({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex min-h-11 flex-wrap items-center gap-2">
                       <p
                         className={cn(
                           "truncate text-base font-semibold",
@@ -466,14 +466,14 @@ function SourcesPanel({
                         {getSourceStatusLabel(source?.status, t)}
                       </span>
                     </div>
-                    <p className={cn("mt-2 line-clamp-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-600")}>
-                      {source?.description ||
-                        source?.summary ||
-                        t(
-                          "workspace.shell.sourceFallbackSummary",
-                          "Use this source as context for roadmap, quiz, and flashcard generation.",
-                        )}
-                    </p>
+                    {/*<p className={cn("mt-2 line-clamp-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-600")}>*/}
+                    {/*  {source?.description ||*/}
+                    {/*    source?.summary ||*/}
+                    {/*    t(*/}
+                    {/*      "workspace.shell.sourceFallbackSummary",*/}
+                    {/*      "Use this source as context for roadmap, quiz, and flashcard generation.",*/}
+                    {/*    )}*/}
+                    {/*</p>*/}
                   </div>
                 </div>
 

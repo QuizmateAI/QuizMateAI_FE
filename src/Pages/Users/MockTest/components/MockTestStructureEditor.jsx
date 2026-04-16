@@ -7,25 +7,11 @@ import { Label } from '@/Components/ui/label';
 import { Badge } from '@/Components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import {
-  MOCK_TEST_QUESTION_TYPES,
   MOCK_TEST_BLOOM_SKILLS,
   MOCK_TEST_DIFFICULTIES,
 } from '../hooks/useMockTestStructureSuggestion';
 
 const MIN_DESCRIPTION_LENGTH = 10;
-
-function translateQuestionType(t, questionType) {
-  switch (questionType) {
-    case 'SINGLE_CHOICE':
-      return t('mockTestForms.common.typeMultipleChoice', 'Single choice');
-    case 'MULTIPLE_CHOICE':
-      return t('mockTestForms.common.typeMultipleSelect', 'Multiple choice');
-    case 'TRUE_FALSE':
-      return t('mockTestForms.common.typeTrueFalse', 'True / False');
-    default:
-      return questionType;
-  }
-}
 
 function translateBloomSkill(t, bloomSkill) {
   switch (bloomSkill) {
@@ -39,8 +25,6 @@ function translateBloomSkill(t, bloomSkill) {
       return t('mockTestForms.common.bloomAnalyze', 'Analyze');
     case 'EVALUATE':
       return t('mockTestForms.common.bloomEvaluate', 'Evaluate');
-    case 'CREATE':
-      return t('mockTestForms.common.bloomCreate', 'Create');
     default:
       return bloomSkill;
   }
@@ -135,16 +119,15 @@ function StructureItemRow({ item, onChange, onRemove, readOnly, t }) {
   if (readOnly) {
     return (
       <div className="grid grid-cols-12 items-center gap-2 rounded-md border border-gray-200 bg-white p-2">
-        <div className="col-span-3 px-2 py-1 text-xs text-muted-foreground">{translateDifficulty(t, item.difficulty)}</div>
-        <div className="col-span-3 px-2 py-1 text-xs text-muted-foreground">{translateQuestionType(t, item.questionType)}</div>
-        <div className="col-span-3 px-2 py-1 text-xs text-muted-foreground">{translateBloomSkill(t, item.bloomSkill)}</div>
-        <div className="col-span-3 px-2 py-1 text-xs font-medium">{item.quantity ?? 1}</div>
+        <div className="col-span-4 px-2 py-1 text-xs text-muted-foreground">{translateDifficulty(t, item.difficulty)}</div>
+        <div className="col-span-4 px-2 py-1 text-xs text-muted-foreground">{translateBloomSkill(t, item.bloomSkill)}</div>
+        <div className="col-span-4 px-2 py-1 text-xs font-medium">{item.quantity ?? 1}</div>
       </div>
     );
   }
   return (
     <div className="grid grid-cols-12 items-center gap-2 rounded-md border border-gray-200 bg-white p-2">
-      <div className="col-span-3">
+      <div className="col-span-4">
         <select
           value={item.difficulty}
           onChange={(e) => update('difficulty', e.target.value)}
@@ -155,18 +138,7 @@ function StructureItemRow({ item, onChange, onRemove, readOnly, t }) {
           ))}
         </select>
       </div>
-      <div className="col-span-3">
-        <select
-          value={item.questionType}
-          onChange={(e) => update('questionType', e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          {MOCK_TEST_QUESTION_TYPES.map((q) => (
-            <option key={q} value={q}>{translateQuestionType(t, q)}</option>
-          ))}
-        </select>
-      </div>
-      <div className="col-span-3">
+      <div className="col-span-4">
         <select
           value={item.bloomSkill}
           onChange={(e) => update('bloomSkill', e.target.value)}
@@ -177,7 +149,7 @@ function StructureItemRow({ item, onChange, onRemove, readOnly, t }) {
           ))}
         </select>
       </div>
-      <div className="col-span-2">
+      <div className="col-span-3">
         <Input
           type="number"
           min={1}
@@ -205,7 +177,12 @@ function SectionCard({
   readOnly = false,
 }) {
   const { t } = useTranslation();
-  const isLeaf = !section.subConfigs || section.subConfigs.length === 0;
+  const hasSubSections = Array.isArray(section.subConfigs) && section.subConfigs.length > 0;
+  const isLeaf = !hasSubSections;
+  const isEditing = !readOnly;
+  const hasDescription = Boolean(section.description?.trim());
+  const hasStructureRows = isLeaf && Array.isArray(section.structure) && section.structure.length > 0;
+  const shouldRenderContent = isEditing || hasDescription || hasStructureRows || hasSubSections;
   const errors = readOnly ? [] : validateSection(section, t);
 
   const updateField = useCallback(
@@ -247,19 +224,21 @@ function SectionCard({
     <Card className={level > 0 ? 'border-purple-200 bg-purple-50/30' : ''}>
       <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
         <div className="flex-1">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t('mockTestForms.structure.sectionNameLabel', 'Section name')}</Label>
           {readOnly ? (
-            <p className="mt-1 font-semibold text-sm">{section.name || '—'}</p>
+            <p className="font-semibold text-sm leading-snug">{section.name || '—'}</p>
           ) : (
-            <Input
-              value={section.name || ''}
-              onChange={(e) => updateField('name', e.target.value)}
-              placeholder={t('mockTestForms.structure.sectionNamePlaceholder', 'E.g. Reading Comprehension, Advanced Vocabulary...')}
-              className="mt-1 font-semibold"
-            />
+            <>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t('mockTestForms.structure.sectionNameLabel', 'Section name')}</Label>
+              <Input
+                value={section.name || ''}
+                onChange={(e) => updateField('name', e.target.value)}
+                placeholder={t('mockTestForms.structure.sectionNamePlaceholder', 'E.g. Reading Comprehension, Advanced Vocabulary...')}
+                className="mt-1 font-semibold"
+              />
+            </>
           )}
         </div>
-        {!readOnly && (
+        {isEditing && (
           <Button
             type="button"
             variant="ghost"
@@ -272,15 +251,13 @@ function SectionCard({
         )}
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div>
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-            {t('mockTestForms.structure.aiInstructionLabel', 'AI question generation instructions')}
-          </Label>
-          {readOnly ? (
-            <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{section.description || '—'}</p>
-          ) : (
-            <>
+      {shouldRenderContent && (
+        <CardContent className="space-y-4">
+          {isEditing ? (
+            <div>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                {t('mockTestForms.structure.aiInstructionLabel', 'AI question generation instructions')}
+              </Label>
               <textarea
                 value={section.description || ''}
                 onChange={(e) => updateField('description', e.target.value)}
@@ -298,46 +275,58 @@ function SectionCard({
                   { min: MIN_DESCRIPTION_LENGTH }
                 )}
               </p>
-            </>
-          )}
-        </div>
+            </div>
+          ) : hasDescription ? (
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{section.description}</p>
+          ) : null}
 
-        {isLeaf && (
-          <div>
-            <div className="flex items-center justify-between">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                {t('mockTestForms.structure.questionStructureLabel', 'Question structure (difficulty x type x Bloom x quantity)')}
-              </Label>
-              <Badge className="bg-gray-100 text-gray-800">
-                {t('mockTestForms.structure.totalLabel', 'Total: {{count}}', {
-                  count: sumStructureQuantity(section.structure),
-                })}
-              </Badge>
-            </div>
-            <div className="mt-2 grid grid-cols-12 gap-2 px-2 text-[10px] uppercase tracking-wide text-muted-foreground">
-              <div className="col-span-3">{t('mockTestForms.structure.columnDifficulty', 'Difficulty')}</div>
-              <div className="col-span-3">{t('mockTestForms.structure.columnQuestionType', 'Question type')}</div>
-              <div className="col-span-3">{t('mockTestForms.structure.columnBloom', 'Bloom level')}</div>
-              <div className="col-span-3">{t('mockTestForms.structure.columnQuantity', 'Quantity')}</div>
-            </div>
-            <div className="mt-1 space-y-2">
+          {!isEditing && hasStructureRows && (
+            <div className="space-y-2">
               {(section.structure || []).map((item, idx) => (
                 <StructureItemRow
                   key={idx}
                   item={item}
                   t={t}
-                  readOnly={readOnly}
-                  onChange={(next) => updateStructureItem(idx, next)}
-                  onRemove={() => removeStructureItem(idx)}
+                  readOnly
                 />
               ))}
-              {(!section.structure || section.structure.length === 0) && (
-                <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
-                  {t('mockTestForms.structure.emptyStructure', 'No structure rows yet. Click "Add combination" to start.')}
-                </p>
-              )}
             </div>
-            {!readOnly && (
+          )}
+
+          {isEditing && isLeaf && (
+            <div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {t('mockTestForms.structure.questionStructureLabel', 'Question structure (difficulty x Bloom x quantity)')}
+                </Label>
+                <Badge className="bg-gray-100 text-gray-800">
+                  {t('mockTestForms.structure.totalLabel', 'Total: {{count}}', {
+                    count: sumStructureQuantity(section.structure),
+                  })}
+                </Badge>
+              </div>
+              <div className="mt-2 grid grid-cols-12 gap-2 px-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                <div className="col-span-4">{t('mockTestForms.structure.columnDifficulty', 'Difficulty')}</div>
+                <div className="col-span-4">{t('mockTestForms.structure.columnBloom', 'Bloom level')}</div>
+                <div className="col-span-4">{t('mockTestForms.structure.columnQuantity', 'Quantity')}</div>
+              </div>
+              <div className="mt-1 space-y-2">
+                {(section.structure || []).map((item, idx) => (
+                  <StructureItemRow
+                    key={idx}
+                    item={item}
+                    t={t}
+                    readOnly={false}
+                    onChange={(next) => updateStructureItem(idx, next)}
+                    onRemove={() => removeStructureItem(idx)}
+                  />
+                ))}
+                {(!section.structure || section.structure.length === 0) && (
+                  <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+                    {t('mockTestForms.structure.emptyStructure', 'No structure rows yet. Click "Add combination" to start.')}
+                  </p>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -348,66 +337,69 @@ function SectionCard({
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 {t('mockTestForms.structure.addCombination', 'Add combination')}
               </Button>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {section.subConfigs && section.subConfigs.length > 0 && (
-          <div className="space-y-3 border-l-2 border-purple-200 pl-4">
-            <p className="text-sm font-medium text-purple-700">
-              {t('mockTestForms.structure.subSectionCount', 'Sub-sections ({{count}})', {
-                count: section.subConfigs.length,
-              })}
-            </p>
-            {section.subConfigs.map((sub, idx) => (
-              <SectionCard
-                key={`${path.join('-')}-${idx}`}
-                section={sub}
-                path={[...path, 'subConfigs', idx]}
-                onUpdate={onUpdate}
-                onRemove={onRemove}
-                onAddSub={onAddSub}
-                level={level + 1}
-                readOnly={readOnly}
-              />
-            ))}
-          </div>
-        )}
+          {hasSubSections && (
+            <div className="space-y-3 border-l-2 border-purple-200 pl-4">
+              {isEditing && (
+                <p className="text-sm font-medium text-purple-700">
+                  {t('mockTestForms.structure.subSectionCount', 'Sub-sections ({{count}})', {
+                    count: section.subConfigs.length,
+                  })}
+                </p>
+              )}
+              {section.subConfigs.map((sub, idx) => (
+                <SectionCard
+                  key={`${path.join('-')}-${idx}`}
+                  section={sub}
+                  path={[...path, 'subConfigs', idx]}
+                  onUpdate={onUpdate}
+                  onRemove={onRemove}
+                  onAddSub={onAddSub}
+                  level={level + 1}
+                  readOnly={readOnly}
+                />
+              ))}
+            </div>
+          )}
 
-        {!readOnly && (
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onAddSub(path)}
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              {t('mockTestForms.structure.addSubSection', 'Add sub-section')}
-            </Button>
-            {errors.length > 0 && (
-              <div className="flex items-start gap-1 text-xs text-red-600">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>{errors.join('. ')}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
+          {isEditing && (
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onAddSub(path)}
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                {t('mockTestForms.structure.addSubSection', 'Add sub-section')}
+              </Button>
+              {errors.length > 0 && (
+                <div className="flex items-start gap-1 text-xs text-red-600">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{errors.join('. ')}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }
 
 /**
  * Editor cấu trúc mock test: tree section, mỗi leaf có danh sách tổ hợp
- * {difficulty, questionType, bloomSkill, quantity}. Wrapper section chỉ có subConfigs.
+ * {difficulty, bloomSkill, quantity}. questionType luôn là SINGLE_CHOICE theo rule mock-test.
+ * Wrapper section chỉ có subConfigs.
  *
  * Props:
  * - sections: Array<Section>
  * - onChange: (nextSections) => void
  * - targetTotalQuestions?: number — để hiển thị badge "X / Y"
  * - topNotice?: string — thông báo (vd "Đã bỏ phần Listening")
- * - readOnly?: boolean
+ * - readOnly?: boolean — compact preview without field labels
  */
 export function MockTestStructureEditor({
   sections,

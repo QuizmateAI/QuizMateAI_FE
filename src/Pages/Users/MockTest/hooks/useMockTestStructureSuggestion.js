@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { suggestMockTestStructure } from '@/api/AIAPI';
 
-const ALLOWED_QUESTION_TYPES = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE'];
-const ALLOWED_BLOOM_SKILLS = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE', 'CREATE'];
+const DEFAULT_MOCK_TEST_QUESTION_TYPE = 'SINGLE_CHOICE';
+const ALLOWED_BLOOM_SKILLS = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE'];
 const ALLOWED_DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
 
 function sanitizeEnum(raw, allowed, fallback) {
@@ -19,7 +19,7 @@ function sanitizeStructureItem(rawItem) {
   if (quantity <= 0) return null;
   return {
     difficulty: sanitizeEnum(rawItem.difficulty, ALLOWED_DIFFICULTIES, 'MEDIUM'),
-    questionType: sanitizeEnum(rawItem.questionType, ALLOWED_QUESTION_TYPES, 'SINGLE_CHOICE'),
+    questionType: DEFAULT_MOCK_TEST_QUESTION_TYPE,
     bloomSkill: sanitizeEnum(rawItem.bloomSkill, ALLOWED_BLOOM_SKILLS, 'UNDERSTAND'),
     quantity,
   };
@@ -51,32 +51,45 @@ function sanitizeSection(rawSection) {
   if (!hasSubs && structure.length > 0) {
     numQuestions = structureTotal;
   }
+  const sectionType = typeof rawSection.sectionType === 'string'
+    ? rawSection.sectionType.trim().toUpperCase()
+    : '';
+  const requiresSharedContext = !hasSubs && (
+    rawSection.requiresSharedContext === true
+    || String(rawSection.requiresSharedContext).trim().toLowerCase() === 'true'
+  );
 
   return {
+    ...(sectionType ? { sectionType } : {}),
     name: typeof rawSection.name === 'string' ? rawSection.name.trim() : '',
     description: typeof rawSection.description === 'string' ? rawSection.description.trim() : '',
     numQuestions,
     structure,
     subConfigs,
+    requiresSharedContext,
   };
 }
 
 function sanitizeResponse(raw) {
   if (!raw || typeof raw !== 'object') {
-    return { description: '', sections: [] };
+    return { description: '', examLanguage: '', sections: [] };
   }
   const description = typeof raw.description === 'string' ? raw.description.trim() : '';
+  const examLanguage = typeof raw.examLanguage === 'string'
+    ? raw.examLanguage.trim().toLowerCase()
+    : '';
   const sections = Array.isArray(raw.sections)
     ? raw.sections.map(sanitizeSection).filter(Boolean)
     : [];
-  return { description, sections };
+  return { description, examLanguage, sections };
 }
 
 /**
  * Hook gọi AI gợi ý cấu trúc mock test (bước 1 của flow tạo).
  *
- * Trả về `suggestion = { description, sections }` đã sanitize.
- * Mỗi leaf section có `structure: [{difficulty, questionType, bloomSkill, quantity}]`,
+ * Trả về `suggestion = { description, examLanguage, sections }` đã sanitize.
+ * Mỗi leaf section có `structure: [{difficulty, bloomSkill, quantity}]`;
+ * `questionType` luôn được normalize về SINGLE_CHOICE để khớp rule backend,
  * wrapper section chỉ có `subConfigs`, `structure = []`, `numQuestions = 0`.
  */
 export function useMockTestStructureSuggestion() {
@@ -127,6 +140,6 @@ export function useMockTestStructureSuggestion() {
   };
 }
 
-export const MOCK_TEST_QUESTION_TYPES = ALLOWED_QUESTION_TYPES;
+export const MOCK_TEST_QUESTION_TYPES = [DEFAULT_MOCK_TEST_QUESTION_TYPE];
 export const MOCK_TEST_BLOOM_SKILLS = ALLOWED_BLOOM_SKILLS;
 export const MOCK_TEST_DIFFICULTIES = ALLOWED_DIFFICULTIES;

@@ -8,12 +8,6 @@ import MatchingDragDrop from './MatchingDragDrop';
 import MixedMathText from '@/Components/math/MixedMathText';
 import './QuestionCard.css';
 
-const DIFFICULTY_STYLES = {
-  EASY: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  MEDIUM: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  HARD: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-};
-
 function CheckboxIndicator({ id }) {
   const maskId = `cbx-${id}`;
   return (
@@ -331,9 +325,6 @@ const QuestionCard = memo(function QuestionCard({
               </button>
             )}
             <span className="whitespace-nowrap rounded bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white dark:bg-slate-600">{questionNumber}/{totalQuestions}</span>
-            {question.difficulty && (
-              <span className={cn('rounded px-2 py-0.5 text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
-            )}
           </div>
         )}
       </div>

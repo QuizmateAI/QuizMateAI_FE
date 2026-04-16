@@ -1139,7 +1139,7 @@
         "quantity": "Số câu"
       },
       "header": {
-        "english": "English",
+        "english": "Tiếng Anh",
         "vietnamese": "Tiếng Việt",
         "fontBeVietnamPro": "Be Vietnam Pro",
         "fontPoppins": "Poppins",
@@ -1147,6 +1147,9 @@
         "fontRobotoSlab": "Roboto Slab",
         "fontMerriweather": "Merriweather",
         "fontTangerine": "Tangerine",
+        "back": "Quay lại",
+        "language": "Đổi ngôn ngữ",
+        "theme": "Đổi giao diện",
         "confirmBackTitle": "Bạn có chắc chắn không?",
         "confirmBackDescription": "Tiến độ chưa lưu có thể bị mất.",
         "cancel": "Hủy",
@@ -1170,8 +1173,19 @@
         "nextQuestion": "Câu tiếp theo",
         "processingAction": "Đang xử lý...",
         "processing": "Đang xử lý bài nộp của bạn...",
+        "headerHint": "Hoàn thành từng câu hỏi và dùng biểu tượng sao để đánh dấu câu muốn xem lại trước khi nộp bài.",
+        "markedCount": "Đã đánh dấu",
+        "answeredProgress": "{{answered}}/{{total}} đã trả lời",
         "confirmSubmitTitle": "Dừng và nộp bài?",
-        "confirmSubmitDescription": "Bài làm của bạn sẽ được nộp ngay lập tức."
+        "confirmSubmitDescription": "Bài làm của bạn sẽ được nộp ngay lập tức.",
+        "confirmSubmitIncompleteTitle": "Bạn còn {{count}} câu chưa trả lời",
+        "confirmSubmitIncompleteDescription": "Những câu này sẽ được nộp dưới dạng chưa trả lời. Bạn vẫn muốn tiếp tục?",
+        "confirmSubmitCompletedTitle": "Sẵn sàng nộp bài?",
+        "confirmSubmitCompletedDescription": "Bạn đã hoàn thành tất cả câu hỏi. Sau khi nộp, bạn sẽ không thể chỉnh sửa câu trả lời.",
+        "unansweredListLabel": "Câu chưa trả lời",
+        "unansweredListMore": "và còn nữa...",
+        "allQuestionsCompleted": "Tất cả câu hỏi đã hoàn thành.",
+        "starting": "Đang bắt đầu"
       },
       "practiceActions": {
         "confirmExitTitle": "Thoát thực hành?",
@@ -1274,6 +1288,7 @@
       },
       "answerLocked": "Hoàn thành bài quiz để xem đáp án và lời giải.",
       "close": "Đóng",
+      "deleteConfirm": "Bạn có chắc muốn xóa quiz này? Hành động này không thể hoàn tác.",
       "confirm": "Xác nhận",
       "continue": "Tiếp tục",
       "distribution": "Phân phối",
@@ -2508,7 +2523,7 @@
       "stepBasic": "1. Cấu hình",
       "stepStructure": "2. Cấu trúc",
       "stepGenerating": "3. Sinh câu hỏi",
-      "scopeNotice": "Mock test chỉ sinh câu hỏi khách quan: một đáp án, nhiều đáp án và đúng/sai. Listening, Writing và Speaking hiện chưa được hỗ trợ, nên AI sẽ bỏ qua các phần đó và chỉ đề xuất Reading, Vocabulary hoặc Grammar cho các đề như IELTS hay TOEIC.",
+      "scopeNotice": "Mock test chỉ sinh câu hỏi trắc nghiệm một đáp án. Listening, Writing và Speaking hiện chưa được hỗ trợ, nên AI sẽ bỏ qua các phần đó và chỉ đề xuất các section dạng văn bản cho các đề như IELTS hay TOEIC.",
       "backToConfig": "Quay lại cấu hình",
       "regenerate": "Sinh lại",
       "requestingSuggestion": "Đang gợi ý...",
@@ -2546,7 +2561,7 @@
       "aiInstructionLabel": "Hướng dẫn AI sinh câu hỏi",
       "aiInstructionPlaceholder": "Ví dụ: Câu hỏi đọc hiểu cho đoạn văn khoảng 150 từ về chủ đề công nghệ. Mỗi câu có 4 đáp án A/B/C/D và chỉ 1 đáp án đúng.",
       "aiInstructionHint": "Mô tả càng rõ chủ đề, kỹ năng và format thì AI càng sinh đúng ý hơn. Tối thiểu {{min}} ký tự.",
-      "questionStructureLabel": "Cấu trúc câu hỏi (độ khó x loại câu x Bloom x số câu)",
+      "questionStructureLabel": "Cấu trúc câu hỏi (độ khó x Bloom x số câu)",
       "totalLabel": "Tổng: {{count}}",
       "columnDifficulty": "Độ khó",
       "columnQuestionType": "Loại câu",
@@ -2556,7 +2571,7 @@
       "addCombination": "Thêm tổ hợp",
       "subSectionCount": "Sub-section ({{count}})",
       "addSubSection": "Thêm sub-section",
-      "totalLeafLabel": "Tổng số câu (leaf): ",
+      "totalLeafLabel": "Tổng số câu: ",
       "addSection": "Thêm section",
       "emptySections": "Chưa có section nào. Bấm \"Thêm section\" hoặc dùng gợi ý AI để bắt đầu.",
       "validation": {
@@ -2601,7 +2616,25 @@
       "historyEmpty": "Chưa có lần làm bài nào.",
       "historyAttempt": "Lần làm",
       "answersLocked": "Làm bài để xem đáp án và giải thích.",
-      "publish": "Xuất bản"
+      "publish": "Xuất bản",
+      "sharedContext": "Ngữ cảnh chung"
+    },
+    "reviewExtensions": {
+      "sectionTitle": "Phân tích theo phần",
+      "bloomTitle": "Phân tích theo kỹ năng Bloom",
+      "unknownSection": "Không rõ phần",
+      "unknownBloom": "Không rõ mức Bloom",
+      "pendingQuestions": "{{count}} câu đang chờ chấm",
+      "failedQuestions": "{{count}} câu chấm lỗi",
+      "cohortTitle": "So với cả lớp",
+      "attemptCount": "{{count}} lượt làm",
+      "classAverage": "Điểm TB lớp",
+      "yourScore": "Của bạn",
+      "rank": "Xếp hạng",
+      "topWrongTitle": "Câu cả lớp sai nhiều",
+      "questionShort": "Câu",
+      "wrongSummary": "{{percent}}% sai ({{wrong}}/{{total}})",
+      "cohortLoadFailed": "Không tải được thống kê lớp"
     }
   }
 }

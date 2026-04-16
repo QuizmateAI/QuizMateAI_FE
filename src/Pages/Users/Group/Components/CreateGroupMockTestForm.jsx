@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
-import { generateMockTest, getBloomSkills, getQuestionTypes } from "@/api/AIAPI";
+import { generateMockTest, getBloomSkills } from "@/api/AIAPI";
 import { getMaterialsByWorkspace } from "@/api/MaterialAPI";
 import { useMockTestStructureSuggestion } from "@/Pages/Users/MockTest/hooks/useMockTestStructureSuggestion";
 import { MockTestStructureEditor, validateMockTestStructure } from "@/Pages/Users/MockTest/components/MockTestStructureEditor";
@@ -38,20 +38,27 @@ function uppercaseDifficulty(value) {
   return String(value).toUpperCase();
 }
 
-// Aggregation: editor structure[{difficulty, questionType, bloomSkill, quantity}] → SectionConfigDTO.
-// BE rule: 1 questionType / section. Difficulty = %, bloom = số câu.
-function aggregateStructure(structure, qtMap, bloomMap) {
+function getUiLanguage(language) {
+  return language === "en" ? "en" : "vi";
+}
+
+function normalizeExamLanguage(value, fallback) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return /^[a-z]{2,3}$/.test(normalized) ? normalized : fallback;
+}
+
+// Aggregation: editor structure[{difficulty, bloomSkill, quantity}] → SectionConfigDTO.
+// BE rule: mock test tự dùng SINGLE_CHOICE. Difficulty = %, bloom = số câu.
+function aggregateStructure(structure, bloomMap) {
   const items = Array.isArray(structure) ? structure : [];
   const numQuestions = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
 
   const diffCounts = { EASY: 0, MEDIUM: 0, HARD: 0 };
-  const qtCounts = {};
   const bloomCounts = {};
   items.forEach((it) => {
     const q = Number(it?.quantity) || 0;
     if (q <= 0) return;
     if (it?.difficulty && diffCounts[it.difficulty] != null) diffCounts[it.difficulty] += q;
-    if (it?.questionType) qtCounts[it.questionType] = (qtCounts[it.questionType] || 0) + q;
     if (it?.bloomSkill) bloomCounts[it.bloomSkill] = (bloomCounts[it.bloomSkill] || 0) + q;
   });
 
@@ -69,12 +76,6 @@ function aggregateStructure(structure, qtMap, bloomMap) {
     }
   }
 
-  const dominantQt = Object.entries(qtCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-  const qtId = dominantQt ? qtMap?.[dominantQt] : null;
-  const questionTypes = Number.isFinite(qtId) && numQuestions > 0
-    ? [{ questionTypeId: qtId, ratio: numQuestions }]
-    : [];
-
   const bloomSkills = Object.entries(bloomCounts)
     .map(([skill, count]) => {
       const id = bloomMap?.[skill];
@@ -83,10 +84,10 @@ function aggregateStructure(structure, qtMap, bloomMap) {
     })
     .filter(Boolean);
 
-  return { numQuestions, easyRatio, mediumRatio, hardRatio, questionTypes, bloomSkills };
+  return { numQuestions, easyRatio, mediumRatio, hardRatio, questionTypes: [], bloomSkills };
 }
 
-function sectionsToServerDTOs(sections, qtMap, bloomMap) {
+function sectionsToServerDTOs(sections, bloomMap) {
   if (!Array.isArray(sections)) return [];
   return sections.map((sec) => {
     const hasSubs = sec.subConfigs && sec.subConfigs.length > 0;
@@ -101,12 +102,13 @@ function sectionsToServerDTOs(sections, qtMap, bloomMap) {
         questionUnit: false,
         bloomUnit: true,
         timerMode: true,
+        requiresSharedContext: false,
         questionTypes: [],
         bloomSkills: [],
-        subConfigs: sectionsToServerDTOs(sec.subConfigs, qtMap, bloomMap),
+        subConfigs: sectionsToServerDTOs(sec.subConfigs, bloomMap),
       };
     }
-    const agg = aggregateStructure(sec.structure, qtMap, bloomMap);
+    const agg = aggregateStructure(sec.structure, bloomMap);
     return {
       name: sec.name,
       description: sec.description,
@@ -117,6 +119,7 @@ function sectionsToServerDTOs(sections, qtMap, bloomMap) {
       questionUnit: false,
       bloomUnit: true,
       timerMode: true,
+      requiresSharedContext: sec.requiresSharedContext === true,
       questionTypes: agg.questionTypes,
       bloomSkills: agg.bloomSkills,
       subConfigs: [],
@@ -166,6 +169,7 @@ export default function CreateGroupMockTestForm({
 
   const [sections, setSections] = useState([]);
   const [topNotice, setTopNotice] = useState("");
+  const [examLanguage, setExamLanguage] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -178,7 +182,6 @@ export default function CreateGroupMockTestForm({
       : []
   );
 
-  const [qtMap, setQtMap] = useState({});
   const [bloomMap, setBloomMap] = useState({});
 
   const {
@@ -256,33 +259,25 @@ export default function CreateGroupMockTestForm({
 
   const allMaterialsSelected = materials.length > 0 && selectedMaterialIds.length === materials.length;
 
-  // Fetch question type + bloom dictionaries 1 lần
+  // Fetch bloom dictionary 1 lần. Question type của mock-test do backend tự set SINGLE_CHOICE.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [qtRes, bloomRes] = await Promise.all([getQuestionTypes(), getBloomSkills()]);
+        const bloomRes = await getBloomSkills();
         if (cancelled) return;
-        const qtList = qtRes?.data || qtRes || [];
         const bloomList = bloomRes?.data || bloomRes || [];
-        const qm = {};
-        qtList.forEach((it) => {
-          const n = String(it.questionType || it.name || "").toUpperCase();
-          if (n && Number.isFinite(it.questionTypeId || it.id)) {
-            qm[n] = it.questionTypeId || it.id;
-          }
-        });
         const bm = {};
         bloomList.forEach((it) => {
-          const n = String(it.bloomSkillName || it.name || "").toUpperCase();
-          if (n && Number.isFinite(it.bloomSkillId || it.id || it.bloomId)) {
-            bm[n] = it.bloomSkillId || it.id || it.bloomId;
+          const n = String(it.bloomName || it.bloomSkillName || it.name || it.label || "").toUpperCase();
+          const id = Number(it.bloomId ?? it.bloomSkillId ?? it.id);
+          if (n && Number.isFinite(id)) {
+            bm[n] = id;
           }
         });
-        setQtMap(qm);
         setBloomMap(bm);
       } catch (e) {
-        console.error("Lỗi tải question types / bloom skills:", e);
+        console.error("Lỗi tải bloom skills:", e);
       }
     })();
     return () => { cancelled = true; };
@@ -291,11 +286,13 @@ export default function CreateGroupMockTestForm({
   // Khi suggestion mới về → chuyển sang STRUCTURE
   useEffect(() => {
     if (suggestion) {
+      const uiLanguage = getUiLanguage(i18n.language);
       setSections(suggestion.sections || []);
       setTopNotice(suggestion.description || "");
+      setExamLanguage(normalizeExamLanguage(suggestion.examLanguage, uiLanguage));
       setStep("STRUCTURE");
     }
-  }, [suggestion]);
+  }, [suggestion, i18n.language]);
 
   const handleRequestSuggestion = useCallback(async () => {
     setError("");
@@ -309,13 +306,15 @@ export default function CreateGroupMockTestForm({
       return;
     }
     try {
+      const uiLanguage = getUiLanguage(i18n.language);
+      setExamLanguage("");
       await requestSuggestion({
         examName: examName.trim(),
         description: customPrompt?.trim() || undefined,
         totalQuestion: Number(totalQuestions) || 1,
         durationInMinute: Number(duration) || 60,
         overallDifficulty: uppercaseDifficulty(difficulty),
-        outputLanguage: i18n.language === "en" ? "en" : "vi",
+        outputLanguage: uiLanguage,
         workspaceId: wsId,
       });
     } catch (e) {
@@ -330,15 +329,11 @@ export default function CreateGroupMockTestForm({
       setError(validation.errors.join(" | "));
       return;
     }
-    if (!Object.keys(qtMap).length) {
-      setError(t("createGroupMockTestForm.errors.questionTypesNotReady", "Question types are still loading. Please try again."));
-      return;
-    }
-
     setSubmitting(true);
     setStep("GENERATING");
     try {
-      const sectionConfigs = sectionsToServerDTOs(sections, qtMap, bloomMap);
+      const sectionConfigs = sectionsToServerDTOs(sections, bloomMap);
+      const uiLanguage = getUiLanguage(i18n.language);
       const payload = {
         title: examName.trim(),
         overallDifficulty: uppercaseDifficulty(difficulty),
@@ -346,7 +341,8 @@ export default function CreateGroupMockTestForm({
         durationInMinute: Number(duration) || 60,
         durationInSecond: 0,
         prompt: customPrompt?.trim() || "",
-        outputLanguage: i18n.language === "en" ? "en" : "vi",
+        outputLanguage: uiLanguage,
+        examLanguage: normalizeExamLanguage(examLanguage, uiLanguage),
         materialIds: selectedMaterialIds,
         workspaceId: Number(resolvedWorkspaceId),
         sectionConfigs,
@@ -366,7 +362,7 @@ export default function CreateGroupMockTestForm({
     } finally {
       setSubmitting(false);
     }
-  }, [sections, totalQuestions, qtMap, bloomMap, examName, difficulty, duration, customPrompt, i18n.language, resolvedWorkspaceId, handleFinished, t, selectedMaterialIds]);
+  }, [sections, totalQuestions, bloomMap, examName, difficulty, duration, customPrompt, i18n.language, examLanguage, resolvedWorkspaceId, handleFinished, t, selectedMaterialIds]);
 
   const handleBackToBasic = useCallback(() => {
     setStep("BASIC");
@@ -412,7 +408,7 @@ export default function CreateGroupMockTestForm({
             <div className={`rounded-lg border p-3 text-xs ${isDarkMode ? "border-blue-800/50 bg-blue-950/20 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
               {t(
                 "createGroupMockTestForm.scopeNotice",
-                "Mock tests only generate objective questions: single choice, multiple choice, and true/false. Listening, Writing, and Speaking are not supported, so AI will skip those parts. The generated test is saved as DRAFT so the leader can publish it later."
+                "Mock tests only generate single-answer multiple-choice questions. Listening, Writing, and Speaking are not supported, so AI will skip those parts. The generated test is saved as DRAFT so the leader can publish it later."
               )}
             </div>
 
