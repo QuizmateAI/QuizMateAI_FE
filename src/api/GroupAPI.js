@@ -1,5 +1,31 @@
 import api from './api';
 
+const buildUrl = (path, params = {}) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    search.set(key, String(value));
+  });
+  const query = search.toString();
+  return query ? `${path}?${query}` : path;
+};
+
+const requestWithFallback = async (handlers = []) => {
+  let lastError = null;
+  for (const handler of handlers) {
+    try {
+      return await handler();
+    } catch (error) {
+      lastError = error;
+      const statusCode = Number(error?.statusCode);
+      if (![404, 405].includes(statusCode)) {
+        throw error;
+      }
+    }
+  }
+  throw lastError;
+};
+
 // Lấy danh sách nhóm mà user đã tham gia
 export const getMyJoinedGroups = async () => {
   const response = await api.get('/group/me/joined');
@@ -48,6 +74,39 @@ export const getPendingInvitations = async (workspaceId) => {
   return response;
 };
 
+// Leader hủy lời mời đang chờ
+export const cancelInvitation = async (workspaceId, invitationId) => {
+  const id = encodeURIComponent(String(invitationId));
+  return requestWithFallback([
+    () => api.delete(`/group/${workspaceId}/invitations/${id}`),
+    () => api.delete(`/group/${workspaceId}/invitation/${id}`),
+  ]);
+};
+
+// Leader gửi lại lời mời đang chờ
+export const resendInvitation = async (workspaceId, invitationId, email) => {
+  const id = invitationId == null ? '' : encodeURIComponent(String(invitationId));
+  const normalizedEmail = String(email || '').trim();
+  const handlers = [];
+
+  if (id) {
+    handlers.push(
+      () => api.post(`/group/${workspaceId}/invitations/${id}/resend`),
+      () => api.post(`/group/${workspaceId}/invitation/${id}/resend`),
+    );
+  }
+
+  if (normalizedEmail) {
+    handlers.push(
+      () => api.post(`/group/${workspaceId}/invitations/resend`, { email: normalizedEmail }),
+      () => api.post(`/group/${workspaceId}/invitation/resend`, { email: normalizedEmail }),
+      () => api.post(`/group/${workspaceId}/invitation:resend`, { email: normalizedEmail }),
+    );
+  }
+
+  return requestWithFallback(handlers);
+};
+
 // Lấy activity log của nhóm
 export const getGroupLogs = async (workspaceId) => {
   const response = await api.get(`/group/${workspaceId}/logs`);
@@ -70,6 +129,118 @@ export const getMemberDashboardCards = async (workspaceId, page = 0, size = 20) 
 export const getMemberDashboardDetail = async (workspaceId, memberUserId, attemptMode = 'ALL') => {
   const mode = encodeURIComponent(String(attemptMode || 'ALL').toUpperCase());
   const response = await api.get(`/group/${workspaceId}/dashboard/members/${memberUserId}?attemptMode=${mode}`);
+  return response;
+};
+
+/** Latest learning snapshots của các member trong group */
+export const getGroupLearningSnapshotsLatest = async (
+  workspaceId,
+  { period = 'DAILY', classification, sort = 'averageScore,desc', page = 0, size = 20 } = {},
+) => {
+  const response = await api.get(buildUrl(`/group/${workspaceId}/dashboard/learning-snapshots/latest`, {
+    period,
+    classification,
+    sort,
+    page,
+    size,
+  }));
+  return response;
+};
+
+/** Tổng hợp learning snapshot của group */
+export const getGroupLearningSnapshotsSummary = async (
+  workspaceId,
+  { period = 'DAILY', from, to } = {},
+) => {
+  const response = await api.get(buildUrl(`/group/${workspaceId}/dashboard/learning-snapshots/summary`, {
+    period,
+    from,
+    to,
+  }));
+  return response;
+};
+
+/** Ranking member theo metric learning snapshot */
+export const getGroupLearningSnapshotsRanking = async (
+  workspaceId,
+  { period = 'DAILY', date, metric = 'averageScore', direction = 'desc', page = 0, size = 20 } = {},
+) => {
+  const response = await api.get(buildUrl(`/group/${workspaceId}/dashboard/learning-snapshots/ranking`, {
+    period,
+    date,
+    metric,
+    direction,
+    page,
+    size,
+  }));
+  return response;
+};
+
+/** Generate/rebuild learning snapshots cho cả group */
+export const generateGroupLearningSnapshots = async (workspaceId, data = {}) => {
+  const response = await api.post(`/group/${workspaceId}/dashboard/learning-snapshots:generate`, data);
+  return response;
+};
+
+/** Latest learning snapshot của một member trong group */
+export const getGroupMemberLearningSnapshotLatest = async (
+  workspaceId,
+  workspaceMemberId,
+  { period = 'DAILY' } = {},
+) => {
+  const response = await api.get(buildUrl(`/group/${workspaceId}/dashboard/members/${workspaceMemberId}/learning-snapshots/latest`, {
+    period,
+  }));
+  return response;
+};
+
+/** Lịch sử learning snapshot của một member */
+export const getGroupMemberLearningSnapshots = async (
+  workspaceId,
+  workspaceMemberId,
+  { period = 'DAILY', from, to, page = 0, size = 20 } = {},
+) => {
+  const response = await api.get(buildUrl(`/group/${workspaceId}/dashboard/members/${workspaceMemberId}/learning-snapshots`, {
+    period,
+    from,
+    to,
+    page,
+    size,
+  }));
+  return response;
+};
+
+/** Trend learning snapshot của một member */
+export const getGroupMemberLearningSnapshotTrend = async (
+  workspaceId,
+  workspaceMemberId,
+  { period = 'DAILY', from, to } = {},
+) => {
+  const response = await api.get(buildUrl(`/group/${workspaceId}/dashboard/members/${workspaceMemberId}/learning-snapshots/trend`, {
+    period,
+    from,
+    to,
+  }));
+  return response;
+};
+
+/** Compare hai learning snapshot của một member */
+export const compareGroupMemberLearningSnapshots = async (
+  workspaceId,
+  workspaceMemberId,
+  fromSnapshotId,
+  toSnapshotId,
+) => {
+  const response = await api.get(buildUrl(`/group/${workspaceId}/dashboard/members/${workspaceMemberId}/learning-snapshots/compare`, {
+    fromSnapshotId,
+    toSnapshotId,
+  }));
+  return response;
+};
+
+/** Generate/rebuild learning snapshot cho một member */
+export const generateGroupMemberLearningSnapshot = async (workspaceId, workspaceMemberId, data = {}) => {
+  const response = await api.post(`/group/${workspaceId}/dashboard/members/${workspaceMemberId}/learning-snapshots:generate`, data);
   return response;
 };
 
