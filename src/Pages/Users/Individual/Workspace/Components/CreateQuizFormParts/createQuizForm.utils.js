@@ -288,6 +288,9 @@ export const buildAiValidationState = ({
   };
 
   const normalizedTotalQuestions = Number(aiTotalQuestions);
+  const normalizedQuizTitleMaxLength = Number(quizTitleMaxLength);
+  const hasQuizTitleMaxLength = Number.isFinite(normalizedQuizTitleMaxLength)
+    && normalizedQuizTitleMaxLength > 0;
   const hasValidTotalQuestions = Number.isFinite(normalizedTotalQuestions)
     && normalizedTotalQuestions >= AI_MINIMUM_QUESTION_COUNT
     && normalizedTotalQuestions <= AI_MAXIMUM_QUESTION_COUNT;
@@ -295,13 +298,13 @@ export const buildAiValidationState = ({
 
   if (!aiName.trim()) {
     registerError("general", "aiName", t("workspace.quiz.validation.nameRequired"));
-  } else if (aiName.trim().length > quizTitleMaxLength) {
+  } else if (hasQuizTitleMaxLength && aiName.trim().length > normalizedQuizTitleMaxLength) {
     registerError(
       "general",
       "aiName",
       t("workspace.quiz.validation.nameMaxLength", {
-        max: quizTitleMaxLength,
-        defaultValue: `Quiz title must be at most ${quizTitleMaxLength} characters.`,
+        max: normalizedQuizTitleMaxLength,
+        defaultValue: `Quiz title must be at most ${normalizedQuizTitleMaxLength} characters.`,
       })
     );
   }

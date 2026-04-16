@@ -103,6 +103,12 @@ function splitNameExt(name) {
   return [String(name), ""];
 }
 
+function isActivelyProcessing(status) {
+  return ["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(
+    String(status || "").toUpperCase(),
+  );
+}
+
 function SourcesPanel({
   isDarkMode = false,
   sources = [],
@@ -115,6 +121,7 @@ function SourcesPanel({
   onSelectionChange,
   onDetailViewChange,
   forceCloseDetail = false,
+  progressTracking = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -466,6 +473,62 @@ function SourcesPanel({
                         {getSourceStatusLabel(source?.status, t)}
                       </span>
                     </div>
+                    {(() => {
+                      if (!isActivelyProcessing(source?.status)) return null;
+                      const rawPercent = Number(
+                        progressTracking?.getMaterialProgress?.(sourceId) ?? 0,
+                      );
+                      const percent = Math.max(
+                        0,
+                        Math.min(100, Number.isFinite(rawPercent) ? rawPercent : 0),
+                      );
+                      const percentLabel = Math.round(percent);
+                      const normalizedStatus = String(source?.status || "").toUpperCase();
+                      const statusLine = percentLabel < 100
+                        ? (normalizedStatus === "UPLOADING"
+                          ? t("workspace.shell.uploadProgress.uploading", "Uploading")
+                          : t("workspace.shell.uploadProgress.processing", "AI is analyzing"))
+                        : t("workspace.shell.uploadProgress.finalizing", "Finalizing");
+                      return (
+                        <div className="mt-3 space-y-1.5">
+                          <div className="flex items-center justify-between gap-3 text-[11px]">
+                            <span className={cn(
+                              "inline-flex items-center gap-1.5 font-medium",
+                              isDarkMode ? "text-slate-300" : "text-slate-600",
+                            )}>
+                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+                              {statusLine}
+                            </span>
+                            <span
+                              className={cn(
+                                "font-mono font-semibold tabular-nums",
+                                isDarkMode ? "text-amber-200" : "text-amber-700",
+                              )}
+                            >
+                              {percentLabel}%
+                            </span>
+                          </div>
+                          <div
+                            className={cn(
+                              "relative h-1.5 overflow-hidden rounded-full",
+                              isDarkMode ? "bg-slate-800" : "bg-slate-200",
+                            )}
+                            role="progressbar"
+                            aria-valuenow={percentLabel}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                          >
+                            <div
+                              className={cn(
+                                "absolute inset-y-0 left-0 rounded-full transition-[width] duration-200 ease-linear",
+                                isDarkMode ? "bg-amber-400" : "bg-amber-500",
+                              )}
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {/*<p className={cn("mt-2 line-clamp-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-600")}>*/}
                     {/*  {source?.description ||*/}
                     {/*    source?.summary ||*/}

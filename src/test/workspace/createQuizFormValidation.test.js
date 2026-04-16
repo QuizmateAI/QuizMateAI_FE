@@ -112,4 +112,30 @@ describe("buildAiValidationState plan gating", () => {
     expect(validationState.fieldErrors.selectedQTypes).toBeUndefined();
     expect(validationState.isValid).toBe(true);
   });
+
+  it("uses the provided quiz title max length when a cap is configured", () => {
+    const validationState = buildAiValidationState(
+      buildBasePayload({
+        aiName: "1234567890123456789012345678901",
+        quizTitleMaxLength: 30,
+      }),
+    );
+
+    expect(validationState.isValid).toBe(false);
+    expect(validationState.fieldErrors.aiName).toBe(
+      "Quiz title must be at most 30 characters.",
+    );
+  });
+
+  it("skips the quiz title max length check when no cap is configured", () => {
+    const validationState = buildAiValidationState(
+      buildBasePayload({
+        aiName: "1234567890123456789012345678901234567890",
+        quizTitleMaxLength: null,
+      }),
+    );
+
+    expect(validationState.fieldErrors.aiName).toBeUndefined();
+    expect(validationState.isValid).toBe(true);
+  });
 });

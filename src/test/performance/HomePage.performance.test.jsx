@@ -94,10 +94,12 @@ vi.mock('@/Components/ui/button', () => ({
 
 vi.mock('@/Pages/Users/Home/Components/UserWorkspace', () => ({
   default: () => <div data-testid="workspace-content">workspace</div>,
+  WorkspaceFilterControls: () => null,
 }));
 
 vi.mock('@/Pages/Users/Home/Components/UserGroup', () => ({
   default: () => <div data-testid="group-content">group</div>,
+  GroupFilterControls: () => null,
 }));
 
 vi.mock('@/Pages/Users/Home/Components/EditWorkspaceDialog', () => ({
@@ -117,6 +119,9 @@ vi.mock('@/Components/ui/CreditIconImage', () => ({
 }));
 
 describe('HomePage performance guards', () => {
+  const originalRequestIdleCallback = window.requestIdleCallback;
+  const originalCancelIdleCallback = window.cancelIdleCallback;
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
@@ -125,6 +130,8 @@ describe('HomePage performance guards', () => {
   });
 
   afterEach(() => {
+    window.requestIdleCallback = originalRequestIdleCallback;
+    window.cancelIdleCallback = originalCancelIdleCallback;
     vi.useRealTimers();
   });
 
@@ -135,6 +142,26 @@ describe('HomePage performance guards', () => {
   });
 
   it('defers wallet fetching until after the first paint fallback timer', async () => {
+    render(<HomePage />);
+
+    expect(getMyWallet).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(249);
+    });
+    expect(getMyWallet).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+
+    expect(getMyWallet).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the timer when requestIdleCallback never runs', async () => {
+    window.requestIdleCallback = vi.fn(() => 123);
+    window.cancelIdleCallback = vi.fn();
+
     render(<HomePage />);
 
     expect(getMyWallet).not.toHaveBeenCalled();

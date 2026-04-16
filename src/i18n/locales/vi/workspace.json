@@ -147,6 +147,9 @@
         "analysisSummaryTitle": "Quizmate AI đang hiểu nội dung này là",
         "analysisHighlightsTitle": "Quizmate AI đã kiểm tra",
         "analysisRefinementTitle": "Bạn có thể nhập lại theo hướng này",
+        "vipBadge": "VIP",
+        "studyNewLockedDescription": "Tính năng này cần gói có quyền tạo roadmap.",
+        "studyNewLockedHint": "Gói hiện tại chưa có quyền tạo roadmap, vui lòng nâng cấp đề sử dụng tính năng này.",
         "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
         "enableRoadmap": "Có, tạo lộ trình kèm theo",
         "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại"

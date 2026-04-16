@@ -13,7 +13,6 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
-import { useUserProfile } from '@/context/UserProfileContext';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { preloadGroupWorkspacePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 import { useToast } from '@/context/ToastContext';
@@ -27,21 +26,6 @@ function formatNumber(value, locale) {
     return new Intl.NumberFormat(locale).format(Number(value) || 0);
   } catch {
     return String(value ?? 0);
-  }
-}
-
-function formatDateTime(value, locale) {
-  if (!value) return '';
-  try {
-    return new Intl.DateTimeFormat(locale, {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(value));
-  } catch {
-    return '';
   }
 }
 
@@ -138,7 +122,6 @@ function HomePage() {
   const activeTab = normalizeHomeTab(searchParams.get('tab'));
   const shouldLoadGroups = activeTab === 'group';
   const { summary: currentPlanSummary } = useCurrentSubscription();
-  const { profile } = useUserProfile();
   const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [loadingWallet, setLoadingWallet] = useState(true);
 
@@ -169,7 +152,6 @@ function HomePage() {
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const walletLocale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
-  const lastLoginLabel = formatDateTime(profile?.lastLoginAt, walletLocale);
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
     i18n.changeLanguage(newLang);
@@ -286,8 +268,11 @@ function HomePage() {
     let cancelled = false;
     let idleHandle = null;
     let timeoutHandle = null;
+    let hasFetched = false;
 
     const fetchWallet = async () => {
+      if (hasFetched || cancelled) return;
+      hasFetched = true;
       setLoadingWallet(true);
       try {
         const res = await getMyWallet();
@@ -317,15 +302,14 @@ function HomePage() {
       void fetchWallet();
     };
 
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
       idleHandle = window.requestIdleCallback(scheduleFetchWallet, { timeout: 1500 });
-    } else {
-      timeoutHandle = window.setTimeout(scheduleFetchWallet, 250);
     }
+    timeoutHandle = window.setTimeout(scheduleFetchWallet, 250);
 
     return () => {
       cancelled = true;
-      if (idleHandle !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+      if (idleHandle !== null && typeof window !== 'undefined' && typeof window.cancelIdleCallback === 'function') {
         window.cancelIdleCallback(idleHandle);
       }
       if (timeoutHandle !== null) {
@@ -409,16 +393,6 @@ function HomePage() {
                  </div>
         
         <div className="flex items-center gap-2">
-          {lastLoginLabel ? (
-            <div className={`hidden max-w-[240px] flex-col items-end leading-tight lg:flex ${
-              isDarkMode ? 'text-slate-400' : 'text-gray-500'
-            }`}>
-              <span className="text-[11px] font-medium uppercase tracking-normal">
-                {t('home.profile.lastLogin')}
-              </span>
-              <span className="truncate text-xs">{lastLoginLabel}</span>
-            </div>
-          ) : null}
           <Button
             variant="ghost"
             size="sm"

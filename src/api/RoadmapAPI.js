@@ -617,6 +617,10 @@ function buildRoadmapConfigPayload(data = {}) {
     speedMode,
     estimatedTotalDays: Number(data.estimatedTotalDays) || null,
     estimatedMinutesPerDay: Number(data.recommendedMinutesPerDay || data.estimatedMinutesPerDay) || null,
+    preLearningRequired:
+      data.preLearningRequired === undefined || data.preLearningRequired === null
+        ? null
+        : Boolean(data.preLearningRequired),
   };
 
   return payload;

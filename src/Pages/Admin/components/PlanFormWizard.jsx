@@ -177,6 +177,7 @@ function PlanFormWizard({
     ? String(formData.planLevel ?? '')
     : (PLAN_LEVEL_OPTIONS[0] ?? '');
   const isDefaultPlanLevel = resolvedPlanLevel === (PLAN_LEVEL_OPTIONS[0] ?? '0');
+  const hasGroupInheritance = isWorkspace && !isDefaultPlanLevel && Boolean(highestActiveUserPlanEntitlement);
 
   useEffect(() => {
     if (editingPlan) return;
@@ -206,16 +207,20 @@ function PlanFormWizard({
   const willAutoRaisePrice = currentPrice > 0 && currentPrice < minPrice;
 
   useEffect(() => {
-    if (!isWorkspace || editingPlan || !highestActiveUserPlanEntitlement) return;
+    if (!hasGroupInheritance || editingPlan) return;
     setEntitlement((prev) => {
       const next = { ...prev };
       const src = highestActiveUserPlanEntitlement;
+      let changed = false;
       Object.keys(entitlementToggles).forEach((key) => {
-        if (src[key] === true) next[key] = true;
+        if (src[key] === true && next[key] !== true) {
+          next[key] = true;
+          changed = true;
+        }
       });
-      return next;
+      return changed ? next : prev;
     });
-  }, [isWorkspace, editingPlan, highestActiveUserPlanEntitlement, entitlementToggles, setEntitlement]);
+  }, [hasGroupInheritance, editingPlan, highestActiveUserPlanEntitlement, entitlementToggles, setEntitlement]);
 
   const handleDialogOpenChange = (nextOpen) => {
     if (isSubmitting) return;
@@ -696,7 +701,7 @@ function PlanFormWizard({
           </div>
         </div>
 
-        {isWorkspace && highestActiveUserPlanEntitlement ? (
+        {hasGroupInheritance ? (
           <div
             className={cn(
               'mt-4 rounded-[22px] border px-4 py-3 text-sm',
@@ -711,7 +716,7 @@ function PlanFormWizard({
           {Object.entries(entitlementToggles).map(([key, meta]) => {
             const checked = Boolean(entitlement[key]);
             const Icon = meta.icon;
-            const inheritedFromUser = isWorkspace && highestActiveUserPlanEntitlement && highestActiveUserPlanEntitlement[key] === true;
+            const inheritedFromUser = hasGroupInheritance && highestActiveUserPlanEntitlement[key] === true;
 
             return (
               <label

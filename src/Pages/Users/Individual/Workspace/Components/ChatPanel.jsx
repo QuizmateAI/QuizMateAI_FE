@@ -125,6 +125,7 @@ function ChatPanel({
   shouldDisableRoadmap = false,
   shouldDisableCreateQuiz = false,
   shouldDisableCreateFlashcard = false,
+  shouldDisableCreateMockTest = false,
   progressTracking = null,
   roadmapHasPhases = false,
   completedQuizCount = 0,
@@ -231,6 +232,7 @@ function ChatPanel({
             onSourceUpdated={onSourceUpdated}
             selectedIds={selectedSourceIds}
             onSelectionChange={onSelectedSourceIdsChange}
+            progressTracking={progressTracking}
           />
         );
       case "roadmap":
@@ -325,6 +327,7 @@ function ChatPanel({
             onViewMockTest={onViewMockTest}
             contextType="WORKSPACE"
             contextId={workspaceId}
+            disableCreate={shouldDisableCreateMockTest}
           />
         );
       case "postLearning":
@@ -397,7 +400,17 @@ function ChatPanel({
           />
         ) : null;
       case "createMockTest":
-        return (
+        return shouldDisableCreateMockTest ? (
+          <LazyMockTestListView
+            isDarkMode={isDarkMode}
+            onCreateMockTest={() => onChangeView?.("createMockTest")}
+            onNavigateHome={onNavigateHome}
+            onViewMockTest={onViewMockTest}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            disableCreate={shouldDisableCreateMockTest}
+          />
+        ) : (
           <LazyCreateMockTestForm
             isDarkMode={isDarkMode}
             onCreateMockTest={onCreateMockTest}
