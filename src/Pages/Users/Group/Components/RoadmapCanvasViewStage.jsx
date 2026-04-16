@@ -1903,8 +1903,8 @@ function RoadmapCanvasViewStage({
                 {isTopSectionCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
               </span>
               {isTopSectionCollapsed
-                ? t("workspace.roadmap.canvas.expandTopSection", "Mở rộng sơ đồ")
-                : t("workspace.roadmap.canvas.collapseTopSection", "Thu gọn sơ đồ")}
+                ? t("workspace.roadmap.canvas.expandTopSection", "Mở rộng lộ trình")
+                : t("workspace.roadmap.canvas.collapseTopSection", "Thu gọn lộ trình")}
             </Button>
           </div>
 
