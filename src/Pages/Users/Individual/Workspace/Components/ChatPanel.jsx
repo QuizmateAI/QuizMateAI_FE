@@ -529,7 +529,7 @@ function ChatPanel({
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle", "Tổng quan")}</span>
               </Button>
-              <Button
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
@@ -538,7 +538,7 @@ function ChatPanel({
               >
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title", "Kiểm thử")}</span>
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
