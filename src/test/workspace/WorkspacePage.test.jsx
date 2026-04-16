@@ -9,6 +9,11 @@ import {
 
 const hoisted = vi.hoisted(() => {
   const mockNavigate = vi.fn();
+  let planEntitlements = {
+    loading: false,
+    hasWorkspaceAnalytics: true,
+    canCreateRoadmap: true,
+  };
   let mockLocation = {
     pathname: '/workspaces/42',
     search: '',
@@ -17,6 +22,13 @@ const hoisted = vi.hoisted(() => {
 
   return {
     mockNavigate,
+    getPlanEntitlements: () => planEntitlements,
+    setPlanEntitlements: (next) => {
+      planEntitlements = {
+        ...planEntitlements,
+        ...next,
+      };
+    },
     setLocation: (next) => {
       mockLocation = next;
     },
@@ -95,10 +107,7 @@ vi.mock('@/hooks/useProgressTracking', () => ({
 }));
 
 vi.mock('@/hooks/usePlanEntitlements', () => ({
-  usePlanEntitlements: () => ({
-    hasWorkspaceAnalytics: true,
-    canCreateRoadmap: true,
-  }),
+  usePlanEntitlements: () => hoisted.getPlanEntitlements(),
 }));
 
 vi.mock('@/context/ToastContext', () => ({
@@ -256,6 +265,11 @@ vi.mock('@/Components/ui/ListSpinner', () => ({
 describe('WorkspacePage', () => {
   beforeEach(() => {
     hoisted.mockNavigate.mockClear();
+    hoisted.setPlanEntitlements({
+      loading: false,
+      hasWorkspaceAnalytics: true,
+      canCreateRoadmap: true,
+    });
     sidebarSpy.mockClear();
     chatPanelSpy.mockClear();
     vi.mocked(deleteIndividualWorkspace).mockClear();
@@ -317,6 +331,32 @@ describe('WorkspacePage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('editQuiz|5|11|0');
     });
+  });
+
+  it('redirects roadmap routes back to the overview when the current plan cannot create roadmaps', async () => {
+    hoisted.setPlanEntitlements({
+      canCreateRoadmap: false,
+    });
+    hoisted.setLocation({
+      pathname: '/workspaces/42/roadmaps',
+      search: '',
+      state: {},
+    });
+
+    render(<WorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('overview|none|none|0');
+    });
+
+    expect(hoisted.mockNavigate).toHaveBeenCalledWith('/workspaces/42', {
+      replace: true,
+    });
+    expect(sidebarSpy).toHaveBeenLastCalledWith(expect.objectContaining({
+      disabledMap: expect.objectContaining({
+        roadmap: true,
+      }),
+    }));
   });
 
   it('does not render the old shared home button in the workspace shell', async () => {

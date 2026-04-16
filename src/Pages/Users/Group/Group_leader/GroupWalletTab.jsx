@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   ReceiptText,
   Shield,
@@ -21,6 +23,7 @@ import {
 import { unwrapApiData } from '@/Utils/apiResponse';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HISTORY_PAGE_SIZE = 5;
 
 const toSafeDate = (value) => {
   const parsed = value ? new Date(value) : null;
@@ -277,6 +280,84 @@ function paymentStatusMeta(status, lang, isDarkMode, t) {
   };
 }
 
+function getPaginationMeta(pageData, fallbackSize = HISTORY_PAGE_SIZE) {
+  const page = Math.max(0, Number(pageData?.number ?? pageData?.page ?? 0) || 0);
+  const size = Math.max(1, Number(pageData?.size ?? fallbackSize) || fallbackSize);
+  const totalElements = Math.max(0, Number(pageData?.totalElements ?? extractPageItems(pageData).length) || 0);
+  const fallbackTotalPages = totalElements > 0 ? Math.ceil(totalElements / size) : 0;
+  const totalPages = Math.max(0, Number(pageData?.totalPages ?? fallbackTotalPages) || fallbackTotalPages);
+
+  return { page, size, totalElements, totalPages };
+}
+
+function HistoryPagination({
+  currentPage,
+  totalPages,
+  totalElements,
+  pageSize,
+  onPageChange,
+  isDarkMode,
+  subtleTextClass,
+  t,
+}) {
+  if (totalElements <= 0) return null;
+
+  const safeTotalPages = Math.max(totalPages, 1);
+  const startItem = currentPage * pageSize + 1;
+  const endItem = Math.min((currentPage + 1) * pageSize, totalElements);
+
+  return (
+    <div className={cn(
+      'mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between',
+      isDarkMode ? 'border-white/10' : 'border-slate-200/80',
+    )}>
+      <p className={`text-xs ${subtleTextClass}`}>
+        {t('groupWalletTab.pagination.summary', 'Showing {{start}} - {{end}} of {{total}}', {
+          start: startItem,
+          end: endItem,
+          total: totalElements,
+        })}
+      </p>
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          className={cn(
+            'h-8 rounded-lg px-2.5 text-xs',
+            isDarkMode ? 'border-slate-700 text-slate-100 hover:bg-slate-900' : 'border-slate-200 bg-white hover:bg-slate-50',
+          )}
+        >
+          <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+          {t('groupWalletTab.pagination.previous', 'Previous')}
+        </Button>
+        <span className={`min-w-[92px] text-center text-xs font-medium ${subtleTextClass}`}>
+          {t('groupWalletTab.pagination.page', 'Page {{page}} / {{totalPages}}', {
+            page: currentPage + 1,
+            totalPages: safeTotalPages,
+          })}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= safeTotalPages - 1}
+          className={cn(
+            'h-8 rounded-lg px-2.5 text-xs',
+            isDarkMode ? 'border-slate-700 text-slate-100 hover:bg-slate-900' : 'border-slate-200 bg-white hover:bg-slate-50',
+          )}
+        >
+          {t('groupWalletTab.pagination.next', 'Next')}
+          <ChevronRight className="ml-1 h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function GroupWalletTab({
   isDarkMode,
   group,
@@ -290,10 +371,33 @@ export default function GroupWalletTab({
   const locale = lang === 'en' ? 'en-US' : 'vi-VN';
   const fontClass = lang === 'en' ? 'font-poppins' : 'font-sans';
   const [renderTimestamp] = useState(() => Date.now());
+  const [historyPages, setHistoryPages] = useState(() => ({
+    workspaceId: null,
+    purchase: 0,
+    usage: 0,
+  }));
   const workspaceId = group?.workspaceId;
+  const purchaseHistoryPage = historyPages.workspaceId === workspaceId ? historyPages.purchase : 0;
+  const usageHistoryPage = historyPages.workspaceId === workspaceId ? historyPages.usage : 0;
   const groupName = group?.groupName || group?.displayTitle || group?.name || t('groupWalletTab.group', 'Group');
   const currentGroupPlanName = String(groupSubscription?.plan?.displayName || groupSubscription?.plan?.code || '').trim();
   const canBuyGroupCredits = groupSubscription?.plan?.entitlement?.canBuyCredit !== false;
+
+  const updateHistoryPage = (key, nextPage, maxPage = Number.POSITIVE_INFINITY) => {
+    setHistoryPages((current) => {
+      const currentPurchase = current.workspaceId === workspaceId ? current.purchase : 0;
+      const currentUsage = current.workspaceId === workspaceId ? current.usage : 0;
+      const basePage = key === 'purchase' ? currentPurchase : currentUsage;
+      const resolvedPage = typeof nextPage === 'function' ? nextPage(basePage) : nextPage;
+      const safePage = Math.max(0, Math.min(Number(resolvedPage) || 0, Math.max(maxPage, 0)));
+
+      return {
+        workspaceId,
+        purchase: key === 'purchase' ? safePage : currentPurchase,
+        usage: key === 'usage' ? safePage : currentUsage,
+      };
+    });
+  };
 
   const { data: groupWallet, isLoading: walletLoading, isError: walletError } = useQuery({
     queryKey: ['group-wallet-summary', workspaceId],
@@ -302,15 +406,17 @@ export default function GroupWalletTab({
   });
 
   const { data: walletTransactionsPage, isLoading: walletTransactionsLoading, isError: walletTransactionsError } = useQuery({
-    queryKey: ['group-wallet-transactions', workspaceId],
-    queryFn: async () => unwrapApiData(await getGroupWorkspaceWalletTransactions(workspaceId, 0, 12)) || { content: [] },
+    queryKey: ['group-wallet-transactions', workspaceId, usageHistoryPage],
+    queryFn: async () => unwrapApiData(await getGroupWorkspaceWalletTransactions(workspaceId, usageHistoryPage, HISTORY_PAGE_SIZE)) || { content: [] },
     enabled: Boolean(canManage && workspaceId),
+    placeholderData: (previousData) => previousData,
   });
 
   const { data: workspacePaymentsPage, isLoading: workspacePaymentsLoading, isError: workspacePaymentsError } = useQuery({
-    queryKey: ['group-workspace-payments', workspaceId],
-    queryFn: async () => unwrapApiData(await getWorkspacePayments(workspaceId, 0, 10)) || { content: [] },
+    queryKey: ['group-workspace-payments', workspaceId, purchaseHistoryPage],
+    queryFn: async () => unwrapApiData(await getWorkspacePayments(workspaceId, purchaseHistoryPage, HISTORY_PAGE_SIZE)) || { content: [] },
     enabled: Boolean(canManage && workspaceId),
+    placeholderData: (previousData) => previousData,
   });
 
   const { data: creditPackages = [], isLoading: creditPackagesLoading } = useQuery({
@@ -346,9 +452,8 @@ export default function GroupWalletTab({
     () => walletTransactions
       .filter((tx) => {
         const normalizedType = String(tx?.transactionType || '').toUpperCase();
-        return !['WELCOME', 'TOPUP', 'PLAN_BONUS'].includes(normalizedType);
-      })
-      .slice(0, 8),
+        return normalizedType !== 'WELCOME';
+      }),
     [walletTransactions],
   );
 
@@ -358,10 +463,18 @@ export default function GroupWalletTab({
   );
 
   const purchaseHistory = useMemo(
-    () => workspacePayments
-      .filter((payment) => ['WORKSPACE_PLAN', 'WORKSPACE_CREDIT', 'WORKSPACE_SLOT'].includes(String(payment?.paymentTargetType || '').toUpperCase()))
-      .slice(0, 8),
+    () => workspacePayments,
     [workspacePayments],
+  );
+
+  const purchasePagination = useMemo(
+    () => getPaginationMeta(workspacePaymentsPage, HISTORY_PAGE_SIZE),
+    [workspacePaymentsPage],
+  );
+
+  const usagePagination = useMemo(
+    () => getPaginationMeta(walletTransactionsPage, HISTORY_PAGE_SIZE),
+    [walletTransactionsPage],
   );
 
   const featuredCreditPackages = useMemo(
@@ -614,7 +727,7 @@ export default function GroupWalletTab({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <div className={cn(cardClass, 'p-5')}>
           <div className="mb-1 flex items-center gap-2">
             <ReceiptText className={cn('h-4 w-4', isDarkMode ? 'text-violet-300' : 'text-violet-600')} />
@@ -636,20 +749,20 @@ export default function GroupWalletTab({
               const statusMeta = paymentStatusMeta(payment.paymentStatus, lang, isDarkMode, t);
               return (
                 <div key={payment.paymentId || payment.orderId} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/12 bg-black/20' : 'border-slate-200/90 bg-white/94')}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      <p className={cn('text-sm font-semibold leading-5 break-words', isDarkMode ? 'text-white' : 'text-slate-900')}>
                         {paymentTargetLabel(payment.paymentTargetType, lang, t)}
                       </p>
-                      <p className={`mt-1 text-xs text-slate-500`}>
+                      <p className={`mt-1 break-all text-xs text-slate-500`}>
                         {payment.orderId || `#${payment.paymentId}`}
                       </p>
                     </div>
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${statusMeta.className}`}>
+                    <span className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[11px] font-semibold ${statusMeta.className}`}>
                       {statusMeta.label}
                     </span>
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <p className={cn('text-sm font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                       {formatCurrency(payment.amount, locale)}
                     </p>
@@ -661,6 +774,16 @@ export default function GroupWalletTab({
               );
             })}
           </div>
+          <HistoryPagination
+            currentPage={purchaseHistoryPage}
+            totalPages={purchasePagination.totalPages}
+            totalElements={purchasePagination.totalElements}
+            pageSize={purchasePagination.size}
+            onPageChange={(nextPage) => updateHistoryPage('purchase', nextPage, (purchasePagination.totalPages || 1) - 1)}
+            isDarkMode={isDarkMode}
+            subtleTextClass={subtleTextClass}
+            t={t}
+          />
         </div>
 
         <div className={cn(cardClass, 'p-5')}>
@@ -695,10 +818,10 @@ export default function GroupWalletTab({
 
               return (
                 <div key={tx.creditTransactionId} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/12 bg-black/20' : 'border-slate-200/90 bg-white/94')}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className={cn('max-w-[360px] truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')} title={activityTitle}>
+                        <p className={cn('max-w-full text-sm font-semibold leading-5 break-words', isDarkMode ? 'text-white' : 'text-slate-900')} title={activityTitle}>
                           {activityTitle}
                         </p>
                         {isRecent ? (
@@ -712,7 +835,7 @@ export default function GroupWalletTab({
                         {activityNote ? ` · ${activityNote}` : ''}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <p className={cn(
                         'text-sm font-bold',
                         isPositive
@@ -723,7 +846,7 @@ export default function GroupWalletTab({
                       </p>
                     </div>
                   </div>
-                  <div className={`mt-3 flex flex-wrap items-center justify-between gap-3 text-xs ${subtleTextClass}`}>
+                  <div className={`mt-3 flex flex-col gap-1 text-xs ${subtleTextClass} sm:flex-row sm:items-center sm:justify-between sm:gap-3`}>
                     <span>
                       {t('groupWalletTab.balanceAfter', 'Balance after')}: {formatNumber(tx.balanceAfter, locale)}
                     </span>
@@ -733,6 +856,16 @@ export default function GroupWalletTab({
               );
             })}
           </div>
+          <HistoryPagination
+            currentPage={usageHistoryPage}
+            totalPages={usagePagination.totalPages}
+            totalElements={usagePagination.totalElements}
+            pageSize={usagePagination.size}
+            onPageChange={(nextPage) => updateHistoryPage('usage', nextPage, (usagePagination.totalPages || 1) - 1)}
+            isDarkMode={isDarkMode}
+            subtleTextClass={subtleTextClass}
+            t={t}
+          />
         </div>
       </div>
     </div>

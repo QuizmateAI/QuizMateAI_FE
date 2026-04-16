@@ -3,7 +3,6 @@ import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown, Loader2
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
-import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 const IMAGE_URL_REGEX = /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -230,10 +229,10 @@ function mergeMaterialSource(previousSource, updatedMaterial) {
 }
 
 // Hiển thị chi tiết tài liệu inline trong khu vực học tập — giống NotebookLM
-function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated }) {
+function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated, planEntitlements = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
-  const { hasAiSummaryAndTextReading } = usePlanEntitlements();
+  const hasAiSummaryAndTextReading = planEntitlements?.hasAiSummaryAndTextReading ?? false;
   const [currentSource, setCurrentSource] = useState(source);
 
   const [extractedText, setExtractedText] = useState(null);

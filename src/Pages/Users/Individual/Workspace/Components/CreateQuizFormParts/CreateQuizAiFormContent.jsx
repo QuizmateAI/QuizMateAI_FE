@@ -26,7 +26,6 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
-import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
 import { AI_MINIMUM_SECONDS_PER_QUESTION } from "./createQuizForm.constants";
 import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
 import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
@@ -65,6 +64,9 @@ function CreateQuizAiFormContent({
     fontClass,
     isDarkMode,
     hasAdvanceQuizConfig = false,
+    planUpgradeScope = "INDIVIDUAL",
+    currentPlanSummaryOverride = null,
+    planUpgradeWorkspaceId = null,
     onClearSelectedMaterials,
     onSelectAllMaterials,
     onToggleMaterialSelection,
@@ -116,6 +118,7 @@ function CreateQuizAiFormContent({
     editableStructureItems,
     structureDifficultyOptions,
     canFetchStructurePreview,
+    quizTitleMaxLength,
   } = state;
   const {
     handleAiDurationBlur,
@@ -181,6 +184,8 @@ function CreateQuizAiFormContent({
   const bulkActionButtonClass = isDarkMode
     ? "h-7 border-slate-700 bg-slate-900/60 px-2.5 text-[11px] text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
     : "h-7 border-gray-200 bg-white px-2.5 text-[11px] text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
+  const resolvedQuizTitleMaxLength = Number(quizTitleMaxLength);
+  const hasQuizTitleMaxLength = Number.isFinite(resolvedQuizTitleMaxLength) && resolvedQuizTitleMaxLength > 0;
 
   const selectableQuestionTypeIds = qTypes
     .filter((item) => hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(item?.questionType))
@@ -219,6 +224,9 @@ function CreateQuizAiFormContent({
   } = usePlanUpgradeInfo({
     featureEntitlementKey: "hasAdvanceQuizConfig",
     enabled: !hasAdvanceQuizConfig && qTypes.some((questionType) => isAdvancedQuizQuestionType(questionType?.questionType)),
+    planScope: planUpgradeScope,
+    workspaceId: planUpgradeWorkspaceId,
+    currentPlanSummaryOverride,
   });
   const advancedQuizGateTitle = t("workspace.quiz.planGate.title", "Cần nâng cấp gói");
   const advancedQuizGateMeta = t(
@@ -371,17 +379,19 @@ function CreateQuizAiFormContent({
             className={`${inputCls} ${fieldErrors.aiName ? (isDarkMode ? "border-red-600" : "border-red-400") : ""}`}
             placeholder={t("workspace.quiz.namePlaceholder")}
             value={aiName}
-            maxLength={QUIZ_TITLE_MAX_LENGTH}
+            maxLength={hasQuizTitleMaxLength ? resolvedQuizTitleMaxLength : undefined}
             onChange={(event) => handleAiNameChange(event.target.value)}
           />
           {fieldErrors.aiName && (
             <p className="mt-1 text-xs text-red-500">{fieldErrors.aiName}</p>
           )}
-          <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-            {t("workspace.quiz.validation.nameMaxLengthHint", {
-              max: QUIZ_TITLE_MAX_LENGTH,
-            })}
-          </p>
+          {hasQuizTitleMaxLength ? (
+            <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+              {t("workspace.quiz.validation.nameMaxLengthHint", {
+                max: resolvedQuizTitleMaxLength,
+              })}
+            </p>
+          ) : null}
         </div>
       </div>
 

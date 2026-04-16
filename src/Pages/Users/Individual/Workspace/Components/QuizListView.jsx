@@ -183,6 +183,15 @@ function resolveQuizNavigationId(quiz) {
   return quiz?.quizId ?? quiz?.id ?? null;
 }
 
+function isRoadmapLinkedQuiz(quiz) {
+  const normalizedContext = String(quiz?.contextType || "").toUpperCase();
+  if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContext)) return true;
+  if (Number(quiz?.roadmapId) > 0) return true;
+  if (Number(quiz?.phaseId) > 0) return true;
+  if (Number(quiz?.knowledgeId) > 0) return true;
+  return false;
+}
+
 /** Quiz nhóm: ALL_MEMBERS vs SELECTED_MEMBERS (mặc định chung nhóm nếu BE chưa gửi). */
 function normalizeGroupAudienceMode(quiz) {
   const m = String(quiz?.groupAudienceMode ?? "").toUpperCase();
@@ -451,15 +460,6 @@ function QuizListView({
       sourcePhaseId,
     };
   }, [contextId, contextType, location.pathname, resolvedReturnToPath]);
-  const isRoadmapQuiz = useCallback((quiz) => {
-    const normalizedContext = String(quiz?.contextType || "").toUpperCase();
-    if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContext)) return true;
-    if (Number(quiz?.roadmapId) > 0) return true;
-    if (Number(quiz?.phaseId) > 0) return true;
-    if (Number(quiz?.knowledgeId) > 0) return true;
-    return false;
-  }, []);
-
   const handleStartQuiz = useCallback((mode, quizId) => {
     if (!mode || !quizId) return;
 
@@ -517,14 +517,11 @@ function QuizListView({
       // Quiz list view chỉ hiển thị quiz thường — mock test có view riêng (MockTestListView).
       incoming = incoming.filter((quiz) => String(quiz?.quizIntent || '').toUpperCase() !== 'MOCK_TEST');
 
-      // Workspace studio giữ quiz thường; group tab có thể hiển thị cả quiz gắn roadmap.
-      if (contextType === 'WORKSPACE' && !includeRoadmapLinkedQuizzes) {
-        incoming = incoming.filter(quiz => {
-          const qContext = String(quiz.contextType || '').toUpperCase();
-          if (['ROADMAP', 'PHASE', 'KNOWLEDGE'].includes(qContext)) return false;
-          if (Number(quiz.roadmapId) > 0 || Number(quiz.phaseId) > 0 || Number(quiz.knowledgeId) > 0) return false;
-          return true;
-        });
+      // Quiz tab của workspace/group chỉ giữ quiz thường; roadmap panels sẽ gọi theo PHASE/KNOWLEDGE riêng.
+      const normalizedListContext = String(contextType || '').toUpperCase();
+      const isRoadmapScopedList = ['ROADMAP', 'PHASE', 'KNOWLEDGE'].includes(normalizedListContext);
+      if (!isRoadmapScopedList && !includeRoadmapLinkedQuizzes) {
+        incoming = incoming.filter((quiz) => !isRoadmapLinkedQuiz(quiz));
       }
 
       if (Array.isArray(intentFilter) && intentFilter.length > 0) {
@@ -945,7 +942,7 @@ function QuizListView({
     const myPassed = quiz?.myPassed === true;
     const visibilityMeta = resolveVisibilityMeta(isCommunityShared, isDarkMode, t);
     const VisibilityIcon = visibilityMeta.icon;
-    const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
+      const isRoadmapContextQuiz = isRoadmapLinkedQuiz(quiz);
     const normalizedIntent = String(quiz?.quizIntent || "").toUpperCase();
     const shouldHideRoadmapIntentBadge = isRoadmapContextQuiz
       && ["PRE_LEARNING", "PRACTICE", "REVIEW"].includes(normalizedIntent);
@@ -1454,7 +1451,7 @@ function QuizListView({
 
               const resolvedQuizId = resolveQuizNavigationId(quiz);
               const isCommunityShared = quiz?.communityShared === true;
-              const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
+              const isRoadmapContextQuiz = isRoadmapLinkedQuiz(quiz);
               const shouldHideRoadmapVisibility = isRoadmapContextQuiz;
               const durationInMinutes = getDurationInMinutes(quiz);
               const normalizedStatus = String(quiz?.status || "").toUpperCase();

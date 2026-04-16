@@ -32,6 +32,7 @@ import {
   normalizeGroupWorkspaceProfile,
   saveGroupBasicStep,
   saveGroupConfigStep,
+  updateGroupConfigStep,
 } from '@/api/WorkspaceAPI';
 
 const LEARNING_MODES = [
@@ -199,7 +200,7 @@ function autoResizeTextarea(textarea, minHeight = COMPACT_TEXTAREA_MIN_HEIGHT) {
 
 function FieldError({ message }) {
   if (!message) return null;
-  return <p className="group-profile-field-error text-xs font-medium text-rose-500">{message}</p>;
+  return <p className="group-profile-field-error mt-2 text-xs font-medium text-rose-500">{message}</p>;
 }
 
 function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled, isDarkMode }) {
@@ -209,76 +210,40 @@ function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled,
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'h-full rounded-[24px] border p-5 text-left transition-all duration-200 hover:scale-[1.02]',
+        'h-full rounded-xl border px-4 py-4 text-left transition-all duration-200',
         active
           ? isDarkMode
-            ? 'border-cyan-400/40 bg-cyan-500/10'
-            : 'border-cyan-300 bg-cyan-50'
+            ? 'border-cyan-300/60 bg-[linear-gradient(135deg,rgba(8,145,178,0.22),rgba(16,185,129,0.14))] shadow-[0_18px_36px_-24px_rgba(34,211,238,0.45)] ring-1 ring-cyan-300/20'
+            : 'border-cyan-300 bg-[linear-gradient(135deg,#dff7ff_0%,#e7fbf3_100%)] shadow-[0_22px_42px_-28px_rgba(6,182,212,0.32)] ring-1 ring-cyan-200'
           : isDarkMode
-            ? 'border-white/10 bg-white/[0.03] hover:border-white/20'
-            : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] hover:border-[color:var(--surface-border-strong)]',
+            ? 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
+            : 'border-slate-200 bg-white/88 hover:border-slate-300 hover:bg-white',
+        !disabled && 'hover:-translate-y-0.5',
         disabled && 'cursor-not-allowed opacity-60'
       )}
     >
       <div className="flex h-full items-start gap-3">
         <div className={cn(
-          'flex h-11 w-11 items-center justify-center rounded-2xl border',
+          'flex h-11 w-11 items-center justify-center rounded-xl border',
           active
-            ? isDarkMode ? 'border-cyan-300/35 bg-cyan-400/20 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
-            : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)] text-slate-600'
+            ? isDarkMode ? 'border-cyan-300/35 bg-cyan-400/20 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700 shadow-[0_12px_24px_-18px_rgba(6,182,212,0.45)]'
+            : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
         )}>
           <Icon className="h-5 w-5" />
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold">{title}</p>
-          <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm font-semibold">{title}</p>
+            {active ? (
+              <CheckCircle2 className={cn('mt-0.5 h-4 w-4 shrink-0', isDarkMode ? 'text-cyan-200' : 'text-cyan-600')} />
+            ) : null}
+          </div>
+          <p className={cn('mt-1.5 text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
             {description}
           </p>
         </div>
       </div>
     </button>
-  );
-}
-
-function ToggleTile({ checked, onChange, title, description, badge, disabled, isDarkMode }) {
-  return (
-    <label
-      className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-[24px] border p-5 transition-all duration-200',
-        checked
-          ? isDarkMode
-            ? 'border-cyan-400/30 bg-cyan-500/10'
-            : 'border-cyan-200 bg-cyan-50/90'
-          : isDarkMode
-            ? 'border-white/10 bg-white/[0.03]'
-            : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)]',
-        disabled && 'cursor-not-allowed opacity-70'
-      )}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        disabled={disabled}
-        className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-      />
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold">{title}</span>
-          {badge ? (
-            <span className={cn(
-              'rounded-full px-2.5 py-1 text-[11px] font-semibold',
-              isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-600'
-            )}>
-              {badge}
-            </span>
-          ) : null}
-        </span>
-        <span className={cn('mt-1 block text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
-          {description}
-        </span>
-      </span>
-    </label>
   );
 }
 
@@ -295,25 +260,32 @@ function GroupWorkspaceProfileConfigMirror({
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const canTemporarilyClose = !canClose && typeof onTemporaryClose === 'function';
   const inputClass = cn(
-    'w-full rounded-[22px] border px-4 py-3.5 text-sm outline-none transition-all duration-200 focus:ring-4',
+    'w-full rounded-lg border px-3.5 py-3 text-sm outline-none transition-all duration-200 focus:ring-4',
     isDarkMode
       ? 'border-slate-700/90 bg-slate-950/80 text-white placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] focus:border-cyan-300 focus:bg-slate-950 focus:ring-cyan-400/10'
-      : 'border-[color:var(--surface-border-mid)] bg-[color:var(--design-30)] text-slate-950 placeholder:text-slate-400 shadow-[var(--surface-shadow-soft)] focus:border-cyan-500 focus:bg-cyan-50/35 focus:ring-cyan-500/15'
+      : 'border-slate-200 bg-white/92 text-slate-950 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_8px_20px_-18px_rgba(15,23,42,0.14)] focus:border-cyan-500 focus:bg-white focus:ring-cyan-500/15'
   );
-  const textareaClass = cn(inputClass, 'min-h-[156px] resize-none rounded-[24px] px-4 py-4');
+  const textareaClass = cn(inputClass, 'min-h-[156px] resize-none rounded-lg px-3.5 py-3.5');
   const compactTextareaClass = cn(inputClass, 'min-h-[72px] overflow-hidden resize-none');
-  const fieldShellClass = cn(
-    'rounded-[28px] border p-5 md:p-6',
-    isDarkMode
-      ? 'border-white/10 bg-white/[0.035]'
-      : 'border-[color:var(--surface-border-soft)] bg-[linear-gradient(180deg,var(--design-30)_0%,var(--design-60)_100%)] shadow-[var(--surface-shadow-soft)]'
-  );
   const fieldEyebrowClass = cn(
     'text-[11px] font-semibold uppercase tracking-[0.16em]',
     isDarkMode ? 'text-cyan-200/70' : 'text-cyan-700'
   );
   const fieldLabelClass = isDarkMode ? 'text-slate-100' : 'text-slate-900';
   const fieldHelperClass = cn('text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600');
+  const sectionDividerClass = isDarkMode ? 'border-white/10' : 'border-slate-200';
+  const subtlePanelClass = isDarkMode
+    ? 'border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] backdrop-blur-xl'
+    : 'border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.96))] shadow-[0_24px_60px_-44px_rgba(15,23,42,0.22)] backdrop-blur-xl';
+  const accentPanelClass = isDarkMode
+    ? 'border-cyan-400/20 bg-[linear-gradient(135deg,rgba(34,211,238,0.12),rgba(16,185,129,0.08))]'
+    : 'border-cyan-200 bg-[linear-gradient(135deg,#effbff_0%,#f0fdf8_100%)]';
+  const accentBarClass = isDarkMode
+    ? 'bg-[linear-gradient(90deg,rgba(34,211,238,0.9),rgba(16,185,129,0.75))]'
+    : 'bg-[linear-gradient(90deg,#06b6d4,#10b981)]';
+  const stepRailClass = isDarkMode
+    ? 'border-white/10 bg-white/[0.03]'
+    : 'border-white/80 bg-white/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_28px_48px_-42px_rgba(15,23,42,0.18)] backdrop-blur-xl';
 
   const [step, setStep] = useState(1);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
@@ -323,6 +295,7 @@ function GroupWorkspaceProfileConfigMirror({
   const [statusNotice, setStatusNotice] = useState('');
   const [errors, setErrors] = useState({});
   const [showProfileConfirm, setShowProfileConfirm] = useState(false);
+  const [isPostOnboardingEdit, setIsPostOnboardingEdit] = useState(false);
 
   const [groupName, setGroupName] = useState('');
   const [rules, setRules] = useState('');
@@ -334,9 +307,7 @@ function GroupWorkspaceProfileConfigMirror({
   const [knowledgeAnalysis, setKnowledgeAnalysis] = useState(null);
   const [analysisRetryTick, setAnalysisRetryTick] = useState(0);
   const [learningMode, setLearningMode] = useState('');
-  const [roadmapEnabled, setRoadmapEnabled] = useState(false);
   const [groupLearningGoal, setGroupLearningGoal] = useState('');
-  const [preLearningRequired, setPreLearningRequired] = useState(false);
   const analysisTimerRef = useRef(null);
   const analysisAbortRef = useRef(null);
   const knowledgeTextareaRef = useRef(null);
@@ -362,20 +333,55 @@ function GroupWorkspaceProfileConfigMirror({
     };
   }, [learningMode, t]);
 
-  const stepTabs = useMemo(() => ([
-    {
-      id: 1,
-      icon: Users,
-      title: t('groupProfileConfig.tabs.basic.title'),
-      description: t('groupProfileConfig.tabs.basic.description'),
-    },
-    {
-      id: 2,
-      icon: BrainCircuit,
-      title: t('groupProfileConfig.tabs.learning.title'),
-      description: t('groupProfileConfig.tabs.learning.description'),
-    },
-  ]), [t]);
+  const totalSteps = isPostOnboardingEdit ? 1 : 2;
+  const displayStep = isPostOnboardingEdit ? 1 : step;
+  const wizardTitle = isPostOnboardingEdit
+    ? t('groupWorkspaceProfileConfigMirror.editConfigTitle', 'Update group learning setup')
+    : step === 1
+      ? t('groupProfileConfig.stepOne.title')
+      : t('groupProfileConfig.stepTwo.title');
+  const wizardDescription = isPostOnboardingEdit
+    ? t(
+      'groupWorkspaceProfileConfigMirror.editConfigDescription',
+      'Adjust the shared domain, knowledge scope, learning mode, and group goal without reopening onboarding.'
+    )
+    : step === 1
+      ? t('groupProfileConfig.stepOne.description')
+      : t('groupProfileConfig.stepTwo.description');
+  const confirmTitle = isPostOnboardingEdit
+    ? t('groupWorkspaceProfileConfigMirror.confirm.updateTitle', 'Confirm learning setup update')
+    : t('groupWorkspaceProfileConfigMirror.confirm.title', 'Confirm this group profile');
+  const confirmDescription = isPostOnboardingEdit
+    ? t(
+      'groupWorkspaceProfileConfigMirror.confirm.updateDescription',
+      'Review the updated learning setup once more before saving it to the active group profile.'
+    )
+    : t(
+      'groupWorkspaceProfileConfigMirror.confirm.description',
+      'Review the summary once more. After confirmation, this setup becomes the active profile for the group workspace.'
+    );
+  const confirmActionLabel = isPostOnboardingEdit
+    ? t('groupWorkspaceProfileConfigMirror.confirm.saveUpdateButton', 'Save learning setup')
+    : t('groupWorkspaceProfileConfigMirror.confirm.confirmButton', 'Confirm this profile');
+
+  const stepTabs = useMemo(() => {
+    const tabs = [
+      {
+        id: 1,
+        icon: Users,
+        title: t('groupProfileConfig.tabs.basic.title'),
+        description: t('groupProfileConfig.tabs.basic.description'),
+      },
+      {
+        id: 2,
+        icon: BrainCircuit,
+        title: t('groupProfileConfig.tabs.learning.title'),
+        description: t('groupProfileConfig.tabs.learning.description'),
+      },
+    ];
+
+    return isPostOnboardingEdit ? tabs.filter((item) => item.id === 2) : tabs;
+  }, [isPostOnboardingEdit, t]);
 
   const readinessItems = useMemo(() => ([
     {
@@ -400,6 +406,24 @@ function GroupWorkspaceProfileConfigMirror({
     },
   ]), [domain, groupLearningGoal, knowledge, learningMode, summary.mode, t]);
 
+  const stepOnePreviewItems = useMemo(() => ([
+    {
+      id: 'groupName',
+      label: t('groupProfileConfig.stepOne.groupName'),
+      value: groupName.trim() || t('groupProfileConfig.stepTwo.ready.pending'),
+    },
+    {
+      id: 'seatLimit',
+      label: t('groupWorkspaceProfileConfigMirror.stepOne.previewSeatLimit'),
+      value: formatSeatLimit(maxMemberOverride),
+    },
+    {
+      id: 'rules',
+      label: t('groupProfileConfig.stepOne.rulesEyebrow'),
+      value: rules.trim() || t('groupProfileConfig.stepTwo.ready.pending'),
+    },
+  ]), [groupName, maxMemberOverride, rules, t]);
+
   const selectedDomainOption = useMemo(
     () => domainOptions.find((option) => option.label === domain) || null,
     [domainOptions, domain]
@@ -410,6 +434,11 @@ function GroupWorkspaceProfileConfigMirror({
     && learningMode
     && groupLearningGoal.trim()
   );
+  const finishLabel = isPostOnboardingEdit
+    ? t('groupWorkspaceProfileConfigMirror.finishUpdateButton', 'Review update')
+    : canFinishStepTwo
+      ? t('groupProfileConfig.common.finish')
+      : t('groupProfileConfig.common.finishIncomplete');
 
   const hasAnalysisSummary = analysisStatus === 'success' && Boolean(
     knowledgeAnalysis?.message
@@ -420,10 +449,6 @@ function GroupWorkspaceProfileConfigMirror({
   const confirmLabelClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const confirmationSummarySections = useMemo(() => {
     const emptyLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.empty', 'Not configured');
-    const enabledLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.enabled', 'Enabled');
-    const disabledLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.disabled', 'Disabled');
-    const requiredLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.required', 'Required');
-    const notRequiredLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.notRequired', 'Not required');
 
     return [
       {
@@ -443,14 +468,6 @@ function GroupWorkspaceProfileConfigMirror({
         ],
       },
       {
-        id: 'config',
-        title: t('groupWorkspaceProfileConfigMirror.confirmationSummary.groupSetupTitle', 'Group setup'),
-        items: [
-          { id: 'roadmap', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.roadmapLabel', 'Shared roadmap'), value: roadmapEnabled ? enabledLabel : disabledLabel },
-          { id: 'entry', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.entryLabel', 'Entry assessment'), value: preLearningRequired ? requiredLabel : notRequiredLabel },
-        ],
-      },
-      {
         id: 'notes',
         title: t('groupWorkspaceProfileConfigMirror.confirmationSummary.operatingNotesTitle', 'Operating notes'),
         spanClass: 'lg:col-span-2',
@@ -467,8 +484,6 @@ function GroupWorkspaceProfileConfigMirror({
     groupName,
     knowledge,
     learningMode,
-    preLearningRequired,
-    roadmapEnabled,
     rules,
     summary.mode,
     t,
@@ -487,24 +502,23 @@ function GroupWorkspaceProfileConfigMirror({
         const profile = normalizeGroupWorkspaceProfile(extractApiData(response));
         if (cancelled || !profile) return;
         const normalizedLearningMode = normalizeGroupLearningMode(profile.learningMode);
+        const nextIsPostOnboardingEdit = Boolean(profile.onboardingCompleted);
         setGroupName(normalizeGroupNameValue(profile.groupName));
         setRules(profile.rules || '');
         setMaxMemberOverride(profile.maxMemberOverride ?? null);
         setDomain(profile.domain || '');
         setKnowledge(profile.knowledge || '');
         setLearningMode(normalizedLearningMode);
-        setRoadmapEnabled(
-          normalizedLearningMode === 'STUDY_NEW'
-            ? Boolean(profile.roadmapEnabled ?? true)
-            : Boolean(profile.roadmapEnabled)
-        );
         setGroupLearningGoal(profile.groupLearningGoal || '');
-        setPreLearningRequired(Boolean(profile.preLearningRequired));
-        const nextStep = Math.min(Math.max(Number(profile.currentStep) || 1, 1), 2);
+        setIsPostOnboardingEdit(nextIsPostOnboardingEdit);
+        const nextStep = nextIsPostOnboardingEdit
+          ? 2
+          : Math.min(Math.max(Number(profile.currentStep) || 1, 1), 2);
         setStep(nextStep);
-        setMaxUnlockedStep(profile.onboardingCompleted ? 2 : Math.max(nextStep, 1));
+        setMaxUnlockedStep(nextIsPostOnboardingEdit ? 2 : Math.max(nextStep, 1));
       } catch {
         if (!cancelled) {
+          setIsPostOnboardingEdit(false);
           setStep(1);
           setMaxUnlockedStep(1);
         }
@@ -530,6 +544,7 @@ function GroupWorkspaceProfileConfigMirror({
       setKnowledgeAnalysis(null);
       setAnalysisRetryTick(0);
       setShowProfileConfirm(false);
+      setIsPostOnboardingEdit(false);
     }
   }, [open]);
 
@@ -670,18 +685,29 @@ function GroupWorkspaceProfileConfigMirror({
     setSaveError('');
     setStatusNotice('');
     try {
-      await saveGroupConfigStep(workspaceId, {
+      const payload = {
         domain,
         knowledge,
         learningMode: normalizeGroupLearningMode(learningMode),
-        roadmapEnabled,
+        roadmapEnabled: true,
         groupLearningGoal,
         examName: null,
-        preLearningRequired,
-      });
-      await confirmGroupWorkspaceProfile(workspaceId);
+        preLearningRequired: false,
+      };
+
+      if (isPostOnboardingEdit) {
+        await updateGroupConfigStep(workspaceId, payload);
+      } else {
+        await saveGroupConfigStep(workspaceId, payload);
+        await confirmGroupWorkspaceProfile(workspaceId);
+      }
+
       setShowProfileConfirm(false);
-      setStatusNotice(t('groupProfileConfig.messages.completed'));
+      setStatusNotice(
+        isPostOnboardingEdit
+          ? t('groupWorkspaceProfileConfigMirror.messages.updated', 'Group learning setup updated.')
+          : t('groupProfileConfig.messages.completed')
+      );
       if (onComplete) {
         await Promise.resolve(onComplete());
       } else {
@@ -714,8 +740,12 @@ function GroupWorkspaceProfileConfigMirror({
     onOpenChange(false);
   };
 
-  const shellClass = isDarkMode ? 'border-slate-800 bg-gradient-to-br from-[#020817] via-[#020817] to-slate-900/50 text-white' : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(180deg,var(--design-60)_0%,#edf6ff_100%)] text-slate-900';
-  const panelClass = isDarkMode ? 'border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.02]' : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(180deg,var(--design-30)_0%,#f7fbff_100%)] shadow-[0_30px_64px_-48px_rgba(15,23,42,0.18)]';
+  const shellClass = isDarkMode
+    ? 'border-slate-800 bg-[#020817] text-white'
+    : 'border-white/80 bg-[linear-gradient(180deg,#fbfeff_0%,#f7fbff_46%,#f4fbf8_100%)] text-slate-900';
+  const panelClass = isDarkMode
+    ? 'border-white/10 bg-white/[0.02]'
+    : 'border-white/80 bg-white/90 shadow-[0_28px_70px_-52px_rgba(15,23,42,0.24)] backdrop-blur-xl';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
   const analysisToneClass = knowledgeAnalysis?.warning
     ? isDarkMode
@@ -731,41 +761,48 @@ function GroupWorkspaceProfileConfigMirror({
         hideClose
         onEscapeKeyDown={canClose ? undefined : (event) => event.preventDefault()}
         onInteractOutside={canClose ? undefined : (event) => event.preventDefault()}
-        className={cn('flex max-h-[92vh] max-w-6xl flex-col overflow-hidden rounded-[32px] border p-0 shadow-2xl', shellClass, fontClass)}
+        className={cn('flex max-h-[92vh] max-w-[1180px] flex-col overflow-hidden rounded-2xl border p-0 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.35)]', shellClass, fontClass)}
       >
-        <DialogHeader className="border-b border-inherit px-8 pb-5 pt-5 text-left">
+        <DialogHeader className={cn(
+          'border-b px-6 py-5 text-left sm:px-7',
+          sectionDividerClass,
+          isDarkMode ? 'bg-[#020817]/95' : 'bg-[linear-gradient(180deg,rgba(244,251,255,0.92),rgba(255,255,255,0.96))]'
+        )}>
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              {showProfileConfirm ? (
-                <>
-                  <div className={cn(
-                    'mb-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold tracking-[0.04em]',
-                    isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  )}>
+            <div className="min-w-0 flex-1 space-y-3">
+              <div
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-md border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]',
+                  showProfileConfirm
+                    ? (isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700')
+                    : (isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600')
+                )}
+              >
+                {showProfileConfirm ? (
+                  <>
                     <Check className="h-3.5 w-3.5" />
                     {t('groupWorkspaceProfileConfigMirror.confirm.badge', 'PROFILE CONFIRMATION')}
-                  </div>
-                  <DialogTitle className="text-[24px] font-bold">
-                    {t('groupWorkspaceProfileConfigMirror.confirm.title', 'Confirm this group profile')}
+                  </>
+                ) : (
+                  t('groupProfileConfig.common.stepCount', { current: displayStep, total: totalSteps })
+                )}
+              </div>
+              {showProfileConfirm ? (
+                <>
+                  <DialogTitle className="text-[28px] font-bold leading-tight">
+                    {confirmTitle}
                   </DialogTitle>
-                  <DialogDescription className={cn('mt-2 max-w-4xl text-sm leading-6', confirmMutedClass)}>
-                    {t(
-                      'groupWorkspaceProfileConfigMirror.confirm.description',
-                      'Review the summary once more. After confirmation, this setup becomes the active profile for the group workspace.'
-                    )}
+                  <DialogDescription className={cn('max-w-4xl text-sm leading-6', confirmMutedClass)}>
+                    {confirmDescription}
                   </DialogDescription>
                 </>
               ) : (
                 <>
-                  <DialogTitle className="text-[24px] font-bold">
-                    {step === 1
-                      ? t('groupProfileConfig.stepOne.title')
-                      : t('groupProfileConfig.stepTwo.title')}
+                  <DialogTitle className="text-[28px] font-bold leading-tight">
+                    {wizardTitle}
                   </DialogTitle>
-                  <DialogDescription className={cn('mt-2 max-w-3xl text-sm leading-6', mutedClass)}>
-                    {step === 1
-                      ? t('groupProfileConfig.stepOne.description')
-                      : t('groupProfileConfig.stepTwo.description')}
+                  <DialogDescription className={cn('max-w-3xl text-sm leading-6', mutedClass)}>
+                    {wizardDescription}
                   </DialogDescription>
                 </>
               )}
@@ -775,10 +812,10 @@ function GroupWorkspaceProfileConfigMirror({
                 type="button"
                 onClick={handleHeaderClose}
                 className={cn(
-                  'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors',
+                  'inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors',
                   isDarkMode
                     ? 'border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-900'
-                    : 'border-[color:var(--surface-border-mid)] bg-[color:var(--design-30)] text-slate-700 shadow-[var(--surface-shadow-soft)] hover:bg-[color:var(--design-60)]'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                 )}
               >
                 <X className="h-4 w-4" />
@@ -787,7 +824,7 @@ function GroupWorkspaceProfileConfigMirror({
               <button
                 type="button"
                 onClick={handleHeaderClose}
-                className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl border', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] text-slate-600')}
+                className={cn('inline-flex h-10 w-10 items-center justify-center rounded-lg border', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}
                 aria-label={t('groupProfileConfig.common.close')}
               >
                 <X className="h-4 w-4" />
@@ -797,14 +834,14 @@ function GroupWorkspaceProfileConfigMirror({
           {showProfileConfirm ? (
             <div className="mt-5">
               <div className={cn(
-                'rounded-[26px] border px-5 py-5 shadow-[0_20px_44px_-30px_rgba(15,23,42,0.35)]',
+                'rounded-xl border px-5 py-5',
                 isDarkMode
                   ? 'border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,47,73,0.78),rgba(6,78,59,0.78))]'
                   : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(239,246,255,1),rgba(236,253,245,0.98))]'
               )}>
                 <div className="flex items-start gap-3">
                   <div className={cn(
-                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg',
                     isDarkMode ? 'bg-white/10 text-emerald-200' : 'bg-emerald-100 text-emerald-700'
                   )}>
                     <Sparkles className="h-5 w-5" />
@@ -824,55 +861,59 @@ function GroupWorkspaceProfileConfigMirror({
               </div>
             </div>
           ) : (
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {stepTabs.map((item) => {
-                const active = step === item.id;
-                const unlocked = item.id <= maxUnlockedStep;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    disabled={!unlocked || loading || submitting}
-                    onClick={() => setStep(item.id)}
-                    className={cn(
-                      'rounded-[24px] border px-5 py-5 text-left transition-all duration-200',
-                      active
-                        ? isDarkMode
-                          ? 'border-cyan-400/40 bg-cyan-500/10 shadow-[0_22px_48px_-36px_rgba(34,211,238,0.45)]'
-                          : 'border-cyan-400 bg-[linear-gradient(135deg,#ecfeff_0%,#f0fdfa_100%)] shadow-[0_24px_44px_-34px_rgba(6,182,212,0.3)]'
-                        : isDarkMode
-                          ? 'border-white/10 bg-white/[0.03]'
-                          : 'border-[color:var(--surface-border-mid)] bg-[color:var(--design-30)] hover:border-[color:var(--surface-border-strong)] hover:bg-[color:var(--design-60)]',
-                      !unlocked && 'opacity-60'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border',
+            <div className={cn('mt-6 rounded-2xl border p-2', stepRailClass)}>
+              <div className="grid gap-2 md:grid-cols-2">
+                {stepTabs.map((item) => {
+                  const active = step === item.id;
+                  const unlocked = item.id <= maxUnlockedStep;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      disabled={!unlocked || loading || submitting}
+                      onClick={() => setStep(item.id)}
+                      className={cn(
+                        'rounded-xl border px-4 py-4 text-left transition-all duration-200',
                         active
                           ? isDarkMode
-                            ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100'
-                            : 'border-cyan-200 bg-white text-cyan-700 shadow-sm'
+                            ? 'border-cyan-400/40 bg-cyan-500/10 shadow-[0_18px_36px_-28px_rgba(34,211,238,0.35)]'
+                            : 'border-cyan-200 bg-[linear-gradient(135deg,#effbff_0%,#f0fdf8_100%)] shadow-[0_24px_40px_-34px_rgba(6,182,212,0.28)]'
                           : isDarkMode
-                            ? 'border-white/10 bg-slate-900/70 text-slate-200'
-                            : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)] text-slate-600'
-                      )}>
-                        <Icon className="h-5 w-5" />
+                            ? 'border-transparent bg-transparent hover:border-white/10 hover:bg-white/[0.03]'
+                            : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-white/70',
+                        !unlocked && 'opacity-60'
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border',
+                          active
+                            ? isDarkMode
+                              ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100'
+                              : 'border-cyan-200 bg-white text-cyan-700 shadow-[0_10px_20px_-16px_rgba(6,182,212,0.45)]'
+                            : isDarkMode
+                              ? 'border-white/10 bg-slate-900/70 text-slate-200'
+                              : 'border-slate-200 bg-white text-slate-600'
+                        )}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold">{item.title}</p>
+                        </div>
+                          <p className={cn('mt-1.5 text-xs leading-5', mutedClass)}>{item.description}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold">{item.title}</p>
-                        <p className={cn('mt-1 text-xs leading-5', mutedClass)}>{item.description}</p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </DialogHeader>
 
-        <div className="custom-scrollbar-group-setup min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-4 scroll-smooth md:pb-10">
+        <div className="custom-scrollbar-group-setup min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-5 scroll-smooth sm:px-7 md:pb-10">
           {loading ? (
             <div className="flex min-h-[320px] items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
@@ -951,50 +992,90 @@ function GroupWorkspaceProfileConfigMirror({
               </div>
             </div>
           ) : step === 1 ? (
-              <section className={cn('rounded-[30px] border p-6', panelClass)}>
-              <div className="space-y-4">
-                <div className={fieldShellClass}>
-                  <div className="mb-4 space-y-1.5">
-                    <label className={cn('text-sm font-semibold', fieldLabelClass)}>
-                      {t('groupProfileConfig.stepOne.groupName')} <span className="text-rose-500">*</span>
-                    </label>
-                    <p className={fieldHelperClass}>{t('groupProfileConfig.stepOne.groupNameHint')}</p>
-                  </div>
-                  <input
-                    value={groupName}
-                    onChange={(e) => { setGroupName(e.target.value); setErrors((prev) => ({ ...prev, groupName: undefined })); }}
-                    className={cn(inputClass, 'text-[15px] font-medium')}
-                    placeholder={t('groupProfileConfig.stepOne.groupNamePlaceholder')}
-                  />
-                  <FieldError message={errors.groupName} />
-                </div>
-
-                <div className={fieldShellClass}>
-                  <div className="mb-4 space-y-1.5">
-                    <p className={fieldEyebrowClass}>{t('groupProfileConfig.stepOne.rulesEyebrow')}</p>
-                    <p className={fieldHelperClass}>{t('groupProfileConfig.stepOne.rulesHint')}</p>
-                  </div>
-                  <textarea
-                    value={rules}
-                    onChange={(e) => setRules(e.target.value)}
-                    className={textareaClass}
-                    placeholder={t('groupProfileConfig.stepOne.rulesPlaceholder')}
-                  />
-                </div>
-              </div>
-            </section>
-          ) : (
-            <div className={cn('grid gap-5', step === 2 && 'lg:grid-cols-[minmax(0,1.2fr)_320px]')}>
-              <section className={cn('rounded-[30px] border p-5 md:p-6', panelClass)}>
-                <div className="space-y-5">
-                  <div className="space-y-3 pb-3 md:pb-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.learningMode')} <span className="text-rose-500">*</span></p>
-                      <span className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', mutedClass)}>
-                        {t('groupProfileConfig.stepTwo.modePrompt')}
-                      </span>
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <section className={cn('rounded-2xl border p-6', panelClass)}>
+                <div className={cn('mb-6 h-1 w-16 rounded-full', accentBarClass)} />
+                <div className="space-y-8">
+                  <div className={cn('border-b pb-8', sectionDividerClass)}>
+                    <p className={fieldEyebrowClass}>
+                      {t('groupProfileConfig.stepOne.groupNameEyebrow', t('groupProfileConfig.stepOne.groupName'))}
+                    </p>
+                    <div className="mt-2 max-w-2xl space-y-1.5">
+                      <label className={cn('text-base font-semibold', fieldLabelClass)}>
+                        {t('groupProfileConfig.stepOne.groupName')} <span className="text-rose-500">*</span>
+                      </label>
+                      <p className={fieldHelperClass}>{t('groupProfileConfig.stepOne.groupNameHint')}</p>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="mt-4">
+                      <input
+                        value={groupName}
+                        onChange={(e) => { setGroupName(e.target.value); setErrors((prev) => ({ ...prev, groupName: undefined })); }}
+                        className={cn(inputClass, 'text-[15px] font-medium')}
+                        placeholder={t('groupProfileConfig.stepOne.groupNamePlaceholder')}
+                      />
+                      <FieldError message={errors.groupName} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="max-w-2xl space-y-1.5">
+                      <p className={fieldEyebrowClass}>{t('groupProfileConfig.stepOne.rulesEyebrow')}</p>
+                      <p className={fieldHelperClass}>{t('groupProfileConfig.stepOne.rulesHint')}</p>
+                    </div>
+                    <div>
+                      <textarea
+                        value={rules}
+                        onChange={(e) => setRules(e.target.value)}
+                        className={textareaClass}
+                        placeholder={t('groupProfileConfig.stepOne.rulesPlaceholder')}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <aside className={cn('rounded-2xl border p-5 xl:sticky xl:top-4 xl:self-start', subtlePanelClass)}>
+                <div className={cn('mb-5 h-1 w-12 rounded-full', accentBarClass)} />
+                <p className={fieldEyebrowClass}>{t('groupWorkspaceProfileConfigMirror.stepOne.previewEyebrow')}</p>
+                <h3 className="mt-2 text-lg font-semibold">
+                  {t('groupWorkspaceProfileConfigMirror.stepOne.previewTitle')}
+                </h3>
+                <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
+                  {t('groupWorkspaceProfileConfigMirror.stepOne.previewDescription')}
+                </p>
+
+                <div className={cn('mt-5 border-t pt-4', sectionDividerClass)}>
+                  <div className="space-y-4">
+                    {stepOnePreviewItems.map((item) => (
+                      <div key={item.id} className={cn('border-b pb-4 last:border-b-0 last:pb-0', sectionDividerClass)}>
+                        <p className={cn('text-[11px] font-semibold uppercase tracking-[0.12em]', mutedClass)}>
+                          {item.label}
+                        </p>
+                        <p className="mt-1.5 text-sm font-medium leading-6">
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          ) : (
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <section className={cn('rounded-2xl border p-6', panelClass)}>
+                <div className={cn('mb-6 h-1 w-16 rounded-full', accentBarClass)} />
+                <div className="space-y-8">
+                  <div className={cn('border-b pb-8', sectionDividerClass)}>
+                    <div className="max-w-2xl space-y-1.5">
+                      <p className={fieldEyebrowClass}>{t('groupProfileConfig.stepTwo.modePrompt')}</p>
+                      <p className="text-base font-semibold">
+                        {t('groupProfileConfig.stepTwo.learningMode')} <span className="text-rose-500">*</span>
+                      </p>
+                      <p className={cn('text-sm leading-6', mutedClass)}>
+                        {t('groupProfileConfig.stepTwo.workflow.modeDescription')}
+                      </p>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
                       {LEARNING_MODES.map((item) => (
                         <ChoiceCard
                           key={item.value}
@@ -1002,9 +1083,6 @@ function GroupWorkspaceProfileConfigMirror({
                           onClick={() => {
                             setLearningMode(item.value);
                             setErrors((prev) => ({ ...prev, learningMode: undefined }));
-                            if (item.value === 'STUDY_NEW') {
-                              setRoadmapEnabled(true);
-                            }
                           }}
                           icon={item.icon}
                           title={t(item.labelKey, item.labelFallback)}
@@ -1019,26 +1097,32 @@ function GroupWorkspaceProfileConfigMirror({
                     <FieldError message={errors.learningMode} />
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.knowledgeLabel')} <span className="text-rose-500">*</span></label>
-                    <textarea
-                      ref={knowledgeTextareaRef}
-                      value={knowledge}
-                      onChange={(e) => {
-                        setKnowledge(e.target.value);
-                        setDomain('');
-                        setErrors((prev) => ({ ...prev, knowledge: undefined, domain: undefined }));
-                        autoResizeTextarea(e.target);
-                      }}
-                      className={compactTextareaClass}
-                      placeholder={t('groupProfileConfig.stepTwo.knowledgePlaceholder')}
-                    />
-                    <FieldError message={errors.knowledge} />
+                  <div className={cn('border-b pb-8', sectionDividerClass)}>
+                    <div className="max-w-2xl space-y-1.5">
+                      <label className="text-base font-semibold">{t('groupProfileConfig.stepTwo.knowledgeLabel')} <span className="text-rose-500">*</span></label>
+                      <p className={cn('text-sm leading-6', mutedClass)}>
+                        {t('groupProfileConfig.stepTwo.workflow.describeDescription')}
+                      </p>
+                    </div>
+                    <div className="mt-4 space-y-4">
+                      <textarea
+                        ref={knowledgeTextareaRef}
+                        value={knowledge}
+                        onChange={(e) => {
+                          setKnowledge(e.target.value);
+                          setDomain('');
+                          setErrors((prev) => ({ ...prev, knowledge: undefined, domain: undefined }));
+                          autoResizeTextarea(e.target);
+                        }}
+                        className={compactTextareaClass}
+                        placeholder={t('groupProfileConfig.stepTwo.knowledgePlaceholder')}
+                      />
+                      <FieldError message={errors.knowledge} />
                   </div>
 
                   {analysisStatus === 'loading' ? (
                     <div className={cn(
-                      'flex items-center gap-3 rounded-[24px] border px-4 py-3',
+                      'flex items-center gap-3 rounded-lg border px-4 py-3',
                       isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700'
                     )}>
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1050,7 +1134,7 @@ function GroupWorkspaceProfileConfigMirror({
 
                   {analysisStatus === 'error' ? (
                     <div className={cn(
-                      'flex flex-wrap items-center justify-between gap-3 rounded-[24px] border px-4 py-3',
+                      'flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3',
                       isDarkMode ? 'border-rose-400/20 bg-rose-500/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-700'
                     )}>
                       <div className="flex items-center gap-3">
@@ -1067,7 +1151,7 @@ function GroupWorkspaceProfileConfigMirror({
                           setAnalysisRetryTick((current) => current + 1);
                         }}
                         className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all',
+                          'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all',
                           isDarkMode ? 'bg-rose-500/20 hover:bg-rose-500/30' : 'bg-rose-100 hover:bg-rose-200'
                         )}
                       >
@@ -1078,7 +1162,7 @@ function GroupWorkspaceProfileConfigMirror({
                   ) : null}
 
                   {hasAnalysisSummary ? (
-                    <div className={cn('rounded-[24px] border px-4 py-3', analysisToneClass)}>
+                    <div className={cn('rounded-lg border px-4 py-3', analysisToneClass)}>
                       <div className="flex items-start gap-3">
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                         <div className="min-w-0 flex-1">
@@ -1110,14 +1194,19 @@ function GroupWorkspaceProfileConfigMirror({
 
                   {analysisStatus === 'success' ? (
                     <div className={cn(
-                      'rounded-[24px] border p-4',
-                      isDarkMode ? 'border-slate-700 bg-slate-950/50' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)]'
+                      'rounded-lg border p-4',
+                      subtlePanelClass
                     )}>
-                      <p className="mb-3 text-sm font-semibold">
+                      <div className="mb-3 max-w-2xl space-y-1">
+                        <p className="text-sm font-semibold">
                         {t('groupProfileConfig.stepTwo.domainSuggestions')} <span className="text-rose-500">*</span>
-                      </p>
+                        </p>
+                        <p className={cn('text-xs leading-5', mutedClass)}>
+                          {t('groupProfileConfig.stepTwo.workflow.domainDescription')}
+                        </p>
+                      </div>
                       {domainOptions.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {domainOptions.map((option) => {
                             const active = domain === option.label;
 
@@ -1130,18 +1219,18 @@ function GroupWorkspaceProfileConfigMirror({
                                   setErrors((prev) => ({ ...prev, domain: undefined }));
                                 }}
                                 className={cn(
-                                  'flex w-full items-start gap-3 rounded-[20px] border px-5 py-4 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg',
+                                  'flex w-full items-start gap-3 rounded-lg border px-4 py-4 text-left transition-all duration-200',
                                   active
                                     ? isDarkMode
-                                      ? 'border-cyan-300/40 bg-cyan-500/12 text-cyan-50 hover:border-cyan-300/50'
-                                      : 'border-cyan-300 bg-cyan-50 text-cyan-900 hover:border-cyan-400'
+                                      ? 'border-cyan-300/40 bg-cyan-500/12 text-cyan-50'
+                                      : 'border-cyan-300 bg-cyan-50 text-cyan-900'
                                     : isDarkMode
-                                      ? 'border-white/10 bg-white/[0.03] hover:border-white/20'
-                                      : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] hover:border-[color:var(--surface-border-strong)]'
+                                      ? 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
+                                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                 )}
                               >
                                 <div className={cn(
-                                  'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                                  'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
                                   active
                                     ? isDarkMode ? 'bg-cyan-400/20 text-cyan-100' : 'bg-cyan-100 text-cyan-700'
                                     : isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600'
@@ -1152,7 +1241,7 @@ function GroupWorkspaceProfileConfigMirror({
                                   <div className="flex items-center justify-between gap-3">
                                     <p className="text-sm font-semibold">{option.label}</p>
                                     <span className={cn(
-                                      'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                                      'shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold',
                                       active
                                         ? isDarkMode ? 'bg-cyan-400/20 text-cyan-100' : 'bg-cyan-100 text-cyan-700'
                                         : isDarkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'
@@ -1170,8 +1259,8 @@ function GroupWorkspaceProfileConfigMirror({
                         </div>
                       ) : (
                         <div className={cn(
-                          'rounded-[20px] border border-dashed px-4 py-3 text-sm leading-6',
-                          isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] text-slate-600'
+                          'rounded-lg border border-dashed px-4 py-3 text-sm leading-6',
+                          isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-white text-slate-600'
                         )}>
                           <p className="font-semibold">
                             {t('groupProfileConfig.stepTwo.analysis.emptyDomainTitle')}
@@ -1189,8 +1278,8 @@ function GroupWorkspaceProfileConfigMirror({
                     <div className="space-y-3">
                       <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.selectedDomain')} <span className="text-rose-500">*</span></label>
                       <div className={cn(
-                        'rounded-[22px] border px-4 py-3',
-                        isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50'
+                        'rounded-lg border px-4 py-3',
+                        accentPanelClass
                       )}>
                         <p className="text-sm font-semibold">{domain}</p>
                         <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
@@ -1202,9 +1291,15 @@ function GroupWorkspaceProfileConfigMirror({
                   ) : null}
 
                   {analysisStatus !== 'success' ? <FieldError message={errors.domain} /> : null}
+                  </div>
 
                   <div className="space-y-3">
-                    <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.groupGoal')} <span className="text-rose-500">*</span></label>
+                    <div className="max-w-xl space-y-1.5">
+                      <label className="text-base font-semibold">{t('groupProfileConfig.stepTwo.groupGoal')} <span className="text-rose-500">*</span></label>
+                      <p className={cn('text-sm leading-6', mutedClass)}>
+                        {t('groupProfileConfig.stepTwo.groupGoalPlaceholder')}
+                      </p>
+                    </div>
                     <textarea
                       ref={groupGoalTextareaRef}
                       value={groupLearningGoal}
@@ -1218,49 +1313,12 @@ function GroupWorkspaceProfileConfigMirror({
                     />
                     <FieldError message={errors.groupLearningGoal} />
                   </div>
-
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.learningSwitches')}</p>
-                        <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                          {t('groupProfileConfig.stepTwo.learningSwitchesHint')}
-                        </p>
-                      </div>
-                      {isStudyNewMode ? (
-                        <span className={cn(
-                          'rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                          isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
-                        )}>
-                          {t('groupProfileConfig.stepTwo.roadmap.studyNewBadge')}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <ToggleTile
-                        checked={roadmapEnabled}
-                        onChange={setRoadmapEnabled}
-                        title={t('groupProfileConfig.stepTwo.roadmap.title')}
-                        description={isStudyNewMode
-                          ? t('groupProfileConfig.stepTwo.roadmap.studyNewDescription')
-                          : t('groupProfileConfig.stepTwo.roadmap.description')}
-                        badge={isStudyNewMode ? t('groupProfileConfig.stepTwo.roadmap.defaultOn') : null}
-                        isDarkMode={isDarkMode}
-                      />
-                      <ToggleTile
-                        checked={preLearningRequired}
-                        onChange={setPreLearningRequired}
-                        title={t('groupProfileConfig.stepTwo.entryAssessment.title')}
-                        description={t('groupProfileConfig.stepTwo.entryAssessment.description')}
-                        isDarkMode={isDarkMode}
-                      />
-                    </div>
-                  </div>
                 </div>
               </section>
 
               {step === 2 && (
-                <aside className={cn('rounded-[30px] border p-4 md:p-5 animate-in fade-in duration-500', panelClass)}>
+                <aside className={cn('rounded-2xl border p-5 animate-in fade-in duration-500 xl:sticky xl:top-4 xl:self-start', subtlePanelClass)}>
+                  <div className={cn('mb-5 h-1 w-12 rounded-full', accentBarClass)} />
                   <p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', mutedClass)}>
                     {t('groupProfileConfig.stepTwo.sidebar.eyebrow')}
                   </p>
@@ -1268,14 +1326,11 @@ function GroupWorkspaceProfileConfigMirror({
                     {t('groupProfileConfig.stepTwo.sidebar.title')}
                   </h3>
 
-                  <div className={cn(
-                    'mt-4 rounded-[24px] border p-4',
-                    isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)]'
-                  )}>
+                  <div className={cn('mt-5 border-t pt-4', sectionDividerClass)}>
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.ready.title')}</p>
                       <span className={cn(
-                        'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                        'rounded-md px-2 py-1 text-[11px] font-semibold',
                         canFinishStepTwo
                           ? isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
                           : isDarkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'
@@ -1285,23 +1340,23 @@ function GroupWorkspaceProfileConfigMirror({
                           : t('groupProfileConfig.stepTwo.ready.pending')}
                       </span>
                     </div>
-                    <div className="mt-3 space-y-3">
+                    <div className="mt-4 space-y-3">
                       {readinessItems.map((item) => (
                         <div
                           key={item.label}
                           className={cn(
-                            'flex items-start gap-3 rounded-[18px] border px-3 py-3',
+                            'flex items-start gap-3 rounded-lg border px-3 py-3',
                             item.ready
                               ? isDarkMode
                                 ? 'border-emerald-400/15 bg-emerald-500/10'
                                 : 'border-emerald-100 bg-emerald-50/80'
                               : isDarkMode
                                 ? 'border-white/10 bg-slate-950/50'
-                                : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)]'
+                                : 'border-slate-200 bg-white'
                           )}
                         >
                           <div className={cn(
-                            'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                            'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md',
                             item.ready
                               ? isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
                               : isDarkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-500'
@@ -1324,16 +1379,16 @@ function GroupWorkspaceProfileConfigMirror({
         </div>
 
         <DialogFooter className={cn(
-          'relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t px-8 py-4 backdrop-blur-xl',
+          'relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t px-6 py-4 backdrop-blur-xl sm:px-7',
           isDarkMode 
             ? 'border-slate-800 bg-gradient-to-t from-[#020817] via-[#020817]/95 to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]' 
-            : 'border-[color:var(--surface-border-soft)] bg-gradient-to-t from-[var(--design-60)] via-[var(--design-60)] to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
+            : 'border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.96))] shadow-[0_-8px_28px_-18px_rgba(15,23,42,0.08)]'
         )}>
           <div className="space-y-1">
             <div className={cn('text-xs leading-5', showProfileConfirm ? confirmMutedClass : mutedClass)}>
               {showProfileConfirm
                 ? '\u00A0'
-                : t('groupProfileConfig.common.stepCount', { current: step, total: 2 })}
+                : t('groupProfileConfig.common.stepCount', { current: displayStep, total: totalSteps })}
             </div>
             {saveError ? <p className="text-xs font-medium text-rose-500">{saveError}</p> : null}
             {!saveError && statusNotice ? <p className="text-xs font-medium text-emerald-500">{statusNotice}</p> : null}
@@ -1348,8 +1403,8 @@ function GroupWorkspaceProfileConfigMirror({
                   disabled={loading || submitting}
                   onClick={() => setShowProfileConfirm(false)}
                   className={cn(
-                    'rounded-[24px] px-5',
-                    isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] text-slate-700 hover:bg-[color:var(--design-60)]'
+                    'rounded-xl px-5',
+                    isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-slate-200 bg-white/90 text-slate-700 hover:bg-white'
                   )}
                 >
                   {t('groupWorkspaceProfileConfigMirror.confirm.backToEdit', 'Back to edit')}
@@ -1358,21 +1413,21 @@ function GroupWorkspaceProfileConfigMirror({
                   type="button"
                   disabled={loading || submitting}
                   onClick={handleConfirmSubmit}
-                  className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700"
+                  className="rounded-xl bg-[linear-gradient(135deg,#10b981,#059669)] px-6 text-white shadow-[0_18px_36px_-24px_rgba(5,150,105,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105"
                 >
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                  {t('groupWorkspaceProfileConfigMirror.confirm.confirmButton', 'Confirm this profile')}
+                  {confirmActionLabel}
                 </Button>
               </>
-            ) : step > 1 ? (
-              <Button type="button" variant="ghost" disabled={loading || submitting} onClick={() => setStep(1)} className={cn('rounded-[24px] px-5 transition-all duration-200', isDarkMode ? 'text-slate-200 hover:bg-slate-900' : 'text-slate-700 hover:bg-slate-100')}>
+            ) : step > 1 && !isPostOnboardingEdit ? (
+              <Button type="button" variant="ghost" disabled={loading || submitting} onClick={() => setStep(1)} className={cn('rounded-xl px-5 transition-all duration-200', isDarkMode ? 'text-slate-200 hover:bg-slate-900' : 'text-slate-700 hover:bg-white/80')}>
                 <ChevronLeft className="h-4 w-4" />
                 {t('groupProfileConfig.common.back')}
               </Button>
             ) : null}
 
             {!showProfileConfirm && step === 1 ? (
-              <Button type="button" disabled={loading || submitting} onClick={handleNext} className="rounded-[24px] bg-cyan-600 px-6 text-white transition-all duration-200 hover:bg-cyan-700">
+              <Button type="button" disabled={loading || submitting} onClick={handleNext} className="rounded-xl bg-[linear-gradient(135deg,#06b6d4,#0f9fbd)] px-6 text-white shadow-[0_18px_36px_-24px_rgba(8,145,178,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105">
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {submitting ? t('groupProfileConfig.common.saving') : t('groupProfileConfig.common.continue')}
                 <ChevronRight className="h-4 w-4" />
@@ -1385,14 +1440,12 @@ function GroupWorkspaceProfileConfigMirror({
                   if (!validateStepTwo()) return;
                   setShowProfileConfirm(true);
                 }}
-                className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700"
+                className="rounded-xl bg-[linear-gradient(135deg,#10b981,#059669)] px-6 text-white shadow-[0_18px_36px_-24px_rgba(5,150,105,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105"
               >
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {submitting
                   ? t('groupProfileConfig.common.saving')
-                  : canFinishStepTwo
-                    ? t('groupProfileConfig.common.finish')
-                    : t('groupProfileConfig.common.finishIncomplete')}
+                  : finishLabel}
               </Button>
             ) : null}
           </div>
