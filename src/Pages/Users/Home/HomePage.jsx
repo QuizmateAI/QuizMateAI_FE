@@ -21,16 +21,6 @@ import { getMyWallet } from '@/api/ManagementSystemAPI';
 import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
-import { createIndividualWorkspaceWithBasicStep } from '@/api/WorkspaceAPI';
-import { unwrapApiData } from '@/Utils/apiResponse';
-
-const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(
-  () => import("@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"),
-);
-
-function DeferredHomeDialog({ children }) {
-  return <React.Suspense fallback={null}>{children}</React.Suspense>;
-}
 
 function formatNumber(value, locale) {
   try {
@@ -137,7 +127,6 @@ function HomePage() {
   const [viewMode, setViewMode] = useState('grid');
   const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState('');
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
-  const [draftProfileConfigOpen, setDraftProfileConfigOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
@@ -158,6 +147,7 @@ function HomePage() {
     workspaces,
     loading,
     pagination,
+    createWorkspace,
     createGroupWorkspace,
     editWorkspace,
     removeWorkspace,
@@ -185,34 +175,24 @@ function HomePage() {
     i18n.changeLanguage(newLang);
   };
 
-  // Tao workspace ca nhan sau khi user hoan tat buoc 1 onboarding.
   const handleOpenCreate = async () => {
-    void preloadWorkspacePage();
-    setDraftProfileConfigOpen(true);
-  };
-
-  const handleDraftProfileSave = async (currentStep, data) => {
-    if (currentStep !== 1) {
-      throw new Error(t('home.workspace.createError') || 'Không thể tạo workspace');
-    }
-
     try {
-      const response = await createIndividualWorkspaceWithBasicStep(data);
-      const profileData = unwrapApiData(response);
-      const createdWorkspaceId = profileData?.workspaceId;
+      void preloadWorkspacePage();
+      const createdWorkspace = await createWorkspace({ title: null });
+      const createdWorkspaceId = createdWorkspace?.workspaceId;
 
       if (!createdWorkspaceId) {
         throw new Error(t('home.workspace.createError') || 'Không thể tạo workspace');
       }
 
-      setDraftProfileConfigOpen(false);
       navigate(buildWorkspacePath(createdWorkspaceId), {
-        state: { openProfileConfig: true, continueProfileSetup: true },
+        state: {
+          openProfileConfig: true,
+          returnToHomeOnIncompleteProfile: true,
+        },
       });
-      return profileData;
     } catch (err) {
       showError(err?.message || t('home.workspace.createError') || 'Không thể tạo workspace');
-      throw err;
     }
   };
 
@@ -261,10 +241,10 @@ function HomePage() {
   // Nếu được gọi từ GroupWorkspace với yêu cầu tạo workspace → nhảy sang trang tạo
   useEffect(() => {
     if (location.state?.openCreateDialog) {
-      setDraftProfileConfigOpen(true);
+      void handleOpenCreate();
       navigate('/home', { replace: true });
     }
-  }, [location.state, navigate]);
+  }, [handleOpenCreate, location.state, navigate]);
 
   useEffect(() => {
     const currentTab = searchParams.get('tab');
@@ -642,19 +622,6 @@ function HomePage() {
         onDelete={handleDelete}
         isDarkMode={isDarkMode}
       />
-      {draftProfileConfigOpen ? (
-        <DeferredHomeDialog>
-          <LazyIndividualWorkspaceProfileConfigDialog
-            open={draftProfileConfigOpen}
-            onOpenChange={setDraftProfileConfigOpen}
-            onSave={handleDraftProfileSave}
-            onConfirm={() => {}}
-            isDarkMode={isDarkMode}
-            initialData={null}
-            forceStartAtStepOne
-          />
-        </DeferredHomeDialog>
-      ) : null}
     </div>
   );
 }

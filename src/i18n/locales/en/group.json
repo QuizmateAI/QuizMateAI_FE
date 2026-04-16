@@ -222,7 +222,7 @@
         "domainTitle": "Lock the domain",
         "domainDescription": "Choose the right baseline so the AI understands this workspace correctly.",
         "modeTitle": "Choose the learning style",
-        "modeDescription": "Decide whether the group is focused on new learning, review, or mock tests."
+        "modeDescription": "Decide whether the group is focused on new learning or review."
       },
       "knowledgeLabel": "Shared group knowledge",
       "knowledgePlaceholder": "Example: Our group is studying JLPT N3 to strengthen grammar, vocabulary, and reading practice by topic.",
@@ -233,7 +233,7 @@
       "learningMode": "Learning mode",
       "modePrompt": "Choose the main learning rhythm for the group",
       "studyNewDescription": "Best when the group is learning new material and needs a clear roadmap.",
-      "reviewDescription": "Best when the group has studied before and wants a structured review flow.",
+      "reviewDescription": "Best when the group has studied before, wants a structured review flow, and may still create mock tests later.",
       "mockTestDescription": "Best when the group wants to practice exams and track progress with tests.",
       "examName": "Exam name",
       "examNamePlaceholder": "Example: JLPT N3 December",

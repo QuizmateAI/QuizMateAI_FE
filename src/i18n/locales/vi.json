@@ -1947,16 +1947,16 @@
         }
       },
       "steps": {
-        "1": {
-          "title": "Bước 1",
-          "stepperLabel": "Mục đích học tập",
-          "description": "Chọn mục đích sử dụng không gian Học tập và để Quizmate AI đánh giá kiến thức."
-        },
-        "2": {
-          "title": "Bước 2",
-          "stepperLabel": "Hồ sơ cá nhân",
-          "description": "Bổ sung trình độ cá nhân, mục tiêu và thông tin mock test nếu cần."
-        },
+      "1": {
+        "title": "Bước 1",
+        "stepperLabel": "Xác định kiến thức",
+        "description": "Chọn cách học và để Quizmate AI xác định phạm vi kiến thức phù hợp."
+      },
+      "2": {
+        "title": "Bước 2",
+        "stepperLabel": "Hồ sơ cá nhân",
+        "description": "Bổ sung trình độ hiện tại, mục tiêu và các điểm cần tập trung để AI gợi ý sát hơn."
+      },
         "3": {
           "title": "Bước 3",
           "stepperLabel": "Cấu hình lộ trình",
@@ -1968,14 +1968,14 @@
         }
       },
       "purpose": {
-        "STUDY_NEW": {
-          "title": "Học mới",
-          "description": "Bắt đầu một chủ đề mới và xây dựng lộ trình nền tảng từ đầu."
-        },
-        "REVIEW": {
-          "title": "Ôn tập",
-          "description": "Củng cố phần đã học, chọn điểm cần cải thiện và có thể thêm lộ trình nếu cần."
-        },
+      "STUDY_NEW": {
+        "title": "Học mới",
+        "description": "Bắt đầu một chủ đề mới, xây dựng nền tảng và vẫn có thể tạo mock test khi cần."
+      },
+      "REVIEW": {
+        "title": "Ôn tập",
+        "description": "Củng cố phần đã học, tập trung vào chỗ cần cải thiện và vẫn có thể tạo mock test khi cần."
+      },
         "MOCK_TEST": {
           "title": "Mock test",
           "description": "Luyện theo kỳ thi mục tiêu với bản mẫu đề, điểm mục tiêu và ngày thi dự kiến."
@@ -1995,9 +1995,9 @@
           "description": "Xác nhận lĩnh vực Quizmate AI đề xuất để tiếp tục sang bước tiếp theo."
         }
       },
-      "stepOne": {
-        "title": "Chọn đúng mục đích sử dụng không gian học tập",
-        "description": "Mục đích bạn chọn sẽ quyết định các trường thông tin, gợi ý và cấu hình ở những bước sau.",
+    "stepOne": {
+      "title": "Xác định kiến thức và cách học",
+      "description": "Chọn cách học chính, nhập kiến thức bạn muốn học và để Quizmate AI gợi ý domain phù hợp.",
         "knowledgeTitle": "Nhập kiến thức bạn muốn học",
         "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. Quizmate AI sẽ suy ra lĩnh vực phù hợp với bạn.",
         "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
@@ -2114,8 +2114,8 @@
         "finishSuccess": "Hoàn thành thiết lập Không gian Học tập thành công.",
         "saveError": "Không thể lưu tiến trình thiết lập Không gian Học tập."
       },
-      "fields": {
-        "workspacePurpose": "Mục đích sử dụng",
+    "fields": {
+      "workspacePurpose": "Cách học chính",
         "knowledgeInput": "Kiến thức bạn muốn học",
         "knowledgeDescription": "Mô tả chi tiết knowledge",
         "primaryDomain": "Lĩnh vực chính",
@@ -3917,7 +3917,7 @@
         "domainTitle": "Chốt domain",
         "domainDescription": "Chọn baseline phù hợp để AI hiểu đúng workspace của nhóm.",
         "modeTitle": "Chọn cách học",
-        "modeDescription": "Xác định nhóm ưu tiên học mới, ôn tập hay thi thử."
+        "modeDescription": "Xác định nhóm ưu tiên học mới hay ôn tập."
       },
       "knowledgeLabel": "Knowledge chung của nhóm",
       "knowledgePlaceholder": "Ví dụ: Cả nhóm đang học JLPT N3 để củng cố ngữ pháp, từ vựng và luyện đọc theo từng chủ điểm.",
@@ -3927,7 +3927,7 @@
       "learningMode": "Chế độ học tập",
       "modePrompt": "Chọn nhịp học chính của nhóm",
       "studyNewDescription": "Phù hợp khi nhóm đang bắt đầu kiến thức mới và muốn có roadmap rõ ràng.",
-      "reviewDescription": "Phù hợp khi nhóm đã học qua và muốn ôn tập có hệ thống.",
+      "reviewDescription": "Phù hợp khi nhóm đã học qua, muốn ôn tập có hệ thống và vẫn có thể tạo mock test khi cần.",
       "mockTestDescription": "Phù hợp khi nhóm cần luyện đề và theo dõi tiến độ bằng bài test.",
       "examName": "Tên kỳ thi",
       "examNamePlaceholder": "Ví dụ: JLPT N3 tháng 12",

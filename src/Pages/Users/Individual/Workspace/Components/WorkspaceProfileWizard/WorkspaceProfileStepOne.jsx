@@ -2,7 +2,6 @@ import React from 'react';
 import {
   AlertTriangle,
   BookMarked,
-  BrainCircuit,
   CheckCircle2,
   ChevronRight,
   Compass,
@@ -10,22 +9,18 @@ import {
   Loader2,
   RefreshCw,
   Route,
-  ScrollText,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PURPOSE_META = {
   STUDY_NEW: {
-    icon: Compass,
+    icon: BookMarked,
     tint: 'from-cyan-500 to-blue-600',
   },
   REVIEW: {
     icon: Layers3,
     tint: 'from-amber-500 to-orange-500',
-  },
-  MOCK_TEST: {
-    icon: ScrollText,
-    tint: 'from-emerald-500 to-green-600',
   },
 };
 
@@ -197,16 +192,16 @@ function WorkspaceProfileStepOne({
   };
 
   return (
-    <div className="space-y-6">
-      <section className={cn('rounded-[26px] border p-4 sm:p-5', surfaceClass)}>
+    <div className="space-y-7">
+      <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
               isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-50 text-cyan-600'
             )}
           >
-            <BrainCircuit className="h-5 w-5" />
+            <Target className="h-5 w-5" />
           </div>
           <div>
             <h3 className="text-[1.15rem] font-semibold leading-7">{t('workspace.profileConfig.stepOne.title')}</h3>
@@ -221,7 +216,7 @@ function WorkspaceProfileStepOne({
           </p>
         </div>
 
-        <div className="grid gap-1.5 lg:grid-cols-3">
+        <div className="grid gap-2.5 lg:grid-cols-2">
           {Object.entries(PURPOSE_META).map(([purpose, meta]) => {
             const Icon = meta.icon;
             const active = values.workspacePurpose === purpose;
@@ -233,7 +228,7 @@ function WorkspaceProfileStepOne({
                 disabled={disabled}
                 onClick={() => onPurposeChange(purpose)}
                 className={cn(
-                  'group min-h-[96px] rounded-[18px] border p-2.5 text-left transition-all sm:min-h-[102px] sm:p-3',
+                  'group min-h-[112px] rounded-[20px] border p-3.5 text-left transition-all sm:min-h-[120px] sm:p-4',
                   disabled && 'cursor-not-allowed opacity-70',
                   active
                     ? isDarkMode
@@ -248,7 +243,7 @@ function WorkspaceProfileStepOne({
                   <div className="flex min-w-0 items-start gap-2">
                     <div
                       className={cn(
-                        'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                        'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
                         active
                           ? 'bg-white/15 text-white'
                           : isDarkMode
@@ -256,11 +251,11 @@ function WorkspaceProfileStepOne({
                             : 'bg-white text-cyan-600'
                       )}
                     >
-                      <Icon className="h-3.5 w-3.5" />
+                      <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[15px] font-semibold leading-5">{t(`workspace.profileConfig.purpose.${purpose}.title`)}</p>
-                      <p className={cn('mt-0.5 text-[11px] leading-[1.45] sm:text-xs', active ? 'text-white/80' : mutedClass)}>
+                      <p className="text-[15px] font-semibold leading-5 sm:text-base">{t(`workspace.profileConfig.purpose.${purpose}.title`)}</p>
+                      <p className={cn('mt-1 text-[11px] leading-[1.5] sm:text-[13px]', active ? 'text-white/80' : mutedClass)}>
                         {t(`workspace.profileConfig.purpose.${purpose}.description`)}
                       </p>
                     </div>
@@ -274,7 +269,7 @@ function WorkspaceProfileStepOne({
         {errors.workspacePurpose ? <p className="mt-3 text-sm font-medium text-red-400">{errors.workspacePurpose}</p> : null}
       </section>
 
-      <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
+      <section className={cn('rounded-[30px] border p-5 sm:p-6', surfaceClass)}>
         <div className="flex items-start gap-3">
           <div
             className={cn(
@@ -297,7 +292,7 @@ function WorkspaceProfileStepOne({
               <RequiredAsterisk />
             </label>
             <textarea
-              rows={3}
+              rows={4}
               disabled={disabled}
               value={values.knowledgeInput}
               onChange={(event) => onFieldChange('knowledgeInput', event.target.value)}
@@ -586,8 +581,8 @@ function WorkspaceProfileStepOne({
         </div>
       </section>
 
-      {(values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') ? (
-        <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
+      {values.workspacePurpose === 'REVIEW' ? (
+        <section className={cn('rounded-[30px] border p-5 sm:p-6', surfaceClass)}>
           <div className="flex items-start gap-3">
             <div
               className={cn(

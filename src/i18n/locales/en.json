@@ -1950,16 +1950,16 @@
         }
       },
       "steps": {
-        "1": {
-          "title": "Step 1",
-          "stepperLabel": "Learning intent",
-          "description": "Choose the workspace intent and let AI assess the knowledge area."
-        },
-        "2": {
-          "title": "Step 2",
-          "stepperLabel": "Current profile",
-          "description": "Add your current level, goals, and mock-test details if needed."
-        },
+      "1": {
+        "title": "Step 1",
+        "stepperLabel": "Knowledge focus",
+        "description": "Choose how you want to learn and let AI identify the right knowledge area."
+      },
+      "2": {
+        "title": "Step 2",
+        "stepperLabel": "Current profile",
+        "description": "Add your current level, goals, and focus areas so AI can guide the next steps."
+      },
         "3": {
           "title": "Step 3",
           "stepperLabel": "Roadmap setup",
@@ -1971,14 +1971,14 @@
         }
       },
       "purpose": {
-        "STUDY_NEW": {
-          "title": "Study new",
-          "description": "Start a new topic and build a foundational roadmap from scratch."
-        },
-        "REVIEW": {
-          "title": "Review",
-          "description": "Reinforce what you already studied, choose focus areas, and optionally add a roadmap."
-        },
+      "STUDY_NEW": {
+        "title": "Study new",
+        "description": "Start a new topic, build the foundation, and still create mock tests when needed."
+      },
+      "REVIEW": {
+        "title": "Review",
+        "description": "Reinforce what you already studied, focus on gaps, and still create mock tests when needed."
+      },
         "MOCK_TEST": {
           "title": "Mock test",
           "description": "Prepare for a target exam with template setup, target score, and expected exam date."
@@ -1998,9 +1998,9 @@
           "description": "Confirm the suggested domain to continue to the next step."
         }
       },
-      "stepOne": {
-        "title": "Choose the right workspace intent",
-        "description": "Your choice here changes the fields, recommendations, and configuration flow in the next steps.",
+    "stepOne": {
+      "title": "Define the knowledge focus and learning style",
+      "description": "Choose the main learning mode, enter what you want to learn, and let Quizmate AI suggest the right domain.",
         "knowledgeTitle": "Your knowledge topic and AI-inferred domain",
         "knowledgeDescription": "Describe what you want to learn. AI will infer the most relevant domain and suggest a field for you to confirm.",
         "knowledgeSuggestionTitle": "Suggested domains",
@@ -2118,8 +2118,8 @@
         "finishSuccess": "Workspace setup completed successfully.",
         "saveError": "Unable to save the workspace setup progress."
       },
-      "fields": {
-        "workspacePurpose": "Workspace purpose",
+    "fields": {
+      "workspacePurpose": "Primary learning mode",
         "knowledgeInput": "Knowledge you want to learn",
         "knowledgeDescription": "Detailed knowledge description",
         "primaryDomain": "Primary domain",
@@ -4050,7 +4050,7 @@
         "domainTitle": "Lock the domain",
         "domainDescription": "Choose the right baseline so the AI understands this workspace correctly.",
         "modeTitle": "Choose the learning style",
-        "modeDescription": "Decide whether the group is focused on new learning, review, or mock tests."
+        "modeDescription": "Decide whether the group is focused on new learning or review."
       },
       "knowledgeLabel": "Shared group knowledge",
       "knowledgePlaceholder": "Example: Our group is studying JLPT N3 to strengthen grammar, vocabulary, and reading practice by topic.",
@@ -4061,7 +4061,7 @@
       "learningMode": "Learning mode",
       "modePrompt": "Choose the main learning rhythm for the group",
       "studyNewDescription": "Best when the group is learning new material and needs a clear roadmap.",
-      "reviewDescription": "Best when the group has studied before and wants a structured review flow.",
+      "reviewDescription": "Best when the group has studied before, wants a structured review flow, and may still create mock tests later.",
       "mockTestDescription": "Best when the group wants to practice exams and track progress with tests.",
       "examName": "Exam name",
       "examNamePlaceholder": "Example: JLPT N3 December",
