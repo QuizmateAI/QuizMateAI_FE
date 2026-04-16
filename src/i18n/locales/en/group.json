@@ -35,19 +35,74 @@
       "no": "No",
       "reload": "Reload",
       "refresh": "Refresh",
-      "headingEyebrow": "Member board",
-      "headingTitle": "Members and roles",
-      "headingDescription": "Manage roles and permissions so everyone knows their responsibility.",
+      "headingEyebrow": "Team directory",
+      "headingTitle": "Team Directory",
+      "headingDescription": "Manage access rights and monitor workspace activity across {{count}} members.",
+      "totalUsers": "Total users",
+      "pendingInvitations": "Pending invitations",
+      "securityHealth": "Security health",
+      "onlineNow": "{{count}} Online",
+      "onlineMetric": "Online now",
+      "leaderCount": "{{count}} leader(s)",
+      "contributorsMetric": "Contributors",
+      "contributorsHint": "Can support shared learning content",
+      "uploadReadyMetric": "Upload ready",
+      "uploadCoverageValue": "{{count}}/{{total}} people · {{percent}}%",
+      "accessHealth": "Access health",
+      "accessHealthHint": "Share upload permissions with the right people.",
+      "visibleNow": "{{count}} / {{total}} visible",
+      "memberFallback": "Member",
       "columns": {
         "member": "Member",
         "role": "Role",
+        "status": "Status",
+        "lastActive": "Last active",
         "uploadAccess": "Upload access",
         "actions": "Actions"
+      },
+      "status": {
+        "active": "Active",
+        "away": "Away",
+        "offline": "Offline",
+        "unknown": "Unknown"
+      },
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{{count}} mins ago",
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} days ago",
+        "noActivity": "No activity"
       },
       "uploadGranted": "Can upload",
       "uploadLimited": "Read and participate",
       "removeConfirmEyebrow": "Confirm action",
-      "showing": "Showing {{count}} of {{total}} members"
+      "showing": "Showing 1 to {{count}} of {{total}} members",
+      "invitations": {
+        "manage": "Manage",
+        "title": "Manage invitations",
+        "description": "Track invited emails and resend invitations when needed.",
+        "refresh": "Refresh invitations",
+        "loadFailed": "Could not load invitations.",
+        "resendFailed": "Could not resend the invitation.",
+        "cancelFailed": "Could not cancel the invitation.",
+        "empty": "No invitations waiting right now.",
+        "emailFallback": "Unknown email",
+        "invitedBy": "Invited by",
+        "sentAt": "Sent",
+        "expiresAt": "Expires",
+        "noDate": "Not updated",
+        "copy": "Copy",
+        "resend": "Resend",
+        "resending": "Sending...",
+        "cancel": "Cancel",
+        "cancelling": "Cancelling...",
+        "status": {
+          "pending": "Pending",
+          "accepted": "Accepted",
+          "expired": "Expired",
+          "cancelled": "Cancelled"
+        }
+      }
     },
     "settings": {
       "groupInfo": "Group Information",
@@ -264,9 +319,27 @@
       "requireUploadBeforeActions": "Upload at least one document in the Documents tab before using this feature."
     },
     "memberStats": {
-      "eyebrow": "Member operations",
+      "eyebrow": "Member drill-down",
       "title": "Member stats",
-      "description": "Track each member and trigger focused actions from one place.",
+      "description": "Use this tab after Overview: inspect one learner at a time, refresh their learning snapshot, and assign focused work.",
+      "hero": {
+        "questionValue": "Per-member decisions",
+        "totalRosterLabel": "Roster scope",
+        "totalRosterNote": "All members available for review.",
+        "activeRowsLabel": "Learning data",
+        "activeRowsValue": "{{count}}/{{total}} visible",
+        "activeRowsNote": "{{count}} row(s) already have a generated snapshot.",
+        "visibleAverageLabel": "Visible avg score",
+        "visibleAverageNote": "Average across rows currently shown."
+      },
+      "scope": {
+        "detailTitle": "Per-member drill-down",
+        "detailBody": "Attempts, passed count, average score, pass rate, and AI class live on each row.",
+        "refreshTitle": "Snapshot control",
+        "refreshBody": "Refresh a single member without regenerating the entire group view.",
+        "actionTitle": "Focused actions",
+        "actionBody": "Assign a quiz or prepare a follow-up for exactly one learner."
+      },
       "totalMembers": "{{count}} members",
       "readOnlyBadge": "Contributor read-only",
       "empty": "No member data available yet.",
@@ -938,8 +1011,21 @@
       "uploadReadyNote": "{{percent}}% can add sources"
     },
     "compact": {
-      "systemDashboardEyebrow": "System dashboard",
-      "headlineSummary": "High-level health and activity signals for the group.",
+      "systemDashboardEyebrow": "Group command center",
+      "titleWithGroup": "{{name}} overview",
+      "headlineSummary": "Use this tab for group-level operations: health signals, coordination gaps, invitations, and activity flow.",
+      "scope": {
+        "questionLabel": "This tab answers",
+        "questionValue": "What needs attention across the whole group?",
+        "groupHealthTitle": "Group health",
+        "groupHealthBody": "Invitation queue, role coverage, upload readiness, and recent activity.",
+        "attentionTitle": "Attention queue",
+        "attentionBody": "Highlights operational gaps before they become member-level work.",
+        "memberStatsTitle": "Member stats handoff",
+        "memberStatsBody": "Open member stats when you need per-person actions or learning detail."
+      },
+      "memberStatsCtaTitle": "Need per-member decisions?",
+      "memberStatsCtaBody": "Use Member stats for individual snapshots, quiz assignment, and member-specific follow-up.",
       "learningIntelligenceEyebrow": "Learning intelligence",
       "learningIntelligenceSummary": "Live aggregates from quiz attempts, scores, and AI classification — tap any card to inspect a member.",
       "summaryLoadError": "Could not load learning summary. Try again later.",
