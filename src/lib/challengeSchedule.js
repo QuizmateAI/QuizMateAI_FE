@@ -1,7 +1,8 @@
 /** Wall-clock local schedule helpers for group challenges (đồng bộ BE LocalDateTime). */
 
-export const CHALLENGE_MIN_LEAD_DAYS = 3;
-export const CHALLENGE_MIN_DURATION_HOURS = 24;
+export const CHALLENGE_MIN_LEAD_DAYS = 0;
+export const CHALLENGE_MIN_DURATION_HOURS = 0;
+export const CHALLENGE_MIN_DURATION_MINUTES = 5;
 
 export function pad2(n) {
   return String(n).padStart(2, '0');
@@ -15,21 +16,22 @@ export function toTimeInputValue(d) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-/** Mặc định: hiện tại + 3 ngày, làm tròn phút về 0. */
+/** Mặc định: hiện tại + 30 phút, làm tròn lên 5 phút. */
 export function defaultStartParts() {
   const d = new Date();
-  d.setDate(d.getDate() + CHALLENGE_MIN_LEAD_DAYS);
-  d.setMinutes(0, 0, 0);
+  d.setMinutes(d.getMinutes() + 30, 0, 0);
+  const remainder = d.getMinutes() % 5;
+  if (remainder > 0) d.setMinutes(d.getMinutes() + (5 - remainder));
   return { dateStr: toDateInputValue(d), timeStr: toTimeInputValue(d) };
 }
 
-/** Kết thúc = bắt đầu + 24h. */
+/** Kết thúc = bắt đầu + 90 phút. */
 export function defaultEndPartsFromStart(dateStr, timeStr) {
   const ms = parseLocalDateTimeToMs(dateStr, timeStr);
   if (!Number.isFinite(ms)) {
     return defaultStartParts();
   }
-  const d = new Date(ms + CHALLENGE_MIN_DURATION_HOURS * 60 * 60 * 1000);
+  const d = new Date(ms + 90 * 60 * 1000);
   return { dateStr: toDateInputValue(d), timeStr: toTimeInputValue(d) };
 }
 
@@ -77,7 +79,6 @@ export function getScheduleValidationIssues(startDate, startTime, endDate, endTi
   const startMs = parseLocalDateTimeToMs(startDate, startTime);
   const endMs = parseLocalDateTimeToMs(endDate, endTime);
   const nowMs = Date.now();
-  const minStartMs = nowMs + CHALLENGE_MIN_LEAD_DAYS * 24 * 60 * 60 * 1000;
 
   if (!startDate || startTime == null || startTime === '' || !endDate || endTime == null || endTime === '') {
     return issues;
@@ -89,7 +90,6 @@ export function getScheduleValidationIssues(startDate, startTime, endDate, endTi
   if (startMs < nowMs) issues.push('pastStart');
   if (endMs < nowMs) issues.push('pastEnd');
   if (endMs <= startMs) issues.push('endBeforeStart');
-  if ((endMs - startMs) < CHALLENGE_MIN_DURATION_HOURS * 60 * 60 * 1000) issues.push('shortWindow');
-  if (startMs < minStartMs) issues.push('startTooSoon');
+  if ((endMs - startMs) < CHALLENGE_MIN_DURATION_MINUTES * 60 * 1000) issues.push('shortWindow');
   return issues;
 }

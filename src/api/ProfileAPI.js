@@ -33,7 +33,7 @@ async function getUserProfile() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-  const userProfile = response?.data || response || {};
+  const userProfile = response?.data?.data ?? response?.data ?? response ?? {};
   const profile = normalizeUserProfile(userProfile, getCurrentUser() || {});
 
   setCachedProfile(profile);

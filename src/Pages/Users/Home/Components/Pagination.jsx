@@ -13,7 +13,7 @@ function Pagination({ currentPage, totalPages, totalElements, pageSize, onPageCh
   const endItem = Math.min((currentPage + 1) * pageSize, totalElements);
 
   return (
-    <div className={`flex items-center justify-between mt-6 px-4 ${fontClass}`}>
+    <div className={`flex items-center justify-between mt-3 px-4 ${fontClass}`}>
       {/* Thông tin hiển thị */}
       <div className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
         {t("home.pagination.showing", { start: startItem, end: endItem, total: totalElements })}

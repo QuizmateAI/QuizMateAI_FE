@@ -354,55 +354,6 @@ export default function GroupDocumentsTab({
 
   return (
     <div className="space-y-5">
-      <section className={`relative overflow-hidden rounded-[32px] border px-6 py-4 lg:px-7 lg:py-5 ${isDarkMode ? 'border-white/10 bg-white/[0.05]' : 'border-white/80 bg-white/90'}`}>
-        <div className={`pointer-events-none absolute inset-0 ${
-          isDarkMode
-            ? 'bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.10),transparent_24%),radial-gradient(circle_at_85%_10%,rgba(249,115,22,0.12),transparent_22%)]'
-            : 'bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.08),transparent_24%),radial-gradient(circle_at_85%_10%,rgba(249,115,22,0.08),transparent_22%)]'
-        }`} />
-        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}`}>
-                {t('groupDocumentsTab.badgeDocumentsHub', 'Documents hub')}
-              </span>
-              <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
-                {isLeader
-                  ? t('groupDocumentsTab.badgeLeaderControl', 'Leader control')
-                  : t('groupDocumentsTab.badgeMemberRequests', 'Member requests')}
-              </span>
-            </div>
-            <h2 className={`mt-3 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {t('groupDocumentsTab.heroTitle', 'Manage group learning materials in one place')}
-            </h2>
-            <p className={`mt-2 max-w-3xl text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              {t('groupDocumentsTab.heroSubtitle', 'Upload shared documents, review member requests, and separate warning materials that still need a leader decision.')}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className={`inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition ${refreshing ? 'cursor-not-allowed opacity-70' : ''} ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.08]' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-            >
-              {renderActionVisual(refreshing, RefreshCw)}
-              {t('groupDocumentsTab.refreshButton', 'Refresh')}
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenUpload?.()}
-              disabled={!canUploadSource}
-              className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition ${!canUploadSource ? 'cursor-not-allowed opacity-60' : ''} ${isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : 'bg-cyan-600 text-white hover:bg-cyan-700'}`}
-            >
-              <UploadCloud className="h-4 w-4" />
-              {t('groupDocumentsTab.uploadButton', 'Upload materials')}
-            </button>
-          </div>
-        </div>
-      </section>
-
       <section className={`rounded-[28px] border p-2 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white/85'}`}>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -447,6 +398,27 @@ export default function GroupDocumentsTab({
               {pendingTabCount}
             </span>
           </button>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${refreshing ? 'cursor-not-allowed opacity-70' : ''} ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.08]' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+            >
+              {renderActionVisual(refreshing, RefreshCw)}
+              {t('groupDocumentsTab.refreshButton', 'Refresh')}
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenUpload?.()}
+              disabled={!canUploadSource}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${!canUploadSource ? 'cursor-not-allowed opacity-60' : ''} ${isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : 'bg-cyan-600 text-white hover:bg-cyan-700'}`}
+            >
+              <UploadCloud className="h-4 w-4" />
+              {t('groupDocumentsTab.uploadButton', 'Upload materials')}
+            </button>
+          </div>
         </div>
       </section>
 

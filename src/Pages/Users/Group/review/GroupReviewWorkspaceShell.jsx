@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import {
   Activity,
@@ -336,6 +337,7 @@ export default function GroupReviewWorkspaceShell() {
     quizIntent: 'REVIEW',
   });
 
+  const queryClient = useQueryClient();
   const { workspaces, currentWorkspace, fetchWorkspaceDetail, createGroupWorkspace } = useWorkspace({ enabled: !isCreating });
   const {
     groups,
@@ -832,13 +834,14 @@ export default function GroupReviewWorkspaceShell() {
 
     try {
       await Promise.all(files.map((file) => uploadMaterial(file, resolvedWorkspaceId)));
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       showSuccess(t('groupReview.toast.uploadSuccess', { count: files.length, defaultValue: 'Sent {{count}} document(s) for processing.' }));
       await Promise.all([fetchSources(), loadGroupLogs()]);
     } catch (error) {
       console.error('Failed to upload materials:', error);
       showError(error?.message || t('groupReview.toast.uploadFailed', 'Document upload failed.'));
     }
-  }, [canUploadSource, fetchSources, loadGroupLogs, resolvedWorkspaceId, shouldForceProfileSetup, showError, showSuccess, t]);
+  }, [canUploadSource, fetchSources, loadGroupLogs, queryClient, resolvedWorkspaceId, shouldForceProfileSetup, showError, showSuccess, t]);
 
   const handleRequestGroupProfileUpdate = useCallback(() => {
     if (profileEditLocked) {

@@ -7,7 +7,6 @@ import {
   Lock,
   Plus,
   Search,
-  Share2,
   Shield,
   Sparkles,
   Users,
@@ -108,13 +107,56 @@ const formatDateLabel = (value, currentLang) => {
   }).format(parsedDate);
 };
 
-function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, onShareGroup }) {
+export function GroupFilterControls({ searchQuery, onSearchQueryChange, isDarkMode }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="relative w-full sm:w-80">
+      <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(event) => onSearchQueryChange(event.target.value)}
+        placeholder={t("home.search.groupPlaceholder")}
+        className={`h-10 w-full rounded-xl border pl-9 pr-9 text-sm outline-none transition-colors ${
+          isDarkMode
+            ? "border-slate-700 bg-slate-900 text-white placeholder:text-slate-500 focus:border-blue-500"
+            : "border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-blue-500"
+        }`}
+      />
+      {searchQuery ? (
+        <button
+          type="button"
+          onClick={() => onSearchQueryChange("")}
+          className={`absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg transition-colors ${
+            isDarkMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          }`}
+          aria-label={t("home.search.clear")}
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function UserGroup({
+  viewMode,
+  isDarkMode,
+  groups = [],
+  loading,
+  onOpenCreate,
+  searchQuery: controlledSearchQuery,
+  onSearchQueryChange,
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language === "en" ? "en" : "vi";
   const navigate = useNavigateWithLoading();
   const isList = viewMode === "list";
-  const [searchQuery, setSearchQuery] = useState("");
+  const [internalSearchQuery, setInternalSearchQuery] = useState("");
+  const searchQuery = controlledSearchQuery ?? internalSearchQuery;
+  const setSearchQuery = onSearchQueryChange ?? setInternalSearchQuery;
 
   const filteredGroups = searchQuery.trim()
     ? groups.filter((group) => {
@@ -139,11 +181,9 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
     navigate(buildGroupWorkspacePath(group.workspaceId));
   };
 
-  const canShareGroup = (group) => getNormalizedRole(group?.memberRole) === "LEADER";
-
-  const renderMetaPill = (theme, content) => (
+  const renderMetaPill = (theme, content, className = "") => (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium ${className} ${
         isDarkMode ? theme.metricDark : theme.metricLight
       }`}
     >
@@ -154,11 +194,6 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
   if (loading) {
     return (
       <section className={fontClass}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-xl font-medium transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>
-            {t("home.sections.myGroups")}
-          </h2>
-        </div>
         <ListSpinner variant="section" />
       </section>
     );
@@ -166,45 +201,6 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
 
   return (
     <section className={fontClass}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className={`text-xl font-medium transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>
-          {t("home.sections.myGroups")}
-        </h2>
-        <button
-          onClick={onOpenCreate}
-          className={`text-sm transition-all active:scale-95 ${isDarkMode ? "text-slate-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
-        >
-          {t("home.actions.createGroup")}
-        </button>
-      </div>
-
-      {groups.length > 0 && (
-        <div className="mb-4">
-          <div className="relative max-w-md">
-            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={t("home.search.groupPlaceholder")}
-              className={`w-full pl-9 pr-9 py-2 rounded-xl text-sm border transition-colors outline-none ${
-                isDarkMode
-                  ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
-                  : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500"
-              }`}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDarkMode ? "text-slate-400 hover:text-white" : "text-gray-400 hover:text-gray-700"}`}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {filteredGroups.length === 0 && groups.length === 0 ? (
         <div className={`rounded-2xl border p-12 text-center ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
           <FolderOpen className={`w-12 h-12 mx-auto mb-3 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
@@ -306,21 +302,6 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
                   </span>
 
                   <span className="flex items-center justify-end gap-2">
-                    {canShareGroup(group) && typeof onShareGroup === "function" ? (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onShareGroup(group);
-                        }}
-                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                          isDarkMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                        }`}
-                        title={t("home.actions.share")}
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </button>
-                    ) : null}
                     <ExternalLink className={`w-4 h-4 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
                   </span>
                 </div>
@@ -329,7 +310,7 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <button
             onClick={onOpenCreate}
             className={`rounded-[28px] border-2 border-dashed p-5 flex flex-col items-center justify-center gap-3 min-h-[190px] transition-all active:scale-95 cursor-pointer ${
@@ -341,7 +322,6 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
               <Plus className="w-5 h-5" />
             </div>
-            <span className="text-sm font-medium">{t("home.actions.createGroup")}</span>
           </button>
 
           {filteredGroups.length === 0 && searchQuery && (
@@ -362,7 +342,7 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
               <div
                 key={group.workspaceId}
                 onClick={() => handleNavigateGroup(group)}
-                className={`relative rounded-[28px] border p-5 overflow-hidden min-h-[176px] cursor-pointer transition-all duration-300 hover:-translate-y-1 ${
+                className={`relative rounded-[28px] border py-5 pl-7 pr-5 overflow-hidden min-h-[132px] cursor-pointer transition-all duration-300 hover:-translate-y-1 ${
                   isDarkMode
                     ? `bg-slate-900 ${theme.cardBorderDark}`
                     : `bg-white ${theme.cardBorderLight} shadow-[0_18px_45px_-38px_rgba(15,23,42,0.35)]`
@@ -372,76 +352,70 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
                 <div className={`absolute -right-10 -top-10 h-28 w-28 rounded-full blur-3xl ${isDarkMode ? theme.orbDark : theme.orbLight}`} />
 
                 <div className="relative flex items-start justify-between gap-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                    isDarkMode ? theme.iconWrapDark : theme.iconWrapLight
-                  }`}>
-                    <RoleIcon className={`w-5 h-5 ${isDarkMode ? theme.iconColorDark : theme.iconColorLight}`} />
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                      isDarkMode ? theme.iconWrapDark : theme.iconWrapLight
+                    }`}>
+                      <RoleIcon className={`w-5 h-5 ${isDarkMode ? theme.iconColorDark : theme.iconColorLight}`} />
+                    </div>
+                    <p className={`min-w-0 truncate text-base font-semibold ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                      {getGroupTitle(group, currentLang)}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {canShareGroup(group) ? (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onShareGroup(group);
-                        }}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-                          isDarkMode ? "bg-slate-800 text-slate-300 hover:text-white" : "bg-slate-100 text-slate-600 hover:text-slate-900"
-                        }`}
-                        title={t("home.actions.share")}
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </button>
+                </div>
+
+                <div className="relative mt-5 grid max-w-[14rem] grid-cols-2 items-center gap-2">
+                  <div>
+                    {renderMetaPill(
+                      theme,
+                      <>
+                        <Users className="w-3.5 h-3.5" />
+                        <span>
+                          {group.memberCount ?? 0} {t("home.labels.membersUnit")}
+                        </span>
+                      </>,
+                      "w-full"
+                    )}
+                  </div>
+
+                  <div>
+                    {joinedDate ? (
+                      renderMetaPill(
+                        theme,
+                        <span>{joinedDate}</span>,
+                        "w-full"
+                      )
                     ) : null}
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${
+                  </div>
+
+                  <div>
+                    <span className={`inline-flex w-full items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                       isDarkMode ? theme.badgeDark : theme.badgeLight
                     }`}>
                       {roleLabel}
                     </span>
                   </div>
-                </div>
 
-                <div className="relative mt-5">
-                  <p className={`text-base font-semibold truncate ${isDarkMode ? "text-white" : "text-slate-900"}`}>
-                    {getGroupTitle(group, currentLang)}
-                  </p>
-                </div>
-
-                <div className="relative mt-5 flex flex-wrap gap-2">
-                  {renderMetaPill(
-                    theme,
-                    <>
-                      <Users className="w-3.5 h-3.5" />
-                      <span>
-                        {group.memberCount ?? 0} {t("home.labels.membersUnit")}
-                      </span>
-                    </>
-                  )}
-
-                  {joinedDate &&
-                    renderMetaPill(
-                      theme,
-                      <span>{currentLang === "en" ? `Joined ${joinedDate}` : `Tham gia ${joinedDate}`}</span>
-                    )}
-
-                  {group.isPublic !== undefined && (
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium border ${
-                        group.isPublic
-                          ? (isDarkMode
-                              ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-300"
-                              : "bg-emerald-50 border-emerald-200 text-emerald-700")
-                          : (isDarkMode
-                              ? "bg-slate-800 border-slate-700 text-slate-400"
-                              : "bg-gray-50 border-gray-200 text-gray-500")
-                      }`}
-                    >
-                      {group.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                      {group.isPublic
-                        ? (currentLang === "en" ? "Public" : "Công khai")
+                  <div>
+                    {group.isPublic !== undefined && (
+                      <span
+                        className={`inline-flex w-full items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium border ${
+                          group.isPublic
+                            ? (isDarkMode
+                                ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-300"
+                                : "bg-emerald-50 border-emerald-200 text-emerald-700")
+                            : (isDarkMode
+                                ? "bg-slate-800 border-slate-700 text-slate-400"
+                                : "bg-gray-50 border-gray-200 text-gray-500")
+                        }`}
+                      >
+                        {group.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        {group.isPublic
+                          ? (currentLang === "en" ? "Public" : "Công khai")
                         : (currentLang === "en" ? "Private" : "Riêng tư")}
-                    </span>
-                  )}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

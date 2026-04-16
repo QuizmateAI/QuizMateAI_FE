@@ -1,10 +1,11 @@
-﻿﻿import React, {
+﻿import React, {
   useEffect,
   useRef,
   useState,
   useCallback,
   useMemo,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import { cn } from "@/lib/utils";
@@ -152,12 +153,14 @@ function WorkspacePage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { showError, showSuccess } = useToast();
+  const queryClient = useQueryClient();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const planEntitlements = usePlanEntitlements();
   const [planUpgradeModalOpen, setPlanUpgradeModalOpen] = useState(false);
   const [planUpgradeFeatureName, setPlanUpgradeFeatureName] =
     useState(undefined);
   const openProfileConfig = location.state?.openProfileConfig || false;
+  const continueProfileSetup = Boolean(location.state?.continueProfileSetup);
   const [profileConfigOpen, setProfileConfigOpen] = useState(false);
   const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
@@ -1692,7 +1695,9 @@ function WorkspacePage() {
 
         await Promise.all(uploadPromises);
 
-        return await fetchSources();
+        const nextSources = await fetchSources();
+        void queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+        return nextSources;
       } catch (error) {
         const msg = getErrorMessage(t, error);
 
@@ -1701,7 +1706,7 @@ function WorkspacePage() {
         throw error;
       }
     },
-    [workspaceId, fetchSources, t, showError],
+    [workspaceId, fetchSources, queryClient, t, showError],
   );
 
   // Delete a single material
@@ -2577,7 +2582,7 @@ function WorkspacePage() {
             uploadedMaterials={sources}
             workspaceId={workspaceId}
             forceStartAtStepOne={
-              isProfileUpdateMode || (openProfileConfig && !isProfileConfigured)
+              isProfileUpdateMode || (openProfileConfig && !isProfileConfigured && !continueProfileSetup)
             }
             mockTestGenerationState={mockTestGenerationState}
             mockTestGenerationMessage={mockTestGenerationDisplayMessage}
