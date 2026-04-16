@@ -1496,6 +1496,7 @@
       "fallbackName": "Phase #{{id}}"
     },
     "roadmap": {
+      "title": "Roadmap",
       "createTitle": "Create Roadmap",
       "createDesc": "Let AI generate a learning roadmap from your goal.",
       "setupConfigTitle": "Set up roadmap",
@@ -1629,8 +1630,8 @@
         "view2RoadmapHint": "Choose the roadmap, a phase, or a knowledge item above to inspect the matching details below.",
         "view2PhaseHint": "Click a phase above to inspect its description and post-learning list.",
         "view2KnowledgeHint": "Click a knowledge item to inspect its details, quizzes, and flashcards.",
-        "expandTopSection": "Expand diagram",
-        "collapseTopSection": "Collapse diagram",
+        "expandTopSection": "Expand roadmap",
+        "collapseTopSection": "Collapse roadmap",
         "knowledge": "Knowledge",
         "preLearning": "Pre-learning",
         "learningPath": "Learning path",
@@ -1697,7 +1698,7 @@
       "postLearningUnlockProgress": "Knowledge progress to unlock: {{completed}}/{{total}}",
       "postLearningProgress": "Post Learning Progress",
       "preLearningHelper": "Pre Learning Helper",
-      "title": "Title"
+      "title": "Roadmap"
     },
     "mockTest": {
       "title": "Mock Test",
