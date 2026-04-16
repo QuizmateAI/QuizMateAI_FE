@@ -3124,13 +3124,48 @@ function GroupWorkspacePage() {
     bumpQuizListRefreshToken();
   }, [bumpQuizListRefreshToken]);
 
-  const handleCreateFlashcard = useCallback(async () => {
+  const handleCreateFlashcard = useCallback(async (createdFlashcard = null) => {
     if (!canCreateContent) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateFlashcard', 'Member cannot create flashcards.'));
       return;
     }
+
+    const scopeId = Number(workspaceId) || 0;
+    const queryKey = ['workspace-flashcards', 'GROUP', scopeId];
+    const flashcardSetId = Number(
+      createdFlashcard?.flashcardSetId
+      ?? createdFlashcard?.id
+      ?? createdFlashcard?.data?.flashcardSetId,
+    );
+
+    if (scopeId > 0 && Number.isInteger(flashcardSetId) && flashcardSetId > 0) {
+      queryClient.setQueryData(queryKey, (previousItems = []) => {
+        const safePreviousItems = Array.isArray(previousItems) ? previousItems : [];
+
+        if (safePreviousItems.some((item) => Number(item?.flashcardSetId ?? item?.id) === flashcardSetId)) {
+          return safePreviousItems;
+        }
+
+        const nowIso = new Date().toISOString();
+        const optimisticItem = {
+          flashcardSetId,
+          flashcardSetName: createdFlashcard?.flashcardSetName
+            || createdFlashcard?.name
+            || `${t('workspace.flashcard.createTitle')} #${flashcardSetId}`,
+          status: String(createdFlashcard?.status || 'DRAFT').toUpperCase(),
+          createVia: createdFlashcard?.createVia || 'AI',
+          itemCount: Number(createdFlashcard?.itemCount ?? 0),
+          createdAt: createdFlashcard?.createdAt || nowIso,
+          updatedAt: createdFlashcard?.updatedAt || nowIso,
+        };
+
+        return [optimisticItem, ...safePreviousItems];
+      });
+    }
+
+    void queryClient.invalidateQueries({ queryKey });
     setActiveView('flashcard');
-  }, [canCreateContent, currentLang, showInfo, t]);
+  }, [canCreateContent, currentLang, queryClient, showInfo, t, workspaceId]);
   const handleViewFlashcard = useCallback((fc) => { setSelectedFlashcard(fc); setActiveView('flashcardDetail'); }, []);
   const handleDeleteFlashcard = useCallback(async (fc) => {
     if (!window.confirm(t('workspace.confirmDeleteFlashcard'))) return;

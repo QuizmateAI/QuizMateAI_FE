@@ -204,12 +204,10 @@ function CreateFlashcardForm({
   const isMaterialReadyForFlashcard = (status) => String(status || "").toUpperCase() === "ACTIVE";
 
   const {
-    allSelected,
     clearSelectedSources,
     materialsError,
     materialsLoading,
     normalizedSources,
-    selectAllSources,
     selectedIdSet: selectedSourceIdSet,
     toggleSourceSelection,
   } = useWorkspaceMaterialSelection({
@@ -240,6 +238,21 @@ function CreateFlashcardForm({
     [selectedReadySourceItems]
   );
   const canSelectMaterialsInForm = typeof onToggleMaterialSelection === "function";
+
+  const handleSingleSourceSelection = (sourceId, isSelected) => {
+    if (!isSelected) {
+      toggleSourceSelection(sourceId, false);
+      return;
+    }
+
+    const normalizedSourceId = Number(sourceId);
+    if (selectedSourceIdSet.has(normalizedSourceId) && selectedSourceItems.length <= 1) {
+      return;
+    }
+
+    clearSelectedSources();
+    toggleSourceSelection(normalizedSourceId, true);
+  };
 
   const distributionTarget = useMemo(
     () => getDistributionTarget(aiTotalCards, distributionUnitByCount),
@@ -410,17 +423,10 @@ function CreateFlashcardForm({
 
           {normalizedSources.length > 0 && !materialsLoading && (
             <>
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
-                  onClick={selectAllSources}
-                  disabled={allSelected}
-                >
-                  {t("workspace.sources.selectAll")}
-                </Button>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                  {t("workspace.flashcard.aiConfig.singleMaterialHint")}
+                </span>
                 <Button
                   type="button"
                   size="sm"
@@ -443,7 +449,7 @@ function CreateFlashcardForm({
                     >
                       <Checkbox
                         checked={isChecked}
-                        onCheckedChange={(checked) => toggleSourceSelection(item.id, checked === true)}
+                        onCheckedChange={(checked) => handleSingleSourceSelection(item.id, checked === true)}
                         className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}`}
                       />
                       <span className={`min-w-0 flex-1 break-words ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
@@ -459,7 +465,9 @@ function CreateFlashcardForm({
           {selectedMaterialIds.length > 0 ? (
             <div className="space-y-2">
               <div className={`text-xs px-3 py-2.5 rounded-lg ${isDarkMode ? "bg-emerald-950/20 text-emerald-400 border border-emerald-900/30" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
-                {t("workspace.quiz.aiConfig.selectedMaterialsCount", { count: selectedMaterialIds.length })}
+                {t("workspace.flashcard.aiConfig.selectedSingleMaterialCount", {
+                  count: selectedMaterialIds.length,
+                })}
               </div>
               <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1">
                 {selectedReadySourceItems.map((item) => (

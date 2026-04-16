@@ -107,15 +107,20 @@ function CreateFlashcardFormGroup({
 
 		setLocalSelectedIds((current) => {
 			if (shouldSelect) {
-				return current.includes(normalizedSourceId) ? current : [...current, normalizedSourceId];
+				return [normalizedSourceId];
 			}
 			return current.filter((id) => id !== normalizedSourceId);
 		});
 
 		if (typeof onToggleMaterialSelection === "function") {
+			if (shouldSelect) {
+				localSelectedIds
+					.filter((id) => id !== normalizedSourceId)
+					.forEach((id) => onToggleMaterialSelection(id, false));
+			}
 			onToggleMaterialSelection(normalizedSourceId, shouldSelect);
 		}
-	}, [onToggleMaterialSelection]);
+	}, [localSelectedIds, onToggleMaterialSelection]);
 
 	const workspaceMaterialsEmptyMessage = loadError
 		|| (loadingSources
