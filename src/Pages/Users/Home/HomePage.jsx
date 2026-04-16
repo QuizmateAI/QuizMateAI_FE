@@ -486,7 +486,7 @@ function HomePage() {
             {isSettingsOpen ? (
               <div
                 role="menu"
-                className={`absolute right-0 mt-2 w-56 rounded-xl border shadow-lg overflow-hidden transition-colors duration-300 ${
+                className={`absolute right-0 top-full z-[100] mt-2 w-56 overflow-hidden rounded-xl border shadow-lg transition-colors duration-300 ${
                   isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-gray-200 text-gray-800'
                 }`}
               >
