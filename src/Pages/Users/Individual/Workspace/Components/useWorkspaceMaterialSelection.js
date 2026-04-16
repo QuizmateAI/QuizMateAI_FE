@@ -26,7 +26,7 @@ function normalizeSources(items, t) {
         status: String(item?.status || "").toUpperCase(),
       };
     })
-    .filter((item) => item && item.status !== "DELETED");
+    .filter((item) => item && item.status === "ACTIVE");
 }
 
 function extractMaterialArray(payload) {
@@ -126,9 +126,23 @@ export default function useWorkspaceMaterialSelection({
     normalizedSelectedSourceIds,
   ]);
 
-  const selectedIds = hasExternalSelectionControl
-    ? normalizedSelectedSourceIds
-    : localSelectedSourceIds;
+  const validSourceIdSet = useMemo(
+    () => new Set(normalizedSources.map((source) => source.id)),
+    [normalizedSources],
+  );
+
+  const selectedIds = useMemo(() => {
+    const candidateIds = hasExternalSelectionControl
+      ? normalizedSelectedSourceIds
+      : localSelectedSourceIds;
+
+    return candidateIds.filter((id) => validSourceIdSet.has(id));
+  }, [
+    hasExternalSelectionControl,
+    localSelectedSourceIds,
+    normalizedSelectedSourceIds,
+    validSourceIdSet,
+  ]);
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 

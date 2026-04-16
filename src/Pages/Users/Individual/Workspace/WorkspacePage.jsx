@@ -2104,11 +2104,50 @@ function WorkspacePage() {
 
   // Handle flashcard creation callback after the API flow finishes
 
-  const handleCreateFlashcard = useCallback(async () => {
-    // Return to the list view so it can refresh
+  const handleCreateFlashcard = useCallback(async (createdFlashcard = null) => {
+    const scopeId = Number(workspaceId) || 0;
+    const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
+    const flashcardSetId = Number(
+      createdFlashcard?.flashcardSetId ??
+      createdFlashcard?.id ??
+      createdFlashcard?.data?.flashcardSetId,
+    );
 
+    if (scopeId > 0 && Number.isInteger(flashcardSetId) && flashcardSetId > 0) {
+      queryClient.setQueryData(queryKey, (previousItems = []) => {
+        const safePreviousItems = Array.isArray(previousItems) ? previousItems : [];
+
+        if (
+          safePreviousItems.some(
+            (item) => Number(item?.flashcardSetId ?? item?.id) === flashcardSetId,
+          )
+        ) {
+          return safePreviousItems;
+        }
+
+        const nowIso = new Date().toISOString();
+        const optimisticItem = {
+          flashcardSetId,
+          flashcardSetName:
+            createdFlashcard?.flashcardSetName ||
+            createdFlashcard?.name ||
+            `${t("workspace.flashcard.createTitle")} #${flashcardSetId}`,
+          status: String(createdFlashcard?.status || "DRAFT").toUpperCase(),
+          createVia: createdFlashcard?.createVia || "AI",
+          itemCount: Number(createdFlashcard?.itemCount ?? 0),
+          createdAt: createdFlashcard?.createdAt || nowIso,
+          updatedAt: createdFlashcard?.updatedAt || nowIso,
+        };
+
+        return [optimisticItem, ...safePreviousItems];
+      });
+    }
+
+    void queryClient.invalidateQueries({ queryKey });
+
+    // Return to the list view so it can refresh
     setActiveView("flashcard");
-  }, []);
+  }, [queryClient, t, workspaceId]);
 
   // Open flashcard detail from the list
 
