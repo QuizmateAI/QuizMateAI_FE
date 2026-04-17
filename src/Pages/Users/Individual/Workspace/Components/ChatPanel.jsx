@@ -157,22 +157,77 @@ function ChatPanel({
   const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
   const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
+  const [roadmapMeta, setRoadmapMeta] = React.useState(null);
+  const previousResolvedViewRef = React.useRef(null);
+
+  const normalizeRoadmapCanvasView = React.useCallback(() => "overview", []);
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView("view2");
+      setRoadmapCanvasView("overview");
       return;
     }
 
     const savedView = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    const normalizedView = ["view1", "view2", "overview"].includes(savedView) ? savedView : "view2";
+    const normalizedView = normalizeRoadmapCanvasView(savedView);
     setRoadmapCanvasView(normalizedView);
-  }, [workspaceId]);
+  }, [normalizeRoadmapCanvasView, workspaceId]);
 
   React.useEffect(() => {
     if (!roadmapCanvasStorageKey || !roadmapCanvasView) return;
     localStorage.setItem(roadmapCanvasStorageKey, roadmapCanvasView);
   }, [roadmapCanvasStorageKey, roadmapCanvasView]);
+
+  React.useEffect(() => {
+    const previousResolvedView = previousResolvedViewRef.current;
+    const normalizedSelectedPhaseId = Number(selectedRoadmapPhaseId);
+    const normalizedSelectedKnowledgeId = Number(selectedRoadmapKnowledgeId);
+    const hasRoadmapSelection = (
+      Number.isInteger(normalizedSelectedPhaseId) && normalizedSelectedPhaseId > 0
+    ) || (
+      Number.isInteger(normalizedSelectedKnowledgeId) && normalizedSelectedKnowledgeId > 0
+    );
+
+    if (
+      resolvedView === "roadmap"
+      && previousResolvedView !== "roadmap"
+      && hasRoadmapSelection
+    ) {
+      setRoadmapCanvasView("overview");
+    }
+
+    previousResolvedViewRef.current = resolvedView;
+  }, [resolvedView, selectedRoadmapKnowledgeId, selectedRoadmapPhaseId]);
+
+  const handleRoadmapCanvasViewChange = React.useCallback((view) => {
+    setRoadmapCanvasView(normalizeRoadmapCanvasView(view));
+  }, [normalizeRoadmapCanvasView]);
+
+  const handleRoadmapMetaChange = React.useCallback((nextMeta) => {
+    if (!nextMeta || typeof nextMeta !== "object") {
+      setRoadmapMeta(null);
+      return;
+    }
+
+    const normalizedMeta = {
+      roadmapId: Number(nextMeta?.roadmapId) || null,
+      title: String(nextMeta?.title || "").trim(),
+      description: String(nextMeta?.description || "").trim(),
+      phaseCount: Number(nextMeta?.phaseCount ?? 0) || 0,
+      knowledgeCount: Number(nextMeta?.knowledgeCount ?? 0) || 0,
+      quizCount: Number(nextMeta?.quizCount ?? 0) || 0,
+    };
+
+    const hasVisibleContent = Boolean(
+      normalizedMeta.title
+      || normalizedMeta.description
+      || normalizedMeta.phaseCount
+      || normalizedMeta.knowledgeCount
+      || normalizedMeta.quizCount,
+    );
+
+    setRoadmapMeta(hasVisibleContent ? normalizedMeta : null);
+  }, []);
 
   React.useEffect(() => {
     if (resolvedView !== "roadmap") return;
@@ -267,7 +322,7 @@ function ChatPanel({
             reloadToken={roadmapReloadToken}
             onReloadRoadmap={onReloadRoadmap}
             forcedCanvasView={roadmapCanvasView}
-            onCanvasViewChange={setRoadmapCanvasView}
+            onCanvasViewChange={handleRoadmapCanvasViewChange}
             selectedPhaseId={selectedRoadmapPhaseId}
             selectedKnowledgeId={selectedRoadmapKnowledgeId}
             progressTracking={progressTracking}
@@ -286,6 +341,7 @@ function ChatPanel({
             disableCreate={shouldDisableRoadmap && !roadmapHasPhases}
             onRoadmapMetaChange={setRoadmapMeta}
             onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed}
+            onRoadmapMetaChange={handleRoadmapMetaChange}
           />
         );
       case "quiz":
@@ -480,7 +536,8 @@ function ChatPanel({
   ].includes(resolvedView);
   const shouldHideRoadmapJour = roadmapCanvasView === "overview"
     || !roadmapHasPhases
-    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
+    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed)
+    || (roadmapCanvasView === "view2" && Number(selectedRoadmapKnowledgeId) > 0);
 
   if (resolvedView === "roadmap") {
     const isOverviewMode = roadmapCanvasView === "overview";
