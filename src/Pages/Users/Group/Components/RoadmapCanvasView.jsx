@@ -226,6 +226,7 @@ function RoadmapCanvasView({
   onToggleAllEmptyStateMaterials,
   onRoadmapLoad,
   onStageTopSectionCollapsedChange,
+  onRoadmapMetaChange,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -302,6 +303,18 @@ function RoadmapCanvasView({
         ? { ...nextRoadmap, canvasView: resolvedCanvasView }
         : null;
       setRoadmap(mergedRoadmap);
+      onRoadmapMetaChange?.(
+        mergedRoadmap
+          ? {
+              roadmapId: Number(mergedRoadmap?.roadmapId ?? mergedRoadmap?.id) || null,
+              title: String(mergedRoadmap?.title || "").trim(),
+              description: String(mergedRoadmap?.description || "").trim(),
+              phaseCount: Number(mergedRoadmap?.stats?.phaseCount ?? mergedRoadmap?.phases?.length ?? 0) || 0,
+              knowledgeCount: Number(mergedRoadmap?.stats?.knowledgeCount ?? 0) || 0,
+              quizCount: Number(mergedRoadmap?.stats?.quizCount ?? 0) || 0,
+            }
+          : null,
+      );
       if (mergedRoadmap?.canvasView) {
         onCanvasViewChange?.(mergedRoadmap.canvasView);
       }
@@ -347,7 +360,7 @@ function RoadmapCanvasView({
         setLoading(false);
       }
     }
-  }, [forcedCanvasView, onCanvasViewChange, workspaceId]);
+  }, [forcedCanvasView, onCanvasViewChange, onRoadmapMetaChange, workspaceId]);
 
   useEffect(() => {
     if (!forcedCanvasView) return;

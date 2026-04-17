@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpenCheck, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GitBranch, Layers3, Loader2, Lock, Pencil, Sparkles, Unlock } from "lucide-react";
+import { BookOpenCheck, CheckCircle2, ChevronLeft, ChevronRight, GitBranch, Layers3, Loader2, Lock, Pencil, Sparkles, Unlock } from "lucide-react";
 import QuizListView from "./QuizListView";
 import { Button } from "@/Components/ui/button";
 import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
@@ -23,7 +23,6 @@ const STAGE_TOP_COMPONENT_SCALE = 1;
 const STAGE_TOP_ROW_GAP = 16;
 const STAGE_TOP_ROW_PADDING_LEFT = 16;
 const STAGE_TOP_ROADMAP_MARGIN_LEFT = 20;
-const STAGE_TOP_SECTION_STORAGE_KEY_PREFIX = "quizmate:workspace:roadmap:stageTopCollapsed";
 
 function getCanvasContext() {
   if (typeof document === "undefined") return null;
@@ -100,13 +99,6 @@ function normalizeTitleForWidth(value) {
 function normalizePositiveId(value) {
   const normalized = Number(value);
   return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
-}
-
-function getStageTopSectionStorageKey(roadmapId) {
-  const normalizedRoadmapId = normalizePositiveId(roadmapId);
-  return normalizedRoadmapId
-    ? `${STAGE_TOP_SECTION_STORAGE_KEY_PREFIX}:${normalizedRoadmapId}`
-    : `${STAGE_TOP_SECTION_STORAGE_KEY_PREFIX}:global`;
 }
 
 function isFinishedPhaseStatus(status) {
@@ -187,12 +179,10 @@ function RoadmapCanvasViewStage({
     data: null,
     phaseId: null,
   });
-  const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(true);
-  const [hydratedStageTopSectionStorageKey, setHydratedStageTopSectionStorageKey] = useState(null);
 
   useEffect(() => {
-    onTopSectionCollapsedChange?.(isTopSectionCollapsed);
-  }, [isTopSectionCollapsed, onTopSectionCollapsedChange]);
+    onTopSectionCollapsedChange?.(true);
+  }, [onTopSectionCollapsedChange]);
 
   const phases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
   const topComponentScale = Math.min(2, Math.max(0.4, STAGE_TOP_COMPONENT_SCALE));
@@ -209,40 +199,6 @@ function RoadmapCanvasViewStage({
   const selectedKnowledge = selectedPhase && selectedKnowledgeId
     ? selectedKnowledges.find((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizedSelectedKnowledgeId) ?? null
     : null;
-  const stageTopSectionStorageKey = useMemo(
-    () => getStageTopSectionStorageKey(roadmap?.roadmapId ?? roadmap?.id),
-    [roadmap?.id, roadmap?.roadmapId],
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    setHydratedStageTopSectionStorageKey(null);
-
-    try {
-      const savedCollapsedValue = window.localStorage.getItem(stageTopSectionStorageKey);
-      if (savedCollapsedValue === "1" || savedCollapsedValue === "0") {
-        setIsTopSectionCollapsed(savedCollapsedValue === "1");
-      } else {
-        window.localStorage.setItem(stageTopSectionStorageKey, isTopSectionCollapsed ? "1" : "0");
-      }
-    } catch {
-      // Bo qua loi storage de tranh anh huong luong roadmap.
-    } finally {
-      setHydratedStageTopSectionStorageKey(stageTopSectionStorageKey);
-    }
-  }, [stageTopSectionStorageKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (hydratedStageTopSectionStorageKey !== stageTopSectionStorageKey) return;
-
-    try {
-      window.localStorage.setItem(stageTopSectionStorageKey, isTopSectionCollapsed ? "1" : "0");
-    } catch {
-      // Bo qua loi storage de tranh anh huong luong roadmap.
-    }
-  }, [hydratedStageTopSectionStorageKey, isTopSectionCollapsed, stageTopSectionStorageKey]);
 
   const roadmapCardWidth = useMemo(() => {
     const normalizedTitle = normalizeTitleForWidth(roadmap?.title) || String(roadmap?.title || "");
@@ -1057,6 +1013,63 @@ function RoadmapCanvasViewStage({
     selectKnowledge(phaseId, nextKnowledgeId);
   };
 
+  const isKnowledgeDetailView = selectedType === "knowledge" && Boolean(selectedKnowledge) && Boolean(selectedPhase);
+
+  const computeNextKnowledgeTarget = () => {
+    if (!selectedPhase || selectedPhaseIndex < 0) return null;
+
+    const isKnowledgeCandidateLocked = (phase, phaseIndex, knowledgeIndex) => {
+      const knowledgeList = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+      const candidate = knowledgeList[knowledgeIndex];
+      if (!candidate) return true;
+      const lockState = resolveKnowledgeLockState(phase, phaseIndex, knowledgeIndex);
+      const status = String(candidate?.status || "").toUpperCase();
+      return status === "LOCKED"
+        || Boolean(lockState?.isPhaseLockedForKnowledge)
+        || Boolean(lockState?.isKnowledgeLockedBySequence);
+    };
+
+    // Try next knowledge in same phase
+    if (selectedKnowledgeNavIndex >= 0 && selectedKnowledgeNavIndex < selectedKnowledges.length - 1) {
+      const nextIndex = selectedKnowledgeNavIndex + 1;
+      const nextKnowledge = selectedKnowledges[nextIndex];
+      const nextKnowledgeId = normalizePositiveId(nextKnowledge?.knowledgeId);
+      const phaseId = normalizePositiveId(selectedPhase?.phaseId);
+      if (nextKnowledgeId && phaseId && !isKnowledgeCandidateLocked(selectedPhase, selectedPhaseIndex, nextIndex)) {
+        return { phaseId, knowledgeId: nextKnowledgeId };
+      }
+    }
+
+    // Try first knowledge of next non-empty phase
+    for (let nextPhaseIdx = selectedPhaseIndex + 1; nextPhaseIdx < phases.length; nextPhaseIdx += 1) {
+      const nextPhase = phases[nextPhaseIdx];
+      const nextPhaseKnowledges = Array.isArray(nextPhase?.knowledges) ? nextPhase.knowledges : [];
+      if (nextPhaseKnowledges.length === 0) continue;
+      const firstKnowledge = nextPhaseKnowledges[0];
+      const firstKnowledgeId = normalizePositiveId(firstKnowledge?.knowledgeId);
+      const phaseId = normalizePositiveId(nextPhase?.phaseId);
+      if (!firstKnowledgeId || !phaseId) continue;
+      if (isKnowledgeCandidateLocked(nextPhase, nextPhaseIdx, 0)) return null;
+      return { phaseId, knowledgeId: firstKnowledgeId };
+    }
+
+    return null;
+  };
+
+  const nextKnowledgeTarget = isKnowledgeDetailView ? computeNextKnowledgeTarget() : null;
+  const canContinueToNextKnowledge = Boolean(nextKnowledgeTarget) && !isSelectedKnowledgeLocked;
+
+  const handleContinueKnowledge = () => {
+    if (!nextKnowledgeTarget) return;
+    selectKnowledge(nextKnowledgeTarget.phaseId, nextKnowledgeTarget.knowledgeId);
+  };
+
+  const handleBackToPhase = () => {
+    const phaseId = normalizePositiveId(selectedPhase?.phaseId);
+    if (!phaseId) return;
+    selectPhase(phaseId);
+  };
+
   const handleUnlockSelectedPhase = async () => {
     if (!isSelectedPhaseUnlockable || !selectedPhase) return;
     const phaseId = normalizePositiveId(selectedPhase?.phaseId);
@@ -1741,285 +1754,24 @@ function RoadmapCanvasViewStage({
     <div className={`h-full overflow-y-auto overflow-x-hidden ${isDarkMode ? "bg-slate-900" : "bg-white"}`}>
       <div className="flex h-full min-h-0 flex-col p-3">
         <div
-          className={`shrink-0 overflow-hidden rounded-[26px] border p-2 ${isDarkMode ? "border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "border-gray-200 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}
-        >
-          <div className={`flex items-center justify-between rounded-[18px] border px-3.5 py-2.5 backdrop-blur-sm ${isDarkMode ? "border-slate-700/80 bg-slate-900/65" : "border-slate-200 bg-white/85"}`}>
-            <div className="flex items-center gap-2.5">
-              <span className={`h-2 w-2 rounded-full ${isTopSectionCollapsed
-                ? (isDarkMode ? "bg-slate-500" : "bg-slate-400")
-                : "bg-emerald-500"}`}
-              />
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
-                {t("workspace.roadmap.canvas.view2TopSectionTitle", "Lộ trình theo giai đoạn")}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsTopSectionCollapsed((current) => !current)}
-              className={`h-8 min-w-[132px] gap-2 rounded-full px-3.5 text-xs font-medium shadow-sm transition-all active:scale-95 ${isDarkMode ? "border-slate-600 bg-slate-900/85 text-slate-100 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
-            >
-              <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}>
-                {isTopSectionCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-              </span>
-              {isTopSectionCollapsed
-                ? t("workspace.roadmap.canvas.expandTopSection", "Mở rộng lộ trình")
-                : t("workspace.roadmap.canvas.collapseTopSection", "Thu gọn lộ trình")}
-            </Button>
-          </div>
-
-          {!isTopSectionCollapsed ? (
-            <div
-              className="mt-2 overflow-hidden rounded-[22px]"
-              style={{
-                transform: `scale(${topComponentScale})`,
-                transformOrigin: "top left",
-                width: `${100 / topComponentScale}%`,
-              }}
-            >
-              <div className="relative">
-                <div className="pointer-events-none absolute left-1 right-1 top-10 z-30 flex items-center justify-between">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={goToPrevPhase}
-                    disabled={!canGoPrevPhase}
-                    className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
-                    aria-label={t("workspace.roadmap.canvas.prevPhase", "Phase trước")}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={goToNextPhase}
-                    disabled={!canGoNextPhase}
-                    className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
-                    aria-label={t("workspace.roadmap.canvas.nextPhase", "Phase tiếp theo")}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                {canShowKnowledgeArrows ? (
-                  <div className="pointer-events-none absolute left-1 right-1 top-[160px] z-30 flex items-center justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={goToPrevKnowledge}
-                      disabled={!canGoPrevKnowledge}
-                      className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
-                      aria-label={t("workspace.roadmap.canvas.prevKnowledge", "Knowledge trước")}
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={goToNextKnowledge}
-                      disabled={!canGoNextKnowledge}
-                      className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
-                      aria-label={t("workspace.roadmap.canvas.nextKnowledge", "Knowledge tiếp theo")}
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </div>
-                ) : null}
-
-                <div
-                  ref={timelineRef}
-                  className="relative overflow-x-auto overflow-y-auto [scrollbar-gutter:stable_both-edges]"
-                  onScroll={handleTimelineScroll}
-                  onPointerDown={startTimelineDrag}
-                  onPointerMove={moveTimelineDrag}
-                  onPointerUp={stopTimelineDrag}
-                  onPointerCancel={stopTimelineDrag}
-                >
-              <div
-                className="absolute inset-0 opacity-45"
-                style={{
-                  backgroundImage: isDarkMode
-                    ? "linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)"
-                    : "linear-gradient(rgba(148,163,184,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.12) 1px, transparent 1px)",
-                  backgroundSize: "42px 42px",
-                }}
-              />
-
-              <div className="relative min-w-max pb-6 pl-4 pr-4 pt-5">
-                {topPhaseLineSegments.map((segment) => (
-                  <div
-                    key={segment.key}
-                    className={`absolute top-[58px] h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
-                    style={{ left: segment.left, width: segment.width }}
-                  />
-                ))}
-
-                <div className="relative flex items-start gap-4">
-                  <button
-                    type="button"
-                    onClick={selectRoadmap}
-                    style={{ width: roadmapCardWidth }}
-                    className={`relative z-20 ml-5 shrink-0 rounded-[24px] border px-4 py-3 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
-                      ? isDarkMode
-                        ? "border-emerald-400 bg-slate-900"
-                        : "border-emerald-500 bg-emerald-50"
-                      : isDarkMode
-                        ? "border-slate-700 bg-slate-900/95 hover:border-slate-600"
-                        : "border-white/80 bg-white/95 hover:border-blue-200"}`}
-                  >
-                    <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
-                      {t("workspace.roadmap.canvas.centralRoadmap")}
-                    </p>
-                    <h3 className={`mt-1.5 text-[clamp(12px,1.25vw,16px)] font-semibold leading-5 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                      {roadmap?.title}
-                    </h3>
-                  </button>
-
-                  {phases.map((phase, index) => {
-                    const active = selectedType !== "roadmap" && normalizedSelectedPhaseId === normalizePositiveId(phase?.phaseId);
-                    const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
-                    const isPhaseLocked = index > maxUnlockedPhaseIndex
-                      && !hasExistingPreLearning
-                      && !isCurrentPhaseByPayload(phase?.phaseId);
-                    const isCompletedPhase = isPhaseCompleted(phase, index);
-                    return (
-                      <button
-                        key={phase.phaseId}
-                        type="button"
-                        onClick={() => selectPhase(phase.phaseId)}
-                        style={{ width: phaseCardWidths[index] ?? PHASE_CARD_WIDTH }}
-                        className={`relative z-10 shrink-0 rounded-[22px] border px-3.5 py-3 text-left shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all ${index === phases.length - 1 ? "mr-10" : ""} ${isPhaseLocked
-                          ? isDarkMode
-                            ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
-                            : "cursor-pointer border-gray-200 bg-gray-100 opacity-80"
-                          : active
-                          ? isDarkMode
-                            ? "border-sky-400 bg-slate-900"
-                            : "border-sky-500 bg-sky-50"
-                          : isDarkMode
-                            ? "border-slate-700 bg-slate-900/95 hover:border-slate-600"
-                            : "border-white/80 bg-white/95 hover:border-blue-200"}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-sky-300" : "text-sky-700"} ${fontClass}`}>
-                            {t("workspace.roadmap.canvas.phase")} {index + 1}
-                          </p>
-                          <div className="flex items-center gap-1.5">
-                            {isCompletedPhase ? (
-                              <CheckCircle2 className={`h-3.5 w-3.5 ${isDarkMode ? "text-emerald-300" : "text-emerald-600"}`} />
-                            ) : null}
-                            {isPhaseLocked ? <Lock className={`h-3.5 w-3.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} /> : null}
-                          </div>
-                        </div>
-                        <h4 className={`mt-1.5 text-[clamp(12px,1.2vw,15px)] font-semibold leading-5 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                          {phase.title}
-                        </h4>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedType !== "roadmap" && selectedPhase && hasSelectedPhaseKnowledges ? (
-                  <div ref={knowledgeBranchRef} className="relative mt-5 min-h-[112px] pb-2" style={{ marginLeft: branchOffset }}>
-                    <div className={`absolute left-8 top-[-20px] h-[20px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
-                    <div
-                      className={`absolute left-8 top-0 h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
-                      style={{ width: knowledgeBranchLineWidth }}
-                    />
-                    <div className="relative flex min-w-max items-start gap-3 pt-4">
-                      {selectedKnowledges.map((knowledge) => {
-                        const active = selectedType === "knowledge" && normalizedSelectedKnowledgeId === normalizePositiveId(knowledge?.knowledgeId);
-                        const selectedPhaseInTimeline = phases.find((phase) => normalizePositiveId(phase?.phaseId) === normalizePositiveId(selectedPhase?.phaseId));
-                        const selectedPhaseIndexInTimeline = phases.findIndex((phase) => normalizePositiveId(phase?.phaseId) === normalizePositiveId(selectedPhaseInTimeline?.phaseId));
-                        const knowledgeItems = Array.isArray(selectedPhaseInTimeline?.knowledges) ? selectedPhaseInTimeline.knowledges : [];
-                        const currentKnowledgeIndexInPhase = Number.isInteger(currentKnowledgeId) && currentKnowledgeId > 0
-                          ? knowledgeItems.findIndex((item) => normalizePositiveId(item?.knowledgeId) === currentKnowledgeId)
-                          : -1;
-                        const isPhaseBeforeCurrentKnowledge = currentKnowledgePhaseIndex >= 0 && selectedPhaseIndexInTimeline < currentKnowledgePhaseIndex;
-                        const knowledgeIndex = selectedKnowledges.findIndex((item) => normalizePositiveId(item?.knowledgeId) === normalizePositiveId(knowledge?.knowledgeId));
-                        const knowledgeLockState = resolveKnowledgeLockState(selectedPhaseInTimeline, selectedPhaseIndexInTimeline, knowledgeIndex);
-                        const knowledgeStatus = String(knowledge?.status || "").toUpperCase();
-                        const isKnowledgeLocked = knowledgeStatus === "LOCKED"
-                          || knowledgeLockState.isPhaseLockedForKnowledge
-                          || knowledgeLockState.isKnowledgeLockedBySequence;
-                        const knowledgeQuizRequestKey = `${normalizePositiveId(selectedPhaseInTimeline?.phaseId)}:${normalizePositiveId(knowledge?.knowledgeId)}`;
-                        const isCompletedPhase = isPhaseCompleted(selectedPhaseInTimeline, selectedPhaseIndexInTimeline);
-                        const isKnowledgeCompleted = isCompletedPhase
-                          || isPhaseBeforeCurrentKnowledge
-                          || (selectedPhaseIndexInTimeline === currentKnowledgePhaseIndex && currentKnowledgeIndexInPhase >= 0 && (
-                            knowledgeIndex < currentKnowledgeIndexInPhase
-                            || (knowledgeIndex === currentKnowledgeIndexInPhase && isCurrentKnowledgeDoneStatus)
-                          ));
-                        const isKnowledgeProcessing = !isKnowledgeCompleted && !isKnowledgeLocked && (
-                          knowledgeStatus === "PROCESSING"
-                          || knowledgeStatus === "GENERATING"
-                          || generatingKnowledgeQuizKnowledgeKeys.includes(knowledgeQuizRequestKey)
-                        );
-                        return (
-                          <button
-                            key={knowledge.knowledgeId}
-                            type="button"
-                            onClick={() => selectKnowledge(selectedPhase.phaseId, knowledge.knowledgeId)}
-                            style={{ width: selectedKnowledgeCardWidths[knowledgeIndex] ?? KNOWLEDGE_CARD_WIDTH }}
-                            className={`relative shrink-0 rounded-[20px] border px-3 py-2.5 text-left shadow-[0_18px_45px_rgba(15,23,42,0.1)] transition-all ${isKnowledgeLocked
-                              ? isDarkMode
-                                ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
-                                : "cursor-pointer border-gray-200 bg-gray-100 opacity-80"
-                              : active
-                              ? isDarkMode
-                                ? "border-sky-400 bg-sky-500/10"
-                                : "border-sky-500 bg-sky-50"
-                              : isDarkMode
-                                ? "border-slate-700 bg-slate-950/95 hover:border-slate-600"
-                                : "border-white/80 bg-white/95 hover:border-emerald-200"}`}
-                          >
-                            <div className={`absolute left-7 top-[-16px] h-[16px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
-                                {t("workspace.roadmap.canvas.knowledge", "Knowledge")} {knowledgeIndex + 1}
-                              </p>
-                              <div className="flex items-center gap-1.5">
-                                {isKnowledgeCompleted ? (
-                                  <CheckCircle2 className={`h-3.5 w-3.5 ${isDarkMode ? "text-emerald-300" : "text-emerald-600"}`} />
-                                ) : null}
-                                {isKnowledgeProcessing ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-500" />
-                                ) : null}
-                                {isKnowledgeLocked ? (
-                                  <Lock className={`h-3.5 w-3.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
-                                ) : null}
-                              </div>
-                            </div>
-                            <div className="mt-1.5">
-                              <h5 className={`text-[clamp(11px,1.1vw,15px)] font-semibold leading-5 whitespace-normal break-words ${active
-                                ? isDarkMode ? "text-sky-200" : "text-sky-900"
-                                : isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                                {knowledge.title}
-                              </h5>
-                            </div>
-                          </button>
-                        );
-                      })}
-                      </div>
-                    </div>
-                ) : null}
-              </div>
-            </div>
-            </div>
-            </div>
-          ) : null}
-        </div>
-
-        <div
-          className={`mt-3 flex flex-col rounded-[26px] border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-gray-200 bg-white"}`}
+          className={`${isKnowledgeDetailView ? "" : "mt-3"} flex flex-col rounded-[26px] border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-gray-200 bg-white"}`}
         >
           <div className={`flex items-center justify-between gap-3 border-b px-4 py-3.5 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-            <div>
+            <div className="flex items-center gap-3 min-w-0">
+              {isKnowledgeDetailView ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBackToPhase}
+                  className={`h-8 gap-1.5 rounded-full px-3 shrink-0 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+                  aria-label={t("workspace.roadmap.canvas.backToPhase", "Quay lại")}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvas.backToPhase", "Quay lại")}</span>
+                </Button>
+              ) : null}
+              <div className="min-w-0">
               <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                 {t("workspace.roadmap.canvas.view2DetailPanelTitle")}
               </p>
@@ -2030,6 +1782,7 @@ function RoadmapCanvasViewStage({
                     ? t("workspace.roadmap.canvas.view2PhaseHint")
                     : t("workspace.roadmap.canvas.view2RoadmapHint")}
               </p>
+              </div>
             </div>
             {selectedType === "phase" && selectedPhase ? (
               <div className="flex items-center gap-2">
@@ -2081,6 +1834,20 @@ function RoadmapCanvasViewStage({
             ) : null}
             <div className={isSelectedPhaseLocked ? "opacity-30 pointer-events-none select-none blur-sm" : ""}>
               {renderDetailContent()}
+              {isKnowledgeDetailView && !isSelectedKnowledgeLocked ? (
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleContinueKnowledge}
+                    disabled={!canContinueToNextKnowledge}
+                    className={`gap-1.5 rounded-full px-5 h-10 ${canContinueToNextKnowledge ? "bg-[#2563EB] hover:bg-blue-700 text-white" : "bg-slate-200 text-slate-400 dark:bg-slate-700 dark:text-slate-500 cursor-not-allowed"}`}
+                    aria-label={t("workspace.roadmap.canvas.continueKnowledge", "Tiếp tục")}
+                  >
+                    <span className={fontClass}>{t("workspace.roadmap.canvas.continueKnowledge", "Tiếp tục")}</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
