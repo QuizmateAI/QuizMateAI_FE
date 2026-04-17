@@ -3,6 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ChatPanel from '@/Pages/Users/Individual/Workspace/Components/ChatPanel';
 
+const ROADMAP_GUIDE_SEEN_STORAGE_KEY = 'quizmate_roadmap_guide_seen_v1';
+
 const overviewSpy = vi.fn();
 const sourcesSpy = vi.fn();
 const roadmapCanvasSpy = vi.fn();
@@ -50,11 +52,24 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/CreateQuizForm', () => ({
   default: () => <div data-testid="create-quiz-form" />,
 }));
 
+function MockRoadmapCanvasView(props) {
+  roadmapCanvasSpy(props);
+  React.useEffect(() => {
+    props.onRoadmapMetaChange?.({
+      roadmapId: 88,
+      title: 'Roadmap - Workspace 6',
+      description: 'Tong hop noi dung roadmap hien tai.',
+      phaseCount: 3,
+      knowledgeCount: 12,
+      quizCount: 4,
+    });
+  }, []);
+
+  return <div data-testid="roadmap-canvas-view">Roadmap canvas mock</div>;
+}
+
 vi.mock('@/Pages/Users/Individual/Workspace/Components/RoadmapCanvasView', () => ({
-  default: (props) => {
-    roadmapCanvasSpy(props);
-    return <div data-testid="roadmap-canvas-view">Roadmap canvas mock</div>;
-  },
+  default: MockRoadmapCanvasView,
 }));
 
 vi.mock('@/Pages/Users/Individual/Workspace/Components/PostLearningListView', () => ({
@@ -157,28 +172,17 @@ describe('Workspace ChatPanel', () => {
     roadmapCanvasSpy.mockClear();
     postLearningListSpy.mockClear();
     createPostLearningFormSpy.mockClear();
+    window.localStorage.clear();
   });
 
-  it('renders overview by default and keeps quick navigation wired to the shell', async () => {
-    const onChangeView = vi.fn();
-
+  it('renders the welcome panel for the overview shell entry', async () => {
     renderChatPanel({
-      activeView: null,
-      onChangeView,
+      activeView: 'overview',
       selectedSourceIds: [1, 5],
     });
 
-    expect(await screen.findByTestId('overview-view')).toBeInTheDocument();
-    expect(overviewSpy).toHaveBeenCalledWith(expect.objectContaining({
-      workspaceTitle: 'Workspace A',
-      workspacePurpose: 'STUDY_NEW',
-      selectedSourceIds: [1, 5],
-      roadmapHasPhases: true,
-      completedQuizCount: 2,
-    }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'go-to-sources' }));
-    expect(onChangeView).toHaveBeenCalledWith('sources');
+    expect(await screen.findByRole('heading', { name: 'Không Gian Học Tập Đỉnh Cao' })).toBeInTheDocument();
+    expect(screen.getByText(/Mở ra chân trời tri thức/i)).toBeInTheDocument();
   });
 
   it('routes the dedicated sources view through the new source hub props', async () => {
@@ -207,7 +211,6 @@ describe('Workspace ChatPanel', () => {
     renderChatPanel({
       activeView: 'roadmap',
       adaptationMode: 'PERSONALIZED',
-      selectedRoadmapPhaseId: 15,
       isGeneratingRoadmapPhases: true,
       roadmapPhaseGenerationProgress: 66,
       shouldDisableRoadmap: true,
@@ -219,12 +222,79 @@ describe('Workspace ChatPanel', () => {
     expect(roadmapCanvasSpy).toHaveBeenCalledWith(expect.objectContaining({
       workspaceId: 321,
       adaptationMode: 'PERSONALIZED',
-      selectedPhaseId: 15,
+      forcedCanvasView: 'overview',
       isGeneratingRoadmapPhases: true,
       roadmapPhaseGenerationProgress: 66,
-      selectedSourceIds: [1, 5],
       disableCreate: true,
     }));
+    expect(screen.queryByText('Chi tiết')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tổng quan')).not.toBeInTheDocument();
+  });
+
+  it('shows the roadmap summary dropdown under the roadmap title', async () => {
+    window.localStorage.setItem('quizmate_roadmap_guide_seen_v2', 'true');
+
+    renderChatPanel({
+      activeView: 'roadmap',
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Roadmap - Workspace 6' })).toBeInTheDocument();
+    const summaryTrigger = await screen.findByText('Nội dung roadmap');
+    expect(summaryTrigger).toBeInTheDocument();
+
+    fireEvent.pointerDown(summaryTrigger.closest('button'));
+
+    expect(await screen.findByText('Tong hop noi dung roadmap hien tai.')).toBeInTheDocument();
+    expect(screen.getAllByText('Roadmap - Workspace 6').length).toBeGreaterThan(1);
+  });
+
+  it('switches back to overview when re-entering roadmap with a phase or knowledge selected', async () => {
+    const { rerender, props } = renderChatPanel({
+      activeView: 'quizDetail',
+      selectedRoadmapPhaseId: 15,
+      selectedRoadmapKnowledgeId: 901,
+    });
+
+    roadmapCanvasSpy.mockClear();
+
+    rerender(
+      <ChatPanel
+        {...props}
+        activeView="roadmap"
+        selectedRoadmapPhaseId={15}
+        selectedRoadmapKnowledgeId={901}
+      />,
+    );
+
+    expect(await screen.findByTestId('roadmap-canvas-view')).toBeInTheDocument();
+    expect(roadmapCanvasSpy).toHaveBeenCalledWith(expect.objectContaining({
+      forcedCanvasView: 'overview',
+      selectedPhaseId: 15,
+      selectedKnowledgeId: 901,
+    }));
+  });
+
+  it('auto opens the roadmap guide once and keeps a manual trigger in the header', async () => {
+    const firstRender = renderChatPanel({
+      activeView: 'roadmap',
+    });
+
+    expect(await screen.findByRole('heading', { name: /how to use roadmap/i })).toBeInTheDocument();
+    expect(screen.getByText(/roadmap summary dropdown/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('heading', { name: /choose a phase from overview/i, level: 3 })).toBeInTheDocument();
+
+    firstRender.unmount();
+    window.localStorage.setItem('quizmate_roadmap_guide_seen_v2', 'true');
+
+    renderChatPanel({
+      activeView: 'roadmap',
+    });
+
+    expect(screen.queryByRole('heading', { name: /how to use roadmap/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /roadmap guide/i }));
+    expect(await screen.findByRole('heading', { name: /how to use roadmap/i })).toBeInTheDocument();
   });
 
   it('keeps the post-learning list flow wired to create and detail callbacks', async () => {

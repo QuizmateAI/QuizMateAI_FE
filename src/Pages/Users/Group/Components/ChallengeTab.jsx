@@ -20,7 +20,14 @@ const MODE_TABS = [
   { key: 'SOLO_BRACKET', label: 'Đấu cúp 1v1' },
 ];
 
-export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, currentUserId }) {
+export default function ChallengeTab({
+  workspaceId,
+  isDarkMode,
+  isLeader,
+  currentUserId,
+  quizGenerationTaskByQuizId = {},
+  quizGenerationProgressByQuizId = {},
+}) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const challengeEventIdFromUrl = searchParams.get('challengeEventId');
@@ -80,6 +87,8 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
         isLeader={isLeader}
         currentUserId={currentUserId}
         onBack={handleBackToList}
+        quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+        quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
       />
     );
   }

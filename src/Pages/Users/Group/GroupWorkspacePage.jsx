@@ -1494,6 +1494,37 @@ function GroupWorkspacePage() {
 
   const challengeDraftQuizIdParam = searchParams.get('challengeDraftQuizId');
   const challengeDraftUiActive = searchParams.get('challengeDraft') === '1';
+  const challengeDraftReturnEventId = (() => {
+    const fromQuery = Number(searchParams.get('challengeEventId'));
+    if (Number.isInteger(fromQuery) && fromQuery > 0) return fromQuery;
+
+    const fromState = Number(location.state?.restoreGroupWorkspace?.challengeEventId);
+    if (Number.isInteger(fromState) && fromState > 0) return fromState;
+
+    return null;
+  })();
+  const returnToChallengeDraftContext = useCallback(() => {
+    const targetWorkspaceId = resolvedWorkspaceId || workspaceId;
+    if (
+      !targetWorkspaceId
+      || targetWorkspaceId === 'new'
+      || !Number.isInteger(Number(challengeDraftReturnEventId))
+      || Number(challengeDraftReturnEventId) <= 0
+    ) {
+      return false;
+    }
+
+    setSelectedQuiz(null);
+    setSelectedRoadmapQuizId(null);
+    setQuizDetailFromChallengeReview(false);
+    setActiveView('quiz');
+    navigate(
+      buildGroupWorkspaceSectionPath(targetWorkspaceId, 'challenge', { challengeEventId: challengeDraftReturnEventId }),
+      { replace: true, state: {} },
+    );
+    return true;
+  }, [challengeDraftReturnEventId, navigate, resolvedWorkspaceId, workspaceId]);
+
   useEffect(() => {
     if (!challengeDraftQuizIdParam || isCreating || !resolvedWorkspaceId) return;
     const qid = Number(challengeDraftQuizIdParam);
@@ -2073,6 +2104,11 @@ function GroupWorkspacePage() {
         || normalizedStatus.includes('CANCEL')
       );
 
+      if (isTerminalQuizSignal && activeSection === 'challenge') {
+        void queryClient.invalidateQueries({ queryKey: ['challenges', workspaceId] });
+        void queryClient.invalidateQueries({ queryKey: ['challenge-detail', workspaceId] });
+      }
+
       if (!processingQuizRefreshIdsRef.current.has(progressQuizId) || isTerminalQuizSignal) {
         if (isTerminalQuizSignal) {
           processingQuizRefreshIdsRef.current.delete(progressQuizId);
@@ -2207,6 +2243,7 @@ function GroupWorkspacePage() {
   }, [
     bumpRoadmapReloadToken,
     bumpQuizListRefreshToken,
+    activeSection,
     announceRealtimeMaterialStatus,
     currentLang,
     isLeader,
@@ -2214,10 +2251,12 @@ function GroupWorkspacePage() {
     materialProgress,
     handleMockTestRealtime,
     patchSessionUpload,
+    queryClient,
     removeSessionUpload,
     roadmapPhaseGenerationTaskId,
     scheduleMaterialViewRefresh,
     sessionUploadQueue,
+    workspaceId,
   ]);
 
   const handleRealtimeMaterialUpdate = useCallback((materialPayload) => {
@@ -3252,20 +3291,40 @@ function GroupWorkspacePage() {
     trackQuizGenerationStart(createdPayload);
 
     if (isRealtimeProcessingQuizPayload(createdPayload)) {
-      showInfo(t('groupWorkspacePage.toast.quizGenerationStarted', 'Quiz is being generated. Track progress in the quiz list.'));
+      showInfo(t(
+        challengeDraftUiActive
+          ? 'groupWorkspacePage.toast.challengeQuizGenerationStarted'
+          : 'groupWorkspacePage.toast.quizGenerationStarted',
+        challengeDraftUiActive
+          ? 'Challenge quiz is being generated. Track progress in the challenge detail.'
+          : 'Quiz is being generated. Track progress in the quiz list.',
+      ));
       bumpQuizListRefreshToken();
       setSelectedQuiz(null);
-      setActiveView('quiz');
       void refreshActiveTaskSnapshot('group-quiz-create');
+      if (challengeDraftUiActive && returnToChallengeDraftContext()) {
+        return;
+      }
+      setActiveView('quiz');
       return;
     }
 
     const createdQuiz = extractGroupCreatedQuizPayload(createdPayload);
     if (createdQuiz) {
       showSuccess(
-        t('groupWorkspacePage.toast.quizCreated', 'Quiz created successfully.')
+        t(
+          challengeDraftUiActive
+            ? 'groupWorkspacePage.toast.challengeQuizCreated'
+            : 'groupWorkspacePage.toast.quizCreated',
+          challengeDraftUiActive
+            ? 'Challenge quiz updated successfully.'
+            : 'Quiz created successfully.',
+        )
       );
       bumpQuizListRefreshToken();
+      if (challengeDraftUiActive && returnToChallengeDraftContext()) {
+        return;
+      }
       setSelectedQuiz(createdQuiz);
       setActiveView('quizDetail');
       return;
@@ -3277,7 +3336,7 @@ function GroupWorkspacePage() {
     }
     void refreshActiveTaskSnapshot('group-quiz-create');
     setActiveView('quiz');
-  }, [bumpQuizListRefreshToken, canCreateContent, currentLang, refreshActiveTaskSnapshot, showInfo, showSuccess, t, trackQuizGenerationStart]);
+  }, [bumpQuizListRefreshToken, canCreateContent, challengeDraftUiActive, currentLang, refreshActiveTaskSnapshot, returnToChallengeDraftContext, showInfo, showSuccess, t, trackQuizGenerationStart]);
   const handleViewQuiz = useCallback((quiz, options = {}) => {
     const normalizedQuizId = Number(quiz?.quizId ?? quiz?.id ?? 0);
     const normalizedQuiz = Number.isInteger(normalizedQuizId) && normalizedQuizId > 0
@@ -3313,7 +3372,14 @@ function GroupWorkspacePage() {
     setActiveView('quizDetail');
   }, [navigateInstant, workspaceId]);
   const handleEditQuiz = useCallback((quiz) => { setSelectedQuiz(quiz); setActiveView('editQuiz'); }, []);
-  const handleSaveQuiz = useCallback((updatedQuiz) => { setSelectedQuiz((p) => ({ ...p, ...updatedQuiz })); setActiveView('quizDetail'); }, []);
+  const handleSaveQuiz = useCallback((updatedQuiz) => {
+    bumpQuizListRefreshToken();
+    if (challengeDraftUiActive && returnToChallengeDraftContext()) {
+      return;
+    }
+    setSelectedQuiz((p) => ({ ...p, ...updatedQuiz }));
+    setActiveView('quizDetail');
+  }, [bumpQuizListRefreshToken, challengeDraftUiActive, returnToChallengeDraftContext]);
 
   const handleGroupQuizUpdated = useCallback((payload) => {
     const qid = Number(payload?.quizId);
@@ -3817,6 +3883,14 @@ function GroupWorkspacePage() {
       }
     }
 
+    if (
+      challengeDraftUiActive
+      && ['createQuiz', 'editQuiz', 'quizDetail'].includes(activeView)
+      && returnToChallengeDraftContext()
+    ) {
+      return;
+    }
+
     const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
     if (activeView === 'quizDetail' && Number.isInteger(Number(selectedRoadmapQuizId)) && Number(selectedRoadmapQuizId) > 0) {
       formToList.quizDetail = 'roadmap';
@@ -3843,6 +3917,8 @@ function GroupWorkspacePage() {
     resolvedWorkspaceId,
     selectedRoadmapQuizId,
     workspaceId,
+    challengeDraftUiActive,
+    returnToChallengeDraftContext,
     searchParams,
     setSearchParams,
   ]);
@@ -4521,6 +4597,8 @@ function GroupWorkspacePage() {
               isDarkMode={isDarkMode}
               isLeader={isLeader}
               currentUserId={currentUser?.userID}
+              quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+              quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
               />
             </React.Suspense>
           </div>

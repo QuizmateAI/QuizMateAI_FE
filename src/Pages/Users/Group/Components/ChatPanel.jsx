@@ -1,9 +1,10 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3, Eye } from "lucide-react";
+import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { getRoadmapReview } from "@/api/RoadmapAPI";
+import RoadmapGuideButton from "@/Components/workspace/RoadmapGuideButton";
 import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 import RoadmapJourPanel from "./RoadmapJourPanel";
 import CreateQuizForm from "./CreateQuizForm";
@@ -38,6 +39,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   const hasSources = sources.length > 0;
   const [activeRoadmapId, setActiveRoadmapId] = React.useState(null);
   const [roadmapReview, setRoadmapReview] = React.useState(null);
+  const [roadmapMeta, setRoadmapMeta] = React.useState(null);
 
   React.useEffect(() => {
     if (!activeRoadmapId) return;
@@ -80,6 +82,32 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       localStorage.setItem(roadmapCanvasStorageKey, canvasView);
     }
   }, [roadmapCanvasStorageKey]);
+
+  const handleRoadmapMetaChange = React.useCallback((nextMeta) => {
+    if (!nextMeta || typeof nextMeta !== "object") {
+      setRoadmapMeta(null);
+      return;
+    }
+
+    const normalizedMeta = {
+      roadmapId: Number(nextMeta?.roadmapId) || null,
+      title: String(nextMeta?.title || "").trim(),
+      description: String(nextMeta?.description || "").trim(),
+      phaseCount: Number(nextMeta?.phaseCount ?? 0) || 0,
+      knowledgeCount: Number(nextMeta?.knowledgeCount ?? 0) || 0,
+      quizCount: Number(nextMeta?.quizCount ?? 0) || 0,
+    };
+
+    const hasVisibleContent = Boolean(
+      normalizedMeta.title
+      || normalizedMeta.description
+      || normalizedMeta.phaseCount
+      || normalizedMeta.knowledgeCount
+      || normalizedMeta.quizCount,
+    );
+
+    setRoadmapMeta(hasVisibleContent ? normalizedMeta : null);
+  }, []);
 
   // Khi chưa có nguồn tài liệu — hiển thị lời chào và nút upload
   if (!hasSources && !activeView) {
@@ -179,7 +207,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
     switch (activeView) {
       case "roadmap":
-        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} onCreateRoadmapPreLearning={onCreateRoadmapPreLearning} onViewQuiz={onViewQuiz} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed} />;
+        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} onCreateRoadmapPreLearning={onCreateRoadmapPreLearning} onViewQuiz={onViewQuiz} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed} onRoadmapMetaChange={handleRoadmapMetaChange} />;
       case "quiz":
         return (
           <LazyQuizListView
@@ -214,6 +242,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   const shouldHideRoadmapJour = roadmapCanvasView === "overview"
     || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
   const shouldRenderRoadmapJour = !shouldHideRoadmapJour && (Boolean(hasRoadmap) || Boolean(isGeneratingRoadmapPhases));
+  const roadmapHeading = roadmapMeta?.title || t("workspace.roadmap.title", "Roadmap");
 
   if (activeView === "roadmap" && listContent) {
     return (
@@ -222,7 +251,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       }`}>
         <div className={`px-6 pb-5 pt-6 border-b flex flex-wrap items-center justify-between gap-3 ${isDarkMode ? "border-slate-700/80" : "border-slate-200"}`}>
           <p className={`text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
-            {t("workspace.roadmap.title", "Roadmap")}
+            {roadmapHeading}
           </p>
           <div className="flex items-center gap-2">
             {/* <Button
@@ -284,6 +313,15 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
               </Button> */}
             </div>
+
+            <RoadmapGuideButton
+              isDarkMode={isDarkMode}
+              autoOpen={activeView === "roadmap"}
+              variant="group"
+              className={isDarkMode
+                ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
+            />
           </div>
         </div>
 
