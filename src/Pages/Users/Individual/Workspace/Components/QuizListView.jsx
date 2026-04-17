@@ -183,6 +183,15 @@ function resolveQuizNavigationId(quiz) {
   return quiz?.quizId ?? quiz?.id ?? null;
 }
 
+function isRoadmapLinkedQuiz(quiz) {
+  const normalizedContext = String(quiz?.contextType || "").toUpperCase();
+  if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContext)) return true;
+  if (Number(quiz?.roadmapId) > 0) return true;
+  if (Number(quiz?.phaseId) > 0) return true;
+  if (Number(quiz?.knowledgeId) > 0) return true;
+  return false;
+}
+
 /** Quiz nhóm: ALL_MEMBERS vs SELECTED_MEMBERS (mặc định chung nhóm nếu BE chưa gửi). */
 function normalizeGroupAudienceMode(quiz) {
   const m = String(quiz?.groupAudienceMode ?? "").toUpperCase();
@@ -289,6 +298,7 @@ function QuizListView({
   contextType = "WORKSPACE",
   contextId,
   intentFilter = null,
+  includeRoadmapLinkedQuizzes = false,
   embedded = false,
   hideCreateButton = false,
   returnToPath = null,
@@ -450,15 +460,6 @@ function QuizListView({
       sourcePhaseId,
     };
   }, [contextId, contextType, location.pathname, resolvedReturnToPath]);
-  const isRoadmapQuiz = useCallback((quiz) => {
-    const normalizedContext = String(quiz?.contextType || "").toUpperCase();
-    if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContext)) return true;
-    if (Number(quiz?.roadmapId) > 0) return true;
-    if (Number(quiz?.phaseId) > 0) return true;
-    if (Number(quiz?.knowledgeId) > 0) return true;
-    return false;
-  }, []);
-
   const handleStartQuiz = useCallback((mode, quizId) => {
     if (!mode || !quizId) return;
 
@@ -516,14 +517,11 @@ function QuizListView({
       // Quiz list view chỉ hiển thị quiz thường — mock test có view riêng (MockTestListView).
       incoming = incoming.filter((quiz) => String(quiz?.quizIntent || '').toUpperCase() !== 'MOCK_TEST');
 
-      // Studio filter: exclude roadmap-related quizzes when in WORKSPACE context
-      if (contextType === 'WORKSPACE') {
-        incoming = incoming.filter(quiz => {
-          const qContext = String(quiz.contextType || '').toUpperCase();
-          if (['ROADMAP', 'PHASE', 'KNOWLEDGE'].includes(qContext)) return false;
-          if (Number(quiz.roadmapId) > 0 || Number(quiz.phaseId) > 0 || Number(quiz.knowledgeId) > 0) return false;
-          return true;
-        });
+      // Quiz tab của workspace/group chỉ giữ quiz thường; roadmap panels sẽ gọi theo PHASE/KNOWLEDGE riêng.
+      const normalizedListContext = String(contextType || '').toUpperCase();
+      const isRoadmapScopedList = ['ROADMAP', 'PHASE', 'KNOWLEDGE'].includes(normalizedListContext);
+      if (!isRoadmapScopedList && !includeRoadmapLinkedQuizzes) {
+        incoming = incoming.filter((quiz) => !isRoadmapLinkedQuiz(quiz));
       }
 
       if (Array.isArray(intentFilter) && intentFilter.length > 0) {
@@ -547,7 +545,7 @@ function QuizListView({
         setHasResolvedInitialFetch(true);
       }
     }
-  }, [contextId, contextType, intentFilter, intentFilterKey]);
+  }, [contextId, contextType, includeRoadmapLinkedQuizzes, intentFilter, intentFilterKey]);
 
   fetchQuizzesRef.current = fetchQuizzes;
 
@@ -944,7 +942,7 @@ function QuizListView({
     const myPassed = quiz?.myPassed === true;
     const visibilityMeta = resolveVisibilityMeta(isCommunityShared, isDarkMode, t);
     const VisibilityIcon = visibilityMeta.icon;
-    const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
+      const isRoadmapContextQuiz = isRoadmapLinkedQuiz(quiz);
     const normalizedIntent = String(quiz?.quizIntent || "").toUpperCase();
     const shouldHideRoadmapIntentBadge = isRoadmapContextQuiz
       && ["PRE_LEARNING", "PRACTICE", "REVIEW"].includes(normalizedIntent);
@@ -1244,11 +1242,11 @@ function QuizListView({
                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                         groupAudienceFilter === key
                           ? isDarkMode
-                            ? "bg-violet-600/25 text-violet-200 ring-1 ring-violet-500/35"
-                            : "bg-slate-900 text-white"
+                            ? "bg-blue-500 text-white ring-1 ring-blue-300/35"
+                            : "bg-blue-600 text-white shadow-sm"
                           : isDarkMode
-                            ? "bg-slate-900 text-slate-300 hover:bg-slate-800"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            ? "bg-blue-500/15 text-blue-100 hover:bg-blue-500/25"
+                            : "bg-blue-50 text-blue-700 hover:bg-blue-100"
                       }`}
                     >
                       {label}
@@ -1263,8 +1261,8 @@ function QuizListView({
                           className={cn(
                             "inline-flex h-9 items-center justify-between gap-2 rounded-full border px-3 text-xs outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                             isDarkMode
-                              ? "border-slate-600 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
-                              : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50",
+                              ? "border-blue-500/30 bg-blue-500/15 text-blue-100 hover:bg-blue-500/25"
+                              : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100",
                           )}
                         >
                           <span className="flex min-w-0 items-center gap-2">
@@ -1359,7 +1357,7 @@ function QuizListView({
                   variant="outline"
                   onClick={() => fetchQuizzes({ silent: true, scopeId: contextId })}
                   disabled={loading}
-                  className={`h-11 rounded-full border px-3 ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                  className={`h-11 rounded-full border px-3 ${isDarkMode ? "border-blue-500/30 bg-blue-500/15 text-blue-100 hover:bg-blue-500/25" : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"}`}
                 >
                   <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </Button>
@@ -1367,7 +1365,7 @@ function QuizListView({
                   <Button
                     variant="outline"
                     onClick={onOpenCommunityQuiz}
-                    className={`h-11 rounded-full border px-4 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}
+                    className={`h-11 rounded-full border px-4 ${isDarkMode ? "border-blue-500/30 bg-blue-500/15 text-blue-100 hover:bg-blue-500/25" : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"}`}
                   >
                     <Globe className="mr-2 h-4 w-4" />
                     <span className="text-sm">{t("quizListView.header.community", "Community Quiz")}</span>
@@ -1453,10 +1451,12 @@ function QuizListView({
 
               const resolvedQuizId = resolveQuizNavigationId(quiz);
               const isCommunityShared = quiz?.communityShared === true;
-              const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
+              const isRoadmapContextQuiz = isRoadmapLinkedQuiz(quiz);
               const shouldHideRoadmapVisibility = isRoadmapContextQuiz;
               const durationInMinutes = getDurationInMinutes(quiz);
               const normalizedStatus = String(quiz?.status || "").toUpperCase();
+              const statusStyles = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
+              const statusLabel = t(`quizListView.status.${normalizedStatus}`, normalizedStatus || "DRAFT");
               const isProcessing = normalizedStatus === "PROCESSING";
               const isInteractionBlocked = isProcessing;
               const processingPercent = resolveQuizProcessingPercent(
@@ -1507,6 +1507,7 @@ function QuizListView({
                 ? `${durationInMinutes} ${t("quizListView.cards.minutesShort", "min")}`
                 : null;
               const createdAtLabel = formatShortDate(quiz.createdAt || quiz.updatedAt);
+              const showLeaderStatusBadge = isLeaderGroupQuizList;
               const difficultyTextClassName = difficultyKey === "HARD"
                 ? (isDarkMode ? "text-rose-300" : "text-rose-600")
                 : difficultyKey === "MEDIUM"
@@ -1531,7 +1532,7 @@ function QuizListView({
                       onViewQuiz?.(quiz);
                     }
                   }}
-                  className={`h-full rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                  className={`flex h-full flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
                     isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
                   } ${
                     isDarkMode
@@ -1541,7 +1542,7 @@ function QuizListView({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <h3 className={`line-clamp-2 text-[21px] font-semibold leading-snug tracking-[-0.02em] ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
+                      <h3 className={`line-clamp-2 min-h-[3.5rem] text-[21px] font-semibold leading-snug tracking-[-0.02em] ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
                         {quiz.title || t("quizListView.cards.noTitle", "—")}
                       </h3>
                     </div>
@@ -1630,44 +1631,51 @@ function QuizListView({
                     </div>
                   ) : null}
 
-                  <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
-                    {shouldShowResultSummary ? (
-                      <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
-                      </div>
-                    ) : null}
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
-                      <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
-                    </div>
-                  </div>
-
-                  <div className={`mt-4 flex items-end justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
-                        <BarChart3 className="h-3.5 w-3.5" />
-                        <span>{difficultyLabel}</span>
-                      </div>
-                      {durationLabel ? (
-                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
-                          <Timer className="h-3.5 w-3.5" />
-                          <span>{durationLabel}</span>
+                  <div className="mt-auto">
+                    <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                      {shouldShowResultSummary ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
                         </div>
                       ) : null}
+                      {showLeaderStatusBadge ? (
+                        <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                          {statusLabel}
+                        </span>
+                      ) : null}
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                        <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
+                      </div>
                     </div>
-                    <div className={`flex flex-wrap items-center justify-end gap-2 text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                      {!shouldHideRoadmapVisibility ? (
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                          {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                          <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
-                        </span>
-                      ) : null}
-                      {createdAtLabel ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>{createdAtLabel}</span>
-                        </span>
-                      ) : null}
+
+                    <div className={`mt-4 flex items-start justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-3">
+                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
+                          <BarChart3 className="h-3.5 w-3.5" />
+                          <span>{difficultyLabel}</span>
+                        </div>
+                        {durationLabel ? (
+                          <div className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                            <Timer className="h-3.5 w-3.5" />
+                            <span>{durationLabel}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className={`flex flex-wrap items-center justify-end gap-2 text-[11px] font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                        {!shouldHideRoadmapVisibility ? (
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                            {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
+                          </span>
+                        ) : null}
+                        {createdAtLabel ? (
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span className="whitespace-nowrap">{createdAtLabel}</span>
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </article>

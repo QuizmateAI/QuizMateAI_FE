@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   CreditCard,
@@ -69,6 +69,7 @@ function PersonalWorkspaceSidebar({
   mobileOpen = false,
   onCloseMobile,
   isMobile = false,
+  walletRefreshToken = 0,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -77,6 +78,7 @@ function PersonalWorkspaceSidebar({
   const location = useLocation();
   const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [loadingWallet, setLoadingWallet] = useState(true);
+  const hasResolvedInitialWalletRef = useRef(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -85,8 +87,10 @@ function PersonalWorkspaceSidebar({
   useEffect(() => {
     let cancelled = false;
 
-    const loadWallet = async () => {
-      setLoadingWallet(true);
+    const loadWallet = async (silent = false) => {
+      if (!silent) {
+        setLoadingWallet(true);
+      }
       try {
         const response = await getMyWallet();
         const payload = response?.data ?? response ?? EMPTY_WALLET_SUMMARY;
@@ -98,23 +102,28 @@ function PersonalWorkspaceSidebar({
           totalAvailableCredits:
             payload?.totalAvailableCredits ?? payload?.balance ?? 0,
         });
+        hasResolvedInitialWalletRef.current = true;
       } catch {
         if (!cancelled) {
           setWalletSummary(EMPTY_WALLET_SUMMARY);
+          hasResolvedInitialWalletRef.current = true;
         }
       } finally {
-        if (!cancelled) {
+        if (
+          !cancelled &&
+          (!silent || !hasResolvedInitialWalletRef.current || loadingWallet)
+        ) {
           setLoadingWallet(false);
         }
       }
     };
 
-    loadWallet();
+    loadWallet(walletRefreshToken > 0);
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [walletRefreshToken]);
 
   const asideClasses = cn(
     cn(

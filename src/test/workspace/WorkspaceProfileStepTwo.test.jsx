@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import i18n, { i18nReady, preloadNamespaces } from '@/i18n';
 import WorkspaceProfileStepTwo from '@/Pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/WorkspaceProfileStepTwo';
 
 const templateStructure = {
@@ -54,7 +55,7 @@ function createProps(overrides = {}) {
   const { values: valueOverrides = {}, ...restOverrides } = overrides;
 
   return {
-    t: (key) => key,
+    t: (key, options) => i18n.t(key, options),
     isDarkMode: false,
     values: {
       workspacePurpose: 'MOCK_TEST',
@@ -98,6 +99,13 @@ function openMockTestConfig() {
 }
 
 describe('WorkspaceProfileStepTwo', () => {
+  beforeEach(async () => {
+    window.localStorage.setItem('app_language', 'vi');
+    await i18nReady;
+    await preloadNamespaces(['common', 'workspace'], 'vi');
+    await i18n.changeLanguage('vi');
+  });
+
   it('shows beginner-aware suggestions when the current level says the learner is just starting', () => {
     render(
       <WorkspaceProfileStepTwo

@@ -44,6 +44,7 @@ function EditQuizForm({
   contextType = "WORKSPACE",
   contextId,
   presentationMode = "default",
+  quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -60,6 +61,8 @@ function EditQuizForm({
     quiz?.overallDifficulty ? REVERSE_DIFFICULTY[quiz.overallDifficulty] || "medium" : "medium"
   );
   const [status, setStatus] = useState(quiz?.status || "ACTIVE");
+  const resolvedQuizTitleMaxLength = Number(quizTitleMaxLength);
+  const hasQuizTitleMaxLength = Number.isFinite(resolvedQuizTitleMaxLength) && resolvedQuizTitleMaxLength > 0;
 
   // State section và questions — lưu sectionId gốc để liên kết
   const [sectionId, setSectionId] = useState(null);
@@ -200,10 +203,10 @@ function EditQuizForm({
         setSubmitting(false);
         return;
       }
-      if (trimmedName.length > QUIZ_TITLE_MAX_LENGTH) {
+      if (hasQuizTitleMaxLength && trimmedName.length > resolvedQuizTitleMaxLength) {
         setError(t("editQuizForm.nameMaxLength", {
-          max: QUIZ_TITLE_MAX_LENGTH,
-          defaultValue: `Quiz title must be at most ${QUIZ_TITLE_MAX_LENGTH} characters.`,
+          max: resolvedQuizTitleMaxLength,
+          defaultValue: `Quiz title must be at most ${resolvedQuizTitleMaxLength} characters.`,
         }));
         setSubmitting(false);
         return;
@@ -408,15 +411,17 @@ function EditQuizForm({
             className={inputCls}
             placeholder={t("workspace.quiz.namePlaceholder")}
             value={name}
-            maxLength={QUIZ_TITLE_MAX_LENGTH}
-            onChange={(e) => setName(normalizeQuizTitleInput(e.target.value))}
+            maxLength={hasQuizTitleMaxLength ? resolvedQuizTitleMaxLength : undefined}
+            onChange={(e) => setName(normalizeQuizTitleInput(e.target.value, quizTitleMaxLength))}
           />
-          <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-            {t("editQuizForm.nameMaxLengthHint", {
-              max: QUIZ_TITLE_MAX_LENGTH,
-              defaultValue: `Maximum ${QUIZ_TITLE_MAX_LENGTH} characters.`,
-            })}
-          </p>
+          {hasQuizTitleMaxLength ? (
+            <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+              {t("editQuizForm.nameMaxLengthHint", {
+                max: resolvedQuizTitleMaxLength,
+                defaultValue: `Maximum ${resolvedQuizTitleMaxLength} characters.`,
+              })}
+            </p>
+          ) : null}
         </div>
 
         <div>

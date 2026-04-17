@@ -125,6 +125,7 @@ function ChatPanel({
   shouldDisableRoadmap = false,
   shouldDisableCreateQuiz = false,
   shouldDisableCreateFlashcard = false,
+  shouldDisableCreateMockTest = false,
   progressTracking = null,
   roadmapHasPhases = false,
   completedQuizCount = 0,
@@ -231,6 +232,7 @@ function ChatPanel({
             onSourceUpdated={onSourceUpdated}
             selectedIds={selectedSourceIds}
             onSelectionChange={onSelectedSourceIdsChange}
+            progressTracking={progressTracking}
           />
         );
       case "roadmap":
@@ -325,6 +327,7 @@ function ChatPanel({
             onViewMockTest={onViewMockTest}
             contextType="WORKSPACE"
             contextId={workspaceId}
+            disableCreate={shouldDisableCreateMockTest}
           />
         );
       case "postLearning":
@@ -397,7 +400,17 @@ function ChatPanel({
           />
         ) : null;
       case "createMockTest":
-        return (
+        return shouldDisableCreateMockTest ? (
+          <LazyMockTestListView
+            isDarkMode={isDarkMode}
+            onCreateMockTest={() => onChangeView?.("createMockTest")}
+            onNavigateHome={onNavigateHome}
+            onViewMockTest={onViewMockTest}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            disableCreate={shouldDisableCreateMockTest}
+          />
+        ) : (
           <LazyCreateMockTestForm
             isDarkMode={isDarkMode}
             onCreateMockTest={onCreateMockTest}
@@ -481,7 +494,7 @@ function ChatPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
+            {/* <Button
               type="button"
               size="sm"
               variant="outline"
@@ -493,7 +506,7 @@ function ChatPanel({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span className={`text-xs ml-1 ${fontClass}`}>{t("common.refresh", "Làm mới")}</span>
-            </Button>
+            </Button> */}
 
             {typeof onEditRoadmapConfig === "function" ? (
               <Button
@@ -529,7 +542,7 @@ function ChatPanel({
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle", "Tổng quan")}</span>
               </Button>
-              <Button
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
@@ -538,13 +551,18 @@ function ChatPanel({
               >
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title", "Kiểm thử")}</span>
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
 
         <div className="min-h-0 flex-1 flex gap-3 p-3">
-          <div className="min-h-0 min-w-0 flex-1 rounded-[24px] overflow-hidden border border-slate-200 dark:border-slate-800 transition-all duration-500 ease-out">
+          <div
+            className={`min-h-0 min-w-0 flex-1 transition-all duration-500 ease-out ${roadmapCanvasView === "overview"
+              ? "rounded-none border-0 bg-transparent overflow-visible"
+              : "rounded-[24px] overflow-hidden border border-slate-200 dark:border-slate-800"
+              }`}
+          >
             <DeferredPanel>{renderContent()}</DeferredPanel>
           </div>
 

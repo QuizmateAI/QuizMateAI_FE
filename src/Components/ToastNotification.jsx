@@ -1,11 +1,34 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
 
+function getNow() {
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function requestFrame(callback) {
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    return window.requestAnimationFrame(callback);
+  }
+  return setTimeout(() => callback(getNow()), 16);
+}
+
+function cancelFrame(frameId) {
+  if (!frameId) return;
+  if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+    window.cancelAnimationFrame(frameId);
+    return;
+  }
+  clearTimeout(frameId);
+}
+
 function ToastNotification({ id, type, message, duration = 2000, onClose }) {
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(100);
   const timeoutRef = useRef(null);
-  const intervalRef = useRef(null);
+  const animationFrameRef = useRef(null);
   const startedAtRef = useRef(0);
   const remainingMsRef = useRef(duration);
 
@@ -14,9 +37,9 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (animationFrameRef.current) {
+      cancelFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
   }, []);
 
@@ -29,19 +52,29 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
       return;
     }
 
-    startedAtRef.current = Date.now();
+    startedAtRef.current = getNow();
     remainingMsRef.current = remainingMs;
+    setProgress((remainingMs / duration) * 100);
 
     timeoutRef.current = setTimeout(() => {
       setProgress(0);
       onClose();
     }, remainingMs);
 
-    intervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startedAtRef.current;
+    const animateProgress = () => {
+      const elapsed = getNow() - startedAtRef.current;
       const remaining = Math.max(0, remainingMsRef.current - elapsed);
       setProgress((remaining / duration) * 100);
-    }, 50);
+
+      if (remaining <= 0) {
+        animationFrameRef.current = null;
+        return;
+      }
+
+      animationFrameRef.current = requestFrame(animateProgress);
+    };
+
+    animationFrameRef.current = requestFrame(animateProgress);
   }, [duration, onClose, stopTimers]);
 
   useEffect(() => {
@@ -59,7 +92,7 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
   const handleMouseEnter = () => {
     if (isPaused) return;
     setIsPaused(true);
-    const elapsed = Date.now() - startedAtRef.current;
+    const elapsed = getNow() - startedAtRef.current;
     remainingMsRef.current = Math.max(0, remainingMsRef.current - elapsed);
     stopTimers();
   };
@@ -113,6 +146,10 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
   const structuredDescription = isStructuredMessage ? String(message.description || '').trim() : '';
   const structuredMeta = isStructuredMessage ? String(message.meta || '').trim() : '';
   const structuredItems = isStructuredMessage && Array.isArray(message.items) ? message.items : [];
+  const structuredAction = isStructuredMessage && message.action && typeof message.action === 'object'
+    ? message.action
+    : null;
+  const structuredActionLabel = structuredAction ? String(structuredAction.label || '').trim() : '';
 
   return (
     <div
@@ -168,6 +205,23 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
                   {structuredMeta}
                 </p>
               ) : null}
+              {structuredActionLabel ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof structuredAction.onClick === 'function') {
+                      structuredAction.onClick();
+                    }
+
+                    if (structuredAction.closeOnClick !== false) {
+                      handleClose();
+                    }
+                  }}
+                  className={`mt-3 inline-flex text-xs font-semibold underline underline-offset-2 ${selectedStyle.textClass} ${selectedStyle.closeHoverClass}`}
+                >
+                  {structuredActionLabel}
+                </button>
+              ) : null}
             </>
           ) : (
             <p className={`text-sm font-medium break-words ${selectedStyle.textClass}`}>{message}</p>
@@ -184,8 +238,8 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
       </div>
       <div className={`h-1 ${selectedStyle.progressTrackClass}`}>
         <div
-          className={`h-full transition-all duration-75 ${selectedStyle.progressBgClass}`}
-          style={{ width: `${progress}%` }}
+          className={`h-full origin-left transform-gpu ${selectedStyle.progressBgClass}`}
+          style={{ transform: `scaleX(${Math.max(0, Math.min(1, progress / 100))})` }}
         />
       </div>
     </div>

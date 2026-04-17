@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import i18n from '@/i18n';
+import i18n, { i18nReady, preloadNamespaces } from '@/i18n';
 import IndividualWorkspaceProfileConfigDialog from '@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog';
 
 // Mock the StudyProfileAPI module
@@ -139,6 +139,14 @@ function clickPurposeButtonByText(text) {
   expect(target).toBeTruthy();
   fireEvent.click(target);
   return target;
+}
+
+function getPurposeButtonByText(text) {
+  const expected = normalizeText(text);
+  return getPurposeButtons().find((button) => {
+    const actual = normalizeText(button.textContent || '');
+    return actual.includes(expected);
+  });
 }
 
 function getFooterPrimaryButton() {
@@ -311,10 +319,12 @@ function getAiOverallReviewDetailCard() {
 }
 
 describe('IndividualWorkspaceProfileConfigDialog', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     window.localStorage.setItem('app_language', 'vi');
     window.sessionStorage.clear();
-    i18n.changeLanguage('vi');
+    await i18nReady;
+    await preloadNamespaces(['common', 'workspace'], 'vi');
+    await i18n.changeLanguage('vi');
     vi.useFakeTimers();
     setupApiMocks();
   });
@@ -332,7 +342,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
 
     const { onSave } = renderDialog();
 
-    expect(getPurposeButtons()).toHaveLength(3);
+    expect(getPurposeButtons()).toHaveLength(2);
 
     await moveToStepTwo({
       purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
@@ -355,6 +365,38 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
         inferredDomain: 'React',
       })
     );
+  });
+
+  it('locks STUDY_NEW behind VIP and defaults the wizard to REVIEW when roadmap creation is unavailable', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['React', 'Frontend Development', 'JavaScript']),
+    });
+
+    const { onSave } = renderDialog({ canCreateRoadmap: false });
+
+    const studyNewButton = getPurposeButtonByText(i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'));
+    expect(studyNewButton).toBeDisabled();
+    expect(within(studyNewButton).getByText(i18n.t('workspace.profileConfig.stepOne.vipBadge'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.stepOne.studyNewLockedHint'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepOne.roadmapQuestion'))).not.toBeInTheDocument();
+
+    await finishKnowledgeAnalysis('React hooks nang cao', 'React');
+    clickButtonByText('React');
+
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onSave).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        workspacePurpose: 'REVIEW',
+        enableRoadmap: false,
+      })
+    );
+    expect(screen.getAllByText(i18n.t('workspace.profileConfig.footerHint', { current: 2, total: 2 })).length).toBeGreaterThan(0);
   });
 
   it('reveals step-two AI suggestions progressively and only suggests learning goals after current context is filled', async () => {
@@ -405,7 +447,6 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
 
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.currentLevelTitle'))).toBeInTheDocument();
     expect(screen.getByText('Đã học xong N5')).toBeInTheDocument();
-    expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.waitForGoalTitle'))).toBeInTheDocument();
     expect(screen.queryByText('Khắc phục Ngữ pháp N4 dễ nhầm để học chắc N4.')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
@@ -984,17 +1025,66 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.roadmapConfig'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.knowledgeLoad'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.knowledgeLoad.BASIC.title'))).toBeInTheDocument();
-    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.adaptationMode.BALANCED.title'))).toBeInTheDocument();
-    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.roadmapSpeedMode'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.roadmapSpeedMode.STANDARD.title'))).toBeInTheDocument();
-    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.estimatedTotalDays'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.estimatedTotalDays', { value: 30 }))).toBeInTheDocument();
-    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.recommendedMinutesPerDay'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.recommendedMinutesPerDay', { value: 60 }))).toBeInTheDocument();
     expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
     expect(onSave).toHaveBeenCalledTimes(2);
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('keeps the confirmation popup visible while applying the selected profile', async () => {
+    const confirmDeferred = createDeferred();
+    const onConfirm = vi.fn().mockImplementation(() => confirmDeferred.promise);
+    const { onOpenChange } = renderDialog({ onConfirm });
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
+      knowledge: 'React hooks nang cao',
+      expectedDomainText: 'React',
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da biet React co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
+      target: { value: 'Xay dung mot project React co lo trinh ro rang.' },
+    });
+
+    await moveToStepThree();
+    await openConfirmProfilePopup();
+
+    const confirmDialog = screen.getByRole('dialog', {
+      name: i18n.t('workspace.profileConfig.confirmProfileDialog.title'),
+    });
+    const confirmProfileButton = within(confirmDialog).getByRole('button', {
+      name: i18n.t('workspace.profileConfig.actions.confirmProfileUse'),
+    });
+
+    await act(async () => {
+      fireEvent.click(confirmProfileButton);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(screen.getByRole('dialog', {
+      name: i18n.t('workspace.profileConfig.confirmProfileDialog.title'),
+    })).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
+    expect(within(confirmDialog).getByRole('button', {
+      name: i18n.t('workspace.profileConfig.actions.confirmProfileUse'),
+    })).toBeDisabled();
+
+    await act(async () => {
+      confirmDeferred.resolve(undefined);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('automatically reclassifies roadmap speed when the user extends the estimated study days', async () => {
@@ -1116,32 +1206,25 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('treats step 2 as the final step for MOCK_TEST when roadmap is disabled', async () => {
+  it('treats step 2 as the final step for REVIEW when roadmap is disabled', async () => {
     const onSave = vi.fn()
       .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce({ deferred: true });
+      .mockResolvedValueOnce(undefined);
     const onConfirm = vi.fn().mockResolvedValue(undefined);
 
     renderDialog({ onSave, onConfirm });
 
     await moveToStepTwo({
-      purposeText: i18n.t('workspace.profileConfig.purpose.MOCK_TEST.title'),
+      purposeText: i18n.t('workspace.profileConfig.purpose.REVIEW.title'),
       knowledge: 'IELTS Writing task 2',
       expectedDomainText: 'IELTS Writing',
       roadmapChoiceText: i18n.t('workspace.profileConfig.common.no'),
     });
 
-    clickMockTestStepTwoTab('mocktest');
-    clickButtonByText('Custom');
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName')), {
-      target: { value: 'IELTS Academic' },
-    });
-
-    clickMockTestStepTwoTab('profile');
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
       target: { value: 'IELTS 6.0' },
     });
-    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('MOCK_TEST')), {
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW')), {
       target: { value: 'On dinh writing va giu toc do lam bai.' },
     });
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
@@ -1160,14 +1243,13 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
 
     expect(onSave).toHaveBeenCalledTimes(2);
     expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({
-      workspacePurpose: 'MOCK_TEST',
+      workspacePurpose: 'REVIEW',
       enableRoadmap: false,
-      mockExamName: 'IELTS Academic',
     }));
-    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('does not require strengths and weaknesses for absolute beginners in MOCK_TEST mode', async () => {
+  it('does not require strengths and weaknesses for absolute beginners in REVIEW mode', async () => {
     setupApiMocks({
       analysisResponse: createAnalysisResponse(['Tiếng Nhật', 'JLPT']),
       fieldSuggestionResponse: createFieldSuggestionResponse({
@@ -1183,28 +1265,21 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
 
     const onSave = vi.fn()
       .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce({ deferred: true });
+      .mockResolvedValueOnce(undefined);
 
     renderDialog({ onSave });
 
     await moveToStepTwo({
-      purposeText: i18n.t('workspace.profileConfig.purpose.MOCK_TEST.title'),
+      purposeText: i18n.t('workspace.profileConfig.purpose.REVIEW.title'),
       knowledge: 'Tiếng Nhật nhập môn',
       expectedDomainText: 'Tiếng Nhật',
       roadmapChoiceText: i18n.t('workspace.profileConfig.common.no'),
     });
 
-    clickMockTestStepTwoTab('mocktest');
-    clickButtonByText('Custom');
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName')), {
-      target: { value: 'JLPT N5 Starter' },
-    });
-
-    clickMockTestStepTwoTab('profile');
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
       target: { value: 'Mới bắt đầu học tiếng Nhật' },
     });
-    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('MOCK_TEST')), {
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW')), {
       target: { value: 'Làm quen cấu trúc đề và xây nền tảng N5 cơ bản.' },
     });
 
@@ -1215,8 +1290,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(screen.queryByText(i18n.t('workspace.profileConfig.validation.weakAreasRequired'))).not.toBeInTheDocument();
     expect(onSave).toHaveBeenCalledTimes(2);
     expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({
-      workspacePurpose: 'MOCK_TEST',
-      mockExamName: 'JLPT N5 Starter',
+      workspacePurpose: 'REVIEW',
       currentLevel: 'Mới bắt đầu học tiếng Nhật',
       strongAreas: null,
       weakAreas: null,
@@ -1335,7 +1409,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     );
   });
 
-  it('shows the template generation pending state on mock-test step 2', async () => {
+  it('maps legacy MOCK_TEST onboarding data back to REVIEW mode', async () => {
     setupApiMocks({
       analysisResponse: createAnalysisResponse(['JLPT N2', 'JLPT', 'Japanese']),
     });
@@ -1361,9 +1435,10 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getAllByText(i18n.t('workspace.profileConfig.messages.mockTemplateGenerating')).length).toBeGreaterThan(0);
-    expect(getFooterPrimaryButton()).toBeDisabled();
-    expect(getFooterPrimaryButton()).toHaveTextContent(i18n.t('workspace.profileConfig.actions.generatingTemplate'));
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.messages.mockTemplateGenerating'))).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW'))).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cấu hình đề thi|exam configuration/i })).not.toBeInTheDocument();
+    expect(getFooterPrimaryButton()).not.toBeDisabled();
   });
 
   it('skips knowledge-analysis API calls for invalid live input and only calls AI after the text becomes valid', async () => {

@@ -4,6 +4,26 @@ import { getCurrentUserPlan } from "@/api/ManagementSystemAPI";
 const CACHE_KEY = "quizmate_plan_entitlements";
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+function extractCurrentPlan(response) {
+  const payload = response?.data?.data ?? response?.data ?? response ?? null;
+
+  if (payload?.plan || payload?.planAssignmentId || payload?.defaultPlan != null) {
+    return payload;
+  }
+
+  if (payload?.data?.plan || payload?.data?.planAssignmentId || payload?.data?.defaultPlan != null) {
+    return payload.data;
+  }
+
+  return payload;
+}
+
+function extractPlanEntitlements(response) {
+  const currentPlan = extractCurrentPlan(response);
+  const entitlements = currentPlan?.plan?.entitlement ?? currentPlan?.entitlement ?? null;
+  return entitlements && typeof entitlements === "object" ? entitlements : null;
+}
+
 function getCachedEntitlements() {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
@@ -38,6 +58,36 @@ export function invalidatePlanEntitlementsCache() {
   }
 }
 
+export function buildPlanEntitlementFlags(entitlements) {
+  const e = entitlements;
+
+  return {
+    entitlements: e,
+
+    // --- File upload permissions ---
+    canUploadPdf: e?.canProcessPdf ?? false,
+    canUploadWord: e?.canProcessWord ?? false,
+    canUploadSlide: e?.canProcessSlide ?? false,
+    canUploadExcel: e?.canProcessExcel ?? false,
+    canUploadText: e?.canProcessText ?? false,
+    canUploadImage: e?.canProcessImage ?? false,
+    canUploadAudio: e?.canProcessAudio ?? false,
+    canUploadVideo: e?.canProcessVideo ?? false,
+
+    // --- Feature permissions ---
+    canCreateRoadmap: e?.canCreateRoadMap ?? false,
+    hasAdvanceQuizConfig: e?.hasAdvanceQuizConfig ?? false,
+    hasAiCompanionMode: e?.hasAiCompanionMode ?? false,
+    hasWorkspaceAnalytics: e?.hasWorkspaceAnalytics ?? false,
+    hasAiSummaryAndTextReading: e?.hasAiSummaryAndTextReading ?? false,
+    hasAiQuizAssessmentAndRecommendation: e?.hasAiQuizAssessmentAndRecommendation ?? false,
+
+    // --- Structural limits ---
+    maxWorkspaces: e?.maxIndividualWorkspace ?? 0,
+    maxMaterialsPerWorkspace: e?.maxMaterialInWorkspace ?? 0,
+  };
+}
+
 /**
  * Hook that fetches the current user's plan entitlements and exposes
  * flat boolean helpers for feature gating in the UI.
@@ -57,11 +107,13 @@ export function usePlanEntitlements({ enabled = true } = {}) {
     setError(null);
     try {
       const response = await getCurrentUserPlan();
-      const plan = response?.data ?? response ?? null;
-      // Path: CurrentPlanResponse → plan (PlanCatalogResponse) → entitlement (PlanEntitlementResponse)
-      const ent = plan?.plan?.entitlement ?? null;
+      const ent = extractPlanEntitlements(response);
       setEntitlements(ent);
-      if (ent) setCachedEntitlements(ent);
+      if (ent) {
+        setCachedEntitlements(ent);
+      } else {
+        invalidatePlanEntitlementsCache();
+      }
       return ent;
     } catch (err) {
       setError(err);
@@ -82,19 +134,26 @@ export function usePlanEntitlements({ enabled = true } = {}) {
     const load = async () => {
       const cached = getCachedEntitlements();
       if (cached) {
-        if (!cancelled) setEntitlements(cached);
-        if (!cancelled) setLoading(false);
-        return;
+        if (!cancelled) {
+          setEntitlements(cached);
+          setLoading(false);
+        }
       }
 
-      setLoading(true);
+      if (!cached) {
+        setLoading(true);
+      }
+
       try {
         const response = await getCurrentUserPlan();
-        const plan = response?.data ?? response ?? null;
-        const ent = plan?.plan?.entitlement ?? null;
+        const ent = extractPlanEntitlements(response);
         if (cancelled) return;
         setEntitlements(ent);
-        if (ent) setCachedEntitlements(ent);
+        if (ent) {
+          setCachedEntitlements(ent);
+        } else {
+          invalidatePlanEntitlementsCache();
+        }
       } catch (err) {
         if (cancelled) return;
         setError(err);
@@ -110,34 +169,10 @@ export function usePlanEntitlements({ enabled = true } = {}) {
     };
   }, [enabled]);
 
-  const e = entitlements;
-
   return {
-    entitlements: e,
     loading,
     error,
     refresh,
-
-    // --- File upload permissions ---
-    canUploadPdf:   e?.canProcessPdf   ?? false,
-    canUploadWord:  e?.canProcessWord  ?? false,
-    canUploadSlide: e?.canProcessSlide ?? false,
-    canUploadExcel: e?.canProcessExcel ?? false,
-    canUploadText:  e?.canProcessText  ?? false,
-    canUploadImage: e?.canProcessImage ?? false,
-    canUploadAudio: e?.canProcessAudio ?? false,
-    canUploadVideo: e?.canProcessVideo ?? false,
-
-    // --- Feature permissions ---
-    canCreateRoadmap:           e?.canCreateRoadMap            ?? false,
-    hasAdvanceQuizConfig:       e?.hasAdvanceQuizConfig        ?? false,
-    hasAiCompanionMode:         e?.hasAiCompanionMode          ?? false,
-    hasWorkspaceAnalytics:      e?.hasWorkspaceAnalytics       ?? false,
-    hasAiSummaryAndTextReading: e?.hasAiSummaryAndTextReading  ?? false,
-    hasAiQuizAssessmentAndRecommendation: e?.hasAiQuizAssessmentAndRecommendation ?? false,
-
-    // --- Structural limits ---
-    maxWorkspaces:            e?.maxIndividualWorkspace   ?? 0,
-    maxMaterialsPerWorkspace: e?.maxMaterialInWorkspace   ?? 0,
+    ...buildPlanEntitlementFlags(entitlements),
   };
 }

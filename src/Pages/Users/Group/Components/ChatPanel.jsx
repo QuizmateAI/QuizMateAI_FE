@@ -32,7 +32,7 @@ function DeferredPanel({ children }) {
 }
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onRefreshRoadmapPhases, onCreateRoadmapPreLearning, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER", planEntitlements = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, isGeneratingRoadmapPhases = false, isGeneratingRoadmapPreLearning = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad, hasRoadmap = false }) {
+function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onRefreshRoadmapPhases, onCreateRoadmapPreLearning, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER", planEntitlements = null, quizTitleMaxLength = null, currentPlanSummaryOverride = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, isGeneratingRoadmapPhases = false, isGeneratingRoadmapPreLearning = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad, hasRoadmap = false }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -193,12 +193,14 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             refreshToken={quizListRefreshToken}
             groupRole={role}
             groupCurrentUserId={groupWorkspaceCurrentUserId}
+            quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+            quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
           />
         );
       case "flashcard":
         return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
       case "mockTest":
-        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
+        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly || !planEntitlements?.hasAdvanceQuizConfig} />;
       case "ranking":
         return <LazyGroupRankingTab workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "postLearning":
@@ -223,7 +225,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             {t("workspace.roadmap.title", "Roadmap")}
           </p>
           <div className="flex items-center gap-2">
-            <Button
+            {/* <Button
               type="button"
               size="sm"
               variant="outline"
@@ -235,7 +237,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span className={`text-xs ml-1 ${fontClass}`}>{t("common.refresh", "Làm mới")}</span>
-            </Button>
+            </Button> */}
 
             {typeof onEditRoadmapConfig === "function" ? (
               <Button
@@ -271,7 +273,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
               </Button>
-              <Button
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
@@ -280,7 +282,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
               >
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
@@ -288,7 +290,12 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
         <RoadmapReviewPanel review={roadmapReview} isDarkMode={isDarkMode} />
 
         <div className="min-h-0 flex-1 flex gap-3 p-3 overflow-hidden">
-          <div className="min-h-0 min-w-0 flex-1 rounded-[24px] overflow-y-auto overflow-x-hidden border border-slate-200 dark:border-slate-800 transition-all duration-500 ease-out">
+          <div
+            className={`min-h-0 min-w-0 flex-1 transition-all duration-500 ease-out ${roadmapCanvasView === "overview"
+              ? "rounded-none border-0 bg-transparent overflow-visible"
+              : "rounded-[24px] overflow-y-auto overflow-x-hidden border border-slate-200 dark:border-slate-800"
+              }`}
+          >
             <DeferredPanel>{listContent}</DeferredPanel>
           </div>
 
@@ -370,6 +377,10 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             readOnly={readOnly}
             existingQuizId={draftTargetId}
             seedQuizTitle={challengeDraftQuizEditor ? seedTitle : undefined}
+            quizTitleMaxLength={quizTitleMaxLength}
+            planUpgradeScope="GROUP"
+            currentPlanSummaryOverride={currentPlanSummaryOverride}
+            planUpgradeWorkspaceId={workspaceId}
           />
         );
       }
@@ -389,10 +400,13 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             contextType="GROUP"
             contextId={workspaceId}
             presentationMode={challengeDraftQuizEditor ? "createAligned" : "default"}
+            quizTitleMaxLength={quizTitleMaxLength}
           />
         ) : null;
       case "createMockTest":
-        return <LazyCreateGroupMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
+        return readOnly || !planEntitlements?.hasAdvanceQuizConfig
+          ? <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate />
+          : <LazyCreateGroupMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "createPostLearning":
         return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "mockTestDetail":

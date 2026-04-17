@@ -5,6 +5,7 @@ import {
   AI_VALIDATION_SECTION_ORDER,
   DIFFICULTY_LEVELS,
 } from "./createQuizForm.constants";
+import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 
 export const shuffle = (items) => {
   const clone = [...items];
@@ -259,13 +260,16 @@ export const buildAiValidationState = ({
   customDifficulty,
   difficultyDefs,
   minimumAiDurationMinutes,
+  hasAdvanceQuizConfig,
   questionTypeUnit,
+  questionTypeDefinitions,
   questionUnit,
   quizTitleMaxLength,
   selectedBloomSkills,
   selectedDifficultyId,
   selectedMaterialIds,
   selectedQTypes,
+  structureItems,
   t,
 }) => {
   const nextFieldErrors = {};
@@ -284,6 +288,9 @@ export const buildAiValidationState = ({
   };
 
   const normalizedTotalQuestions = Number(aiTotalQuestions);
+  const normalizedQuizTitleMaxLength = Number(quizTitleMaxLength);
+  const hasQuizTitleMaxLength = Number.isFinite(normalizedQuizTitleMaxLength)
+    && normalizedQuizTitleMaxLength > 0;
   const hasValidTotalQuestions = Number.isFinite(normalizedTotalQuestions)
     && normalizedTotalQuestions >= AI_MINIMUM_QUESTION_COUNT
     && normalizedTotalQuestions <= AI_MAXIMUM_QUESTION_COUNT;
@@ -291,13 +298,13 @@ export const buildAiValidationState = ({
 
   if (!aiName.trim()) {
     registerError("general", "aiName", t("workspace.quiz.validation.nameRequired"));
-  } else if (aiName.trim().length > quizTitleMaxLength) {
+  } else if (hasQuizTitleMaxLength && aiName.trim().length > normalizedQuizTitleMaxLength) {
     registerError(
       "general",
       "aiName",
       t("workspace.quiz.validation.nameMaxLength", {
-        max: quizTitleMaxLength,
-        defaultValue: `Quiz title must be at most ${quizTitleMaxLength} characters.`,
+        max: normalizedQuizTitleMaxLength,
+        defaultValue: `Quiz title must be at most ${normalizedQuizTitleMaxLength} characters.`,
       })
     );
   }
@@ -366,8 +373,30 @@ export const buildAiValidationState = ({
   }
 
   const questionTypeTarget = questionTypeUnit ? normalizedTotalQuestions : 100;
+  const restrictedAdvancedQuestionTypes = !hasAdvanceQuizConfig
+    ? selectedQTypes.filter((item) => {
+        const detail = (Array.isArray(questionTypeDefinitions) ? questionTypeDefinitions : []).find(
+          (questionType) => Number(questionType?.questionTypeId) === Number(item?.questionTypeId),
+        );
+        return isAdvancedQuizQuestionType(detail?.questionType);
+      })
+    : [];
+  const restrictedAdvancedStructureItems = !hasAdvanceQuizConfig
+    ? (Array.isArray(structureItems) ? structureItems : []).filter((item) => (
+        isAdvancedQuizQuestionType(item?.questionType)
+      ))
+    : [];
+
   if (selectedQTypes.length === 0) {
     registerError("questionTypes", "selectedQTypes", t("workspace.quiz.validation.questionTypeRequired"));
+  } else if (restrictedAdvancedQuestionTypes.length > 0 || restrictedAdvancedStructureItems.length > 0) {
+    registerError(
+      "questionTypes",
+      "selectedQTypes",
+      t("workspace.quiz.validation.advancedQuestionTypePlanRequired", {
+        defaultValue: "Advanced question types require a plan with advanced quiz configuration.",
+      }),
+    );
   } else if ((!questionTypeUnit || hasValidTotalQuestions) && !isNearlyEqual(sumRatios(selectedQTypes), questionTypeTarget)) {
     registerError(
       "questionTypes",

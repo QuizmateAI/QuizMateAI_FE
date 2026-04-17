@@ -51,4 +51,32 @@ describe('InviteMemberDialog', () => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
+
+  it('blocks submission when the member seat limit is already exhausted', async () => {
+    const onInvite = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <InviteMemberDialog
+        open
+        onOpenChange={vi.fn()}
+        onInvite={onInvite}
+        isDarkMode={false}
+        memberSeatLimit={5}
+        memberSeatUsage={6}
+        memberSeatRemaining={0}
+        isMemberSeatLimitReached
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'home.group.sendInvite' })).toBeDisabled();
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'blocked@example.com' },
+    });
+
+    fireEvent.submit(screen.getByRole('button', { name: 'home.group.sendInvite' }).closest('form'));
+
+    await waitFor(() => {
+      expect(onInvite).not.toHaveBeenCalled();
+    });
+  });
 });

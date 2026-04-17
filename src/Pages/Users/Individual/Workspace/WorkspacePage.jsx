@@ -20,6 +20,7 @@ import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
 import PlanUpgradeModal from "@/Components/plan/PlanUpgradeModal";
 
 import {
+  deleteIndividualWorkspace,
   getIndividualWorkspaceProfile,
   getWorkspacePersonalization,
   normalizeIndividualWorkspaceProfile,
@@ -132,6 +133,38 @@ function getProfilePurpose(profileData) {
   return profileData?.workspacePurpose || profileData?.learningMode || "";
 }
 
+function hasTextValue(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function hasSavedBasicProfileStep(profileData) {
+  if (!profileData || typeof profileData !== "object") {
+    return false;
+  }
+
+  const explicitStep = Number(profileData?.currentStep);
+  const setupStatus = String(profileData?.workspaceSetupStatus || "").toUpperCase();
+  const profileStatus = String(profileData?.profileStatus || "").toUpperCase();
+
+  if (explicitStep >= 2) return true;
+  if (["PROFILE_DONE", "DONE"].includes(setupStatus)) return true;
+  if (["BASIC_DONE", "DONE"].includes(profileStatus)) return true;
+
+  return Boolean(
+    getProfilePurpose(profileData) &&
+      hasTextValue(
+        profileData?.knowledgeInput ??
+          profileData?.knowledge ??
+          profileData?.customKnowledge,
+      ) &&
+      hasTextValue(
+        profileData?.inferredDomain ??
+          profileData?.domain ??
+          profileData?.customDomain,
+      ),
+  );
+}
+
 function normalizeRoadmapEnabledValue(value) {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value === 1;
@@ -161,11 +194,19 @@ function WorkspacePage() {
   const queryClient = useQueryClient();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const planEntitlements = usePlanEntitlements();
+  const canCreateRoadmap = planEntitlements.loading
+    ? null
+    : Boolean(planEntitlements.canCreateRoadmap);
+  const roadmapCreationBlocked =
+    planEntitlements.loading || canCreateRoadmap === false;
   const [planUpgradeModalOpen, setPlanUpgradeModalOpen] = useState(false);
   const [planUpgradeFeatureName, setPlanUpgradeFeatureName] =
     useState(undefined);
   const openProfileConfig = location.state?.openProfileConfig || false;
   const continueProfileSetup = Boolean(location.state?.continueProfileSetup);
+  const shouldReturnHomeOnIncompleteProfile = Boolean(
+    location.state?.returnToHomeOnIncompleteProfile,
+  );
   const [profileConfigOpen, setProfileConfigOpen] = useState(false);
   const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
@@ -191,6 +232,7 @@ function WorkspacePage() {
 
   const [sources, setSources] = useState([]);
   const sourcesRef = useRef([]);
+  const roadmapAccessRedirectHandledRef = useRef(false);
   const hasLoadedSourcesSuccessfullyRef = useRef(false);
   const lastLoadedSourcesWorkspaceIdRef = useRef(null);
   const skipRoadmapStoredRestoreRef = useRef(false);
@@ -253,6 +295,8 @@ function WorkspacePage() {
   const [hasExistingWorkspaceFlashcard, setHasExistingWorkspaceFlashcard] =
     useState(false);
   const [totalFlashcardCount, setTotalFlashcardCount] = useState(0);
+  const [hasExistingWorkspaceMockTest, setHasExistingWorkspaceMockTest] =
+    useState(false);
   const [totalMockTestCount, setTotalMockTestCount] = useState(0);
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
@@ -372,9 +416,10 @@ function WorkspacePage() {
   }, [location.pathname, workspaceId]);
 
   const canAutoFocusRoadmap = useCallback(() => {
+    if (canCreateRoadmap === false) return false;
     const routeView = getCurrentWorkspaceRouteView();
     return routeView === "roadmap";
-  }, [getCurrentWorkspaceRouteView]);
+  }, [canCreateRoadmap, getCurrentWorkspaceRouteView]);
 
   const focusRoadmapViewSafely = useCallback(() => {
     if (isOnWorkspaceQuizRoute || !canAutoFocusRoadmap()) return;
@@ -399,6 +444,7 @@ function WorkspacePage() {
       setTotalQuizCount(0);
       setHasExistingWorkspaceFlashcard(false);
       setTotalFlashcardCount(0);
+      setHasExistingWorkspaceMockTest(false);
       setTotalMockTestCount(0);
       return;
     }
@@ -454,6 +500,7 @@ function WorkspacePage() {
         setTotalQuizCount(workspaceQuizzes.length);
         setHasExistingWorkspaceFlashcard(workspaceFlashcards.length > 0);
         setTotalFlashcardCount(workspaceFlashcards.length);
+        setHasExistingWorkspaceMockTest(mockTestCount > 0);
         setTotalMockTestCount(mockTestCount);
       } catch (error) {
         if (!cancelled) {
@@ -503,8 +550,14 @@ function WorkspacePage() {
     !hasAtLeastOneActiveSource && !hasExistingWorkspaceQuiz;
   const shouldDisableFlashcard =
     !hasAtLeastOneActiveSource && !hasExistingWorkspaceFlashcard;
+  const shouldDisableMockTest =
+    !hasAtLeastOneActiveSource && !hasExistingWorkspaceMockTest;
   const shouldDisableCreateQuiz = !hasAtLeastOneActiveSource;
   const shouldDisableCreateFlashcard = !hasAtLeastOneActiveSource;
+  const shouldDisableCreateMockTest =
+    !hasAtLeastOneActiveSource ||
+    planEntitlements.loading ||
+    !planEntitlements.hasAdvanceQuizConfig;
   const materialCountForProfile = sources.length;
   const profileEditLocked = materialCountForProfile > 0;
   const roadmapEnabledFromProfile = normalizeRoadmapEnabledValue(
@@ -520,13 +573,17 @@ function WorkspacePage() {
   const passRoadmapCondition1 = resolvedRoadmapEnabled;
   const passRoadmapCondition2 = hasAtLeastOneActiveSource;
   const passRoadmapCondition3 = !isRoadmapStructureMissing;
-  const shouldDisableRoadmapForStudio = hasRoadmapPhases
+  const shouldDisableRoadmapForStudio = canCreateRoadmap === false
+    ? true
+    : hasRoadmapPhases
     ? false
     : !hasAtLeastOneActiveSource ||
       !passRoadmapCondition1 ||
       !passRoadmapCondition3;
 
-  const isStudyNewRoadmap = getProfilePurpose(workspaceProfile) === "STUDY_NEW";
+  const isStudyNewRoadmap =
+    canCreateRoadmap !== false &&
+    getProfilePurpose(workspaceProfile) === "STUDY_NEW";
 
   const hasWorkspaceLearningDataAtRisk =
     hasExistingWorkspaceQuiz ||
@@ -541,6 +598,12 @@ function WorkspacePage() {
   ).toUpperCase();
 
   const [roadmapConfigEditOpen, setRoadmapConfigEditOpen] = useState(false);
+
+  useEffect(() => {
+    if (!shouldDisableCreateMockTest) return;
+    if (activeView !== "createMockTest") return;
+    setActiveView("mockTest");
+  }, [activeView, shouldDisableCreateMockTest]);
 
   const roadmapConfigInitialValues = useMemo(
     () => ({
@@ -846,6 +909,38 @@ function WorkspacePage() {
     navigate(buildWorkspacePath(workspaceId), { replace: true });
   }, [navigate, workspaceId]);
 
+  const navigateToWorkspaceHomeTab = useCallback(() => {
+    navigate("/home?tab=workspace", { replace: true });
+  }, [navigate]);
+
+  const handleIncompleteProfileExit = useCallback(async () => {
+    const shouldDeleteDraftWorkspace =
+      shouldReturnHomeOnIncompleteProfile &&
+      !hasSavedBasicProfileStep(workspaceProfile);
+
+    closeProfileDialogs();
+    setIsProfileUpdateMode(false);
+
+    if (shouldDeleteDraftWorkspace && workspaceId) {
+      try {
+        await deleteIndividualWorkspace(workspaceId);
+      } catch (error) {
+        console.error("Failed to delete incomplete draft workspace:", error);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      }
+    }
+
+    navigateToWorkspaceHomeTab();
+  }, [
+    closeProfileDialogs,
+    navigateToWorkspaceHomeTab,
+    queryClient,
+    shouldReturnHomeOnIncompleteProfile,
+    workspaceId,
+    workspaceProfile,
+  ]);
+
   const {
     mockTestGenerationState,
 
@@ -1008,6 +1103,10 @@ function WorkspacePage() {
   }, []);
 
   const openRoadmapWorkspaceView = useCallback(() => {
+    if (canCreateRoadmap === false) {
+      return;
+    }
+
     const routeView = getCurrentWorkspaceRouteView();
     if (
       routeView &&
@@ -1018,12 +1117,53 @@ function WorkspacePage() {
     React.startTransition(() => {
       setActiveView((prev) => (prev === "roadmap" ? prev : "roadmap"));
     });
-  }, [getCurrentWorkspaceRouteView]);
+  }, [canCreateRoadmap, getCurrentWorkspaceRouteView]);
 
   const clearRoadmapPhaseSelection = useCallback(() => {
     setSelectedRoadmapPhaseId(null);
     setSelectedRoadmapKnowledgeId(null);
   }, []);
+
+  useEffect(() => {
+    if (!workspaceId || canCreateRoadmap !== false) {
+      roadmapAccessRedirectHandledRef.current = false;
+      return;
+    }
+
+    const routeView = getCurrentWorkspaceRouteView();
+    const roadmapRouteLocked = routeView === "roadmap";
+    const roadmapViewLocked = activeView === "roadmap";
+
+    if (!roadmapRouteLocked && !roadmapViewLocked) {
+      roadmapAccessRedirectHandledRef.current = false;
+      return;
+    }
+
+    if (roadmapAccessRedirectHandledRef.current) {
+      return;
+    }
+
+    roadmapAccessRedirectHandledRef.current = true;
+    clearRoadmapPhaseSelection();
+    setSelectedQuiz(null);
+    setQuizBackTarget(null);
+    React.startTransition(() => {
+      setActiveView((prev) => (prev === "overview" ? prev : "overview"));
+    });
+
+    const workspaceOverviewPath = buildWorkspacePath(workspaceId);
+    if (location.pathname !== workspaceOverviewPath) {
+      navigate(workspaceOverviewPath, { replace: true });
+    }
+  }, [
+    activeView,
+    canCreateRoadmap,
+    clearRoadmapPhaseSelection,
+    getCurrentWorkspaceRouteView,
+    location.pathname,
+    navigate,
+    workspaceId,
+  ]);
 
   const invalidateMockTestQueries = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["workspace-mock-tests"] });
@@ -1058,6 +1198,7 @@ function WorkspacePage() {
 
   const {
     wsConnected,
+    walletRealtimeTick,
 
     roadmapReloadToken,
 
@@ -1270,12 +1411,21 @@ function WorkspacePage() {
       } else {
         setIsProfileUpdateMode(false);
 
+        if (
+          shouldReturnHomeOnIncompleteProfile &&
+          !hasSavedBasicProfileStep(workspaceProfile)
+        ) {
+          void handleIncompleteProfileExit();
+          return;
+        }
+
         if (location.state?.openProfileConfig) {
           navigateToWorkspaceRoot();
         }
       }
     },
     [
+      handleIncompleteProfileExit,
       location.state,
 
       loadWorkspaceProfileData,
@@ -1284,7 +1434,9 @@ function WorkspacePage() {
 
       readStoredMockTestGeneration,
 
+      shouldReturnHomeOnIncompleteProfile,
       syncMockTestGenerationFromProfile,
+      workspaceProfile,
     ],
   );
 
@@ -1484,6 +1636,8 @@ function WorkspacePage() {
       setHasExistingWorkspaceFlashcard(false);
 
       setTotalFlashcardCount(0);
+
+      setHasExistingWorkspaceMockTest(false);
 
       setTotalMockTestCount(0);
 
@@ -2025,11 +2179,50 @@ function WorkspacePage() {
 
   // Handle flashcard creation callback after the API flow finishes
 
-  const handleCreateFlashcard = useCallback(async () => {
-    // Return to the list view so it can refresh
+  const handleCreateFlashcard = useCallback(async (createdFlashcard = null) => {
+    const scopeId = Number(workspaceId) || 0;
+    const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
+    const flashcardSetId = Number(
+      createdFlashcard?.flashcardSetId ??
+      createdFlashcard?.id ??
+      createdFlashcard?.data?.flashcardSetId,
+    );
 
+    if (scopeId > 0 && Number.isInteger(flashcardSetId) && flashcardSetId > 0) {
+      queryClient.setQueryData(queryKey, (previousItems = []) => {
+        const safePreviousItems = Array.isArray(previousItems) ? previousItems : [];
+
+        if (
+          safePreviousItems.some(
+            (item) => Number(item?.flashcardSetId ?? item?.id) === flashcardSetId,
+          )
+        ) {
+          return safePreviousItems;
+        }
+
+        const nowIso = new Date().toISOString();
+        const optimisticItem = {
+          flashcardSetId,
+          flashcardSetName:
+            createdFlashcard?.flashcardSetName ||
+            createdFlashcard?.name ||
+            `${t("workspace.flashcard.createTitle")} #${flashcardSetId}`,
+          status: String(createdFlashcard?.status || "DRAFT").toUpperCase(),
+          createVia: createdFlashcard?.createVia || "AI",
+          itemCount: Number(createdFlashcard?.itemCount ?? 0),
+          createdAt: createdFlashcard?.createdAt || nowIso,
+          updatedAt: createdFlashcard?.updatedAt || nowIso,
+        };
+
+        return [optimisticItem, ...safePreviousItems];
+      });
+    }
+
+    void queryClient.invalidateQueries({ queryKey });
+
+    // Return to the list view so it can refresh
     setActiveView("flashcard");
-  }, []);
+  }, [queryClient, t, workspaceId]);
 
   // Open flashcard detail from the list
 
@@ -2061,7 +2254,7 @@ function WorkspacePage() {
 
   const handleCreateRoadmap = useCallback(
     async (data) => {
-      if (!planEntitlements.canCreateRoadmap) {
+      if (roadmapCreationBlocked) {
         setPlanUpgradeFeatureName("Tạo lộ trình học tập");
 
         setPlanUpgradeModalOpen(true);
@@ -2093,7 +2286,7 @@ function WorkspacePage() {
         throw err;
       }
     },
-    [workspaceId, planEntitlements.canCreateRoadmap],
+    [workspaceId, roadmapCreationBlocked],
   );
 
   // Go back to the matching list view when the user presses Back in a form
@@ -2312,7 +2505,7 @@ function WorkspacePage() {
   const handleCreateRoadmapPhases = useCallback(() => {
     if (isSubmittingRoadmapPhaseRequest) return;
 
-    if (!planEntitlements.canCreateRoadmap) {
+    if (roadmapCreationBlocked) {
       setPlanUpgradeFeatureName("Tạo lộ trình học tập");
       setPlanUpgradeModalOpen(true);
       return;
@@ -2322,7 +2515,7 @@ function WorkspacePage() {
   }, [
     handleOpenRoadmapPhaseDialog,
     isSubmittingRoadmapPhaseRequest,
-    planEntitlements.canCreateRoadmap,
+    roadmapCreationBlocked,
   ]);
 
   const chatPanelProps = {
@@ -2392,6 +2585,7 @@ function WorkspacePage() {
     shouldDisableRoadmap: shouldDisableRoadmapForStudio,
     shouldDisableCreateQuiz,
     shouldDisableCreateFlashcard,
+    shouldDisableCreateMockTest,
     progressTracking,
     roadmapHasPhases,
     completedQuizCount,
@@ -2429,12 +2623,14 @@ function WorkspacePage() {
           onToggleDarkMode={toggleDarkMode}
           onEditWorkspace={async (data) => {
             await editWorkspace(Number(workspaceId), data);
-          }}
-          wsConnected={wsConnected}
-          disabledMap={{
+            }}
+            wsConnected={wsConnected}
+            walletRefreshToken={walletRealtimeTick}
+            disabledMap={{
             roadmap: shouldDisableRoadmapForStudio,
             quiz: shouldDisableQuiz,
             flashcard: shouldDisableFlashcard,
+            mockTest: shouldDisableMockTest,
             questionStats: !planEntitlements.hasWorkspaceAnalytics,
           }}
           badgeMap={{
@@ -2618,6 +2814,7 @@ function WorkspacePage() {
             onConfirm={handleConfirmProfileConfig}
             onUploadFiles={handleUploadFiles}
             isDarkMode={personalWorkspaceIsDark}
+            canCreateRoadmap={canCreateRoadmap}
             uploadedMaterials={sources}
             workspaceId={workspaceId}
             forceStartAtStepOne={

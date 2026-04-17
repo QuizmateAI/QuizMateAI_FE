@@ -1,13 +1,15 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import i18n from '@/i18n';
+import i18n, { i18nReady, preloadNamespaces } from '@/i18n';
 import IndividualWorkspaceProfileOverviewDialog from '@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog';
 
 describe('IndividualWorkspaceProfileOverviewDialog', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     window.localStorage.setItem('app_language', 'vi');
-    i18n.changeLanguage('vi');
+    await i18nReady;
+    await preloadNamespaces(['common', 'workspace'], 'vi');
+    await i18n.changeLanguage('vi');
   });
 
   it('renders a separate overview UI with the saved profile data', () => {

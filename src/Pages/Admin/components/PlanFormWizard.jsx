@@ -103,6 +103,8 @@ function PlanFormWizard({
   availableAiModels,
   creditUnitPrice = 200,
   highestActiveUserPlanEntitlement,
+  editLocked = false,
+  editLockedReason = '',
   onSubmit,
   onValidationError,
 }) {
@@ -174,12 +176,28 @@ function PlanFormWizard({
   const resolvedPlanLevel = PLAN_LEVEL_OPTIONS.includes(String(formData.planLevel ?? ''))
     ? String(formData.planLevel ?? '')
     : (PLAN_LEVEL_OPTIONS[0] ?? '');
+  const isDefaultPlanLevel = resolvedPlanLevel === (PLAN_LEVEL_OPTIONS[0] ?? '0');
+  const hasGroupInheritance = isWorkspace && !isDefaultPlanLevel && Boolean(highestActiveUserPlanEntitlement);
 
   useEffect(() => {
     if (editingPlan) return;
     if (formData.planLevel === resolvedPlanLevel) return;
     setFormData((prev) => ({ ...prev, planLevel: resolvedPlanLevel }));
   }, [editingPlan, formData.planLevel, resolvedPlanLevel, setFormData]);
+
+  useEffect(() => {
+    if (!isDefaultPlanLevel) return;
+
+    setEntitlement((prev) => {
+      if (String(prev.planIncludedCredits ?? '') === '0') return prev;
+      return { ...prev, planIncludedCredits: 0 };
+    });
+
+    setFormData((prev) => {
+      if (String(prev.price ?? '') === '0') return prev;
+      return { ...prev, price: '0' };
+    });
+  }, [isDefaultPlanLevel, setEntitlement, setFormData]);
 
   const includedCredits = Number(entitlement.planIncludedCredits) || 0;
   const minPrice = includedCredits * creditUnitPrice;
@@ -189,16 +207,20 @@ function PlanFormWizard({
   const willAutoRaisePrice = currentPrice > 0 && currentPrice < minPrice;
 
   useEffect(() => {
-    if (!isWorkspace || editingPlan || !highestActiveUserPlanEntitlement) return;
+    if (!hasGroupInheritance || editingPlan) return;
     setEntitlement((prev) => {
       const next = { ...prev };
       const src = highestActiveUserPlanEntitlement;
+      let changed = false;
       Object.keys(entitlementToggles).forEach((key) => {
-        if (src[key] === true) next[key] = true;
+        if (src[key] === true && next[key] !== true) {
+          next[key] = true;
+          changed = true;
+        }
       });
-      return next;
+      return changed ? next : prev;
     });
-  }, [isWorkspace, editingPlan, highestActiveUserPlanEntitlement, entitlementToggles, setEntitlement]);
+  }, [hasGroupInheritance, editingPlan, highestActiveUserPlanEntitlement, entitlementToggles, setEntitlement]);
 
   const handleDialogOpenChange = (nextOpen) => {
     if (isSubmitting) return;
@@ -256,18 +278,26 @@ function PlanFormWizard({
       );
     }
 
-    const planIncludedCredits = Number(entitlement.planIncludedCredits);
-    if (!Number.isFinite(planIncludedCredits) || planIncludedCredits <= 0) {
-      return t(
-        'subscription.wizard.validation.planIncludedCreditsRequired',
-        'Included credits is required and must be greater than 0.'
-      );
+    if (!isDefaultPlanLevel) {
+      const planIncludedCredits = Number(entitlement.planIncludedCredits);
+      if (!Number.isFinite(planIncludedCredits) || planIncludedCredits <= 0) {
+        return t(
+          'subscription.wizard.validation.planIncludedCreditsRequired',
+          'Included credits is required and must be greater than 0.'
+        );
+      }
     }
 
     return null;
   };
 
   const getValidationError = ({ forSubmit = false } = {}) => {
+    if (editLocked) {
+      return editLockedReason || t(
+        'subscription.planEditLocked',
+        'Goi level 1/2 da co nguoi mua hoac dang mua nen khong the cap nhat.'
+      );
+    }
     if ((currentStep === 0 || forSubmit) && !formData.code?.trim()) return t('subscription.validation.codeRequired', 'Please enter a plan code.');
     if ((currentStep === 0 || forSubmit) && !formData.displayName?.trim()) return t('subscription.validation.displayNameRequired', 'Please enter a plan name.');
     if (currentStep === 1 || forSubmit) {
@@ -301,6 +331,15 @@ function PlanFormWizard({
 
   const handleInternalSubmit = (event) => {
     event?.preventDefault?.();
+    if (editLocked) {
+      onValidationError(
+        editLockedReason || t(
+          'subscription.planEditLocked',
+          'Goi level 1/2 da co nguoi mua hoac dang mua nen khong the cap nhat.'
+        )
+      );
+      return;
+    }
     if (!isLastStep) {
       handleNext();
       return;
@@ -535,7 +574,8 @@ function PlanFormWizard({
               <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>{field.label}</Label>
               <Input
                 type="number"
-                min="1"
+                min={field.key === 'planIncludedCredits' && isDefaultPlanLevel ? '0' : '1'}
+                disabled={field.key === 'planIncludedCredits' && isDefaultPlanLevel}
                 required={requireIndividualPlanLimits}
                 value={entitlement[field.key] ?? ''}
                 onChange={field.key === 'planIncludedCredits'
@@ -560,6 +600,7 @@ function PlanFormWizard({
           <Input
             type="number"
             min="0"
+            disabled={isDefaultPlanLevel}
             required={requireIndividualPlanLimits}
             value={formData.price}
             onChange={handlePriceChange}
@@ -660,7 +701,7 @@ function PlanFormWizard({
           </div>
         </div>
 
-        {isWorkspace && highestActiveUserPlanEntitlement ? (
+        {hasGroupInheritance ? (
           <div
             className={cn(
               'mt-4 rounded-[22px] border px-4 py-3 text-sm',
@@ -675,7 +716,7 @@ function PlanFormWizard({
           {Object.entries(entitlementToggles).map(([key, meta]) => {
             const checked = Boolean(entitlement[key]);
             const Icon = meta.icon;
-            const inheritedFromUser = isWorkspace && highestActiveUserPlanEntitlement && highestActiveUserPlanEntitlement[key] === true;
+            const inheritedFromUser = hasGroupInheritance && highestActiveUserPlanEntitlement[key] === true;
 
             return (
               <label
@@ -1009,6 +1050,20 @@ function PlanFormWizard({
             </DialogDescription>
           </DialogHeader>
 
+          {editLocked ? (
+            <div
+              className={cn(
+                'mt-4 rounded-2xl border px-4 py-3 text-sm',
+                isDarkMode ? 'border-rose-400/25 bg-rose-500/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-700'
+              )}
+            >
+              {editLockedReason || t(
+                'subscription.planEditLocked',
+                'Goi level 1/2 da co nguoi mua hoac dang mua nen khong the cap nhat.'
+              )}
+            </div>
+          ) : null}
+
           <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-2">
               <span
@@ -1186,7 +1241,7 @@ function PlanFormWizard({
                 <Button
                   type="button"
                   onClick={isLastStep ? submitWizard : handleNext}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || editLocked}
                   className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700 cursor-pointer"
                 >
                   {isLastStep ? (

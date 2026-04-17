@@ -47,6 +47,7 @@ export function useWorkspaceRoadmapManager({
 	const [phaseGenerateDialogDefaultIds, setPhaseGenerateDialogDefaultIds] = useState([]);
 	const [isGeneratingRoadmapPhases, setIsGeneratingRoadmapPhases] = useState(false);
 	const [roadmapPhaseGenerationProgress, setRoadmapPhaseGenerationProgress] = useState(0);
+	const [walletRealtimeTick, setWalletRealtimeTick] = useState(0);
 	const [roadmapPhaseGenerationTaskId, setRoadmapPhaseGenerationTaskId] = useState(null);
 	const [isSubmittingRoadmapPhaseRequest, setIsSubmittingRoadmapPhaseRequest] = useState(false);
 	const [generatingKnowledgePhaseIds, setGeneratingKnowledgePhaseIds] = useState([]);
@@ -1419,6 +1420,9 @@ export function useWorkspaceRoadmapManager({
 		onMaterialUpdated: () => {
 			fetchSources?.();
 		},
+		onWalletUpdate: () => {
+			setWalletRealtimeTick((current) => current + 1);
+		},
 		onProgress: handleWebSocketProgress,
 	});
 
@@ -1439,6 +1443,7 @@ export function useWorkspaceRoadmapManager({
 
 	return {
 		wsConnected,
+		walletRealtimeTick,
 		roadmapReloadToken,
 		bumpRoadmapReloadToken,
 		quizGenerationTaskByQuizId,

@@ -338,7 +338,7 @@ function WorkspaceProfileStepTwo({
   );
   const isJapaneseBeginnerScope = isJapaneseLearningScope(values.knowledgeInput, values.inferredDomain);
   const requireStrengthFields =
-      (values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !isBeginnerMode;
+      values.workspacePurpose === 'REVIEW' && !isBeginnerMode;
   const hasStrengthWeaknessContext =
       values.strongAreas.trim().length > 0 && values.weakAreas.trim().length > 0;
   const beginnerStrongSuggestions = isBeginnerMode
@@ -456,7 +456,7 @@ function WorkspaceProfileStepTwo({
   ).map(humanizeConsistencyText);
 
   return (
-      <div className="space-y-6">
+      <div className="space-y-7">
         {isMockTest ? (
             <div className="flex bg-slate-100 dark:bg-slate-900 rounded-2xl p-1.5 shadow-inner border border-slate-200 dark:border-slate-800 relative z-10 w-fit">
               <button
@@ -477,7 +477,7 @@ function WorkspaceProfileStepTwo({
         ) : null}
 
         {(!isMockTest || activeTab === 'profile') && (
-        <section className={cn('rounded-[28px] border p-5 sm:p-6', cardClass)}>
+        <section className={cn('rounded-[30px] border p-5 sm:p-6', cardClass)}>
           <div className="flex items-start gap-3">
             <div
                 className={cn(
@@ -496,8 +496,8 @@ function WorkspaceProfileStepTwo({
             </div>
           </div>
 
-          <div className="mt-4 space-y-4">
-            <div className="rounded-[24px] border border-dashed p-4">
+          <div className="mt-5 space-y-5">
+            <div className="rounded-[24px] border border-dashed p-5">
               <FieldBlock
                   label={`1. ${t('workspace.profileConfig.fields.currentLevel')}`}
                   error={errors.currentLevel}
@@ -526,7 +526,7 @@ function WorkspaceProfileStepTwo({
               </FieldBlock>
             </div>
 
-            <div className="rounded-[24px] border border-dashed p-4">
+            <div className="rounded-[24px] border border-dashed p-5">
               <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>
                 {translateStepTwo(
                     'workspaceProfileStepTwo.strengthWeaknessTitle',
@@ -617,7 +617,7 @@ function WorkspaceProfileStepTwo({
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-dashed p-4">
+            <div className="rounded-[24px] border border-dashed p-5">
               <FieldBlock
                   label={`3. ${learningGoalLabel}`}
                   error={errors.learningGoal}

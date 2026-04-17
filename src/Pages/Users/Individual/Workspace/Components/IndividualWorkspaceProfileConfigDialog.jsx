@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronLeft, ChevronRight, FilePenLine, Loader2, Rocket, X } from 'lucide-react';
+import { BookMarked, Check, ChevronLeft, ChevronRight, FilePenLine, Loader2, Rocket, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,61 +21,17 @@ import {
 import { useWorkspaceProfileWizard } from './WorkspaceProfileWizard/useWorkspaceProfileWizard';
 
 function QuizmateStepOneIcon({ className, ...props }) {
-  const iconId = React.useId();
-  const glowGradientId = `${iconId}-glow`;
-  const badgeGradientId = `${iconId}-badge`;
-  const shineGradientId = `${iconId}-shine`;
-  const shadowId = `${iconId}-shadow`;
-
   return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      className={className}
+    <span
+      className={cn(
+        'inline-flex items-center justify-center rounded-full border border-sky-200 bg-[radial-gradient(circle_at_30%_30%,#f0f9ff_0%,#dbeafe_48%,#bfdbfe_100%)] text-sky-700 shadow-[0_10px_24px_rgba(14,165,233,0.18)]',
+        className
+      )}
       aria-hidden="true"
       {...props}
     >
-      <defs>
-        <radialGradient id={glowGradientId} cx="0" cy="0" r="1" gradientTransform="translate(18 14) rotate(50) scale(30)">
-          <stop offset="0" stopColor="#c9f1ff" />
-          <stop offset="0.42" stopColor="#77d6ff" />
-          <stop offset="1" stopColor="#0f7bff" />
-        </radialGradient>
-        <linearGradient id={badgeGradientId} x1="13" x2="35" y1="10" y2="38" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#4cd6ff" />
-          <stop offset="0.52" stopColor="#239fff" />
-          <stop offset="1" stopColor="#1f5cff" />
-        </linearGradient>
-        <radialGradient id={shineGradientId} cx="0" cy="0" r="1" gradientTransform="translate(17 14) rotate(35) scale(13 9)">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
-          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-        </radialGradient>
-        <filter id={shadowId} x="4" y="4" width="40" height="40" filterUnits="userSpaceOnUse">
-          <feDropShadow dx="0" dy="2.5" stdDeviation="2" floodColor="#0f7bff" floodOpacity="0.24" />
-        </filter>
-      </defs>
-
-      <g filter={`url(#${shadowId})`}>
-        <circle cx="24" cy="24" r="21" fill="#d9f2ff" />
-        <circle cx="24" cy="24" r="18.6" fill={`url(#${glowGradientId})`} />
-        <circle cx="24" cy="24" r="17" fill={`url(#${badgeGradientId})`} />
-        <circle cx="24" cy="24" r="17" fill={`url(#${shineGradientId})`} />
-        <ellipse cx="16.8" cy="14.1" rx="5.3" ry="3.6" fill="#ffffff" fillOpacity="0.22" transform="rotate(-20 16.8 14.1)" />
-
-        <path
-          fill="#ffffff"
-          d="M24.4 13.4c1.63 6.32 3.7 8.4 10.02 10.02-6.32 1.63-8.4 3.7-10.02 10.02-1.63-6.32-3.7-8.4-10.02-10.02 6.32-1.63 8.4-3.7 10.02-10.02Z"
-        />
-        <path
-          fill="#ffffff"
-          d="M15.2 15.4c.48 1.9 1.1 2.52 3 3-.48.48-2.52 1.1-3 3-.48-1.9-1.1-2.52-3-3 1.9-.48 2.52-1.1 3-3Z"
-        />
-        <path
-          fill="#ffffff"
-          d="M33.6 28.7c.4 1.55.92 2.07 2.46 2.46-1.54.4-2.06.92-2.46 2.46-.39-1.54-.91-2.06-2.46-2.46 1.55-.39 2.07-.91 2.46-2.46Z"
-        />
-      </g>
-    </svg>
+      <BookMarked className="h-[52%] w-[52%]" />
+    </span>
   );
 }
 
@@ -129,12 +85,13 @@ function normalizeDisplayValue(value) {
   return String(value).trim();
 }
 
-function createConfirmationSummary(t, values) {
+function createConfirmationSummary(t, values, options = {}) {
   const emptyValueLabel = t(
     'individualWorkspaceProfileConfigDialog.emptyValue',
     'Not set yet'
   );
-  const shouldShowRoadmapConfig = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
+  const shouldShowRoadmapConfig = options?.canCreateRoadmap !== false
+    && (values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap);
   const beginnerScope = getBeginnerScopeLabel(
     values,
     t('individualWorkspaceProfileConfigDialog.beginnerFallbackScope', 'this topic')
@@ -334,12 +291,12 @@ function createStepCopy(t) {
       stepperLabel: translateOrFallback(
         t,
         'workspace.profileConfig.steps.1.stepperLabel',
-        'Learning intent'
+        'Knowledge focus'
       ),
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.1.description',
-        'Choose the workspace intent and let AI assess the knowledge area.'
+        'Choose how you want to learn and let AI identify the right knowledge area.'
       ),
     },
     2: {
@@ -352,7 +309,7 @@ function createStepCopy(t) {
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.2.description',
-        'Add your current level, goals, and mock-test details if needed.'
+        'Add your current level, goals, and focus areas to shape the next steps.'
       ),
     },
     3: {
@@ -401,6 +358,7 @@ function IndividualWorkspaceProfileConfigDialog({
   isDarkMode,
   initialData,
   workspaceId,
+  canCreateRoadmap = true,
   isReadOnly = false,
   forceStartAtStepOne = false,
   mockTestGenerationState = 'idle',
@@ -414,6 +372,7 @@ function IndividualWorkspaceProfileConfigDialog({
     initialData,
     onSave,
     storageKey: workspaceId ? `workspace-profile-wizard-${workspaceId}` : undefined,
+    canCreateRoadmap,
     forceStartAtStepOne,
     mockTestGenerationState,
     mockTestGenerationMessage,
@@ -451,6 +410,8 @@ function IndividualWorkspaceProfileConfigDialog({
   const progressFraction = stepIds.length > 1 ? (wizard.step - 1) / (stepIds.length - 1) : 0;
   const stepTransitionClass = 'animate-in fade-in-50 slide-in-from-bottom-3 zoom-in-95 duration-500';
   const [isProfileConfirmView, setIsProfileConfirmView] = React.useState(false);
+  const [isApplyingConfirmedProfile, setIsApplyingConfirmedProfile] = React.useState(false);
+  const [confirmProfileError, setConfirmProfileError] = React.useState('');
   const confirmationTitle = t(
     'individualWorkspaceProfileConfigDialog.confirmProfile.title',
     'Confirm using this profile'
@@ -460,31 +421,66 @@ function IndividualWorkspaceProfileConfigDialog({
     'Are you sure you want to use this profile? Once confirmed, the system will save the current configuration for this learning workspace.'
   );
   const confirmationSummary = React.useMemo(
-    () => createConfirmationSummary(t, wizard.values),
-    [t, wizard.values]
+    () => createConfirmationSummary(t, wizard.values, { canCreateRoadmap }),
+    [t, wizard.values, canCreateRoadmap]
   );
 
   React.useEffect(() => {
     if (!open) {
       setIsProfileConfirmView(false);
+      setIsApplyingConfirmedProfile(false);
+      setConfirmProfileError('');
     }
   }, [open]);
 
   function handleCloseProfileConfirm() {
+    if (isApplyingConfirmedProfile) {
+      return;
+    }
     setIsProfileConfirmView(false);
+    setConfirmProfileError('');
   }
 
   async function handleConfirmedProfileUse() {
-    const result = await wizard.handleSubmit();
-    if (result?.ok && result?.shouldConfirm !== false) {
-      setIsProfileConfirmView(false);
-      await onConfirm?.();
-      onOpenChange(false);
+    if (isApplyingConfirmedProfile) {
       return;
     }
 
-    if (!result?.ok || result?.shouldConfirm === false) {
-      handleCloseProfileConfirm();
+    setConfirmProfileError('');
+
+    try {
+      const result = await wizard.handleSubmit();
+      if (result?.ok && result?.shouldConfirm !== false) {
+        setIsApplyingConfirmedProfile(true);
+
+        try {
+          await onConfirm?.();
+          onOpenChange(false);
+        } catch (error) {
+          setConfirmProfileError(
+            error?.message
+              || t(
+                'workspace.profileConfig.messages.confirmError',
+                'Không thể xác nhận hồ sơ này. Vui lòng thử lại.'
+              )
+          );
+        } finally {
+          setIsApplyingConfirmedProfile(false);
+        }
+        return;
+      }
+
+      if (!result?.ok || result?.shouldConfirm === false) {
+        handleCloseProfileConfirm();
+      }
+    } catch (error) {
+      setConfirmProfileError(
+        error?.message
+          || t(
+            'workspace.profileConfig.messages.confirmError',
+            'Không thể xác nhận hồ sơ này. Vui lòng thử lại.'
+          )
+      );
     }
   }
 
@@ -501,6 +497,7 @@ function IndividualWorkspaceProfileConfigDialog({
           needsKnowledgeDescription={wizard.needsKnowledgeDescription}
           knowledgeAnalysis={wizard.knowledgeAnalysis}
           disabled={isReadOnly}
+          canCreateRoadmap={canCreateRoadmap}
           onPurposeChange={wizard.setPurpose}
           onFieldChange={wizard.updateField}
           onDomainSelect={wizard.selectInferredDomain}
@@ -543,6 +540,7 @@ function IndividualWorkspaceProfileConfigDialog({
         errors={wizard.errors}
         selectedExam={wizard.selectedExam}
         disabled={isReadOnly}
+        canCreateRoadmap={canCreateRoadmap}
         onFieldChange={wizard.updateField}
       />
     );
@@ -552,8 +550,13 @@ function IndividualWorkspaceProfileConfigDialog({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
+        if (!nextOpen && isApplyingConfirmedProfile) {
+          return;
+        }
         if (!nextOpen) {
           setIsProfileConfirmView(false);
+          setIsApplyingConfirmedProfile(false);
+          setConfirmProfileError('');
         }
         onOpenChange(nextOpen);
       }}
@@ -579,14 +582,6 @@ function IndividualWorkspaceProfileConfigDialog({
         <DialogHeader className="relative border-b border-inherit px-4 pb-3 pt-3 text-left sm:px-5 sm:pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <div
-                className={cn(
-                  'mb-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold tracking-[0.04em]',
-                  isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-200' : 'border-cyan-200 bg-cyan-50 text-cyan-700'
-                )}
-              >
-                {t('workspace.profileConfig.badge')}
-              </div>
               <DialogTitle className="max-w-4xl text-[clamp(1.6rem,1.9vw,2rem)] font-bold leading-[1.08] tracking-tight">
                 {t('workspace.profileConfig.title')}
               </DialogTitle>
@@ -624,7 +619,7 @@ function IndividualWorkspaceProfileConfigDialog({
 
           <div className="mt-6 flex items-center justify-center">
             <div className="relative flex w-full max-w-[920px] flex-col items-center px-4 sm:px-10">
-              <div className="relative flex w-full items-center justify-between py-2">
+                <div className="relative flex w-full items-center justify-between py-2">
                 <div
                   className={cn(
                     'pointer-events-none absolute inset-x-[6%] top-1/2 h-[3px] -translate-y-1/2 rounded-full',
@@ -694,10 +689,10 @@ function IndividualWorkspaceProfileConfigDialog({
                           />
                         ) : null}
                         {usesStandaloneBadge ? (
-                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+                          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
                             <StepIcon
                               className={cn(
-                                'h-11 w-11 shrink-0 transition-all duration-500',
+                                'h-10 w-10 shrink-0 transition-all duration-500',
                                 active ? 'scale-[1.08]' : complete ? 'scale-[1.03]' : 'opacity-95'
                               )}
                               style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
@@ -856,6 +851,7 @@ function IndividualWorkspaceProfileConfigDialog({
                   if (!wizard.showValidationErrors(wizard.step)) {
                     return;
                   }
+                  setConfirmProfileError('');
                   setIsProfileConfirmView(true);
                 }}
                 className="rounded-full bg-emerald-600 px-6 text-white hover:bg-emerald-700"
@@ -1075,10 +1071,18 @@ function IndividualWorkspaceProfileConfigDialog({
             isDarkMode ? 'border-slate-800 bg-[#020817]/95' : 'border-slate-300 bg-white/95'
           )}
         >
-          <div className={cn('mr-auto hidden text-xs leading-5 lg:block', confirmMutedClass)}>
-            {t(
-              'individualWorkspaceProfileConfigDialog.confirmProfile.footerHelper',
-              'You can still go back to the wizard to edit before applying.'
+          <div className="mr-auto">
+            {confirmProfileError ? (
+              <p className="text-xs font-medium text-red-400">
+                {confirmProfileError}
+              </p>
+            ) : (
+              <div className={cn('hidden text-xs leading-5 lg:block', confirmMutedClass)}>
+                {t(
+                  'individualWorkspaceProfileConfigDialog.confirmProfile.footerHelper',
+                  'You can still go back to the wizard to edit before applying.'
+                )}
+              </div>
             )}
           </div>
 
@@ -1086,6 +1090,7 @@ function IndividualWorkspaceProfileConfigDialog({
             type="button"
             variant="outline"
             onClick={handleCloseProfileConfirm}
+            disabled={isApplyingConfirmedProfile}
             className={cn(
               'rounded-full px-5',
               isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -1096,10 +1101,10 @@ function IndividualWorkspaceProfileConfigDialog({
           <Button
             type="button"
             onClick={handleConfirmedProfileUse}
-            disabled={wizard.submitting || wizard.isMockTestGenerationPending || wizard.isWaitingForOverallReview}
+            disabled={wizard.submitting || wizard.isMockTestGenerationPending || wizard.isWaitingForOverallReview || isApplyingConfirmedProfile}
             className="rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700"
           >
-            {wizard.submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+            {wizard.submitting || isApplyingConfirmedProfile ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
             {actionCopy.confirmProfileUse}
           </Button>
         </DialogFooter>

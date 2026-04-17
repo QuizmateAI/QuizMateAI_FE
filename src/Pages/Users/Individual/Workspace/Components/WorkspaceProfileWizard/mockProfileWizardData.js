@@ -1,6 +1,6 @@
 import i18n from '@/i18n';
 
-export const PURPOSE_OPTIONS = ['STUDY_NEW', 'REVIEW', 'MOCK_TEST'];
+export const PURPOSE_OPTIONS = ['STUDY_NEW', 'REVIEW'];
 
 export const ADAPTATION_MODE_OPTIONS = [
   { value: 'FLEXIBLE', accent: 'from-emerald-500 to-teal-500' },
