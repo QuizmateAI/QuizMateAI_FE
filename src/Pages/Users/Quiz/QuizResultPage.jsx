@@ -7,7 +7,7 @@ import { Button } from '@/Components/ui/button';
 import DirectFeedbackButton from '@/Components/feedback/DirectFeedbackButton';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
-import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment } from '@/api/QuizAPI';
+import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, refreshAttemptAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
 import {
@@ -488,22 +488,45 @@ export default function QuizResultPage() {
     setKnowledgeGenerationHydrated(true);
   }, [preLearningGenerateDedupeKey]);
 
+  const applyAssessmentPayload = useCallback((payload) => {
+    setAssessmentStatus(payload?.status || 'NOT_AVAILABLE');
+    setAssessmentData(payload || null);
+  }, []);
+
   const fetchAssessment = useCallback(async () => {
     if (!attemptId) return;
     setAssessmentLoading(true);
     try {
       const res = await getAttemptAssessment(attemptId);
-      const payload = res?.data || null;
-      setAssessmentStatus(payload?.status || 'NOT_AVAILABLE');
-      setAssessmentData(payload);
+      applyAssessmentPayload(res?.data || null);
     } catch (err) {
       console.error('Failed to load assessment:', err);
-      setAssessmentStatus('NOT_AVAILABLE');
-      setAssessmentData(null);
+      applyAssessmentPayload(null);
     } finally {
       setAssessmentLoading(false);
     }
-  }, [attemptId]);
+  }, [applyAssessmentPayload, attemptId]);
+
+  const handleRefreshAssessment = useCallback(async () => {
+    if (!attemptId) return;
+    if (assessmentStatus !== 'FAILED') {
+      await fetchAssessment();
+      return;
+    }
+
+    setAssessmentLoading(true);
+    try {
+      const res = await refreshAttemptAssessment(attemptId);
+      applyAssessmentPayload(res?.data || null);
+      showSuccess(t('quizResultPage.refreshAssessmentQueued', 'AI assessment refresh has started.'));
+    } catch (err) {
+      console.error('Failed to refresh assessment:', err);
+      showError(t('quizResultPage.refreshAssessmentFail', 'Unable to refresh AI assessment right now.'));
+      await fetchAssessment();
+    } finally {
+      setAssessmentLoading(false);
+    }
+  }, [applyAssessmentPayload, assessmentStatus, attemptId, fetchAssessment, showError, showSuccess, t]);
 
   useEffect(() => {
     fetchAssessment();
@@ -1454,7 +1477,7 @@ handleBack,
                   <Sparkles className="w-4 h-4" />
                   {t('quizResultPage.aiAssessment', 'AI Assessment')}
                 </h3>
-                <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
+                <Button variant="outline" size="sm" onClick={handleRefreshAssessment} disabled={assessmentLoading} className="gap-2">
                   <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
                   {t('quizResultPage.refreshAssessment', 'Refresh')}
                 </Button>
