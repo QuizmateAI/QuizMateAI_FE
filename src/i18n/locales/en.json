@@ -2861,7 +2861,7 @@
         "promptOptional": "Prompt (Optional)",
         "selectedMaterials": "Source materials",
         "selectedMaterialsCount": "Using {{count}} selected material(s) from Sources panel.",
-        "noSelectedMaterials": "No material selected in Sources panel. You can still generate by using Prompt only.",
+        "noSelectedMaterials": "Please choose the material you want to use.",
         "workspaceMaterialsEmpty": "No documents in this workspace yet. Add materials from the Sources panel.",
         "materialSelectedBadge": "Selected",
         "materialsSelectedSummary": "{{selected}} of {{total}} selected",

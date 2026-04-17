@@ -13,7 +13,7 @@ function normalizeSourceItem(item, index, t) {
 	if (!Number.isInteger(id) || id <= 0) return null;
 
 	const status = String(item?.status || "").toUpperCase();
-	if (status === "DELETED") return null;
+	if (status !== "ACTIVE") return null;
 
 	return {
 		id,

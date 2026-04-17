@@ -80,6 +80,15 @@ export function clearPendingPlanPurchase() {
   removeStorageValue(PENDING_PLAN_PURCHASE_KEY);
 }
 
+export function clearRecentPlanPurchase() {
+  removeStorageValue(RECENT_PLAN_PURCHASE_KEY);
+}
+
+export function clearPlanPurchaseState() {
+  clearPendingPlanPurchase();
+  clearRecentPlanPurchase();
+}
+
 export function markPendingPlanPurchaseSucceeded() {
   const pendingPurchase = getPendingPlanPurchase();
   if (!pendingPurchase) return null;
