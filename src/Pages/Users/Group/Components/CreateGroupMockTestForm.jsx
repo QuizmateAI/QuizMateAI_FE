@@ -26,11 +26,19 @@ function normalizeMaterialItem(item, index, t) {
   const id = Number(item?.materialId ?? item?.id ?? 0);
   if (!Number.isInteger(id) || id <= 0) return null;
   const status = String(item?.status || "").toUpperCase();
-  if (status === "DELETED") return null;
+  if (status !== "ACTIVE") return null;
   return {
     id,
     name: String(item?.title || item?.name || t("createGroupMockTestForm.materials.itemFallback", "Material #{{index}}", { index: index + 1 })),
   };
+}
+
+function normalizeMaterialIds(ids) {
+  return Array.from(new Set(
+    (Array.isArray(ids) ? ids : [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0)
+  ));
 }
 
 function uppercaseDifficulty(value) {
@@ -176,11 +184,7 @@ export default function CreateGroupMockTestForm({
   const [materials, setMaterials] = useState([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
   const [materialsError, setMaterialsError] = useState("");
-  const [selectedMaterialIds, setSelectedMaterialIds] = useState(() =>
-    Array.isArray(selectedSourceIds)
-      ? selectedSourceIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
-      : []
-  );
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState(() => normalizeMaterialIds(selectedSourceIds));
 
   const [bloomMap, setBloomMap] = useState({});
 
@@ -242,6 +246,21 @@ export default function CreateGroupMockTestForm({
     }
   }, [onToggleMaterialSelection]);
 
+  const validMaterialIdSet = useMemo(
+    () => new Set(materials.map((material) => material.id)),
+    [materials],
+  );
+
+  const effectiveSelectedMaterialIds = useMemo(
+    () => selectedMaterialIds.filter((id) => validMaterialIdSet.has(id)),
+    [selectedMaterialIds, validMaterialIdSet],
+  );
+
+  const effectiveSelectedMaterialIdSet = useMemo(
+    () => new Set(effectiveSelectedMaterialIds),
+    [effectiveSelectedMaterialIds],
+  );
+
   const selectAllMaterials = useCallback(() => {
     const ids = materials.map((m) => m.id);
     setSelectedMaterialIds(ids);
@@ -252,12 +271,13 @@ export default function CreateGroupMockTestForm({
 
   const clearSelectedMaterials = useCallback(() => {
     if (typeof onToggleMaterialSelection === "function") {
-      selectedMaterialIds.forEach((id) => onToggleMaterialSelection(id, false));
+      effectiveSelectedMaterialIds.forEach((id) => onToggleMaterialSelection(id, false));
     }
     setSelectedMaterialIds([]);
-  }, [onToggleMaterialSelection, selectedMaterialIds]);
+  }, [effectiveSelectedMaterialIds, onToggleMaterialSelection]);
 
-  const allMaterialsSelected = materials.length > 0 && selectedMaterialIds.length === materials.length;
+  const allMaterialsSelected = materials.length > 0
+    && materials.every((material) => effectiveSelectedMaterialIdSet.has(material.id));
 
   // Fetch bloom dictionary 1 lần. Question type của mock-test do backend tự set SINGLE_CHOICE.
   useEffect(() => {
@@ -343,7 +363,7 @@ export default function CreateGroupMockTestForm({
         prompt: customPrompt?.trim() || "",
         outputLanguage: uiLanguage,
         examLanguage: normalizeExamLanguage(examLanguage, uiLanguage),
-        materialIds: selectedMaterialIds,
+        materialIds: effectiveSelectedMaterialIds,
         workspaceId: Number(resolvedWorkspaceId),
         sectionConfigs,
       };
@@ -362,7 +382,7 @@ export default function CreateGroupMockTestForm({
     } finally {
       setSubmitting(false);
     }
-  }, [sections, totalQuestions, bloomMap, examName, difficulty, duration, customPrompt, i18n.language, examLanguage, resolvedWorkspaceId, handleFinished, t, selectedMaterialIds]);
+  }, [sections, totalQuestions, bloomMap, examName, difficulty, duration, customPrompt, i18n.language, examLanguage, resolvedWorkspaceId, handleFinished, t, effectiveSelectedMaterialIds]);
 
   const handleBackToBasic = useCallback(() => {
     setStep("BASIC");
@@ -503,7 +523,7 @@ export default function CreateGroupMockTestForm({
                 </p>
                 {materials.length > 0 && (
                   <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    {selectedMaterialIds.length}/{materials.length}
+                    {effectiveSelectedMaterialIds.length}/{materials.length}
                   </span>
                 )}
               </div>
@@ -528,7 +548,7 @@ export default function CreateGroupMockTestForm({
                     </Button>
                     <Button type="button" size="sm" variant="outline"
                       className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
-                      onClick={clearSelectedMaterials} disabled={selectedMaterialIds.length === 0}>
+                      onClick={clearSelectedMaterials} disabled={effectiveSelectedMaterialIds.length === 0}>
                       {t("createGroupMockTestForm.materials.deselectAll", "Deselect all")}
                     </Button>
                   </div>
@@ -536,7 +556,7 @@ export default function CreateGroupMockTestForm({
                     {materials.map((item) => (
                       <label key={item.id} className={`flex items-start gap-3 px-3 py-2 text-xs cursor-pointer ${isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50"}`}>
                         <Checkbox
-                          checked={selectedMaterialIds.includes(item.id)}
+                          checked={effectiveSelectedMaterialIdSet.has(item.id)}
                           onCheckedChange={(checked) => toggleMaterial(item.id, checked === true)}
                           className="mt-0.5 border-gray-300 data-[state=checked]:bg-[#0455BF] data-[state=checked]:border-[#0455BF]"
                         />
