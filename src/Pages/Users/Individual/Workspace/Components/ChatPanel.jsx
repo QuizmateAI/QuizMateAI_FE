@@ -157,7 +157,6 @@ function ChatPanel({
   const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
   const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
-  const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const previousResolvedViewRef = React.useRef(null);
 
   const normalizeRoadmapCanvasView = React.useCallback(() => "overview", []);
@@ -339,7 +338,6 @@ function ChatPanel({
             onToggleAllEmptyStateMaterials={handleToggleAllRoadmapMaterials}
             activeSourceCount={activeSourceCount}
             disableCreate={shouldDisableRoadmap && !roadmapHasPhases}
-            onRoadmapMetaChange={setRoadmapMeta}
             onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed}
             onRoadmapMetaChange={handleRoadmapMetaChange}
           />
