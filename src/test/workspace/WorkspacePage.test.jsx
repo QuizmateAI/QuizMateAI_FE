@@ -2,9 +2,18 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import WorkspacePage from '@/Pages/Users/Individual/Workspace/WorkspacePage';
+import {
+  deleteIndividualWorkspace,
+  getIndividualWorkspaceProfile,
+} from '@/api/WorkspaceAPI';
 
 const hoisted = vi.hoisted(() => {
   const mockNavigate = vi.fn();
+  let planEntitlements = {
+    loading: false,
+    hasWorkspaceAnalytics: true,
+    canCreateRoadmap: true,
+  };
   let mockLocation = {
     pathname: '/workspaces/42',
     search: '',
@@ -13,6 +22,13 @@ const hoisted = vi.hoisted(() => {
 
   return {
     mockNavigate,
+    getPlanEntitlements: () => planEntitlements,
+    setPlanEntitlements: (next) => {
+      planEntitlements = {
+        ...planEntitlements,
+        ...next,
+      };
+    },
     setLocation: (next) => {
       mockLocation = next;
     },
@@ -46,6 +62,16 @@ vi.mock('react-i18next', () => ({
     },
   }),
 }));
+
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual('@tanstack/react-query');
+  return {
+    ...actual,
+    useQueryClient: () => ({
+      invalidateQueries: vi.fn(),
+    }),
+  };
+});
 
 vi.mock('@/hooks/useDarkMode', () => ({
   useDarkMode: () => ({
@@ -81,10 +107,7 @@ vi.mock('@/hooks/useProgressTracking', () => ({
 }));
 
 vi.mock('@/hooks/usePlanEntitlements', () => ({
-  usePlanEntitlements: () => ({
-    hasWorkspaceAnalytics: true,
-    canCreateRoadmap: true,
-  }),
+  usePlanEntitlements: () => hoisted.getPlanEntitlements(),
 }));
 
 vi.mock('@/context/ToastContext', () => ({
@@ -112,6 +135,7 @@ vi.mock('@/api/WorkspaceAPI', () => ({
   saveIndividualWorkspaceRoadmapConfigStep: vi.fn(),
   startIndividualWorkspaceMockTestPersonalInfoStep: vi.fn(),
   confirmIndividualWorkspaceProfile: vi.fn(),
+  deleteIndividualWorkspace: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/api/RoadmapAPI', () => ({
@@ -214,6 +238,14 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfil
   ) : null),
 }));
 
+vi.mock('@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog', () => ({
+  default: ({ open, onOpenChange }) => (open ? (
+    <div data-testid="profile-config-dialog">
+      <button type="button" onClick={() => onOpenChange(false)}>close-profile-config</button>
+    </div>
+  ) : null),
+}));
+
 vi.mock('@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog', () => ({
   default: ({ open }) => (open ? <div data-testid="profile-update-guard-dialog">guard-open</div> : null),
 }));
@@ -233,8 +265,24 @@ vi.mock('@/Components/ui/ListSpinner', () => ({
 describe('WorkspacePage', () => {
   beforeEach(() => {
     hoisted.mockNavigate.mockClear();
+    hoisted.setPlanEntitlements({
+      loading: false,
+      hasWorkspaceAnalytics: true,
+      canCreateRoadmap: true,
+    });
     sidebarSpy.mockClear();
     chatPanelSpy.mockClear();
+    vi.mocked(deleteIndividualWorkspace).mockClear();
+    vi.mocked(getIndividualWorkspaceProfile).mockResolvedValue({
+      data: {
+        data: {
+          workspaceSetupStatus: 'DONE',
+          onboardingCompleted: true,
+          workspacePurpose: 'STUDY_NEW',
+          roadmapEnabled: true,
+        },
+      },
+    });
     window.localStorage.clear();
     window.sessionStorage.clear();
     window.innerWidth = 1440;
@@ -250,14 +298,14 @@ describe('WorkspacePage', () => {
     render(<WorkspacePage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('sources|none|none|0');
+      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('overview|none|none|0');
     });
 
     expect(sidebarSpy).toHaveBeenCalledWith(
       expect.objectContaining({ isDarkMode: true }),
     );
     expect(chatPanelSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ isDarkMode: false }),
+      expect.objectContaining({ isDarkMode: true }),
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'go-sources' }));
@@ -283,6 +331,32 @@ describe('WorkspacePage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('editQuiz|5|11|0');
     });
+  });
+
+  it('redirects roadmap routes back to the overview when the current plan cannot create roadmaps', async () => {
+    hoisted.setPlanEntitlements({
+      canCreateRoadmap: false,
+    });
+    hoisted.setLocation({
+      pathname: '/workspaces/42/roadmaps',
+      search: '',
+      state: {},
+    });
+
+    render(<WorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('overview|none|none|0');
+    });
+
+    expect(hoisted.mockNavigate).toHaveBeenCalledWith('/workspaces/42', {
+      replace: true,
+    });
+    expect(sidebarSpy).toHaveBeenLastCalledWith(expect.objectContaining({
+      disabledMap: expect.objectContaining({
+        roadmap: true,
+      }),
+    }));
   });
 
   it('does not render the old shared home button in the workspace shell', async () => {
@@ -312,13 +386,13 @@ describe('WorkspacePage', () => {
     render(<WorkspacePage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:true|open:false|active:sources');
+      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:true|open:false|active:overview');
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Open sidebar' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:true|open:true|active:sources');
+      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:true|open:true|active:overview');
     });
 
     act(() => {
@@ -327,7 +401,7 @@ describe('WorkspacePage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:false|open:false|active:sources');
+      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:false|open:false|active:overview');
     });
   });
 
@@ -357,5 +431,93 @@ describe('WorkspacePage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('profile-update-guard-dialog')).toBeInTheDocument();
     });
+  });
+
+  it('returns to home and deletes the draft workspace when onboarding closes before step 1 is saved', async () => {
+    hoisted.setLocation({
+      pathname: '/workspaces/42',
+      search: '',
+      state: {
+        openProfileConfig: true,
+        returnToHomeOnIncompleteProfile: true,
+      },
+    });
+    vi.mocked(getIndividualWorkspaceProfile).mockResolvedValue({
+      data: {
+        data: {
+          workspaceSetupStatus: 'CREATED',
+          onboardingCompleted: false,
+          currentStep: 1,
+        },
+      },
+    });
+
+    render(<WorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'open-profile-sidebar' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-profile-sidebar' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-config-dialog')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'close-profile-config' }));
+
+    await waitFor(() => {
+      expect(deleteIndividualWorkspace).toHaveBeenCalledWith('42');
+    });
+
+    expect(hoisted.mockNavigate).toHaveBeenCalledWith('/home?tab=workspace', {
+      replace: true,
+    });
+  });
+
+  it('keeps the workspace when step 1 has already been saved and onboarding closes', async () => {
+    hoisted.setLocation({
+      pathname: '/workspaces/42',
+      search: '',
+      state: {
+        openProfileConfig: true,
+        returnToHomeOnIncompleteProfile: true,
+      },
+    });
+    vi.mocked(getIndividualWorkspaceProfile).mockResolvedValue({
+      data: {
+        data: {
+          workspaceSetupStatus: 'CREATED',
+          profileStatus: 'BASIC_DONE',
+          onboardingCompleted: false,
+          currentStep: 2,
+          workspacePurpose: 'REVIEW',
+          knowledgeInput: 'Xac suat thong ke',
+          inferredDomain: 'Probability & Statistics',
+        },
+      },
+    });
+
+    render(<WorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'open-profile-sidebar' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-profile-sidebar' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-config-dialog')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'close-profile-config' }));
+
+    await waitFor(() => {
+      expect(hoisted.mockNavigate).toHaveBeenCalledWith('/workspaces/42', {
+        replace: true,
+      });
+    });
+
+    expect(deleteIndividualWorkspace).not.toHaveBeenCalled();
   });
 });

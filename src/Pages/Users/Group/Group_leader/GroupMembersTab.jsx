@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import {
@@ -26,6 +27,7 @@ import {
 } from '@/Components/ui/dropdown-menu';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
 import UserDisplayName from '@/Components/users/UserDisplayName';
+import { normalizePendingInvitationSummary } from '../utils/memberSeatLimit';
 
 const normalizeRole = (role) => String(role || 'MEMBER').toUpperCase();
 
@@ -35,6 +37,19 @@ const OFFLINE_STATUS_VALUES = new Set(['OFFLINE', 'INACTIVE', 'DISCONNECTED']);
 const ACTIVE_WINDOW_MS = 2 * 60 * 1000;
 const AWAY_WINDOW_MS = 5 * 60 * 1000;
 const PRESENCE_TICK_MS = 30 * 1000;
+const EMPTY_PENDING_INVITATIONS = Object.freeze({ count: 0, invitations: [] });
+
+const getPendingInvitationsQueryKey = (workspaceId) => ['group-pending-invitations', workspaceId];
+
+const getPendingInvitationIdentity = (invitation = {}) => String(
+  invitation?.invitationId
+  || invitation?.id
+  || invitation?.inviteId
+  || invitation?.token
+  || invitation?.invitedEmail
+  || invitation?.email
+  || ''
+);
 
 const resolveMemberPresenceKey = (member = {}, now = Date.now()) => {
   const lastActiveAt = resolveMemberLastActiveAt(member);
@@ -86,6 +101,7 @@ function GroupMembersTab({
   isDarkMode,
   workspaceId,
   members = [],
+  totalMemberCount = null,
   membersLoading,
   isLeader,
   onReload,
@@ -98,10 +114,19 @@ function GroupMembersTab({
   fetchPendingInvitations,
   onCancelInvitation,
   onResendInvitation,
+  memberSeatLimit = null,
+  memberSeatUsage = null,
+  memberSeatRemaining = null,
+  isMemberSeatLimitReached = false,
 }) {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const pendingInvitationsQueryKey = useMemo(
+    () => getPendingInvitationsQueryKey(workspaceId),
+    [workspaceId],
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -109,9 +134,7 @@ function GroupMembersTab({
   const [reloading, setReloading] = useState(false);
   const [presenceNow, setPresenceNow] = useState(() => Date.now());
   const [invitePanelOpen, setInvitePanelOpen] = useState(false);
-  const [pendingInviteData, setPendingInviteData] = useState({ count: null, invitations: [] });
-  const [pendingInviteLoading, setPendingInviteLoading] = useState(false);
-  const [pendingInviteError, setPendingInviteError] = useState('');
+  const [pendingInviteActionError, setPendingInviteActionError] = useState('');
   const [resendingInviteKey, setResendingInviteKey] = useState('');
   const [cancelingInviteKey, setCancelingInviteKey] = useState('');
 
@@ -135,38 +158,59 @@ function GroupMembersTab({
     });
   }, [members, searchQuery, filterRole]);
 
-  const totalMembers = members.length;
-  const fallbackPendingInvitations = members.filter((member) => !member.canUpload && normalizeRole(member.role) !== 'LEADER').length;
+  const {
+    data: pendingInviteData = EMPTY_PENDING_INVITATIONS,
+    error: pendingInviteQueryError,
+    isFetching: pendingInviteFetching,
+    isLoading: pendingInviteLoading,
+    refetch: refetchPendingInvitations,
+  } = useQuery({
+    queryKey: pendingInvitationsQueryKey,
+    queryFn: async () => normalizePendingInvitationSummary(await fetchPendingInvitations(workspaceId)),
+    enabled: Boolean(isLeader && workspaceId && fetchPendingInvitations),
+  });
+
+  const normalizedTotalMemberCount = Number(totalMemberCount);
+  const totalMembers = Number.isFinite(normalizedTotalMemberCount) && normalizedTotalMemberCount >= members.length
+    ? normalizedTotalMemberCount
+    : members.length;
   const pendingInvitationItems = Array.isArray(pendingInviteData?.invitations) ? pendingInviteData.invitations : [];
   const pendingInvitations = pendingInviteData?.count != null && Number.isFinite(Number(pendingInviteData.count))
     ? Number(pendingInviteData.count)
-    : fallbackPendingInvitations;
+    : pendingInvitationItems.length;
   const onlineMembers = members.filter((member) => resolveMemberPresenceKey(member, presenceNow) === 'active').length;
   const uploadReadyMembers = members.filter((member) => member.canUpload).length;
+  const pendingInviteError = pendingInviteActionError
+    || pendingInviteQueryError?.message
+    || '';
+  const normalizedMemberSeatLimit = Number(memberSeatLimit);
+  const normalizedMemberSeatUsage = Number(memberSeatUsage);
+  const normalizedMemberSeatRemaining = Number(memberSeatRemaining);
+  const hasMemberSeatLimit = Number.isFinite(normalizedMemberSeatLimit) && normalizedMemberSeatLimit > 0;
+  const inviteDisabled = Boolean(
+    isLeader
+    && hasMemberSeatLimit
+    && (
+      isMemberSeatLimitReached
+      || (Number.isFinite(normalizedMemberSeatRemaining) && normalizedMemberSeatRemaining <= 0)
+    )
+  );
+  const seatUsageLabel = hasMemberSeatLimit
+    ? `${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : totalMembers}/${normalizedMemberSeatLimit}`
+    : '';
+
+  const updatePendingInvitationCache = useCallback((updater) => {
+    queryClient.setQueryData(pendingInvitationsQueryKey, (current) => {
+      const normalizedCurrent = normalizePendingInvitationSummary(current);
+      const nextValue = typeof updater === 'function' ? updater(normalizedCurrent) : updater;
+      return normalizePendingInvitationSummary(nextValue);
+    });
+  }, [pendingInvitationsQueryKey, queryClient]);
 
   const loadPendingInvitations = useCallback(async () => {
-    if (!workspaceId || !fetchPendingInvitations) return;
-
-    setPendingInviteLoading(true);
-    setPendingInviteError('');
-    try {
-      const payload = await fetchPendingInvitations(workspaceId);
-      setPendingInviteData({
-        count: Number(payload?.count) || 0,
-        invitations: Array.isArray(payload?.invitations) ? payload.invitations : [],
-      });
-    } catch (error) {
-      setPendingInviteError(error?.message || t('groupManage.members.invitations.loadFailed', { defaultValue: 'Không tải được danh sách lời mời.' }));
-    } finally {
-      setPendingInviteLoading(false);
-    }
-  }, [fetchPendingInvitations, t, workspaceId]);
-
-  useEffect(() => {
-    if (isLeader && workspaceId && fetchPendingInvitations) {
-      void loadPendingInvitations();
-    }
-  }, [fetchPendingInvitations, isLeader, loadPendingInvitations, workspaceId]);
+    setPendingInviteActionError('');
+    await refetchPendingInvitations();
+  }, [refetchPendingInvitations]);
 
   const handleReload = useCallback(async () => {
     setReloading(true);
@@ -276,20 +320,34 @@ function GroupMembersTab({
 
     const key = getInviteKey(invitation);
     setResendingInviteKey(key);
-    setPendingInviteError('');
+    setPendingInviteActionError('');
     try {
+      let refreshedInvitation = null;
       if (onResendInvitation) {
-        await onResendInvitation(workspaceId, invitationId, email);
+        refreshedInvitation = await onResendInvitation(workspaceId, invitationId, email);
       } else if (onInvite && email) {
         await onInvite(email);
       }
-      await loadPendingInvitations();
+      if (refreshedInvitation && typeof refreshedInvitation === 'object') {
+        updatePendingInvitationCache((current) => {
+          const nextInvitations = [
+            refreshedInvitation,
+            ...current.invitations.filter((item) => getPendingInvitationIdentity(item) !== key),
+          ];
+          return {
+            count: nextInvitations.length,
+            invitations: nextInvitations,
+          };
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: pendingInvitationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', workspaceId] });
     } catch (error) {
-      setPendingInviteError(error?.message || t('groupManage.members.invitations.resendFailed', { defaultValue: 'Không gửi lại được lời mời.' }));
+      setPendingInviteActionError(error?.message || t('groupManage.members.invitations.resendFailed', { defaultValue: 'Không gửi lại được lời mời.' }));
     } finally {
       setResendingInviteKey('');
     }
-  }, [loadPendingInvitations, onInvite, onResendInvitation, t, workspaceId]);
+  }, [onInvite, onResendInvitation, pendingInvitationsQueryKey, queryClient, t, updatePendingInvitationCache, workspaceId]);
 
   const handleCancelInvite = useCallback(async (invitation) => {
     const invitationId = getInviteId(invitation);
@@ -297,16 +355,24 @@ function GroupMembersTab({
 
     const key = getInviteKey(invitation);
     setCancelingInviteKey(key);
-    setPendingInviteError('');
+    setPendingInviteActionError('');
     try {
       await onCancelInvitation(workspaceId, invitationId);
-      await loadPendingInvitations();
+      updatePendingInvitationCache((current) => {
+        const nextInvitations = current.invitations.filter((item) => getPendingInvitationIdentity(item) !== key);
+        return {
+          count: nextInvitations.length,
+          invitations: nextInvitations,
+        };
+      });
+      void queryClient.invalidateQueries({ queryKey: pendingInvitationsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', workspaceId] });
     } catch (error) {
-      setPendingInviteError(error?.message || t('groupManage.members.invitations.cancelFailed', { defaultValue: 'Không hủy được lời mời.' }));
+      setPendingInviteActionError(error?.message || t('groupManage.members.invitations.cancelFailed', { defaultValue: 'Không hủy được lời mời.' }));
     } finally {
       setCancelingInviteKey('');
     }
-  }, [loadPendingInvitations, onCancelInvitation, t, workspaceId]);
+  }, [onCancelInvitation, pendingInvitationsQueryKey, queryClient, t, updatePendingInvitationCache, workspaceId]);
 
   const getRoleLabel = (role) => {
     const normalizedRole = normalizeRole(role);
@@ -416,7 +482,9 @@ function GroupMembersTab({
                 <button
                   type="button"
                   onClick={onOpenInvite}
-                  className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#4d43e5] px-5 text-sm font-semibold text-white shadow-lg shadow-[#4d43e5]/25 transition-all hover:bg-[#4038c7] active:scale-95"
+                  disabled={inviteDisabled}
+                  title={inviteDisabled ? t('groupManage.members.memberSeatLimitReached', { defaultValue: 'Nhóm đã hết slot thành viên khả dụng.' }) : undefined}
+                  className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#4d43e5] px-5 text-sm font-semibold text-white shadow-lg shadow-[#4d43e5]/25 transition-all hover:bg-[#4038c7] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserPlus className="h-4 w-4" />
                   {t('home.group.invite', { defaultValue: 'Invite User' })}
@@ -452,6 +520,15 @@ function GroupMembersTab({
                   <span className={`text-3xl font-black ${headingClass}`}>{totalMembers.toLocaleString(currentLang)}</span>
                   <span className="pb-1 text-xs font-black text-[#21a66f]">+2%</span>
                 </div>
+                {hasMemberSeatLimit ? (
+                  <p className={`mt-2 text-xs font-semibold ${inviteDisabled ? 'text-red-600' : mutedTextClass}`}>
+                    {t('groupManage.members.memberSeatUsage', {
+                      used: Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : totalMembers,
+                      limit: normalizedMemberSeatLimit,
+                      defaultValue: `Đang dùng ${seatUsageLabel} slot thành viên`,
+                    })}
+                  </p>
+                ) : null}
               </div>
 
               <button
@@ -493,12 +570,12 @@ function GroupMembersTab({
                   <button
                     type="button"
                     onClick={loadPendingInvitations}
-                    disabled={pendingInviteLoading}
+                    disabled={pendingInviteLoading || pendingInviteFetching}
                     title={t('groupManage.members.invitations.refresh', { defaultValue: 'Làm mới lời mời' })}
                     aria-label={t('groupManage.members.invitations.refresh', { defaultValue: 'Làm mới lời mời' })}
                     className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200' : 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50'}`}
                   >
-                    <RefreshCw className={`h-4 w-4 ${pendingInviteLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 ${pendingInviteLoading || pendingInviteFetching ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
 

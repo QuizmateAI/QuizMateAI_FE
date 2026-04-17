@@ -17,7 +17,7 @@ function mapPlanCatalogToCard(plan) {
     planName: plan.displayName,
     price: plan.price ?? 0,
     type: plan.planScope === "USER" ? "INDIVIDUAL" : "GROUP",
-    durationInDay: 999999,
+    durationInDay: Number(plan.durationInDay) || 0,
     planLimit: {
       maxWorkspace: e.maxIndividualWorkspace,
       maxMaterialPerWorkspace: e.maxMaterialInWorkspace,

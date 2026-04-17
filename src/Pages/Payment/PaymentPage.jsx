@@ -26,7 +26,7 @@ function mapPlanCatalogToPaymentPlan(raw) {
     price: raw.price ?? 0,
     type,
     status: raw.status ?? 'ACTIVE',
-    durationInDay: 999999,
+    durationInDay: Number(raw.durationInDay) || 0,
     planLimit: {
       maxWorkspace: e.maxIndividualWorkspace,
       maxMaterialPerWorkspace: e.maxMaterialInWorkspace,

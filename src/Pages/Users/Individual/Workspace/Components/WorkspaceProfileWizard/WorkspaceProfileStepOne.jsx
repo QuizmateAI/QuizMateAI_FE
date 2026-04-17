@@ -2,30 +2,26 @@ import React from 'react';
 import {
   AlertTriangle,
   BookMarked,
-  BrainCircuit,
   CheckCircle2,
   ChevronRight,
   Compass,
+  Crown,
   Layers3,
   Loader2,
   RefreshCw,
   Route,
-  ScrollText,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PURPOSE_META = {
   STUDY_NEW: {
-    icon: Compass,
+    icon: BookMarked,
     tint: 'from-cyan-500 to-blue-600',
   },
   REVIEW: {
     icon: Layers3,
     tint: 'from-amber-500 to-orange-500',
-  },
-  MOCK_TEST: {
-    icon: ScrollText,
-    tint: 'from-emerald-500 to-green-600',
   },
 };
 
@@ -103,11 +99,13 @@ function WorkspaceProfileStepOne({
   onFieldChange,
   onDomainSelect,
   onRetryAnalysis,
+  canCreateRoadmap = true,
 }) {
   const surfaceClass = isDarkMode
     ? 'border-white/10 bg-white/[0.04] text-white'
     : 'border-slate-200 bg-white text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
+  const roadmapLockedByPlan = canCreateRoadmap === false;
   const inputClass = cn(
     'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all',
     isDarkMode
@@ -197,16 +195,16 @@ function WorkspaceProfileStepOne({
   };
 
   return (
-    <div className="space-y-6">
-      <section className={cn('rounded-[26px] border p-4 sm:p-5', surfaceClass)}>
+    <div className="space-y-7">
+      <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
               isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-50 text-cyan-600'
             )}
           >
-            <BrainCircuit className="h-5 w-5" />
+            <Target className="h-5 w-5" />
           </div>
           <div>
             <h3 className="text-[1.15rem] font-semibold leading-7">{t('workspace.profileConfig.stepOne.title')}</h3>
@@ -221,24 +219,39 @@ function WorkspaceProfileStepOne({
           </p>
         </div>
 
-        <div className="grid gap-1.5 lg:grid-cols-3">
+        <div className="grid gap-2.5 lg:grid-cols-2">
           {Object.entries(PURPOSE_META).map(([purpose, meta]) => {
             const Icon = meta.icon;
             const active = values.workspacePurpose === purpose;
+            const isLockedPurpose = roadmapLockedByPlan && purpose === 'STUDY_NEW';
+            const purposeDescription = isLockedPurpose
+              ? t('workspace.profileConfig.stepOne.studyNewLockedDescription')
+              : t(`workspace.profileConfig.purpose.${purpose}.description`);
+            const indicatorToneClass = active
+              ? 'text-white'
+              : isLockedPurpose
+                ? isDarkMode
+                  ? 'text-amber-300'
+                  : 'text-amber-600'
+                : mutedClass;
 
             return (
               <button
                 key={purpose}
                 type="button"
-                disabled={disabled}
+                disabled={disabled || isLockedPurpose}
                 onClick={() => onPurposeChange(purpose)}
                 className={cn(
-                  'group min-h-[96px] rounded-[18px] border p-2.5 text-left transition-all sm:min-h-[102px] sm:p-3',
-                  disabled && 'cursor-not-allowed opacity-70',
+                  'group min-h-[112px] rounded-[20px] border p-3.5 text-left transition-all sm:min-h-[120px] sm:p-4',
+                  (disabled || isLockedPurpose) && 'cursor-not-allowed',
                   active
                     ? isDarkMode
                       ? `border-transparent bg-gradient-to-br ${meta.tint} text-white shadow-lg shadow-cyan-950/25`
                       : `border-transparent bg-gradient-to-br ${meta.tint} text-white shadow-lg shadow-cyan-200/60`
+                    : isLockedPurpose
+                      ? isDarkMode
+                        ? 'border-amber-400/25 bg-amber-500/10 text-slate-200'
+                        : 'border-amber-200 bg-amber-50 text-slate-700'
                     : isDarkMode
                       ? 'border-white/10 bg-white/[0.03] hover:border-cyan-400/40 hover:bg-white/[0.06]'
                       : 'border-slate-200 bg-slate-50 hover:border-cyan-400/50 hover:bg-cyan-50/70'
@@ -248,7 +261,7 @@ function WorkspaceProfileStepOne({
                   <div className="flex min-w-0 items-start gap-2">
                     <div
                       className={cn(
-                        'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                        'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
                         active
                           ? 'bg-white/15 text-white'
                           : isDarkMode
@@ -256,25 +269,54 @@ function WorkspaceProfileStepOne({
                             : 'bg-white text-cyan-600'
                       )}
                     >
-                      <Icon className="h-3.5 w-3.5" />
+                      <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[15px] font-semibold leading-5">{t(`workspace.profileConfig.purpose.${purpose}.title`)}</p>
-                      <p className={cn('mt-0.5 text-[11px] leading-[1.45] sm:text-xs', active ? 'text-white/80' : mutedClass)}>
-                        {t(`workspace.profileConfig.purpose.${purpose}.description`)}
+                      <p className="text-[15px] font-semibold leading-5 sm:text-base">{t(`workspace.profileConfig.purpose.${purpose}.title`)}</p>
+                      <p className={cn('mt-1 text-[11px] leading-[1.5] sm:text-[13px]', active ? 'text-white/80' : mutedClass)}>
+                        {purposeDescription}
                       </p>
                     </div>
                   </div>
-                  {active ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className={cn('h-3.5 w-3.5 shrink-0', mutedClass)} />}
+                  {isLockedPurpose ? (
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]',
+                        active
+                          ? 'border-white/25 bg-white/15 text-white'
+                          : isDarkMode
+                            ? 'border-amber-300/30 bg-amber-400/15 text-amber-200'
+                            : 'border-amber-300 bg-white text-amber-700'
+                      )}
+                    >
+                      <Crown className="h-3 w-3" />
+                      <span>{t('workspace.profileConfig.stepOne.vipBadge')}</span>
+                    </span>
+                  ) : active ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                  ) : (
+                    <ChevronRight className={cn('h-3.5 w-3.5 shrink-0', indicatorToneClass)} />
+                  )}
                 </div>
               </button>
             );
           })}
         </div>
         {errors.workspacePurpose ? <p className="mt-3 text-sm font-medium text-red-400">{errors.workspacePurpose}</p> : null}
+        {roadmapLockedByPlan ? (
+          <div
+            className={cn(
+              'mt-4 flex items-start gap-3 rounded-[22px] border px-4 py-3 text-sm leading-6',
+              isDarkMode ? 'border-amber-400/20 bg-amber-500/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-800'
+            )}
+          >
+            <Crown className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{t('workspace.profileConfig.stepOne.studyNewLockedHint')}</p>
+          </div>
+        ) : null}
       </section>
 
-      <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
+      <section className={cn('rounded-[30px] border p-5 sm:p-6', surfaceClass)}>
         <div className="flex items-start gap-3">
           <div
             className={cn(
@@ -297,7 +339,7 @@ function WorkspaceProfileStepOne({
               <RequiredAsterisk />
             </label>
             <textarea
-              rows={3}
+              rows={4}
               disabled={disabled}
               value={values.knowledgeInput}
               onChange={(event) => onFieldChange('knowledgeInput', event.target.value)}
@@ -586,8 +628,8 @@ function WorkspaceProfileStepOne({
         </div>
       </section>
 
-      {(values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') ? (
-        <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
+      {values.workspacePurpose === 'REVIEW' && !roadmapLockedByPlan ? (
+        <section className={cn('rounded-[30px] border p-5 sm:p-6', surfaceClass)}>
           <div className="flex items-start gap-3">
             <div
               className={cn(

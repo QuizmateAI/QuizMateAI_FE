@@ -32,6 +32,7 @@ function normalizeQuizzes(payload) {
         quizId,
         title: String(quiz?.title || '').trim() || `Quiz #${quizId}`,
         status: String(quiz?.status || '').toUpperCase(),
+        quizIntent: String(quiz?.quizIntent || '').toUpperCase(),
       };
     })
     .filter(Boolean);
@@ -96,8 +97,7 @@ function GroupMemberStatsTab({
     queryFn: async () => {
       const response = await getQuizzesByScope('GROUP', workspaceId);
       const list = normalizeQuizzes(unwrapApiData(response));
-      // Assign quiz cho member không áp dụng cho mock test (mock test ALL members).
-      return list.filter((q) => String(q?.quizIntent || '').toUpperCase() !== 'MOCK_TEST');
+      return list.filter((quiz) => quiz.quizIntent !== 'MOCK_TEST');
     },
     enabled: Boolean(assignOpen && isLeader && workspaceId),
   });
@@ -177,6 +177,7 @@ function GroupMemberStatsTab({
     if (memberPage < totalPages) return;
     setMemberPage(Math.max(0, totalPages - 1));
   }, [memberPage, totalPages]);
+
   const canAssignQuiz = Boolean(isLeader);
 
   const openAssignDialog = useCallback((member) => {
@@ -224,7 +225,7 @@ function GroupMemberStatsTab({
     } finally {
       setAssigning(false);
     }
-  }, [selectedQuizId, targetMember?.userId, showInfo, t, showError, showSuccess]);
+  }, [selectedQuizId, showError, showInfo, showSuccess, t, targetMember?.userId]);
 
   const handleGenerateMemberSnapshot = useCallback(async (member) => {
     if (!isLeader) {
@@ -431,11 +432,11 @@ function GroupMemberStatsTab({
                           <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                             <UserDisplayName user={member} fallback={memberName} isDarkMode={isDarkMode} />
                           </p>
-                          {(member.email || member.username) && (
+                          {(member.email || member.username) ? (
                             <p className={cn('truncate text-xs', eyebrowClass)}>
                               {member.email || `@${member.username}`}
                             </p>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                       <div className="mt-3 grid gap-2 sm:grid-cols-4">
@@ -578,10 +579,15 @@ function GroupMemberStatsTab({
             ) : (quizzesQuery.data || []).length === 0 ? (
               <div className={cn('rounded-xl border px-4 py-3 text-sm', isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-700')}>
                 <p>{t('groupWorkspace.memberStats.noQuiz', 'No group quiz found yet.')}</p>
-                <Button type="button" variant="outline" className="mt-3" onClick={() => {
-                  setAssignOpen(false);
-                  if (typeof onOpenQuizSection === 'function') onOpenQuizSection();
-                }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => {
+                    setAssignOpen(false);
+                    if (typeof onOpenQuizSection === 'function') onOpenQuizSection();
+                  }}
+                >
                   <BarChart3 className="mr-2 h-4 w-4" />
                   {t('groupWorkspace.memberStats.openQuizTab', 'Open quiz tab')}
                 </Button>
@@ -599,7 +605,7 @@ function GroupMemberStatsTab({
                     'h-11 w-full rounded-xl border px-3 text-sm outline-none',
                     isDarkMode
                       ? 'border-white/10 bg-slate-900 text-white focus:border-cyan-400/60'
-                      : 'border-slate-200 bg-white text-slate-900 focus:border-cyan-400'
+                      : 'border-slate-200 bg-white text-slate-900 focus:border-cyan-400',
                   )}
                 >
                   <option value="">{t('groupWorkspace.memberStats.pickQuizPlaceholder', 'Select one quiz')}</option>

@@ -131,10 +131,13 @@ export default function useWorkspaceMaterialSelection({
     normalizedSelectedSourceIds,
   ]);
 
-  const selectedIds = useMemo(() => (
-    (hasExternalSelectionControl ? normalizedSelectedSourceIds : localSelectedSourceIds)
-      .filter((id) => normalizedSourceIdSet.has(id))
-  ), [
+  const selectedIds = useMemo(() => {
+    const candidateIds = hasExternalSelectionControl
+      ? normalizedSelectedSourceIds
+      : localSelectedSourceIds;
+
+    return candidateIds.filter((id) => normalizedSourceIdSet.has(id));
+  }, [
     hasExternalSelectionControl,
     localSelectedSourceIds,
     normalizedSelectedSourceIds,

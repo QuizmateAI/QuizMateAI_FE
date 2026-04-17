@@ -411,6 +411,20 @@ function RoadmapCanvasViewOverview({
     [roadmapPhases, selectedPhaseDetail?.phaseId],
   );
 
+  const selectedPhaseVisualState = useMemo(() => {
+    if (!selectedPhaseDetail || selectedPhaseIndex < 0) return "locked";
+
+    const resolvedCurrentIndex = getCurrentIndex(roadmapPhases, currentPhaseProgress);
+    const resolvedPayloadDoneThroughIndex = getPayloadDoneThroughIndex(roadmapPhases, currentPhaseProgress);
+
+    return getVisualState(
+      selectedPhaseDetail,
+      selectedPhaseIndex,
+      resolvedCurrentIndex,
+      resolvedPayloadDoneThroughIndex,
+    );
+  }, [currentPhaseProgress, roadmapPhases, selectedPhaseDetail, selectedPhaseIndex]);
+
   const isSelectedPhaseCurrentByPayload = useMemo(() => {
     const normalizedSelectedPhaseId = Number(selectedPhaseDetail?.phaseId);
     return isStudyNewRoadmap
@@ -431,14 +445,13 @@ function RoadmapCanvasViewOverview({
     Array.isArray(selectedPhaseDetail?.preLearningQuizzes) && selectedPhaseDetail.preLearningQuizzes.length > 0;
 
   const isSelectedPhaseLocked = useMemo(
-    () => selectedPhaseIndex > maxUnlockedPhaseIndex
+    () => selectedPhaseVisualState === "locked"
       && !selectedPhaseHasExistingPreLearning
       && !isSelectedPhaseCurrentByPayload,
     [
       isSelectedPhaseCurrentByPayload,
-      maxUnlockedPhaseIndex,
       selectedPhaseHasExistingPreLearning,
-      selectedPhaseIndex,
+      selectedPhaseVisualState,
     ],
   );
 
@@ -454,8 +467,8 @@ function RoadmapCanvasViewOverview({
     : -1;
 
   const isSelectedPhaseEffectivelyDone = useMemo(
-    () => isPhaseEffectivelyDone(selectedPhaseDetail),
-    [selectedPhaseDetail],
+    () => isPhaseEffectivelyDone(selectedPhaseDetail) || selectedPhaseVisualState === "done",
+    [selectedPhaseDetail, selectedPhaseVisualState],
   );
 
   const selectedPhaseKnowledgeStates = useMemo(
@@ -479,6 +492,15 @@ function RoadmapCanvasViewOverview({
           && currentKnowledgeIndexInSelectedPhase >= 0
           && knowledgeIndex > currentKnowledgeIndexInSelectedPhase + (isCurrentKnowledgeDoneStatus ? 1 : 0);
         if (isSelectedPhaseLocked || isKnowledgeLockedBySequence) return "locked";
+        if (
+          Number.isInteger(currentKnowledgePhaseId)
+          && currentKnowledgePhaseId > 0
+          && currentKnowledgePhaseId === Number(selectedPhaseDetail?.phaseId)
+          && currentKnowledgeIndexInSelectedPhase === knowledgeIndex
+          && isCurrentKnowledgeDoneStatus
+        ) {
+          return "done";
+        }
         if (
           Number.isInteger(currentKnowledgePhaseId)
           && currentKnowledgePhaseId > 0
@@ -681,7 +703,10 @@ function RoadmapCanvasViewOverview({
         <section
           role="region"
           aria-label={labels.selectorTitle}
-          className={`relative m-2 sm:m-3 lg:m-4 flex-1 flex flex-col overflow-visible rounded-[20px] sm:rounded-[24px] border shadow-[0_24px_56px_-42px_rgba(15,23,42,0.28)] ${isDarkMode ? "border-slate-700 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950" : "border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50"}`}
+          className={`relative flex-1 flex flex-col overflow-visible ${isExpandedMode
+            ? `m-2 sm:m-3 lg:m-4 rounded-[20px] sm:rounded-[24px] border shadow-[0_24px_56px_-42px_rgba(15,23,42,0.28)] ${isDarkMode ? "border-slate-700 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950" : "border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50"}`
+            : "m-0 rounded-none border-0 bg-transparent shadow-none"
+          }`}
         >
           <button
             type="button"

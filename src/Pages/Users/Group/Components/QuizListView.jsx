@@ -24,7 +24,7 @@ function resolveGroupPhaseReturnPath(pathname, phaseId) {
 }
 
 function QuizListView({
-  contextType = "WORKSPACE",
+  contextType = "GROUP",
   contextId,
   returnToPath = null,
   ...restProps

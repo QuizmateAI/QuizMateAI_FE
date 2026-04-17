@@ -235,6 +235,7 @@ export default function GroupDocumentsTab({
   currentLang = 'vi',
   isLeader = false,
   canUploadSource = false,
+  planEntitlements = null,
   sources = [],
   pendingItems = [],
   pendingLoading = false,
@@ -426,6 +427,7 @@ export default function GroupDocumentsTab({
         <section className={`h-[calc(100vh-9rem)] min-h-[520px] max-h-[860px] overflow-hidden rounded-[28px] border ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
           <SourceDetailView
             isDarkMode={isDarkMode}
+            planEntitlements={planEntitlements}
             source={viewingMaterial}
             onBack={() => setViewingMaterial(null)}
             onSourceUpdated={handleDetailSourceUpdated}

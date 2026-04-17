@@ -186,6 +186,8 @@ function enrichProgressWithActiveTaskShape(payload) {
  * @param {Function} options.onMaterialUpdated - Callback khi có tài liệu được cập nhật
  * @param {Function} options.onGroupUpdate - Callback khi có cập nhật thành viên/lời mời/cấu hình group
  * @param {Function} options.onProgress - Callback khi có progress update
+ * @param {Function} options.onWalletUpdate - Callback khi ví cá nhân thay đổi
+ * @param {Function} options.onWorkspaceWalletUpdate - Callback khi ví workspace/group thay đổi
  * @param {boolean} options.enabled - Bật/tắt WebSocket connection (mặc định: true)
  */
 export function useWebSocket({
@@ -195,6 +197,8 @@ export function useWebSocket({
   onMaterialUpdated,
   onGroupUpdate,
   onProgress,
+  onWalletUpdate,
+  onWorkspaceWalletUpdate,
   onQuizAttemptGrading,
   onChallengeUpdate,
   enabled = true,
@@ -210,6 +214,8 @@ export function useWebSocket({
     onMaterialUpdated,
     onGroupUpdate,
     onProgress,
+    onWalletUpdate,
+    onWorkspaceWalletUpdate,
     onQuizAttemptGrading,
     onChallengeUpdate,
   });
@@ -218,23 +224,37 @@ export function useWebSocket({
   const needsProgressQueue = Boolean(
     onProgress || onMaterialUploaded || onMaterialDeleted || onMaterialUpdated,
   );
+  const needsWalletQueue = Boolean(onWalletUpdate);
   const needsQuizAttemptGradingQueue = Boolean(onQuizAttemptGrading);
   const hasMaterialSubscription = Boolean(
     workspaceId && (onMaterialUploaded || onMaterialDeleted || onMaterialUpdated),
   );
   const hasChallengeSubscription = Boolean(workspaceId && onChallengeUpdate);
   const hasGroupSubscription = Boolean(workspaceId && onGroupUpdate);
+  const hasWorkspaceWalletSubscription = Boolean(workspaceId && onWorkspaceWalletUpdate);
   const hasWorkspaceSubscription = Boolean(
-    workspaceId && (hasMaterialSubscription || hasChallengeSubscription || hasGroupSubscription),
+    workspaceId && (
+      hasMaterialSubscription
+      || hasChallengeSubscription
+      || hasGroupSubscription
+      || hasWorkspaceWalletSubscription
+    ),
   );
-  const shouldConnect = Boolean(enabled) && (needsProgressQueue || needsQuizAttemptGradingQueue || hasWorkspaceSubscription);
+  const shouldConnect = Boolean(enabled) && (
+    needsProgressQueue
+    || needsWalletQueue
+    || needsQuizAttemptGradingQueue
+    || hasWorkspaceSubscription
+  );
   const connectionKey = [
     hasWorkspaceSubscription ? `workspace:${workspaceId}` : null,
     needsProgressQueue ? "progress" : null,
+    needsWalletQueue ? "wallet" : null,
     needsQuizAttemptGradingQueue ? "quiz-attempt-grading" : null,
     hasMaterialSubscription ? "material" : null,
     hasChallengeSubscription ? "challenge" : null,
     hasGroupSubscription ? "group" : null,
+    hasWorkspaceWalletSubscription ? "workspace-wallet" : null,
   ].filter(Boolean).join("|") || null;
 
   useEffect(() => {
@@ -244,10 +264,22 @@ export function useWebSocket({
       onMaterialUpdated,
       onGroupUpdate,
       onProgress,
+      onWalletUpdate,
+      onWorkspaceWalletUpdate,
       onQuizAttemptGrading,
       onChallengeUpdate,
     };
-  }, [onMaterialUploaded, onMaterialDeleted, onMaterialUpdated, onGroupUpdate, onProgress, onQuizAttemptGrading, onChallengeUpdate]);
+  }, [
+    onMaterialUploaded,
+    onMaterialDeleted,
+    onMaterialUpdated,
+    onGroupUpdate,
+    onProgress,
+    onWalletUpdate,
+    onWorkspaceWalletUpdate,
+    onQuizAttemptGrading,
+    onChallengeUpdate,
+  ]);
 
   // Lấy token từ localStorage
   const getAuthToken = useCallback(() => {
@@ -317,6 +349,9 @@ export function useWebSocket({
         if (needsProgressQueue) {
           console.log("🔔 Subscribed channel: /user/queue/progress");
         }
+        if (needsWalletQueue) {
+          console.log("🔔 Subscribed channel: /user/queue/wallet");
+        }
         if (needsQuizAttemptGradingQueue) {
           console.log("🔔 Subscribed channel: /user/queue/quiz-attempt-grading");
         }
@@ -328,6 +363,9 @@ export function useWebSocket({
         }
         if (hasGroupSubscription && workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/group`);
+        }
+        if (hasWorkspaceWalletSubscription && workspaceId) {
+          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/wallet`);
         }
         setIsConnected(true);
 
@@ -344,6 +382,21 @@ export function useWebSocket({
           }
           if (hasGroupSubscription) {
             callbackRefs.current.onGroupUpdate?.({
+              type: "SOCKET_RESTORED",
+              workspaceId,
+              restoredFromRegistry,
+              timestamp: Date.now(),
+            });
+          }
+          if (needsWalletQueue) {
+            callbackRefs.current.onWalletUpdate?.({
+              type: "SOCKET_RESTORED",
+              restoredFromRegistry,
+              timestamp: Date.now(),
+            });
+          }
+          if (hasWorkspaceWalletSubscription) {
+            callbackRefs.current.onWorkspaceWalletUpdate?.({
               type: "SOCKET_RESTORED",
               workspaceId,
               restoredFromRegistry,
@@ -386,6 +439,23 @@ export function useWebSocket({
             }
           );
           subscriptionsRef.current.push(progressSubscription);
+        }
+
+        if (needsWalletQueue) {
+          const walletSubscription = stompClient.subscribe(
+            "/user/queue/wallet",
+            (message) => {
+              try {
+                const response = JSON.parse(message.body);
+                console.log("💳 Wallet update received:", response);
+                setLastMessage({ type: "wallet:update", data: response, timestamp: Date.now() });
+                callbackRefs.current.onWalletUpdate?.(response);
+              } catch (err) {
+                console.error("Failed to parse wallet message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(walletSubscription);
         }
 
         if (needsQuizAttemptGradingQueue) {
@@ -477,6 +547,23 @@ export function useWebSocket({
           );
           subscriptionsRef.current.push(groupSubscription);
         }
+
+        if (hasWorkspaceWalletSubscription && workspaceId) {
+          const workspaceWalletSubscription = stompClient.subscribe(
+            `/topic/workspace/${workspaceId}/wallet`,
+            (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                console.log("💳 Workspace wallet update:", data);
+                setLastMessage({ type: "workspace-wallet:update", data, timestamp: Date.now() });
+                callbackRefs.current.onWorkspaceWalletUpdate?.(data);
+              } catch (err) {
+                console.error("Failed to parse workspace wallet message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(workspaceWalletSubscription);
+        }
       },
 
       onDisconnect: () => {
@@ -541,8 +628,10 @@ export function useWebSocket({
     hasGroupSubscription,
     hasMaterialSubscription,
     hasWorkspaceSubscription,
+    hasWorkspaceWalletSubscription,
     hasChallengeSubscription,
     needsProgressQueue,
+    needsWalletQueue,
     needsQuizAttemptGradingQueue,
     shouldConnect,
     workspaceId,

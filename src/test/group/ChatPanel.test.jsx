@@ -5,11 +5,19 @@ import i18n from '@/i18n';
 import ChatPanel from '@/Pages/Users/Group/Components/ChatPanel';
 
 const roadmapCanvasSpy = vi.fn();
+const quizListSpy = vi.fn();
 
 vi.mock('@/Pages/Users/Group/Components/RoadmapCanvasView', () => ({
   default: (props) => {
     roadmapCanvasSpy(props);
     return <div data-testid="group-roadmap-canvas-view">Roadmap canvas mock</div>;
+  },
+}));
+
+vi.mock('@/Pages/Users/Group/Components/QuizListView', () => ({
+  default: (props) => {
+    quizListSpy(props);
+    return <div data-testid="group-quiz-list-view">Quiz list mock</div>;
   },
 }));
 
@@ -52,6 +60,7 @@ function renderChatPanel(overrides = {}) {
 describe('Group ChatPanel', () => {
   beforeEach(async () => {
     roadmapCanvasSpy.mockClear();
+    quizListSpy.mockClear();
     window.localStorage.clear();
     window.localStorage.setItem('app_language', 'en');
     await i18n.changeLanguage('en');
@@ -69,6 +78,24 @@ describe('Group ChatPanel', () => {
       emptyStateTitle: 'Thiết lập lộ trình cho nhóm',
       emptyStateDescription: 'Thiết lập trước khi tạo phase.',
       emptyStateActionLabel: 'Thiết lập lộ trình',
+    }));
+  });
+
+  it('passes quiz websocket progress props into the group quiz list', async () => {
+    renderChatPanel({
+      activeView: 'quiz',
+      quizListRefreshToken: 9,
+      quizGenerationTaskByQuizId: { 15: 'task-15' },
+      quizGenerationProgressByQuizId: { 15: 42 },
+    });
+
+    expect(await screen.findByTestId('group-quiz-list-view')).toBeInTheDocument();
+    expect(quizListSpy).toHaveBeenCalledWith(expect.objectContaining({
+      contextType: 'GROUP',
+      contextId: 987,
+      refreshToken: 9,
+      quizGenerationTaskByQuizId: { 15: 'task-15' },
+      quizGenerationProgressByQuizId: { 15: 42 },
     }));
   });
 });

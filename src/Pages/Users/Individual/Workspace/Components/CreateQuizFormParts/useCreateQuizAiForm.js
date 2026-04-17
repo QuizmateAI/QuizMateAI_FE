@@ -178,6 +178,7 @@ export const useCreateQuizAiForm = ({
   hasImageMaterials,
   i18nLanguage,
   onCreateQuiz,
+  quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
   selectedMaterialIds,
   t,
   existingQuizId = null,
@@ -244,8 +245,12 @@ export const useCreateQuizAiForm = ({
     if (!Number.isInteger(qid) || qid <= 0) return;
     const s = String(seedQuizTitle || "").trim();
     if (!s) return;
-    setAiName((prev) => (String(prev || "").trim() ? prev : normalizeQuizTitleInput(s)));
-  }, [existingQuizId, seedQuizTitle]);
+    setAiName((prev) => (
+      String(prev || "").trim()
+        ? prev
+        : normalizeQuizTitleInput(s, quizTitleMaxLength)
+    ));
+  }, [existingQuizId, quizTitleMaxLength, seedQuizTitle]);
 
   const getTargetTotal = useCallback(
     (unitByCount) => (unitByCount ? Number(aiTotalQuestions || 0) : 100),
@@ -586,14 +591,17 @@ export const useCreateQuizAiForm = ({
     bloomUnit,
     customDifficulty,
     difficultyDefs,
+    hasAdvanceQuizConfig,
     minimumAiDurationMinutes,
     questionTypeUnit,
+    questionTypeDefinitions: qTypes,
     questionUnit,
-    quizTitleMaxLength: QUIZ_TITLE_MAX_LENGTH,
+    quizTitleMaxLength,
     selectedBloomSkills,
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
+    structureItems: isStructureEditing ? editableStructureItems : structurePreview?.items,
     t,
   }), [
     aiDuration,
@@ -607,14 +615,20 @@ export const useCreateQuizAiForm = ({
     bloomUnit,
     customDifficulty,
     difficultyDefs,
+    editableStructureItems,
+    hasAdvanceQuizConfig,
     minimumAiDurationMinutes,
     questionTypeUnit,
+    qTypes,
     questionUnit,
+    quizTitleMaxLength,
     selectedBloomSkills,
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
+    structurePreview?.items,
     t,
+    isStructureEditing,
   ]);
 
   const canFetchStructurePreview = useMemo(() => {
@@ -745,8 +759,8 @@ export const useCreateQuizAiForm = ({
   }, [aiValidationState, scrollToAiSection]);
 
   const handleAiNameChange = useCallback((value) => {
-    setAiName(normalizeQuizTitleInput(value));
-  }, []);
+    setAiName(normalizeQuizTitleInput(value, quizTitleMaxLength));
+  }, [quizTitleMaxLength]);
 
   const handleAiPromptChange = useCallback((value) => {
     setAiPrompt(value);
@@ -1259,6 +1273,14 @@ export const useCreateQuizAiForm = ({
       return;
     }
 
+    if (
+      field === "questionType"
+      && !hasAdvanceQuizConfig
+      && isAdvancedQuizQuestionType(value)
+    ) {
+      return;
+    }
+
     const nextItems = editableStructureItems.map((item, itemIndex) => {
       if (itemIndex !== index) {
         return item;
@@ -1278,7 +1300,7 @@ export const useCreateQuizAiForm = ({
     });
 
     updateStructureFromEditableItems(nextItems);
-  }, [editableStructureItems, updateStructureFromEditableItems]);
+  }, [editableStructureItems, hasAdvanceQuizConfig, updateStructureFromEditableItems]);
 
   const handleAddStructureItem = useCallback(() => {
     const currentTotal = (Array.isArray(editableStructureItems) ? editableStructureItems : [])
@@ -1538,6 +1560,7 @@ export const useCreateQuizAiForm = ({
       canFetchStructurePreview,
       minimumAiDurationMinutes,
       qTypes,
+      quizTitleMaxLength,
       questionTypeUnit,
       questionUnit,
       selectedBloomSkills,
