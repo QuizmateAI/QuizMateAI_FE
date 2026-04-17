@@ -3347,6 +3347,13 @@
       "configNotSet": "Not set",
       "viewConfig": "View config",
       "editConfigAction": "Edit",
+      "summaryDropdown": "Roadmap content",
+      "summaryFallback": "This roadmap does not have a summary description yet.",
+      "summaryStats": {
+        "phases": "phases",
+        "knowledges": "knowledges",
+        "quizzes": "quizzes"
+      },
       "setupButton": "Set up roadmap",
       "groupSetupPromptTitle": "Set up a roadmap for your group",
       "groupSetupPromptDescription": "Set the knowledge amount, pacing, total days, and daily study time first so the roadmap matches the group learning plan.",
