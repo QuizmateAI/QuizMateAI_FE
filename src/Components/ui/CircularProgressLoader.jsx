@@ -32,12 +32,13 @@ export default function CircularProgressLoader({
 
 	const dims = sizeMap[size] || sizeMap.md;
 	const colorClass = colorMap[color] || colorMap.blue;
-	const displayPercent = Math.max(0, Math.min(100, Number(percent) || 0));
+	const normalizedPercent = Math.max(0, Math.min(100, Number(percent) || 0));
+	const displayPercent = Math.round(normalizedPercent);
 
 	// Tính circumference đúng: r = 45 (trong SVG 100x100 viewBox)
 	// C = 2πr = 2π(45) ≈ 282.74
 	const circumference = 282.74;
-	const strokeDashoffset = circumference - (displayPercent / 100) * circumference;
+	const strokeDashoffset = circumference - (normalizedPercent / 100) * circumference;
 
 	return (
 		<div className={`flex flex-col items-center justify-center gap-2 ${className}`}>

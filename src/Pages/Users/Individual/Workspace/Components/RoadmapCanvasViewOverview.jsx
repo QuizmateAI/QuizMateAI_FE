@@ -703,7 +703,10 @@ function RoadmapCanvasViewOverview({
         <section
           role="region"
           aria-label={labels.selectorTitle}
-          className={`relative m-2 sm:m-3 lg:m-4 flex-1 flex flex-col overflow-visible rounded-[20px] sm:rounded-[24px] border shadow-[0_24px_56px_-42px_rgba(15,23,42,0.28)] ${isDarkMode ? "border-slate-700 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950" : "border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50"}`}
+          className={`relative flex-1 flex flex-col overflow-visible ${isExpandedMode
+            ? `m-2 sm:m-3 lg:m-4 rounded-[20px] sm:rounded-[24px] border shadow-[0_24px_56px_-42px_rgba(15,23,42,0.28)] ${isDarkMode ? "border-slate-700 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950" : "border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50"}`
+            : "m-0 rounded-none border-0 bg-transparent shadow-none"
+          }`}
         >
           <button
             type="button"

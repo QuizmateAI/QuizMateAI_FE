@@ -557,7 +557,12 @@ function ChatPanel({
         </div>
 
         <div className="min-h-0 flex-1 flex gap-3 p-3">
-          <div className="min-h-0 min-w-0 flex-1 rounded-[24px] overflow-hidden border border-slate-200 dark:border-slate-800 transition-all duration-500 ease-out">
+          <div
+            className={`min-h-0 min-w-0 flex-1 transition-all duration-500 ease-out ${roadmapCanvasView === "overview"
+              ? "rounded-none border-0 bg-transparent overflow-visible"
+              : "rounded-[24px] overflow-hidden border border-slate-200 dark:border-slate-800"
+              }`}
+          >
             <DeferredPanel>{renderContent()}</DeferredPanel>
           </div>
 
