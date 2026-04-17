@@ -2,6 +2,7 @@ import api from './api';
 import { setCachedProfile, setCachedSubscription, clearUserCache } from '@/Utils/userCache';
 import { normalizeUserProfile } from '@/Utils/userProfile';
 import { queryClient } from '@/queryClient';
+import { clearPlanPurchaseState } from '@/Utils/planPurchaseState';
 
 // ======================= AUTH API SERVICES =======================
 
@@ -30,13 +31,12 @@ export const register = async (userData) => {
  * Lưu profile + subscription + groups từ login response vào cache (chuyển tab instant)
  */
 function saveLoginDataToCache(data) {
+  clearPlanPurchaseState();
   if (data?.user) {
     const profile = normalizeUserProfile(data.user, data);
     setCachedProfile(profile);
   }
-  if (data?.subscription != null) {
-    setCachedSubscription(data.subscription);
-  }
+  setCachedSubscription(data?.subscription ?? null);
   // Groups từ login → React Query cache → tab Nhóm load instant (<1s)
   if (Array.isArray(data?.groups) && data.groups.length >= 0) {
     queryClient.setQueryData(['groups'], data.groups);
@@ -61,6 +61,7 @@ function clearAuthState() {
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
   clearUserCache();
+  clearPlanPurchaseState();
   queryClient.clear();
 }
 
