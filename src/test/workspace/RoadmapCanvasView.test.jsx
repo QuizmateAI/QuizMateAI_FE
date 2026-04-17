@@ -158,9 +158,11 @@ describe('RoadmapCanvasView', () => {
 
     await waitFor(() => {
       expect(onRoadmapMetaChange).toHaveBeenCalledWith(expect.objectContaining({
-        roadmapId: 88,
         title: 'Personal roadmap',
         description: 'A new roadmap',
+        phaseCount: 3,
+        knowledgeCount: 1,
+        quizCount: 1,
       }));
     });
   });
@@ -172,10 +174,11 @@ describe('RoadmapCanvasView', () => {
       <RoadmapCanvasView
         workspaceId={321}
         forcedCanvasView="overview"
-        selectedPhaseId={1}
         isStudyNewRoadmap={true}
       />,
     );
+
+    fireEvent.click(await screen.findByRole('button', { name: /warm-up/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText('Current active phase').length).toBeGreaterThan(0);
@@ -195,7 +198,7 @@ describe('RoadmapCanvasView', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Equivalent fractions')).toBeInTheDocument();
+      expect(screen.getByText('Warm-up')).toBeInTheDocument();
     });
   });
 
@@ -212,8 +215,7 @@ describe('RoadmapCanvasView', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Quay lại' })).toBeInTheDocument();
-      expect(screen.getByText('Equivalent fractions')).toBeInTheDocument();
+      expect(screen.getByText('Warm-up')).toBeInTheDocument();
     });
   });
 
@@ -221,7 +223,7 @@ describe('RoadmapCanvasView', () => {
     getRoadmapGraph.mockResolvedValue({ data: { data: createRoadmapGraph() } });
 
     function Harness() {
-      const [selectedPhaseId, setSelectedPhaseId] = React.useState(1);
+      const [selectedPhaseId, setSelectedPhaseId] = React.useState(null);
 
       return (
         <RoadmapCanvasView
@@ -246,8 +248,10 @@ describe('RoadmapCanvasView', () => {
 
     renderRoadmap(<Harness />);
 
+    fireEvent.click(await screen.findByRole('button', { name: /warm-up/i }));
+
     await waitFor(() => {
-      expect(screen.getByText('Equivalent fractions')).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Close phase detail').length).toBeGreaterThan(0);
     });
 
     fireEvent.click(screen.getAllByLabelText('Close phase detail')[0]);

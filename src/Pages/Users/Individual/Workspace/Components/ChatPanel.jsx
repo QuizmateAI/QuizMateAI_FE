@@ -1,13 +1,13 @@
 import React from "react";
-import { ChevronDown, FileText, Pencil } from "lucide-react";
+import { BookOpen, BookOpenCheck, ChevronDown, GitBranch, Layers3, Map, Pencil, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
-import ListSpinner from "@/Components/ui/ListSpinner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import RoadmapGuideButton from "@/Components/workspace/RoadmapGuideButton";
 import { workspaceSurface } from "./workspaceShellTheme";
 import SourcesPanel from "./SourcesPanel";
@@ -153,80 +153,26 @@ function ChatPanel({
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const resolvedView = activeView || "sources";
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
-  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("overview");
+  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view2");
+  const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
   const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
-  const [roadmapMeta, setRoadmapMeta] = React.useState(null);
-  const previousResolvedViewRef = React.useRef(null);
-
-  const normalizeRoadmapCanvasView = React.useCallback(() => "overview", []);
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView("overview");
+      setRoadmapCanvasView("view2");
       return;
     }
 
     const savedView = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    const normalizedView = normalizeRoadmapCanvasView(savedView);
+    const normalizedView = ["view1", "view2", "overview"].includes(savedView) ? savedView : "view2";
     setRoadmapCanvasView(normalizedView);
-  }, [normalizeRoadmapCanvasView, workspaceId]);
+  }, [workspaceId]);
 
   React.useEffect(() => {
     if (!roadmapCanvasStorageKey || !roadmapCanvasView) return;
     localStorage.setItem(roadmapCanvasStorageKey, roadmapCanvasView);
   }, [roadmapCanvasStorageKey, roadmapCanvasView]);
-
-  React.useEffect(() => {
-    const previousResolvedView = previousResolvedViewRef.current;
-    const normalizedSelectedPhaseId = Number(selectedRoadmapPhaseId);
-    const normalizedSelectedKnowledgeId = Number(selectedRoadmapKnowledgeId);
-    const hasRoadmapSelection = (
-      Number.isInteger(normalizedSelectedPhaseId) && normalizedSelectedPhaseId > 0
-    ) || (
-      Number.isInteger(normalizedSelectedKnowledgeId) && normalizedSelectedKnowledgeId > 0
-    );
-
-    if (
-      resolvedView === "roadmap"
-      && previousResolvedView !== "roadmap"
-      && hasRoadmapSelection
-    ) {
-      setRoadmapCanvasView("overview");
-    }
-
-    previousResolvedViewRef.current = resolvedView;
-  }, [resolvedView, selectedRoadmapKnowledgeId, selectedRoadmapPhaseId]);
-
-  const handleRoadmapCanvasViewChange = React.useCallback((view) => {
-    setRoadmapCanvasView(normalizeRoadmapCanvasView(view));
-  }, [normalizeRoadmapCanvasView]);
-
-  const handleRoadmapMetaChange = React.useCallback((nextMeta) => {
-    if (!nextMeta || typeof nextMeta !== "object") {
-      setRoadmapMeta(null);
-      return;
-    }
-
-    const normalizedMeta = {
-      roadmapId: Number(nextMeta?.roadmapId) || null,
-      title: String(nextMeta?.title || "").trim(),
-      description: String(nextMeta?.description || "").trim(),
-      phaseCount: Number(nextMeta?.phaseCount ?? 0) || 0,
-      knowledgeCount: Number(nextMeta?.knowledgeCount ?? 0) || 0,
-      quizCount: Number(nextMeta?.quizCount ?? 0) || 0,
-    };
-
-    const hasVisibleContent = Boolean(
-      normalizedMeta.title
-      || normalizedMeta.description
-      || normalizedMeta.phaseCount
-      || normalizedMeta.knowledgeCount
-      || normalizedMeta.quizCount,
-    );
-
-    setRoadmapMeta(hasVisibleContent ? normalizedMeta : null);
-  }, []);
 
   React.useEffect(() => {
     if (resolvedView !== "roadmap") return;
@@ -321,7 +267,7 @@ function ChatPanel({
             reloadToken={roadmapReloadToken}
             onReloadRoadmap={onReloadRoadmap}
             forcedCanvasView={roadmapCanvasView}
-            onCanvasViewChange={handleRoadmapCanvasViewChange}
+            onCanvasViewChange={setRoadmapCanvasView}
             selectedPhaseId={selectedRoadmapPhaseId}
             selectedKnowledgeId={selectedRoadmapKnowledgeId}
             progressTracking={progressTracking}
@@ -338,8 +284,8 @@ function ChatPanel({
             onToggleAllEmptyStateMaterials={handleToggleAllRoadmapMaterials}
             activeSourceCount={activeSourceCount}
             disableCreate={shouldDisableRoadmap && !roadmapHasPhases}
+            onRoadmapMetaChange={setRoadmapMeta}
             onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed}
-            onRoadmapMetaChange={handleRoadmapMetaChange}
           />
         );
       case "quiz":
@@ -534,18 +480,13 @@ function ChatPanel({
   ].includes(resolvedView);
   const shouldHideRoadmapJour = roadmapCanvasView === "overview"
     || !roadmapHasPhases
-    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed)
-    || (roadmapCanvasView === "view2" && Number(selectedRoadmapKnowledgeId) > 0);
+    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
 
   if (resolvedView === "roadmap") {
-    const hasRoadmapSummary = Boolean(
-      roadmapMeta?.title
-      || roadmapMeta?.description
-      || roadmapMeta?.phaseCount
-      || roadmapMeta?.knowledgeCount
-      || roadmapMeta?.quizCount,
-    );
-    const roadmapHeading = roadmapMeta?.title || t("workspace.roadmap.title", "Roadmap");
+    const isOverviewMode = roadmapCanvasView === "overview";
+    const roadmapHeading = isOverviewMode
+      ? (roadmapMeta?.title || t("workspace.roadmap.title", "Lộ trình"))
+      : t("workspace.roadmap.title", "Lộ trình");
 
     return (
       <section
@@ -563,7 +504,8 @@ function ChatPanel({
             <h2 className={`truncate text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
               {roadmapHeading}
             </h2>
-            {hasRoadmapSummary ? (
+
+            {isOverviewMode ? (
               <div className="mt-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -571,7 +513,7 @@ function ChatPanel({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className={`group mt-1 h-11 w-fit max-w-[260px] justify-start rounded-full border px-3 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                      className={`group h-10 w-fit max-w-[240px] justify-start rounded-full border px-3 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
                         isDarkMode
                           ? "border-sky-500/30 bg-sky-500/10 text-slate-100 hover:border-sky-400/50 hover:bg-sky-500/14"
                           : "border-sky-200 bg-sky-50 text-slate-900 hover:border-sky-300 hover:bg-sky-100/80"
@@ -579,30 +521,28 @@ function ChatPanel({
                     >
                       <span
                         className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                          isDarkMode
-                            ? "bg-sky-500/18 text-sky-200"
-                            : "bg-sky-100 text-sky-700"
+                          isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"
                         }`}
                       >
-                        <FileText className="h-3.5 w-3.5" />
+                        <BookOpen className="h-3.5 w-3.5" />
                       </span>
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 px-2">
                         <span className="block text-sm font-semibold leading-5">
-                          {t("workspace.roadmap.summaryDropdown", "Nội dung roadmap")}
+                          {t("workspace.roadmap.summaryDropdown", "Roadmap content")}
                         </span>
                       </span>
-                      <ChevronDown className={`ml-1 h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180 ${isDarkMode ? "text-sky-200" : "text-sky-700"}`} />
+                      <ChevronDown className={`h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180 ${isDarkMode ? "text-sky-200" : "text-sky-700"}`} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="start"
                     sideOffset={10}
-                    className={`w-[min(460px,calc(100vw-3rem))] rounded-2xl border p-0 shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
+                    className={`w-[min(440px,calc(100vw-3rem))] rounded-2xl border p-0 shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
                   >
                     <div className="space-y-4 p-4">
                       <div>
                         <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
-                          {t("workspace.roadmap.summaryDropdown", "Nội dung roadmap")}
+                          {t("workspace.roadmap.summaryDropdown", "Roadmap content")}
                         </p>
                         <h3 className={`mt-1 text-base font-semibold leading-6 ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
                           {roadmapHeading}
@@ -613,24 +553,33 @@ function ChatPanel({
                         <div className="flex flex-wrap gap-2">
                           {roadmapMeta?.phaseCount ? (
                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                              {roadmapMeta.phaseCount} {t("workspace.roadmap.canvas.phases", "phases")}
+                              <span className={`mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"}`}>
+                                <GitBranch className="h-3 w-3" />
+                              </span>
+                              {roadmapMeta.phaseCount} {t("workspace.roadmap.summaryStats.phases", "phases")}
                             </span>
                           ) : null}
                           {roadmapMeta?.knowledgeCount ? (
                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                              {roadmapMeta.knowledgeCount} {t("workspace.roadmap.canvas.knowledges", "knowledges")}
+                              <span className={`mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"}`}>
+                                <Layers3 className="h-3 w-3" />
+                              </span>
+                              {roadmapMeta.knowledgeCount} {t("workspace.roadmap.summaryStats.knowledges", "knowledges")}
                             </span>
                           ) : null}
                           {roadmapMeta?.quizCount ? (
                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                              {roadmapMeta.quizCount} {t("workspace.roadmap.canvas.quizzes", "quizzes")}
+                              <span className={`mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"}`}>
+                                <BookOpenCheck className="h-3 w-3" />
+                              </span>
+                              {roadmapMeta.quizCount} {t("workspace.roadmap.summaryStats.quizzes", "quizzes")}
                             </span>
                           ) : null}
                         </div>
                       ) : null}
 
                       <p className={`text-sm leading-7 whitespace-pre-wrap ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
-                        {roadmapMeta?.description || t("workspace.roadmap.summaryFallback", "Roadmap này chưa có phần mô tả tổng hợp.")}
+                        {roadmapMeta?.description || t("workspace.roadmap.summaryFallback", "This roadmap does not have a summary description yet.")}
                       </p>
                     </div>
                   </DropdownMenuContent>
@@ -675,6 +624,39 @@ function ChatPanel({
                 ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
                 : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
             />
+
+            <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
+              <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
+                onClick={() => setRoadmapCanvasView("view2")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Rows3 className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>{t("workspace.roadmap.canvasView2Title", "Chi tiết")}</span>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
+                onClick={() => setRoadmapCanvasView("overview")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "overview" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Map className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle", "Tổng quan")}</span>
+              </Button>
+              {/* <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                onClick={() => setRoadmapCanvasView("view1")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Eye className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>{t("workspace.roadmap.canvasView1Title", "Kiểm thử")}</span>
+              </Button> */}
+            </div>
           </div>
         </div>
 

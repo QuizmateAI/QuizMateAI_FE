@@ -1889,7 +1889,7 @@ function RoadmapCanvasViewStage({
                 : "bg-emerald-500"}`}
               />
               <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
-                {t("workspace.roadmap.canvas.view2TopSectionTitle", "Lộ trình theo giai đoạn")}
+                {t("workspace.roadmap.canvas.view2TopSectionTitle", "Roadmap by phase")}
               </p>
             </div>
             <Button
