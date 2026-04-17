@@ -7,6 +7,7 @@ import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
 import LoadingSpinner from '@/Components/ui/LoadingSpinner';
 import RouteMetaManager from '@/Components/seo/RouteMetaManager';
+import RuntimeRecoveryBoundary from '@/Components/system/RuntimeRecoveryBoundary';
 import { launchConfig } from '@/lib/launchConfig';
 import { hasRouteNamespacesLoaded, preloadRouteNamespaces } from '@/i18n';
 import { useTranslation } from 'react-i18next';
@@ -275,11 +276,13 @@ function AppContent() {
 function App() {
   return (
     <ToastProvider>
-      <Router>
-        <RouteMetaManager />
-        <PlanGuardListener />
-        <AppContent />
-      </Router>
+      <RuntimeRecoveryBoundary>
+        <Router>
+          <RouteMetaManager />
+          <PlanGuardListener />
+          <AppContent />
+        </Router>
+      </RuntimeRecoveryBoundary>
     </ToastProvider>
   );
 }

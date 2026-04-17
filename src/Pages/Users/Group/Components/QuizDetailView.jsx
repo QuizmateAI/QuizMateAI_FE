@@ -729,9 +729,6 @@ function QuizDetailView({
   }, []);
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
-  const sourceTypeLabel = String(effectiveQuiz?.createVia || "").toUpperCase() === "AI"
-    ? t("workspace.quiz.cardAiLabel", "QUIZMATE AI")
-    : t("workspace.quiz.cardManualLabel", "Manual Quiz");
   const overviewIntentLabel = effectiveQuiz?.quizIntent
     ? t(`workspace.quiz.intentLabels.${effectiveQuiz.quizIntent}`, effectiveQuiz.quizIntent)
     : t("quizDetailView.overview.notAvailable", "N/A");
@@ -749,17 +746,9 @@ function QuizDetailView({
         ? t("workspace.quiz.myPassedFalse", "Not passed")
         : t("workspace.quiz.myAttemptedTrue", "Attempted"))
     : t("workspace.quiz.myAttemptedFalse", "Not attempted");
-  const overviewAudienceLabel = _contextType === "GROUP"
-    ? (
-      String(effectiveQuiz?.groupAudienceMode || "").toUpperCase() === "SELECTED_MEMBERS"
-        ? t("workspace.quiz.groupAudience.assignedMembers", "Assigned only")
-        : t("workspace.quiz.groupAudience.wholeGroup", "Whole group")
-    )
-    : (
-      effectiveQuiz?.communityShared === true
-        ? t("workspace.quiz.communityPublic", "Public")
-        : t("workspace.quiz.privateShort", "Private")
-    );
+  const challengeStartModeLabel = challengeSnapshotReviewMode
+    ? t("quizDetailView.overview.challengeStartModeDefault", "Theo lịch • leader có thể bắt đầu sớm")
+    : null;
   /** Nhóm + leader: tab Kiểm tra. Snapshot challenge (mở từ «Xem quiz»): cả reviewer (member) cũng cần tab Kiểm tra để xem đủ đáp án. */
   // "Kiểm tra" tab: leader sees it only while quiz is DRAFT (to review before publishing).
   // Snapshot-reviewers (contributors invited to check) always see it regardless of status.
@@ -1086,10 +1075,11 @@ function QuizDetailView({
 
               {/* Thẻ thông tin dạng grid */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 mb-4">
-                <InfoChip icon={Sparkles} label={t("quizDetailView.overview.sourceLabel", "Source") } value={sourceTypeLabel} isDarkMode={isDarkMode} />
-                <InfoChip icon={Users} label={t("workspace.quiz.groupAudience.filterLabelShort", "Group") } value={overviewAudienceLabel} isDarkMode={isDarkMode} />
                 <InfoChip icon={BadgeCheck} label={t("quizDetailView.overview.intentLabel", "Intent") } value={overviewIntentLabel} isDarkMode={isDarkMode} />
                 <InfoChip icon={Clock} label={t("quizDetailView.overview.timerModeLabel", "Timer mode") } value={overviewTimerModeLabel} isDarkMode={isDarkMode} />
+                {challengeStartModeLabel && (
+                  <InfoChip icon={Play} label={t("quizDetailView.overview.challengeStartModeLabel", "Bắt đầu challenge")} value={challengeStartModeLabel} isDarkMode={isDarkMode} />
+                )}
                 {durationInMinutes > 0 && (
                   <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${durationInMinutes} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
                 )}
