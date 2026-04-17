@@ -998,7 +998,7 @@
         "promptOptional": "Prompt (Tùy chọn)",
         "selectedMaterials": "Tài liệu nguồn",
         "selectedMaterialsCount": "Đang sử dụng {{count}} tài liệu được chọn từ Sources panel.",
-        "noSelectedMaterials": "Chưa chọn tài liệu trong Sources panel. Bạn vẫn có thể tạo bằng Prompt.",
+        "noSelectedMaterials": "Xin hãy chọn tài liệu mà bạn muốn sử dụng",
         "workspaceMaterialsEmpty": "Chưa có tài liệu trong không gian này. Hãy thêm từ panel Sources.",
         "materialSelectedBadge": "Đã chọn",
         "materialsSelectedSummary": "Đã chọn {{selected}}/{{total}}",
