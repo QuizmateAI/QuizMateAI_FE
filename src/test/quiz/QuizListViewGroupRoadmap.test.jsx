@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import QuizListView from '@/Pages/Users/Group/Components/QuizListView';
 import { getQuizzesByScope } from '@/api/QuizAPI';
@@ -106,5 +106,84 @@ describe('QuizListView group roadmap coverage', () => {
     const title = await screen.findByText('Roadmap-linked group quiz');
     expect(title).toBeInTheDocument();
     expect(getQuizzesByScope).toHaveBeenCalledWith('PHASE', 77);
+  });
+
+  it('hides privately assigned quizzes of other members from a regular member on the all tab', async () => {
+    getQuizzesByScope.mockResolvedValueOnce({
+      data: [
+        {
+          quizId: 101,
+          title: 'Whole group quiz',
+          status: 'ACTIVE',
+          createdAt: '2026-03-25T10:00:00',
+          groupAudienceMode: 'ALL_MEMBERS',
+        },
+        {
+          quizId: 102,
+          title: 'My assigned quiz',
+          status: 'ACTIVE',
+          createdAt: '2026-03-25T10:01:00',
+          groupAudienceMode: 'SELECTED_MEMBERS',
+          assignedUserIds: [7, 9],
+        },
+        {
+          quizId: 103,
+          title: 'Other member assigned quiz',
+          status: 'ACTIVE',
+          createdAt: '2026-03-25T10:02:00',
+          groupAudienceMode: 'SELECTED_MEMBERS',
+          assignedUserIds: [9],
+        },
+      ],
+    });
+
+    render(
+      <QuizListView
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onViewQuiz={vi.fn()}
+        contextId={42}
+        groupRole="MEMBER"
+        groupCurrentUserId={7}
+      />,
+    );
+
+    expect(await screen.findByText('Whole group quiz')).toBeInTheDocument();
+    expect(screen.getByText('My assigned quiz')).toBeInTheDocument();
+    expect(screen.queryByText('Other member assigned quiz')).not.toBeInTheDocument();
+    expect(getGroupMembers).not.toHaveBeenCalled();
+  });
+
+  it('does not show the assignee picker to a regular member', async () => {
+    getQuizzesByScope.mockResolvedValueOnce({
+      data: [
+        {
+          quizId: 201,
+          title: 'My assigned quiz',
+          status: 'ACTIVE',
+          createdAt: '2026-03-25T10:01:00',
+          groupAudienceMode: 'SELECTED_MEMBERS',
+          assignedUserIds: [7, 9],
+        },
+      ],
+    });
+
+    render(
+      <QuizListView
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onViewQuiz={vi.fn()}
+        contextId={42}
+        groupRole="MEMBER"
+        groupCurrentUserId={7}
+      />,
+    );
+
+    await screen.findByText('My assigned quiz');
+    fireEvent.click(screen.getByRole('button', { name: 'Assigned' }));
+
+    expect(screen.getByText('My assigned quiz')).toBeInTheDocument();
+    expect(screen.queryByText('All assigned quizzes')).not.toBeInTheDocument();
+    expect(getGroupMembers).not.toHaveBeenCalled();
   });
 });
