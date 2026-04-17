@@ -105,9 +105,14 @@ export default function useWorkspaceMaterialSelection({
     [fetchedSources, hasProvidedSources, sources, t],
   );
 
+  const normalizedSourceIdSet = useMemo(
+    () => new Set(normalizedSources.map((source) => source.id)),
+    [normalizedSources],
+  );
+
   const normalizedSelectedSourceIds = useMemo(
-    () => normalizeIds(selectedSourceIds),
-    [selectedSourceIds],
+    () => normalizeIds(selectedSourceIds).filter((id) => normalizedSourceIdSet.has(id)),
+    [normalizedSourceIdSet, selectedSourceIds],
   );
 
   useEffect(() => {
@@ -126,22 +131,17 @@ export default function useWorkspaceMaterialSelection({
     normalizedSelectedSourceIds,
   ]);
 
-  const validSourceIdSet = useMemo(
-    () => new Set(normalizedSources.map((source) => source.id)),
-    [normalizedSources],
-  );
-
   const selectedIds = useMemo(() => {
     const candidateIds = hasExternalSelectionControl
       ? normalizedSelectedSourceIds
       : localSelectedSourceIds;
 
-    return candidateIds.filter((id) => validSourceIdSet.has(id));
+    return candidateIds.filter((id) => normalizedSourceIdSet.has(id));
   }, [
     hasExternalSelectionControl,
     localSelectedSourceIds,
     normalizedSelectedSourceIds,
-    validSourceIdSet,
+    normalizedSourceIdSet,
   ]);
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
