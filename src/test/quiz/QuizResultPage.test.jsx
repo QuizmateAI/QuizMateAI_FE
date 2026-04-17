@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import QuizResultPage from '@/Pages/Users/Quiz/QuizResultPage';
 
@@ -184,7 +184,7 @@ describe('QuizResultPage', () => {
     expect(screen.queryByText('Không tìm thấy kết quả')).not.toBeInTheDocument();
   }, 10000);
 
-  it('renders only concise recommendation results when the assessment is ready', async () => {
+  it('hides next quiz recommendations when the assessment is ready', async () => {
     mockGetAttemptResult.mockResolvedValue({ data: buildAttemptResult() });
     mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
     mockGetAttemptAssessment.mockResolvedValue({
@@ -247,25 +247,32 @@ describe('QuizResultPage', () => {
 
     render(<QuizResultPage />);
 
-    expect(await screen.findByText('Đề xuất tiếp theo')).toBeInTheDocument();
-    expect(screen.getByText('Quiz review Cohesion')).toBeInTheDocument();
-    expect(screen.getByText('Ôn lại các dạng lỗi chuyển ý và sắp xếp luận điểm.')).toBeInTheDocument();
-    expect(screen.getByText('Community quiz cohesion basics')).toBeInTheDocument();
+    expect(await screen.findByText('Bạn đang làm tốt phần task response nhưng còn lặp lỗi cohesion.')).toBeInTheDocument();
+    expect(screen.queryByText('Đề xuất tiếp theo')).not.toBeInTheDocument();
+    expect(screen.queryByText('Next suggestion')).not.toBeInTheDocument();
+    expect(screen.queryByText('Quiz review Cohesion')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ôn lại các dạng lỗi chuyển ý và sắp xếp luận điểm.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Community quiz cohesion basics')).not.toBeInTheDocument();
     expect(screen.queryByText('Tóm tắt đề xuất')).not.toBeInTheDocument();
     expect(screen.queryByText('Đã có 2/3 quiz. Làm thêm 1 bài nữa để profile ổn định hơn.')).not.toBeInTheDocument();
     expect(screen.queryByText('Ôn lại chủ đề yếu')).not.toBeInTheDocument();
     expect(screen.queryByText('Review lại phase hiện tại')).not.toBeInTheDocument();
-    expect(screen.queryByText('Task response')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /tạo quiz dựa trên đánh giá ai/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /tạo quiz dựa trên đánh giá ai/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /generate quiz from ai assessment/i })).not.toBeInTheDocument();
   });
 
-  it('shows a clear fallback when no assessment is available yet', async () => {
+  it('hides the AI assessment section when no assessment is available yet', async () => {
     mockGetAttemptResult.mockResolvedValue({ data: buildAttemptResult() });
     mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
 
     render(<QuizResultPage />);
 
-    expect(await screen.findByText(/Chưa có đánh giá AI cho lượt làm này/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('quiz-header')).toHaveTextContent('Bai kiem tra 60 cau');
+    await waitFor(() => expect(mockGetAttemptAssessment).toHaveBeenCalledWith('62'));
+    await waitFor(() => {
+      expect(screen.queryByText('AI insights')).not.toBeInTheDocument();
+      expect(screen.queryByText('AI Assessment')).not.toBeInTheDocument();
+    });
   });
 
   it('updates the grading UI from websocket events even if result refresh fails', async () => {
