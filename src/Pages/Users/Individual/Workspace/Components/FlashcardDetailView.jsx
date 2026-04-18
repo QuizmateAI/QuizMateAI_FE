@@ -26,6 +26,31 @@ import {
   updateFlashcardSetStatus,
 } from "@/api/FlashcardAPI";
 
+function FlashcardFace({
+  accentClassName,
+  content,
+  fontClass,
+  hint,
+  hintClassName,
+  label,
+  labelClassName,
+  textClassName,
+}) {
+  return (
+    <div className={accentClassName}>
+      <div className="grid h-full grid-rows-[auto_1fr_auto] gap-6">
+        <p className={labelClassName}>{label}</p>
+        <div className="flex min-h-0 items-center justify-center px-2 sm:px-6">
+          <p className={`max-h-full overflow-y-auto whitespace-pre-wrap break-words text-center text-xl font-semibold leading-relaxed sm:text-2xl ${textClassName} ${fontClass}`}>
+            {content}
+          </p>
+        </div>
+        <p className={hintClassName}>{hint}</p>
+      </div>
+    </div>
+  );
+}
+
 function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -232,7 +257,7 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
       </div>
 
       <div className="mt-8 flex w-full max-w-3xl shrink-0 flex-col items-center self-center">
-        <div className="mb-6 flex min-h-[360px] w-full items-center justify-center [perspective:1000px]">
+        <div className="mb-6 flex h-[320px] w-full items-center justify-center sm:h-[360px] lg:h-[400px] [perspective:1000px]">
           {activeItem ? (
             <div
               key={activeItem.flashcardItemId}
@@ -248,29 +273,27 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
                 className={`relative h-full w-full cursor-pointer transition-transform duration-300 [transform-style:preserve-3d] ${flipped ? '[transform:rotateX(180deg)]' : ''}`}
                 onClick={() => setFlipped((prev) => !prev)}
               >
-                <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm [backface-visibility:hidden]">
-                  <p className="absolute left-6 top-6 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
-                    {t("workspace.flashcard.frontContent")}
-                  </p>
-                  <p className={`text-center text-2xl font-semibold leading-relaxed text-slate-950 dark:text-white ${fontClass}`}>
-                    {activeItem.frontContent}
-                  </p>
-                  <p className="absolute bottom-6 text-sm text-slate-400 dark:text-slate-500">
-                    {t("workspace.flashcard.tapToFlip", "Click to flip this card")}
-                  </p>
-                </div>
+                <FlashcardFace
+                  accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm [backface-visibility:hidden] dark:border-slate-800 dark:bg-slate-900 sm:p-8"
+                  content={activeItem.frontContent}
+                  fontClass={fontClass}
+                  hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
+                  hintClassName="text-center text-sm text-slate-400 dark:text-slate-500"
+                  label={t("workspace.flashcard.frontContent")}
+                  labelClassName="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"
+                  textClassName="text-slate-950 dark:text-white"
+                />
 
-                <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center rounded-[28px] border border-emerald-300 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20 p-8 shadow-sm [backface-visibility:hidden] [transform:rotateX(180deg)]">
-                  <p className="absolute left-6 top-6 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-600/70 dark:text-emerald-500/70">
-                    {t("workspace.flashcard.backContent")}
-                  </p>
-                  <p className={`text-center text-2xl font-semibold leading-relaxed text-emerald-950 dark:text-emerald-400 ${fontClass}`}>
-                    {activeItem.backContent}
-                  </p>
-                  <p className="absolute bottom-6 text-sm text-emerald-600/70 dark:text-emerald-500/70">
-                    {t("workspace.flashcard.tapToFlip", "Click to flip this card")}
-                  </p>
-                </div>
+                <FlashcardFace
+                  accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-emerald-300 bg-emerald-50 p-6 shadow-sm [backface-visibility:hidden] [transform:rotateX(180deg)] dark:border-emerald-900/50 dark:bg-emerald-950/20 sm:p-8"
+                  content={activeItem.backContent}
+                  fontClass={fontClass}
+                  hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
+                  hintClassName="text-center text-sm text-emerald-600/70 dark:text-emerald-500/70"
+                  label={t("workspace.flashcard.backContent")}
+                  labelClassName="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-600/70 dark:text-emerald-500/70"
+                  textClassName="text-emerald-950 dark:text-emerald-400"
+                />
               </div>
             </div>
           ) : (
