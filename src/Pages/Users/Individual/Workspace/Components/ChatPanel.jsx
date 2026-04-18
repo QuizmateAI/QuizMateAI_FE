@@ -1,5 +1,5 @@
 import React from "react";
-import { BookOpen, BookOpenCheck, ChevronDown, GitBranch, Layers3, Map, Pencil, Rows3 } from "lucide-react";
+import { ChevronDown, Eye, FileText, Map, Pencil, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import {
@@ -157,76 +157,22 @@ function ChatPanel({
   const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
   const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
-  const previousResolvedViewRef = React.useRef(null);
-
-  const normalizeRoadmapCanvasView = React.useCallback(() => "overview", []);
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView("overview");
+      setRoadmapCanvasView("view2");
       return;
     }
 
     const savedView = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    const normalizedView = normalizeRoadmapCanvasView(savedView);
+    const normalizedView = ["view1", "view2", "overview"].includes(savedView) ? savedView : "view2";
     setRoadmapCanvasView(normalizedView);
-  }, [normalizeRoadmapCanvasView, workspaceId]);
+  }, [workspaceId]);
 
   React.useEffect(() => {
     if (!roadmapCanvasStorageKey || !roadmapCanvasView) return;
     localStorage.setItem(roadmapCanvasStorageKey, roadmapCanvasView);
   }, [roadmapCanvasStorageKey, roadmapCanvasView]);
-
-  React.useEffect(() => {
-    const previousResolvedView = previousResolvedViewRef.current;
-    const normalizedSelectedPhaseId = Number(selectedRoadmapPhaseId);
-    const normalizedSelectedKnowledgeId = Number(selectedRoadmapKnowledgeId);
-    const hasRoadmapSelection = (
-      Number.isInteger(normalizedSelectedPhaseId) && normalizedSelectedPhaseId > 0
-    ) || (
-      Number.isInteger(normalizedSelectedKnowledgeId) && normalizedSelectedKnowledgeId > 0
-    );
-
-    if (
-      resolvedView === "roadmap"
-      && previousResolvedView !== "roadmap"
-      && hasRoadmapSelection
-    ) {
-      setRoadmapCanvasView("overview");
-    }
-
-    previousResolvedViewRef.current = resolvedView;
-  }, [resolvedView, selectedRoadmapKnowledgeId, selectedRoadmapPhaseId]);
-
-  const handleRoadmapCanvasViewChange = React.useCallback((view) => {
-    setRoadmapCanvasView(normalizeRoadmapCanvasView(view));
-  }, [normalizeRoadmapCanvasView]);
-
-  const handleRoadmapMetaChange = React.useCallback((nextMeta) => {
-    if (!nextMeta || typeof nextMeta !== "object") {
-      setRoadmapMeta(null);
-      return;
-    }
-
-    const normalizedMeta = {
-      roadmapId: Number(nextMeta?.roadmapId) || null,
-      title: String(nextMeta?.title || "").trim(),
-      description: String(nextMeta?.description || "").trim(),
-      phaseCount: Number(nextMeta?.phaseCount ?? 0) || 0,
-      knowledgeCount: Number(nextMeta?.knowledgeCount ?? 0) || 0,
-      quizCount: Number(nextMeta?.quizCount ?? 0) || 0,
-    };
-
-    const hasVisibleContent = Boolean(
-      normalizedMeta.title
-      || normalizedMeta.description
-      || normalizedMeta.phaseCount
-      || normalizedMeta.knowledgeCount
-      || normalizedMeta.quizCount,
-    );
-
-    setRoadmapMeta(hasVisibleContent ? normalizedMeta : null);
-  }, []);
 
   React.useEffect(() => {
     if (resolvedView !== "roadmap") return;
@@ -321,7 +267,7 @@ function ChatPanel({
             reloadToken={roadmapReloadToken}
             onReloadRoadmap={onReloadRoadmap}
             forcedCanvasView={roadmapCanvasView}
-            onCanvasViewChange={handleRoadmapCanvasViewChange}
+            onCanvasViewChange={setRoadmapCanvasView}
             selectedPhaseId={selectedRoadmapPhaseId}
             selectedKnowledgeId={selectedRoadmapKnowledgeId}
             progressTracking={progressTracking}
@@ -338,8 +284,8 @@ function ChatPanel({
             onToggleAllEmptyStateMaterials={handleToggleAllRoadmapMaterials}
             activeSourceCount={activeSourceCount}
             disableCreate={shouldDisableRoadmap && !roadmapHasPhases}
+            onRoadmapMetaChange={setRoadmapMeta}
             onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed}
-            onRoadmapMetaChange={handleRoadmapMetaChange}
           />
         );
       case "quiz":
@@ -534,8 +480,7 @@ function ChatPanel({
   ].includes(resolvedView);
   const shouldHideRoadmapJour = roadmapCanvasView === "overview"
     || !roadmapHasPhases
-    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed)
-    || (roadmapCanvasView === "view2" && Number(selectedRoadmapKnowledgeId) > 0);
+    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
 
   if (resolvedView === "roadmap") {
     const isOverviewMode = roadmapCanvasView === "overview";
@@ -568,7 +513,7 @@ function ChatPanel({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className={`group h-10 w-fit max-w-[240px] justify-start rounded-full border px-3 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                      className={`group h-10 w-fit max-w-[260px] justify-start rounded-full border px-3 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
                         isDarkMode
                           ? "border-sky-500/30 bg-sky-500/10 text-slate-100 hover:border-sky-400/50 hover:bg-sky-500/14"
                           : "border-sky-200 bg-sky-50 text-slate-900 hover:border-sky-300 hover:bg-sky-100/80"
@@ -576,10 +521,12 @@ function ChatPanel({
                     >
                       <span
                         className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                          isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"
+                          isDarkMode
+                            ? "bg-sky-500/18 text-sky-200"
+                            : "bg-sky-100 text-sky-700"
                         }`}
                       >
-                        <BookOpen className="h-3.5 w-3.5" />
+                        <FileText className="h-3.5 w-3.5" />
                       </span>
                       <span className="min-w-0 flex-1 px-2">
                         <span className="block text-sm font-semibold leading-5">
@@ -608,25 +555,16 @@ function ChatPanel({
                         <div className="flex flex-wrap gap-2">
                           {roadmapMeta?.phaseCount ? (
                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                              <span className={`mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"}`}>
-                                <GitBranch className="h-3 w-3" />
-                              </span>
                               {roadmapMeta.phaseCount} {t("workspace.roadmap.summaryStats.phases", "phases")}
                             </span>
                           ) : null}
                           {roadmapMeta?.knowledgeCount ? (
                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                              <span className={`mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"}`}>
-                                <Layers3 className="h-3 w-3" />
-                              </span>
                               {roadmapMeta.knowledgeCount} {t("workspace.roadmap.summaryStats.knowledges", "knowledges")}
                             </span>
                           ) : null}
                           {roadmapMeta?.quizCount ? (
                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                              <span className={`mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-sky-500/18 text-sky-200" : "bg-sky-100 text-sky-700"}`}>
-                                <BookOpenCheck className="h-3 w-3" />
-                              </span>
                               {roadmapMeta.quizCount} {t("workspace.roadmap.summaryStats.quizzes", "quizzes")}
                             </span>
                           ) : null}

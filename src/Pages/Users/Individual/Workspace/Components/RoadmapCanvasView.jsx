@@ -34,15 +34,6 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function normalizeCanvasView(canvasView) {
-  return "overview";
-}
-
-function isPositiveInteger(value) {
-  const normalizedValue = Number(value);
-  return Number.isInteger(normalizedValue) && normalizedValue > 0;
-}
-
 function getPhaseSide(index) {
   return index % 2 === 0 ? "left" : "right";
 }
@@ -233,7 +224,6 @@ function RoadmapCanvasView({
   onRoadmapLoad,
   onRoadmapMetaChange,
   onStageTopSectionCollapsedChange,
-  onRoadmapMetaChange,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -285,9 +275,8 @@ function RoadmapCanvasView({
   }, [roadmap]);
 
   const persistCanvasView = useCallback((roadmapId, canvasView) => {
-    const normalizedCanvasView = normalizeCanvasView(canvasView);
-    if (!roadmapId || !normalizedCanvasView) return;
-    localStorage.setItem(`roadmap_${roadmapId}_canvasView`, normalizedCanvasView);
+    if (!roadmapId || !canvasView) return;
+    localStorage.setItem(`roadmap_${roadmapId}_canvasView`, canvasView);
   }, []);
 
   const loadRoadmap = useCallback(async ({ soft = false } = {}) => {
@@ -302,12 +291,10 @@ function RoadmapCanvasView({
       const storedCanvasView = nextRoadmap?.roadmapId
         ? localStorage.getItem(`roadmap_${nextRoadmap.roadmapId}_canvasView`)
         : null;
-      const resolvedCanvasView = normalizeCanvasView(
-        forcedCanvasView
-          || nextRoadmap?.canvasView
-          || storedCanvasView
-          || "overview",
-      );
+      const resolvedCanvasView = forcedCanvasView
+        || nextRoadmap?.canvasView
+        || (storedCanvasView === "view1" || storedCanvasView === "view2" || storedCanvasView === "overview" ? storedCanvasView : null)
+        || "view1";
       const mergedRoadmap = nextRoadmap
         ? { ...nextRoadmap, canvasView: resolvedCanvasView }
         : null;
@@ -380,11 +367,10 @@ function RoadmapCanvasView({
 
   useEffect(() => {
     if (!forcedCanvasView) return;
-    const normalizedCanvasView = normalizeCanvasView(forcedCanvasView);
-    setRoadmap((current) => (current ? { ...current, canvasView: normalizedCanvasView } : current));
+    setRoadmap((current) => (current ? { ...current, canvasView: forcedCanvasView } : current));
     if (roadmap?.roadmapId) {
-      persistCanvasView(roadmap.roadmapId, normalizedCanvasView);
-      onCanvasViewChange?.(normalizedCanvasView);
+      persistCanvasView(roadmap.roadmapId, forcedCanvasView);
+      onCanvasViewChange?.(forcedCanvasView);
     }
   }, [forcedCanvasView, onCanvasViewChange, persistCanvasView, roadmap?.roadmapId]);
 
@@ -530,13 +516,12 @@ function RoadmapCanvasView({
   ), [fontClass, isDarkMode, onEditRoadmapConfig, onViewRoadmapConfig, t]);
 
   const handleSelectCanvasView = useCallback(async (canvasView) => {
-    const normalizedCanvasView = normalizeCanvasView(canvasView);
-    if (!normalizedCanvasView) return;
+    if (!canvasView) return;
 
     if (roadmap?.roadmapId) {
-      persistCanvasView(roadmap.roadmapId, normalizedCanvasView);
-      setRoadmap((current) => (current ? { ...current, canvasView: normalizedCanvasView } : current));
-      onCanvasViewChange?.(normalizedCanvasView);
+      persistCanvasView(roadmap.roadmapId, canvasView);
+      setRoadmap((current) => (current ? { ...current, canvasView } : current));
+      onCanvasViewChange?.(canvasView);
       return;
     }
 
@@ -544,7 +529,7 @@ function RoadmapCanvasView({
 
     setIsCreatingRoadmap(true);
     try {
-      await onCreateRoadmap({ mode: "ai", canvasView: normalizedCanvasView });
+      await onCreateRoadmap({ mode: "ai", canvasView });
       await loadRoadmap();
     } finally {
       setIsCreatingRoadmap(false);
@@ -945,11 +930,11 @@ function RoadmapCanvasView({
 
   // Swapped mapping by request:
   // view1 -> canvas view 2, view2 -> canvas view 1
-  const effectiveCanvasView = (
-    isPositiveInteger(selectedPhaseId) && isPositiveInteger(selectedKnowledgeId)
-  )
+  const effectiveCanvasView = roadmap?.canvasView === "overview"
+    ? "overview"
+    : roadmap?.canvasView === "view2"
     ? "view2"
-    : normalizeCanvasView(roadmap?.canvasView);
+    : "view1";
 
   if (effectiveCanvasView === "view1") {
     return (
@@ -1051,11 +1036,9 @@ function RoadmapCanvasView({
         currentPhaseProgress={currentPhaseProgress}
         currentKnowledgeProgress={currentKnowledgeProgress}
         isStudyNewRoadmap={isStudyNewRoadmap}
-        selectedPhaseId={selectedPhaseId}
         onSelectCenterRoadmap={(phaseId = null, options = {}) => {
           const normalizedPhaseId = Number(phaseId);
           const normalizedKnowledgeId = Number(options?.knowledgeId);
-          const shouldFocusRoadmapCenter = options?.focusRoadmapCenter === true;
 
           if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
             onRoadmapPhaseFocus?.(normalizedPhaseId, {
@@ -1064,16 +1047,9 @@ function RoadmapCanvasView({
                 : null,
               preserveActiveView: true,
             });
-          } else if (shouldFocusRoadmapCenter) {
-            onRoadmapPhaseFocus?.(null, {
-              focusRoadmapCenter: true,
-              preserveActiveView: true,
-            });
           }
 
-          if (options?.switchCanvasView === "view2") {
-            handleSelectCanvasView("view2");
-          }
+          handleSelectCanvasView("view2");
         }}
       />
     );

@@ -21,10 +21,6 @@ vi.mock('@/api/RoadmapAPI', () => ({
   getRoadmapGraph: vi.fn(),
 }));
 
-vi.mock('@/Components/workspace/RoadmapReviewPanel', () => ({
-  default: () => <div data-testid="roadmap-review-panel" />,
-}));
-
 function createRoadmapGraph() {
   return {
     roadmapId: 88,
@@ -135,130 +131,36 @@ describe('RoadmapCanvasView', () => {
     });
   });
 
-  it('renders roadmap overview with visible phase cards by default', async () => {
+  it('renders roadmap detail panel for active phase', async () => {
     getRoadmapGraph.mockResolvedValue({ data: { data: createRoadmapGraph() } });
 
     renderRoadmap(<RoadmapCanvasView workspaceId={321} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Warm-up')).toBeInTheDocument();
-    });
-  });
-
-  it('emits roadmap metadata for the header summary dropdown', async () => {
-    getRoadmapGraph.mockResolvedValue({ data: { data: createRoadmapGraph() } });
-    const onRoadmapMetaChange = vi.fn();
-
-    renderRoadmap(
-      <RoadmapCanvasView
-        workspaceId={321}
-        onRoadmapMetaChange={onRoadmapMetaChange}
-      />,
-    );
+    expect(await screen.findByText('Personal roadmap')).toBeInTheDocument();
+    expect(screen.getByText('Warm-up')).toBeInTheDocument();
+    expect(screen.getByText('Current active phase')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(onRoadmapMetaChange).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Personal roadmap',
-        description: 'A new roadmap',
-        phaseCount: 3,
-        knowledgeCount: 1,
-        quizCount: 1,
-      }));
-    });
-  });
-
-  it('renders selected phase content inside the overview drawer', async () => {
-    getRoadmapGraph.mockResolvedValue({ data: { data: createRoadmapGraph() } });
-
-    renderRoadmap(
-      <RoadmapCanvasView
-        workspaceId={321}
-        forcedCanvasView="overview"
-        isStudyNewRoadmap={true}
-      />,
-    );
-
-    fireEvent.click(await screen.findByRole('button', { name: /warm-up/i }));
-
-    await waitFor(() => {
-      expect(screen.getAllByText('Current active phase').length).toBeGreaterThan(0);
       expect(screen.getByText('Equivalent fractions')).toBeInTheDocument();
     });
   });
 
-  it('syncs an externally selected phase into the overview drawer', async () => {
+  it('renders knowledge quiz entry in detail panel', async () => {
     getRoadmapGraph.mockResolvedValue({ data: { data: createRoadmapGraph() } });
 
     renderRoadmap(
       <RoadmapCanvasView
         workspaceId={321}
-        forcedCanvasView="overview"
-        selectedPhaseId={1}
+        isStudyNewRoadmap={true}
       />,
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Warm-up')).toBeInTheDocument();
-    });
-  });
-
-  it('renders knowledge detail when an external knowledge route is selected', async () => {
-    getRoadmapGraph.mockResolvedValue({ data: { data: createRoadmapGraph() } });
-
-    renderRoadmap(
-      <RoadmapCanvasView
-        workspaceId={321}
-        forcedCanvasView="overview"
-        selectedPhaseId={1}
-        selectedKnowledgeId={901}
-      />,
-    );
+    await screen.findByText('Personal roadmap');
 
     await waitFor(() => {
-      expect(screen.getByText('Warm-up')).toBeInTheDocument();
-    });
-  });
-
-  it('returns to the roadmap overview when the selected phase drawer is closed', async () => {
-    getRoadmapGraph.mockResolvedValue({ data: { data: createRoadmapGraph() } });
-
-    function Harness() {
-      const [selectedPhaseId, setSelectedPhaseId] = React.useState(null);
-
-      return (
-        <RoadmapCanvasView
-          workspaceId={321}
-          forcedCanvasView="overview"
-          selectedPhaseId={selectedPhaseId}
-          onRoadmapPhaseFocus={(phaseId, options = {}) => {
-            if (options?.focusRoadmapCenter) {
-              setSelectedPhaseId(null);
-              return;
-            }
-
-            setSelectedPhaseId(
-              Number.isInteger(Number(phaseId)) && Number(phaseId) > 0
-                ? Number(phaseId)
-                : null,
-            );
-          }}
-        />
-      );
-    }
-
-    renderRoadmap(<Harness />);
-
-    fireEvent.click(await screen.findByRole('button', { name: /warm-up/i }));
-
-    await waitFor(() => {
-      expect(screen.getAllByLabelText('Close phase detail').length).toBeGreaterThan(0);
+      expect(screen.getByText('Equivalent fractions')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByLabelText('Close phase detail')[0]);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Equivalent fractions')).not.toBeInTheDocument();
-      expect(screen.getByText('Warm-up')).toBeInTheDocument();
-    });
+    expect(screen.getByRole('button', { name: 'Equivalent fractions' })).toBeInTheDocument();
   });
 });
