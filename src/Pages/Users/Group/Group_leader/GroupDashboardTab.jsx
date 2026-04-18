@@ -5,7 +5,6 @@ import {
   Activity,
   AlertCircle,
   BarChart3,
-  Brain,
   CheckCircle2,
   Clock3,
   Mail,
@@ -37,13 +36,6 @@ import { useGroup } from '@/hooks/useGroup';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
 import i18n from '@/i18n';
 import { Button } from '@/Components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/Components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
 import UserDisplayName from '@/Components/users/UserDisplayName';
@@ -151,6 +143,45 @@ function classificationLabel(code) {
   return map[c] || c || '—';
 }
 
+const ROLE_CHART_COLORS = ['#f59e0b', '#06b6d4', '#10b981'];
+
+function roleChartLabelKey(key) {
+  if (key === 'leader') return 'home.group.leader';
+  if (key === 'contributor') return 'home.group.contributor';
+  return 'home.group.member';
+}
+
+function roleChartLabel(t, key) {
+  return t(roleChartLabelKey(key));
+}
+
+function roleChartTone(key, isDarkMode) {
+  if (key === 'leader') {
+    return isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700';
+  }
+  if (key === 'contributor') {
+    return isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700';
+  }
+  return isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700';
+}
+
+function roleChartBarTone(key, isDarkMode) {
+  if (key === 'leader') {
+    return isDarkMode ? 'bg-amber-300' : 'bg-amber-500';
+  }
+  if (key === 'contributor') {
+    return isDarkMode ? 'bg-cyan-300' : 'bg-cyan-500';
+  }
+  return isDarkMode ? 'bg-emerald-300' : 'bg-emerald-500';
+}
+
+function coverageTone(isDarkMode) {
+  return {
+    track: isDarkMode ? 'bg-white/[0.08]' : 'bg-slate-100',
+    fill: isDarkMode ? 'bg-cyan-300' : 'bg-cyan-600',
+  };
+}
+
 function formatPctRatio(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
   return `${Math.round(Number(n) * 1000) / 10}%`;
@@ -171,13 +202,6 @@ function passRate(snapshot) {
   const passed = Number(snapshot?.totalQuizPassed ?? 0);
   return attempts > 0 ? passed / attempts : null;
 }
-
-function snapshotMemberId(member) {
-  const id = Number(member?.workspaceMemberId ?? member?.groupMemberId ?? 0);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
-const PIE_CLASSIFICATION_COLORS = ['#22d3ee', '#a78bfa', '#fbbf24', '#fb7185'];
 
 const MEMBER_CARD_PAGE_SIZE = 8;
 
@@ -201,8 +225,6 @@ function GroupDashboardTab({
     fetchGroupLearningSnapshotsSummary,
     fetchGroupLearningSnapshotsLatest,
     fetchGroupLearningSnapshotsRanking,
-    fetchGroupMemberLearningSnapshotLatest,
-    fetchGroupMemberLearningSnapshotTrend,
     generateGroupLearningSnapshots,
   } = useGroup({ enabled: false });
   const lang = i18n.language;
@@ -222,10 +244,8 @@ function GroupDashboardTab({
     enabled: Boolean(workspaceId),
   });
 
-  const [detailSnapshotMember, setDetailSnapshotMember] = useState(null);
   const [generatingSnapshots, setGeneratingSnapshots] = useState(false);
   const memberCardPage = 0;
-  const detailWorkspaceMemberId = snapshotMemberId(detailSnapshotMember);
 
   const analyticsEnabled = Boolean(isLeader && workspaceId && hasWorkspaceAnalytics);
 
@@ -242,7 +262,6 @@ function GroupDashboardTab({
 
   const {
     data: memberCardsPage,
-    isLoading: cardsLoading,
     refetch: refetchMemberSnapshots,
   } = useQuery({
     queryKey: ['group-learning-snapshot-latest', workspaceId, LEARNING_SNAPSHOT_PERIOD, memberCardPage, MEMBER_CARD_PAGE_SIZE],
@@ -271,18 +290,6 @@ function GroupDashboardTab({
     enabled: analyticsEnabled,
   });
 
-  const { data: memberDetail, isLoading: detailLoading } = useQuery({
-    queryKey: ['group-member-learning-snapshot-latest', workspaceId, detailWorkspaceMemberId, LEARNING_SNAPSHOT_PERIOD],
-    queryFn: () => fetchGroupMemberLearningSnapshotLatest(workspaceId, detailWorkspaceMemberId, { period: LEARNING_SNAPSHOT_PERIOD }),
-    enabled: Boolean(analyticsEnabled && detailWorkspaceMemberId != null),
-  });
-
-  const { data: memberTrend, isLoading: trendLoading } = useQuery({
-    queryKey: ['group-member-learning-snapshot-trend', workspaceId, detailWorkspaceMemberId, LEARNING_SNAPSHOT_PERIOD],
-    queryFn: () => fetchGroupMemberLearningSnapshotTrend(workspaceId, detailWorkspaceMemberId, { period: LEARNING_SNAPSHOT_PERIOD }),
-    enabled: Boolean(analyticsEnabled && detailWorkspaceMemberId != null),
-  });
-
   const memberLearningCards = useMemo(() => {
     const raw = memberCardsPage?.content;
     return Array.isArray(raw) ? raw : [];
@@ -306,16 +313,6 @@ function GroupDashboardTab({
         };
       });
   }, [memberLearningCards, rankingPage]);
-
-  const classificationPieData = useMemo(() => {
-    const src = learningSummary?.classificationDistribution;
-    if (!src || typeof src !== 'object') return [];
-    return Object.entries(src).map(([key, value]) => ({
-      name: classificationLabel(key),
-      value: Number(value) || 0,
-      key,
-    })).filter((d) => d.value > 0);
-  }, [learningSummary, lang]);
 
   const roster = members.map((member) => ({ ...member, joinedDate: toSafeDate(member.joinedAt) }))
     .sort((a, b) => (b.joinedDate?.getTime() ?? 0) - (a.joinedDate?.getTime() ?? 0));
@@ -444,16 +441,6 @@ function GroupDashboardTab({
     },
   };
   const axisMuted = isDarkMode ? '#64748b' : '#94a3b8';
-  const memberTrendData = useMemo(() => {
-    const points = Array.isArray(memberTrend?.points) ? memberTrend.points : [];
-    return points.slice(-8).map((point) => ({
-      snapshotId: point.snapshotId,
-      label: formatDateTime(point.snapshotDate, lang),
-      score: point.averageScore != null ? Math.round(Number(point.averageScore) * 10) / 10 : null,
-      attempts: Number(point.totalQuizAttempts ?? 0),
-    }));
-  }, [memberTrend, lang]);
-
   const handleGenerateSnapshots = async () => {
     if (!workspaceId || generatingSnapshots) return;
     setGeneratingSnapshots(true);
@@ -514,54 +501,87 @@ function GroupDashboardTab({
       },
     ];
 
-    const memberCardTotalElements = Number(memberCardsPage?.totalElements) || 0;
-    const memberCardTotalPages = Math.max(
-      1,
-      Number(memberCardsPage?.totalPages) || Math.ceil(memberCardTotalElements / MEMBER_CARD_PAGE_SIZE) || 1,
-    );
-    const showMemberCardPagination = memberCardTotalElements > MEMBER_CARD_PAGE_SIZE || typeof onOpenMemberStats === 'function';
+    const latestSnapshotDate = memberLearningCards.reduce((latest, snapshot) => {
+      const nextDate = toSafeDate(snapshot.snapshotDate);
+      if (!nextDate) return latest;
+      if (!latest || nextDate.getTime() > latest.getTime()) return nextDate;
+      return latest;
+    }, null);
+    const spotlightLead = scoreLeaderboard[0] ?? null;
+    const activityChartSum = activityChartData.reduce((sum, item) => sum + item.count, 0);
+    const coverage = coverageTone(isDarkMode);
+    const activeRoleChartData = roleChartData.filter((item) => item.value > 0);
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
         {isLeader && workspaceId && hasWorkspaceAnalytics ? (
           <section
             className={cn(
               cardClass,
-              'overflow-hidden p-0 ring-1',
+              'overflow-hidden rounded-lg p-0 ring-1',
               isDarkMode ? 'ring-cyan-400/25' : 'ring-cyan-500/20',
             )}
           >
             <div
               className={cn(
-                'relative overflow-hidden px-5 py-4',
+                'relative overflow-hidden border-b px-4 py-4 sm:px-5',
                 isDarkMode
-                  ? 'bg-gradient-to-r from-cyan-950/90 via-slate-950/50 to-slate-950/30'
-                  : 'bg-gradient-to-r from-cyan-50 via-white to-slate-50/80',
+                  ? 'border-white/10 bg-gradient-to-r from-cyan-950/95 via-slate-950/75 to-slate-950/55'
+                  : 'border-cyan-100 bg-gradient-to-r from-cyan-50 via-white to-slate-50/85',
               )}
             >
-              <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-cyan-400/25 blur-3xl" aria-hidden="true" />
-              <div className="relative flex flex-wrap items-center gap-3">
-                <span
-                  className={cn(
-                    'flex h-11 w-11 items-center justify-center rounded-2xl',
-                    isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700',
-                  )}
-                >
-                  <Sparkles className="h-5 w-5" />
-                </span>
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-cyan-400/12 via-cyan-400/5 to-transparent" aria-hidden="true" />
+              <div className="pointer-events-none absolute -right-16 -top-14 h-36 w-36 rounded-full bg-cyan-400/20 blur-3xl" aria-hidden="true" />
+              <div className="relative flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>
-                    {t('groupDashboard.compact.learningIntelligenceEyebrow', 'Learning intelligence')}
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={cn(
+                        'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+                        isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700',
+                      )}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>
+                        {t('groupDashboard.compact.systemDashboardEyebrow', 'Group command center')}
+                      </p>
+                      <h2 className={cn('mt-1 text-xl font-black tracking-tight sm:text-2xl', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {t('groupDashboard.compact.titleWithGroup', {
+                          name: dashboardTitle,
+                          defaultValue: '{{name}} overview',
+                        })}
+                      </h2>
+                    </div>
+                  </div>
+                  <p className={`mt-3 max-w-3xl text-sm leading-6 ${subtleTextClass}`}>
+                    {t('groupDashboard.compact.headlineSummary', 'Use this tab for group-level operations: health signals, coordination gaps, invitations, and activity flow.')}
                   </p>
-                  <p className={`mt-1 text-sm leading-relaxed ${subtleTextClass}`}>
-                    {t('groupDashboard.compact.learningIntelligenceSummary', 'Daily snapshots from quiz attempts, scores, time spent, and AI classification.')}
-                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium', isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
+                      {formatWhole(totalMembers)} {t('groupDashboard.stats.totalMembersLabel', 'Total members').toLowerCase()}
+                    </span>
+                    <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium', isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
+                      {formatWhole(openInvitations)} {t('groupDashboard.hero.invitationQueueLabel', 'Invitation queue').toLowerCase()}
+                    </span>
+                    {latestSnapshotDate ? (
+                      <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium', isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
+                        {t('groupDashboard.snapshots.lastUpdated', 'Updated')} {formatDateTime(latestSnapshotDate, lang)}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled={generatingSnapshots}
-                  className={cn('rounded-full font-semibold', isDarkMode ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/15' : 'border-cyan-200 bg-white/80 text-cyan-700 hover:bg-cyan-50')}
+                  className={cn(
+                    'rounded-md font-semibold',
+                    isDarkMode
+                      ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/15'
+                      : 'border-cyan-200 bg-white/80 text-cyan-700 hover:bg-cyan-50',
+                  )}
                   onClick={handleGenerateSnapshots}
                 >
                   <RefreshCw className={cn('mr-2 h-4 w-4', generatingSnapshots ? 'animate-spin' : '')} />
@@ -570,11 +590,85 @@ function GroupDashboardTab({
                     : t('groupDashboard.snapshots.generateDaily', 'Update daily snapshots')}
                 </Button>
               </div>
+
+              <div className="relative mt-4 grid gap-3 xl:grid-cols-[1.1fr_1fr_1fr]">
+                <div className={cn('rounded-lg border px-4 py-4', innerCardClass)}>
+                  <div className="flex items-start gap-3">
+                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', isDarkMode ? 'bg-cyan-400/10 text-cyan-200' : 'bg-cyan-50 text-cyan-700')}>
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
+                        {t('groupDashboard.compact.scope.questionLabel', 'This tab answers')}
+                      </p>
+                      <p className={cn('mt-2 text-sm font-semibold leading-6', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {t('groupDashboard.compact.scope.questionValue', 'What needs attention across the whole group?')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={cn('rounded-lg border px-4 py-4', innerCardClass)}>
+                  <div className="flex items-start gap-3">
+                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', isDarkMode ? 'bg-violet-400/10 text-violet-200' : 'bg-violet-50 text-violet-700')}>
+                      <Shield className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {t('groupDashboard.compact.scope.groupHealthTitle', 'Group health')}
+                      </p>
+                      <p className={`mt-1 text-xs leading-5 ${subtleTextClass}`}>
+                        {t('groupDashboard.compact.scope.groupHealthBody', 'Invitation queue, role coverage, upload readiness, and recent activity.')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>{t('groupDashboard.stats.newThisWeekLabel', 'New this week')}</p>
+                      <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatWhole(newThisWeek)}</p>
+                    </div>
+                    <div>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>{t('groupDashboard.hero.activityThisWeekLabel', 'Activity this week')}</p>
+                      <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatWhole(activityThisWeek)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={cn('rounded-lg border px-4 py-4', innerCardClass)}>
+                  <div className="flex items-start gap-3">
+                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', isDarkMode ? 'bg-emerald-400/10 text-emerald-200' : 'bg-emerald-50 text-emerald-700')}>
+                      <Target className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {t('groupDashboard.compact.memberStatsCtaTitle', 'Need per-member decisions?')}
+                      </p>
+                      <p className={`mt-1 text-xs leading-5 ${subtleTextClass}`}>
+                        {t('groupDashboard.compact.memberStatsCtaBody', 'Use Member stats for individual snapshots, quiz assignment, and member-specific follow-up.')}
+                      </p>
+                    </div>
+                  </div>
+                  {typeof onOpenMemberStats === 'function' ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        'mt-4 w-full rounded-md font-semibold',
+                        isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-100 hover:bg-white/[0.08]' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                      )}
+                      onClick={onOpenMemberStats}
+                    >
+                      {t('groupDashboard.compact.openMemberStats', 'Open member stats')}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-5 p-5">
+            <div className="space-y-4 p-4 sm:p-5">
               {summaryError ? (
-                <p className={`rounded-2xl border px-4 py-3 text-sm ${isDarkMode ? 'border-rose-400/30 bg-rose-400/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
+                <p className={`rounded-lg border px-4 py-3 text-sm ${isDarkMode ? 'border-rose-400/30 bg-rose-400/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
                   {t('groupDashboard.compact.summaryLoadError', 'Could not load learning summary. Try again later.')}
                 </p>
               ) : null}
@@ -583,9 +677,9 @@ function GroupDashboardTab({
                 {learningKpis.map((k) => {
                   const Icon = k.icon;
                   return (
-                    <div key={k.label} className={cn('rounded-[22px] border p-4', innerCardClass)}>
+                    <div key={k.label} className={cn('rounded-lg border p-4', innerCardClass)}>
                       <div className="flex items-center gap-2">
-                        <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', k.tone)}>
+                        <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', k.tone)}>
                           <Icon className="h-4 w-4" />
                         </span>
                         <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${eyebrowClass}`}>{k.label}</p>
@@ -597,22 +691,39 @@ function GroupDashboardTab({
                 })}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className={cn('rounded-[22px] border p-4', innerCardClass)}>
-                  <div className="mb-1 flex items-center gap-2">
-                    <TrendingUp className={cn('h-4 w-4', isDarkMode ? 'text-cyan-300' : 'text-cyan-600')} />
-                    <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {t('groupDashboard.compact.scoreSpotlightTitle', 'Score spotlight')}
-                    </h3>
+              <div className="grid gap-4 xl:grid-cols-[1.15fr_0.9fr_0.95fr]">
+                <div className={cn('rounded-lg border p-4', innerCardClass)}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="mb-1 flex items-center gap-2">
+                        <TrendingUp className={cn('h-4 w-4', isDarkMode ? 'text-cyan-300' : 'text-cyan-600')} />
+                        <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                          {t('groupDashboard.compact.scoreSpotlightTitle', 'Score spotlight')}
+                        </h3>
+                      </div>
+                      <p className={`text-xs ${subtleTextClass}`}>
+                        {t('groupDashboard.compact.scoreSpotlightSubtitle', { pageSize: MEMBER_CARD_PAGE_SIZE, defaultValue: 'On this page ({{pageSize}} members / page) — ranked by score.' })}
+                      </p>
+                    </div>
+                    {spotlightLead ? (
+                      <div className={cn('min-w-[132px] rounded-lg border px-3 py-2 text-right', isDarkMode ? 'border-cyan-400/20 bg-cyan-400/10' : 'border-cyan-200 bg-cyan-50/80')}>
+                        <p className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>
+                          {t('groupDashboard.snapshots.topPerformer', 'Top score')}
+                        </p>
+                        <p className={cn('mt-1 truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                          {spotlightLead.label}
+                        </p>
+                        <p className={cn('mt-1 text-lg font-black tracking-tight', isDarkMode ? 'text-cyan-100' : 'text-cyan-700')}>
+                          {spotlightLead.score}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
-                  <p className={`text-xs ${subtleTextClass}`}>
-                    {t('groupDashboard.compact.scoreSpotlightSubtitle', { pageSize: MEMBER_CARD_PAGE_SIZE, defaultValue: 'Latest daily snapshots ranked by average score.' })}
-                  </p>
-                  <div className="mt-4 h-52 w-full min-h-[13rem]">
+                  <div className="mt-4 h-56 w-full min-h-[14rem]">
                     {rankingLoading ? (
                       <div className={`flex h-full items-center justify-center text-sm ${subtleTextClass}`}>…</div>
                     ) : scoreLeaderboard.length === 0 ? (
-                      <div className={`flex h-full items-center justify-center rounded-xl border border-dashed px-4 text-center text-sm ${subtleTextClass}`}>
+                      <div className={`flex h-full items-center justify-center rounded-lg border border-dashed px-4 text-center text-sm ${subtleTextClass}`}>
                         {t('groupDashboard.compact.noCompletedQuizData', 'No generated snapshot data yet.')}
                       </div>
                     ) : (
@@ -633,135 +744,138 @@ function GroupDashboardTab({
                   </div>
                 </div>
 
-                <div className={cn('rounded-[22px] border p-4', innerCardClass)}>
+                <div className={cn('rounded-lg border p-4', innerCardClass)}>
                   <div className="mb-1 flex items-center gap-2">
-                    <Brain className={cn('h-4 w-4', isDarkMode ? 'text-violet-300' : 'text-violet-600')} />
+                    <Activity className={cn('h-4 w-4', isDarkMode ? 'text-emerald-300' : 'text-emerald-600')} />
                     <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {t('groupDashboard.compact.aiClassificationTitle', 'AI classification mix')}
+                      {t('groupDashboard.charts.weeklyTrendCompact', '7-day activity rhythm')}
                     </h3>
                   </div>
                   <p className={`text-xs ${subtleTextClass}`}>
-                    {t('groupDashboard.compact.aiClassificationSubtitle', 'From member learning profiles when available.')}
+                    {t('groupDashboard.compact.activityChartSubtitle', 'Recent log activity helps you see whether the group is moving or standing still.')}
                   </p>
-                  <div className="mt-4 flex h-52 items-center justify-center">
-                    {summaryLoading ? (
-                      <span className={`text-sm ${subtleTextClass}`}>…</span>
-                    ) : classificationPieData.length === 0 ? (
-                      <div className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm ${subtleTextClass}`}>
-                        {t('groupDashboard.compact.noAiLabels', 'No AI labels yet.')}
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>
+                        {t('groupDashboard.hero.activityThisWeekLabel', 'Activity this week')}
+                      </p>
+                      <p className={cn('mt-1 text-2xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {formatWhole(activityChartSum)}
+                      </p>
+                    </div>
+                    <span className={cn('rounded-md border px-2.5 py-1 text-xs font-medium', isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
+                      {t('groupDashboard.charts.recentWindow', 'Last 7 days')}
+                    </span>
+                  </div>
+                  <div className="mt-4 h-56">
+                    {activityChartData.length === 0 ? (
+                      <div className={`flex h-full items-center justify-center rounded-lg border border-dashed px-4 text-center text-sm ${subtleTextClass}`}>
+                        {t('groupDashboard.charts.noActivityLogData', 'No activity log data yet.')}
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={classificationPieData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={44}
-                            outerRadius={72}
-                            paddingAngle={3}
-                          >
-                            {classificationPieData.map((entry, index) => (
-                              <Cell key={entry.key} fill={PIE_CLASSIFICATION_COLORS[index % PIE_CLASSIFICATION_COLORS.length]} />
-                            ))}
-                          </Pie>
+                        <LineChart data={activityChartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1e293b' : '#e2e8f0'} vertical={false} />
+                          <XAxis dataKey="label" tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={28} />
                           <Tooltip contentStyle={chartTooltipBox.contentStyle} />
-                        </PieChart>
+                          <Line
+                            type="monotone"
+                            dataKey="count"
+                            stroke={isDarkMode ? '#34d399' : '#059669'}
+                            strokeWidth={2.5}
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                          />
+                        </LineChart>
                       </ResponsiveContainer>
                     )}
                   </div>
                 </div>
-              </div>
 
-              <div className={cn('rounded-[22px] border p-4', innerCardClass)}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                <div className={cn('rounded-lg border p-4', innerCardClass)}>
+                  <div className="mb-1 flex items-center gap-2">
+                    <Users className={cn('h-4 w-4', isDarkMode ? 'text-amber-300' : 'text-amber-600')} />
                     <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {t('groupDashboard.snapshots.latestTitle', 'Latest member snapshots')}
+                      {t('groupDashboard.charts.roleDistributionCompact', 'Role distribution')}
                     </h3>
-                    <p className={`mt-1 text-xs ${subtleTextClass}`}>
-                      {t('groupDashboard.snapshots.latestSubtitle', {
-                        page: memberCardPage + 1,
-                        totalPages: memberCardTotalPages,
-                        defaultValue: 'Daily snapshot page {{page}}/{{totalPages}}.',
-                      })}
-                    </p>
                   </div>
-                  {showMemberCardPagination && typeof onOpenMemberStats === 'function' ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full text-xs font-semibold"
-                      onClick={onOpenMemberStats}
-                    >
-                      {t('groupDashboard.snapshots.openMemberStats', 'Open member stats')}
-                    </Button>
-                  ) : null}
-                </div>
-
-                <div className="mt-4">
-                  {cardsLoading ? (
-                    <div className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm ${subtleTextClass}`}>
-                      {t('groupDashboard.snapshots.loadingLatest', 'Loading snapshots...')}
+                  <p className={`text-xs ${subtleTextClass}`}>
+                    {t('groupDashboard.compact.roleChartSubtitle', 'Mix of leaders, contributors, and members plus execution coverage for the group.')}
+                  </p>
+                  <div className="mt-4 grid items-center gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                    <div className="h-40">
+                      {activeRoleChartData.length === 0 ? (
+                        <div className={`flex h-full items-center justify-center rounded-lg border border-dashed px-4 text-center text-sm ${subtleTextClass}`}>
+                          {t('groupDashboard.charts.noRoleData', 'No member data yet.')}
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={activeRoleChartData}
+                              dataKey="value"
+                              nameKey="label"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={36}
+                              outerRadius={62}
+                              paddingAngle={3}
+                            >
+                              {activeRoleChartData.map((entry, index) => (
+                                <Cell key={entry.key} fill={ROLE_CHART_COLORS[index % ROLE_CHART_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip contentStyle={chartTooltipBox.contentStyle} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
-                  ) : memberLearningCards.length === 0 ? (
-                    <div className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm ${subtleTextClass}`}>
-                      {t('groupDashboard.snapshots.emptyLatest', 'No snapshots yet. Update daily snapshots to generate data from quiz attempts.')}
-                    </div>
-                  ) : (
-                    <div className="grid gap-3 lg:grid-cols-2">
-                      {memberLearningCards.slice(0, MEMBER_CARD_PAGE_SIZE).map((snapshot) => (
-                        <button
-                          key={snapshot.snapshotId ?? snapshot.workspaceMemberId ?? snapshot.userId}
-                          type="button"
-                          className={cn(
-                            'rounded-[18px] border px-4 py-3 text-left transition hover:-translate-y-0.5',
-                            isDarkMode ? 'border-white/10 bg-black/20 hover:bg-white/[0.06]' : 'border-slate-200 bg-white hover:bg-slate-50',
-                          )}
-                          onClick={() => setDetailSnapshotMember(snapshot)}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                                <UserDisplayName
-                                  user={snapshot}
-                                  fallback={t('groupDashboard.common.memberFallback', 'Member')}
-                                  isDarkMode={isDarkMode}
-                                />
-                              </p>
-                              <p className={`mt-1 text-xs ${eyebrowClass}`}>
-                                {formatDateTime(snapshot.snapshotDate, lang)}
-                              </p>
-                            </div>
-                            <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold', isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700')}>
-                              {classificationLabel(snapshot.aiClassification)}
+                    <div className="space-y-3">
+                      {activeRoleChartData.map((entry) => (
+                        <div key={entry.key} className={cn('rounded-lg border px-3 py-3', isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white/80')}>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className={cn('inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold', roleChartTone(entry.key, isDarkMode))}>
+                              {roleChartLabel(t, entry.key)}
+                            </span>
+                            <span className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-200' : 'text-slate-700')}>
+                              {entry.value}
                             </span>
                           </div>
-                          <div className="mt-3 grid grid-cols-4 gap-2">
-                            <div>
-                              <p className={`text-[10px] uppercase tracking-[0.12em] ${eyebrowClass}`}>{t('groupDashboard.snapshots.attempts', 'Attempts')}</p>
-                              <p className={cn('mt-1 text-sm font-semibold', isDarkMode ? 'text-cyan-100' : 'text-cyan-700')}>{snapshot.totalQuizAttempts ?? 0}</p>
-                            </div>
-                            <div>
-                              <p className={`text-[10px] uppercase tracking-[0.12em] ${eyebrowClass}`}>{t('groupDashboard.snapshots.passed', 'Passed')}</p>
-                              <p className={cn('mt-1 text-sm font-semibold', isDarkMode ? 'text-emerald-100' : 'text-emerald-700')}>{snapshot.totalQuizPassed ?? 0}</p>
-                            </div>
-                            <div>
-                              <p className={`text-[10px] uppercase tracking-[0.12em] ${eyebrowClass}`}>{t('groupDashboard.snapshots.score', 'Score')}</p>
-                              <p className={cn('mt-1 text-sm font-semibold', isDarkMode ? 'text-violet-100' : 'text-violet-700')}>{formatScore(snapshot.averageScore)}</p>
-                            </div>
-                            <div>
-                              <p className={`text-[10px] uppercase tracking-[0.12em] ${eyebrowClass}`}>{t('groupDashboard.snapshots.passRate', 'Pass rate')}</p>
-                              <p className={cn('mt-1 text-sm font-semibold', isDarkMode ? 'text-amber-100' : 'text-amber-700')}>{formatPctRatio(passRate(snapshot))}</p>
-                            </div>
+                          <div className={cn('mt-2 h-1.5 rounded-full', isDarkMode ? 'bg-white/[0.08]' : 'bg-slate-100')}>
+                            <div
+                              className={cn('h-1.5 rounded-full', roleChartBarTone(entry.key, isDarkMode))}
+                              style={{ width: `${Math.max(8, Math.round((entry.value / Math.max(totalMembers, 1)) * 100))}%` }}
+                            />
                           </div>
-                        </button>
+                        </div>
                       ))}
+                      <div className={cn('rounded-lg border px-3 py-3', isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white/80')}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>
+                            {t('groupDashboard.stats.coordinationLanesLabel', 'Coordination lanes')}
+                          </span>
+                          <span className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-200' : 'text-slate-700')}>
+                            {coordinatorCoverage}%
+                          </span>
+                        </div>
+                        <div className={cn('mt-2 h-1.5 rounded-full', coverage.track)}>
+                          <div className={cn('h-1.5 rounded-full', coverage.fill)} style={{ width: `${Math.max(8, coordinatorCoverage)}%` }} />
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <span className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>
+                            {t('groupDashboard.stats.uploadReadyLabel', 'Upload ready')}
+                          </span>
+                          <span className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-200' : 'text-slate-700')}>
+                            {uploadCoverage}%
+                          </span>
+                        </div>
+                        <div className={cn('mt-2 h-1.5 rounded-full', coverage.track)}>
+                          <div className={cn('h-1.5 rounded-full', coverage.fill)} style={{ width: `${Math.max(8, uploadCoverage)}%` }} />
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -799,153 +913,6 @@ function GroupDashboardTab({
           </section>
         ) : null}
 
-        <Dialog
-          open={Boolean(analyticsEnabled && detailWorkspaceMemberId != null)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setDetailSnapshotMember(null);
-            }
-          }}
-        >
-          <DialogContent
-            className={cn(
-              'max-h-[min(640px,92vh)] w-[min(100vw-1.5rem,560px)] max-w-none overflow-y-auto rounded-[26px] border p-0 shadow-2xl sm:max-w-2xl',
-              isDarkMode ? 'border-white/10 bg-[#070f14]' : 'border-slate-200/80 bg-white',
-            )}
-          >
-            <DialogHeader className={cn('space-y-1 border-b px-6 pb-4 pt-6 text-left sm:px-7', isDarkMode ? 'border-white/10' : 'border-slate-200')}>
-              <DialogTitle className={cn('text-xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                {detailLoading && !memberDetail
-                  ? t('groupDashboard.detail.loading', 'Loading member…')
-                  : (
-                    <UserDisplayName
-                      user={memberDetail || detailSnapshotMember}
-                      fallback={t('groupDashboard.common.memberFallback', 'Member')}
-                      isDarkMode={isDarkMode}
-                    />
-                  )}
-              </DialogTitle>
-              <DialogDescription className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                {(memberDetail || detailSnapshotMember)?.username ? `@${(memberDetail || detailSnapshotMember).username}` : null}
-                {(memberDetail || detailSnapshotMember)?.snapshotDate
-                  ? ` · ${formatDateTime((memberDetail || detailSnapshotMember).snapshotDate, lang)}`
-                  : null}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-5 px-6 py-5 sm:px-7">
-              <div className={cn('rounded-2xl border px-4 py-3 text-sm', innerCardClass)}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                    {t('groupDashboard.detail.snapshotPeriod', 'Daily learning snapshot')}
-                  </span>
-                  <span className={`text-xs ${subtleTextClass}`}>
-                    {t('groupDashboard.detail.snapshotId', {
-                      id: (memberDetail || detailSnapshotMember)?.snapshotId ?? '—',
-                      defaultValue: 'Snapshot #{{id}}',
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              {detailLoading && !memberDetail ? (
-                <p className={`text-sm ${subtleTextClass}`}>{t('groupDashboard.detail.fetchingSignals', 'Fetching learning signals…')}</p>
-              ) : memberDetail ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {[
-                      { key: 'attempts', label: t('groupDashboard.detail.attempts', 'Attempts'), value: memberDetail.totalQuizAttempts ?? 0 },
-                      { key: 'passed', label: t('groupDashboard.detail.passed', 'Passed'), value: memberDetail.totalQuizPassed ?? 0 },
-                      { key: 'avgScore', label: t('groupDashboard.detail.avgScore', 'Avg score'), value: formatScore(memberDetail.averageScore) },
-                      { key: 'passRate', label: t('groupDashboard.detail.passRate', 'Pass rate'), value: formatPctRatio(passRate(memberDetail)) },
-                      { key: 'highest', label: t('groupDashboard.detail.highestScore', 'Highest'), value: formatScore(memberDetail.highestScore) },
-                      { key: 'lowest', label: t('groupDashboard.detail.lowestScore', 'Lowest'), value: formatScore(memberDetail.lowestScore) },
-                      { key: 'minutes', label: t('groupDashboard.detail.minutesSpent', 'Minutes'), value: formatWhole(memberDetail.totalMinutesSpent) },
-                      { key: 'flashcards', label: t('groupDashboard.detail.flashcards', 'Flashcards'), value: memberDetail.flashcardsReviewed ?? 0 },
-                    ].map(({ key, label, value }) => (
-                      <div key={key} className={cn('rounded-2xl border px-3 py-3', innerCardClass)}>
-                        <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{label}</p>
-                        <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{value}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className={cn('rounded-2xl border px-4 py-3 text-sm', innerCardClass)}>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                        {t('groupDashboard.detail.aiClassification', 'AI classification')}
-                      </span>
-                      <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700')}>
-                        {classificationLabel(memberDetail.aiClassification)}
-                      </span>
-                    </div>
-                    <p className={`mt-2 text-xs leading-relaxed ${subtleTextClass}`}>
-                      {memberDetail.flashcardMasteryRate == null
-                        ? t('groupDashboard.detail.flashcardNote', 'Flashcard mastery is not available yet because user review/progress data is not tracked.')
-                        : t('groupDashboard.detail.flashcardMastery', {
-                          rate: formatPctRatio(memberDetail.flashcardMasteryRate),
-                          defaultValue: 'Flashcard mastery: {{rate}}',
-                        })}
-                    </p>
-                  </div>
-
-                  {(memberDetail.weakTopics?.length > 0 || memberDetail.strongTopics?.length > 0) ? (
-                    <div className="space-y-3">
-                      {memberDetail.strongTopics?.length > 0 ? (
-                        <div>
-                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{t('groupDashboard.detail.strongAreas', 'Strong')}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {memberDetail.strongTopics.map((a) => (
-                              <span key={a} className={cn('rounded-full px-3 py-1 text-xs font-medium', isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-50 text-emerald-800')}>{a}</span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                      {memberDetail.weakTopics?.length > 0 ? (
-                        <div>
-                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{t('groupDashboard.detail.growthAreas', 'Growth areas')}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {memberDetail.weakTopics.map((a) => (
-                              <span key={a} className={cn('rounded-full px-3 py-1 text-xs font-medium', isDarkMode ? 'bg-amber-400/15 text-amber-100' : 'bg-amber-50 text-amber-900')}>{a}</span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  <div className={cn('rounded-2xl border px-4 py-3', innerCardClass)}>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <p className={`text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>
-                        {t('groupDashboard.detail.trendTitle', 'Score trend')}
-                      </p>
-                      {trendLoading ? <span className={`text-xs ${subtleTextClass}`}>…</span> : null}
-                    </div>
-                    {memberTrendData.length < 2 ? (
-                      <p className={`text-sm ${subtleTextClass}`}>
-                        {t('groupDashboard.detail.noTrend', 'Generate more snapshots to show a trend.')}
-                      </p>
-                    ) : (
-                      <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={memberTrendData} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1e293b' : '#e2e8f0'} vertical={false} />
-                            <XAxis dataKey="label" tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={32} />
-                            <Tooltip contentStyle={chartTooltipBox.contentStyle} />
-                            <Line type="monotone" dataKey="score" stroke={isDarkMode ? '#22d3ee' : '#0891b2'} strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <p className={`text-sm ${subtleTextClass}`}>{t('groupDashboard.detail.noData', 'No data.')}</p>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     );
   }
