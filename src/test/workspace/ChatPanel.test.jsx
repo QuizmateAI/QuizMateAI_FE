@@ -216,19 +216,20 @@ describe('Workspace ChatPanel', () => {
       shouldDisableRoadmap: true,
       roadmapHasPhases: false,
       selectedSourceIds: [1, 5],
+      selectedRoadmapPhaseId: null,
     });
 
     expect(await screen.findByTestId('roadmap-canvas-view')).toBeInTheDocument();
     expect(roadmapCanvasSpy).toHaveBeenCalledWith(expect.objectContaining({
       workspaceId: 321,
       adaptationMode: 'PERSONALIZED',
-      forcedCanvasView: 'overview',
+      forcedCanvasView: 'view2',
       isGeneratingRoadmapPhases: true,
       roadmapPhaseGenerationProgress: 66,
       disableCreate: true,
     }));
-    expect(screen.queryByText('Chi tiết')).not.toBeInTheDocument();
-    expect(screen.queryByText('Tổng quan')).not.toBeInTheDocument();
+    expect(screen.getByText('Chi tiết')).toBeInTheDocument();
+    expect(screen.getByText('Tổng quan')).toBeInTheDocument();
   });
 
   it('shows the roadmap summary dropdown under the roadmap title', async () => {
@@ -236,19 +237,24 @@ describe('Workspace ChatPanel', () => {
 
     renderChatPanel({
       activeView: 'roadmap',
+      selectedRoadmapPhaseId: null,
+      selectedRoadmapKnowledgeId: null,
     });
 
-    expect(await screen.findByRole('heading', { name: 'Roadmap - Workspace 6' })).toBeInTheDocument();
-    const summaryTrigger = await screen.findByText('Nội dung roadmap');
-    expect(summaryTrigger).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Lộ trình' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tổng quan' }));
+    const summaryTriggerButton = await screen.findByRole('button', {
+      name: /roadmap content|nội dung roadmap|nội dung lộ trình|roadmap summary/i,
+    });
+    expect(summaryTriggerButton).toBeInTheDocument();
 
-    fireEvent.pointerDown(summaryTrigger.closest('button'));
+    fireEvent.pointerDown(summaryTriggerButton);
 
     expect(await screen.findByText('Tong hop noi dung roadmap hien tai.')).toBeInTheDocument();
     expect(screen.getAllByText('Roadmap - Workspace 6').length).toBeGreaterThan(1);
   });
 
-  it('switches back to overview when re-entering roadmap with a phase or knowledge selected', async () => {
+  it('keeps detail canvas when re-entering roadmap with a phase or knowledge selected', async () => {
     const { rerender, props } = renderChatPanel({
       activeView: 'quizDetail',
       selectedRoadmapPhaseId: 15,
@@ -268,7 +274,7 @@ describe('Workspace ChatPanel', () => {
 
     expect(await screen.findByTestId('roadmap-canvas-view')).toBeInTheDocument();
     expect(roadmapCanvasSpy).toHaveBeenCalledWith(expect.objectContaining({
-      forcedCanvasView: 'overview',
+      forcedCanvasView: 'view2',
       selectedPhaseId: 15,
       selectedKnowledgeId: 901,
     }));
