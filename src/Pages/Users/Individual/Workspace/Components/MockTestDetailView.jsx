@@ -11,6 +11,7 @@ import {
   getQuizFull, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizHistory, publishGroupQuiz
 } from "@/api/QuizAPI";
 import { buildQuizResultPath } from "@/lib/routePaths";
+import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 import MixedMathText from "@/Components/math/MixedMathText";
 
 // Cấu hình màu badge trạng thái (giống quiz)
@@ -101,6 +102,38 @@ function normalizeDisplaySections(sectionList) {
   });
 }
 
+function isTruthyQuizFlag(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+  }
+  return false;
+}
+
+function hasCompletedAttemptRecord(attempt) {
+  if (!attempt || typeof attempt !== "object") return false;
+
+  const status = String(attempt.status || attempt.attemptStatus || attempt.state || "").toUpperCase();
+  if (["COMPLETED", "SUBMITTED", "GRADED", "PASSED", "FAILED"].includes(status)) {
+    return true;
+  }
+
+  return Boolean(
+    attempt.completedAt
+    || attempt.submittedAt
+    || attempt.finishedAt
+    || attempt.endedAt
+    || attempt.score != null
+    || attempt.totalScore != null
+    || attempt.correctCount != null,
+  );
+}
+
+function hasCompletedAttemptHistory(history) {
+  return Array.isArray(history) && history.some(hasCompletedAttemptRecord);
+}
+
 function updateQuestionInSectionTree(sectionList, questionId, updater) {
   if (!Array.isArray(sectionList) || sectionList.length === 0) {
     return sectionList;
@@ -178,12 +211,20 @@ function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEd
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [starringId, setStarringId] = useState(null);
   const [history, setHistory] = useState([]);
+  const [historyProbeDone, setHistoryProbeDone] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
+  const localQuizCompleted = hasQuizCompleted(quiz?.quizId);
+  const hasQuizPayloadCompleted =
+    isTruthyQuizFlag(quiz?.myPassed)
+    || isTruthyQuizFlag(quizMeta?.myPassed);
+  const hasHistoryCompleted = hasCompletedAttemptHistory(history);
+  const hasCurrentUserCompletedQuiz = localQuizCompleted || hasQuizPayloadCompleted || hasHistoryCompleted;
+
   const canViewAnswers =
     quizStatus === "DRAFT"
-    || Boolean(quiz?.myAttempted || quiz?.myPassed)
+    || hasCurrentUserCompletedQuiz
     || (contextType === "GROUP" && Boolean(isGroupLeader));
 
   const handlePublish = useCallback(async () => {
@@ -213,10 +254,45 @@ function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEd
   }, [quiz?.quizId]);
 
   useEffect(() => {
-    if (activeTab === "history" && history.length === 0) {
-      fetchHistoryData();
+    setHistory([]);
+    setHistoryProbeDone(false);
+  }, [quiz?.quizId]);
+
+  useEffect(() => {
+    if (activeTab !== "history" || historyProbeDone) {
+      return;
     }
-  }, [activeTab, fetchHistoryData, history.length]);
+
+    fetchHistoryData().finally(() => {
+      setHistoryProbeDone(true);
+    });
+  }, [activeTab, fetchHistoryData, historyProbeDone]);
+
+  useEffect(() => {
+    if (historyProbeDone || loadingHistory) {
+      return;
+    }
+
+    if (quizStatus === "DRAFT" || (contextType === "GROUP" && Boolean(isGroupLeader))) {
+      return;
+    }
+
+    if (hasCurrentUserCompletedQuiz) {
+      return;
+    }
+
+    fetchHistoryData().finally(() => {
+      setHistoryProbeDone(true);
+    });
+  }, [
+    contextType,
+    fetchHistoryData,
+    hasCurrentUserCompletedQuiz,
+    historyProbeDone,
+    isGroupLeader,
+    loadingHistory,
+    quizStatus,
+  ]);
 
   // Tải toàn bộ dữ liệu chi tiết bằng payload full quiz đã có tree children
   const fetchFullDetail = useCallback(async () => {

@@ -8,6 +8,8 @@ import {
 } from "@/Components/ui/dialog";
 import { Button } from "@/Components/ui/button";
 import {
+  AlertTriangle,
+  Ban,
   CheckSquare,
   FileText,
   Film,
@@ -24,6 +26,17 @@ function getFileIcon(file) {
   if (file?.type?.includes("pdf")) return <FileText className="w-4 h-4 text-red-500" />;
   if (file?.type?.includes("image")) return <Image className="w-4 h-4 text-green-500" />;
   if (file?.type?.includes("video")) return <Film className="w-4 h-4 text-purple-500" />;
+  return <FileText className="w-4 h-4 text-blue-500" />;
+}
+
+function getMaterialIconByStatus(status) {
+  const normalized = String(status || "").toUpperCase();
+  if (normalized === "ERROR") return <AlertTriangle className="w-4 h-4 text-red-500" />;
+  if (normalized === "WARN" || normalized === "WARNED") return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+  if (normalized === "REJECT" || normalized === "REJECTED") return <Ban className="w-4 h-4 text-red-600" />;
+  if (normalized === "PROCESSING" || normalized === "UPLOADING" || normalized === "PENDING" || normalized === "QUEUED") {
+    return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+  }
   return <FileText className="w-4 h-4 text-blue-500" />;
 }
 
@@ -52,42 +65,20 @@ function RoadmapPhaseGenerateDialog({
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedMaterialIds, setSelectedMaterialIds] = useState(normalizeMaterialIds(defaultSelectedMaterialIds));
 
-  const selectableMaterials = useMemo(
-    () => materials.filter(isMaterialSelectable),
+  const selectableMaterialIds = useMemo(
+    () => materials.filter(isMaterialSelectable).map((item) => Number(item.id)).filter((id) => Number.isInteger(id) && id > 0),
     [materials],
   );
 
-  const selectableMaterialIds = useMemo(
-    () => selectableMaterials.map((item) => Number(item.id)).filter((id) => Number.isInteger(id) && id > 0),
-    [selectableMaterials],
-  );
-
-  const selectableMaterialIdSet = useMemo(
-    () => new Set(selectableMaterialIds),
-    [selectableMaterialIds],
-  );
-
-  const effectiveSelectedMaterialIds = useMemo(
-    () => selectedMaterialIds.filter((id) => selectableMaterialIdSet.has(id)),
-    [selectedMaterialIds, selectableMaterialIdSet],
-  );
-
-  const effectiveSelectedMaterialIdSet = useMemo(
-    () => new Set(effectiveSelectedMaterialIds),
-    [effectiveSelectedMaterialIds],
-  );
-
   const allSelectableChecked = selectableMaterialIds.length > 0
-    && selectableMaterialIds.every((id) => effectiveSelectedMaterialIdSet.has(id));
+    && selectableMaterialIds.every((id) => selectedMaterialIds.includes(id));
 
-  const canSubmit = selectedFiles.length > 0 || effectiveSelectedMaterialIds.length > 0;
+  const canSubmit = selectedFiles.length > 0 || selectedMaterialIds.length > 0;
 
   const handleOpenChange = (nextOpen) => {
     if (!nextOpen) {
       setSelectedFiles([]);
-      setSelectedMaterialIds(
-        normalizeMaterialIds(defaultSelectedMaterialIds).filter((id) => selectableMaterialIdSet.has(id)),
-      );
+      setSelectedMaterialIds(normalizeMaterialIds(defaultSelectedMaterialIds));
     }
     onOpenChange?.(nextOpen);
   };
@@ -131,7 +122,7 @@ function RoadmapPhaseGenerateDialog({
     if (!canSubmit || submitting) return;
     await onSubmit?.({
       files: selectedFiles,
-      materialIds: effectiveSelectedMaterialIds,
+      materialIds: normalizeMaterialIds(selectedMaterialIds),
     });
     setSelectedFiles([]);
   };
@@ -240,19 +231,20 @@ function RoadmapPhaseGenerateDialog({
             </div>
 
             <div className="max-h-52 overflow-y-auto p-2 space-y-1">
-              {selectableMaterials.length === 0 ? (
+              {materials.length === 0 ? (
                 <div className={`px-3 py-2 text-xs rounded ${isDarkMode ? "text-slate-400 bg-slate-900" : "text-gray-500 bg-gray-50"}`}>
                   {t("workspace.roadmap.phaseDialog.noMaterialYet", "Chưa có tài liệu. Hãy tải tài liệu để tạo phase.")}
                 </div>
               ) : (
-                selectableMaterials.map((material) => {
+                materials.map((material) => {
                   const id = Number(material?.id);
-                  const checked = effectiveSelectedMaterialIdSet.has(id);
+                  const selectable = Number.isInteger(id) && id > 0 && isMaterialSelectable(material);
+                  const checked = selectedMaterialIds.includes(id);
                   return (
                     <button
                       key={material?.id || material?.name}
                       type="button"
-                      onClick={() => toggleMaterialSelection(id)}
+                      onClick={() => selectable && toggleMaterialSelection(id)}
                       className={`w-full flex items-start gap-2 px-3 py-2 rounded text-left border transition-colors ${
                         checked
                           ? isDarkMode
@@ -261,16 +253,23 @@ function RoadmapPhaseGenerateDialog({
                           : isDarkMode
                             ? "border-slate-800 hover:bg-slate-900"
                             : "border-gray-200 hover:bg-gray-50"
-                      }`}
+                      } ${!selectable ? "opacity-70 cursor-not-allowed" : ""}`}
                     >
                       {checked ? <CheckSquare className="mt-0.5 w-4 h-4 text-blue-500 shrink-0" /> : <Square className="mt-0.5 w-4 h-4 text-gray-400 shrink-0" />}
-                      <FileText className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+                      <span className="mt-0.5 shrink-0">
+                        {getMaterialIconByStatus(material?.status)}
+                      </span>
                       <div className="min-w-0 flex-1">
                         <p className={`text-sm leading-5 whitespace-normal break-all ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
                           {material?.name || material?.title}
                         </p>
                         <p className={`text-[11px] uppercase ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>{material?.status || "UNKNOWN"}</p>
                       </div>
+                      {!selectable ? (
+                        <span className={`mt-0.5 shrink-0 text-[10px] ${isDarkMode ? "text-amber-400" : "text-amber-600"}`}>
+                          {t("workspace.roadmap.phaseDialog.onlyActive", "Chỉ chọn ACTIVE")}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })
@@ -281,7 +280,7 @@ function RoadmapPhaseGenerateDialog({
 
         <div className="flex items-center justify-between pt-2">
           <div className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.roadmap.phaseDialog.selectionCount", "Đã chọn {{count}} tài liệu", { count: effectiveSelectedMaterialIds.length })}
+            {t("workspace.roadmap.phaseDialog.selectionCount", "Đã chọn {{count}} tài liệu", { count: selectedMaterialIds.length })}
           </div>
           <div className="flex items-center gap-2">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>

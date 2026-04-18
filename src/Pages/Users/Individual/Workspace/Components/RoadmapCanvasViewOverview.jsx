@@ -318,7 +318,6 @@ function RoadmapCanvasViewOverview({
   currentPhaseProgress = null,
   currentKnowledgeProgress = null,
   isStudyNewRoadmap = false,
-  selectedPhaseId: selectedPhaseIdProp = null,
   isDarkMode = false,
   fontClass,
   i18n,
@@ -360,20 +359,11 @@ function RoadmapCanvasViewOverview({
   const CANVAS_WIDTH = canvasWidth;
   const [viewportWidth, setViewportWidth] = useState(CANVAS_WIDTH || 1280);
   const roadmapPhases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
-  const effectiveSelectedPhaseId = useMemo(() => {
-    const normalizedSelectedPhaseId = Number(selectedPhaseIdProp);
-    if (Number.isInteger(normalizedSelectedPhaseId) && normalizedSelectedPhaseId > 0) {
-      return normalizedSelectedPhaseId;
-    }
-
-    return selectedPhaseId;
-  }, [selectedPhaseId, selectedPhaseIdProp]);
-
   const selectedPhaseDetail = useMemo(() => {
-    const normalizedPhaseId = Number(effectiveSelectedPhaseId);
+    const normalizedPhaseId = Number(selectedPhaseId);
     if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return null;
     return roadmapPhases.find((phase) => Number(phase?.phaseId) === normalizedPhaseId) || null;
-  }, [effectiveSelectedPhaseId, roadmapPhases]);
+  }, [roadmapPhases, selectedPhaseId]);
   const currentPayloadPhaseId = Number(currentPhaseProgress?.phaseId);
   const currentPayloadStatus = getStatus(currentPhaseProgress?.status);
   const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
@@ -631,14 +621,6 @@ function RoadmapCanvasViewOverview({
     if (!Number.isInteger(normalizedKnowledgeId) || normalizedKnowledgeId <= 0) return;
 
     onSelectCenterRoadmap?.(normalizedPhaseId, { knowledgeId: normalizedKnowledgeId });
-    setSelectedPhaseId(null);
-  };
-
-  const closeSelectedPhaseDetail = () => {
-    onSelectCenterRoadmap?.(null, {
-      focusRoadmapCenter: true,
-      preserveActiveView: true,
-    });
     setSelectedPhaseId(null);
   };
 
@@ -928,7 +910,7 @@ function RoadmapCanvasViewOverview({
               <button
                 type="button"
                 aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
-                onClick={closeSelectedPhaseDetail}
+                onClick={() => setSelectedPhaseId(null)}
                 className="fixed inset-0 z-[170] bg-slate-950/45 backdrop-blur-[1px] animate-[roadmapFadeIn_180ms_ease-out]"
               />
 
@@ -948,7 +930,7 @@ function RoadmapCanvasViewOverview({
                     </div>
                     <button
                       type="button"
-                      onClick={closeSelectedPhaseDetail}
+                      onClick={() => setSelectedPhaseId(null)}
                       className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                       aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
                     >
