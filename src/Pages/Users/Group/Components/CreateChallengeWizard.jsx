@@ -67,6 +67,10 @@ const MATCH_MODE_OPTIONS = [
 
 const TEAM_COUNT = 2;
 const BRACKET_SIZE_OPTIONS = [4, 8, 16, 32];
+const ENABLE_SOLO_BRACKET_MODE = false;
+const AVAILABLE_MATCH_MODE_OPTIONS = MATCH_MODE_OPTIONS.filter(
+  (option) => ENABLE_SOLO_BRACKET_MODE || option.key !== 'SOLO_BRACKET',
+);
 const TEAM_CONFIG_MODES = [
   {
     key: 'AUTO_BALANCE',
@@ -125,7 +129,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const [error, setError] = useState('');
 
   // Step 1: Match mode
-  const [matchMode, setMatchMode] = useState('FREE_FOR_ALL');
+  const [matchMode, setMatchMode] = useState(AVAILABLE_MATCH_MODE_OPTIONS[0]?.key || 'FREE_FOR_ALL');
   const [capacityLimit, setCapacityLimit] = useState('');
   const [teamConfigMode, setTeamConfigMode] = useState('AUTO_BALANCE');
   const [teamMembersPerTeam, setTeamMembersPerTeam] = useState('4');
@@ -479,8 +483,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       case 0: // Match mode
         return (
           <div className="flex flex-col gap-4">
-            <div className="grid gap-3 md:grid-cols-3">
-              {MATCH_MODE_OPTIONS.map((opt) => {
+            <div className={`grid gap-3 ${AVAILABLE_MATCH_MODE_OPTIONS.length > 2 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+              {AVAILABLE_MATCH_MODE_OPTIONS.map((opt) => {
                 const Icon = opt.icon;
                 const active = matchMode === opt.key;
                 return (
@@ -488,7 +492,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                     key={opt.key}
                     type="button"
                     onClick={() => setMatchMode(opt.key)}
-                    className={`flex min-h-[150px] flex-col gap-3 rounded-xl border p-4 text-left transition-all ${
+                    className={`flex min-h-[156px] flex-col gap-3 rounded-xl border p-4 text-left transition-all sm:p-5 ${
                       active
                         ? (isDarkMode ? 'border-teal-400 bg-teal-500/10' : 'border-teal-500 bg-teal-50')
                         : (isDarkMode ? 'border-slate-700 bg-slate-800/60 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300')
