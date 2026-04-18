@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, Brain, Lock, PenLine, RefreshCw, UserCog, Users } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -38,10 +38,92 @@ function normalizeQuizzes(payload) {
     .filter(Boolean);
 }
 
+function pickFirst(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+  return null;
+}
+
+function pickNumber(...values) {
+  for (const value of values) {
+    if (value === undefined || value === null || value === '') continue;
+    const numeric = Number(value);
+    if (!Number.isNaN(numeric)) return numeric;
+  }
+  return null;
+}
+
+function normalizeRateValue(value) {
+  const numeric = pickNumber(value);
+  if (numeric == null) return null;
+  if (numeric > 1) return numeric / 100;
+  if (numeric < 0) return null;
+  return numeric;
+}
+
+function normalizeLearningSnapshotRow(base = {}, detail = null) {
+  const source = detail && typeof detail === 'object' ? { ...base, ...detail } : { ...base };
+
+  const attempts = pickNumber(
+    source.totalQuizAttempts,
+    source.quizAttemptCount,
+    source.totalAttempts,
+    source.attemptCount,
+    source.attempts,
+  ) ?? 0;
+
+  const passed = pickNumber(
+    source.totalQuizPassed,
+    source.quizCompletedCount,
+    source.quizPassedCount,
+    source.passedCount,
+    source.completedCount,
+    source.totalCompleted,
+  ) ?? 0;
+
+  const averageScore = pickNumber(
+    source.averageScore,
+    source.avgScore,
+    source.averageQuizScore,
+    source.scoreAverage,
+    source.meanScore,
+  );
+
+  const passRate = normalizeRateValue(
+    pickFirst(
+      source.passRate,
+      source.quizPassRate,
+      source.passedRate,
+      source.pass_percentage,
+    ),
+  );
+
+  return {
+    ...source,
+    totalQuizAttempts: attempts,
+    totalQuizPassed: passed,
+    averageScore,
+    passRate,
+    aiClassification: pickFirst(
+      source.aiClassification,
+      source.aiClass,
+      source.classification,
+    ),
+    snapshotDate: pickFirst(
+      source.snapshotDate,
+      source.generatedAt,
+      source.createdAt,
+      source.snapshotCreatedAt,
+    ),
+  };
+}
+
 function normalizePassRate(member) {
+  const explicitRate = normalizeRateValue(member?.passRate);
   const attempts = Number(member?.totalQuizAttempts ?? member?.quizAttemptCount ?? 0);
   const passed = Number(member?.totalQuizPassed ?? member?.quizCompletedCount ?? 0);
-  const value = attempts > 0 ? passed / attempts : null;
+  const value = explicitRate ?? (attempts > 0 ? passed / attempts : null);
   if (value == null || Number.isNaN(Number(value))) return '—';
   return `${Math.round(Number(value) * 1000) / 10}%`;
 }
@@ -68,6 +150,7 @@ function GroupMemberStatsTab({
   const { t, i18n } = useTranslation();
   const {
     fetchGroupLearningSnapshotsLatest,
+    fetchGroupMemberLearningSnapshotLatest,
     generateGroupMemberLearningSnapshot,
   } = useGroup({ enabled: false });
   const { showError, showInfo, showSuccess } = useToast();
@@ -79,6 +162,7 @@ function GroupMemberStatsTab({
   const [assigning, setAssigning] = useState(false);
   const [targetMember, setTargetMember] = useState(null);
   const [generatingMemberId, setGeneratingMemberId] = useState(null);
+  const [detailRefreshNonce, setDetailRefreshNonce] = useState(0);
 
   const memberStatsQuery = useQuery({
     queryKey: ['group-member-stats-tab-learning-snapshots', workspaceId, LEARNING_SNAPSHOT_PERIOD, memberPage, PAGE_SIZE],
@@ -88,7 +172,7 @@ function GroupMemberStatsTab({
       page: memberPage,
       size: PAGE_SIZE,
     }),
-    enabled: Boolean(workspaceId && isLeader),
+    enabled: Boolean(workspaceId && (isLeader || isContributor)),
   });
   const refetchMemberStats = memberStatsQuery.refetch;
 
@@ -120,7 +204,7 @@ function GroupMemberStatsTab({
     }));
   }, [members]);
 
-  const rows = useMemo(() => {
+  const rawRows = useMemo(() => {
     const memberMap = new Map(
       (Array.isArray(members) ? members : []).map((member) => [
         Number(member?.userId ?? 0),
@@ -136,7 +220,7 @@ function GroupMemberStatsTab({
 
     return cards.map((card) => {
       const member = memberMap.get(Number(card?.userId ?? 0));
-      return {
+      return normalizeLearningSnapshotRow({
         ...card,
         workspaceMemberId: card?.workspaceMemberId ?? member?.workspaceMemberId ?? member?.groupMemberId ?? null,
         groupMemberId: member?.groupMemberId ?? card?.workspaceMemberId ?? null,
@@ -145,9 +229,25 @@ function GroupMemberStatsTab({
         avatar: card?.avatar || member?.avatar || '',
         email: card?.email || member?.email || '',
         role: card?.role || member?.role || null,
-      };
+      });
     });
   }, [fallbackRows, memberPage, memberStatsQuery.data?.content, members]);
+
+  const rowDetailQueries = useQueries({
+    queries: rawRows.map((member) => {
+      const workspaceMemberId = resolveWorkspaceMemberId(member);
+      return {
+        queryKey: ['group-member-stats-row-latest', workspaceId, workspaceMemberId, LEARNING_SNAPSHOT_PERIOD, detailRefreshNonce],
+        queryFn: () => fetchGroupMemberLearningSnapshotLatest(workspaceId, workspaceMemberId, { period: LEARNING_SNAPSHOT_PERIOD }),
+        enabled: Boolean(workspaceId && workspaceMemberId),
+        staleTime: 0,
+      };
+    }),
+  });
+
+  const rows = useMemo(() => (
+    rawRows.map((member, index) => normalizeLearningSnapshotRow(member, rowDetailQueries[index]?.data))
+  ), [rawRows, rowDetailQueries]);
 
   const hasServerPagingData = Number(memberStatsQuery.data?.totalElements) > 0;
   const totalElements = hasServerPagingData
@@ -246,6 +346,7 @@ function GroupMemberStatsTab({
         force: true,
       });
       await refetchMemberStats();
+      setDetailRefreshNonce((current) => current + 1);
       showSuccess(t('groupWorkspace.memberStats.snapshotGenerateSuccess', 'Learning snapshot updated.'));
     } catch (error) {
       showError(error?.message || t('groupWorkspace.memberStats.snapshotGenerateFailed', 'Could not update learning snapshot.'));
