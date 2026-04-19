@@ -135,6 +135,12 @@ export const getQuestionsBySection = async (sectionId) => {
   return response;
 };
 
+// Lấy chi tiết một câu hỏi
+export const getQuestionById = async (questionId) => {
+  const response = await api.get(`/questions/${questionId}`);
+  return response;
+};
+
 // Tạo câu hỏi cho section (Bước 3)
 export const createQuestion = async (data) => {
   const response = await api.post('/questions/create', data);
@@ -527,4 +533,37 @@ export const createFullQuiz = async ({
   });
 
   return updatedQuiz.data;
+};
+
+// ==================== MANUAL QUIZ ====================
+
+// Duplicate quiz → trả quiz mới (MANUAL, DRAFT)
+export const duplicateQuiz = async (quizId) => {
+  const response = await api.post(`/quiz/${quizId}/duplicate`);
+  return response;
+};
+
+// Tạo manual quiz toàn bộ trong 1 request
+export const createManualQuizBulk = async (payload) => {
+  const response = await api.post('/quiz/manual:create-bulk', payload);
+  return response;
+};
+
+// Lấy danh sách câu hỏi từ các quiz trong workspace (để import)
+// params: { excludeQuizId?, quizId?, search?, questionType?, difficulty? }
+export const getWorkspaceQuestionsCatalog = async (workspaceId, params = {}) => {
+  const response = await api.get(`/quiz/workspace/${workspaceId}/questions-catalog`, { params });
+  return response;
+};
+
+// Import (deep-copy) câu hỏi từ quiz khác vào quiz đang chỉnh sửa
+export const importQuestionsToQuiz = async (quizId, { targetSectionId, sourceQuestionIds }) => {
+  const response = await api.post(`/quiz/${quizId}/questions:import`, { targetSectionId, sourceQuestionIds });
+  return response;
+};
+
+// Bulk update toàn bộ nội dung manual quiz (full-state replace, BE tự diff add/update/delete)
+export const updateManualQuizBulk = async (quizId, payload) => {
+  const response = await api.put(`/quiz/${quizId}/manual:update-bulk`, payload);
+  return response;
 };

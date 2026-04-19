@@ -121,6 +121,13 @@ export function useProgressTracking(options = {}) {
 	const timerRef = useRef(null);
 	const lastTickRef = useRef(0);
 	const lastPersistRef = useRef(0);
+	const tickAnimationRef = useRef(null);
+
+	const scheduleNextAnimation = useCallback(() => {
+		timerRef.current = globalThis.setTimeout(() => {
+			tickAnimationRef.current?.();
+		}, ANIM_FRAME_INTERVAL_MS);
+	}, []);
 
 	// Keep the display mirror in sync whenever state actually commits.
 	useEffect(() => { displayRef.current.task = progressByTaskId; }, [progressByTaskId]);
@@ -231,17 +238,21 @@ export function useProgressTracking(options = {}) {
 		if (updates.postLearning) setPostLearningProgressByPhaseId(updates.postLearning);
 
 		if (keepRunning) {
-			timerRef.current = globalThis.setTimeout(tickAnimation, ANIM_FRAME_INTERVAL_MS);
+			scheduleNextAnimation();
 		} else {
 			lastTickRef.current = 0;
 		}
-	}, []);
+	}, [scheduleNextAnimation]);
+
+	useEffect(() => {
+		tickAnimationRef.current = tickAnimation;
+	}, [tickAnimation]);
 
 	const ensureAnimating = useCallback(() => {
 		if (timerRef.current != null) return;
 		lastTickRef.current = 0;
-		timerRef.current = globalThis.setTimeout(tickAnimation, ANIM_FRAME_INTERVAL_MS);
-	}, [tickAnimation]);
+		scheduleNextAnimation();
+	}, [scheduleNextAnimation]);
 
 	// Hydrate from localStorage on scope change.
 	useEffect(() => {
