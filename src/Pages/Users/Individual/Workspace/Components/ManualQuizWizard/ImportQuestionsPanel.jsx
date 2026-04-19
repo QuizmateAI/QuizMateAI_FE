@@ -23,12 +23,6 @@ import { Button } from "@/Components/ui/button";
 import { parseMatchingPairs, serializeMatchingPairs } from "./AnswerEditor";
 import { unwrapApiData, unwrapApiList } from "@/Utils/apiResponse";
 
-const DIFF_CLS = {
-  EASY: "text-emerald-600 bg-emerald-50",
-  MEDIUM: "text-amber-600 bg-amber-50",
-  HARD: "text-red-600 bg-red-50",
-};
-
 const QUESTION_TYPE_VALUE_MAP = {
   SINGLE_CHOICE: "multipleChoice",
   MULTIPLE_CHOICE: "multipleSelect",
@@ -72,7 +66,6 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
   const [quizSearch, setQuizSearch] = useState("");
   const [questionSearch, setQuestionSearch] = useState("");
   const [filterType, setFilterType] = useState("");
-  const [filterDiff, setFilterDiff] = useState("");
   const [quizzesLoading, setQuizzesLoading] = useState(false);
   const [questionsLoading, setQuestionsLoading] = useState(false);
   const [wholeQuizLoadingId, setWholeQuizLoadingId] = useState(null);
@@ -89,12 +82,6 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
     MATCHING: t("workspace.quiz.manualWizard.importPanel.typeLabels.MATCHING", "Ghép đôi"),
   }), [t]);
 
-  const difficultyLabels = useMemo(() => ({
-    EASY: t("workspace.quiz.manualWizard.step1.fields.difficultyOptions.EASY", "Dễ"),
-    MEDIUM: t("workspace.quiz.manualWizard.step1.fields.difficultyOptions.MEDIUM", "Trung bình"),
-    HARD: t("workspace.quiz.manualWizard.step1.fields.difficultyOptions.HARD", "Khó"),
-  }), [t]);
-
   const isBusy = quizzesLoading || questionsLoading || importing || wholeQuizLoadingId !== null;
 
   const resetPanelState = useCallback(() => {
@@ -108,7 +95,6 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
     setQuizSearch("");
     setQuestionSearch("");
     setFilterType("");
-    setFilterDiff("");
     setQuizzesLoading(false);
     setQuestionsLoading(false);
     setWholeQuizLoadingId(null);
@@ -138,7 +124,12 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
     setQuizzesLoading(true);
     try {
       const response = await getQuizzesByScope("WORKSPACE", Number(workspaceId));
-      const incoming = unwrapApiList(response).filter((quiz) => getQuizId(quiz) !== Number(excludeQuizId || 0));
+      const incoming = unwrapApiList(response)
+        .filter((quiz) => getQuizId(quiz) !== Number(excludeQuizId || 0))
+        .map((quiz) => {
+          const { overallDifficulty, ...restQuiz } = quiz || {};
+          return restQuiz;
+        });
       setQuizzes(incoming);
     } catch {
       setQuizzes([]);
@@ -156,14 +147,12 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
     try {
       const searchValue = overrides.search !== undefined ? overrides.search : questionSearch;
       const typeValue = overrides.filterType !== undefined ? overrides.filterType : filterType;
-      const diffValue = overrides.filterDiff !== undefined ? overrides.filterDiff : filterDiff;
 
       const response = await getWorkspaceQuestionsCatalog(workspaceId, {
         excludeQuizId,
         quizId,
         search: searchValue || undefined,
         questionType: typeValue || undefined,
-        difficulty: diffValue || undefined,
       });
       setQuestionCatalog(unwrapApiList(response));
     } catch {
@@ -171,7 +160,7 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
     } finally {
       setQuestionsLoading(false);
     }
-  }, [workspaceId, excludeQuizId, activeQuiz, questionSearch, filterType, filterDiff]);
+  }, [workspaceId, excludeQuizId, activeQuiz, questionSearch, filterType]);
 
   const loadWholeQuizQuestions = useCallback(async (quiz) => {
     const quizId = getQuizId(quiz);
@@ -229,9 +218,8 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
     setActiveQuiz(quiz);
     setQuestionSearch("");
     setFilterType("");
-    setFilterDiff("");
     setView("questions");
-    await loadQuestionsForQuiz(quiz, { search: "", filterType: "", filterDiff: "" });
+    await loadQuestionsForQuiz(quiz, { search: "", filterType: "" });
   };
 
   const handleSelectWholeQuiz = useCallback(async (quiz) => {
@@ -585,18 +573,6 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
                 ))}
               </select>
 
-              <select
-                value={filterDiff}
-                onChange={(event) => setFilterDiff(event.target.value)}
-                aria-label={t("workspace.quiz.manualWizard.importPanel.allDifficulties", "Tất cả độ khó")}
-                className={cn(inputCls, "w-36 shrink-0")}
-              >
-                <option value="">{t("workspace.quiz.manualWizard.importPanel.allDifficulties", "Tất cả độ khó")}</option>
-                {Object.entries(difficultyLabels).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-
               <Button variant="outline" size="sm" onClick={() => loadQuestionsForQuiz(activeQuiz)} className="shrink-0 rounded-lg">
                 {t("workspace.quiz.manualWizard.importPanel.searchButton", "Tìm")}
               </Button>
@@ -699,13 +675,6 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
                           )}>
                             {typeLabels[question.questionType] || question.questionType}
                           </span>
-
-                          <span className={cn(
-                            "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
-                            DIFF_CLS[question.difficulty] || "text-gray-500 bg-gray-100",
-                          )}>
-                            {difficultyLabels[question.difficulty] || question.difficulty}
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -742,12 +711,6 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
                       isDarkMode ? "bg-slate-800 text-slate-300" : "bg-gray-100 text-gray-600",
                     )}>
                       {typeLabels[question.questionType] || question.questionType}
-                    </span>
-                    <span className={cn(
-                      "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
-                      DIFF_CLS[question.difficulty] || "text-gray-500 bg-gray-100",
-                    )}>
-                      {difficultyLabels[question.difficulty] || question.difficulty}
                     </span>
                     <span className={cn(
                       "text-[10px] px-1.5 py-0.5 rounded-full",
