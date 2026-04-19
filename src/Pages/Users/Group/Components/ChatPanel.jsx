@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3, Eye } from "lucide-react";
+import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";

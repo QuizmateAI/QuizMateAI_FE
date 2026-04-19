@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Map, Pencil, Rows3 } from "lucide-react";
+import { Map, Pencil, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -15,6 +15,7 @@ const LazyQuizListView = React.lazy(() => import("./QuizListView"));
 const LazyCommunityQuizExplorerView = React.lazy(() => import("./CommunityQuizExplorerView"));
 const LazyQuizDetailView = React.lazy(() => import("./QuizDetailView"));
 const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
+const LazyManualQuizWizard = React.lazy(() => import("./ManualQuizWizard"));
 const LazyFlashcardListView = React.lazy(() => import("./FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("./FlashcardDetailView"));
 const LazyMockTestListView = React.lazy(() => import("./MockTestListView"));
@@ -87,6 +88,7 @@ function ChatPanel({
   onViewQuiz,
   onEditQuiz,
   onSaveQuiz,
+  onCreateSimilarQuiz,
   selectedFlashcard = null,
   onViewFlashcard,
   onDeleteFlashcard,
@@ -384,12 +386,40 @@ function ChatPanel({
             quiz={selectedQuiz}
             onBack={onBack}
             onEdit={onEditQuiz}
+            onCreateSimilar={onCreateSimilarQuiz}
             contextType="WORKSPACE"
             contextId={workspaceId}
           />
         ) : null;
-      case "editQuiz":
-        return selectedQuiz ? (
+      case "editQuiz": {
+        if (!selectedQuiz) return null;
+        const isManualQuiz = ["MANUAL", "MANUAL_FROM_AI"].includes(
+          String(selectedQuiz?.createVia || "").toUpperCase(),
+        );
+        const editMode = selectedQuiz?._editMode || "edit";
+        if (isManualQuiz && editMode === "clone") {
+          return (
+            <LazyManualQuizWizard
+              workspaceId={workspaceId}
+              cloneFromQuizId={selectedQuiz.quizId}
+              onCreateQuiz={onCreateQuiz}
+              onBack={onBack}
+              isDarkMode={isDarkMode}
+            />
+          );
+        }
+        if (isManualQuiz) {
+          return (
+            <LazyManualQuizWizard
+              workspaceId={workspaceId}
+              editingQuizId={selectedQuiz.quizId}
+              onSaveQuiz={onSaveQuiz}
+              onBack={onBack}
+              isDarkMode={isDarkMode}
+            />
+          );
+        }
+        return (
           <LazyEditQuizForm
             isDarkMode={isDarkMode}
             quiz={selectedQuiz}
@@ -398,7 +428,8 @@ function ChatPanel({
             contextType="WORKSPACE"
             contextId={workspaceId}
           />
-        ) : null;
+        );
+      }
       case "createMockTest":
         return shouldDisableCreateMockTest ? (
           <LazyMockTestListView
