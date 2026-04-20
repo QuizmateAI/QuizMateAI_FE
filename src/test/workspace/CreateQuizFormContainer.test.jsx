@@ -1,11 +1,12 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CreateQuizForm from '@/Pages/Users/Individual/Workspace/Components/CreateQuizFormParts/CreateQuizFormContainer';
 import {
   getDifficultyDefinitions,
   getBloomSkills,
   getQuestionTypes,
+  previewAIQuizStructure,
 } from '@/api/AIAPI';
 import { getRoadmapsByWorkspace } from '@/api/RoadmapAPI';
 import { getPendingRecommendations } from '@/api/QuizAPI';
@@ -22,6 +23,7 @@ vi.mock('@/api/AIAPI', () => ({
   getQuestionTypes: vi.fn(),
   getDifficultyDefinitions: vi.fn(),
   getBloomSkills: vi.fn(),
+  previewAIQuizStructure: vi.fn(),
 }));
 
 vi.mock('@/api/RoadmapAPI', () => ({
@@ -165,5 +167,25 @@ describe('CreateQuizForm personalization preset', () => {
       expect(screen.queryByText('workspace.quiz.aiRecommendations.inlineTitle')).not.toBeInTheDocument();
       expect(screen.queryByText('workspace.quiz.aiRecommendations.empty')).not.toBeInTheDocument();
     });
+  });
+
+  it('locks quiz structure preview when the current plan lacks advanced quiz config', async () => {
+    render(
+      <CreateQuizForm
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onBack={vi.fn()}
+        contextId={42}
+        planEntitlements={{ hasAdvanceQuizConfig: false }}
+      />
+    );
+
+    const structureButton = await screen.findByRole('button', {
+      name: /Fetch detailed configuration/i,
+    });
+
+    expect(structureButton).toBeDisabled();
+    fireEvent.click(structureButton);
+    expect(previewAIQuizStructure).not.toHaveBeenCalled();
   });
 });

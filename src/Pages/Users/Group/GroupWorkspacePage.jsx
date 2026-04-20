@@ -85,11 +85,12 @@ import {
   normalizeGroupWorkspaceProfile,
 } from '@/api/WorkspaceAPI';
 import { getQuizzesByScope, deleteQuiz } from '@/api/QuizAPI';
-import { unwrapApiData } from '@/Utils/apiResponse';
+import { unwrapApiData, unwrapApiList } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
 import {
+  buildGroupWorkspaceDetailPath,
   buildGroupWorkspacePath,
   buildGroupWorkspaceRoadmapPath,
   buildGroupWorkspaceSectionPath,
@@ -105,6 +106,7 @@ import {
   isMockTestRealtimeSignal,
 } from '@/Pages/Users/MockTest/utils/mockTestRealtime';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
+import { resolveGroupUiPermissions } from './utils/groupPermissionView';
 import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 import { buildGroupMemberSeatSummary, normalizePendingInvitationSummary, resolveGroupMemberSeatLimit } from './utils/memberSeatLimit';
@@ -623,6 +625,29 @@ function getRealtimeMaterialId(payload, fallbackTaskId = null, uploads = []) {
   return Number.isInteger(matchedId) && matchedId > 0 ? matchedId : null;
 }
 
+function normalizeWorkspaceSourceItem(item, fallbackItem = null) {
+  const materialId = Number(item?.materialId ?? item?.id ?? fallbackItem?.materialId ?? fallbackItem?.id ?? 0);
+  if (!Number.isInteger(materialId) || materialId <= 0) return null;
+
+  const title = item?.title ?? item?.name ?? fallbackItem?.title ?? fallbackItem?.name ?? '';
+  const materialType = item?.materialType ?? item?.type ?? fallbackItem?.materialType ?? fallbackItem?.type ?? '';
+  const uploadedAt = item?.uploadedAt ?? fallbackItem?.uploadedAt ?? null;
+  const status = normalizeMaterialStatus(item?.status ?? fallbackItem?.status);
+
+  return {
+    ...(fallbackItem || {}),
+    ...item,
+    id: materialId,
+    materialId,
+    title,
+    name: title,
+    type: materialType,
+    materialType,
+    uploadedAt,
+    status,
+  };
+}
+
 function buildPendingQueueMessage(status, currentLang, isLeader = false, needReview = true) {
   const normalized = normalizeMaterialStatus(status);
   const lng = currentLang === 'en' ? 'en' : 'vi';
@@ -775,6 +800,12 @@ function GroupWorkspacePage() {
   const resolvedSection = legacySectionMap[sectionFromUrl] || sectionFromUrl;
   const groupWorkspaceSubPath = extractGroupWorkspaceSubPath(location.pathname, workspaceId);
   const pathSection = resolveGroupWorkspaceSectionFromSubPath(groupWorkspaceSubPath);
+  const memberDetailWorkspaceMemberId = useMemo(() => {
+    const match = String(groupWorkspaceSubPath || '').match(/^members\/(\d+)(?:\/.*)?$/);
+    if (!match) return null;
+    const nextValue = Number(match[1]);
+    return Number.isInteger(nextValue) && nextValue > 0 ? nextValue : null;
+  }, [groupWorkspaceSubPath]);
   const roadmapPathParams = useMemo(
     () => resolveGroupRoadmapPathParams(groupWorkspaceSubPath),
     [groupWorkspaceSubPath],
@@ -782,9 +813,11 @@ function GroupWorkspacePage() {
   const querySection = GROUP_WORKSPACE_VALID_SECTIONS.includes(resolvedSection)
     ? resolvedSection
     : null;
-  const activeSection = querySection && querySection !== 'roadmap'
-    ? querySection
-    : pathSection || querySection || 'dashboard';
+  const activeSection = memberDetailWorkspaceMemberId != null
+    ? 'memberStats'
+    : querySection && querySection !== 'roadmap'
+      ? querySection
+      : pathSection || querySection || 'dashboard';
 
   const setActiveSection = (section) => {
     if (activeSection === 'roadmap' && section !== 'roadmap') {
@@ -912,6 +945,80 @@ function GroupWorkspacePage() {
       planType: 'GROUP',
     };
   }, [groupSubscription]);
+  const removeSharedSource = useCallback((materialId) => {
+    const normalizedMaterialId = Number(materialId);
+    if (!Number.isInteger(normalizedMaterialId) || normalizedMaterialId <= 0) return;
+
+    setSources((current) => current.filter((item) => Number(item?.materialId ?? item?.id) !== normalizedMaterialId));
+    setSelectedSourceIds((current) => current.filter((id) => Number(id) !== normalizedMaterialId));
+    setSelectedRoadmapSourceIds((current) => current.filter((id) => Number(id) !== normalizedMaterialId));
+  }, []);
+
+  const upsertSharedSource = useCallback((payload) => {
+    const normalizedItem = normalizeWorkspaceSourceItem(payload);
+    const normalizedMaterialId = Number(normalizedItem?.materialId ?? 0);
+    if (!Number.isInteger(normalizedMaterialId) || normalizedMaterialId <= 0) return;
+
+    const shouldRemove = normalizeMaterialStatus(payload?.status) === 'DELETED' || Boolean(payload?.needReview);
+    if (shouldRemove) {
+      removeSharedSource(normalizedMaterialId);
+      return;
+    }
+
+    setSources((current) => {
+      const currentItems = Array.isArray(current) ? current : [];
+      const existingIndex = currentItems.findIndex((item) => Number(item?.materialId ?? item?.id) === normalizedMaterialId);
+      const fallbackItem = existingIndex >= 0 ? currentItems[existingIndex] : null;
+      const nextItem = normalizeWorkspaceSourceItem(payload, fallbackItem);
+      if (!nextItem) return currentItems;
+
+      if (existingIndex >= 0) {
+        const nextItems = [...currentItems];
+        nextItems[existingIndex] = nextItem;
+        return nextItems;
+      }
+
+      return [nextItem, ...currentItems];
+    });
+  }, [removeSharedSource]);
+
+  const removePendingReviewMaterialFromState = useCallback((materialId) => {
+    const normalizedMaterialId = Number(materialId);
+    if (!Number.isInteger(normalizedMaterialId) || normalizedMaterialId <= 0) return;
+
+    setPendingReviewMaterials((current) => current.filter((item) => Number(item?.materialId ?? item?.id) !== normalizedMaterialId));
+  }, []);
+
+  const upsertPendingReviewMaterial = useCallback((payload) => {
+    const normalizedItem = normalizeWorkspaceSourceItem(payload);
+    const normalizedMaterialId = Number(normalizedItem?.materialId ?? 0);
+    if (!Number.isInteger(normalizedMaterialId) || normalizedMaterialId <= 0) return;
+
+    const normalizedStatus = normalizeMaterialStatus(payload?.status);
+    const needReview = payload?.needReview !== false;
+    if (!shouldTrackInLeaderReviewQueue(normalizedStatus, needReview)) {
+      removePendingReviewMaterialFromState(normalizedMaterialId);
+      return;
+    }
+
+    setPendingReviewMaterials((current) => {
+      const currentItems = Array.isArray(current) ? current : [];
+      const existingIndex = currentItems.findIndex((item) => Number(item?.materialId ?? item?.id) === normalizedMaterialId);
+      const fallbackItem = existingIndex >= 0 ? currentItems[existingIndex] : null;
+      const nextItem = {
+        ...(normalizeWorkspaceSourceItem(payload, fallbackItem) || {}),
+        needReview,
+      };
+
+      if (existingIndex >= 0) {
+        const nextItems = [...currentItems];
+        nextItems[existingIndex] = nextItem;
+        return nextItems;
+      }
+
+      return [nextItem, ...currentItems];
+    });
+  }, [removePendingReviewMaterialFromState]);
   const roadmapSelectionStorageKey = useMemo(
     () =>
       workspaceId
@@ -1108,6 +1215,8 @@ function GroupWorkspacePage() {
     groups,
     fetchGroups,
     fetchMembers,
+    fetchMyPermissions,
+    fetchMemberPermissions,
     grantUpload,
     revokeUpload,
     updateMemberRole,
@@ -1116,6 +1225,7 @@ function GroupWorkspacePage() {
     cancelInvitation,
     resendInvitation,
     fetchGroupLogs,
+    syncMemberPermissions,
     removeMember,
   } = useGroup();
 
@@ -1253,11 +1363,42 @@ function GroupWorkspacePage() {
   const isLeader = currentRoleKey === 'LEADER';
   const isContributor = currentRoleKey === 'CONTRIBUTOR';
   const isMember = currentRoleKey === 'MEMBER';
-  const canCreateContent = isLeader || isContributor;
-  const canUploadSource = isLeader || isContributor;
-  const canManageMembers = isLeader;
+  const currentMember = React.useMemo(
+    () => members.find((member) => Number(member?.userId) === Number(currentUser?.userID ?? currentUser?.id)),
+    [currentUser?.id, currentUser?.userID, members],
+  );
+  const hasGrantedContentAccess = Boolean(
+    currentMember?.canUpload
+    || currentGroupWorkspace?.canUpload
+    || currentGroupFromGroups?.canUpload,
+  );
   const resolvedWorkspaceId = currentGroupWorkspace?.workspaceId
     ?? (isCreating ? null : workspaceId);
+  const fallbackCanCreateContent = isLeader || isContributor || hasGrantedContentAccess;
+  const fallbackCanUploadSource = isLeader || isContributor || hasGrantedContentAccess;
+  const fallbackCanViewMemberDashboard = isLeader || isContributor;
+  const {
+    data: myGroupPermissions,
+  } = useQuery({
+    queryKey: ['group-my-permissions', resolvedWorkspaceId],
+    queryFn: () => fetchMyPermissions(resolvedWorkspaceId),
+    enabled: Boolean(resolvedWorkspaceId && !isCreating),
+    staleTime: 15 * 1000,
+  });
+  const {
+    canCreateQuiz,
+    canCreateFlashcard,
+    canCreateContent,
+    canUploadSource,
+    canManageMembers,
+    canViewMemberDashboard,
+  } = resolveGroupUiPermissions({
+    myGroupPermissions,
+    fallbackCanCreateContent,
+    fallbackCanUploadSource,
+    fallbackCanManageMembers: isLeader,
+    fallbackCanViewMemberDashboard,
+  });
   const pendingInvitationsQueryKey = useMemo(
     () => ['group-pending-invitations', resolvedWorkspaceId],
     [resolvedWorkspaceId],
@@ -1389,11 +1530,12 @@ function GroupWorkspacePage() {
     ),
   });
   const personalLearningSnapshot = personalLearningSnapshotQuery.data;
-  const groupSidebarDisabledMap = useMemo(() => ({
-    members: isMember,
+  const groupSidebarDisabledMap = useMemo(() => ({}), []);
+  const groupSidebarHiddenMap = useMemo(() => ({
+    members: !canManageMembers,
     wallet: !isLeader || !canManageGroup,
     settings: !isLeader || !canManageGroup,
-  }), [canManageGroup, isLeader, isMember]);
+  }), [canManageGroup, canManageMembers, isLeader]);
   const groupSidebarBadgeMap = useMemo(() => ({
     documents: sources.length || undefined,
     notifications: pendingReviewMaterials.length || undefined,
@@ -1648,16 +1790,20 @@ function GroupWorkspacePage() {
     if (!workspaceId || isCreating) return [];
     try {
       const data = await getMaterialsByWorkspace(workspaceId);
-      const mappedSources = Array.isArray(data)
-        ? data.map((item) => ({
-          id: item.materialId,
-          name: item.title,
-          type: item.materialType,
-          status: item.status,
-          uploadedAt: item.uploadedAt,
+      const mappedSources = unwrapApiList(data)
+        .map((item) => ({
+          id: Number(item?.materialId ?? item?.id),
+          materialId: Number(item?.materialId ?? item?.id),
+          name: item?.title ?? item?.name ?? '',
+          title: item?.title ?? item?.name ?? '',
+          type: item?.materialType ?? item?.type ?? '',
+          materialType: item?.materialType ?? item?.type ?? '',
+          status: item?.status,
+          uploadedAt: item?.uploadedAt,
           ...item,
-        })).filter((item) => String(item?.status || '').toUpperCase() !== 'DELETED')
-        : [];
+        }))
+        .filter((item) => Number(item?.materialId ?? item?.id) > 0)
+        .filter((item) => String(item?.status || '').toUpperCase() !== 'DELETED');
       setSources(mappedSources);
       return mappedSources;
     } catch (err) {
@@ -1676,19 +1822,21 @@ function GroupWorkspacePage() {
     setPendingReviewLoading(true);
     try {
       const data = await getPendingGroupMaterialsAPI(resolvedWorkspaceId);
-      const materials = Array.isArray(data)
-        ? data.map((item) => ({
-          id: item.materialId,
-          materialId: item.materialId,
-          title: item.title,
-          name: item.title,
-          type: item.materialType,
-          status: item.status,
-          uploadedAt: item.uploadedAt,
-          needReview: item.needReview !== false,
+      const materials = unwrapApiList(data)
+        .map((item) => ({
+          id: Number(item?.materialId ?? item?.id),
+          materialId: Number(item?.materialId ?? item?.id),
+          title: item?.title ?? item?.name ?? '',
+          name: item?.title ?? item?.name ?? '',
+          type: item?.materialType ?? item?.type ?? '',
+          materialType: item?.materialType ?? item?.type ?? '',
+          status: item?.status,
+          uploadedAt: item?.uploadedAt,
+          needReview: item?.needReview !== false,
           ...item,
-        })).filter((item) => normalizeMaterialStatus(item?.status) !== 'DELETED')
-        : [];
+        }))
+        .filter((item) => Number(item?.materialId ?? item?.id) > 0)
+        .filter((item) => normalizeMaterialStatus(item?.status) !== 'DELETED');
       setPendingReviewMaterials(materials);
       return materials;
     } catch (error) {
@@ -1731,8 +1879,8 @@ function GroupWorkspacePage() {
   useEffect(() => {
     if (isCreating || hasCheckedInitialSources) return;
     if (!workspaceId || workspaceId === 'new') return;
-    const timer = setTimeout(() => {
-      fetchSources();
+    const timer = setTimeout(async () => {
+      await fetchSources();
       setHasCheckedInitialSources(true);
     }, 500);
     return () => clearTimeout(timer);
@@ -2234,11 +2382,31 @@ function GroupWorkspacePage() {
     if (materialId && isTerminalMaterialStatus(status)) {
       materialProgress.setProgress(String(materialId), 100);
       announceRealtimeMaterialStatus(materialId, progressPayload?.title ?? progressPayload?.data?.title, status, resolvedNeedReview);
+      upsertSharedSource({
+        materialId,
+        title: progressPayload?.title ?? progressPayload?.data?.title ?? existingSessionUpload?.title ?? existingSessionUpload?.name ?? '',
+        status,
+        uploadedAt: progressPayload?.uploadedAt ?? existingSessionUpload?.uploadedAt ?? null,
+        materialType: progressPayload?.materialType ?? progressPayload?.data?.materialType ?? existingSessionUpload?.materialType ?? existingSessionUpload?.type ?? '',
+        needReview: resolvedNeedReview,
+      });
+      if (isLeader) {
+        upsertPendingReviewMaterial({
+          materialId,
+          title: progressPayload?.title ?? progressPayload?.data?.title ?? existingSessionUpload?.title ?? existingSessionUpload?.name ?? '',
+          status,
+          uploadedAt: progressPayload?.uploadedAt ?? existingSessionUpload?.uploadedAt ?? null,
+          materialType: progressPayload?.materialType ?? progressPayload?.data?.materialType ?? existingSessionUpload?.materialType ?? existingSessionUpload?.type ?? '',
+          needReview: resolvedNeedReview,
+        });
+      }
       if (isLeader && !shouldTrackInLeaderReviewQueue(status, resolvedNeedReview)) {
         removeSessionUpload((item) => Number(item?.materialId) === Number(materialId) || String(item?.taskId || '') === taskId);
         materialProgress.clearProgress(String(materialId));
       }
-      scheduleMaterialViewRefresh(materialId);
+      if (!progressPayload?.title && !progressPayload?.data?.title) {
+        scheduleMaterialViewRefresh(materialId);
+      }
     }
   }, [
     bumpRoadmapReloadToken,
@@ -2256,6 +2424,8 @@ function GroupWorkspacePage() {
     roadmapPhaseGenerationTaskId,
     scheduleMaterialViewRefresh,
     sessionUploadQueue,
+    upsertPendingReviewMaterial,
+    upsertSharedSource,
     workspaceId,
   ]);
 
@@ -2312,10 +2482,28 @@ function GroupWorkspacePage() {
       }),
     );
 
+    upsertSharedSource({
+      ...materialPayload,
+      materialId,
+      title: materialTitle ?? existingSessionUpload?.title ?? existingSessionUpload?.name ?? '',
+      status,
+      needReview: resolvedNeedReview,
+    });
+    if (isLeader) {
+      upsertPendingReviewMaterial({
+        ...materialPayload,
+        materialId,
+        title: materialTitle ?? existingSessionUpload?.title ?? existingSessionUpload?.name ?? '',
+        status,
+        needReview: resolvedNeedReview,
+      });
+    }
+
     if (status === 'DELETED') {
       removeSessionUpload((item) => Number(item?.materialId) === Number(materialId));
       materialProgress.clearProgress(String(materialId));
-      void refreshGroupMaterialViews({ silent: true });
+      removeSharedSource(materialId);
+      removePendingReviewMaterialFromState(materialId);
       return;
     }
 
@@ -2325,20 +2513,44 @@ function GroupWorkspacePage() {
         removeSessionUpload((item) => Number(item?.materialId) === Number(materialId) || String(item?.taskId || '') === taskId);
         materialProgress.clearProgress(String(materialId));
       }
-      scheduleMaterialViewRefresh(materialId);
+      if (!materialTitle) {
+        scheduleMaterialViewRefresh(materialId);
+      }
       return;
     }
-
-    void refreshGroupMaterialViews({ silent: true });
   }, [
     announceRealtimeMaterialStatus,
     currentLang,
     isLeader,
     materialProgress,
     patchSessionUpload,
+    removePendingReviewMaterialFromState,
+    removeSharedSource,
     refreshGroupMaterialViews,
     removeSessionUpload,
     scheduleMaterialViewRefresh,
+    sessionUploadQueue,
+    upsertPendingReviewMaterial,
+    upsertSharedSource,
+  ]);
+
+  const handleRealtimeMaterialDeleted = useCallback((materialPayload) => {
+    const materialId = getRealtimeMaterialId(materialPayload, null, sessionUploadQueue);
+    if (!materialId) {
+      void refreshGroupMaterialViews({ silent: true });
+      return;
+    }
+
+    removeSessionUpload((item) => Number(item?.materialId) === Number(materialId));
+    materialProgress.clearProgress(String(materialId));
+    removeSharedSource(materialId);
+    removePendingReviewMaterialFromState(materialId);
+  }, [
+    materialProgress,
+    refreshGroupMaterialViews,
+    removePendingReviewMaterialFromState,
+    removeSessionUpload,
+    removeSharedSource,
     sessionUploadQueue,
   ]);
 
@@ -2458,6 +2670,10 @@ function GroupWorkspacePage() {
       setMembers((current) => mergeRealtimeMember(current, realtimeMember));
     }
 
+    if (Boolean(realtimeMember) && memberPatchOnlyTypes.has(eventType)) {
+      return;
+    }
+
     if (groupRealtimeRefreshTimerRef.current) {
       globalThis.clearTimeout(groupRealtimeRefreshTimerRef.current);
     }
@@ -2552,9 +2768,7 @@ function GroupWorkspacePage() {
     workspaceId: !isCreating ? workspaceId : null,
     enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
     onMaterialUploaded: handleRealtimeMaterialUpdate,
-    onMaterialDeleted: () => {
-      void refreshGroupMaterialViews({ silent: true });
-    },
+    onMaterialDeleted: handleRealtimeMaterialDeleted,
     onMaterialUpdated: handleRealtimeMaterialUpdate,
     onProgress: handleRealtimeProgress,
     onGroupUpdate: handleGroupRealtime,
@@ -2563,9 +2777,9 @@ function GroupWorkspacePage() {
   });
 
   useEffect(() => {
-    if (isCreating || !workspaceId || workspaceId === 'new' || activeSection !== 'members') return undefined;
+    if (isCreating || !workspaceId || workspaceId === 'new' || activeSection !== 'members' || wsConnected) return undefined;
 
-    const intervalMs = wsConnected ? 60000 : 30000;
+    const intervalMs = 30000;
     const timerId = globalThis.setInterval(() => {
       void loadMembers({ silent: true });
     }, intervalMs);
@@ -3073,6 +3287,16 @@ function GroupWorkspacePage() {
       return;
     }
 
+    if (actionKey === 'createQuiz' && !canCreateQuiz) {
+      showInfo(t('groupWorkspacePage.toast.memberCannotCreateQuiz', 'Member cannot create quizzes.'));
+      return;
+    }
+
+    if (actionKey === 'createFlashcard' && !canCreateFlashcard) {
+      showInfo(t('groupWorkspacePage.toast.memberCannotCreateFlashcard', 'Member cannot create flashcards.'));
+      return;
+    }
+
     if (GROUP_SECTIONS_REQUIRE_MATERIALS.has(actionKey) && !hasUploadedMaterials) {
       showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
       setActiveSection('documents');
@@ -3106,6 +3330,8 @@ function GroupWorkspacePage() {
     setActiveView(actionKey);
   }, [
     setActiveSection,
+    canCreateFlashcard,
+    canCreateQuiz,
     currentRoleKey,
     showInfo,
     currentLang,
@@ -3330,13 +3556,13 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (!canCreateContent) {
+    if (!canCreateQuiz) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateQuiz', 'Member cannot create quizzes.'));
       return;
     }
     void refreshActiveTaskSnapshot('group-quiz-create');
     setActiveView('quiz');
-  }, [bumpQuizListRefreshToken, canCreateContent, challengeDraftUiActive, currentLang, refreshActiveTaskSnapshot, returnToChallengeDraftContext, showInfo, showSuccess, t, trackQuizGenerationStart]);
+  }, [bumpQuizListRefreshToken, canCreateQuiz, challengeDraftUiActive, currentLang, refreshActiveTaskSnapshot, returnToChallengeDraftContext, showInfo, showSuccess, t, trackQuizGenerationStart]);
   const handleViewQuiz = useCallback((quiz, options = {}) => {
     const normalizedQuizId = Number(quiz?.quizId ?? quiz?.id ?? 0);
     const normalizedQuiz = Number.isInteger(normalizedQuizId) && normalizedQuizId > 0
@@ -3390,7 +3616,7 @@ function GroupWorkspacePage() {
   }, [bumpQuizListRefreshToken]);
 
   const handleCreateFlashcard = useCallback(async (createdFlashcard = null) => {
-    if (!canCreateContent) {
+    if (!canCreateFlashcard) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateFlashcard', 'Member cannot create flashcards.'));
       return;
     }
@@ -3430,7 +3656,7 @@ function GroupWorkspacePage() {
 
     void queryClient.invalidateQueries({ queryKey });
     setActiveView('flashcard');
-  }, [canCreateContent, currentLang, queryClient, showInfo, t, workspaceId]);
+  }, [canCreateFlashcard, currentLang, queryClient, showInfo, t, workspaceId]);
   const handleViewFlashcard = useCallback((fc) => { setSelectedFlashcard(fc); setActiveView('flashcardDetail'); }, []);
   const handleDeleteFlashcard = useCallback(async (fc) => {
     if (!window.confirm(t('workspace.confirmDeleteFlashcard'))) return;
@@ -4332,6 +4558,8 @@ function GroupWorkspacePage() {
         onToggleMaterialSelection={handleSelectOneSource}
         activeView={activeView || defaultView}
         readOnly={!canCreateContent}
+        canCreateQuiz={canCreateQuiz}
+        canCreateFlashcard={canCreateFlashcard}
         role={currentRoleKey}
         isGroupLeader={isLeader}
         groupWorkspaceCurrentUserId={currentUser?.userID}
@@ -4531,6 +4759,8 @@ function GroupWorkspacePage() {
             onGrantUpload={grantUpload}
             onRevokeUpload={revokeUpload}
             onUpdateRole={updateMemberRole}
+            onFetchMemberPermissions={fetchMemberPermissions}
+            onSyncMemberPermissions={syncMemberPermissions}
             onRemoveMember={removeMember}
             onOpenInvite={() => setInviteDialogOpen(true)}
             onInvite={handleInvite}
@@ -4546,7 +4776,7 @@ function GroupWorkspacePage() {
         );
 
       case 'memberStats':
-        if (isMember) {
+        if (!canViewMemberDashboard) {
           return renderPersonalDashboard();
         }
         return (
@@ -4559,6 +4789,25 @@ function GroupWorkspacePage() {
             isLeader={isLeader}
             isContributor={isContributor}
             onOpenQuizSection={() => handleStudioAction('quiz')}
+            detailOnly={memberDetailWorkspaceMemberId != null}
+            forcedMemberId={memberDetailWorkspaceMemberId}
+            onBack={() => navigateInstant(buildGroupWorkspaceSectionPath(workspaceId, 'memberStats'))}
+            onOpenMemberDetail={(member) => {
+              const workspaceMemberId = resolveWorkspaceMemberId(member);
+              if (!workspaceMemberId) return;
+              if (!isLeader) {
+                const memberUserId = resolveMemberUserId(member);
+                if (memberUserId == null || String(memberUserId) !== String(currentUser?.userID)) {
+                  showInfo(t('groupWorkspace.memberStats.detailLeaderOnly', 'Only leaders can open another member detail page.'));
+                  return;
+                }
+              }
+              navigateInstant(buildGroupWorkspaceDetailPath(
+                workspaceId,
+                `members/${workspaceMemberId}`,
+                { section: 'memberStats' },
+              ));
+            }}
             />
           </React.Suspense>
         );
@@ -4690,6 +4939,7 @@ function GroupWorkspacePage() {
             wsConnected={wsConnected}
             memberCount={members.length}
             disabledMap={groupSidebarDisabledMap}
+            hiddenMap={groupSidebarHiddenMap}
             badgeMap={groupSidebarBadgeMap}
             collapsed={isDesktopSidebarCollapsed}
             onToggleCollapsed={() => setIsDesktopSidebarCollapsed((current) => !current)}
@@ -4708,6 +4958,7 @@ function GroupWorkspacePage() {
           wsConnected={wsConnected}
           memberCount={members.length}
           disabledMap={groupSidebarDisabledMap}
+          hiddenMap={groupSidebarHiddenMap}
           badgeMap={groupSidebarBadgeMap}
           isMobile
           mobileOpen={isMobileSidebarOpen}

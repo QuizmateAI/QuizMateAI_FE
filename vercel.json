@@ -1,4 +1,14 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/momo/return",
+      "destination": "https://api.quizmateai.io.vn/api/momo/return"
+    },
+    {
+      "source": "/api/momo/ipn",
+      "destination": "https://api.quizmateai.io.vn/api/momo/ipn"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",

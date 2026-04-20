@@ -54,6 +54,21 @@ export const shareQuizToCommunity = async (quizId, shared = true) => {
   return response;
 };
 
+export const getCommunityQuizDetail = async (quizId) => {
+  const response = await api.get(`/community-quizzes/${quizId}`);
+  return response;
+};
+
+export const submitCommunityQuizReview = async (sourceQuizId, payload) => {
+  const response = await api.post(`/community-quizzes/${sourceQuizId}/reviews`, payload);
+  return response;
+};
+
+export const submitCommunityQuizComment = async (sourceQuizId, payload) => {
+  const response = await api.post(`/community-quizzes/${sourceQuizId}/comments`, payload);
+  return response;
+};
+
 export const cloneCommunityQuizToWorkspace = async (quizId, workspaceId, metadata = {}) => {
   const params = new URLSearchParams();
   params.set('workspaceId', workspaceId);
@@ -81,11 +96,9 @@ export const deleteQuiz = async (quizId) => {
   return response;
 };
 
-/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE.
- *  options.leaderJoinsRanking = true → leader phải hoàn thành trước khi members làm được.
- */
-export const publishGroupQuiz = async (quizId, options = {}) => {
-  const response = await api.post(`/quiz/${quizId}/group/publish`, Object.keys(options).length ? options : undefined);
+/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE. */
+export const publishGroupQuiz = async (quizId) => {
+  const response = await api.post(`/quiz/${quizId}/group/publish`);
   return response;
 };
 

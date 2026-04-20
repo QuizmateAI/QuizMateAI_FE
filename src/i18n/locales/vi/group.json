@@ -405,7 +405,6 @@
     },
     "ranking": {
       "title": "Bảng xếp hạng nhóm",
-      "description": "Xếp hạng tổng hợp toàn nhóm. Ranking theo từng quiz riêng xem trong tab \"Xếp hạng\" của từng bài.",
       "loading": "Đang tổng hợp dữ liệu từ tất cả các quiz…",
       "error": "Không thể tải dữ liệu xếp hạng.",
       "retry": "Thử lại",
@@ -413,6 +412,55 @@
       "empty": "Chưa có thành viên nào hoàn thành quiz nào cả.",
       "noData": "Chưa có dữ liệu.",
       "meta": "Tổng hợp từ {{quizCount}} quiz đang hoạt động · {{memberCount}} thành viên tham gia",
+      "tableTitle": "Bảng điểm ranking",
+      "priority": "Xếp hạng theo RP",
+      "description": "Top 3 hiện tại và bảng RP của cả nhóm.",
+      "podiumTitle": "Top 3 hiện tại",
+      "podiumSubtitle": "Ba vị trí đầu đang giữ nhịp cạnh tranh của nhóm.",
+      "detail": {
+        "title": "Vì sao họ đứng hạng này?",
+        "description": "Chi tiết RP được cộng từ các bài làm hợp lệ trong khu vực publish chung.",
+        "currentRank": "Hạng hiện tại",
+        "totalRp": "Tổng RP",
+        "evidenceTitle": "Lịch sử cộng RP",
+        "evidenceHint": "Mỗi bài chỉ lấy lần làm chính thức đầu tiên.",
+        "empty": "Chưa có dữ liệu RP chi tiết.",
+        "formula": "Base {{base}} · Bonus {{bonus}}",
+        "breakdown": {
+          "regular": "Quiz thường",
+          "roadmap": "Roadmap quiz",
+          "mockTest": "Mock test"
+        },
+        "types": {
+          "REGULAR": "Quiz thường",
+          "ROADMAP": "Roadmap quiz",
+          "MOCK_TEST": "Mock test"
+        }
+      },
+      "snapshotTitle": "Tổng quan nhanh",
+      "snapshotStats": {
+        "quizzes": "Quiz đang tính RP",
+        "members": "Thành viên có mặt",
+        "leaderRp": "RP dẫn đầu"
+      },
+      "topBadge": "Top 1",
+      "topBadges": {
+        "1": "Top 1",
+        "2": "Top 2",
+        "3": "Top 3"
+      },
+      "completedValue": "{{count}} quiz",
+      "columns": {
+        "rank": "Hạng",
+        "member": "Thành viên",
+        "points": "RP",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test",
+        "accuracy": "Độ chính xác",
+        "completed": "Hoàn thành",
+        "totalScore": "Tổng điểm"
+      },
       "metrics": {
         "accuracy": {
           "title": "Độ chính xác",
@@ -423,20 +471,6 @@
           "subtitle": "Xếp hạng theo số lượng quiz đã hoàn thành ít nhất 1 lần",
           "value": "{{count}} quiz"
         }
-      }
-    },
-    "quizRanking": {
-      "title": "Bảng xếp hạng · {{count}} thành viên",
-      "loading": "Đang tải…",
-      "error": "Không thể tải bảng xếp hạng.",
-      "retry": "Thử lại",
-      "refresh": "Làm mới",
-      "empty": "Chưa có thành viên nào hoàn thành bài này.",
-      "columns": {
-        "member": "Thành viên",
-        "accuracy": "Độ chính xác",
-        "time": "Thời gian",
-        "submittedAt": "Ngày nộp"
       }
     },
     "profile": {

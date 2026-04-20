@@ -223,7 +223,7 @@ function CreateQuizAiFormContent({
     upgradePath: advancedQuizUpgradePath,
   } = usePlanUpgradeInfo({
     featureEntitlementKey: "hasAdvanceQuizConfig",
-    enabled: !hasAdvanceQuizConfig && qTypes.some((questionType) => isAdvancedQuizQuestionType(questionType?.questionType)),
+    enabled: !hasAdvanceQuizConfig,
     planScope: planUpgradeScope,
     workspaceId: planUpgradeWorkspaceId,
     currentPlanSummaryOverride,
@@ -250,6 +250,31 @@ function CreateQuizAiFormContent({
         defaultValue: `Cần gói ${advancedQuizRequiredPlanName}`,
       })
     : t("workspace.quiz.planGate.lockedGroupTitleFallback", "Cần gói nâng cao");
+  const structureGateFeatureName = advancedQuizRequiredPlanName
+    ? t("workspace.quiz.planGate.structureTitleWithPlan", {
+        planName: advancedQuizRequiredPlanName,
+        defaultValue: `Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName}`,
+      })
+    : t("workspace.quiz.planGate.structureTitleFallback", "Cấu trúc quiz cần gói nâng cao");
+  const structureGateDescription = advancedQuizRequiredPlanName
+    ? (advancedQuizCurrentPlanName
+      ? t("workspace.quiz.planGate.structureDescriptionWithCurrentPlan", {
+          currentPlanName: advancedQuizCurrentPlanName,
+          requiredPlanName: advancedQuizRequiredPlanName,
+          defaultValue: `Cấu trúc quiz không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.`,
+        })
+      : t("workspace.quiz.planGate.structureDescriptionWithRequiredPlan", {
+          requiredPlanName: advancedQuizRequiredPlanName,
+          defaultValue: `Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.`,
+        }))
+    : t(
+        "workspace.quiz.planGate.structureDescriptionFallback",
+        "Cấu trúc quiz cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng.",
+      );
+  const structureGateMeta = t(
+    "workspace.quiz.planGate.structureMeta",
+    "Bạn vẫn có thể tạo quiz bằng các tỷ lệ độ khó, loại câu hỏi và Bloom hiện có trong gói hiện tại.",
+  );
 
   const handleSelectAllQuestionTypes = () => {
     selectableQuestionTypeIds.forEach((id) => {
@@ -1122,6 +1147,18 @@ function CreateQuizAiFormContent({
         )}
       </div>
 
+      <PlanGatedFeature
+        allowed={hasAdvanceQuizConfig}
+        featureName={structureGateFeatureName}
+        isDarkMode={isDarkMode}
+        className="block w-full"
+        toastTitle={advancedQuizGateTitle}
+        toastDescription={structureGateDescription}
+        toastMeta={structureGateMeta}
+        upgradePath={advancedQuizUpgradePath}
+        upgradeLabel={t("workspace.quiz.planGate.upgradeAction", "Nâng cấp")}
+        badgeLabel={t("workspace.quiz.planGate.vipBadge", "VIP")}
+      >
       <div className={`relative overflow-hidden border-t transition-all ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
         <div className={`${showStructureOutdatedOverlay ? "opacity-20 pointer-events-none select-none" : ""}`}>
         <div className={`border-b px-4 py-3 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
@@ -1453,8 +1490,9 @@ function CreateQuizAiFormContent({
           </div>
         )}
       </div>
+      </PlanGatedFeature>
 
-      <Dialog open={showStructureEditConfirm} onOpenChange={setShowStructureEditConfirm}>
+      <Dialog open={hasAdvanceQuizConfig && showStructureEditConfirm} onOpenChange={setShowStructureEditConfirm}>
         <DialogContent className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}>
           <DialogHeader>
             <DialogTitle>{t("workspace.quiz.aiConfig.structureEditAction", "Edit")}</DialogTitle>
@@ -1486,7 +1524,7 @@ function CreateQuizAiFormContent({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showStructureCancelConfirm} onOpenChange={setShowStructureCancelConfirm}>
+      <Dialog open={hasAdvanceQuizConfig && showStructureCancelConfirm} onOpenChange={setShowStructureCancelConfirm}>
         <DialogContent className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}>
           <DialogHeader>
             <DialogTitle>{t("workspace.quiz.aiConfig.structureCancelEditAction", "Cancel edit")}</DialogTitle>

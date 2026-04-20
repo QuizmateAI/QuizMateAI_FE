@@ -231,7 +231,7 @@ function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEd
     if (!quiz?.quizId) return;
     setIsPublishing(true);
     try {
-      await publishGroupQuiz(quiz.quizId, { leaderJoinsRanking: false });
+      await publishGroupQuiz(quiz.quizId);
       setQuizMeta((prev) => ({ ...(prev ?? quizProp), status: 'ACTIVE' }));
     } catch (err) {
       console.error('Lỗi khi xuất bản đề thi thử:', err);

@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
   Lock,
   Loader2,
   MessageSquare,
+  Reply,
   Send,
   Sparkles,
   Timer,
   Trash2,
+  X,
 } from "lucide-react";
 import i18n from "@/i18n";
 import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
@@ -28,6 +30,13 @@ import {
   getThreadMessages,
   postMessage,
 } from "@/api/GroupDiscussionAPI";
+import {
+  buildDiscussionMessageMap,
+  formatDiscussionPreview,
+  getDiscussionReplyDepth,
+  getDiscussionReplyPreview,
+  normalizeDiscussionMessageId,
+} from "./groupDiscussionReplyUtils";
 
 const BLOOM_KEYS = ["remember", "understand", "apply", "analyze", "evaluate"];
 
@@ -231,7 +240,7 @@ function ThreadAvatar({ src, name, role, userId, className = "" }) {
   );
 }
 
-function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
+function ThreadMessageRow({ msg, canDelete, onDelete, onReply, replyPreview, depth, isDarkMode }) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState(false);
   const resetRef = useRef(null);
@@ -239,6 +248,10 @@ function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
     fullName: msg.authorName,
     username: msg.authorUserName,
   }, msg.authorName || t("questionDiscussion.shared.userFallback", "User"));
+  const replyAuthorDisplay = getUserDisplayParts({
+    fullName: replyPreview?.authorName,
+    username: replyPreview?.authorUserName,
+  }, replyPreview?.authorName || t("questionDiscussion.shared.userFallback", "User"));
 
   const handleDeleteClick = () => {
     if (pendingDelete) {
@@ -255,7 +268,13 @@ function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
   useEffect(() => () => clearTimeout(resetRef.current), []);
 
   return (
-    <div className="flex gap-3">
+    <div
+      className={cn(
+        "flex gap-3",
+        depth > 0 && (isDarkMode ? "border-l border-slate-800 pl-3" : "border-l border-slate-200 pl-3"),
+      )}
+      style={depth > 0 ? { marginLeft: `${Math.min(depth, 2) * 18}px` } : undefined}
+    >
       <ThreadAvatar
         src={msg.authorAvatar}
         name={msg.authorName}
@@ -277,6 +296,32 @@ function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
             {relativeTime(msg.createdAt)}
           </span>
         </div>
+
+        {replyPreview ? (
+          <div
+            className={cn(
+              "mb-1.5 flex items-start gap-2 rounded-2xl border-l-2 px-3 py-2 text-xs",
+              isDarkMode ? "border-blue-700 bg-slate-900/80 text-slate-400" : "border-blue-300 bg-slate-50 text-slate-500",
+            )}
+          >
+            <Reply className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", isDarkMode ? "text-blue-300" : "text-blue-600")} />
+            <div className="min-w-0">
+              <p className={cn("font-medium", isDarkMode ? "text-slate-300" : "text-slate-700")}>
+                {replyPreview.missing
+                  ? t("questionDiscussion.reply.originalUnavailable", "Original comment unavailable")
+                  : t("questionDiscussion.reply.replyingTo", {
+                    name: replyAuthorDisplay.name,
+                    defaultValue: "Replying to {{name}}",
+                  })}
+              </p>
+              {!replyPreview.missing ? (
+                <p className="truncate">
+                  {formatDiscussionPreview(replyPreview.body) || t("questionDiscussion.reply.emptyBody", "No content")}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex items-center gap-2">
           <div
@@ -311,7 +356,21 @@ function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             )
-          ) : null}
+            ) : null}
+        </div>
+
+        <div className="mt-1.5 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onReply(msg)}
+            className={cn(
+              "inline-flex items-center gap-1 text-[11px] font-medium transition-colors",
+              isDarkMode ? "text-slate-500 hover:text-blue-300" : "text-slate-500 hover:text-blue-700",
+            )}
+          >
+            <Reply className="h-3 w-3" />
+            {t("questionDiscussion.reply.action", "Reply")}
+          </button>
         </div>
       </div>
     </div>
@@ -346,10 +405,12 @@ function useQuestionDiscussionThread({
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
+  const [replyTarget, setReplyTarget] = useState(null);
   const textareaRef = useRef(null);
   const bottomRef = useRef(null);
   const onMessageCountChangeRef = useRef(onMessageCountChange);
   const canAccess = isLeader || hasAttempted;
+  const messageMap = useMemo(() => buildDiscussionMessageMap(messages), [messages]);
 
   useEffect(() => {
     onMessageCountChangeRef.current = onMessageCountChange;
@@ -398,28 +459,28 @@ function useQuestionDiscussionThread({
     }
   }, [loading, messages.length]);
 
+  useEffect(() => {
+    if (replyTarget?.id && !messageMap.has(replyTarget.id)) {
+      setReplyTarget(null);
+    }
+  }, [messageMap, replyTarget]);
+
   const handlePost = useCallback(async () => {
     const body = draft.trim();
     if (!body || posting || !canAccess) return;
-
-    const authorId = profile?.userId ?? profile?.id ?? 0;
-    const authorName = profile?.fullName ?? profile?.name ?? t("questionDiscussion.shared.userFallback", "User");
-    const authorUserName = profile?.username ?? null;
-    const authorAvatar = profile?.avatarUrl ?? profile?.avatar ?? null;
-    const authorRole = isLeader ? "LEADER" : "MEMBER";
+    const parentMessageId = replyTarget?.id && Number.isFinite(Number(replyTarget.id))
+      ? Number(replyTarget.id)
+      : null;
 
     setPosting(true);
     try {
       const nextMessage = await postMessage(workspaceId, quizId, questionId, {
         body,
-        authorId,
-        authorName,
-        authorUserName,
-        authorAvatar,
-        authorRole,
+        parentMessageId,
       });
       setMessages((prev) => [...prev, nextMessage]);
       setDraft("");
+      setReplyTarget(null);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
@@ -431,16 +492,35 @@ function useQuestionDiscussionThread({
     } finally {
       setPosting(false);
     }
-  }, [canAccess, draft, isLeader, posting, profile, questionId, quizId, workspaceId, t]);
+  }, [canAccess, draft, posting, questionId, quizId, replyTarget, workspaceId]);
 
   const handleDelete = useCallback(async (messageId) => {
     try {
       await deleteMessage(workspaceId, quizId, questionId, messageId);
       setMessages((prev) => prev.filter((message) => message.id !== messageId));
+      setReplyTarget((prev) => (prev?.id === normalizeDiscussionMessageId(messageId) ? null : prev));
     } catch {
       //
     }
   }, [questionId, quizId, workspaceId]);
+
+  const handleReply = useCallback((message) => {
+    const messageId = normalizeDiscussionMessageId(message?.id ?? message?.messageId);
+    if (!messageId) {
+      return;
+    }
+
+    setReplyTarget({
+      id: messageId,
+      authorName: message?.authorName || null,
+      authorUserName: message?.authorUserName || null,
+      body: formatDiscussionPreview(message?.body),
+    });
+
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, []);
 
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -458,17 +538,21 @@ function useQuestionDiscussionThread({
   return {
     profile,
     messages,
+    messageMap,
     loading,
     draft,
     posting,
     canAccess,
+    replyTarget,
     textareaRef,
     bottomRef,
     setDraft,
+    setReplyTarget,
     handleDelete,
     handleInput,
     handleKeyDown,
     handlePost,
+    handleReply,
   };
 }
 
@@ -492,17 +576,21 @@ export default function QuestionDiscussionDialog({
   const {
     profile: discussionProfile,
     messages: discussionMessages,
+    messageMap: discussionMessageMap,
     loading: discussionLoading,
     draft: discussionDraft,
     posting: discussionPosting,
     canAccess: discussionCanAccess,
+    replyTarget: discussionReplyTarget,
     textareaRef,
     bottomRef,
     setDraft: setDiscussionDraft,
+    setReplyTarget: setDiscussionReplyTarget,
     handleDelete: handleDiscussionDelete,
     handleInput: handleDiscussionInput,
     handleKeyDown: handleDiscussionKeyDown,
     handlePost: handleDiscussionPost,
+    handleReply: handleDiscussionReply,
   } = useQuestionDiscussionThread({
     workspaceId,
     quizId,
@@ -520,6 +608,12 @@ export default function QuestionDiscussionDialog({
     discussionProfile?.fullName ?? discussionProfile?.name ?? composerNameFallback,
   ).trim() || composerNameFallback;
   const visibleCommentCount = discussionLoading ? commentCount : discussionMessages.length;
+  const discussionReplyDisplay = discussionReplyTarget
+    ? getUserDisplayParts({
+      fullName: discussionReplyTarget.authorName,
+      username: discussionReplyTarget.authorUserName,
+    }, discussionReplyTarget.authorName || t("questionDiscussion.shared.userFallback", "User"))
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -709,6 +803,9 @@ export default function QuestionDiscussionDialog({
                         msg={message}
                         canDelete={isLeader || Number(message.authorId) === Number(discussionProfile?.userId ?? discussionProfile?.id ?? 0)}
                         onDelete={handleDiscussionDelete}
+                        onReply={handleDiscussionReply}
+                        replyPreview={getDiscussionReplyPreview(discussionMessageMap, message)}
+                        depth={getDiscussionReplyDepth(discussionMessageMap, message)}
                         isDarkMode={isDarkMode}
                       />
                     ))}
@@ -726,6 +823,38 @@ export default function QuestionDiscussionDialog({
                 isDarkMode ? "border-slate-800 bg-slate-950/90" : "border-slate-200 bg-white/95",
               )}
             >
+              {discussionReplyTarget ? (
+                <div
+                  className={cn(
+                    "mb-3 flex items-start justify-between gap-3 rounded-2xl border px-3 py-2",
+                    isDarkMode ? "border-blue-900/60 bg-blue-950/20" : "border-blue-200 bg-blue-50",
+                  )}
+                >
+                  <div className="min-w-0">
+                    <p className={cn("text-xs font-semibold", isDarkMode ? "text-blue-300" : "text-blue-700")}>
+                      {t("questionDiscussion.reply.replyingTo", {
+                        name: discussionReplyDisplay?.name || t("questionDiscussion.shared.userFallback", "User"),
+                        defaultValue: "Replying to {{name}}",
+                      })}
+                    </p>
+                    <p className={cn("mt-0.5 truncate text-xs", isDarkMode ? "text-slate-400" : "text-slate-600")}>
+                      {discussionReplyTarget.body || t("questionDiscussion.reply.emptyBody", "No content")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDiscussionReplyTarget(null)}
+                    className={cn(
+                      "rounded-full p-1 transition-colors",
+                      isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-white hover:text-slate-600",
+                    )}
+                    title={t("questionDiscussion.reply.cancel", "Cancel reply")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : null}
+
               <div className="flex items-center gap-3">
                 <ThreadAvatar
                   src={getProfileAvatar(discussionProfile)}
@@ -748,7 +877,12 @@ export default function QuestionDiscussionDialog({
                     onChange={(event) => setDiscussionDraft(event.target.value)}
                     onKeyDown={handleDiscussionKeyDown}
                     onInput={handleDiscussionInput}
-                    placeholder={t("questionDiscussion.shared.composerPlaceholder", "Bình luận dưới tên {{name}}", { name: composerDisplayName })}
+                    placeholder={discussionReplyTarget
+                      ? t("questionDiscussion.reply.placeholder", {
+                        name: discussionReplyDisplay?.name || t("questionDiscussion.shared.userFallback", "User"),
+                        defaultValue: "Reply to {{name}}",
+                      })
+                      : t("questionDiscussion.shared.composerPlaceholder", "Bình luận dưới tên {{name}}", { name: composerDisplayName })}
                     rows={1}
                     className={cn(
                       "min-h-[22px] max-h-24 flex-1 resize-none bg-transparent py-1 text-sm leading-5 outline-none",
