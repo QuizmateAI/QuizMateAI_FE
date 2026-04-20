@@ -1276,7 +1276,7 @@
           "MATCHING": "Nối cặp",
           "IMAGED_BASED": "Dựa trên hình ảnh"
         },
-        "bloomSkills": "Kỹ năng Bloom",
+        "bloomSkills": "Thang đo Bloom",
         "bloomInfo": "Tham chiếu thang Bloom",
         "bloomInfoAlt": "Biểu đồ thang Bloom taxonomy",
         "countUnit": "câu",
@@ -2890,7 +2890,7 @@
     },
     "reviewExtensions": {
       "sectionTitle": "Phân tích theo phần",
-      "bloomTitle": "Phân tích theo kỹ năng Bloom",
+      "bloomTitle": "Phân tích theo thang đo Bloom",
       "unknownSection": "Không rõ phần",
       "unknownBloom": "Không rõ mức Bloom",
       "pendingQuestions": "{{count}} câu đang chờ chấm",

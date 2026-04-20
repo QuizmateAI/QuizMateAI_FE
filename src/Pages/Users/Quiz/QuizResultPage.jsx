@@ -1347,7 +1347,7 @@ handleBack,
         key={question.id}
         onClick={() => jumpToQuestion(questionNumber - 1)}
         className={cn(
-          'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+          'relative aspect-square min-h-[44px] w-full rounded-[16px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
           isPending
             ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
             : isCorrect
@@ -1391,8 +1391,10 @@ handleBack,
         </div>
 
         {Array.isArray(section?.questions) && section.questions.length > 0 && (
-          <div className="grid grid-cols-5 gap-1.5">
-            {section.questions.map((question, questionIndex) => renderReviewNavButton(question, questionIndex))}
+          <div className="rounded-[18px] border border-slate-200/80 bg-slate-50/85 p-2.5 dark:border-slate-700/80 dark:bg-slate-800/55">
+            <div className="grid grid-cols-5 gap-2">
+              {section.questions.map((question, questionIndex) => renderReviewNavButton(question, questionIndex))}
+            </div>
           </div>
         )}
 
@@ -1497,7 +1499,10 @@ handleBack,
 
               {assessmentStatus === 'PROCESSING' && (
                 <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-950/20 dark:text-amber-300">
-                  {t('quizResultPage.assessmentProcessing', 'AI assessment is still processing. This page will refresh automatically.')}
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t('quizResultPage.assessmentProcessing', 'AI assessment is still processing. This page will refresh automatically.')}</span>
+                  </div>
                 </div>
               )}
 
@@ -1797,37 +1802,37 @@ handleBack,
                       </div>
 
                       {isMockTestReviewLayout ? (
-                        <div className="max-h-[48vh] space-y-4 overflow-y-auto pr-0.5">
+                        <div className="max-h-[48vh] space-y-4 overflow-y-auto pr-1">
                           {reviewSectionGroups.map((section, sectionIndex) => renderReviewNavSection(section, sectionIndex))}
                         </div>
                       ) : (
-                        <div className="grid max-h-[48vh] grid-cols-5 gap-1.5 overflow-y-auto pr-0.5">
-                          {navQuestions.map((q, idx) => {
-                            const globalIdx = navStartIndex + idx;
-                            const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
-                            const isCorrect = q.isCorrect === true;
-                            const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
+                        <div className="max-h-[48vh] overflow-y-auto pr-1">
+                          <div className="rounded-[20px] border border-slate-200/80 bg-slate-50/85 p-2.5 dark:border-slate-700/80 dark:bg-slate-800/55">
+                            <div className="grid grid-cols-5 gap-2">
+                              {navQuestions.map((q, idx) => {
+                                const globalIdx = navStartIndex + idx;
+                                const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
+                                const isCorrect = q.isCorrect === true;
 
-                            return (
-                              <button
-                                key={q.id}
-                                onClick={() => jumpToQuestion(globalIdx)}
-                                className={cn(
-                                  'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
-                                  isPending
-                                    ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
-                                    : isCorrect
-                                      ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
-                                      : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
-                                  inCurrentPage
-                                    ? 'ring-2 ring-sky-500 ring-offset-2 dark:ring-offset-slate-900'
-                                    : ''
-                                )}
-                              >
-                                <span className="relative z-10 leading-none">{globalIdx + 1}</span>
-                              </button>
-                            );
-                          })}
+                                return (
+                                  <button
+                                    key={q.id}
+                                    onClick={() => jumpToQuestion(globalIdx)}
+                                    className={cn(
+                                      'relative aspect-square min-h-[44px] w-full rounded-[16px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+                                      isPending
+                                        ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
+                                        : isCorrect
+                                          ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
+                                          : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
+                                    )}
+                                  >
+                                    <span className="relative z-10 leading-none">{globalIdx + 1}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </div>
                       )}
 
