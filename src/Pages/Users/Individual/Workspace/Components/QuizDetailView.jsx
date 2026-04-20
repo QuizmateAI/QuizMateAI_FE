@@ -5,8 +5,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare, Trophy, Eye, Lock,
+  Share2, UserPlus, MessageSquare, Trophy, Eye, Lock, Pencil, Copy,
 } from "lucide-react";
+import { getCurrentUser } from "@/api/Authentication";
+import { resolveEditRule } from "./resolveEditRule";
+import ConfirmDuplicateDialog from "./ConfirmDuplicateDialog";
+import EditChoiceDialog from "./EditChoiceDialog";
+import QuizMetadataEditModal from "./QuizMetadataEditModal";
+import { duplicateQuiz, updateQuiz } from "@/api/QuizAPI";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
@@ -162,6 +168,7 @@ function QuizDetailView({
   quiz,
   onBack,
   onEdit,
+  onCreateSimilar,
   contextType: _contextType = "WORKSPACE",
   contextId: _contextId,
   hideEditButton = false,
@@ -197,6 +204,7 @@ function QuizDetailView({
   const [examStartOpen, setExamStartOpen] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [activating, setActivating] = useState(false);
   // Leader participation dialog (xuất bản → hỏi ranking)
   const [leaderParticipationOpen, setLeaderParticipationOpen] = useState(false);
   // Per-question discussion popup
@@ -209,6 +217,13 @@ function QuizDetailView({
   const [membersLoading, setMembersLoading] = useState(false);
   const detailRequestRunRef = React.useRef(0);
   const attemptHistoryProbeKeyRef = React.useRef(null);
+  const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false);
+  const [metadataEditOpen, setMetadataEditOpen] = useState(false);
+
+  const currentUserId = React.useMemo(() => {
+    const currentUser = getCurrentUser();
+    return Number(currentUser?.userId ?? currentUser?.userID ?? currentUser?.id ?? 0);
+  }, []);
 
   const localQuizCompleted = hasQuizCompleted(quiz?.quizId);
   const hasQuizPayloadAttempted =
@@ -222,9 +237,22 @@ function QuizDetailView({
   /** Fair play: leader tham gia thi + quiz ACTIVE → không xem trước đáp án/tab Kiểm tra. */
   const fairPlayRestricts = Boolean(quiz?.challengeFairPlayRestrictsViewer);
 
+  /**
+   * Creator luôn xem được đáp án quiz do mình tạo.
+   * Individual workspace (contextType="WORKSPACE"): viewer luôn là owner — dùng currentUserId > 0
+   * vì BE không nhất quán trả về creatorId trong quiz response.
+   * Các scope khác: match theo creatorId hoặc quizMeta (từ getQuizFull).
+   */
+  const isCreator = currentUserId > 0 && (
+    _contextType === "WORKSPACE"
+    || Number(quiz?.creatorId || 0) === currentUserId
+    || Number(quizMeta?.creatorId || 0) === currentUserId
+  );
+
   /** Cá nhân: chỉ xem đáp án sau khi làm xong (hoặc quiz nháp). Nhóm: leader / xem từ challenge cần đủ phương án cho tab Kiểm tra. */
   const canViewAnswers =
-    hasCurrentUserCompletedQuiz
+    isCreator
+    || hasCurrentUserCompletedQuiz
     || currentStatus === "DRAFT"
     || (_contextType === "GROUP" && isGroupLeader && !fairPlayRestricts)
     || (challengeSnapshotReviewMode && !fairPlayRestricts);
@@ -306,17 +334,15 @@ function QuizDetailView({
       let nextQuestionsMap = {};
       let nextAnswersMap = {};
 
-      // Nếu quiz chỉ có quizId (thiếu metadata như khi back từ kết quả), fetch thông tin đầy đủ
-      if (!quiz?.title) {
-        try {
-          const fullRes = await getQuizFull(quiz.quizId);
-          if (fullRes?.data) {
-            nextQuizMeta = fullRes.data;
-            nextStatus = fullRes.data.status || "DRAFT";
-          }
-        } catch (fullErr) {
-          console.error("Lỗi khi tải metadata quiz:", fullErr);
+      // Luôn đồng bộ metadata/status mới nhất để tránh giữ trạng thái cũ từ prop.
+      try {
+        const fullRes = await getQuizFull(quiz.quizId);
+        if (fullRes?.data) {
+          nextQuizMeta = fullRes.data;
+          nextStatus = fullRes.data.status || nextStatus;
         }
+      } catch (fullErr) {
+        console.error("Lỗi khi tải metadata quiz:", fullErr);
       }
 
       // Bước 1: Lấy sections
@@ -666,6 +692,41 @@ function QuizDetailView({
     }
   }, [quiz?.quizId, audienceMode, selectedAudienceUserIds, fetchFullDetail, onGroupQuizUpdated, t]);
 
+  const handleActivateWorkspaceQuiz = useCallback(async () => {
+    const quizId = effectiveQuiz?.quizId;
+    if (!quizId) return;
+
+    const confirmed = window.confirm(
+      t(
+        "workspace.quiz.detail.activateConfirm",
+        "Kích hoạt quiz này? Sau khi kích hoạt, người dùng có thể làm bài. Bạn vẫn có thể chỉnh sửa tự do cho đến khi có attempt đầu tiên.",
+      ),
+    );
+    if (!confirmed) return;
+
+    setActivating(true);
+    try {
+      const res = await updateQuiz(quizId, { status: "ACTIVE" });
+      const next = unwrapApiData(res) || {};
+      const nextStatus = next?.status || "ACTIVE";
+      setCurrentStatus(nextStatus);
+      setQuizMeta((prev) => ({ ...(prev || effectiveQuiz), ...next, status: nextStatus }));
+      queryClient.invalidateQueries({ queryKey: ["quizzes"] });
+      quizDetailCache.clear();
+      await fetchFullDetail();
+    } catch (err) {
+      console.error("[QuizDetailView] activate workspace quiz failed", err);
+      console.error("[QuizDetailView] activate workspace quiz failed response", err?.response?.data || err);
+      window.alert(
+        err?.response?.data?.message
+        || err?.message
+        || t("workspace.quiz.detail.activateFailed", "Không thể kích hoạt quiz."),
+      );
+    } finally {
+      setActivating(false);
+    }
+  }, [effectiveQuiz, fetchFullDetail, queryClient, t]);
+
   const toggleAudienceMember = useCallback((userId) => {
     setSelectedAudienceUserIds((prev) => (
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
@@ -673,6 +734,63 @@ function QuizDetailView({
   }, []);
 
   const isActiveQuiz = currentStatus === "ACTIVE";
+  const normalizedQuizIntent = String(effectiveQuiz?.quizIntent || "").toUpperCase();
+
+  const editRule = React.useMemo(
+    () => resolveEditRule(effectiveQuiz, hasHistoryCompleted),
+    [effectiveQuiz, hasHistoryCompleted],
+  );
+
+  const isManualQuiz = ["MANUAL", "MANUAL_FROM_AI"].includes(
+    String(effectiveQuiz?.createVia || "").toUpperCase(),
+  );
+
+  const canShowEditButton =
+    isCreator
+    && _contextType === "WORKSPACE"
+    && !hideEditButton
+    && !challengeSnapshotReviewMode
+    && currentStatus !== "PROCESSING"
+    && normalizedQuizIntent === "REVIEW";
+  const canShowDuplicateButton =
+    _contextType === "WORKSPACE"
+    && isCreator
+    && !hideEditButton
+    && !challengeSnapshotReviewMode
+    && currentStatus !== "PROCESSING"
+    && (isManualQuiz || hasCurrentUserCompletedQuiz)
+    && typeof onCreateSimilar === "function";
+  const canActivateManualDraftQuiz =
+    _contextType === "WORKSPACE"
+    && isManualQuiz
+    && isCreator
+    && String(currentStatus || "").toUpperCase() === "DRAFT"
+    && !challengeSnapshotReviewMode;
+
+  const handleDuplicate = useCallback(async () => {
+    const quizId = effectiveQuiz?.quizId;
+    if (!quizId) return;
+    const res = await duplicateQuiz(quizId);
+    const newQuiz = res?.data;
+    if (!newQuiz) return;
+    queryClient.invalidateQueries({ queryKey: ["quizzes"] });
+    setConfirmDuplicateOpen(false);
+    onEdit?.(newQuiz);
+  }, [effectiveQuiz?.quizId, queryClient, onEdit]);
+
+  const handleEditClick = useCallback(() => {
+    if (editRule === "EDIT_IN_PLACE") {
+      onEdit?.(effectiveQuiz);
+    } else if (editRule === "REQUIRES_DUPLICATE") {
+      setConfirmDuplicateOpen(true);
+    }
+    // LOCKED_UNTIL_FIRST_ATTEMPT: button is disabled, no action
+  }, [editRule, effectiveQuiz, onEdit]);
+
+  const handleMetadataSaved = useCallback((updatedFields) => {
+    setQuizMeta((prev) => ({ ...(prev || effectiveQuiz), ...updatedFields }));
+  }, [effectiveQuiz]);
+
   // Gate luyện tập: chỉ hiện sau khi user hoàn thành ít nhất 1 lần kiểm tra chính thức
   const hasCompletedOfficialAttempt = personalHistory !== null &&
     personalHistory.some(a => a.isPracticeMode === false && Boolean(a.completedAt));
@@ -824,6 +942,59 @@ function QuizDetailView({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* Nút Edit — chỉ hiển thị cho creator, scope cá nhân */}
+          {canShowEditButton && (
+            <div className="relative group/edit">
+              <Button
+                variant="outline"
+                disabled={editRule === "LOCKED_UNTIL_FIRST_ATTEMPT"}
+                onClick={handleEditClick}
+                className={cn(
+                  "rounded-full h-9 px-4 flex items-center gap-2",
+                  isDarkMode
+                    ? "border-slate-600 text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+                    : "text-slate-700 hover:bg-slate-100 disabled:opacity-40",
+                )}
+              >
+                <Pencil className="w-4 h-4" />
+                <span className="text-sm">{t("workspace.quiz.detail.edit", "Chỉnh sửa")}</span>
+              </Button>
+              {editRule === "LOCKED_UNTIL_FIRST_ATTEMPT" && (
+                <div className={cn(
+                  "pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium opacity-0 group-hover/edit:opacity-100 transition-opacity z-50",
+                  isDarkMode ? "bg-slate-700 text-slate-200" : "bg-slate-800 text-white",
+                )}>
+                  {t("workspace.quiz.detail.editLockedHint", "Hãy làm quiz lần đầu trước khi sửa")}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Nút Tạo quiz tương tự — chỉ dành cho manual quiz */}
+          {canShowDuplicateButton && (
+            <Button
+              variant="outline"
+              onClick={() => onCreateSimilar(effectiveQuiz)}
+              className={cn(
+                "rounded-full h-9 px-4 flex items-center gap-2",
+                isDarkMode
+                  ? "border-slate-600 text-slate-200 hover:bg-slate-700"
+                  : "text-slate-700 hover:bg-slate-100",
+              )}
+              >
+                <Copy className="w-4 h-4" />
+                <span className="text-sm">{t("workspace.quiz.detail.createSimilar", "Tạo tương tự")}</span>
+            </Button>
+          )}
+          {canActivateManualDraftQuiz && (
+            <Button
+              disabled={activating || String(currentStatus || "").toUpperCase() === "PROCESSING"}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
+              onClick={handleActivateWorkspaceQuiz}
+            >
+              {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              <span className="text-sm">{t("workspace.quiz.detail.activateQuiz", "Kích hoạt quiz")}</span>
+            </Button>
+          )}
           {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "DRAFT" && (
             <Button
               disabled={publishing || String(currentStatus || "").toUpperCase() === "PROCESSING"}
@@ -846,6 +1017,52 @@ function QuizDetailView({
           )}
         </div>
       </div>
+
+      {canActivateManualDraftQuiz && (
+        <div className="px-4 pb-3 pt-1">
+          <div
+            className={`relative overflow-hidden rounded-2xl border shadow-sm ${
+              isDarkMode
+                ? "border-slate-700/80 bg-gradient-to-br from-slate-900/95 via-slate-900 to-emerald-950/35"
+                : "border-slate-200/90 bg-gradient-to-br from-white via-slate-50/90 to-emerald-50/70"
+            }`}
+          >
+            <div
+              className={`pointer-events-none absolute inset-y-0 left-0 w-1 ${
+                isDarkMode ? "bg-gradient-to-b from-emerald-400/90 to-teal-500/80" : "bg-gradient-to-b from-emerald-500 to-teal-500"
+              }`}
+              aria-hidden
+            />
+            <div className="flex gap-3.5 pl-5 pr-4 py-4">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                  isDarkMode ? "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-400/20" : "bg-emerald-100 text-emerald-600 ring-1 ring-emerald-200/80"
+                }`}
+              >
+                <Play className="h-5 w-5" strokeWidth={2} />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className={`text-[13px] font-semibold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+                  Quiz này đang ở trạng thái bản nháp
+                </p>
+                <p className={`text-[13px] leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                  Bạn có thể tiếp tục chỉnh sửa thoải mái khi quiz chưa có attempt. Khi đã sẵn sàng cho người dùng làm bài, hãy kích hoạt quiz.
+                </p>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  <Button
+                    disabled={activating}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
+                    onClick={handleActivateWorkspaceQuiz}
+                  >
+                    {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    <span className="text-sm">{t("workspace.quiz.detail.confirmActivateQuiz", "Xác nhận & kích hoạt")}</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {_contextType === "GROUP" && String(currentStatus || "").toUpperCase() === "DRAFT" && (
         <div className="px-4 pb-3 pt-1">
@@ -1899,6 +2116,36 @@ function QuizDetailView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Confirm/Edit Dialog — mở khi editRule === REQUIRES_DUPLICATE */}
+      {isManualQuiz ? (
+        <EditChoiceDialog
+          open={confirmDuplicateOpen}
+          onClose={() => setConfirmDuplicateOpen(false)}
+          onDuplicate={handleDuplicate}
+          onEditMetadata={() => {
+            setConfirmDuplicateOpen(false);
+            setMetadataEditOpen(true);
+          }}
+          quiz={effectiveQuiz}
+          isDarkMode={isDarkMode}
+        />
+      ) : (
+        <ConfirmDuplicateDialog
+          open={confirmDuplicateOpen}
+          onClose={() => setConfirmDuplicateOpen(false)}
+          onConfirm={handleDuplicate}
+          quiz={effectiveQuiz}
+          isDarkMode={isDarkMode}
+        />
+      )}
+      {/* Metadata edit modal — chỉ cho manual quiz */}
+      <QuizMetadataEditModal
+        open={metadataEditOpen}
+        onClose={() => setMetadataEditOpen(false)}
+        quiz={effectiveQuiz}
+        onSaved={handleMetadataSaved}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/Components/ui/button";
-import { AlertCircle, ArrowLeft, BadgeCheck, Loader2, Rocket } from "lucide-react";
+import { AlertCircle, ArrowLeft, BadgeCheck, Loader2, Rocket, Sparkles, PenLine } from "lucide-react";
+import ManualQuizWizard from "../ManualQuizWizard";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { QUESTION_TYPE_LABEL_FALLBACKS } from "./createQuizForm.constants";
@@ -70,6 +71,16 @@ function CreateQuizForm({
   const insufficientCreditBannerRef = useRef(null);
   const prevSubmittingRef = useRef(false);
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+
+  // Tab: "ai" | "manual" — nhớ lựa chọn qua localStorage
+  const [mode, setMode] = useState(() => {
+    try { return localStorage.getItem("createQuizMode") || "ai"; } catch { return "ai"; }
+  });
+
+  const handleModeChange = useCallback((next) => {
+    setMode(next);
+    try { localStorage.setItem("createQuizMode", next); } catch { /* noop */ }
+  }, []);
 
   const {
     allSelected: areAllWorkspaceMaterialsSelected,
@@ -274,22 +285,69 @@ function CreateQuizForm({
 
   return (
     <div id="create-quiz-header" className="flex h-full flex-col scroll-mt-20">
-      <div className={`flex h-14 shrink-0 items-center gap-3 border-b px-3 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      {/* Header — gộp tabs vào 1 row, bỏ dòng tabs riêng */}
+      <div className={`flex h-12 shrink-0 items-center gap-2 border-b px-3 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button
           type="button"
           onClick={onBack}
-          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"}`}
+          className={`shrink-0 flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"}`}
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex flex-1 items-center gap-2">
-          <BadgeCheck className="h-5 w-5 text-blue-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+
+        {/* Title */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <BadgeCheck className="h-4 w-4 text-blue-500 shrink-0" />
+          <p className={`text-sm font-semibold truncate ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
             {t("workspace.quiz.createTitle")}
           </p>
         </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Mode toggle pills — inline right side */}
+        <div className={`flex items-center rounded-lg p-0.5 gap-0.5 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
+          {[
+            { key: "ai", label: "QuizMate AI", Icon: Sparkles },
+            { key: "manual", label: "Thủ công", Icon: PenLine },
+          ].map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => handleModeChange(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                mode === key
+                  ? isDarkMode
+                    ? "bg-slate-700 text-blue-400 shadow-sm"
+                    : "bg-white text-blue-600 shadow-sm"
+                  : isDarkMode
+                    ? "text-slate-400 hover:text-slate-200"
+                    : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* Manual mode — full height wizard */}
+      {mode === "manual" && (
+        <div className="flex-1 overflow-hidden">
+          <ManualQuizWizard
+            workspaceId={defaultContextId}
+            onCreateQuiz={onCreateQuiz}
+            onBack={onBack}
+            isDarkMode={isDarkMode}
+          />
+        </div>
+      )}
+
+      {/* AI mode */}
+      {mode === "ai" && (
+      <>
       <div id="create-quiz-scroll-root" className="flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-4">
 
         <CreateQuizAiRecommendationsPanel
@@ -429,6 +487,8 @@ function CreateQuizForm({
           {submitting ? t("workspace.quiz.generating") : t("workspace.quiz.generateAI")}
         </Button>
       </div>
+      </>
+      )}
     </div>
   );
 }
