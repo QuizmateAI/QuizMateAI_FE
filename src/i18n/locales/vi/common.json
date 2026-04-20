@@ -243,16 +243,16 @@
     "navHome": "Trang chủ",
     "heroBadge": "Minh bạch, công bằng, dễ dự đoán",
     "title": "Cách tính credit trong QuizmateAI",
-    "subtitle": "QuizmateAI không tính tiền theo tên tính năng. Hệ thống tính credit theo mức độ AI được sử dụng thực tế, để bạn biết vì sao bị trừ credit và có thể dự đoán chi phí trước khi chạy.",
+    "subtitle": "QuizmateAI tính credit theo mức dùng AI thực tế, giúp bạn hiểu vì sao bị trừ credit và dự đoán chi phí trước khi chạy.",
     "ctaPrimaryGuest": "Đăng nhập để xem ví",
     "ctaPrimaryUser": "Mở ví credit",
     "ctaSecondaryGuest": "Xem plans",
     "ctaSecondaryUser": "Xem plans",
     "openDashboard": "Mở dashboard",
     "viewPlans": "Xem plans",
-    "creditCardDescription": "Đơn vị dùng để quy đổi usage AI thành cách tính dễ mua, dễ hiểu và dễ giới hạn ngân sách.",
+    "creditCardDescription": "Đơn vị quy đổi usage AI thành cách tính dễ hiểu và dễ kiểm soát ngân sách.",
     "startingPointLabel": "Mốc khởi động",
-    "lightRequestHint": "Một tác vụ nhẹ như tạo quiz trộn 20 câu thường tiêu tốn khoảng 20-21 credit. OCR và các phần bổ sung sẽ làm tổng credit tăng thêm.",
+    "lightRequestHint": "Một tác vụ nhẹ như tạo quiz trộn 20 câu thường tốn khoảng 20-21 credit. OCR và phần bổ sung sẽ làm tổng credit tăng thêm.",
     "summaryCards": [
       {
         "title": "1 credit",
@@ -272,7 +272,7 @@
       }
     ],
     "bundleTitle": "Cách tính theo loại tài liệu được hỗ trợ",
-    "bundleDesc": "Hệ thống hiện dùng cách tính đơn giản để user dễ hiểu và dễ ước lượng. Mỗi loại tài liệu chỉ có một mức credit cơ bản theo đơn vị đo chính.",
+    "bundleDesc": "Hệ thống dùng cách tính đơn giản để dễ hiểu và dễ ước lượng. Mỗi loại tài liệu có một mức credit cơ bản theo đơn vị đo chính.",
     "bundleHeaders": [
       "Loại tài liệu",
       "Cách tính",
@@ -316,7 +316,7 @@
       ]
     ],
     "unitTitle": "Bảng credit cho tính năng AI chính",
-    "unitDesc": "Bảng này chỉ giữ các tính năng AI cốt lõi để user dễ ước lượng trước khi chạy. Riêng quiz sẽ tính đơn giản theo tổng số câu, không tách riêng từng loại câu hay config câu hỏi.",
+    "unitDesc": "Bảng này giữ các tính năng AI cốt lõi để dễ ước lượng trước khi chạy. Riêng quiz tính theo tổng số câu, không tách từng loại câu hay cấu hình câu hỏi.",
     "unitHeaders": [
       "Hạng mục",
       "Credit đề xuất",
