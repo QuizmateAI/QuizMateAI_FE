@@ -322,13 +322,13 @@
       "group": "Nhóm"
     },
     "badges": {
-      "permanent": "Mua vĩnh viễn",
+      "permanent": "Theo thời hạn gói",
       "credits": "Tính theo Credit",
       "transparent": "Minh bạch & rõ ràng"
     },
     "creditModel": {
       "title": "Mô hình Credit cho AI",
-      "desc": "Bạn mua plan một lần, sau đó chỉ cần nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
+      "desc": "Bạn chọn gói phù hợp, sau đó nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
       "cta": "Mở ví Credit",
       "guide": "Xem cách tính Credit"
     },
@@ -428,8 +428,8 @@
       }
     },
     "notes": {
-      "permanentTitle": "Mua một lần, dùng lâu dài",
-      "permanentDesc": "Plan không bắt buộc theo tháng. Tùy cấu hình hệ thống, bạn có thể sở hữu plan dạng vĩnh viễn.",
+      "permanentTitle": "Thời hạn gói rõ ràng",
+      "permanentDesc": "QuizMateAI không có gói mua vĩnh viễn. Mỗi plan có thời hạn và quyền lợi riêng để bạn chọn theo nhu cầu học.",
       "creditsTitle": "AI dùng theo Credit",
       "creditsDesc": "Các tính năng AI chỉ trừ Credit khi bạn thực sự dùng, nên dễ kiểm soát chi phí hơn.",
       "refundTitle": "Thanh toán rõ ràng",
@@ -482,7 +482,7 @@
       "hasAiContentStructuring": "AI Content Structuring",
       "hasPersonalizedLearningAnalytic": "Phân tích học tập cá nhân",
       "hasAiTextReadingAndSummarization": "AI đọc & tóm tắt văn bản",
-      "hasAdvancedAiConfiguration": "Loại quiz nâng cao"
+      "hasAdvancedAiConfiguration": "Cấu hình quiz nâng cao"
     }
   },
   "paymentResult": {

@@ -942,7 +942,7 @@
       "canProcessVideo": "Video",
       "canProcessAudio": "Audio",
       "canBuyCredit": "Mua credit",
-      "hasAdvanceQuizConfig": "Loại quiz nâng cao",
+      "hasAdvanceQuizConfig": "Cấu hình quiz nâng cao",
       "canCreateRoadMap": "Tạo roadmap",
       "hasAiCompanionMode": "AI companion",
       "hasWorkspaceAnalytics": "Analytics",

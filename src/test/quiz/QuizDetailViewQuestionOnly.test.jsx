@@ -18,6 +18,7 @@ vi.mock('@/api/QuizAPI', () => ({
   getSectionsByQuiz: vi.fn(),
   getQuestionsBySection: vi.fn(),
   getAnswersByQuestion: vi.fn(),
+  deleteQuestion: vi.fn(),
   toggleStarQuestion: vi.fn(),
   QUESTION_TYPE_ID_MAP: {},
   getQuizFull: vi.fn(),

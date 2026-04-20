@@ -79,7 +79,7 @@ describe('RoadmapConfigEditDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /^thiết lập lộ trình$|^set up roadmap$/i }));
 
     expect(screen.getByRole('heading', { name: /xác nhận thiết lập lộ trình|confirm roadmap setup/i })).toBeInTheDocument();
-    expect(screen.getByText(/bạn có chắc chắn muốn lưu cấu hình lộ trình này cho nhóm không|save this roadmap configuration for the group/i)).toBeInTheDocument();
+    expect(screen.getByText(/bạn có chắc chắn muốn lưu cấu hình lộ trình này cho workspace này không|save this roadmap configuration for this workspace/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /^xác nhận thiết lập$|^confirm setup$/i }));
 

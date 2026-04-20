@@ -19,6 +19,7 @@ vi.mock('@/api/QuizAPI', () => ({
   getSectionsByQuiz: vi.fn(),
   getQuestionsBySection: vi.fn(),
   getAnswersByQuestion: vi.fn(),
+  deleteQuestion: vi.fn(),
   toggleStarQuestion: vi.fn(),
   QUESTION_TYPE_ID_MAP: {},
   getQuizFull: vi.fn(),
@@ -182,5 +183,32 @@ describe('QuizDetailView group access', () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/Bình luận dưới tên/i)).toBeInTheDocument();
     });
+  });
+
+  it('keeps challenge fair-play leaders on overview only', async () => {
+    renderQuizDetailView({
+      isDarkMode: false,
+      quiz: {
+        quizId: 444,
+        title: 'Challenge fair play quiz',
+        status: 'ACTIVE',
+        challengeFairPlayRestrictsViewer: true,
+      },
+      onBack: vi.fn(),
+      hideEditButton: true,
+      contextType: 'GROUP',
+      contextId: 2,
+      isGroupLeader: true,
+      challengeSnapshotReviewMode: true,
+    });
+
+    await waitFor(() => {
+      expect(getSectionsByQuiz).toHaveBeenCalledWith(444);
+    });
+
+    expect(screen.queryByRole('button', { name: /^Câu hỏi$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Lịch sử làm bài$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Discussion$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Distribution$/i })).not.toBeInTheDocument();
   });
 });

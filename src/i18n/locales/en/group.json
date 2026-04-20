@@ -431,7 +431,7 @@
     },
     "ranking": {
       "title": "Group ranking",
-      "description": "This is the overall group ranking. Per-quiz ranking is available inside each quiz's Ranking tab.",
+      "description": "This is the overall group ranking in a single table. Challenge leaderboards are shown inside each challenge.",
       "loading": "Aggregating data from all quizzes…",
       "error": "Unable to load ranking data.",
       "retry": "Try again",
@@ -439,6 +439,56 @@
       "empty": "No member has completed any quiz yet.",
       "noData": "No data yet.",
       "meta": "Aggregated from {{quizCount}} active quizzes · {{memberCount}} participating members",
+      "tableTitle": "Ranking points",
+      "priority": "Ranked by RP",
+      "description": "Current top 3 and the full RP board for the group.",
+      "podiumTitle": "Current top 3",
+      "podiumSubtitle": "The leading three are setting the pace for the group.",
+      "detail": {
+        "title": "Why are they ranked here?",
+        "description": "Detailed RP earned from valid attempts in the shared published area.",
+        "currentRank": "Current rank",
+        "totalRp": "Total RP",
+        "evidenceTitle": "RP history",
+        "evidenceHint": "Each quiz counts only the first official attempt.",
+        "empty": "No detailed RP evidence yet.",
+        "formula": "Base {{base}} · Bonus {{bonus}}",
+        "breakdown": {
+          "regular": "Regular quiz",
+          "roadmap": "Roadmap quiz",
+          "mockTest": "Mock test"
+        },
+        "types": {
+          "REGULAR": "Regular quiz",
+          "ROADMAP": "Roadmap quiz",
+          "MOCK_TEST": "Mock test"
+        }
+      },
+      "snapshotTitle": "Quick snapshot",
+      "snapshotStats": {
+        "quizzes": "Quizzes counting RP",
+        "members": "Members on board",
+        "leaderRp": "Leading RP"
+      },
+      "note": "Only shared published content counts. Each quiz uses only the first official attempt to prevent spam.",
+      "topBadge": "Top 1",
+      "topBadges": {
+        "1": "Top 1",
+        "2": "Top 2",
+        "3": "Top 3"
+      },
+      "completedValue": "{{count}} quiz",
+      "columns": {
+        "rank": "Rank",
+        "member": "Member",
+        "points": "RP",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test",
+        "accuracy": "Accuracy",
+        "completed": "Completed",
+        "totalScore": "Total score"
+      },
       "metrics": {
         "accuracy": {
           "title": "Accuracy",
@@ -449,20 +499,6 @@
           "subtitle": "Ranked by how many quizzes were completed at least once",
           "value": "{{count}} quizzes"
         }
-      }
-    },
-    "quizRanking": {
-      "title": "Ranking · {{count}} members",
-      "loading": "Loading…",
-      "error": "Unable to load the ranking.",
-      "retry": "Try again",
-      "refresh": "Refresh",
-      "empty": "No member has completed this quiz yet.",
-      "columns": {
-        "member": "Member",
-        "accuracy": "Accuracy",
-        "time": "Time",
-        "submittedAt": "Submitted"
       }
     },
     "profile": {

@@ -25,7 +25,7 @@ import {
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 import i18nInstance from '@/i18n';
-import { analyzeKnowledge } from '@/api/StudyProfileAPI';
+import { analyzeKnowledge, suggestProfileFields } from '@/api/StudyProfileAPI';
 import {
   confirmGroupWorkspaceProfile,
   getGroupWorkspaceProfile,
@@ -42,6 +42,7 @@ const LEARNING_MODES = [
 
 const GROUP_NAME_PLACEHOLDERS = new Set(['group name null']);
 const ANALYSIS_DEBOUNCE_MS = 800;
+const FIELD_SUGGESTION_DEBOUNCE_MS = 700;
 const COMPACT_TEXTAREA_MIN_HEIGHT = 72;
 
 function extractApiData(response) {
@@ -50,6 +51,10 @@ function extractApiData(response) {
 
 function getErrorMessage(error, fallback) {
   return error?.message || error?.response?.data?.message || fallback;
+}
+
+function translateOrFallback(key, fallback, options) {
+  return i18nInstance.t(key, { defaultValue: fallback, ...(options || {}) });
 }
 
 function formatSeatLimit(value) {
@@ -306,10 +311,15 @@ function GroupWorkspaceProfileConfigMirror({
   const [domainOptions, setDomainOptions] = useState([]);
   const [knowledgeAnalysis, setKnowledgeAnalysis] = useState(null);
   const [analysisRetryTick, setAnalysisRetryTick] = useState(0);
+  const [groupGoalSuggestions, setGroupGoalSuggestions] = useState([]);
+  const [goalSuggestionStatus, setGoalSuggestionStatus] = useState('idle');
+  const [goalSuggestionMessage, setGoalSuggestionMessage] = useState('');
   const [learningMode, setLearningMode] = useState('');
   const [groupLearningGoal, setGroupLearningGoal] = useState('');
   const analysisTimerRef = useRef(null);
   const analysisAbortRef = useRef(null);
+  const goalSuggestionTimerRef = useRef(null);
+  const goalSuggestionAbortRef = useRef(null);
   const knowledgeTextareaRef = useRef(null);
   const groupGoalTextareaRef = useRef(null);
   const isStudyNewMode = learningMode === 'STUDY_NEW';
@@ -535,6 +545,8 @@ function GroupWorkspaceProfileConfigMirror({
 
   useEffect(() => {
     if (!open) {
+      clearTimeout(goalSuggestionTimerRef.current);
+      goalSuggestionAbortRef.current?.abort();
       setErrors({});
       setSaveError('');
       setStatusNotice('');
@@ -543,6 +555,9 @@ function GroupWorkspaceProfileConfigMirror({
       setDomainOptions([]);
       setKnowledgeAnalysis(null);
       setAnalysisRetryTick(0);
+      setGroupGoalSuggestions([]);
+      setGoalSuggestionStatus('idle');
+      setGoalSuggestionMessage('');
       setShowProfileConfirm(false);
       setIsPostOnboardingEdit(false);
     }
@@ -552,6 +567,8 @@ function GroupWorkspaceProfileConfigMirror({
     return () => {
       clearTimeout(analysisTimerRef.current);
       analysisAbortRef.current?.abort();
+      clearTimeout(goalSuggestionTimerRef.current);
+      goalSuggestionAbortRef.current?.abort();
     };
   }, []);
 
@@ -613,6 +630,87 @@ function GroupWorkspaceProfileConfigMirror({
       analysisAbortRef.current?.abort();
     };
   }, [open, knowledge, analysisRetryTick]);
+
+  useEffect(() => {
+    if (!open || step !== 2) return;
+
+    clearTimeout(goalSuggestionTimerRef.current);
+    goalSuggestionAbortRef.current?.abort();
+
+    const trimmedKnowledge = knowledge.trim();
+    const trimmedDomain = domain.trim();
+    const normalizedLearningMode = normalizeGroupLearningMode(learningMode);
+
+    if (
+      analysisStatus !== 'success'
+      || !trimmedKnowledge
+      || !trimmedDomain
+      || !normalizedLearningMode
+    ) {
+      setGroupGoalSuggestions([]);
+      setGoalSuggestionStatus('idle');
+      setGoalSuggestionMessage('');
+      return;
+    }
+
+    setGoalSuggestionStatus('loading');
+    setGoalSuggestionMessage('');
+
+    goalSuggestionTimerRef.current = setTimeout(async () => {
+      const abortController = new AbortController();
+      goalSuggestionAbortRef.current = abortController;
+
+      try {
+        const result = await suggestProfileFields(
+          {
+            knowledge: trimmedKnowledge,
+            domain: trimmedDomain,
+            learningMode: normalizedLearningMode,
+            currentLevel: null,
+            strongAreas: [],
+            weakAreas: [],
+          },
+          { signal: abortController.signal }
+        );
+
+        if (abortController.signal.aborted) return;
+
+        const nextSuggestions = Array.isArray(result?.learningGoalSuggestions)
+          ? result.learningGoalSuggestions
+            .map((item) => (typeof item === 'string' ? item.trim() : ''))
+            .filter(Boolean)
+            .slice(0, 3)
+          : [];
+
+        setGroupGoalSuggestions(nextSuggestions);
+        setGoalSuggestionStatus('success');
+        setGoalSuggestionMessage(
+          result?.warning && typeof result?.message === 'string'
+            ? result.message.trim()
+            : ''
+        );
+      } catch (error) {
+        if (abortController.signal.aborted) return;
+        console.error('[GroupWorkspace] Goal suggestions failed:', error);
+        setGroupGoalSuggestions([]);
+        setGoalSuggestionStatus('error');
+        setGoalSuggestionMessage(
+          getErrorMessage(
+            error,
+            translateOrFallback(
+              'groupWorkspaceProfileConfigMirror.goalSuggestionError',
+              'QuizMate AI chưa thể gợi ý mục tiêu học tập lúc này.'
+            )
+          )
+        );
+      }
+    }, FIELD_SUGGESTION_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(goalSuggestionTimerRef.current);
+      goalSuggestionAbortRef.current?.abort();
+    };
+  }, [open, step, analysisStatus, knowledge, domain, learningMode]);
 
   const validateStepOne = () => {
     const nextErrors = {};
@@ -1311,6 +1409,65 @@ function GroupWorkspaceProfileConfigMirror({
                       className={compactTextareaClass}
                       placeholder={t('groupProfileConfig.stepTwo.groupGoalPlaceholder')}
                     />
+                    {goalSuggestionStatus === 'loading' ? (
+                      <div className={cn(
+                        'rounded-lg border px-4 py-3 text-sm',
+                        isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700'
+                      )}>
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>
+                            {translateOrFallback(
+                              'groupWorkspaceProfileConfigMirror.goalSuggestionLoading',
+                              'QuizMate AI đang gợi ý mục tiêu học tập phù hợp cho nhóm.'
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {groupGoalSuggestions.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className={cn('text-[11px] font-semibold uppercase tracking-[0.16em]', mutedClass)}>
+                          {translateOrFallback(
+                            'groupWorkspaceProfileConfigMirror.goalSuggestionLabel',
+                            'QuizMate AI gợi ý mục tiêu'
+                          )}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {groupGoalSuggestions.map((suggestion) => (
+                            <button
+                              key={suggestion}
+                              type="button"
+                              onClick={() => {
+                                setGroupLearningGoal(suggestion);
+                                setErrors((prev) => ({ ...prev, groupLearningGoal: undefined }));
+                                requestAnimationFrame(() => autoResizeTextarea(groupGoalTextareaRef.current));
+                              }}
+                              className={cn(
+                                'rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
+                                isDarkMode
+                                  ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-200 hover:border-cyan-300/40 hover:bg-cyan-500/20'
+                                  : 'border-cyan-200 bg-cyan-50 text-cyan-700 hover:border-cyan-300 hover:bg-cyan-100'
+                              )}
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {goalSuggestionMessage ? (
+                      <p className={cn(
+                        'text-xs leading-5',
+                        goalSuggestionStatus === 'error'
+                          ? 'text-rose-500'
+                          : mutedClass
+                      )}>
+                        {goalSuggestionMessage}
+                      </p>
+                    ) : null}
                     <FieldError message={errors.groupLearningGoal} />
                   </div>
                 </div>

@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  KeyRound,
   Mail,
   MoreVertical,
   RefreshCw,
@@ -13,7 +14,6 @@ import {
   Send,
   Shield,
   Trash2,
-  Upload,
   UserMinus,
   UserPlus,
   Users,
@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/Components/ui/dropdown-menu';
+import { Switch } from '@/Components/ui/switch';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
 import UserDisplayName from '@/Components/users/UserDisplayName';
 import { normalizePendingInvitationSummary } from '../utils/memberSeatLimit';
@@ -38,6 +39,65 @@ const ACTIVE_WINDOW_MS = 2 * 60 * 1000;
 const AWAY_WINDOW_MS = 5 * 60 * 1000;
 const PRESENCE_TICK_MS = 30 * 1000;
 const EMPTY_PENDING_INVITATIONS = Object.freeze({ count: 0, invitations: [] });
+const GROUP_PERMISSION_SECTIONS = [
+  {
+    id: 'content',
+    label: 'Content',
+    items: [
+      { code: 'CREATE_QUIZ', label: 'Create quiz', description: 'Draft and edit group quizzes.' },
+      { code: 'PUBLISH_QUIZ', label: 'Publish quiz', description: 'Publish quiz drafts to members.' },
+      { code: 'ASSIGN_QUIZ_AUDIENCE', label: 'Assign audience', description: 'Choose which members can access a quiz.' },
+      { code: 'CREATE_FLASHCARD', label: 'Create flashcard', description: 'Create and update flashcard sets.' },
+      { code: 'CREATE_MOCK_TEST', label: 'Create mock test', description: 'Generate and manage mock tests.' },
+      { code: 'CREATE_ROADMAP', label: 'Create roadmap', description: 'Generate roadmap content and learning phases.' },
+      { code: 'CREATE_CHALLENGE', label: 'Create challenge', description: 'Create challenge events for the group.' },
+      { code: 'DELETE_CONTENT', label: 'Delete content', description: 'Remove group learning content.' },
+    ],
+  },
+  {
+    id: 'materials',
+    label: 'Materials',
+    items: [
+      { code: 'UPLOAD_MATERIAL', label: 'Upload material', description: 'Upload and refresh learning materials.' },
+      { code: 'MODERATE_MATERIAL', label: 'Moderate material', description: 'Approve, reject, or review pending materials.' },
+    ],
+  },
+  {
+    id: 'insights',
+    label: 'Insights',
+    items: [
+      { code: 'VIEW_MEMBER_DASHBOARD', label: 'View member dashboard', description: 'Open member stats and analytics.' },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'Administration',
+    items: [
+      { code: 'MANAGE_MEMBERS', label: 'Manage members', description: 'Invite, remove, and manage member permissions.' },
+      { code: 'MANAGE_SETTINGS', label: 'Manage settings', description: 'Update group settings and visibility.' },
+    ],
+  },
+];
+
+const ALL_GROUP_PERMISSION_CODES = GROUP_PERMISSION_SECTIONS.flatMap((section) => (
+  section.items.map((item) => item.code)
+));
+const GROUP_PERMISSION_SECTION_CODES = Object.fromEntries(
+  GROUP_PERMISSION_SECTIONS.map((section) => [section.id, section.items.map((item) => item.code)]),
+);
+
+const mergePermissionCodes = (currentCodes = [], nextCodes = []) => {
+  const merged = new Set(currentCodes);
+  nextCodes.forEach((code) => merged.add(code));
+  return ALL_GROUP_PERMISSION_CODES.filter((code) => merged.has(code));
+};
+
+const PERMISSION_PRESETS = {
+  MEMBER: [],
+  CONTRIBUTOR: ['UPLOAD_MATERIAL', 'CREATE_QUIZ', 'CREATE_FLASHCARD', 'CREATE_MOCK_TEST', 'CREATE_ROADMAP', 'VIEW_MEMBER_DASHBOARD', 'DELETE_CONTENT'],
+  ANALYST: ['VIEW_MEMBER_DASHBOARD'],
+  CONTENT_MANAGER: ['UPLOAD_MATERIAL', 'CREATE_QUIZ', 'PUBLISH_QUIZ', 'ASSIGN_QUIZ_AUDIENCE', 'CREATE_FLASHCARD', 'CREATE_MOCK_TEST', 'CREATE_ROADMAP', 'DELETE_CONTENT'],
+};
 
 const getPendingInvitationsQueryKey = (workspaceId) => ['group-pending-invitations', workspaceId];
 
@@ -108,6 +168,8 @@ function GroupMembersTab({
   onGrantUpload,
   onRevokeUpload,
   onUpdateRole,
+  onFetchMemberPermissions,
+  onSyncMemberPermissions,
   onRemoveMember,
   onOpenInvite,
   onInvite,
@@ -132,6 +194,10 @@ function GroupMembersTab({
   const [filterRole, setFilterRole] = useState('all');
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [reloading, setReloading] = useState(false);
+  const [permissionDialogMember, setPermissionDialogMember] = useState(null);
+  const [permissionDraft, setPermissionDraft] = useState([]);
+  const [permissionLoading, setPermissionLoading] = useState(false);
+  const [permissionSaving, setPermissionSaving] = useState(false);
   const [presenceNow, setPresenceNow] = useState(() => Date.now());
   const [invitePanelOpen, setInvitePanelOpen] = useState(false);
   const [pendingInviteActionError, setPendingInviteActionError] = useState('');
@@ -198,6 +264,9 @@ function GroupMembersTab({
   const seatUsageLabel = hasMemberSeatLimit
     ? `${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : totalMembers}/${normalizedMemberSeatLimit}`
     : '';
+  const permissionDraftSet = useMemo(() => new Set(permissionDraft), [permissionDraft]);
+  const hasAllPermissions = ALL_GROUP_PERMISSION_CODES.length > 0
+    && ALL_GROUP_PERMISSION_CODES.every((code) => permissionDraftSet.has(code));
 
   const updatePendingInvitationCache = useCallback((updater) => {
     queryClient.setQueryData(pendingInvitationsQueryKey, (current) => {
@@ -223,13 +292,13 @@ function GroupMembersTab({
 
   const handleToggleUpload = useCallback(async (member) => {
     try {
-      const targetUserId = member.userId;
-      if (!targetUserId) return;
+      const targetMemberId = member.groupMemberId ?? member.workspaceMemberId;
+      if (!targetMemberId) return;
 
       if (member.canUpload) {
-        await onRevokeUpload(workspaceId, targetUserId);
+        await onRevokeUpload(workspaceId, targetMemberId);
       } else {
-        await onGrantUpload(workspaceId, targetUserId);
+        await onGrantUpload(workspaceId, targetMemberId);
       }
 
       await onReload();
@@ -240,8 +309,9 @@ function GroupMembersTab({
 
   const handleChangeRole = useCallback(async (member, newRole) => {
     try {
-      if (!member.userId) return;
-      await onUpdateRole(workspaceId, member.userId, newRole);
+      const targetMemberId = member.groupMemberId ?? member.workspaceMemberId;
+      if (!targetMemberId) return;
+      await onUpdateRole(workspaceId, targetMemberId, newRole);
       await onReload();
     } catch (err) {
       console.error('Lỗi đổi vai trò:', err);
@@ -250,8 +320,9 @@ function GroupMembersTab({
 
   const handleRemoveMember = useCallback(async (member) => {
     try {
-      if (!member.userId) return;
-      await onRemoveMember(workspaceId, member.userId);
+      const targetMemberId = member.groupMemberId ?? member.workspaceMemberId;
+      if (!targetMemberId) return;
+      await onRemoveMember(workspaceId, targetMemberId);
       await onReload();
     } catch (err) {
       console.error('Lỗi xóa thành viên:', err);
@@ -259,6 +330,70 @@ function GroupMembersTab({
 
     setConfirmRemove(null);
   }, [workspaceId, onRemoveMember, onReload]);
+
+  const handleOpenPermissions = useCallback(async (member) => {
+    if (!isLeader || !member || !onFetchMemberPermissions) return;
+    const targetMemberId = member.groupMemberId ?? member.workspaceMemberId;
+    if (!targetMemberId) return;
+    setPermissionDialogMember(member);
+    setPermissionLoading(true);
+    try {
+      const payload = await onFetchMemberPermissions(workspaceId, targetMemberId);
+      const assigned = Array.isArray(payload?.assignedPermissionCodes) ? payload.assignedPermissionCodes : [];
+      setPermissionDraft(assigned);
+    } catch (err) {
+      console.error('Lỗi tải permissions:', err);
+      setPermissionDraft([]);
+    } finally {
+      setPermissionLoading(false);
+    }
+  }, [isLeader, onFetchMemberPermissions, workspaceId]);
+
+  const togglePermissionCode = useCallback((code) => {
+    setPermissionDraft((current) => (
+      current.includes(code)
+        ? current.filter((item) => item !== code)
+        : [...current, code]
+    ));
+  }, []);
+
+  const applyAllPermissions = useCallback(() => {
+    setPermissionDraft([...ALL_GROUP_PERMISSION_CODES]);
+  }, []);
+
+  const applySectionPermissions = useCallback((sectionId) => {
+    const sectionCodes = GROUP_PERMISSION_SECTION_CODES[sectionId] || [];
+    setPermissionDraft((current) => mergePermissionCodes(current, sectionCodes));
+  }, []);
+
+  const applyPermissionPreset = useCallback((presetKey) => {
+    setPermissionDraft([...(PERMISSION_PRESETS[presetKey] || [])]);
+  }, []);
+
+  const resetPermissionsToRoleDefaults = useCallback(() => {
+    const role = normalizeRole(permissionDialogMember?.role);
+    if (role === 'CONTRIBUTOR') {
+      applyPermissionPreset('CONTRIBUTOR');
+      return;
+    }
+    applyPermissionPreset('MEMBER');
+  }, [applyPermissionPreset, permissionDialogMember?.role]);
+
+  const handleSavePermissions = useCallback(async () => {
+    if (!permissionDialogMember || !onSyncMemberPermissions) return;
+    const targetMemberId = permissionDialogMember.groupMemberId ?? permissionDialogMember.workspaceMemberId;
+    if (!targetMemberId) return;
+    setPermissionSaving(true);
+    try {
+      await onSyncMemberPermissions(workspaceId, targetMemberId, permissionDraft);
+      await onReload();
+      setPermissionDialogMember(null);
+    } catch (err) {
+      console.error('Lỗi lưu permissions:', err);
+    } finally {
+      setPermissionSaving(false);
+    }
+  }, [onReload, onSyncMemberPermissions, permissionDialogMember, permissionDraft, workspaceId]);
 
   const getInviteEmail = (invitation) => (
     invitation?.invitedEmail
@@ -711,18 +846,22 @@ function GroupMembersTab({
               ) : (
                 <div className={`overflow-hidden rounded-[28px] border backdrop-blur-xl ${tableClass}`}>
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[820px] table-fixed border-collapse">
+                    <table className="w-full min-w-[1080px] table-fixed border-collapse">
                       <colgroup>
-                        <col className="w-[40%]" />
-                        <col className="w-[22%]" />
-                        <col className="w-[24%]" />
+                        <col className="w-[34%]" />
                         <col className="w-[14%]" />
+                        <col className="w-[16%]" />
+                        <col className="w-[12%]" />
+                        <col className="w-[12%]" />
+                        <col className="w-[12%]" />
                       </colgroup>
                       <thead>
                         <tr className={`h-[54px] text-xs font-black uppercase ${isDarkMode ? 'border-b border-white/10 bg-white/[0.04] text-slate-300' : 'border-b border-slate-200 bg-slate-50 text-slate-600'}`}>
                           <th className="px-7 text-left">{t('groupManage.members.columns.member', { defaultValue: 'Member' })}</th>
                           <th className="px-4 text-left">{t('groupManage.members.columns.role', { defaultValue: 'Role' })}</th>
                           <th className="px-4 text-left">{t('groupManage.members.columns.status', { defaultValue: 'Status' })}</th>
+                          <th className="px-4 text-left">{t('groupManage.members.columns.upload', { defaultValue: 'Upload' })}</th>
+                          <th className="px-4 text-left">{t('groupManage.members.columns.permissions', { defaultValue: 'Permissions' })}</th>
                           <th className="px-7 text-right">{t('groupManage.members.columns.actions', { defaultValue: 'Action' })}</th>
                         </tr>
                       </thead>
@@ -731,6 +870,7 @@ function GroupMembersTab({
                           const memberRole = normalizeRole(member.role);
                           const avatarUrl = getAvatarUrl(member);
                           const status = getStatus(member);
+                          const canManageRow = isLeader && !member.isCurrentUser && memberRole !== 'LEADER';
 
                           return (
                             <tr key={member.groupMemberId ?? member.userId} className={`h-[86px] transition-colors ${isDarkMode ? 'hover:bg-white/[0.04]' : 'hover:bg-slate-50'}`}>
@@ -745,10 +885,10 @@ function GroupMembersTab({
                                   </div>
                                   <div className="min-w-0">
                                     <p className={`truncate text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-[#314044]'}`}>
-                                      <UserDisplayName user={member} fallback={currentLang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
+                                      <UserDisplayName user={member} fallback={currentLang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} showUsernameSuffix={false} />
                                     </p>
                                     <p className={`mt-1 truncate text-xs ${mutedTextClass}`}>
-                                      {member.email || (member.username ? `@${member.username}` : 'member')}
+                                      {member.email || '—'}
                                     </p>
                                   </div>
                                 </div>
@@ -764,8 +904,34 @@ function GroupMembersTab({
                                   {status.label}
                                 </span>
                               </td>
+                              <td className="px-4">
+                                <div className="flex items-center gap-3">
+                                  <Switch
+                                    checked={Boolean(member.canUpload)}
+                                    onCheckedChange={() => handleToggleUpload(member)}
+                                    disabled={!canManageRow}
+                                    aria-label={member.canUpload ? t('home.group.revokeUpload', { defaultValue: 'Revoke upload' }) : t('home.group.grantUpload', { defaultValue: 'Grant upload' })}
+                                  />
+                                  <span className={`text-xs font-semibold ${member.canUpload ? (isDarkMode ? 'text-cyan-200' : 'text-cyan-700') : mutedTextClass}`}>
+                                    {member.canUpload
+                                      ? t('groupManage.members.permissionOn', { defaultValue: 'On' })
+                                      : t('groupManage.members.permissionOff', { defaultValue: 'Off' })}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenPermissions(member)}
+                                  disabled={!canManageRow}
+                                  className={`inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-100 hover:bg-white/[0.08]' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                                >
+                                  <KeyRound className="h-3.5 w-3.5" />
+                                  {t('groupManage.members.managePermissions', { defaultValue: 'Manage' })}
+                                </button>
+                              </td>
                               <td className="px-7 text-right">
-                                {isLeader && !member.isCurrentUser && memberRole !== 'LEADER' ? (
+                                {canManageRow ? (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <button
@@ -777,11 +943,6 @@ function GroupMembersTab({
                                       </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className={`w-56 rounded-lg p-1 shadow-xl ${isDarkMode ? 'border-white/10 bg-[#09170f] text-emerald-50' : 'border-white bg-white text-[#2f3d66]'}`}>
-                                      <DropdownMenuItem onClick={() => handleToggleUpload(member)} className="cursor-pointer rounded-lg px-3 py-2.5 text-sm">
-                                        <Upload className="mr-2 h-4 w-4" />
-                                        {member.canUpload ? t('home.group.revokeUpload', { defaultValue: 'Revoke upload' }) : t('home.group.grantUpload', { defaultValue: 'Grant upload' })}
-                                      </DropdownMenuItem>
-
                                       {memberRole === 'MEMBER' ? (
                                         <DropdownMenuItem onClick={() => handleChangeRole(member, 'CONTRIBUTOR')} className="cursor-pointer rounded-lg px-3 py-2.5 text-sm">
                                           <Shield className="mr-2 h-4 w-4" />
@@ -863,6 +1024,126 @@ function GroupMembersTab({
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 active:scale-95"
               >
                 {t('home.group.removeMember', { defaultValue: 'Remove member' })}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {permissionDialogMember ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm">
+          <div className={`flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border p-5 shadow-2xl sm:p-6 ${isDarkMode ? 'border-white/10 bg-[#09170f] text-white' : 'border-white bg-white text-slate-900'}`}>
+            <p className={`text-xs font-bold uppercase ${mutedTextClass}`}>{t('groupManage.members.permissionsTitle', { defaultValue: 'Permissions' })}</p>
+            <h3 className="mt-3 text-xl font-bold">
+              {t('groupManage.members.permissionsFor', {
+                name: getUserDisplayLabel(permissionDialogMember, currentLang === 'en' ? 'Member' : 'Thành viên'),
+                defaultValue: 'Permissions for {{name}}',
+              })}
+            </h3>
+
+            {permissionLoading ? (
+              <div className="mt-5 flex min-h-[260px] flex-1 items-center justify-center">
+                <ListSpinner variant="inline" />
+              </div>
+            ) : (
+              <>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => applyPermissionPreset('MEMBER')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Member</button>
+                  <button type="button" onClick={() => applyPermissionPreset('CONTRIBUTOR')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Contributor</button>
+                  <button type="button" onClick={() => applyPermissionPreset('ANALYST')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Analyst</button>
+                  <button type="button" onClick={() => applyPermissionPreset('CONTENT_MANAGER')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Content manager</button>
+                  <button
+                    type="button"
+                    onClick={applyAllPermissions}
+                    className={`rounded-lg px-3 py-2 text-xs font-semibold ${hasAllPermissions
+                      ? (isDarkMode ? 'bg-cyan-400/20 text-cyan-100' : 'bg-cyan-50 text-cyan-700')
+                      : (isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800')}`}
+                  >
+                    {t('groupManage.members.permissionsAllFull', { defaultValue: 'All full' })}
+                  </button>
+                  <button type="button" onClick={resetPermissionsToRoleDefaults} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700'}`}>Reset to role defaults</button>
+                </div>
+
+                <div className="-mr-1 mt-5 flex-1 overflow-y-auto pr-1">
+                  <div className="space-y-4 pb-1">
+                    {GROUP_PERMISSION_SECTIONS.map((section) => {
+                      const sectionCodes = GROUP_PERMISSION_SECTION_CODES[section.id] || [];
+                      const hasAllSectionPermissions = sectionCodes.length > 0
+                        && sectionCodes.every((code) => permissionDraftSet.has(code));
+
+                      return (
+                        <div key={section.id}>
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className={`text-xs font-bold uppercase ${mutedTextClass}`}>{section.label}</p>
+                            <button
+                              type="button"
+                              onClick={() => applySectionPermissions(section.id)}
+                              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide ${hasAllSectionPermissions
+                                ? (isDarkMode ? 'bg-cyan-400/20 text-cyan-100' : 'bg-cyan-50 text-cyan-700')
+                                : (isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800')}`}
+                            >
+                              {t('groupManage.members.permissionsAll', { defaultValue: 'All' })}
+                            </button>
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                            {section.items.map((permission) => {
+                              const checked = permissionDraftSet.has(permission.code);
+                              return (
+                                <div
+                                  key={permission.code}
+                                  onClick={(event) => {
+                                    if (event.target.closest('[role="switch"]')) return;
+                                    togglePermissionCode(permission.code);
+                                  }}
+                                  className={`cursor-pointer rounded-lg border px-3 py-2.5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-slate-50'}`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-semibold">{permission.label}</p>
+                                      <p className={`mt-1 text-[11px] leading-4 ${mutedTextClass}`}>{permission.description}</p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1.5">
+                                      <Switch
+                                        aria-label={permission.label}
+                                        checked={checked}
+                                        onCheckedChange={() => togglePermissionCode(permission.code)}
+                                      />
+                                      <span className={`text-[10px] font-semibold uppercase ${checked ? (isDarkMode ? 'text-cyan-200' : 'text-cyan-700') : mutedTextClass}`}>
+                                        {checked
+                                          ? t('groupManage.members.permissionOn', { defaultValue: 'On' })
+                                          : t('groupManage.members.permissionOff', { defaultValue: 'Off' })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className={`mt-5 flex shrink-0 justify-end gap-3 border-t pt-4 ${isDarkMode ? 'border-white/10' : 'border-slate-100'}`}>
+              <button
+                type="button"
+                onClick={() => setPermissionDialogMember(null)}
+                className={`rounded-lg border px-4 py-2 text-sm font-medium transition-all active:scale-95 ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.10]' : 'border-white bg-slate-50 text-slate-700 hover:bg-white'}`}
+              >
+                {t('home.group.cancel', { defaultValue: 'Cancel' })}
+              </button>
+              <button
+                type="button"
+                disabled={permissionLoading || permissionSaving}
+                onClick={handleSavePermissions}
+                className="rounded-lg bg-[#4d43e5] px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:bg-[#4338ca] disabled:opacity-60"
+              >
+                {permissionSaving
+                  ? t('groupManage.members.savingPermissions', { defaultValue: 'Saving...' })
+                  : t('groupManage.members.savePermissions', { defaultValue: 'Save permissions' })}
               </button>
             </div>
           </div>

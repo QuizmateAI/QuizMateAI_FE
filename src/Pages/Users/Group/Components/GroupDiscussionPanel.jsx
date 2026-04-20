@@ -29,6 +29,7 @@ import {
   X,
   Info,
   Lock,
+  Reply,
 } from 'lucide-react';
 import i18n from '@/i18n';
 import { Button } from '@/Components/ui/button';
@@ -40,6 +41,13 @@ import {
   postMessage,
   deleteMessage,
 } from '@/api/GroupDiscussionAPI';
+import {
+  buildDiscussionMessageMap,
+  formatDiscussionPreview,
+  getDiscussionReplyDepth,
+  getDiscussionReplyPreview,
+  normalizeDiscussionMessageId,
+} from './groupDiscussionReplyUtils';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -176,7 +184,17 @@ function UserAvatar({ src, name, role, userId, sizeClass = 'w-8 h-8', textClass 
 }
 
 /** Single message row. */
-function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDarkMode }) {
+function MessageItem({
+  msg,
+  canDelete,
+  onDelete,
+  onReply,
+  replyPreview,
+  depth,
+  questionsById,
+  onNavigate,
+  isDarkMode,
+}) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState(false);
   const cancelRef = useRef(null);
@@ -184,6 +202,10 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
     fullName: msg.authorName,
     username: msg.authorUserName,
   }, msg.authorName || t('groupDiscussionPanel.defaultUserName', 'User'));
+  const replyAuthorDisplay = getUserDisplayParts({
+    fullName: replyPreview?.authorName,
+    username: replyPreview?.authorUserName,
+  }, replyPreview?.authorName || t('groupDiscussionPanel.defaultUserName', 'User'));
 
   const handleDeleteClick = () => {
     if (pendingDelete) {
@@ -201,7 +223,13 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
   const parts = parseBody(msg.body);
 
   return (
-    <div className="flex gap-3 group">
+    <div
+      className={cn(
+        'flex gap-3 group',
+        depth > 0 && (isDarkMode ? 'border-l border-slate-800 pl-3' : 'border-l border-blue-100 pl-3'),
+      )}
+      style={depth > 0 ? { marginLeft: `${Math.min(depth, 2) * 18}px` } : undefined}
+    >
       <UserAvatar
         src={msg.authorAvatar}
         name={msg.authorName}
@@ -230,6 +258,33 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
         </div>
 
         {/* Body with question chips */}
+        {replyPreview && (
+          <div
+            className={cn(
+              'mb-1.5 flex items-start gap-2 rounded-xl border-l-2 px-2.5 py-1.5 text-xs',
+              isDarkMode
+                ? 'border-blue-700 bg-slate-900/80 text-slate-400'
+                : 'border-blue-300 bg-white text-gray-500',
+            )}
+          >
+            <Reply className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
+            <div className="min-w-0">
+              <p className={cn('font-medium', isDarkMode ? 'text-slate-300' : 'text-gray-700')}>
+                {replyPreview.missing
+                  ? t('groupDiscussionPanel.reply.originalUnavailable', 'Original comment unavailable')
+                  : t('groupDiscussionPanel.reply.replyingTo', {
+                    name: replyAuthorDisplay.name,
+                    defaultValue: 'Replying to {{name}}',
+                  })}
+              </p>
+              {!replyPreview.missing && (
+                <p className="truncate">
+                  {truncateText(replyPreview.body, 80) || t('groupDiscussionPanel.reply.emptyBody', 'No content')}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         <div className={cn(
           'text-sm leading-relaxed rounded-xl px-3 py-2 inline-block max-w-full',
           isDarkMode ? 'bg-slate-800/70 text-slate-200' : 'bg-blue-50 text-gray-800',
@@ -250,6 +305,20 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
             }
             return part ? <span key={i} className="whitespace-pre-wrap break-words">{part}</span> : null;
           })}
+        </div>
+
+        <div className="mt-1.5 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onReply(msg)}
+            className={cn(
+              'inline-flex items-center gap-1 text-[11px] font-medium transition-colors',
+              isDarkMode ? 'text-slate-500 hover:text-blue-300' : 'text-gray-400 hover:text-blue-600',
+            )}
+          >
+            <Reply className="h-3 w-3" />
+            {t('groupDiscussionPanel.reply.action', 'Reply')}
+          </button>
         </div>
       </div>
 
@@ -464,6 +533,7 @@ export default function GroupDiscussionPanel({
 
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [replyTarget, setReplyTarget] = useState(null);
 
   // ── Draft & tag state
   const [draft, setDraft] = useState('');
@@ -480,6 +550,7 @@ export default function GroupDiscussionPanel({
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const canAccess = isLeader || hasAttempted;
+  const messageMap = useMemo(() => buildDiscussionMessageMap(messages), [messages]);
 
   // ── Filtered suggestions
   const filteredSuggestions = useMemo(() => {
@@ -520,6 +591,12 @@ export default function GroupDiscussionPanel({
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length]);
+
+  useEffect(() => {
+    if (replyTarget?.id && !messageMap.has(replyTarget.id)) {
+      setReplyTarget(null);
+    }
+  }, [messageMap, replyTarget]);
 
   // ── Input change: detect slash command
   const handleInputChange = useCallback((e) => {
@@ -578,31 +655,26 @@ export default function GroupDiscussionPanel({
     if (!rawBody || posting || !canAccess) return;
 
     const encodedBody = encodeDraftTags(rawBody, draftTags);
-    const authorId = profile?.userId ?? profile?.id ?? 0;
-    const authorName = profile?.fullName ?? profile?.name ?? t('groupDiscussionPanel.defaultUserName', 'User');
-    const authorUserName = profile?.username ?? null;
-    const authorAvatar = profile?.avatarUrl ?? profile?.avatar ?? null;
-    const authorRole = isLeader ? 'LEADER' : 'MEMBER';
+    const parentMessageId = replyTarget?.id && Number.isFinite(Number(replyTarget.id))
+      ? Number(replyTarget.id)
+      : null;
 
     setPosting(true);
     try {
       const msg = await postMessage(workspaceId, quizId, null, {
         body: encodedBody,
-        authorId,
-        authorName,
-        authorUserName,
-        authorAvatar,
-        authorRole,
+        parentMessageId,
       });
       setMessages((prev) => [...prev, msg]);
       setDraft('');
       setDraftTags({});
+      setReplyTarget(null);
     } catch {
       // upstream handles errors
     } finally {
       setPosting(false);
     }
-  }, [draft, draftTags, posting, canAccess, profile, isLeader, workspaceId, quizId, t]);
+  }, [draft, draftTags, posting, canAccess, replyTarget, workspaceId, quizId]);
 
   // ── Keyboard navigation in suggestions + send
   const handleKeyDown = useCallback((e) => {
@@ -639,12 +711,37 @@ export default function GroupDiscussionPanel({
     try {
       await deleteMessage(workspaceId, quizId, null, messageId);
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      setReplyTarget((prev) => (prev?.id === normalizeDiscussionMessageId(messageId) ? null : prev));
     } catch {
       // ignore
     }
   }, [workspaceId, quizId]);
 
+  const handleReply = useCallback((message) => {
+    const messageId = normalizeDiscussionMessageId(message?.id ?? message?.messageId);
+    if (!messageId) {
+      return;
+    }
+
+    setReplyTarget({
+      id: messageId,
+      authorName: message?.authorName || null,
+      authorUserName: message?.authorUserName || null,
+      body: formatDiscussionPreview(message?.body),
+    });
+
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, []);
+
   const currentUserId = profile?.userId ?? profile?.id ?? 0;
+  const replyTargetDisplay = replyTarget
+    ? getUserDisplayParts({
+      fullName: replyTarget.authorName,
+      username: replyTarget.authorUserName,
+    }, replyTarget.authorName || t('groupDiscussionPanel.defaultUserName', 'User'))
+    : null;
 
   // ── Active tag chips shown in the input bar
   const activeTagCount = Object.keys(draftTags).filter((marker) => draft.includes(marker)).length;
@@ -704,6 +801,9 @@ export default function GroupDiscussionPanel({
                 msg={msg}
                 canDelete={isLeader || Number(msg.authorId) === Number(currentUserId)}
                 onDelete={handleDelete}
+                onReply={handleReply}
+                replyPreview={getDiscussionReplyPreview(messageMap, msg)}
+                depth={getDiscussionReplyDepth(messageMap, msg)}
                 questionsById={questionsById}
                 onNavigate={onNavigateToQuestion}
                 isDarkMode={isDarkMode}
@@ -797,6 +897,38 @@ export default function GroupDiscussionPanel({
         'px-4 py-3 border-t shrink-0',
         isDarkMode ? 'border-slate-700/60' : 'border-blue-100',
       )}>
+        {replyTarget && (
+          <div
+            className={cn(
+              'mb-2 flex items-start justify-between gap-3 rounded-xl border px-3 py-2',
+              isDarkMode ? 'border-blue-900/60 bg-blue-950/20' : 'border-blue-200 bg-blue-50',
+            )}
+          >
+            <div className="min-w-0">
+              <p className={cn('text-xs font-semibold', isDarkMode ? 'text-blue-300' : 'text-blue-700')}>
+                {t('groupDiscussionPanel.reply.replyingTo', {
+                  name: replyTargetDisplay?.name || t('groupDiscussionPanel.defaultUserName', 'User'),
+                  defaultValue: 'Replying to {{name}}',
+                })}
+              </p>
+              <p className={cn('mt-0.5 truncate text-xs', isDarkMode ? 'text-slate-400' : 'text-gray-600')}>
+                {truncateText(replyTarget.body, 90) || t('groupDiscussionPanel.reply.emptyBody', 'No content')}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplyTarget(null)}
+              className={cn(
+                'rounded-full p-1 transition-colors',
+                isDarkMode ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-gray-400 hover:bg-white hover:text-gray-600',
+              )}
+              title={t('groupDiscussionPanel.reply.cancel', 'Cancel reply')}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         <div className={cn(
           'flex items-end gap-2 rounded-xl border p-2 transition-colors',
           showSuggestions
@@ -818,7 +950,12 @@ export default function GroupDiscussionPanel({
             value={draft}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={t('groupDiscussionPanel.input.placeholder', 'Write a comment… Use / to tag a question · Enter to send')}
+            placeholder={replyTarget
+              ? t('groupDiscussionPanel.input.replyPlaceholder', {
+                name: replyTargetDisplay?.name || t('groupDiscussionPanel.defaultUserName', 'User'),
+                defaultValue: 'Reply to {{name}}… Press Enter to send',
+              })
+              : t('groupDiscussionPanel.input.placeholder', 'Write a comment… Use / to tag a question · Enter to send')}
             rows={1}
             className={cn(
               'flex-1 bg-transparent resize-none text-sm leading-relaxed outline-none min-h-[36px] max-h-[100px]',

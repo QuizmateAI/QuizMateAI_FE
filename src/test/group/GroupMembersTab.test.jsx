@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import GroupMembersTab from '@/Pages/Users/Group/Group_leader/GroupMembersTab';
@@ -16,7 +16,7 @@ vi.mock('react-i18next', () => ({
       if (key === 'groupManage.members.showing') {
         return `Showing ${options?.count} of ${options?.total}`;
       }
-      return translations[key] || key;
+      return translations[key] || options?.defaultValue || key;
     },
     i18n: { language: 'en' },
   }),
@@ -95,7 +95,7 @@ describe('GroupMembersTab', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('groupManage.members.pendingInvitations').closest('button'));
+    fireEvent.click(screen.getByText('Pending invitations').closest('button'));
 
     expect(await screen.findByText('loc@example.com')).toBeInTheDocument();
   });
@@ -123,6 +123,80 @@ describe('GroupMembersTab', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'home.group.invite' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Invite User' })).toBeDisabled();
+  });
+
+  it('uses workspaceMemberId when toggling upload permission', async () => {
+    const onGrantUpload = vi.fn();
+
+    renderWithQueryClient(
+      <GroupMembersTab
+        isDarkMode={false}
+        workspaceId={9}
+        membersLoading={false}
+        isLeader
+        members={[
+          { groupMemberId: 22, userId: 12, fullName: 'Bob', email: 'bob@example.com', role: 'MEMBER', canUpload: false },
+        ]}
+        onReload={vi.fn()}
+        onGrantUpload={onGrantUpload}
+        onRevokeUpload={vi.fn()}
+        onUpdateRole={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onOpenInvite={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Grant upload' }));
+
+    expect(onGrantUpload).toHaveBeenCalledWith(9, 22);
+  });
+
+  it('saves member permissions using workspaceMemberId', async () => {
+    const onFetchMemberPermissions = vi.fn().mockResolvedValue({
+      assignedPermissionCodes: ['CREATE_QUIZ'],
+    });
+    const onSyncMemberPermissions = vi.fn().mockResolvedValue({});
+
+    renderWithQueryClient(
+      <GroupMembersTab
+        isDarkMode={false}
+        workspaceId={9}
+        membersLoading={false}
+        isLeader
+        members={[
+          { groupMemberId: 55, userId: 15, fullName: 'Cara', email: 'cara@example.com', role: 'MEMBER', canUpload: false },
+        ]}
+        onReload={vi.fn()}
+        onGrantUpload={vi.fn()}
+        onRevokeUpload={vi.fn()}
+        onUpdateRole={vi.fn()}
+        onFetchMemberPermissions={onFetchMemberPermissions}
+        onSyncMemberPermissions={onSyncMemberPermissions}
+        onRemoveMember={vi.fn()}
+        onOpenInvite={vi.fn()}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /manage/i }));
+    });
+
+    expect(await screen.findByRole('button', { name: 'Save permissions' })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create flashcard'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save permissions' }));
+    });
+
+    expect(onFetchMemberPermissions).toHaveBeenCalledWith(9, 55);
+    expect(onSyncMemberPermissions).toHaveBeenCalledWith(
+      9,
+      55,
+      expect.arrayContaining(['CREATE_QUIZ', 'CREATE_FLASHCARD']),
+    );
   });
 });

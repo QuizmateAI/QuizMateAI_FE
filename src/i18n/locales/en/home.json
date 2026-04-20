@@ -324,13 +324,13 @@
       "group": "Group"
     },
     "badges": {
-      "permanent": "Permanent purchase",
+      "permanent": "Fixed-term plans",
       "credits": "Credit-based AI usage",
       "transparent": "Clear & transparent"
     },
     "creditModel": {
       "title": "Credit model for AI",
-      "desc": "Buy the plan once, then top up Credits only when you need more AI usage.",
+      "desc": "Choose the plan that fits, then top up Credits only when you need more AI usage.",
       "cta": "Open Credit Wallet",
       "guide": "See credit pricing"
     },
@@ -430,8 +430,8 @@
       }
     },
     "notes": {
-      "permanentTitle": "Buy once, keep access longer",
-      "permanentDesc": "Plans do not have to be monthly. Depending on configuration, some plans can be purchased permanently.",
+      "permanentTitle": "Clear plan duration",
+      "permanentDesc": "QuizMateAI does not offer permanent purchases. Each plan has its own duration and benefits so you can choose what fits your study needs.",
       "creditsTitle": "AI is credit-based",
       "creditsDesc": "AI features only consume Credits when you actually use them, so spend stays easier to control.",
       "refundTitle": "Clear checkout flow",
@@ -485,7 +485,7 @@
       "hasAiContentStructuring": "AI Content Structuring",
       "hasPersonalizedLearningAnalytic": "Personalized Learning Analytics",
       "hasAiTextReadingAndSummarization": "AI Text Reading & Summarization",
-      "hasAdvancedAiConfiguration": "Advanced quiz types"
+      "hasAdvancedAiConfiguration": "Advanced quiz configuration"
     },
     "paymentError": "Payment Error",
     "vnpayError": "Vnpay Error"
