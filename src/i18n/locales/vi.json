@@ -4369,6 +4369,73 @@
       "noRules": "Chưa có nội quy bổ sung."
     }
   },
+  "challengeDetailView": {
+    "reviewerPanel": {
+      "invitationPendingShort": "Chưa đồng ý review",
+      "invitationDeclinedShort": "Đã từ chối review",
+      "confirmedShort": "Đã xác nhận {{time}}",
+      "openedPendingShort": "Đã mở {{time}} • Chưa xác nhận",
+      "pendingShort": "Chưa mở • Chưa xác nhận",
+      "participatingLeaderHint": "Leader đang tham gia challenge, nên hãy mời 1 hoặc 2 reviewer ở đây. Tất cả reviewer có cùng vai trò.",
+      "optionalHint": "Bạn có thể mời tối đa 2 reviewer nếu muốn có thêm người rà soát trước khi xuất bản. Tất cả reviewer có cùng vai trò.",
+      "reviewerBadge": "Reviewer",
+      "noEligibleMembersHint": "Không còn thành viên phù hợp để mời. Danh sách này đã loại reviewer hiện có, thí sinh đã đăng ký và leader nếu leader đang tham gia.",
+      "needReviewerWhenLeaderParticipates": "Leader đang tham gia thi nên cần mời tối thiểu 1 reviewer. Bạn có thể mời tối đa 2 reviewer.",
+      "optionalReviewersHint": "Reviewer là tuỳ chọn ở bước này. Nếu mời, họ có thể giúp kiểm tra và dọn đề trước khi bạn xuất bản."
+    },
+    "errors": {
+      "generic": "Có lỗi xảy ra.",
+      "cannotStartAttempt": "Không thể bắt đầu lượt làm bài.",
+      "cannotLoadDetail": "Không thể tải chi tiết challenge."
+    },
+    "cannotOpenTitle": "Không thể mở challenge",
+    "back": "Quay lại",
+    "waitingReviewerConfirm": "Đang chờ reviewer xác nhận",
+    "publishHints": {
+      "needDraftQuizContent": "Leader cần soạn nội dung quiz trước.",
+      "needActiveQuiz": "Quiz challenge cần chuyển từ bản nháp sang sẵn sàng trước khi xuất bản challenge.",
+      "needReviewerWhenLeaderParticipates": "Leader đang tham gia thi, nên cần mời 1 hoặc 2 reviewer trước khi xuất bản challenge.",
+      "needReviewersConfirm": "Ít nhất một reviewer phải xác nhận đề ổn thì leader mới xuất bản challenge được.",
+      "startTimePassed": "Challenge đã tới giờ bắt đầu nên không thể xuất bản nữa.",
+      "afterPublishInfo": "Sau khi xuất bản, thành viên sẽ thấy challenge và có thể đăng ký."
+    },
+    "notPublishedBadge": "Chưa xuất bản",
+    "startLabel": "Bắt đầu",
+    "endLabel": "Kết thúc",
+    "participantCount": "{{count}} người tham gia",
+    "registrationMode": {
+      "inviteOnly": "Chỉ mời",
+      "public": "Công khai"
+    },
+    "quizChallengeLabel": "Quiz challenge",
+    "minutesShort": "{{count}} phút",
+    "questionsShort": "câu hỏi",
+    "processingQuizTitle": "Quiz challenge đang được tạo",
+    "processingQuizHint": "Hệ thống vẫn đang tạo câu hỏi cho challenge này. Quay lại sau ít phút để tiếp tục duyệt hoặc chỉnh sửa quiz.",
+    "composeChallengeQuiz": "Soạn quiz challenge",
+    "draftQuizHint": "Hãy tạo nội dung quiz trước, sau đó bạn có thể xem trước quiz challenge.",
+    "reviewInvitation": {
+      "title": "Bạn được mời review đề challenge này",
+      "body": "Leader đã chọn bạn làm reviewer. Nếu đồng ý, bạn sẽ được xem đề trước để kiểm tra và bạn sẽ không thể đăng ký tham gia challenge này như thí sinh.",
+      "accept": "Đồng ý review",
+      "decline": "Từ chối"
+    },
+    "actions": {
+      "publish": "Xuất bản challenge",
+      "register": "Đăng ký",
+      "acceptInvite": "Chấp nhận lời mời",
+      "continueAttempt": "Tiếp tục làm bài",
+      "startAttempt": "Bắt đầu làm bài",
+      "cancel": "Huỷ challenge"
+    },
+    "participantsTitle": "Người tham gia ({{count}})",
+    "memberFallback": "Thành viên",
+    "participantStatus": {
+      "finished": "Đã hoàn thành",
+      "playing": "Đang làm",
+      "waiting": "Đang chờ"
+    }
+  },
   "workspaceSettings": "Cài đặt không gian học tập",
   "adminLayout": {
     "brand": "Admin QuizMate"
