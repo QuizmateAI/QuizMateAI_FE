@@ -4597,6 +4597,73 @@
       "noRules": "No additional rules yet."
     }
   },
+  "challengeDetailView": {
+    "reviewerPanel": {
+      "invitationPendingShort": "Review invitation pending",
+      "invitationDeclinedShort": "Review invitation declined",
+      "confirmedShort": "Confirmed {{time}}",
+      "openedPendingShort": "Opened {{time}} • Not confirmed yet",
+      "pendingShort": "Not opened • Not confirmed yet",
+      "participatingLeaderHint": "The leader is joining this challenge, so invite 1 or 2 reviewers here. All reviewers share the same role.",
+      "optionalHint": "You can invite up to 2 reviewers if you want another set of eyes before publishing. All reviewers share the same role.",
+      "reviewerBadge": "Reviewer",
+      "noEligibleMembersHint": "No eligible members are available to invite. Existing reviewers, registered participants, and the participating leader are already filtered out.",
+      "needReviewerWhenLeaderParticipates": "The leader is participating, so invite at least 1 reviewer. You can invite up to 2 reviewers.",
+      "optionalReviewersHint": "Reviewers are optional at this step. If invited, they can help check and clean up the quiz before you publish it."
+    },
+    "errors": {
+      "generic": "Something went wrong.",
+      "cannotStartAttempt": "Cannot start the attempt.",
+      "cannotLoadDetail": "Cannot load challenge detail."
+    },
+    "cannotOpenTitle": "Cannot open challenge",
+    "back": "Back",
+    "waitingReviewerConfirm": "Waiting for reviewer confirmation",
+    "publishHints": {
+      "needDraftQuizContent": "The leader must compose the quiz content first.",
+      "needActiveQuiz": "The challenge quiz must move from draft to ready before the challenge can be published.",
+      "needReviewerWhenLeaderParticipates": "The leader is participating, so invite 1 or 2 reviewers before publishing the challenge.",
+      "needReviewersConfirm": "At least one reviewer must confirm the quiz is OK before the leader can publish the challenge.",
+      "startTimePassed": "The challenge has reached its start time, so it can no longer be published.",
+      "afterPublishInfo": "After publishing, members will see the challenge and be able to register."
+    },
+    "notPublishedBadge": "Not published",
+    "startLabel": "Start",
+    "endLabel": "End",
+    "participantCount": "{{count}} participants",
+    "registrationMode": {
+      "inviteOnly": "Invite only",
+      "public": "Public"
+    },
+    "quizChallengeLabel": "Challenge quiz",
+    "minutesShort": "{{count}} minutes",
+    "questionsShort": "questions",
+    "processingQuizTitle": "Challenge quiz is being generated",
+    "processingQuizHint": "The system is still generating questions for this challenge. Return in a moment to keep reviewing or editing the quiz.",
+    "composeChallengeQuiz": "Compose challenge quiz",
+    "draftQuizHint": "Create the quiz content first, then you can preview the challenge quiz.",
+    "reviewInvitation": {
+      "title": "You were invited to review this challenge quiz",
+      "body": "The leader selected you as a reviewer. If you accept, you can preview the quiz before launch to check it, and you will not be able to register as a participant in this challenge.",
+      "accept": "Accept review",
+      "decline": "Decline"
+    },
+    "actions": {
+      "publish": "Publish challenge",
+      "register": "Register",
+      "acceptInvite": "Accept invitation",
+      "continueAttempt": "Continue attempt",
+      "startAttempt": "Start attempt",
+      "cancel": "Cancel challenge"
+    },
+    "participantsTitle": "Participants ({{count}})",
+    "memberFallback": "Member",
+    "participantStatus": {
+      "finished": "Finished",
+      "playing": "In progress",
+      "waiting": "Waiting"
+    }
+  },
   "workspaceSettings": "Workspace settings",
   "adminLayout": {
     "brand": "Admin QuizMate"
