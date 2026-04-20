@@ -2169,6 +2169,12 @@ function WorkspacePage() {
     setActiveView("editQuiz");
   }, []);
 
+  const handleCreateSimilarQuiz = useCallback((quiz) => {
+    setSelectedQuiz({ ...quiz, _editMode: "clone" });
+    setQuizBackTarget(null);
+    setActiveView("editQuiz");
+  }, []);
+
   // Save quiz edits and return to detail view
 
   const handleSaveQuiz = useCallback((updatedQuiz) => {
@@ -2568,6 +2574,7 @@ function WorkspacePage() {
     onViewPostLearning: handleViewPostLearning,
     onEditQuiz: handleEditQuiz,
     onSaveQuiz: handleSaveQuiz,
+    onCreateSimilarQuiz: handleCreateSimilarQuiz,
     onShareQuiz: handleShareQuiz,
     selectedFlashcard,
     onViewFlashcard: handleViewFlashcard,
