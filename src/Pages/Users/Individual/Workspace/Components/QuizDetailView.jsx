@@ -736,6 +736,7 @@ function QuizDetailView({
   }, []);
 
   const isActiveQuiz = currentStatus === "ACTIVE";
+  const normalizedQuizIntent = String(effectiveQuiz?.quizIntent || "").toUpperCase();
 
   const editRule = React.useMemo(
     () => resolveEditRule(effectiveQuiz, hasHistoryCompleted),
@@ -748,9 +749,19 @@ function QuizDetailView({
 
   const canShowEditButton =
     isCreator
+    && _contextType === "WORKSPACE"
     && !hideEditButton
     && !challengeSnapshotReviewMode
-    && currentStatus !== "PROCESSING";
+    && currentStatus !== "PROCESSING"
+    && normalizedQuizIntent === "REVIEW";
+  const canShowDuplicateButton =
+    _contextType === "WORKSPACE"
+    && isCreator
+    && !hideEditButton
+    && !challengeSnapshotReviewMode
+    && currentStatus !== "PROCESSING"
+    && (isManualQuiz || hasCurrentUserCompletedQuiz)
+    && typeof onCreateSimilar === "function";
   const canActivateManualDraftQuiz =
     _contextType === "WORKSPACE"
     && isManualQuiz
@@ -948,20 +959,20 @@ function QuizDetailView({
                 )}
               >
                 <Pencil className="w-4 h-4" />
-                <span className="text-sm">Chỉnh sửa</span>
+                <span className="text-sm">{t("workspace.quiz.detail.edit", "Chỉnh sửa")}</span>
               </Button>
               {editRule === "LOCKED_UNTIL_FIRST_ATTEMPT" && (
                 <div className={cn(
                   "pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium opacity-0 group-hover/edit:opacity-100 transition-opacity z-50",
                   isDarkMode ? "bg-slate-700 text-slate-200" : "bg-slate-800 text-white",
                 )}>
-                  Hãy làm quiz lần đầu trước khi sửa
+                  {t("workspace.quiz.detail.editLockedHint", "Hãy làm quiz lần đầu trước khi sửa")}
                 </div>
               )}
             </div>
           )}
           {/* Nút Tạo quiz tương tự — chỉ dành cho manual quiz */}
-          {isManualQuiz && typeof onCreateSimilar === "function" && (
+          {canShowDuplicateButton && (
             <Button
               variant="outline"
               onClick={() => onCreateSimilar(effectiveQuiz)}

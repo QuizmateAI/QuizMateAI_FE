@@ -1301,6 +1301,7 @@
       },
       "detail": {
         "edit": "Edit",
+        "editLockedHint": "Complete the quiz once before editing",
         "createSimilar": "Create similar",
         "activateQuiz": "Activate quiz",
         "confirmActivateQuiz": "Confirm & activate",
