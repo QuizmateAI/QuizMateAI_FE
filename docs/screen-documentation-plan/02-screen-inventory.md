@@ -1,0 +1,369 @@
+# Screen Inventory
+
+Day la inventory de lam backlog chup anh va viet spec. Mot so screen la route thuan, mot so screen la sub-view/section ben trong workspace.
+
+## Public va Auth
+
+- `PUB-01` Launching Page
+  - Route: `*` khi launch mode bat
+  - Source: `src/Pages/LaunchingPage/LaunchingPage.jsx`
+- `PUB-02` Landing Page
+  - Route: `/`
+  - Source: `src/Pages/LandingPage/LandingPage.jsx`
+- `PUB-03` Pricing Guide Page
+  - Route: `/pricing`
+  - Source: `src/Pages/Pricing/PricingGuidePage.jsx`
+- `AUTH-01` Login Page
+  - Route: `/login`
+  - Source: `src/Pages/Authentication/LoginPage.jsx`
+- `AUTH-02` Register Page
+  - Route: `/register`
+  - Source: `src/Pages/Authentication/RegisterPage.jsx`
+- `AUTH-03` Forgot Password Page
+  - Route: `/forgot-password`
+  - Source: `src/Pages/Authentication/ForgotPasswordPage.jsx`
+- `PUB-04` Accept Invitation Page
+  - Route: `/accept-invite`
+  - Source: `src/Pages/Users/Group/AcceptInvitationPage.jsx`
+
+## User Core
+
+- `HOME-01` Home Workspace Tab
+  - Route: `/home?tab=workspace`
+  - Source: `src/Pages/Users/Home/HomePage.jsx`
+- `HOME-02` Home Group Tab
+  - Route: `/home?tab=group`
+  - Source: `src/Pages/Users/Home/HomePage.jsx`
+- `HOME-03` Edit Workspace Dialog
+  - Trigger: edit action tu workspace card
+  - Source: `src/Pages/Users/Home/Components/EditWorkspaceDialog.jsx`
+- `HOME-04` Delete Workspace Dialog
+  - Trigger: delete action tu workspace card
+  - Source: `src/Pages/Users/Home/Components/DeleteWorkspaceDialog.jsx`
+- `PROFILE-01` Profile Page Overview
+  - Route: `/profiles`
+  - Source: `src/Pages/Users/Profile/ProfilePage.jsx`
+- `PROFILE-02` Profile Edit State
+  - Trigger: edit profile mode trong `ProfilePage`
+- `PROFILE-03` Change Password Dialog
+  - Trigger: password dialog trong `ProfilePage`
+- `PLAN-01` Plan Page
+  - Route: `/plans`
+  - Source: `src/Pages/Users/Plan/PlanPage.jsx`
+- `PLAN-02` Plan Upgrade Modal
+  - Trigger: plan gate khi user mo feature khong nam trong current plan
+  - Source: `src/Components/plan/PlanUpgradeModal.jsx`
+- `PAY-01` Payment Detail Page
+  - Route: `/payments`
+  - Source: `src/Pages/Payment/PaymentPage.jsx`
+- `PAY-02` Credit Payment Page
+  - Route: `/payments/credits`
+  - Source: `src/Pages/Payment/CreditPaymentPage.jsx`
+- `PAY-03` Payment Result Page
+  - Route: `/payments/results`
+  - Source: `src/Pages/Payment/PaymentResultPage.jsx`
+- `PAY-04` VNPay Return Redirect
+  - Route: `/api/vnpay/return`
+  - Source: `src/Pages/Payment/VnPayReturnRedirect.jsx`
+- `WALLET-01` Wallet Page
+  - Route: `/wallets`
+  - Source: `src/Pages/Users/Credit/WalletPage.jsx`
+- `FEEDBACK-01` Feedback Overview
+  - Route: `/feedbacks/overview`
+  - Source: `src/Pages/Users/Feedback/FeedbackCenterPage.jsx`
+- `FEEDBACK-02` Feedback Product
+  - Route: `/feedbacks/product`
+  - Source: `src/Pages/Users/Feedback/FeedbackProductPage.jsx`
+- `FEEDBACK-03` Feedback System
+  - Route: `/feedbacks/system`
+  - Source: `src/Pages/Users/Feedback/FeedbackSystemPage.jsx`
+- `FEEDBACK-04` Feedback Surveys
+  - Route: `/feedbacks/surveys`
+  - Source: `src/Pages/Users/Feedback/FeedbackSurveyPage.jsx`
+
+## Individual Workspace
+
+- `IND-01` Workspace Welcome / Overview
+  - Route: `/workspaces/:workspaceId`
+  - Source: `WorkspacePage.jsx` + `WelcomePanel.jsx`
+- `IND-02` Workspace Profile Config Dialog
+  - Trigger: open profile config / onboarding
+  - Source: `IndividualWorkspaceProfileConfigDialog.jsx`
+- `IND-03` Workspace Profile Overview Dialog
+  - Trigger: open profile summary
+  - Source: `IndividualWorkspaceProfileOverviewDialog.jsx`
+- `IND-04` Sources List
+  - Trigger: sidebar `sources`
+  - Source: `SourcesPanel.jsx`
+- `IND-05` Source Detail
+  - Trigger: open one source inside `SourcesPanel`
+  - Source: `SourceDetailView.jsx`
+- `IND-06` Upload Source Dialog
+  - Trigger: add/upload source
+  - Source: `UploadSourceDialog.jsx`
+- `IND-07` Roadmap Canvas
+  - Trigger: sidebar `roadmap`
+  - Source: `RoadmapCanvasView*.jsx`
+- `IND-08` Quiz List
+  - Trigger: sidebar `quiz`
+  - Source: `QuizListView.jsx`
+- `IND-09` Community Quiz Explorer
+  - Trigger: tu `QuizListView`
+  - Source: `CommunityQuizExplorerView.jsx`
+- `IND-10` Create Quiz Form
+  - Trigger: create action tu quiz list
+  - Source: `CreateQuizForm.jsx` + `CreateQuizFormParts/*`
+- `IND-11` Quiz Detail
+  - Trigger: open 1 quiz
+  - Note: co them question discussion popup va exam start confirmation trong cung detail flow
+  - Source: `QuizDetailView.jsx`
+- `IND-12` Edit Quiz Form
+  - Trigger: edit tu quiz detail
+  - Source: `EditQuizForm.jsx`
+- `IND-13` Flashcard List
+  - Trigger: sidebar `flashcard`
+  - Source: `FlashcardListView.jsx`
+- `IND-14` Create Flashcard Form
+  - Trigger: create action tu flashcard list
+  - Source: `CreateFlashcardForm.jsx`
+- `IND-15` Flashcard Detail
+  - Trigger: open 1 flashcard set
+  - Source: `FlashcardDetailView.jsx`
+- `IND-16` Mock Test List
+  - Trigger: sidebar `mockTest`
+  - Source: `MockTestListView.jsx`
+- `IND-17` Create Mock Test Form
+  - Trigger: create action tu mock test list
+  - Source: `CreateMockTestForm.jsx`
+- `IND-18` Mock Test Detail
+  - Trigger: open 1 mock test
+  - Source: `MockTestDetailView.jsx`
+- `IND-19` Edit Mock Test Form
+  - Trigger: edit mock test
+  - Source: `EditMockTestForm.jsx`
+- `IND-20` Post-Learning List
+  - Trigger: studio action `postLearning`
+  - Source: `PostLearningListView.jsx`
+- `IND-21` Create Post-Learning Form
+  - Trigger: create action tu post-learning list
+  - Source: `CreatePostLearningForm.jsx`
+- `IND-22` Question Stats
+  - Trigger: sidebar `questionStats`
+  - Source: `QuestionStatsView.jsx`
+- `IND-23` Workspace Onboarding Update Guard Dialog
+  - Trigger: update onboarding khi workspace da co tai lieu / learning data
+  - Source: `src/Components/workspace/WorkspaceOnboardingUpdateGuardDialog.jsx`
+- `IND-24` Roadmap Config Edit Dialog
+  - Trigger: edit roadmap config tu roadmap workspace
+  - Source: `src/Components/workspace/RoadmapConfigEditDialog.jsx`
+- `IND-25` Roadmap Phase Generate Dialog
+  - Trigger: tao them roadmap phase tu tai lieu da upload hoac moi upload
+  - Source: `RoadmapPhaseGenerateDialog.jsx`
+
+## Group Workspace
+
+- `GRP-01` Group Dashboard
+  - Route: `/group-workspaces/:workspaceId?section=dashboard`
+  - Source: `GroupWorkspacePage.jsx` + `GroupDashboardTab.jsx`
+- `GRP-02` Personal Dashboard
+  - Route: `?section=personalDashboard`
+  - Source: `GroupWorkspacePage.jsx`
+- `GRP-03` Group Documents Tab
+  - Route: `?section=documents`
+  - Source: `GroupDocumentsTab.jsx`
+- `GRP-04` Group Source Detail
+  - Trigger: open material trong documents/sources
+  - Source: `SourceDetailView.jsx`
+- `GRP-05` Upload Source Dialog
+  - Trigger: upload material vao group
+  - Source: `UploadSourceDialog.jsx`
+- `GRP-06` Members Tab
+  - Route: `?section=members`
+  - Source: `GroupMembersTab.jsx`
+- `GRP-07` Invite Member Dialog
+  - Trigger: invite action trong members tab
+  - Source: `InviteMemberDialog.jsx`
+- `GRP-08` Member Stats Tab
+  - Route: `?section=memberStats`
+  - Source: `GroupMemberStatsTab.jsx`
+- `GRP-09` Notifications / Activity Feed
+  - Route: `?section=notifications`
+  - Source: `GroupWorkspacePage.jsx`
+- `GRP-10` Roadmap Studio
+  - Route: `/group-workspaces/:workspaceId/roadmaps...`
+  - Source: `GroupWorkspacePage.jsx` + `ChatPanel.jsx` + `RoadmapCanvasView*.jsx`
+- `GRP-11` Quiz List
+  - Route: `?section=quiz`
+  - Source: `QuizListView.jsx`
+- `GRP-12` Create Quiz Form
+  - Trigger: create quiz tu group studio
+  - Source: `CreateQuizForm.jsx`
+- `GRP-13` Quiz Detail
+  - Trigger: open quiz trong group
+  - Note: co them discussion popup, audience dialog, leader participation dialog, exam start confirmation
+  - Source: `QuizDetailView.jsx`
+- `GRP-14` Edit Quiz Form
+  - Trigger: edit quiz trong group
+  - Source: `EditQuizForm.jsx`
+- `GRP-15` Flashcard List
+  - Route: `?section=flashcard`
+  - Source: `FlashcardListView.jsx`
+- `GRP-16` Flashcard Detail
+  - Trigger: open 1 flashcard set
+  - Source: `FlashcardDetailView.jsx`
+- `GRP-17` Create Flashcard Form
+  - Trigger: create flashcard trong group
+  - Source: `CreateFlashcardForm.jsx`
+- `GRP-18` Mock Test List
+  - Route: `?section=mockTest`
+  - Source: `MockTestListView.jsx`
+- `GRP-19` Create Mock Test Form
+  - Trigger: create mock test trong group
+  - Source: `CreateGroupMockTestForm.jsx`
+- `GRP-20` Mock Test Detail / Edit
+  - Trigger: open/edit 1 mock test
+  - Source: `MockTestDetailView.jsx`, `EditMockTestForm.jsx`
+- `GRP-21` Challenge Hub
+  - Route: `?section=challenge`
+  - Source: `ChallengeTab.jsx`
+- `GRP-22` Create Challenge Wizard
+  - Trigger: create challenge trong challenge hub
+  - Source: `CreateChallengeWizard.jsx`
+- `GRP-23` Challenge Detail
+  - Trigger: open 1 challenge
+  - Source: `ChallengeDetailView.jsx`
+- `GRP-24` Ranking
+  - Route: `?section=ranking`
+  - Source: `GroupRankingTab.jsx`
+- `GRP-25` Group Wallet
+  - Route: `?section=wallet`
+  - Source: `GroupWalletTab.jsx`
+- `GRP-26` Group Settings
+  - Route: `?section=settings`
+  - Source: `GroupSettingsTab.jsx`
+- `GRP-27` Group Profile Setup Gate / Config Dialog
+  - Trigger: mandatory profile flow
+  - Source: `GroupWorkspaceProfileConfigDialog.jsx`
+- `GRP-28` Workspace Onboarding Update Guard Dialog
+  - Trigger: update group onboarding khi workspace da co document / learning data
+  - Source: `src/Components/workspace/WorkspaceOnboardingUpdateGuardDialog.jsx`
+- `GRP-29` Group Workspace Credit Gate Modal
+  - Trigger: group action can credit nhung so du credit nhom khong du
+  - Source: `GroupWorkspaceCreditGateModal.jsx`
+- `GRP-30` Roadmap Config Edit Dialog
+  - Trigger: setup/edit roadmap config cho group roadmap
+  - Source: `src/Components/workspace/RoadmapConfigEditDialog.jsx`
+- `GRP-31` Roadmap Config Summary Dialog
+  - Trigger: view roadmap config summary trong group roadmap
+  - Source: `src/Components/workspace/RoadmapConfigSummaryDialog.jsx`
+- `GRP-32` Roadmap Phase Generate Dialog
+  - Trigger: tao roadmap phase trong group roadmap studio
+  - Source: `RoadmapPhaseGenerateDialog.jsx`
+
+## Quiz Runtime
+
+- `QZ-01` Practice Quiz Page
+  - Route: `/quizzes/practice/:quizId`
+  - Source: `PracticeQuizPage.jsx`
+- `QZ-02` Exam Quiz Page
+  - Route: `/quizzes/exams/:quizId`
+  - Source: `ExamQuizPage.jsx`
+- `QZ-03` Quiz Result Page
+  - Route: `/quizzes/results/:attemptId`
+  - Source: `QuizResultPage.jsx`
+
+## Admin
+
+- `ADM-01` Admin Dashboard
+  - Route: `/admin`
+  - Source: `AdminDashboard.jsx`
+- `ADM-02` User Management
+  - Route: `/admin/users`
+  - Source: `UserManagement.jsx`
+- `ADM-03` User Detail
+  - Route: `/admin/users/:userId`
+  - Source: `UserDetailPage.jsx`
+- `ADM-04` Group Management
+  - Route: `/admin/groups`
+  - Source: `GroupManagement.jsx`
+- `ADM-05` Group Detail
+  - Route: `/admin/groups/:workspaceId`
+  - Source: `GroupDetailPage.jsx`
+- `ADM-06` Plan Management
+  - Route: `/admin/plans`
+  - Source: `PlanManagement.jsx`
+- `ADM-07` Credit Package Management
+  - Route: `/admin/credits`
+  - Source: `CreditPackageManagement.jsx`
+- `ADM-08` Payment Management
+  - Route: `/admin/payments`
+  - Source: `AdminPaymentManagement.jsx`
+- `ADM-09` System Settings
+  - Route: `/admin/system-settings`
+  - Source: `SystemSettingManagement.jsx`
+
+## Super Admin
+
+- `SADM-01` Super Admin Dashboard
+  - Route: `/super-admin`
+  - Source: `SuperAdminDashboard.jsx`
+- `SADM-02` Admin Management
+  - Route: `/super-admin/admins`
+  - Source: `AdminManagement.jsx`
+- `SADM-03` RBAC Management
+  - Route: `/super-admin/rbac`
+  - Source: `RbacManagement.jsx`
+- `SADM-04` AI Providers Overview
+  - Route: `/super-admin/ai-providers`
+  - Source: `AiProvidersOverview.jsx`
+- `SADM-05` AI Models Management
+  - Route: `/super-admin/ai-models`
+  - Source: `AiModelsManagement.jsx`
+- `SADM-06` AI Cost Management
+  - Route: `/super-admin/ai-costs`
+  - Source: `AiCostManagement.jsx`
+- `SADM-07` AI Audit Management
+  - Route: `/super-admin/ai-audit`
+  - Source: `AiAuditManagement.jsx`
+- `SADM-08` AI Action Policy Management
+  - Route: `/super-admin/ai-action-policies`
+  - Source: `AiActionPolicyManagement.jsx`
+- `SADM-09` User Management
+  - Route: `/super-admin/users`
+  - Source: `UserManagement.jsx`
+- `SADM-10` User Detail
+  - Route: `/super-admin/users/:userId`
+  - Source: `UserDetailPage.jsx`
+- `SADM-11` Group Management
+  - Route: `/super-admin/groups`
+  - Source: `GroupManagement.jsx`
+- `SADM-12` Group Detail
+  - Route: `/super-admin/groups/:workspaceId`
+  - Source: `GroupDetailPage.jsx`
+- `SADM-13` Plan Management
+  - Route: `/super-admin/plans`
+  - Source: `PlanManagement.jsx`
+- `SADM-14` Credit Package Management
+  - Route: `/super-admin/credits`
+  - Source: `CreditPackageManagement.jsx`
+- `SADM-15` Payment Management
+  - Route: `/super-admin/payments`
+  - Source: `AdminPaymentManagement.jsx`
+- `SADM-16` System Settings
+  - Route: `/super-admin/system-settings`
+  - Source: `SystemSettingManagement.jsx`
+- `SADM-17` Feedback Forms
+  - Route: `/super-admin/feedbacks/forms`
+  - Source: `FeedbackManagement.jsx`
+- `SADM-18` Feedback Tickets
+  - Route: `/super-admin/feedbacks/tickets`
+  - Source: `FeedbackTicketManagementPage.jsx`
+- `SADM-19` Feedback Activity
+  - Route: `/super-admin/feedbacks/activity`
+  - Source: `FeedbackResponseActivityPage.jsx`
+
+## Ghi chu inventory
+
+- `WorkspacePage.jsx` va `GroupWorkspacePage.jsx` la 2 shell lon. Can doc route/view mapping truoc roi moi di vao sub-view.
+- `Admin` va `Super Admin` co nhieu page dung chung file. Tuy nhien van can verify khac biet action theo permission.
+- Legacy redirect `/groups/:workspaceId/manage` la non-visual route behavior, da track trong `PUB-05` va khong can chup man hinh rieng.

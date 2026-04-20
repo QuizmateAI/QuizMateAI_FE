@@ -334,17 +334,15 @@ function QuizDetailView({
       let nextQuestionsMap = {};
       let nextAnswersMap = {};
 
-      // Nếu quiz chỉ có quizId (thiếu metadata như khi back từ kết quả), fetch thông tin đầy đủ
-      if (!quiz?.title) {
-        try {
-          const fullRes = await getQuizFull(quiz.quizId);
-          if (fullRes?.data) {
-            nextQuizMeta = fullRes.data;
-            nextStatus = fullRes.data.status || "DRAFT";
-          }
-        } catch (fullErr) {
-          console.error("Lỗi khi tải metadata quiz:", fullErr);
+      // Luôn đồng bộ metadata/status mới nhất để tránh giữ trạng thái cũ từ prop.
+      try {
+        const fullRes = await getQuizFull(quiz.quizId);
+        if (fullRes?.data) {
+          nextQuizMeta = fullRes.data;
+          nextStatus = fullRes.data.status || nextStatus;
         }
+      } catch (fullErr) {
+        console.error("Lỗi khi tải metadata quiz:", fullErr);
       }
 
       // Bước 1: Lấy sections
