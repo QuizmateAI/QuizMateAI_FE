@@ -915,13 +915,13 @@ function RoadmapCanvasViewOverview({
               />
 
               <aside
-                className="fixed inset-y-0 right-0 z-[180] w-full max-w-[520px] border-l border-slate-200 bg-white text-slate-900 shadow-2xl backdrop-blur-sm animate-[roadmapSlideInRight_220ms_ease-out]"
+                className={`fixed inset-y-0 right-0 z-[180] w-full max-w-[520px] border-l shadow-2xl backdrop-blur-sm animate-[roadmapSlideInRight_220ms_ease-out] ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
                 onWheelCapture={(event) => event.stopPropagation()}
               >
                 <div className="flex h-full flex-col">
-                  <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                  <div className={`flex items-start justify-between gap-3 border-b px-4 py-4 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      <p className={`text-xs font-semibold uppercase tracking-[0.14em] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
                         {labels.phase}
                       </p>
                       <h3 className={`mt-1 text-lg font-bold leading-snug ${fontClass}`}>
@@ -931,29 +931,29 @@ function RoadmapCanvasViewOverview({
                     <button
                       type="button"
                       onClick={() => setSelectedPhaseId(null)}
-                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"}`}
                       aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
                     >
                       <X className="h-4 w-4" />
                     </button>
                   </div>
 
-                  <div className="flex-1 space-y-4 overflow-y-auto overscroll-y-contain bg-gradient-to-b from-white via-sky-50/50 to-cyan-50/60 px-4 py-4" onWheelCapture={(event) => event.stopPropagation()}>
-                    <p className={`text-sm leading-relaxed text-slate-700 ${fontClass}`}>
+                  <div className={`flex-1 space-y-4 overflow-y-auto overscroll-y-contain px-4 py-4 ${isDarkMode ? "bg-gradient-to-b from-slate-950 via-slate-900/95 to-slate-900/90" : "bg-gradient-to-b from-white via-sky-50/50 to-cyan-50/60"}`} onWheelCapture={(event) => event.stopPropagation()}>
+                    <p className={`text-sm leading-relaxed ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
                       {selectedPhaseDetail?.description || t("workspace.shell.phaseDescriptionFallback", "This phase is ready for knowledge and quiz generation.")}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-sky-700/60 bg-sky-900/30 text-sky-200" : "border-sky-200 bg-sky-50 text-sky-700"}`}>
                         {(selectedPhaseDetail?.knowledges ?? []).length} {labels.knowledges}
                       </span>
-                      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-emerald-700/60 bg-emerald-900/30 text-emerald-200" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
                         {selectedPhaseDoneKnowledgeCount}/{selectedPhaseKnowledges.length} {t("workspace.shell.phaseCompleted", "Completed")}
                       </span>
                     </div>
 
                     {selectedPhaseKnowledges.length === 0 ? (
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      <div className={`rounded-xl border px-4 py-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-900/80 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
                         {t("workspace.roadmap.canvas.noKnowledgeInPhase", "This phase does not have knowledge items yet.")}
                       </div>
                     ) : (
@@ -964,10 +964,10 @@ function RoadmapCanvasViewOverview({
                           const isKnowledgeLocked = knowledgeState === "locked";
                           const isKnowledgeCurrent = knowledgeState === "current";
                           const knowledgeBadgeClassName = isKnowledgeDone
-                            ? "bg-emerald-100 text-emerald-800"
+                            ? (isDarkMode ? "bg-emerald-900/50 text-emerald-200" : "bg-emerald-100 text-emerald-800")
                             : isKnowledgeCurrent
-                              ? "bg-sky-100 text-sky-800"
-                              : "bg-slate-100 text-slate-700";
+                              ? (isDarkMode ? "bg-sky-900/50 text-sky-200" : "bg-sky-100 text-sky-800")
+                              : (isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700");
                           const KnowledgeStatusIcon = isKnowledgeLocked ? Lock : CircleDot;
                           const knowledgeStatusLabel = isKnowledgeDone
                             ? t("workspace.shell.phaseCompleted", "Completed")
@@ -975,10 +975,16 @@ function RoadmapCanvasViewOverview({
                               ? t("workspace.shell.phaseCurrent", "Current")
                               : t("workspace.shell.phaseLocked", "Locked");
                           const knowledgeSurfaceClassName = isKnowledgeDone
-                            ? "border-emerald-200 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50"
+                            ? (isDarkMode
+                              ? "border-emerald-700/50 bg-gradient-to-br from-emerald-950/40 via-teal-950/30 to-cyan-950/30"
+                              : "border-emerald-200 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50")
                             : isKnowledgeCurrent
-                              ? "border-sky-200 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50"
-                              : "border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100";
+                              ? (isDarkMode
+                                ? "border-sky-700/50 bg-gradient-to-br from-sky-950/40 via-blue-950/30 to-indigo-950/30"
+                                : "border-sky-200 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50")
+                              : (isDarkMode
+                                ? "border-slate-700 bg-gradient-to-br from-slate-900 to-slate-800"
+                                : "border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100");
 
                           return (
                             <button
@@ -996,7 +1002,7 @@ function RoadmapCanvasViewOverview({
                                   <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
                                     {t("workspace.roadmap.canvas.knowledge", "Knowledge")} {knowledgeIndex + 1}
                                   </p>
-                                  <p className={`mt-1 text-sm font-semibold text-slate-900 ${fontClass}`}>
+                                  <p className={`mt-1 text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
                                     {knowledge?.title || t("workspace.roadmap.knowledgeUntitled", "Untitled knowledge")}
                                   </p>
                                 </div>
@@ -1007,7 +1013,7 @@ function RoadmapCanvasViewOverview({
                               </div>
 
                               {knowledge?.description ? (
-                                <p className={`mt-2 text-xs leading-relaxed text-slate-600 ${fontClass}`}>
+                                <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
                                   {knowledge.description}
                                 </p>
                               ) : null}

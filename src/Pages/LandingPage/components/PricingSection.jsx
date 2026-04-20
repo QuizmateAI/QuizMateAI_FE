@@ -65,10 +65,10 @@ const PricingSection = () => {
         </Card>
 
         {/* Pro Plan - The Highlighted One */}
-        <Card className={`text-white border-none scale-110 p-14 space-y-10 rounded-[50px] relative z-20 overflow-hidden ${
+        <Card className={`relative z-20 overflow-hidden transform md:-translate-y-4 p-12 space-y-10 rounded-[50px] shadow-2xl transition-all duration-500 border-2 ${
           isDarkMode 
-            ? 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-2xl shadow-blue-500/30' 
-            : 'bg-[#2c87ee] shadow-3xl'
+            ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white border-blue-500 shadow-blue-500/30' 
+            : 'bg-gradient-to-b from-blue-500 to-[#2c87ee] text-white border-blue-400 shadow-blue-500/40'
         }`}>
           <Badge className={`absolute top-8 right-8 text-white border-none px-6 py-1.5 font-bold animate-pulse ${
             isDarkMode ? 'bg-blue-400/30 backdrop-blur-sm' : 'bg-[#2563EB]'

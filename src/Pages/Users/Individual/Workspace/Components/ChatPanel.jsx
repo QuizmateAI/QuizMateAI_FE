@@ -1,5 +1,5 @@
 import React from "react";
-import { Map, Pencil, Rows3 } from "lucide-react";
+import { ChevronDown, FileText, Map, Pencil, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import {
@@ -649,8 +649,8 @@ function ChatPanel({
                 : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
             />
 
-            <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
-              <Button
+            {/* <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}> */}
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
@@ -669,7 +669,7 @@ function ChatPanel({
               >
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle", "Tổng quan")}</span>
-              </Button>
+              </Button> */}
               {/* <Button
                 type="button"
                 size="sm"
@@ -680,7 +680,7 @@ function ChatPanel({
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title", "Kiểm thử")}</span>
               </Button> */}
-            </div>
+            {/* </div> */}
           </div>
         </div>
 
