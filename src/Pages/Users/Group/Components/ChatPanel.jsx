@@ -262,8 +262,8 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
             />
 
-            <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
-              <Button
+            {/* <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}> */}
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
@@ -272,8 +272,8 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
               >
                 <Rows3 className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
-              </Button>
-              <Button
+              </Button> */}
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
@@ -282,7 +282,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
               >
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
-              </Button>
+              </Button> */}
               {/* <Button
                 type="button"
                 size="sm"
@@ -293,7 +293,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
               </Button> */}
-            </div>
+            {/* </div> */}
           </div>
         </div>
 

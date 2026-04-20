@@ -1,80 +1,91 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { Map, BrainCircuit, Mic } from 'lucide-react';
+import { Sparkles, MonitorSmartphone, Users, CheckCircle2 } from 'lucide-react';
+import { Card } from "@/Components/ui/card";
 
 const FeaturesSection = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  // Cấu hình màu sắc cho mỗi feature dựa trên dark mode
-  const getFeatureColors = (color) => {
-    if (isDarkMode) {
-      return {
-        rose: 'bg-rose-950/30 text-rose-400 group-hover:bg-rose-900/50',
-        blue: 'bg-blue-950/30 text-blue-400 group-hover:bg-blue-900/50',
-        emerald: 'bg-emerald-950/30 text-emerald-400 group-hover:bg-emerald-900/50'
-      }[color];
+  const features = [
+    {
+      id: 'generation',
+      icon: <Sparkles className="text-rose-500" />,
+      title: t('landingPage.features.new.generation.title', { defaultValue: 'Automated Generation' }),
+      bullets: [
+        t('landingPage.features.new.generation.bullet1', { defaultValue: 'Diverse sources: Upload PDFs, Videos, Images, YouTube links...' }),
+        t('landingPage.features.new.generation.bullet2', { defaultValue: 'AI extracts knowledge & generates highly relevant questions.' }),
+        t('landingPage.features.new.generation.bullet3', { defaultValue: 'Saves hours of manual quiz creation (Solves main pain point).' })
+      ]
+    },
+    {
+      id: 'customization',
+      icon: <MonitorSmartphone className="text-blue-500" />,
+      title: t('landingPage.features.new.customization.title', { defaultValue: 'Deep Customization' }),
+      bullets: [
+        t('landingPage.features.new.customization.bullet1', { defaultValue: "Adjust: Question types, difficulty, Bloom's cognitive levels." }),
+        t('landingPage.features.new.customization.bullet2', { defaultValue: 'Select purpose: Quick review, knowledge testing, or mock exams.' }),
+        t('landingPage.features.new.customization.bullet3', { defaultValue: 'AI evaluates results and suggests key topics for review.' })
+      ]
+    },
+    {
+      id: 'collaborative',
+      icon: <Users className="text-emerald-500" />,
+      title: t('landingPage.features.new.collaborative.title', { defaultValue: 'Collaborative Learning' }),
+      bullets: [
+        t('landingPage.features.new.collaborative.bullet1', { defaultValue: 'Share study materials and assign quizzes to the whole group.' }),
+        t('landingPage.features.new.collaborative.bullet2', { defaultValue: 'Host real-time multiplayer challenges to boost engagement.' }),
+        t('landingPage.features.new.collaborative.bullet3', { defaultValue: 'Leaders can manage and track individual member progress.' })
+      ]
     }
-    return {
-      rose: 'bg-rose-50 group-hover:bg-rose-100',
-      blue: 'bg-blue-50 group-hover:bg-blue-100',
-      emerald: 'bg-emerald-50 group-hover:bg-emerald-100'
-    }[color];
-  };
-
-  const getIconColor = (color) => {
-    if (isDarkMode) return ''; // Icon color đã được set trong getFeatureColors
-    return {
-      rose: 'text-rose-500',
-      blue: 'text-blue-500',
-      emerald: 'text-emerald-500'
-    }[color];
-  };
+  ];
 
   return (
     <section id="features" className={`py-32 scroll-mt-20 transition-colors duration-300 ${fontClass} ${
         isDarkMode ? 'bg-slate-900' : 'bg-[#FAFAFA]'
       }`}>
-      <div className="container mx-auto px-6 text-center max-w-6xl">
-        <h2 className={`text-3xl font-black mb-24 tracking-tight ${
-          isDarkMode ? 'text-white' : 'text-[#12141D]'
+      <div className="container mx-auto px-6 text-center space-y-6 mb-16 max-w-7xl">
+        <h2 className={`text-4xl font-black tracking-tight ${
+          isDarkMode ? 'text-white' : ''
         }`}>
-          {t('landingPage.features.title')}
+          {t('landingPage.features.title', { defaultValue: 'Cách mạng hóa hành trình học tập' })}
         </h2>
-        <div className="grid md:grid-cols-3 gap-16 lg:gap-24">
-          {/* Feature 1 */}
-          <div className="group space-y-6 flex flex-col items-center md:items-start text-center md:text-left transition-all">
-            <div className={`w-20 h-20 rounded-[25px] flex items-center justify-center shadow-sm group-hover:rotate-6 transition-all duration-300 ${getFeatureColors('rose')}`}>
-              <Map className={`w-10 h-10 ${getIconColor('rose')}`} />
+      </div>
+      
+      <div className="container mx-auto px-6 grid md:grid-cols-3 gap-12 max-w-7xl items-stretch pb-12">
+        {features.map((feature, idx) => (
+          <Card key={idx} className={`p-12 space-y-8 rounded-[40px] transition-all duration-500 border-2 flex flex-col items-center text-center ${
+            isDarkMode
+              ? 'bg-slate-950 border-slate-800 hover:border-slate-600 shadow-lg shadow-slate-950/50'
+              : 'border-gray-100 shadow-sm hover:shadow-2xl bg-white'
+          }`}>
+            <div className={`w-24 h-24 rounded-[30px] flex items-center justify-center shadow-sm -rotate-3 hover:rotate-6 transition-all duration-300 ${
+              isDarkMode ? 'bg-slate-900/80 border border-slate-800' : 'bg-slate-50 border border-slate-100'
+            }`}>
+              {React.cloneElement(feature.icon, { className: "w-12 h-12 m-0" })}
             </div>
-            <h3 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-[#12141D]'}`}>{t('landingPage.features.roadmapTitle')}</h3>
-            <p className={`font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-              {t('landingPage.features.roadmapDesc')}
-            </p>
-          </div>
-          {/* Feature 2 */}
-          <div className="group space-y-6 flex flex-col items-center md:items-start text-center md:text-left transition-all">
-            <div className={`w-20 h-20 rounded-[25px] flex items-center justify-center shadow-sm group-hover:rotate-6 transition-all duration-300 ${getFeatureColors('blue')}`}>
-              <BrainCircuit className={`w-10 h-10 ${getIconColor('blue')}`} />
+            
+            <div className="space-y-4 w-full">
+              <h3 className={`text-2xl font-black ${
+                isDarkMode ? 'text-white' : 'text-[#12141D]'
+              }`}>
+                {feature.title}
+              </h3>
+              <ul className={`space-y-5 text-left w-full text-sm font-bold ${
+                isDarkMode ? 'text-slate-300' : 'text-gray-500'
+              }`}>
+                {feature.bullets.map((bullet, bIdx) => (
+                  <li key={bIdx} className="flex items-start gap-4">
+                    <CheckCircle2 className={`w-6 h-6 flex-shrink-0 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+                    <span className="leading-relaxed pt-0.5">{bullet}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <h3 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-[#12141D]'}`}>{t('landingPage.features.quizTitle')}</h3>
-            <p className={`font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-              {t('landingPage.features.quizDesc')}
-            </p>
-          </div>
-          {/* Feature 3 */}
-          <div className="group space-y-6 flex flex-col items-center md:items-start text-center md:text-left transition-all">
-            <div className={`w-20 h-20 rounded-[25px] flex items-center justify-center shadow-sm group-hover:rotate-6 transition-all duration-300 ${getFeatureColors('emerald')}`}>
-              <Mic className={`w-10 h-10 ${getIconColor('emerald')}`} />
-            </div>
-            <h3 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-[#12141D]'}`}>{t('landingPage.features.companionTitle')}</h3>
-            <p className={`font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-              {t('landingPage.features.companionDesc')}
-            </p>
-          </div>
-        </div>
+          </Card>
+        ))}
       </div>
     </section>
   );
