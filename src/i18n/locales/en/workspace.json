@@ -1262,7 +1262,7 @@
         "remove": "Remove",
         "lock": "Lock",
         "unlock": "Unlock",
-        "settings": "Timing & exam mode",
+        "settings": "Total questions, timing and exam mode",
         "timeMinutes": "Time (Minutes)",
         "enableTimerMode": "Enable Timer Mode",
         "examType": "Exam type",

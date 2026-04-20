@@ -1367,8 +1367,8 @@
       "updatedOn": "Cập nhật"
     },
     "examMode": {
-      "totalTimer": "Exam giới hạn thời gian tổng",
-      "perQuestion": "Exam theo từng câu",
+      "totalTimer": "Kiểm tra theo giới hạn thời gian tổng",
+      "perQuestion": "Kiểm tra theo từng câu",
       "totalTimerShort": "Giới hạn thời gian tổng",
       "perQuestionShort": "Theo từng câu"
     },

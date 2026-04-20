@@ -189,13 +189,7 @@
           "bullet2": "Tổ chức thử thách tương tác trong thời gian thực để tạo hứng thú.",
           "bullet3": "Trưởng nhóm có thể quản lý và theo dõi tiến độ của từng học viên."
         }
-      },
-      "roadmapTitle": "Lộ trình AI",
-      "roadmapDesc": "AI phân tích tài liệu và tạo lộ trình học tập từng bước từ cơ bản đến nâng cao.",
-      "quizTitle": "Trắc nghiệm thông minh",
-      "quizDesc": "Tạo câu hỏi trắc nghiệm hoặc tự luận tức thì từ bất kỳ file PDF, video YouTube nào.",
-      "companionTitle": "Trợ lý AI",
-      "companionDesc": "Tương tác với gia sư AI qua giọng nói để giải đáp thắc mắc và giải thích các khái niệm phức tạp theo thời gian thực."
+      }
     },
     "pricing": {
       "titlePart1": "Chọn",
