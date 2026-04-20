@@ -450,6 +450,11 @@ function WorkspaceProfileStepTwo({
     || consistencyResult?.recommendationList
     || consistencyResult?.suggestions
   ).map(humanizeConsistencyText);
+  const aiWorkspaceNameSuggestion = normalizeText(
+    consistencyResult?.workspaceNameSuggestion
+    || consistencyResult?.workspaceTitleSuggestion
+    || consistencyResult?.workspaceTitle
+  );
   const aiQuizConstraintWarnings = normalizeStringList(
     consistencyResult?.quizConstraintWarnings
     || consistencyResult?.quizConstraints
@@ -779,8 +784,41 @@ function WorkspaceProfileStepTwo({
                                 : 'border-amber-200 bg-amber-50 text-amber-900'
                     )}
                 >
+                  {aiWorkspaceNameSuggestion ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em]">
+                        {translateStepTwo(
+                          'workspaceProfileStepTwo.workspaceNameSuggestionTitle',
+                          'Quizmate AI suggested workspace name'
+                        )}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={cn(
+                            'inline-flex rounded-full px-3 py-1.5 text-sm font-semibold',
+                            consistencyResult.isConsistent
+                              ? isDarkMode
+                                ? 'bg-emerald-400/15 text-emerald-50'
+                                : 'bg-emerald-100 text-emerald-800'
+                              : isDarkMode
+                                ? 'bg-amber-400/15 text-amber-50'
+                                : 'bg-amber-100 text-amber-800'
+                          )}
+                        >
+                          {aiWorkspaceNameSuggestion}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 opacity-85">
+                        {translateStepTwo(
+                          'workspaceProfileStepTwo.workspaceNameSuggestionDescription',
+                          'This name is generated from your current knowledge, field, and learning goal so it can be used immediately for the workspace.'
+                        )}
+                      </p>
+                    </div>
+                  ) : null}
+
                   {aiAlignmentHighlights.length > 0 ? (
-                        <div>
+                        <div className={cn(aiWorkspaceNameSuggestion ? 'mt-4' : '')}>
                           <p className="text-xs font-semibold uppercase tracking-[0.08em]">
                             {translateStepTwo(
                                 'workspaceProfileStepTwo.alignmentHighlightsTitle',

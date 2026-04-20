@@ -17,6 +17,7 @@ import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
 import { cn } from "@/lib/utils";
 import UserDisplayName from "@/Components/users/UserDisplayName";
 import { getUserDisplayLabel } from "@/Utils/userProfile";
+import CommunityQuizSignals from "@/Pages/Users/Quiz/components/CommunityQuizSignals";
 import {
   buildQuizAttemptPath,
   buildWorkspaceRoadmapsPath,
@@ -110,6 +111,16 @@ const QUIZ_CARD_THEMES = {
 };
 
 const QUIZ_PAGE_SIZE = 6;
+const QUIZ_PAGE_SIZE_XL = 8;
+const QUIZ_GRID_XL_BREAKPOINT = 1280;
+
+function resolveQuizPageSize(viewportWidth, { embedded = false } = {}) {
+  if (embedded) return QUIZ_PAGE_SIZE;
+  if (Number.isFinite(viewportWidth) && viewportWidth >= QUIZ_GRID_XL_BREAKPOINT) {
+    return QUIZ_PAGE_SIZE_XL;
+  }
+  return QUIZ_PAGE_SIZE;
+}
 
 function hasQuizListChanged(prevList, nextList) {
   if (!Array.isArray(prevList) || !Array.isArray(nextList)) return true;
@@ -336,6 +347,9 @@ function QuizListView({
   const [appliedGroupFilters, setAppliedGroupFilters] = useState(["all"]);
   const [groupMemberUserId, setGroupMemberUserId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [quizPageSize, setQuizPageSize] = useState(() => (
+    resolveQuizPageSize(typeof window === "undefined" ? NaN : window.innerWidth, { embedded })
+  ));
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignSaving, setBulkAssignSaving] = useState(false);
@@ -431,6 +445,19 @@ function QuizListView({
   useEffect(() => {
     setCurrentPage(1);
   }, [deferredSearchQuery, appliedGroupFilters, groupMemberUserId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const syncQuizPageSize = () => {
+      const nextPageSize = resolveQuizPageSize(window.innerWidth, { embedded });
+      setQuizPageSize((current) => (current === nextPageSize ? current : nextPageSize));
+    };
+
+    syncQuizPageSize();
+    window.addEventListener("resize", syncQuizPageSize);
+    return () => window.removeEventListener("resize", syncQuizPageSize);
+  }, [embedded]);
 
   const selectedGroupAudienceMember = useMemo(() => {
     if (groupMemberUserId == null) return null;
@@ -778,16 +805,16 @@ function QuizListView({
     groupMemberUserId,
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / QUIZ_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / quizPageSize));
   const currentPageClamped = Math.min(currentPage, totalPages);
   const paginatedQuizzes = useMemo(() => {
-    const start = (currentPageClamped - 1) * QUIZ_PAGE_SIZE;
-    return filtered.slice(start, start + QUIZ_PAGE_SIZE);
-  }, [currentPageClamped, filtered]);
-  const paginationStartIndex = filtered.length === 0 ? 0 : ((currentPageClamped - 1) * QUIZ_PAGE_SIZE) + 1;
+    const start = (currentPageClamped - 1) * quizPageSize;
+    return filtered.slice(start, start + quizPageSize);
+  }, [currentPageClamped, filtered, quizPageSize]);
+  const paginationStartIndex = filtered.length === 0 ? 0 : ((currentPageClamped - 1) * quizPageSize) + 1;
   const paginationEndIndex = filtered.length === 0
     ? 0
-    : Math.min(filtered.length, currentPageClamped * QUIZ_PAGE_SIZE);
+    : Math.min(filtered.length, currentPageClamped * quizPageSize);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -1665,6 +1692,18 @@ function QuizListView({
                       </div>
                     </div>
 
+                    {isCommunityShared ? (
+                      <CommunityQuizSignals
+                        cloneCount={quiz?.communityCloneCount}
+                        averageRating={quiz?.communityAverageRating}
+                        ratingCount={quiz?.communityRatingCount}
+                        commentCount={quiz?.communityCommentCount}
+                        isDarkMode={isDarkMode}
+                        t={t}
+                        className="mt-4"
+                      />
+                    ) : null}
+
                     <div className={`mt-4 flex items-start justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
                       <div className="flex min-w-0 flex-wrap items-center gap-3">
                         <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
@@ -1699,7 +1738,7 @@ function QuizListView({
             })}
           </div>
 
-          {filtered.length > QUIZ_PAGE_SIZE ? (
+          {filtered.length > quizPageSize ? (
             <div className={cn(
               "mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2",
               isDarkMode ? "border-slate-700 bg-slate-900/60 text-slate-300" : "border-slate-200 bg-white text-slate-600",

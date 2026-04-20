@@ -52,6 +52,7 @@ function GroupSidebar({
   wsConnected = false,
   memberCount = 0,
   disabledMap = {},
+  hiddenMap = {},
   badgeMap = {},
   collapsed = false,
   onToggleCollapsed,
@@ -74,6 +75,7 @@ function GroupSidebar({
     : activeSection;
 
   const filteredItems = NAV_ITEMS.filter((item) => {
+    if (hiddenMap?.[item.id]) return false;
     if (item.id === 'dashboard') return !isMember;
     if (item.id === 'personalDashboard') return isMember;
     if (item.id === 'memberStats') return !isMember;

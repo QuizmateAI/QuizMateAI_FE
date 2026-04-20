@@ -13,6 +13,9 @@ import {
   cancelInvitation as cancelInvitationAPI,
   resendInvitation as resendInvitationAPI,
   getGroupLogs as getGroupLogsAPI,
+  getGroupMyPermissions as getGroupMyPermissionsAPI,
+  getGroupMemberPermissions as getGroupMemberPermissionsAPI,
+  syncGroupMemberPermissions as syncGroupMemberPermissionsAPI,
   removeMember as removeMemberAPI,
   getGroupDashboardSummary as getGroupDashboardSummaryAPI,
   getMemberDashboardCards as getMemberDashboardCardsAPI,
@@ -135,6 +138,21 @@ export function useGroup(options = {}) {
     return Array.isArray(payload) ? payload : [];
   }, []);
 
+  const fetchMyPermissions = useCallback(async (workspaceId) => {
+    const res = await getGroupMyPermissionsAPI(workspaceId);
+    return unwrapApiData(res);
+  }, []);
+
+  const fetchMemberPermissions = useCallback(async (workspaceId, memberId) => {
+    const res = await getGroupMemberPermissionsAPI(workspaceId, memberId);
+    return unwrapApiData(res);
+  }, []);
+
+  const syncMemberPermissions = useCallback(async (workspaceId, memberId, permissionCodes = []) => {
+    const res = await syncGroupMemberPermissionsAPI(workspaceId, memberId, permissionCodes);
+    return unwrapApiData(res);
+  }, []);
+
   const fetchGroupDashboardSummary = useCallback(async (workspaceId) => {
     const res = await getGroupDashboardSummaryAPI(workspaceId);
     return unwrapApiData(res);
@@ -157,8 +175,8 @@ export function useGroup(options = {}) {
     };
   }, []);
 
-  const fetchMemberDashboardDetail = useCallback(async (workspaceId, memberUserId, attemptMode = 'ALL') => {
-    const res = await getMemberDashboardDetailAPI(workspaceId, memberUserId, attemptMode);
+  const fetchMemberDashboardDetail = useCallback(async (workspaceId, memberId, attemptMode = 'ALL') => {
+    const res = await getMemberDashboardDetailAPI(workspaceId, memberId, attemptMode);
     return unwrapApiData(res);
   }, []);
 
@@ -239,6 +257,9 @@ export function useGroup(options = {}) {
     cancelInvitation,
     resendInvitation,
     fetchGroupLogs,
+    fetchMyPermissions,
+    fetchMemberPermissions,
+    syncMemberPermissions,
     fetchGroupDashboardSummary,
     fetchMemberDashboardCards,
     fetchMemberDashboardDetail,

@@ -1102,6 +1102,34 @@
           }
         }
       },
+      "communitySignals": {
+        "rating": "{{rating}}★ · {{count}} đánh giá",
+        "noRating": "Chưa có đánh giá",
+        "comments": "{{count}} bình luận",
+        "clones": "{{count}} lượt clone"
+      },
+      "communityDetail": {
+        "previewAction": "Xem chi tiết",
+        "previewDescription": "Xem câu hỏi, rating cộng đồng và comment công khai trước khi clone.",
+        "summaryTitle": "Tín hiệu cộng đồng",
+        "ownerSummary": "Theo dõi feedback và discussion công khai của quiz bạn đã chia sẻ.",
+        "cloneSummary": "Xem rating và discussion gốc của community quiz này, rồi gửi feedback sau khi làm xong bản clone của bạn.",
+        "openCommunity": "Mở community detail",
+        "leaveFeedback": "Gửi feedback community",
+        "updateFeedback": "Cập nhật feedback community"
+      },
+      "communityExplorer": {
+        "backToQuiz": "Quay lại Quiz",
+        "description": "Khám phá quiz public, xem trước chất lượng câu hỏi rồi clone về workspace của bạn.",
+        "empty": "Chưa có quiz community phù hợp.",
+        "loadError": "Không thể tải quiz community.",
+        "publicCount": "{{count}} quiz public",
+        "publicQuiz": "Quiz public",
+        "recommendedCount": "{{count}} quiz được đề xuất",
+        "searchPlaceholder": "Tìm quiz cộng đồng...",
+        "title": "Quiz Community",
+        "topMatch": "Khớp nhất"
+      },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
         "nameMaxLength": "Tên quiz tối đa {{max}} ký tự.",
@@ -1218,7 +1246,7 @@
         "difficultyUnitByCount": "Đơn vị độ khó theo số lượng",
         "questionTypeUnitByCount": "Đơn vị loại câu hỏi theo số lượng",
         "bloomUnitByCount": "Đơn vị bloom skill theo số lượng",
-        "advancedConfig": "Loại quiz nâng cao",
+        "advancedConfig": "Cấu hình quiz nâng cao",
         "questionTypes": "Loại câu hỏi",
         "planGate": {
           "title": "Cần nâng cấp gói",
@@ -1230,6 +1258,12 @@
           "inlineHintFallback": "Các loại bên dưới cần gói hỗ trợ cấu hình quiz nâng cao.",
           "lockedGroupTitleWithPlan": "Cần gói {{planName}}",
           "lockedGroupTitleFallback": "Cần gói nâng cao",
+          "structureTitleWithPlan": "Cấu trúc quiz cần gói {{planName}}",
+          "structureTitleFallback": "Cấu trúc quiz cần gói nâng cao",
+          "structureDescriptionWithCurrentPlan": "Cấu trúc quiz không có trong gói {{currentPlanName}}. Cần gói {{requiredPlanName}} hoặc cao hơn để sử dụng.",
+          "structureDescriptionWithRequiredPlan": "Cấu trúc quiz cần gói {{requiredPlanName}} hoặc cao hơn để sử dụng.",
+          "structureDescriptionFallback": "Cấu trúc quiz cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng.",
+          "structureMeta": "Bạn vẫn có thể tạo quiz bằng các tỷ lệ độ khó, loại câu hỏi và Bloom hiện có trong gói hiện tại.",
           "upgradeAction": "Nâng cấp",
           "vipBadge": "VIP"
         },
@@ -1281,6 +1315,7 @@
         "structurePreviewLoading": "Đang tạo cấu trúc...",
         "structurePreviewHint": "Nhấn Cấu hình chi tiết để xem trước cách AI phân bổ quiz.",
         "structurePreviewFailed": "Không thể xem trước cấu trúc quiz. Vui lòng thử lại.",
+        "structurePlanRequired": "Cấu trúc quiz cần gói hỗ trợ cấu hình quiz nâng cao.",
         "structureDifficulty": "Độ khó",
         "structureQuestionType": "Loại câu",
         "structureBloom": "Bloom",
@@ -1505,6 +1540,8 @@
         "recommendedQuizTitle": "Quiz nên làm tiếp",
         "communitySuggestionTitle": "Quiz cộng đồng phù hợp",
         "feedbackAction": "Phản hồi",
+        "communityFeedbackAction": "Gửi feedback community",
+        "communityFeedbackUpdate": "Cập nhật feedback community",
         "refreshAssessment": "Làm mới",
         "resumeAttempt": "Tiếp tục làm bài",
         "retryLoad": "Thử lại",
@@ -1691,7 +1728,7 @@
       "groupSetupPromptTitle": "Bạn hãy thiết lập lộ trình cho nhóm",
       "groupSetupPromptDescription": "Hãy thiết lập lượng kiến thức, nhịp học, số ngày dự kiến và số phút học mỗi ngày để roadmap bám đúng kế hoạch học của nhóm.",
       "setupConfirmTitle": "Xác nhận thiết lập lộ trình",
-      "setupConfirmDescription": "Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho nhóm không?",
+      "setupConfirmDescription": "Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho workspace này không?",
       "setupConfirmAction": "Xác nhận thiết lập",
       "updateConfirmTitle": "Xác nhận cập nhật lộ trình",
       "updateConfirmDescription": "Bạn có chắc chắn muốn cập nhật thông tin lộ trình không?",
@@ -2267,17 +2304,6 @@
       "resultLabel": "Kết quả",
       "notAvailable": "Chưa có",
       "practiceRequiresAttempt": "Hoàn thành 1 lần kiểm tra để mở"
-    },
-    "leaderParticipation": {
-      "title": "Bạn có muốn tham gia ranking?",
-      "description": "Chọn hình thức tham gia của leader trước khi xuất bản bài kiểm tra cho nhóm.",
-      "joinTitle": "Tham gia ranking",
-      "joinDescription": "Leader làm bài trước. Sau khi hoàn thành, bài sẽ được kích hoạt cho các thành viên. Điểm của leader sẽ được tính vào bảng xếp hạng.",
-      "skipTitle": "Không tham gia",
-      "skipDescription": "Xuất bản ngay cho các thành viên. Leader vẫn có thể làm bài nhưng kết quả không vào ranking.",
-      "cancel": "Huỷ",
-      "skipButton": "Không tham gia",
-      "joinButton": "Tham gia ranking & làm bài"
     }
   },
   "workspaceSettings": "Cài đặt không gian học tập",
@@ -2474,8 +2500,10 @@
     "continuePracticeAction": "Tiếp tục luyện tập",
     "generateKnowledgeAction": "Tạo knowledge luyện tập",
     "reviewAnswers": "Xem lại câu trả lời",
-    "feedbackAction": "Phản hồi",
-    "reviewAnswersTitle": "Xem lại câu trả lời",
+        "feedbackAction": "Phản hồi",
+        "communityFeedbackAction": "Gửi feedback community",
+        "communityFeedbackUpdate": "Cập nhật feedback community",
+        "reviewAnswersTitle": "Xem lại câu trả lời",
     "paginationPrev": "Trang trước",
     "paginationPage": "Trang",
     "paginationNext": "Trang sau",
@@ -2663,7 +2691,7 @@
     "setupConfirmTitle": "Xác nhận thiết lập lộ trình",
     "updateExistingConfirmTitle": "Bạn đang có lộ trình đang sử dụng",
     "updateConfirmTitle": "Xác nhận cập nhật lộ trình",
-    "setupConfirmDescription": "Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho nhóm không?",
+    "setupConfirmDescription": "Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho workspace này không?",
     "updateExistingConfirmDescription": "Nếu cập nhật, lộ trình đang sử dụng sẽ bị mất đi. Bạn chắc chắn với quyết định cập nhật thông tin lộ trình không?",
     "updateConfirmDescription": "Bạn có chắc chắn muốn cập nhật thông tin lộ trình không?",
     "saveFailed": "Lưu thất bại. Vui lòng thử lại."

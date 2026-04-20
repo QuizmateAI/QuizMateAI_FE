@@ -452,6 +452,11 @@ export const confirmIndividualWorkspaceProfile = async (workspaceId) => {
   return response;
 };
 
+export const suggestIndividualRoadmapConfig = async (workspaceId) => {
+  const response = await api.post(`/workspace-profile/individual/${workspaceId}/roadmap-config/suggest`);
+  return response;
+};
+
 // Cấu hình Individual Workspace Profile theo flow 3 bước mới
 export const configureIndividualWorkspaceProfile = async (workspaceId, data) => {
   await saveIndividualWorkspaceBasicStep(workspaceId, data);

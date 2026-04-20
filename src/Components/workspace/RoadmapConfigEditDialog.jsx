@@ -80,7 +80,7 @@ function RoadmapConfigEditDialog({
   const confirmDescription = isSetupMode
     ? t(
       'roadmapConfigEditDialog.setupConfirmDescription',
-      'Are you sure you want to save this roadmap configuration for the group?'
+      'Are you sure you want to save this roadmap configuration for this workspace?'
     )
     : hasExistingRoadmap
       ? t(
@@ -186,10 +186,7 @@ function RoadmapConfigEditDialog({
         recommendations: Array.isArray(suggestion?.recommendations)
           ? suggestion.recommendations.filter(Boolean)
           : [],
-        preLearningRequired:
-          suggestion?.preLearningRequired === undefined || suggestion?.preLearningRequired === null
-            ? null
-            : Boolean(suggestion.preLearningRequired),
+        preLearningRequired: null,
       });
     } catch (error) {
       console.error('Failed to suggest roadmap config:', error);
@@ -267,7 +264,7 @@ function RoadmapConfigEditDialog({
                         <p className={`mt-1 text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                           {t(
                             'roadmapConfigEditDialog.suggestDescription',
-                            'The suggestion uses the saved group profile to estimate depth, pacing, study days, and daily workload.'
+                            'The suggestion uses the saved workspace profile to estimate depth, pacing, study days, and daily workload.'
                           )}
                         </p>
                       </div>
@@ -326,14 +323,14 @@ function RoadmapConfigEditDialog({
                             }`}>
                               {suggestionMeta.preLearningRequired
                                 ? t('roadmapConfigEditDialog.preLearningRequired', 'AI recommends enabling a pre-learning check before the roadmap starts.')
-                                : t('roadmapConfigEditDialog.preLearningNotRequired', 'AI suggests the group can enter the roadmap directly.')}
+                                : t('roadmapConfigEditDialog.preLearningNotRequired', 'AI suggests this workspace can enter the roadmap directly.')}
                             </p>
                           ) : null}
 
                           {suggestionMeta.recommendations.length > 0 ? (
                             <div>
                               <p className="text-xs font-semibold uppercase tracking-[0.08em] opacity-75">
-                                {t('roadmapConfigEditDialog.suggestRecommendationsLabel', 'Leader notes')}
+                                {t('roadmapConfigEditDialog.suggestRecommendationsLabel', 'AI notes')}
                               </p>
                               <ul className={`mt-2 space-y-2 text-sm leading-6 ${
                                 isDarkMode ? 'text-slate-200' : 'text-slate-700'
