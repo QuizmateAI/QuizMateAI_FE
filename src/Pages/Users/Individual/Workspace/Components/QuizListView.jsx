@@ -1032,7 +1032,9 @@ function QuizListView({
           ? t("quizListView.cards.myPassed", "Passed")
           : t("quizListView.cards.myFailed", "Not passed")
       )
-      : t("quizListView.cards.notAttempted", "Not attempted");
+      : (normalizedStatus === "DRAFT"
+        ? t("quizListView.status.DRAFT", "Draft")
+        : t("quizListView.cards.notAttempted", "Not attempted"));
     const shouldShowResultPill = !myAttempted || myPassed;
     const roadmapExamLabel = t("quizListView.cards.exam", "Exam");
     const roadmapRetakeExamLabel = t("quizListView.cards.retakeExam", "Retake exam");
@@ -1502,7 +1504,9 @@ function QuizListView({
                 ? t("quizListView.cards.processing", "Generating quiz")
                 : myAttempted
                   ? (myPassed ? t("quizListView.cards.myPassed", "Passed") : t("quizListView.cards.myFailed", "Not passed"))
-                  : t("quizListView.cards.notAttempted", "Not attempted");
+                  : (normalizedStatus === "DRAFT"
+                    ? t("quizListView.status.DRAFT", "Draft")
+                    : t("quizListView.cards.notAttempted", "Not attempted"));
               const shouldShowResultSummary = isProcessing || !myAttempted || myPassed || resolvedScoreValue != null;
               const resultToneClassName = isProcessing
                 ? (isDarkMode ? "text-sky-300" : "text-sky-700")

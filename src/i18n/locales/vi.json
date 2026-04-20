@@ -1522,13 +1522,33 @@
       "badge": "✨ Đột phá học tập cùng AI",
       "titlePart1": "Chinh phục kiến thức cùng",
       "titlePart2": "QuizMate AI",
-      "subtitle": "Tải lên tài liệu học tập (PDF, Video, hoặc URL) và để AI xây dựng lộ trình cá nhân hóa cùng bộ câu hỏi tương tác.",
+      "subtitle": "Biến mọi tài liệu thành bài trắc nghiệm chỉ trong tích tắc. Tải lên tài liệu học tập (PDF, DOC, hoặc Youtube URL) để AI tự động tạo các bộ câu hỏi tương tác và tùy chỉnh theo cách học của riêng bạn.",
       "startLearning": "Bắt đầu học ngay",
       "watchDemo": "Xem Demo",
       "activeStudents": "Học viên tích cực"
     },
     "features": {
       "title": "Cách mạng hóa hành trình học tập",
+      "new": {
+        "generation": {
+          "title": "Tạo tự động",
+          "bullet1": "Đa dạng nguồn: Tải lên PDF, Video, Hình ảnh, YouTube links...",
+          "bullet2": "AI trích xuất kiến thức & tạo câu hỏi sát với thực tế.",
+          "bullet3": "Tiết kiệm hàng giờ tạo quiz thủ công (Giải quyết vấn đề cốt lõi)."
+        },
+        "customization": {
+          "title": "Tùy chỉnh sâu",
+          "bullet1": "Điều chỉnh: Loại câu hỏi, độ khó, mức độ nhận thức Bloom.",
+          "bullet2": "Chọn mục đích: Ôn tập nhanh, kiểm tra kiến thức, hoặc thi thử.",
+          "bullet3": "AI đánh giá kết quả và đề xuất các chủ đề cần ôn tập."
+        },
+        "collaborative": {
+          "title": "Học tập cộng tác",
+          "bullet1": "Chia sẻ tài liệu học tập và giao bài kiểm tra cho cả nhóm.",
+          "bullet2": "Tổ chức thử thách tương tác trong thời gian thực để tạo hứng thú.",
+          "bullet3": "Trưởng nhóm có thể quản lý và theo dõi tiến độ của từng học viên."
+        }
+      },
       "roadmapTitle": "Lộ trình AI",
       "roadmapDesc": "AI phân tích tài liệu và tạo lộ trình học tập từng bước từ cơ bản đến nâng cao.",
       "quizTitle": "Trắc nghiệm thông minh",

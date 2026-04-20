@@ -21,6 +21,7 @@ const LazyQuizListView = React.lazy(() => import("./QuizListView"));
 const LazyCommunityQuizExplorerView = React.lazy(() => import("./CommunityQuizExplorerView"));
 const LazyQuizDetailView = React.lazy(() => import("./QuizDetailView"));
 const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
+const LazyManualQuizWizard = React.lazy(() => import("./ManualQuizWizard"));
 const LazyFlashcardListView = React.lazy(() => import("./FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("./FlashcardDetailView"));
 const LazyMockTestListView = React.lazy(() => import("./MockTestListView"));
@@ -93,6 +94,7 @@ function ChatPanel({
   onViewQuiz,
   onEditQuiz,
   onSaveQuiz,
+  onCreateSimilarQuiz,
   selectedFlashcard = null,
   onViewFlashcard,
   onDeleteFlashcard,
@@ -392,12 +394,40 @@ function ChatPanel({
             quiz={selectedQuiz}
             onBack={onBack}
             onEdit={onEditQuiz}
+            onCreateSimilar={onCreateSimilarQuiz}
             contextType="WORKSPACE"
             contextId={workspaceId}
           />
         ) : null;
-      case "editQuiz":
-        return selectedQuiz ? (
+      case "editQuiz": {
+        if (!selectedQuiz) return null;
+        const isManualQuiz = ["MANUAL", "MANUAL_FROM_AI"].includes(
+          String(selectedQuiz?.createVia || "").toUpperCase(),
+        );
+        const editMode = selectedQuiz?._editMode || "edit";
+        if (editMode === "clone") {
+          return (
+            <LazyManualQuizWizard
+              workspaceId={workspaceId}
+              cloneFromQuizId={selectedQuiz.quizId}
+              onCreateQuiz={onCreateQuiz}
+              onBack={onBack}
+              isDarkMode={isDarkMode}
+            />
+          );
+        }
+        if (isManualQuiz) {
+          return (
+            <LazyManualQuizWizard
+              workspaceId={workspaceId}
+              editingQuizId={selectedQuiz.quizId}
+              onSaveQuiz={onSaveQuiz}
+              onBack={onBack}
+              isDarkMode={isDarkMode}
+            />
+          );
+        }
+        return (
           <LazyEditQuizForm
             isDarkMode={isDarkMode}
             quiz={selectedQuiz}
@@ -406,7 +436,8 @@ function ChatPanel({
             contextType="WORKSPACE"
             contextId={workspaceId}
           />
-        ) : null;
+        );
+      }
       case "createMockTest":
         return shouldDisableCreateMockTest ? (
           <LazyMockTestListView
@@ -618,8 +649,8 @@ function ChatPanel({
                 : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
             />
 
-            <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
-              <Button
+            {/* <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}> */}
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
@@ -638,7 +669,7 @@ function ChatPanel({
               >
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle", "Tổng quan")}</span>
-              </Button>
+              </Button> */}
               {/* <Button
                 type="button"
                 size="sm"
@@ -649,7 +680,7 @@ function ChatPanel({
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title", "Kiểm thử")}</span>
               </Button> */}
-            </div>
+            {/* </div> */}
           </div>
         </div>
 
