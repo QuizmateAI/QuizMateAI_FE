@@ -397,7 +397,7 @@ function ChatPanel({
           String(selectedQuiz?.createVia || "").toUpperCase(),
         );
         const editMode = selectedQuiz?._editMode || "edit";
-        if (isManualQuiz && editMode === "clone") {
+        if (editMode === "clone") {
           return (
             <LazyManualQuizWizard
               workspaceId={workspaceId}

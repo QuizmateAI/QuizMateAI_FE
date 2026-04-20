@@ -1291,6 +1291,7 @@
       },
       "detail": {
         "edit": "Chỉnh sửa",
+        "editLockedHint": "Hãy làm quiz lần đầu trước khi sửa",
         "createSimilar": "Tạo tương tự",
         "activateQuiz": "Kích hoạt quiz",
         "confirmActivateQuiz": "Xác nhận & kích hoạt",
