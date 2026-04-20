@@ -58,6 +58,7 @@ const QuizResultPage = lazy(() => import('./Pages/Users/Quiz/QuizResultPage'));
 const PaymentPage = lazy(() => import('./Pages/Payment/PaymentPage'));
 const CreditPaymentPage = lazy(() => import('./Pages/Payment/CreditPaymentPage'));
 const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
+const MomoReturnRedirect = lazy(() => import('./Pages/Payment/MomoReturnRedirect'));
 const VnPayReturnRedirect = lazy(() => import('./Pages/Payment/VnPayReturnRedirect'));
 
 // Super Admin
@@ -83,6 +84,7 @@ function MainRoutes() {
       {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home
       page của role đó */}
       {/* VNPay return: nếu request trúng frontend thay vì backend thì redirect sang backend */}
+      <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
       <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
       <Route path="/accept-invite" element={<AcceptInvitationPage />} />
       <Route path="/pricing" element={<PricingGuidePage />} />
@@ -226,6 +228,7 @@ function RouteNamespaceGate({ children }) {
 function LaunchRoutes() {
   return (
     <Routes>
+      <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
       <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
       <Route path="*" element={<LaunchingPage />} />
     </Routes>

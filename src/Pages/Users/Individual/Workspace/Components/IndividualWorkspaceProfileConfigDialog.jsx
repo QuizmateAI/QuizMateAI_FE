@@ -361,6 +361,7 @@ function IndividualWorkspaceProfileConfigDialog({
   canCreateRoadmap = true,
   isReadOnly = false,
   forceStartAtStepOne = false,
+  onSuggestRoadmapConfig,
   mockTestGenerationState = 'idle',
   mockTestGenerationMessage = '',
   mockTestGenerationProgress = 0,
@@ -542,6 +543,7 @@ function IndividualWorkspaceProfileConfigDialog({
         disabled={isReadOnly}
         canCreateRoadmap={canCreateRoadmap}
         onFieldChange={wizard.updateField}
+        onSuggestRoadmapConfig={onSuggestRoadmapConfig}
       />
     );
   }

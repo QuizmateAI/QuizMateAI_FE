@@ -911,7 +911,7 @@
       "canProcessVideo": "Video",
       "canProcessAudio": "Audio",
       "canBuyCredit": "Buy credit",
-      "hasAdvanceQuizConfig": "Advanced quiz types",
+      "hasAdvanceQuizConfig": "Advanced quiz configuration",
       "canCreateRoadMap": "Create roadmap",
       "hasAiCompanionMode": "AI companion",
       "hasWorkspaceAnalytics": "Analytics",

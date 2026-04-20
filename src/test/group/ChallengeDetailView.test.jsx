@@ -7,6 +7,7 @@ import i18n, { preloadRouteNamespaces } from '@/i18n';
 import { buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
 import ChallengeDetailView from '@/Pages/Users/Group/Components/ChallengeDetailView';
 import {
+  acceptQuizReviewInvitation,
   batchInviteQuizReviewers,
   getChallengeDetail,
 } from '@/api/ChallengeAPI';
@@ -34,6 +35,8 @@ vi.mock('@/api/ChallengeAPI', () => ({
   batchInviteQuizReviewers: vi.fn(),
   startChallenge: vi.fn(),
   createChallengeRoundQuiz: vi.fn(),
+  acceptQuizReviewInvitation: vi.fn(),
+  declineQuizReviewInvitation: vi.fn(),
 }));
 
 vi.mock('@/api/GroupAPI', () => ({
@@ -97,6 +100,7 @@ describe('ChallengeDetailView', () => {
     getChallengeDetail.mockResolvedValue({ data: { ...baseDetail } });
     getGroupMembers.mockResolvedValue({ data: { content: [] } });
     batchInviteQuizReviewers.mockResolvedValue({ data: {} });
+    acceptQuizReviewInvitation.mockResolvedValue({ data: {} });
     window.localStorage.clear();
     window.localStorage.setItem('app_language', 'en');
     await preloadRouteNamespaces('/group-workspaces/55', 'en');
@@ -145,12 +149,26 @@ describe('ChallengeDetailView', () => {
       expect(batchInviteQuizReviewers).toHaveBeenCalledWith(55, 901, [
         {
           userId: 202,
-          primaryReviewer: true,
         },
       ]);
     });
 
-    expect(screen.getByText('Only the primary reviewer is needed to publish.')).toBeInTheDocument();
+    expect(screen.getByText('Reviewers are optional here. If invited, they can help check and clean up the quiz before you publish it.')).toBeInTheDocument();
+  });
+
+  it('hides the preview button when the leader joins the challenge and should only compose the quiz', async () => {
+    getChallengeDetail.mockResolvedValueOnce({
+      data: {
+        ...baseDetail,
+        leaderParticipates: true,
+        snapshotQuizTotalQuestion: 8,
+      },
+    });
+
+    renderChallengeDetail();
+
+    expect(await screen.findByRole('button', { name: 'Compose challenge quiz' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Xem quiz' })).not.toBeInTheDocument();
   });
 
   it('shows realtime websocket progress for the challenge quiz without waiting for detail reload', async () => {
@@ -173,6 +191,30 @@ describe('ChallengeDetailView', () => {
     expect(screen.queryByRole('button', { name: 'Compose challenge quiz' })).not.toBeInTheDocument();
   });
 
+  it('asks pending reviewers to accept before showing the quiz preview', async () => {
+    getChallengeDetail.mockResolvedValueOnce({
+      data: {
+        ...baseDetail,
+        creatorId: 999,
+        snapshotQuizStatus: 'ACTIVE',
+        snapshotQuizTotalQuestion: 8,
+        myReviewContributorForSnapshot: true,
+        myReviewInvitationStatus: 'PENDING',
+      },
+    });
+
+    renderChallengeDetail({ isLeader: false, currentUserId: 202 });
+
+    expect(await screen.findByText('Bạn được mời review đề challenge này')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View quiz' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đồng ý review' }));
+
+    await waitFor(() => {
+      expect(acceptQuizReviewInvitation).toHaveBeenCalledWith(55, 901);
+    });
+  });
+
   it('trusts server ACTIVE status and hides stale processing state', async () => {
     getChallengeDetail.mockResolvedValueOnce({
       data: {
@@ -190,5 +232,22 @@ describe('ChallengeDetailView', () => {
     expect(await screen.findByText('Draft quiz')).toBeInTheDocument();
     expect(screen.queryByText('Challenge quiz is being generated')).not.toBeInTheDocument();
     expect(screen.queryByText('55%')).not.toBeInTheDocument();
+  });
+
+  it('prefers active realtime quiz generation over a stale error status', async () => {
+    getChallengeDetail.mockResolvedValueOnce({
+      data: {
+        ...baseDetail,
+        snapshotQuizStatus: 'ERROR',
+      },
+    });
+
+    renderChallengeDetail({
+      quizGenerationTaskByQuizId: { 901: 'task-901' },
+      quizGenerationProgressByQuizId: { 901: 12 },
+    });
+
+    expect(await screen.findByText('Challenge quiz is being generated')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Compose challenge quiz' })).not.toBeInTheDocument();
   });
 });

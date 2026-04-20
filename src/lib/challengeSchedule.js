@@ -2,7 +2,7 @@
 
 export const CHALLENGE_MIN_LEAD_DAYS = 0;
 export const CHALLENGE_MIN_DURATION_HOURS = 0;
-export const CHALLENGE_MIN_DURATION_MINUTES = 5;
+export const CHALLENGE_MIN_DURATION_MINUTES = 30;
 
 export function pad2(n) {
   return String(n).padStart(2, '0');

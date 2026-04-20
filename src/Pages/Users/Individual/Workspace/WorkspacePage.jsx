@@ -27,6 +27,7 @@ import {
   saveIndividualWorkspaceBasicStep,
   saveIndividualWorkspacePersonalInfoStep,
   saveIndividualWorkspaceRoadmapConfigStep,
+  suggestIndividualRoadmapConfig,
   startIndividualWorkspaceMockTestPersonalInfoStep,
   confirmIndividualWorkspaceProfile,
 } from "@/api/WorkspaceAPI";
@@ -1564,8 +1565,18 @@ function WorkspacePage() {
       resetRoadmapRuntimeState,
       loadWorkspaceProfileData,
       bumpRoadmapReloadToken,
-    ],
-  );
+      ],
+    );
+
+  const handleSuggestRoadmapConfig = useCallback(async () => {
+    const normalizedWorkspaceId = Number(workspaceId);
+    if (!Number.isInteger(normalizedWorkspaceId) || normalizedWorkspaceId <= 0) {
+      throw new Error("No workspace found");
+    }
+
+    const response = await suggestIndividualRoadmapConfig(normalizedWorkspaceId);
+    return response?.data?.data ?? response?.data ?? response ?? null;
+  }, [workspaceId]);
 
   const handleDeleteMaterialsForProfileUpdate = useCallback(async () => {
     if (!workspaceId || isResettingWorkspaceForProfileUpdate) return;
@@ -2819,6 +2830,7 @@ function WorkspacePage() {
             onOpenChange={handleProfileConfigChange}
             onSave={handleSaveProfileConfig}
             onConfirm={handleConfirmProfileConfig}
+            onSuggestRoadmapConfig={handleSuggestRoadmapConfig}
             onUploadFiles={handleUploadFiles}
             isDarkMode={personalWorkspaceIsDark}
             canCreateRoadmap={canCreateRoadmap}
@@ -2881,6 +2893,7 @@ function WorkspacePage() {
             extractRoadmapIdFromProfile(workspaceProfile),
           )}
           onSave={handleSaveRoadmapConfig}
+          onSuggest={handleSuggestRoadmapConfig}
         />
       </React.Suspense>
     </div>
