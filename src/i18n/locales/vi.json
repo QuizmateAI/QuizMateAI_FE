@@ -2889,7 +2889,7 @@
           "MATCHING": "Nối cặp",
           "IMAGED_BASED": "Dựa trên hình ảnh"
         },
-        "bloomSkills": "Kỹ năng Bloom",
+        "bloomSkills": "Thang đo Bloom",
         "bloomInfo": "Tham chiếu thang Bloom",
         "bloomInfoAlt": "Biểu đồ thang Bloom taxonomy",
         "countUnit": "câu",
@@ -3819,7 +3819,7 @@
     "questionNotFound": "Không tìm thấy câu hỏi.",
     "answerNotFound": "Không tìm thấy đáp án.",
     "questionTypeNotFound": "Không tìm thấy loại câu hỏi.",
-    "bloomNotFound": "Không tìm thấy kỹ năng Bloom.",
+    "bloomNotFound": "Không tìm thấy thang đo Bloom.",
     "invalidSectionParent": "Phần cha không hợp lệ.",
     "invalidSectionType": "Loại phần không hợp lệ.",
     "quizNotInGroup": "Bộ câu hỏi không thuộc nhóm.",
