@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, MoreHorizontal, Shield, Ban, CheckCircle2, Eye } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Shield, Ban, CheckCircle2, Eye, Trash2 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/Components/ui/card";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/Components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -23,10 +26,14 @@ import {
   DropdownMenuSeparator,
 } from "@/Components/ui/dropdown-menu";
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAllUsers, updateUserStatus } from '@/api/ManagementSystemAPI';
+import { getAllUsers, updateUserStatus, forceDeleteUser } from '@/api/ManagementSystemAPI';
 import AdminPagination from './components/AdminPagination';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from '@/Pages/SuperAdmin/Components/SuperAdminSurface';
 
 function UserManagement() {
   const navigate = useNavigate();
@@ -45,6 +52,12 @@ function UserManagement() {
     totalPages: 0,
     totalElements: 0,
   });
+  const isSuperAdminContext = basePath === '/super-admin';
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const DELETE_PHRASE = 'FORCE-DELETE-USER';
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const getFriendlyError = (err, fallbackText) => {
@@ -122,6 +135,46 @@ function UserManagement() {
     showSuccess('Cập nhật trạng thái người dùng thành công');
   };
 
+  const openDeleteDialog = (user) => {
+    setDeleteTarget(user);
+    setDeleteConfirmText('');
+    setDeleteReason('');
+  };
+
+  const closeDeleteDialog = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+    setDeleteConfirmText('');
+    setDeleteReason('');
+  };
+
+  const canSubmitDelete =
+    deleteConfirmText === DELETE_PHRASE &&
+    deleteReason.trim().length >= 10 &&
+    deleteReason.trim().length <= 500;
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || !canSubmitDelete) return;
+    setIsDeleting(true);
+    try {
+      await forceDeleteUser(deleteTarget.id, {
+        confirmText: deleteConfirmText,
+        reason: deleteReason.trim(),
+      });
+      showSuccess('Đã xoá người dùng');
+      setDeleteTarget(null);
+      setDeleteConfirmText('');
+      setDeleteReason('');
+      fetchUsers(pagination.page, pagination.size);
+    } catch (err) {
+      const msg = getFriendlyError(err, 'Không thể xoá người dùng');
+      showError(msg);
+      console.error('Lỗi khi force-delete user:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Lọc users theo search term và chỉ hiển thị role USER (ẩn ADMIN và SUPER_ADMIN)
   const filteredUsers = users
     .filter(user => user.role === 'USER')
@@ -158,26 +211,20 @@ function UserManagement() {
   };
 
   return (
-    <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
-        <div>
-          <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {t('userPage.title')}
-          </h1>
-          <p className={`${isDarkMode ? 'text-slate-400' : 'text-gray-500'} font-medium`}>
-            {t('userPage.desc')}
-          </p>
-        </div>
-        <Button 
-          onClick={() => fetchUsers(pagination.page, pagination.size)}
-          disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
-        >
-          <RefreshCw className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          {t('userPage.refresh')}
-        </Button>
-      </div>
+    <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
+      <SuperAdminPageHeader
+        title={t('userPage.title')}
+        actions={(
+          <Button
+            onClick={() => fetchUsers(pagination.page, pagination.size)}
+            disabled={isLoading}
+            className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {t('userPage.refresh')}
+          </Button>
+        )}
+      />
 
       {/* Error Message */}
       {error && (
@@ -289,7 +336,7 @@ function UserManagement() {
                               <Shield className="w-4 h-4 mr-2 text-amber-500" />
                               {t('userPage.setInactive')}
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleUpdateStatus(user.id, 'BANNED')}
                               disabled={user.status === 'BANNED'}
                               className="cursor-pointer"
@@ -297,6 +344,19 @@ function UserManagement() {
                               <Ban className="w-4 h-4 mr-2 text-rose-500" />
                               {t('userPage.setBanned')}
                             </DropdownMenuItem>
+                            {isSuperAdminContext && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => openDeleteDialog(user)}
+                                  disabled={user.status === 'DELETED'}
+                                  className="cursor-pointer text-rose-600 focus:text-rose-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2 text-rose-500" />
+                                  Xoá tài khoản
+                                </DropdownMenuItem>
+                              </>
+                            )}
                             <DropdownMenuSeparator />
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -328,7 +388,75 @@ function UserManagement() {
           )}
         </CardContent>
       </Card>
-    </div>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) closeDeleteDialog(); }}>
+        <DialogContent className={`sm:max-w-[520px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : ''}`}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <Trash2 className="w-5 h-5" /> Xoá tài khoản người dùng
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
+              Hành động chỉ dành cho SUPER_ADMIN và được ghi vào audit log. Tài khoản sẽ bị đánh dấu
+              <span className="font-semibold"> DELETED</span> và email/username bị ẩn danh.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteTarget && (
+            <div className="space-y-4">
+              <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-slate-200 bg-slate-50'}`}>
+                <div><span className="font-semibold">Username:</span> {deleteTarget.username}</div>
+                <div><span className="font-semibold">Email:</span> {deleteTarget.email}</div>
+                <div><span className="font-semibold">ID:</span> {deleteTarget.id}</div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold">
+                  Gõ chính xác <code className="px-1 py-0.5 rounded bg-rose-100 text-rose-700">{DELETE_PHRASE}</code> để xác nhận
+                </label>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={DELETE_PHRASE}
+                  disabled={isDeleting}
+                  className="h-10 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold">
+                  Lý do xoá (10–500 ký tự) <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Ghi rõ lý do để lưu vào audit log"
+                  disabled={isDeleting}
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition focus:border-rose-400 ${
+                    isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200'
+                  }`}
+                />
+                <div className="text-xs text-slate-400 text-right">{deleteReason.trim().length}/500</div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog} disabled={isDeleting} className="rounded-xl">
+              Huỷ
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              disabled={!canSubmitDelete || isDeleting}
+              className="rounded-xl bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {isDeleting ? 'Đang xoá…' : 'Xoá vĩnh viễn'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </SuperAdminPage>
   );
 }
 

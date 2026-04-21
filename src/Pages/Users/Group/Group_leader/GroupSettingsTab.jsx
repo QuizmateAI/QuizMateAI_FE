@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -16,7 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { updateWorkspace } from '@/api/WorkspaceAPI';
-import { toggleVisibility as apiToggleVisibility } from '@/api/GroupAPI';
+import { toggleVisibility as apiToggleVisibility, deleteGroup as apiDeleteGroup } from '@/api/GroupAPI';
 import GroupProfileOverviewPanel from '../Components/GroupProfileOverviewPanel';
 
 function GroupSettingsTab({
@@ -24,6 +24,7 @@ function GroupSettingsTab({
   group,
   isLeader,
   onGroupUpdated,
+  onGroupDeleted,
   compactMode = false,
   onOpenProfileConfig,
   profileEditLocked = false,
@@ -66,7 +67,7 @@ function GroupSettingsTab({
       : 'border-white/80 bg-white text-slate-900 placeholder:text-slate-400 focus:border-cyan-200 focus:bg-white'
   }`;
 
-  const confirmationPhrase = useMemo(() => `delete ${group?.groupName || ''}`, [group?.groupName]);
+  const confirmationPhrase = 'delete group';
   const governanceSignals = [
     {
       label: t('groupSettingsTab.identityState', 'Identity state'),
@@ -154,11 +155,28 @@ function GroupSettingsTab({
   }, [group, groupName, onGroupUpdated, t]);
 
   const handleDelete = useCallback(async () => {
-    if (!group?.workspaceId) return;
+    if (!group?.workspaceId || deleting) return;
+    if (deleteConfirmationInput !== confirmationPhrase) return;
 
-    setErrorMsg(t('groupManage.settings.deleteError'));
-    setDeleting(false);
-  }, [group, t]);
+    setDeleting(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      await apiDeleteGroup(group.workspaceId, confirmationPhrase);
+      setShowDeleteConfirm(false);
+      setDeleteConfirmationInput('');
+      setSuccessMsg(t('groupManage.settings.deleteSuccess', 'Group has been deleted.'));
+      if (onGroupDeleted) {
+        await onGroupDeleted();
+      }
+    } catch (err) {
+      const serverMsg = err?.response?.data?.message || err?.message;
+      setErrorMsg(serverMsg || t('groupManage.settings.deleteError'));
+      console.error('Lỗi xóa nhóm:', err);
+    } finally {
+      setDeleting(false);
+    }
+  }, [group, deleting, deleteConfirmationInput, onGroupDeleted, t]);
 
   const handleCancel = useCallback(() => {
     setGroupName(group?.groupName || '');
@@ -282,6 +300,85 @@ function GroupSettingsTab({
           onOpenProfileConfig={onOpenProfileConfig}
           profileEditLocked={profileEditLocked}
         />
+
+        {isLeader ? (
+          <section className={`rounded-2xl border p-5 ${isDarkMode ? 'border-red-400/20 bg-red-500/10 text-white' : 'border-red-200 bg-red-50/80 text-slate-900'}`}>
+            <div className="flex items-start gap-3">
+              <span className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl ${isDarkMode ? 'bg-red-400/10 text-red-200' : 'bg-red-100 text-red-700'}`}>
+                <Trash2 className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-red-200/80' : 'text-red-600'}`}>
+                  {t('groupManage.settings.dangerZone', 'Danger zone')}
+                </p>
+                <h3 className={`mt-1 text-base font-bold ${isDarkMode ? 'text-white' : 'text-red-800'}`}>
+                  {t('groupSettingsTab.retireHeading', 'Retire this group carefully')}
+                </h3>
+                <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-red-100/85' : 'text-red-700'}`}>
+                  {t('groupManage.settings.deleteWarning', 'This action cannot be undone. All data associated with the group will be removed.')}
+                </p>
+              </div>
+            </div>
+
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className={`mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all active:scale-95 ${
+                  isDarkMode ? 'border-red-300/25 bg-red-400/10 text-red-100 hover:bg-red-400/15' : 'border-red-200 bg-white text-red-700 hover:bg-red-50'
+                }`}
+              >
+                <AlertTriangle className="h-4 w-4" />
+                {t('groupManage.settings.deleteGroup', 'Delete group')}
+              </button>
+            ) : (
+              <div className={`mt-4 rounded-xl border p-4 ${isDarkMode ? 'border-red-300/15 bg-black/20' : 'border-red-200 bg-white'}`}>
+                <p className={`text-sm font-semibold ${isDarkMode ? 'text-red-100' : 'text-red-700'}`}>
+                  {t('groupManage.settings.deleteConfirm', 'Please confirm group deletion')}
+                </p>
+                <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-red-100/80' : 'text-slate-600'}`}>
+                  {t('groupSettingsTab.confirmTypePrefix', 'Type')}{' '}
+                  <span className="font-bold">{confirmationPhrase}</span>{' '}
+                  {t('groupSettingsTab.confirmTypeSuffix', 'to confirm permanent removal.')}
+                </p>
+
+                <input
+                  type="text"
+                  value={deleteConfirmationInput}
+                  onChange={(event) => setDeleteConfirmationInput(event.target.value)}
+                  className={`mt-3 w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-all ${
+                    isDarkMode
+                      ? 'border-red-300/15 bg-white/[0.04] text-white placeholder:text-slate-500 focus:border-red-300/30'
+                      : 'border-red-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-red-300'
+                  }`}
+                  placeholder={confirmationPhrase}
+                />
+
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteConfirmationInput('');
+                    }}
+                    disabled={deleting}
+                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-all active:scale-95 disabled:opacity-50 ${
+                      isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.10]' : 'border-gray-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {t('home.group.cancel', 'Cancel')}
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleteConfirmationInput !== confirmationPhrase || deleting}
+                    className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {t('groupManage.settings.confirmDelete', 'Confirm delete')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        ) : null}
       </div>
     );
   }

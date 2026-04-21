@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { checkEmail, checkUsername, register, sendOTP, verifyOTP } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
+import { markAuthAvailabilityUnavailable, mayBeAuthAvailabilityUnavailable } from '@/lib/authAvailabilityBloom';
 import { getEmailViolationKey } from '@/Utils/emailValidation';
 import i18n from '@/i18n';
 
@@ -8,6 +9,9 @@ import i18n from '@/i18n';
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;
 // Regex theo BE: password phải chứa cả chữ và số
 const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
+const AVAILABILITY_DEBOUNCE_MS = 250;
+const AVAILABILITY_CACHE_TTL_MS = 60 * 1000;
+
 function getUsernameValidationMessage(username, t) {
   if (!username) {
     return t('validation.usernameRequired');
@@ -28,6 +32,11 @@ function getEmailValidationMessage(email, t) {
     return t(`validation.${violationKey}`);
   }
   return '';
+}
+
+function normalizeAvailabilityValue(field, value) {
+  const trimmedValue = String(value || '').trim();
+  return field === 'email' ? trimmedValue.toLowerCase() : trimmedValue;
 }
 
 export const useRegister = (setView, t) => {
@@ -53,6 +62,26 @@ export const useRegister = (setView, t) => {
     email: { checking: false, available: null, message: '', checkedValue: '' }
   });
   const availabilityRequestRef = useRef({ username: 0, email: 0 });
+  const availabilityDebounceRef = useRef({ username: null, email: null });
+  const availabilityCacheRef = useRef({
+    username: { available: new Map(), unavailable: new Map() },
+    email: { available: new Map(), unavailable: new Map() },
+  });
+
+  const clearAvailabilityTimer = (field) => {
+    if (availabilityDebounceRef.current[field]) {
+      clearTimeout(availabilityDebounceRef.current[field]);
+      availabilityDebounceRef.current[field] = null;
+    }
+  };
+
+  useEffect(() => () => {
+    Object.values(availabilityDebounceRef.current).forEach((timerId) => {
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+    });
+  }, []);
 
   const setAvailabilityFieldState = (field, nextState) => {
     setAvailabilityStatus(prev => ({
@@ -62,6 +91,72 @@ export const useRegister = (setView, t) => {
         ...nextState,
       }
     }));
+  };
+
+  const getAvailabilityMessages = (field) => ({
+    checking: t('auth.checkingAvailability') || 'Checking...',
+    available: field === 'username'
+      ? (t('auth.usernameAvailable') || 'Username is available')
+      : (t('auth.emailAvailable') || 'Email is available'),
+    unavailable: field === 'username'
+      ? (t('auth.usernameExists') || 'Username is already in use')
+      : (t('auth.emailExists') || 'Email is already in use'),
+  });
+
+  const readAvailabilityCache = (field, value) => {
+    const now = Date.now();
+    const cache = availabilityCacheRef.current[field];
+    const availableAt = cache.available.get(value);
+    const unavailableAt = cache.unavailable.get(value);
+
+    if (typeof availableAt === 'number') {
+      if (now - availableAt <= AVAILABILITY_CACHE_TTL_MS) {
+        return true;
+      }
+      cache.available.delete(value);
+    }
+
+    if (typeof unavailableAt === 'number') {
+      if (now - unavailableAt <= AVAILABILITY_CACHE_TTL_MS) {
+        return false;
+      }
+      cache.unavailable.delete(value);
+    }
+
+    return null;
+  };
+
+  const writeAvailabilityCache = (field, value, isAvailable) => {
+    const cache = availabilityCacheRef.current[field];
+    const timestamp = Date.now();
+
+    if (isAvailable) {
+      cache.available.set(value, timestamp);
+      cache.unavailable.delete(value);
+      return;
+    }
+
+    cache.unavailable.set(value, timestamp);
+    cache.available.delete(value);
+    markAuthAvailabilityUnavailable(field, value);
+  };
+
+  const applyAvailabilityResult = (field, value, isAvailable) => {
+    const messages = getAvailabilityMessages(field);
+
+    setAvailabilityFieldState(field, {
+      checking: false,
+      available: isAvailable,
+      checkedValue: value,
+      message: isAvailable ? messages.available : messages.unavailable,
+    });
+
+    if (isAvailable) {
+      clearFieldError(field);
+      return;
+    }
+
+    setFieldErrors(prev => ({ ...prev, [field]: messages.unavailable }));
   };
 
   const clearFieldError = (field) => {
@@ -75,14 +170,17 @@ export const useRegister = (setView, t) => {
   };
 
   const runAvailabilityCheck = async (field, value) => {
+    clearAvailabilityTimer(field);
+
     const requestId = availabilityRequestRef.current[field] + 1;
     availabilityRequestRef.current[field] = requestId;
+    const messages = getAvailabilityMessages(field);
 
     setAvailabilityFieldState(field, {
       checking: true,
       available: null,
       checkedValue: value,
-      message: t('auth.checkingAvailability') || 'Checking...',
+      message: messages.checking,
     });
 
     try {
@@ -95,25 +193,8 @@ export const useRegister = (setView, t) => {
       }
 
       const isAvailable = response?.data === true;
-      const successMessageByField = field === 'username'
-        ? (t('auth.usernameAvailable') || 'Username is available')
-        : (t('auth.emailAvailable') || 'Email is available');
-      const errorMessageByField = field === 'username'
-        ? (t('auth.usernameExists') || 'Username is already in use')
-        : (t('auth.emailExists') || 'Email is already in use');
-
-      setAvailabilityFieldState(field, {
-        checking: false,
-        available: isAvailable,
-        checkedValue: value,
-        message: isAvailable ? successMessageByField : errorMessageByField,
-      });
-
-      if (isAvailable) {
-        clearFieldError(field);
-      } else {
-        setFieldErrors(prev => ({ ...prev, [field]: errorMessageByField }));
-      }
+      writeAvailabilityCache(field, value, isAvailable);
+      applyAvailabilityResult(field, value, isAvailable);
 
       return isAvailable;
     } catch (err) {
@@ -121,18 +202,9 @@ export const useRegister = (setView, t) => {
         return null;
       }
 
-      const errorMessageByField = field === 'username'
-        ? (t('auth.usernameExists') || 'Username is already in use')
-        : (t('auth.emailExists') || 'Email is already in use');
-
       if (err?.statusCode === 400) {
-        setAvailabilityFieldState(field, {
-          checking: false,
-          available: false,
-          checkedValue: value,
-          message: errorMessageByField,
-        });
-        setFieldErrors(prev => ({ ...prev, [field]: errorMessageByField }));
+        writeAvailabilityCache(field, value, false);
+        applyAvailabilityResult(field, value, false);
         return false;
       }
 
@@ -145,6 +217,69 @@ export const useRegister = (setView, t) => {
 
       return null;
     }
+  };
+
+  const scheduleAvailabilityCheck = (field, rawValue, { immediate = false } = {}) => {
+    if (registerStep !== 'form') {
+      return;
+    }
+
+    clearAvailabilityTimer(field);
+    availabilityRequestRef.current[field] += 1;
+
+    const normalizedValue = normalizeAvailabilityValue(field, rawValue);
+
+    if (!normalizedValue) {
+      setAvailabilityFieldState(field, {
+        checking: false,
+        available: null,
+        checkedValue: '',
+        message: '',
+      });
+      return;
+    }
+
+    const formatError = field === 'username'
+      ? getUsernameValidationMessage(normalizedValue, t)
+      : getEmailValidationMessage(normalizedValue, t);
+
+    if (formatError) {
+      setAvailabilityFieldState(field, {
+        checking: false,
+        available: false,
+        checkedValue: normalizedValue,
+        message: formatError,
+      });
+      setFieldErrors(prev => ({ ...prev, [field]: formatError }));
+      return;
+    }
+
+    clearFieldError(field);
+
+    const cachedAvailability = readAvailabilityCache(field, normalizedValue);
+    if (cachedAvailability !== null) {
+      applyAvailabilityResult(field, normalizedValue, cachedAvailability);
+      return;
+    }
+
+    const messages = getAvailabilityMessages(field);
+    const delay = immediate
+      ? 0
+      : mayBeAuthAvailabilityUnavailable(field, normalizedValue)
+        ? 0
+        : AVAILABILITY_DEBOUNCE_MS;
+
+    setAvailabilityFieldState(field, {
+      checking: true,
+      available: null,
+      checkedValue: normalizedValue,
+      message: messages.checking,
+    });
+
+    availabilityDebounceRef.current[field] = setTimeout(() => {
+      availabilityDebounceRef.current[field] = null;
+      void runAvailabilityCheck(field, normalizedValue);
+    }, delay);
   };
 
   const requestOtpWithSocket = async (email, successKey, fallbackSuccessMessage) => {
@@ -170,12 +305,7 @@ export const useRegister = (setView, t) => {
     }
 
     if (field === 'username' || field === 'email') {
-      setAvailabilityFieldState(field, {
-        checking: false,
-        available: null,
-        checkedValue: '',
-        message: '',
-      });
+      scheduleAvailabilityCheck(field, nextValue);
     }
   };
 
@@ -192,41 +322,9 @@ export const useRegister = (setView, t) => {
       return;
     }
 
-    const trimmedValue = formData[field]?.trim() || '';
+    const trimmedValue = normalizeAvailabilityValue(field, formData[field]);
     setFormData(prev => ({ ...prev, [field]: trimmedValue }));
-
-    if (!trimmedValue) {
-      setAvailabilityFieldState(field, {
-        checking: false,
-        available: null,
-        message: '',
-      });
-      return;
-    }
-
-    const formatError = field === 'username'
-      ? getUsernameValidationMessage(trimmedValue, t)
-      : getEmailValidationMessage(trimmedValue, t);
-
-    if (formatError) {
-      setAvailabilityFieldState(field, {
-        checking: false,
-        available: false,
-        checkedValue: trimmedValue,
-        message: formatError,
-      });
-      return;
-    }
-
-    if (
-      availabilityStatus[field]?.checkedValue === trimmedValue
-      && availabilityStatus[field]?.available !== null
-      && !availabilityStatus[field]?.checking
-    ) {
-      return;
-    }
-
-    await runAvailabilityCheck(field, trimmedValue);
+    scheduleAvailabilityCheck(field, trimmedValue, { immediate: true });
   };
 
   // Validate toàn bộ form đăng ký theo quy tắc BE
@@ -277,18 +375,12 @@ export const useRegister = (setView, t) => {
   };
 
   const validateAvailabilityBeforeSubmit = async (trimmedData) => {
-    const usernameFromCache =
-      availabilityStatus.username.checkedValue === trimmedData.username
-        ? availabilityStatus.username.available
-        : null;
-    const emailFromCache =
-      availabilityStatus.email.checkedValue === trimmedData.email
-        ? availabilityStatus.email.available
-        : null;
+    clearAvailabilityTimer('username');
+    clearAvailabilityTimer('email');
 
     const [usernameAvailable, emailAvailable] = await Promise.all([
-      usernameFromCache !== null ? Promise.resolve(usernameFromCache) : runAvailabilityCheck('username', trimmedData.username),
-      emailFromCache !== null ? Promise.resolve(emailFromCache) : runAvailabilityCheck('email', trimmedData.email),
+      runAvailabilityCheck('username', normalizeAvailabilityValue('username', trimmedData.username)),
+      runAvailabilityCheck('email', normalizeAvailabilityValue('email', trimmedData.email)),
     ]);
 
     const nextErrors = {};
@@ -443,6 +535,8 @@ export const useRegister = (setView, t) => {
 
   // Reset toàn bộ state đăng ký
   const resetRegisterState = () => {
+    clearAvailabilityTimer('username');
+    clearAvailabilityTimer('email');
     setRegisterStep('form');
     setOtp('');
     setFormData({

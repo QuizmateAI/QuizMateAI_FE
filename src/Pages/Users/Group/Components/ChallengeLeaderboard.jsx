@@ -10,6 +10,16 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function formatScore(score, scoreIsPercent) {
+  if (score == null) return '-';
+  const numeric = Number(score);
+  if (!Number.isFinite(numeric)) return '-';
+  const formatted = Number.isInteger(numeric)
+    ? numeric.toLocaleString()
+    : numeric.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  return scoreIsPercent ? `${formatted}%` : formatted;
+}
+
 const MEDAL_COLORS = ['text-yellow-400', 'text-slate-300', 'text-amber-600'];
 
 export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode }) {
@@ -90,7 +100,7 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
                     ? (isDarkMode ? 'text-orange-300' : 'text-orange-600')
                     : (isDarkMode ? 'text-slate-500' : 'text-gray-400')
                 }`}>
-                  {isFinished ? (entry.score ?? 0) : '-'}
+                  {isFinished ? formatScore(entry.score, entry.scoreIsPercent) : '-'}
                 </td>
                 <td className={`px-4 py-3 text-right ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                   <div className="inline-flex items-center gap-1">

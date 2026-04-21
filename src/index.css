@@ -123,6 +123,123 @@
     @apply inline-flex items-center justify-center text-[13px] font-medium leading-none tabular-nums;
     font-family: var(--quiz-ui-font);
   }
+
+  .qm-auth-input:-webkit-autofill,
+  .qm-auth-input:-webkit-autofill:hover,
+  .qm-auth-input:-webkit-autofill:focus,
+  .qm-auth-input:-webkit-autofill:active {
+    -webkit-text-fill-color: #0f172a;
+    caret-color: #0f172a;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    box-shadow: 0 0 0 1000px #ffffff inset;
+    transition: background-color 9999s ease-out 0s;
+  }
+
+  .dark .qm-auth-input:-webkit-autofill,
+  .dark .qm-auth-input:-webkit-autofill:hover,
+  .dark .qm-auth-input:-webkit-autofill:focus,
+  .dark .qm-auth-input:-webkit-autofill:active {
+    -webkit-text-fill-color: #f8fafc;
+    caret-color: #f8fafc;
+    -webkit-box-shadow: 0 0 0 1000px #0f172a inset;
+    box-shadow: 0 0 0 1000px #0f172a inset;
+  }
+
+  .super-admin-theme {
+    --background: 40 22% 97%;
+    --foreground: 222 40% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 40% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 40% 13%;
+    --primary: 214 96% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 100% 97%;
+    --secondary-foreground: 214 70% 28%;
+    --muted: 220 33% 96%;
+    --muted-foreground: 215 18% 45%;
+    --accent: 214 100% 97%;
+    --accent-foreground: 214 86% 30%;
+    --border: 218 23% 88%;
+    --input: 218 23% 90%;
+    --ring: 214 96% 40%;
+    background:
+      radial-gradient(1100px circle at top right, rgba(4, 85, 191, 0.08), transparent 42%),
+      radial-gradient(900px circle at bottom left, rgba(148, 163, 184, 0.12), transparent 48%),
+      linear-gradient(180deg, #f8f7f3 0%, #f4f6fa 45%, #f7f8fb 100%);
+  }
+
+  .dark .super-admin-theme {
+    --background: 222 38% 8%;
+    --foreground: 210 40% 96%;
+    --card: 223 35% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 223 35% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 222 47% 9%;
+    --secondary: 223 30% 15%;
+    --secondary-foreground: 210 30% 90%;
+    --muted: 223 28% 14%;
+    --muted-foreground: 215 20% 66%;
+    --accent: 221 70% 21%;
+    --accent-foreground: 210 40% 96%;
+    --border: 223 24% 20%;
+    --input: 223 24% 20%;
+    --ring: 213 94% 68%;
+    background:
+      radial-gradient(1100px circle at top right, rgba(14, 165, 233, 0.12), transparent 40%),
+      radial-gradient(900px circle at bottom left, rgba(59, 130, 246, 0.1), transparent 45%),
+      linear-gradient(180deg, #08111f 0%, #0b1324 42%, #0a1220 100%);
+  }
+
+  .super-admin-theme [data-sa-page] {
+    position: relative;
+    z-index: 1;
+  }
+
+  .super-admin-theme [data-sa-panel] table thead {
+    background: color-mix(in srgb, white 84%, #e8eef8 16%);
+  }
+
+  .super-admin-theme [data-sa-panel] table tbody tr {
+    transition: background-color 160ms ease;
+  }
+
+  .super-admin-theme [data-sa-panel] table tbody tr:hover {
+    background: color-mix(in srgb, white 68%, #eef4ff 32%);
+  }
+
+  .dark .super-admin-theme [data-sa-panel] table thead {
+    background: color-mix(in srgb, #0f172a 84%, #1e293b 16%);
+  }
+
+  .dark .super-admin-theme [data-sa-panel] table tbody tr:hover {
+    background: rgba(30, 41, 59, 0.56);
+  }
+
+  .super-admin-theme .sa-frosted {
+    @apply border shadow-[0_24px_70px_-48px_rgba(15,23,42,0.3)] backdrop-blur-xl;
+    border-color: rgba(226, 232, 240, 0.8);
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .super-admin-theme .sa-pill {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium text-slate-600 shadow-sm backdrop-blur;
+    border-color: rgba(226, 232, 240, 0.8);
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .dark .super-admin-theme .sa-frosted {
+    border-color: rgb(30 41 59);
+    background: rgba(2, 6, 23, 0.88);
+  }
+
+  .dark .super-admin-theme .sa-pill {
+    border-color: rgb(51 65 85);
+    background: rgba(15, 23, 42, 0.9);
+    color: rgb(203 213 225);
+  }
 }
 
 html {
@@ -245,4 +362,27 @@ html {
 
 .dark .custom-scrollbar-group-setup::-webkit-scrollbar-thumb:hover {
   background: rgb(96 165 250 / 0.45);
+}
+
+/* ── Auth Page (Diagonal Split) Animations ── */
+@keyframes qm-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes qm-mesh {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(20px, -10px) scale(1.08); }
+}
+@keyframes qm-float-slow {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50%      { transform: translateY(-8px) rotate(var(--r, 0deg)); }
+}
+@keyframes qm-progress {
+  from { width: 0%; }
+  to   { width: 70%; }
+}
+@keyframes qm-wave {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  10%, 30%      { transform: rotate(14deg); }
+  20%           { transform: rotate(-8deg); }
 }

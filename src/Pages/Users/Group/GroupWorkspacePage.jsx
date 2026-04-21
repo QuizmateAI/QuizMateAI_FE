@@ -3364,6 +3364,15 @@ function GroupWorkspacePage() {
     }
   }, [fetchGroups, fetchWorkspaceDetail, loadGroupProfile, refreshGroupMaterialViews, resolvedWorkspaceId]);
 
+  const handleGroupDeleted = useCallback(async () => {
+    try {
+      await fetchGroups();
+    } catch (error) {
+      console.error('Failed to refresh groups after delete:', error);
+    }
+    navigate('/home', { replace: true });
+  }, [fetchGroups, navigate]);
+
   // Xử lý yêu cầu cập nhật onboarding — kiểm tra guard
   const handleRequestGroupProfileUpdate = useCallback(() => {
     setProfileConfigOpen(true);
@@ -4873,6 +4882,7 @@ function GroupWorkspacePage() {
             group={resolvedGroupData}
             isLeader={isLeader}
             onGroupUpdated={handleGroupUpdated}
+            onGroupDeleted={handleGroupDeleted}
             compactMode
             onOpenProfileConfig={handleRequestGroupProfileUpdate}
             profileEditLocked={profileEditLocked}

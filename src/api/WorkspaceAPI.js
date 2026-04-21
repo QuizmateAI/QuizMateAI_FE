@@ -554,6 +554,26 @@ export const suggestGroupRoadmapConfig = async (workspaceId) => {
   return response;
 };
 
+export const saveGroupRoadmapConfigStep = async (workspaceId, data = {}) => {
+  const payload = {
+    knowledgeLoad: data.knowledgeLoad || null,
+    adaptationMode: mapAdaptationMode(data.adaptationMode),
+    speedMode: mapRoadmapSpeedMode(data.speedMode || data.roadmapSpeedMode),
+    estimatedTotalDays: Number(data.estimatedTotalDays) || null,
+    estimatedMinutesPerDay:
+      Number(data.estimatedMinutesPerDay)
+      || Number(data.recommendedMinutesPerDay)
+      || null,
+    preLearningRequired:
+      data.preLearningRequired == null ? null : Boolean(data.preLearningRequired),
+  };
+  const response = await api.put(
+    `/workspace-profile/group/${workspaceId}/steps/roadmap-config`,
+    payload,
+  );
+  return response;
+};
+
 export const confirmGroupWorkspaceProfile = async (workspaceId) => {
   const response = await api.post(`/workspace-profile/group/${workspaceId}/steps/confirm`);
   return response;

@@ -45,6 +45,10 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { getAllAiActionPolicies, updateAiActionPolicy } from '@/api/ManagementSystemAPI';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from '@/Pages/SuperAdmin/Components/SuperAdminSurface';
 
 const ACTION_META = {
   GENERATE_QUIZ: { icon: ClipboardCheck, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-950/40', category: 'generate', i18nKey: 'generateQuiz' },
@@ -437,33 +441,22 @@ export default function AiActionPolicyManagement() {
   const editLabels = editPolicy ? getActionLabels(editPolicy.actionKey, t) : null;
 
   return (
-    <div className={`min-h-screen p-6 ${fontClass} ${dk ? 'bg-slate-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`rounded-xl p-2.5 ${dk ? 'bg-cyan-500/10' : 'bg-cyan-50'}`}>
-            <Settings2 className={`h-6 w-6 ${dk ? 'text-cyan-300' : 'text-cyan-700'}`} />
-          </div>
-          <div>
-            <h1 className={`text-2xl font-bold ${dk ? 'text-white' : 'text-gray-900'}`}>
-              {t('aiActionPolicy.title')}
-            </h1>
-            <p className={`mt-0.5 text-sm ${dk ? 'text-slate-400' : 'text-gray-500'}`}>
-              {t('aiActionPolicy.subtitle')}
-            </p>
-          </div>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchPolicies}
-          disabled={loading}
-          className={dk ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          {t('aiActionPolicy.refresh')}
-        </Button>
-      </div>
+    <SuperAdminPage className={`${fontClass} ${dk ? 'text-white' : 'text-gray-900'}`}>
+      <SuperAdminPageHeader
+        title={t('aiActionPolicy.title')}
+        actions={(
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchPolicies}
+            disabled={loading}
+            className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {t('aiActionPolicy.refresh')}
+          </Button>
+        )}
+      />
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
@@ -661,6 +654,6 @@ export default function AiActionPolicyManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </SuperAdminPage>
   );
 }

@@ -27,6 +27,10 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { getAdminPayments, getAdminPaymentByOrderId, expireOverduePayments } from '@/api/ManagementSystemAPI';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from '@/Pages/SuperAdmin/Components/SuperAdminSurface';
 
 const INITIAL_FILTERS = {
   orderId: '',
@@ -79,6 +83,21 @@ function AdminPaymentManagement() {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isExpireOpen, setIsExpireOpen] = useState(false);
   const [isExpiring, setIsExpiring] = useState(false);
+  const [expireForm, setExpireForm] = useState({ confirmText: '', reason: '' });
+
+  const confirmTextValid = expireForm.confirmText === 'EXPIRE-OVERDUE';
+  const reasonValid = expireForm.reason.trim().length >= 10 && expireForm.reason.trim().length <= 500;
+  const canSubmitExpire = confirmTextValid && reasonValid && !isExpiring;
+
+  const openExpireDialog = () => {
+    setExpireForm({ confirmText: '', reason: '' });
+    setIsExpireOpen(true);
+  };
+
+  const closeExpireDialog = () => {
+    if (isExpiring) return;
+    setIsExpireOpen(false);
+  };
 
   const getFriendlyError = (err, fallbackText) => {
     const mapped = getErrorMessage(t, err);
@@ -209,12 +228,17 @@ function AdminPaymentManagement() {
   };
 
   const handleExpireOverdue = async () => {
+    if (!canSubmitExpire) return;
     setIsExpiring(true);
     try {
-      const res = await expireOverduePayments();
+      const res = await expireOverduePayments({
+        confirmText: expireForm.confirmText,
+        reason: expireForm.reason.trim(),
+      });
       const count = res?.data?.data ?? res?.data ?? 0;
       showSuccess(t('adminPayments.expireSuccess', { count }));
       setIsExpireOpen(false);
+      setExpireForm({ confirmText: '', reason: '' });
       await loadPayments(pageInfo.page, filters);
     } catch (err) {
       showError(getFriendlyError(err, t('adminPayments.errors.expireFailed')));
@@ -260,26 +284,21 @@ function AdminPaymentManagement() {
 
   if (!permLoading && !canRead) {
     return (
-      <div className={`p-6 ${fontClass}`}>
+      <SuperAdminPage className={fontClass}>
         <Card className={isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}>
           <CardContent className="p-8 text-center text-slate-500 dark:text-slate-400">
             {t('adminPayments.permissionDenied')}
           </CardContent>
         </Card>
-      </div>
+      </SuperAdminPage>
     );
   }
 
   return (
-    <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
-      <div className="flex flex-col gap-2">
-        <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          {t('sidebar.payments')}
-        </h1>
-        <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
-          {t('adminPayments.desc')}
-        </p>
-      </div>
+    <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
+      <SuperAdminPageHeader
+        title={t('sidebar.payments')}
+      />
 
       {error && (
         <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-100 dark:bg-rose-900/30 px-4 py-3 text-rose-700 dark:text-rose-400">
@@ -347,7 +366,7 @@ function AdminPaymentManagement() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsExpireOpen(true)}
+                onClick={openExpireDialog}
                 className={`rounded-xl gap-2 ${isDarkMode ? 'border-amber-700 text-amber-400 hover:bg-amber-500/10' : 'border-amber-300 text-amber-700 hover:bg-amber-50'}`}
               >
                 <Clock className="w-4 h-4" />
@@ -456,7 +475,7 @@ function AdminPaymentManagement() {
       </Card>
 
       {/* Expire Overdue Dialog */}
-      <Dialog open={isExpireOpen} onOpenChange={setIsExpireOpen}>
+      <Dialog open={isExpireOpen} onOpenChange={(open) => (open ? openExpireDialog() : closeExpireDialog())}>
         <DialogContent className={isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : ''}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -467,10 +486,74 @@ function AdminPaymentManagement() {
               {t('adminPayments.expireDescription')}
             </DialogDescription>
           </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="expire-confirm-text"
+                className={`text-sm font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                {t('adminPayments.expireForm.confirmTextLabel')}
+              </label>
+              <Input
+                id="expire-confirm-text"
+                value={expireForm.confirmText}
+                onChange={(event) => setExpireForm((prev) => ({ ...prev, confirmText: event.target.value }))}
+                placeholder="EXPIRE-OVERDUE"
+                autoComplete="off"
+                disabled={isExpiring}
+              />
+              <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                {t('adminPayments.expireForm.confirmTextHint')}
+              </p>
+              {expireForm.confirmText.length > 0 && !confirmTextValid && (
+                <p className="text-xs text-rose-500">
+                  {t('adminPayments.expireForm.confirmTextInvalid')}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="expire-reason"
+                className={`text-sm font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                {t('adminPayments.expireForm.reasonLabel')}
+              </label>
+              <textarea
+                id="expire-reason"
+                value={expireForm.reason}
+                onChange={(event) => setExpireForm((prev) => ({ ...prev, reason: event.target.value }))}
+                placeholder={t('adminPayments.expireForm.reasonPlaceholder')}
+                rows={3}
+                maxLength={500}
+                disabled={isExpiring}
+                className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+                  isDarkMode
+                    ? 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500'
+                    : 'bg-white border-input text-slate-900 placeholder:text-slate-400'
+                }`}
+              />
+              <div className="flex items-center justify-between">
+                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {t('adminPayments.expireForm.reasonHint')}
+                </p>
+                <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {expireForm.reason.trim().length}/500
+                </p>
+              </div>
+              {expireForm.reason.length > 0 && !reasonValid && (
+                <p className="text-xs text-rose-500">
+                  {t('adminPayments.expireForm.reasonInvalid')}
+                </p>
+              )}
+            </div>
+          </div>
+
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              onClick={() => setIsExpireOpen(false)}
+              onClick={closeExpireDialog}
               disabled={isExpiring}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
             >
@@ -479,8 +562,8 @@ function AdminPaymentManagement() {
             </Button>
             <Button
               onClick={handleExpireOverdue}
-              disabled={isExpiring}
-              className="bg-amber-500 hover:bg-amber-600 text-white"
+              disabled={!canSubmitExpire}
+              className="bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-60"
             >
               <Clock className={`w-4 h-4 mr-1 ${isExpiring ? 'animate-spin' : ''}`} />
               {isExpiring ? t('adminPayments.expiring') : t('adminPayments.expireConfirm')}
@@ -587,7 +670,7 @@ function AdminPaymentManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </SuperAdminPage>
   );
 }
 

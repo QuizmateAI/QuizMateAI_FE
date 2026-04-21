@@ -48,6 +48,7 @@ const CreditPackageManagement = lazy(() => import('./Pages/Admin/CreditPackageMa
 const AdminPaymentManagement = lazy(() => import('./Pages/Admin/AdminPaymentManagement'));
 const SystemSettingManagement = lazy(() => import('./Pages/Admin/SystemSettingManagement'));
 const AiActionPolicyManagement = lazy(() => import('./Pages/Admin/AiActionPolicyManagement'));
+const MyPermissionsPage = lazy(() => import('./Pages/Admin/MyPermissionsPage'));
 
 // Quiz
 const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
@@ -60,6 +61,7 @@ const CreditPaymentPage = lazy(() => import('./Pages/Payment/CreditPaymentPage')
 const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
 const MomoReturnRedirect = lazy(() => import('./Pages/Payment/MomoReturnRedirect'));
 const VnPayReturnRedirect = lazy(() => import('./Pages/Payment/VnPayReturnRedirect'));
+const StripeReturnRedirect = lazy(() => import('./Pages/Payment/StripeReturnRedirect'));
 
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'));
@@ -74,8 +76,8 @@ const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
 const FeedbackManagementLayout = lazy(() => import('./Pages/SuperAdmin/FeedbackManagementLayout'));
 const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagement'));
-const FeedbackTicketManagementPage = lazy(() => import('./Pages/SuperAdmin/FeedbackTicketManagementPage'));
 const FeedbackResponseActivityPage = lazy(() => import('./Pages/SuperAdmin/FeedbackResponseActivityPage'));
+const PermissionRequestsPage = lazy(() => import('./Pages/SuperAdmin/PermissionRequestsPage'));
 
 function MainRoutes() {
   return (
@@ -86,6 +88,7 @@ function MainRoutes() {
       {/* VNPay return: nếu request trúng frontend thay vì backend thì redirect sang backend */}
       <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
       <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
+      <Route path="/api/stripe/return" element={<StripeReturnRedirect />} />
       <Route path="/accept-invite" element={<AcceptInvitationPage />} />
       <Route path="/pricing" element={<PricingGuidePage />} />
 
@@ -136,6 +139,7 @@ function MainRoutes() {
           <Route index element={<SuperAdminDashboard />} />
           <Route path="admins" element={<AdminManagement />} />
           <Route path="rbac" element={<RbacManagement />} />
+          <Route path="permission-requests" element={<PermissionRequestsPage />} />
           <Route path="ai-providers" element={<AiProvidersOverview />} />
           <Route path="ai-models" element={<AiModelsManagement />} />
           <Route path="ai-costs" element={<AiCostManagement />} />
@@ -152,7 +156,6 @@ function MainRoutes() {
             <Route path="feedbacks" element={<FeedbackManagementLayout />}>
               <Route index element={<Navigate to="forms" replace />} />
               <Route path="forms" element={<FeedbackManagement />} />
-              <Route path="tickets" element={<FeedbackTicketManagementPage />} />
               <Route path="activity" element={<FeedbackResponseActivityPage />} />
             </Route>
         </Route>
@@ -170,6 +173,7 @@ function MainRoutes() {
           <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
           <Route path="system-settings" element={<SystemSettingManagement />} />
+          <Route path="my-permissions" element={<MyPermissionsPage />} />
         </Route>
       </Route>
     </Routes>
@@ -230,6 +234,7 @@ function LaunchRoutes() {
     <Routes>
       <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
       <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
+      <Route path="/api/stripe/return" element={<StripeReturnRedirect />} />
       <Route path="*" element={<LaunchingPage />} />
     </Routes>
   );

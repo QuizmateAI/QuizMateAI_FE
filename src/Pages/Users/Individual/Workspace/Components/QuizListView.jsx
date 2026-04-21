@@ -1534,7 +1534,7 @@ function QuizListView({
                   : (normalizedStatus === "DRAFT"
                     ? t("quizListView.status.DRAFT", "Draft")
                     : t("quizListView.cards.notAttempted", "Not attempted"));
-              const shouldShowResultSummary = isProcessing || !myAttempted || myPassed || resolvedScoreValue != null;
+              const shouldShowResultSummary = isProcessing || myPassed || resolvedScoreValue != null;
               const resultToneClassName = isProcessing
                 ? (isDarkMode ? "text-sky-300" : "text-sky-700")
                 : myAttempted
@@ -1551,6 +1551,7 @@ function QuizListView({
                 : null;
               const createdAtLabel = formatShortDate(quiz.createdAt || quiz.updatedAt);
               const showLeaderStatusBadge = isLeaderGroupQuizList;
+              const shouldShowInlineStatusBadge = showLeaderStatusBadge || normalizedStatus === "ACTIVE";
               const difficultyTextClassName = difficultyKey === "HARD"
                 ? (isDarkMode ? "text-rose-300" : "text-rose-600")
                 : difficultyKey === "MEDIUM"
@@ -1575,7 +1576,7 @@ function QuizListView({
                       onViewQuiz?.(quiz);
                     }
                   }}
-                  className={`flex h-full flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                  className={`group flex h-[204px] flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
                     isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
                   } ${
                     isDarkMode
@@ -1675,21 +1676,23 @@ function QuizListView({
                   ) : null}
 
                   <div className="mt-auto">
-                    <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
-                      {shouldShowResultSummary ? (
+                    <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
                         <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                          <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                         </div>
-                      ) : null}
-                      {showLeaderStatusBadge ? (
-                        <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                        {shouldShowResultSummary ? (
+                          <div className="flex items-center gap-2">
+                            <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      {shouldShowInlineStatusBadge ? (
+                        <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
                           {statusLabel}
                         </span>
                       ) : null}
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
-                        <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
-                      </div>
                     </div>
 
                     {isCommunityShared ? (

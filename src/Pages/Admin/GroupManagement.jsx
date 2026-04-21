@@ -26,6 +26,10 @@ import { getAllGroups } from '@/api/ManagementSystemAPI';
 import AdminPagination from './components/AdminPagination';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from '@/Pages/SuperAdmin/Components/SuperAdminSurface';
 
 const GROUP_NAME_PLACEHOLDERS = ['group name null', 'name null', 'null', 'undefined'];
 const GROUP_DESCRIPTION_PLACEHOLDERS = ['group description null', 'description null', 'null', 'undefined'];
@@ -157,26 +161,20 @@ function GroupManagement() {
   };
 
   return (
-    <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
-        <div>
-          <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {t('groupPage.title')}
-          </h1>
-          <p className={`${isDarkMode ? 'text-slate-400' : 'text-gray-500'} font-medium`}>
-            {t('groupPage.desc')}
-          </p>
-        </div>
-        <Button 
-          onClick={() => fetchGroups(pagination.page, pagination.size)}
-          disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
-        >
-          <RefreshCw className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          {t('groupPage.refresh')}
-        </Button>
-      </div>
+    <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
+      <SuperAdminPageHeader
+        title={t('groupPage.title')}
+        actions={(
+          <Button
+            onClick={() => fetchGroups(pagination.page, pagination.size)}
+            disabled={isLoading}
+            className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {t('groupPage.refresh')}
+          </Button>
+        )}
+      />
 
       {/* Error Message */}
       {error && (
@@ -210,13 +208,12 @@ function GroupManagement() {
         
         <CardContent className="p-0">
           <div className="overflow-hidden">
-            <Table className="table-fixed min-w-[1080px]">
+            <Table className="table-fixed min-w-[960px]">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                   <TableHead className="w-[300px] font-bold text-slate-500 text-left">{t('groupPage.table.name')}</TableHead>
-                  <TableHead className="w-[36%] font-bold text-slate-500 text-left">{t('groupPage.table.description')}</TableHead>
-                  <TableHead className="w-[136px] font-bold text-slate-500 text-left">{t('groupPage.table.members')}</TableHead>
-                  <TableHead className="w-[150px] font-bold text-slate-500 text-left">{t('groupPage.table.leader')}</TableHead>
+                  <TableHead className="w-[44%] font-bold text-slate-500 text-left">{t('groupPage.table.description')}</TableHead>
+                  <TableHead className="w-[210px] font-bold text-slate-500 text-left">{t('groupPage.table.leader')}</TableHead>
                   <TableHead className="w-[132px] font-bold text-slate-500 text-left">{t('groupPage.table.createdAt')}</TableHead>
                   <TableHead className="text-right w-[84px] font-bold text-slate-500">{t('groupPage.table.actions')}</TableHead>
                 </TableRow>
@@ -224,7 +221,7 @@ function GroupManagement() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4">
+                    <TableCell colSpan={5} className="text-center py-4">
                       <ListSpinner variant="table" />
                     </TableCell>
                   </TableRow>
@@ -249,7 +246,7 @@ function GroupManagement() {
                           <div className="min-w-0 flex-1">
                             <p
                               title={getGroupName(group)}
-                              className="min-h-[2.75rem] line-clamp-2 text-[15px] font-semibold leading-[1.375rem]"
+                              className="truncate whitespace-nowrap text-[15px] font-semibold leading-[1.375rem]"
                             >
                               {getGroupName(group)}
                             </p>
@@ -259,33 +256,24 @@ function GroupManagement() {
                       <TableCell className={`text-left ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                         <p
                           title={getGroupDescription(group)}
-                          className="min-h-[2.75rem] line-clamp-2 leading-[1.375rem]"
+                          className="truncate whitespace-nowrap leading-[1.375rem]"
                         >
                           {getGroupDescription(group)}
                         </p>
                       </TableCell>
-                      <TableCell className="text-left whitespace-nowrap">
+                      <TableCell className="text-left">
                         <Badge
                           variant="outline"
-                          className={`rounded-lg px-2.5 py-0.5 whitespace-nowrap inline-flex border transition-colors duration-200 ${
-                            isDarkMode
-                              ? 'border-sky-800/70 bg-sky-950/40 text-sky-300 hover:border-sky-700 hover:bg-sky-900/55'
-                              : 'border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300 hover:bg-sky-100'
-                          }`}
-                        >
-                          {group.memberCount ?? 0} {t('groupPage.members')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-left whitespace-nowrap">
-                        <Badge
-                          variant="outline"
-                          className={`rounded-lg px-2.5 py-0.5 whitespace-nowrap inline-flex border transition-colors duration-200 ${
+                          title={getLeaderName(group)}
+                          className={`inline-flex max-w-[180px] rounded-lg border px-2.5 py-0.5 transition-colors duration-200 ${
                             isDarkMode
                               ? 'border-emerald-800/70 bg-emerald-950/35 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-900/50'
                               : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
                           }`}
                         >
-                          {getLeaderName(group)}
+                          <span className="block max-w-full truncate whitespace-nowrap">
+                            {getLeaderName(group)}
+                          </span>
                         </Badge>
                       </TableCell>
                       <TableCell className={`whitespace-nowrap text-left text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -319,7 +307,7 @@ function GroupManagement() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-medium italic">
+                    <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-medium italic">
                       {t('groupPage.noData')}
                     </TableCell>
                   </TableRow>
@@ -343,7 +331,7 @@ function GroupManagement() {
         </CardContent>
       </Card>
 
-    </div>
+    </SuperAdminPage>
   );
 }
 

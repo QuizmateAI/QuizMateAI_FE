@@ -17,6 +17,11 @@ import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { getAiCostSummary, getAiModels, getAiProviderHealth } from '@/api/ManagementSystemAPI';
 import { AI_PROVIDER_OPTIONS, filterSupportedAiModels, getAiModelGroupLabel } from '@/lib/aiModelCatalog';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+  SuperAdminPanel,
+} from './Components/SuperAdminSurface';
 
 function extractData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
@@ -112,16 +117,41 @@ function TabsContent({ active, children, className = '' }) {
 
 function MetricPill({ icon: Icon, label, value, isDarkMode }) {
   return (
-    <div className={`rounded-2xl border px-4 py-3 ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50'}`}>
-      <div className="flex items-center gap-3">
-        <div className={`rounded-xl p-2 ${isDarkMode ? 'bg-slate-900 text-slate-300' : 'bg-white text-slate-600'}`}>
-          <Icon className="h-4 w-4" />
+    <div className={`rounded-2xl border px-3.5 py-2.5 ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50'}`}>
+      <div className="flex items-center gap-2.5">
+        <div className={`rounded-xl p-1.5 ${isDarkMode ? 'bg-slate-900 text-slate-300' : 'bg-white text-slate-600'}`}>
+          <Icon className="h-3.5 w-3.5" />
         </div>
         <div>
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{label}</p>
-          <p className={`mt-1 text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
+          <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{label}</p>
+          <p className={`mt-0.5 text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function getDetailToneClass(tone, isDarkMode) {
+  if (tone === 'success') {
+    return isDarkMode
+      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  }
+  if (tone === 'danger') {
+    return isDarkMode
+      ? 'border-rose-500/20 bg-rose-500/10 text-rose-200'
+      : 'border-rose-200 bg-rose-50 text-rose-700';
+  }
+  return isDarkMode
+    ? 'border-slate-700 bg-slate-900 text-slate-200'
+    : 'border-slate-200 bg-slate-50 text-slate-700';
+}
+
+function HealthDetailPill({ label, value, tone = 'neutral', isDarkMode }) {
+  return (
+    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${getDetailToneClass(tone, isDarkMode)}`}>
+      <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{label}</span>
+      <span className="font-semibold">{value}</span>
     </div>
   );
 }
@@ -219,33 +249,30 @@ function AiProvidersOverview() {
   }, [activeProvider, providerCards]);
 
   return (
-    <div className={`space-y-6 p-6 ${fontClass}`}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {t('aiProviders.title', { defaultValue: 'AI Providers' })}
-          </h1>
-          <p className={`mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            {t('aiProviders.subtitle', { defaultValue: 'Overview of provider catalogs, health status, and models grouped by provider.' })}
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={loadData}
-          disabled={loading}
-          className={`rounded-xl cursor-pointer ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800' : ''}`}
-          aria-label={t('common.refresh')}
-          title={t('common.refresh')}
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
+    <SuperAdminPage className={fontClass}>
+      <SuperAdminPageHeader
+        eyebrow="AI Governance"
+        title={t('aiProviders.title', { defaultValue: 'AI Providers' })}
+        description={t('aiProviders.subtitle', { defaultValue: 'Overview of provider catalogs, health status, and models grouped by provider.' })}
+        actions={(
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={loadData}
+            disabled={loading}
+            className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            aria-label={t('common.refresh')}
+            title={t('common.refresh')}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        )}
+      />
 
       <div className="space-y-5">
         {loading ? (
-          <div className={`rounded-3xl border p-10 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'}`}>
+          <div className={`rounded-[28px] border p-10 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.25)] ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white/92 backdrop-blur-xl'}`}>
             <ListSpinner />
           </div>
         ) : (
@@ -278,47 +305,66 @@ function AiProvidersOverview() {
 
             <TabsContent active={Boolean(activeProviderCard)}>
               {activeProviderCard && (
-                <section
-                  className={`overflow-hidden rounded-3xl border ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}
+                <SuperAdminPanel
+                  className={isDarkMode ? '' : 'bg-white/94'}
+                  title={activeProviderCard.provider}
+                  description={t('aiProviders.providerHint', {
+                    defaultValue: '{{count}} models in catalog, {{active}} active and {{archived}} archived.',
+                    count: activeProviderCard.models.length,
+                    active: activeProviderCard.activeCount,
+                    archived: activeProviderCard.archivedCount,
+                  })}
+                  action={(
+                    <Badge className={`border ${getHealthBadgeClass(activeProviderCard.health.status, isDarkMode)}`}>
+                      {getProviderHealthLabel(activeProviderCard.health.status, t)}
+                    </Badge>
+                  )}
+                  contentClassName="p-0"
                 >
-                  <div className={`border-b p-5 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <h2 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeProviderCard.provider}</h2>
-                          <Badge className={`border ${getHealthBadgeClass(activeProviderCard.health.status, isDarkMode)}`}>
-                            {getProviderHealthLabel(activeProviderCard.health.status, t)}
-                          </Badge>
-                        </div>
-                        <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {t('aiProviders.providerHint', {
-                            defaultValue: '{{count}} models in catalog, {{active}} active and {{archived}} archived.',
-                            count: activeProviderCard.models.length,
-                            active: activeProviderCard.activeCount,
-                            archived: activeProviderCard.archivedCount,
-                          })}
-                        </p>
+                  <div className={`border-b px-5 py-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`sa-pill ${isDarkMode ? '' : 'border-slate-200'}`}>
+                          {activeProviderCard.provider}
+                        </span>
+                        <HealthDetailPill
+                          label={t('aiProviders.health.configured', { defaultValue: 'Configured' })}
+                          value={activeProviderCard.health.configured
+                            ? t('aiProviders.health.yes', { defaultValue: 'Yes' })
+                            : t('aiProviders.health.no', { defaultValue: 'No' })}
+                          tone={activeProviderCard.health.configured ? 'success' : 'neutral'}
+                          isDarkMode={isDarkMode}
+                        />
+                        <HealthDetailPill
+                          label={t('aiProviders.health.reachable', { defaultValue: 'Reachable' })}
+                          value={activeProviderCard.health.reachable
+                            ? t('aiProviders.health.yes', { defaultValue: 'Yes' })
+                            : t('aiProviders.health.no', { defaultValue: 'No' })}
+                          tone={activeProviderCard.health.reachable ? 'success' : 'danger'}
+                          isDarkMode={isDarkMode}
+                        />
+                        <HealthDetailPill
+                          label={t('aiProviders.health.keyCount', { defaultValue: 'Keys' })}
+                          value={activeProviderCard.health.keyCount ?? 0}
+                          tone={(activeProviderCard.health.keyCount ?? 0) > 0 ? 'success' : 'neutral'}
+                          isDarkMode={isDarkMode}
+                        />
                       </div>
-                      <div className={`rounded-2xl border px-4 py-3 text-sm ${isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                        <p>{t('aiProviders.health.configured', { defaultValue: 'Configured' })}: <span className="font-semibold">{activeProviderCard.health.configured ? t('aiProviders.health.yes', { defaultValue: 'Yes' }) : t('aiProviders.health.no', { defaultValue: 'No' })}</span></p>
-                        <p>{t('aiProviders.health.reachable', { defaultValue: 'Reachable' })}: <span className="font-semibold">{activeProviderCard.health.reachable ? t('aiProviders.health.yes', { defaultValue: 'Yes' }) : t('aiProviders.health.no', { defaultValue: 'No' })}</span></p>
-                        <p>{t('aiProviders.health.keyCount', { defaultValue: 'Keys' })}: <span className="font-semibold">{activeProviderCard.health.keyCount ?? 0}</span></p>
-                      </div>
-                    </div>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <MetricPill
-                        icon={Coins}
-                        label={t('aiProviders.metrics.providerCost', { defaultValue: 'Provider cost' })}
-                        value={formatMoney(activeProviderCard.summary?.totalProviderCostVnd ?? 0)}
-                        isDarkMode={isDarkMode}
-                      />
-                      <MetricPill
-                        icon={Coins}
-                        label={t('aiProviders.metrics.profit', { defaultValue: 'Profit' })}
-                        value={formatMoney(activeProviderCard.summary?.totalProfitVnd ?? 0)}
-                        isDarkMode={isDarkMode}
-                      />
+                      <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[340px]">
+                        <MetricPill
+                          icon={Coins}
+                          label={t('aiProviders.metrics.providerCost', { defaultValue: 'Provider cost' })}
+                          value={formatMoney(activeProviderCard.summary?.totalProviderCostVnd ?? 0)}
+                          isDarkMode={isDarkMode}
+                        />
+                        <MetricPill
+                          icon={Coins}
+                          label={t('aiProviders.metrics.profit', { defaultValue: 'Profit' })}
+                          value={formatMoney(activeProviderCard.summary?.totalProfitVnd ?? 0)}
+                          isDarkMode={isDarkMode}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -365,13 +411,13 @@ function AiProvidersOverview() {
                       </TableBody>
                     </Table>
                   </div>
-                </section>
+                </SuperAdminPanel>
               )}
             </TabsContent>
           </>
         )}
       </div>
-    </div>
+    </SuperAdminPage>
   );
 }
 

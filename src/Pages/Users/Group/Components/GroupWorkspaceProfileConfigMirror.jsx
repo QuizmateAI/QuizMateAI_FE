@@ -32,6 +32,8 @@ import {
   normalizeGroupWorkspaceProfile,
   saveGroupBasicStep,
   saveGroupConfigStep,
+  saveGroupRoadmapConfigStep,
+  suggestGroupRoadmapConfig,
   updateGroupConfigStep,
 } from '@/api/WorkspaceAPI';
 
@@ -797,6 +799,24 @@ function GroupWorkspaceProfileConfigMirror({
         await updateGroupConfigStep(workspaceId, payload);
       } else {
         await saveGroupConfigStep(workspaceId, payload);
+
+        if (payload.roadmapEnabled) {
+          try {
+            const suggestResponse = await suggestGroupRoadmapConfig(workspaceId);
+            const suggestion = suggestResponse?.data?.data ?? suggestResponse?.data ?? {};
+            await saveGroupRoadmapConfigStep(workspaceId, {
+              knowledgeLoad: suggestion.knowledgeLoad,
+              adaptationMode: suggestion.adaptationMode,
+              speedMode: suggestion.speedMode,
+              estimatedTotalDays: suggestion.estimatedTotalDays,
+              estimatedMinutesPerDay: suggestion.estimatedMinutesPerDay,
+              preLearningRequired: suggestion.preLearningRequired,
+            });
+          } catch (roadmapError) {
+            console.warn('[GroupProfile] roadmap-config suggest/save failed', roadmapError);
+          }
+        }
+
         await confirmGroupWorkspaceProfile(workspaceId);
       }
 

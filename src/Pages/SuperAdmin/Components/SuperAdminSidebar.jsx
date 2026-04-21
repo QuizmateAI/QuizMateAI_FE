@@ -1,326 +1,135 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Users, UsersRound,
-  PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote, Bot, ChevronDown, ChevronRight,
-  Settings2, Cpu, ReceiptText, MessageSquareText,
-} from 'lucide-react';
-import { cn } from "@/lib/utils";
-import LogoDark from "@/assets/DarkMode_Logo.webp";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { useDarkMode } from '@/hooks/useDarkMode';
+import LogoDark from '@/assets/DarkMode_Logo.webp';
 import { logout } from '@/api/Authentication';
-
-const MENU_SECTIONS = [
-  {
-    labelKey: 'sidebarSections.overview',
-    items: [
-      {
-        icon: LayoutDashboard,
-        labelKey: 'sidebar.dashboard',
-        path: '/super-admin',
-        alsoMatch: '/super-admin',
-        matchPrefix: false,
-      },
-    ],
-  },
-  {
-    labelKey: 'sidebarSections.workspace',
-    items: [
-      {
-        icon: Users,
-        labelKey: 'sidebar.users',
-        path: '/super-admin/users',
-        alsoMatch: '/super-admin/users',
-        matchPrefix: true,
-      },
-      {
-        icon: UsersRound,
-        labelKey: 'sidebar.groups',
-        path: '/super-admin/groups',
-        matchPrefix: true,
-      },
-    ],
-  },
-  {
-    labelKey: 'sidebarSections.commerce',
-    items: [
-      {
-        icon: CreditCard,
-        labelKey: 'sidebar.subscriptions',
-        path: '/super-admin/plans',
-        matchPrefix: true,
-      },
-      {
-        icon: Coins,
-        labelKey: 'sidebar.creditPackages',
-        path: '/super-admin/credits',
-        matchPrefix: true,
-      },
-      {
-        icon: Banknote,
-        labelKey: 'sidebar.payments',
-        path: '/super-admin/payments',
-        matchPrefix: true,
-      },
-    ],
-  },
-  {
-    labelKey: 'sidebarSections.accessControl',
-    items: [
-      {
-        icon: Shield,
-        labelKey: 'sidebar.adminAccounts',
-        path: '/super-admin/admins',
-        matchPrefix: true,
-      },
-      {
-        icon: Shield,
-        labelKey: 'sidebar.rbac',
-        path: '/super-admin/rbac',
-        matchPrefix: true,
-      },
-    ],
-  },
-  {
-    labelKey: 'sidebarSections.aiGovernance',
-    items: [
-      {
-        icon: Cpu,
-        labelKey: 'sidebar.aiProviders',
-        path: '/super-admin/ai-providers',
-        matchPrefix: true,
-      },
-      {
-        icon: Cpu,
-        labelKey: 'sidebar.aiModels',
-        path: '/super-admin/ai-models',
-        matchPrefix: true,
-      },
-      {
-        icon: ReceiptText,
-        labelKey: 'sidebar.aiCosts',
-        path: '/super-admin/ai-costs',
-        matchPrefix: true,
-      },
-      {
-        icon: Bot,
-        labelKey: 'sidebar.aiAudit',
-        path: '/super-admin/ai-audit',
-        matchPrefix: true,
-      },
-      {
-        icon: Cpu,
-        labelKey: 'sidebar.aiActionPolicies',
-        path: '/super-admin/ai-action-policies',
-        matchPrefix: true,
-      },
-    ],
-  },
-  {
-    labelKey: 'sidebarSections.platformConfig',
-    items: [
-      {
-        icon: Settings2,
-        labelKey: 'sidebar.systemSettings',
-        path: '/super-admin/system-settings',
-        matchPrefix: true,
-      },
-      {
-        icon: MessageSquareText,
-        labelKey: 'sidebar.feedback',
-        path: '/super-admin/feedbacks/forms',
-        matchPrefix: true,
-      },
-    ],
-  },
-];
-
-const isActive = (item, pathname) => {
-  if (pathname === item.path || pathname === item.alsoMatch) return true;
-  if (item.matchPrefix && pathname.startsWith(item.path + '/')) return true;
-  return false;
-};
+import {
+  SUPER_ADMIN_MENU_SECTIONS,
+  isSuperAdminItemActive,
+} from './superAdminNavigation';
 
 function SuperAdminSidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { isDarkMode } = useDarkMode();
-  const [sectionOverrides, setSectionOverrides] = useState({});
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const toggleSection = (section) => {
-    const defaultOpen = section.items.some((item) => isActive(item, location.pathname));
-
-    setSectionOverrides((prev) => ({
-      ...prev,
-      [section.labelKey]: !(prev[section.labelKey] ?? defaultOpen),
-    }));
-  };
-
   return (
-    <div className={cn(
-      "border-r h-screen flex flex-col transition-all duration-300", 
-      collapsed ? "w-20" : "w-64",
-      isDarkMode ? "bg-slate-900 border-slate-800" : "bg-[#204D87]"
-    )}>
-      {/* Header: Logo + Toggle Icon */}
-      <div className={cn(
-        "flex items-center border-b",
-        collapsed ? "flex-col p-2 gap-2" : "justify-between px-3 py-2",
-        isDarkMode ? "border-slate-700" : "border-white/10"
-      )}>
-        {/* Logo */}
+    <aside
+      className={cn(
+        'sticky top-0 z-30 flex h-screen shrink-0 flex-col overflow-hidden border-r border-slate-200/80 bg-white/86 shadow-[24px_0_80px_-56px_rgba(15,23,42,0.55)] backdrop-blur-2xl transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-950/82',
+        collapsed ? 'w-[92px]' : 'w-[292px]',
+      )}
+    >
+      <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-4 dark:border-slate-800/70">
         <div
           className={cn(
-            "transition-all duration-300",
-            collapsed && "cursor-pointer group"
+            'flex min-w-0 items-center gap-3',
+            collapsed && 'justify-center',
           )}
-          onClick={collapsed ? onToggle : undefined}
-          title={collapsed ? t('common.expandSidebar', 'Expand sidebar') : undefined}
         >
-          <img
-            src={LogoDark}
-            alt="Logo"
-            className={cn(
-              "transition-all duration-300",
-              collapsed
-                ? "w-10 h-10 group-hover:scale-110 group-hover:brightness-125"
-                : "w-12 h-12"
-            )}
-          />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0455BF] shadow-[0_20px_30px_-18px_rgba(4,85,191,0.75)]">
+            <img src={LogoDark} alt="QuizMate" className="h-8 w-8 object-contain" />
+          </div>
+          {!collapsed ? (
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                QuizMate
+              </p>
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                Super Admin
+              </p>
+            </div>
+          ) : null}
         </div>
 
-        {/* Icon đóng sidebar */}
-        {!collapsed && (
-          <button
-            onClick={onToggle}
-            className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-            title={t('common.collapseSidebar', 'Collapse sidebar')}
-          >
-            <PanelLeftClose className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+          title={collapsed ? t('common.expandSidebar', 'Expand sidebar') : t('common.collapseSidebar', 'Collapse sidebar')}
+        >
+          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </button>
       </div>
 
-      <nav className={cn("flex-1 overflow-y-auto py-4", collapsed ? "px-2 space-y-3" : "px-3 space-y-4")}>
-        {MENU_SECTIONS.map((section) => (
-          (() => {
-            const shouldUseDropdown = !collapsed && section.items.length > 1;
-            const isSectionOpen = shouldUseDropdown
-              ? (sectionOverrides[section.labelKey] ?? section.items.some((item) => isActive(item, location.pathname)))
-              : true;
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        {SUPER_ADMIN_MENU_SECTIONS.map((section) => (
+          <div key={section.id} className="space-y-2">
+            {!collapsed ? (
+              <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
+                {t(section.labelKey, section.defaultLabel)}
+              </p>
+            ) : null}
 
-            return (
-              <div
-                key={section.labelKey}
-                className={cn(
-                  "rounded-2xl border",
-                  collapsed ? "p-1.5" : "p-2",
-                  isDarkMode
-                    ? "border-slate-800/80 bg-slate-950/30"
-                    : "border-white/10 bg-white/5"
-                )}
-              >
-                {!collapsed && (
-                  shouldUseDropdown ? (
-                    <button
-                      type="button"
-                      onClick={() => toggleSection(section)}
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const active = isSuperAdminItemActive(item, location.pathname);
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => navigate(item.to)}
+                    title={collapsed ? t(item.labelKey, item.defaultLabel) : undefined}
+                    className={cn(
+                      'group relative flex w-full items-center gap-3 rounded-[20px] px-3 py-3 text-left text-sm font-medium transition-all',
+                      collapsed ? 'justify-center' : 'justify-start',
+                      active
+                        ? 'bg-[#EEF4FF] text-[#0455BF] shadow-[0_18px_32px_-24px_rgba(4,85,191,0.55)] ring-1 ring-[#B9D4FF] dark:bg-[#0B1731] dark:text-sky-300 dark:ring-[#1E3A8A]'
+                        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white',
+                    )}
+                  >
+                    {active && !collapsed ? (
+                      <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-[#0455BF] dark:bg-sky-300" />
+                    ) : null}
+                    <div
                       className={cn(
-                        "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition-colors",
-                        isDarkMode ? "hover:bg-slate-800/80" : "hover:bg-white/10"
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors',
+                        active
+                          ? 'bg-white text-[#0455BF] dark:bg-slate-950 dark:text-sky-300'
+                          : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-slate-950 dark:group-hover:text-white',
                       )}
                     >
-                      <span
-                        className={cn(
-                          "text-[11px] font-semibold uppercase tracking-[0.22em]",
-                          isDarkMode ? "text-slate-500" : "text-white/55"
-                        )}
-                      >
-                        {t(section.labelKey)}
-                      </span>
-                      {isSectionOpen ? (
-                        <ChevronDown className={cn("h-4 w-4", isDarkMode ? "text-slate-400" : "text-white/55")} />
-                      ) : (
-                        <ChevronRight className={cn("h-4 w-4", isDarkMode ? "text-slate-400" : "text-white/55")} />
-                      )}
-                    </button>
-                  ) : (
-                    <p className={cn(
-                      "px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.22em]",
-                      isDarkMode ? "text-slate-500" : "text-white/55"
-                    )}>
-                      {t(section.labelKey)}
-                    </p>
-                  )
-                )}
-
-                {isSectionOpen && (
-                  <div className="space-y-1">
-                    {section.items.map((item) => {
-                      const active = isActive(item, location.pathname);
-                      return (
-                        <button
-                          key={item.path}
-                          onClick={() => navigate(item.path)}
-                          title={collapsed ? t(item.labelKey) : undefined}
-                          className={cn(
-                            "relative w-full flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                            collapsed ? "px-0 justify-center" : "px-4",
-                            active
-                              ? isDarkMode
-                                ? "bg-ocean-700/60 text-white font-semibold ring-1 ring-ocean-500/40"
-                                : "bg-white text-ocean-800 font-semibold shadow-sm ring-1 ring-ocean-200"
-                              : isDarkMode
-                                ? "text-slate-300 hover:bg-ocean-800/40 hover:text-white"
-                                : "text-white/85 hover:bg-white/15 hover:text-white"
-                          )}
-                        >
-                          {active && !collapsed ? (
-                            <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r bg-glitter-400" />
-                          ) : null}
-                          <item.icon className="w-5 h-5 flex-shrink-0" />
-                          {!collapsed && <span>{t(item.labelKey)}</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })()
+                      <Icon className="h-[18px] w-[18px]" />
+                    </div>
+                    {!collapsed ? (
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{t(item.labelKey, item.defaultLabel)}</p>
+                        <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
+                          {t(section.labelKey, section.defaultLabel)}
+                        </p>
+                      </div>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </nav>
 
-      <div className={cn(
-        "mt-auto border-t", 
-        collapsed ? "p-2" : "p-4",
-        isDarkMode ? "border-slate-700" : "border-white/10"
-      )}>
-        <button 
+      <div className="border-t border-slate-200/70 p-3 dark:border-slate-800/70">
+        <button
+          type="button"
           onClick={handleLogout}
-          title={collapsed ? t('sidebar.logout') : undefined}
           className={cn(
-            "w-full flex items-center gap-3 py-3",
-            "bg-red-500/10 hover:bg-red-500/20",
-            "text-white hover:text-red-300",
-            "border border-red-500/20 hover:border-red-500/40",
-            "rounded-xl text-sm font-semibold transition-all duration-300",
-            collapsed ? "px-0 justify-center" : "px-4 justify-start"
+            'flex w-full items-center gap-3 rounded-[20px] border border-rose-200 bg-rose-50 px-3 py-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/15',
+            collapsed && 'justify-center',
           )}
+          title={collapsed ? t('sidebar.logout') : undefined}
         >
-          <LogOut className="w-5 h-5" />
-          {!collapsed && <span>{t('sidebar.logout')}</span>}
+          <LogOut className="h-4 w-4" />
+          {!collapsed ? <span>{t('sidebar.logout')}</span> : null}
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
 

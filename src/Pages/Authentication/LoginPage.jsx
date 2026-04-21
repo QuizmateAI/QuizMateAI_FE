@@ -1,634 +1,1157 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
-import { FloatingInput, FloatingPasswordInput } from "@/Components/ui/floating-input";
-import { ChevronLeft, Globe, Sun, Moon, Loader2 } from 'lucide-react';
-import LogoLight from "@/assets/LightMode_Logo.webp";
-import LogoDark from "@/assets/DarkMode_Logo.webp";
-import { GoogleLogin } from '@react-oauth/google'; // Import GoogleLogin component
+import {
+  ChevronLeft, Globe, Sun, Moon, Loader2,
+  User, Mail, Lock, Eye, EyeOff, Check, ArrowRight,
+  Zap, Users, KeyRound,
+} from 'lucide-react';
+import HeroLogo from "@/assets/QuizmateAI_PIC.png";
+import { GoogleLogin } from '@react-oauth/google';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLogin } from './Login';
 import { useRegister } from './Register';
 import { useForgotPassword } from './ForgotPassword';
-import AuthIllustration from '@/Components/ui/AuthIllustration';
 import AuthGoogleProvider, { isGoogleAuthEnabled } from './AuthGoogleProvider';
 
+// ── Form primitives (login-page only) ─────────────────────────────────────
+function QMInput({
+  id, type = 'text', icon: IconCmp, label, value, onChange, onBlur,
+  error, success, suffix, onSuffixClick, autoComplete, compact = false,
+}) {
+  const [focused, setFocused] = useState(false);
+  const active = focused || !!value;
 
+  const wrapperClass = compact
+    ? 'h-12 rounded-[16px] px-3'
+    : 'h-14 rounded-[18px] px-3.5';
+
+  const inputClass = compact
+    ? 'h-full py-0 text-[14px] leading-none'
+    : 'h-full py-0 text-[15px] leading-none';
+
+  const labelLeft = compact
+    ? (IconCmp ? 40 : 14)
+    : (IconCmp ? 44 : 16);
+
+  const labelFontSize = active
+    ? (compact ? 10 : 11)
+    : (compact ? 14 : 15);
+
+  const iconSizeClass = compact ? 'w-4 h-4' : 'w-[18px] h-[18px]';
+
+  const borderClass = error
+    ? 'border-red-500'
+    : success
+      ? 'border-emerald-500'
+      : focused
+        ? 'border-[#0455BF] dark:border-blue-400'
+        : 'border-blue-300 dark:border-slate-700';
+
+  const labelColor = error
+    ? 'text-red-500'
+    : active
+      ? 'text-[#0455BF] dark:text-blue-400'
+      : 'text-slate-400 dark:text-slate-500';
+
+  const iconColor = active
+    ? 'text-[#0455BF] dark:text-blue-400'
+    : 'text-slate-400 dark:text-slate-500';
+
+  return (
+    <div
+      className={`relative border-[1.25px] bg-white dark:bg-slate-900 flex items-center transition-all duration-200 ${wrapperClass} ${borderClass}`}
+      style={{
+        boxShadow: focused
+          ? '0 12px 22px -18px rgba(4,85,191,.3)'
+          : '0 12px 22px -20px rgba(15,23,42,.12)',
+      }}
+    >
+      {IconCmp && (
+        <div className={`mr-2.5 transition-colors ${iconColor}`}>
+          <IconCmp className={iconSizeClass} strokeWidth={1.8} />
+        </div>
+      )}
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange?.(e)}
+        onFocus={() => setFocused(true)}
+        onBlur={(e) => { setFocused(false); onBlur?.(e); }}
+        autoComplete={autoComplete}
+        className={`qm-auth-input peer flex-1 bg-transparent border-none outline-none font-sans text-slate-800 dark:text-white transition-[padding] duration-150 ${inputClass}`}
+      />
+      <label
+        htmlFor={id}
+        className={`absolute pointer-events-none select-none transition-all duration-150 ${labelColor} ${active ? 'bg-white px-1.5 dark:bg-slate-900' : 'bg-transparent px-0'}`}
+        style={{
+          left: labelLeft,
+          top: active ? 0 : '50%',
+          transform: 'translateY(-50%)',
+          fontSize: labelFontSize,
+          fontWeight: active ? 600 : 500,
+          letterSpacing: 0,
+          textTransform: 'none',
+        }}
+      >
+        {label}
+      </label>
+      {suffix && (
+        <button
+          type="button"
+          onClick={onSuffixClick}
+          className="border-none bg-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1.5 flex items-center transition-colors"
+          tabIndex={-1}
+        >
+          {suffix}
+        </button>
+      )}
+      {success && !suffix && (
+        <div className="text-emerald-500 flex">
+          <Check className={compact ? 'w-4 h-4' : 'w-[18px] h-[18px]'} strokeWidth={2.2} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QMPasswordInput({ id, label, value, onChange, error, showPassword, onTogglePassword, autoComplete, compact = false }) {
+  return (
+    <QMInput
+      id={id}
+      type={showPassword ? 'text' : 'password'}
+      icon={Lock}
+      label={label}
+      value={value}
+      onChange={onChange}
+      error={error}
+      autoComplete={autoComplete}
+      compact={compact}
+      suffix={showPassword
+        ? <EyeOff className={compact ? 'w-4 h-4' : 'w-[18px] h-[18px]'} strokeWidth={1.8} />
+        : <Eye className={compact ? 'w-4 h-4' : 'w-[18px] h-[18px]'} strokeWidth={1.8} />}
+      onSuffixClick={onTogglePassword}
+    />
+  );
+}
+
+function RegisterOtpInputs({ value, onChange, hasError = false }) {
+  const inputRefs = useRef([]);
+  const digits = Array.from({ length: 6 }, (_, index) => value[index] || '');
+
+  const focusInput = (index) => {
+    const target = inputRefs.current[index];
+    if (target) {
+      target.focus();
+      target.select?.();
+    }
+  };
+
+  const updateDigits = (nextDigits) => {
+    onChange(nextDigits.join(''));
+  };
+
+  const setDigit = (index, nextValue) => {
+    const sanitized = String(nextValue || '').replace(/\D/g, '');
+
+    if (!sanitized) {
+      const nextDigits = [...digits];
+      nextDigits[index] = '';
+      updateDigits(nextDigits);
+      return;
+    }
+
+    if (sanitized.length > 1) {
+      const nextDigits = [...digits];
+      sanitized.slice(0, 6).split('').forEach((digit, digitIndex) => {
+        if (index + digitIndex < 6) {
+          nextDigits[index + digitIndex] = digit;
+        }
+      });
+      updateDigits(nextDigits);
+      focusInput(Math.min(index + sanitized.length, 5));
+      return;
+    }
+
+    const nextDigits = [...digits];
+    nextDigits[index] = sanitized;
+    updateDigits(nextDigits);
+
+    if (index < 5) {
+      focusInput(index + 1);
+    }
+  };
+
+  const handleKeyDown = (index, event) => {
+    if (event.key === 'Backspace' && !digits[index] && index > 0) {
+      focusInput(index - 1);
+    }
+
+    if (event.key === 'ArrowLeft' && index > 0) {
+      event.preventDefault();
+      focusInput(index - 1);
+    }
+
+    if (event.key === 'ArrowRight' && index < 5) {
+      event.preventDefault();
+      focusInput(index + 1);
+    }
+  };
+
+  const handlePaste = (event) => {
+    event.preventDefault();
+    const pastedValue = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pastedValue) return;
+
+    const nextDigits = Array.from({ length: 6 }, (_, index) => pastedValue[index] || '');
+    updateDigits(nextDigits);
+    focusInput(Math.min(pastedValue.length - 1, 5));
+  };
+
+  return (
+    <div className="flex justify-center gap-2.5 sm:gap-3">
+      {digits.map((digit, index) => (
+        <input
+          key={index}
+          ref={(node) => { inputRefs.current[index] = node; }}
+          inputMode="numeric"
+          autoComplete={index === 0 ? 'one-time-code' : 'off'}
+          maxLength={1}
+          value={digit}
+          onChange={(event) => setDigit(index, event.target.value)}
+          onKeyDown={(event) => handleKeyDown(index, event)}
+          onPaste={handlePaste}
+          className={`h-12 w-12 rounded-xl border text-center text-xl font-black text-slate-900 outline-none transition-all sm:h-14 sm:w-14 ${
+            hasError
+              ? 'border-red-300 bg-red-50 focus:border-red-500'
+              : digit
+                ? 'border-[#0455BF] bg-blue-50/80 focus:border-[#0455BF]'
+                : 'border-blue-100 bg-white focus:border-[#0455BF]'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function RegisterOtpVerificationCard({ t, registerHook, onBackToRegisterForm }) {
+  return (
+    <div className="relative mx-auto flex w-full max-w-[430px] flex-col items-center py-4 sm:py-8">
+      <div className="absolute -left-8 top-6 h-36 w-36 rounded-full bg-amber-200/40 blur-3xl" />
+      <div className="absolute -right-6 bottom-0 h-40 w-40 rounded-full bg-rose-200/35 blur-3xl" />
+      <div className="absolute inset-x-8 top-10 h-40 rounded-full bg-blue-200/35 blur-3xl" />
+
+      <div className="relative mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-[0_24px_60px_-20px_rgba(4,85,191,.28)] ring-8 ring-blue-100/60">
+        <Mail className="h-9 w-9 text-[#0455BF]" strokeWidth={2.1} />
+        <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#FF8682] text-[10px] font-black text-white">
+          1
+        </div>
+      </div>
+
+      <div className="relative w-full rounded-[28px] bg-white px-6 py-7 text-center shadow-[0_28px_70px_-28px_rgba(4,85,191,.35)] sm:px-8">
+        <h2 className="text-[28px] font-black tracking-tight text-slate-900">
+          {t('auth.checkYourEmailTitle', 'Kiểm tra email của bạn')}
+        </h2>
+        <p className="mx-auto mt-2 max-w-[260px] text-[13px] leading-5 text-slate-500">
+          {t('auth.checkYourEmailSubtitle', 'Chúng tôi đã gửi mã xác thực 6 chữ số đến')}
+        </p>
+        <p className="mt-1 text-sm font-bold text-[#0455BF]">
+          {registerHook.formData.email}
+        </p>
+
+        {registerHook.error && (
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {registerHook.error}
+          </div>
+        )}
+
+        {registerHook.successMessage && !registerHook.error && (
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
+            {registerHook.successMessage}
+          </div>
+        )}
+
+        <form className="mt-6 space-y-5" onSubmit={registerHook.handleVerifyOTPAndRegister}>
+          <RegisterOtpInputs
+            value={registerHook.otp}
+            onChange={(nextOtp) => registerHook.handleOtpChange({ target: { value: nextOtp } })}
+            hasError={Boolean(registerHook.fieldErrors?.otp)}
+          />
+
+          {registerHook.fieldErrors?.otp && (
+            <p className="text-left text-xs text-red-500">{registerHook.fieldErrors.otp}</p>
+          )}
+
+          <PrimaryButton type="submit" loading={registerHook.isLoading}>
+            {t('auth.verifyEmailButton', 'Xác thực')} <ArrowRight className="w-4 h-4" />
+          </PrimaryButton>
+        </form>
+
+        <p className="mt-5 text-[13px] text-slate-500">
+          {t('auth.didNotReceiveEmail', 'Không nhận được email?')}{' '}
+          <button
+            type="button"
+            onClick={registerHook.handleResendOTP}
+            disabled={registerHook.isLoading}
+            className="font-bold text-[#FF8682] transition-opacity hover:underline disabled:opacity-50"
+          >
+            {t('auth.resendOTP', 'Gửi lại')}
+          </button>
+        </p>
+      </div>
+
+      <p className="relative mt-5 text-center text-[13px] text-slate-500">
+        {t('auth.wrongEmailPrompt', 'Sai email?')}{' '}
+        <button
+          type="button"
+          onClick={onBackToRegisterForm}
+          className="font-bold text-[#FF8682] hover:underline"
+        >
+          {t('auth.backToRegisterForm', 'Quay lại đăng ký')}
+        </button>
+      </p>
+    </div>
+  );
+}
+
+function StrengthMeter({ value, t }) {
+  if (!value) return null;
+  let s = 0;
+  if (value.length >= 6) s++;
+  if (value.length >= 10) s++;
+  if (/[A-Z]/.test(value)) s++;
+  if (/[0-9]/.test(value)) s++;
+  if (/[^A-Za-z0-9]/.test(value)) s++;
+  const score = Math.min(s, 4);
+  const labels = ['', t('passwordStrength.weak', 'Yếu'), t('passwordStrength.medium', 'Trung bình'), t('passwordStrength.good', 'Khá'), t('passwordStrength.strong', 'Mạnh')];
+  const colors = ['bg-slate-200', 'bg-red-500', 'bg-amber-500', 'bg-blue-500', 'bg-emerald-500'];
+  const textColors = ['text-slate-400', 'text-red-500', 'text-amber-500', 'text-blue-500', 'text-emerald-500'];
+  return (
+    <div className="mt-1.5 px-1">
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className={`flex-1 h-[3px] rounded-full transition-colors ${i < score ? colors[score] : 'bg-slate-200 dark:bg-slate-700'}`} />
+        ))}
+      </div>
+      <div className={`text-[11px] font-semibold mt-1 ${textColors[score]}`}>{labels[score]}</div>
+    </div>
+  );
+}
+
+function PrimaryButton({ children, onClick, type = 'button', disabled, loading }) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-[15px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.985]"
+      style={{ boxShadow: '0 6px 20px -6px rgba(4,85,191,.55)' }}
+    >
+      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : children}
+    </button>
+  );
+}
+
+// ── Right-panel decorative pieces ─────────────────────────────────────────
+function FloatingQuizCard({ children, style, delay = '0s', active = false, className = '', rotation = '0deg' }) {
+  return (
+    <div
+      className={`absolute bg-white dark:bg-slate-900 p-3.5 min-w-[180px] ${className}`}
+      style={{
+        boxShadow: active
+          ? '0 20px 40px -12px rgba(15,23,42,.34), 0 0 0 2px rgba(250,204,21,.72)'
+          : '0 16px 30px -16px rgba(15,23,42,.4)',
+        transform: `rotate(${rotation})`,
+        animation: `qm-fade-up .5s ease-out ${delay} both, qm-float-slow 6s ease-in-out ${delay} infinite`,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function QuizOption({ label, correct = false }) {
+  return (
+    <div
+      className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg border ${
+        correct
+          ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold dark:bg-emerald-900/30 dark:text-emerald-200'
+          : 'border-slate-200 bg-white text-slate-500 font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
+      }`}
+    >
+      {correct && <Check className="w-3 h-3 text-emerald-500" />}
+      {label}
+    </div>
+  );
+}
+
+function FlashcardStack({ t, style, delay = '0s', rotation = '0deg' }) {
+  return (
+    <div
+      className="absolute h-[152px] w-[196px]"
+      style={{
+        transform: `rotate(${rotation})`,
+        animation: `qm-fade-up .55s ease-out ${delay} both, qm-float-slow 7.5s ease-in-out ${delay} infinite`,
+        ...style,
+      }}
+    >
+      <div className="absolute inset-x-4 top-4 bottom-0 rounded-[26px] bg-white/16 backdrop-blur-md" />
+      <div className="absolute inset-x-2 top-2 bottom-4 rounded-[26px] bg-white/24" />
+      <div className="absolute inset-0 rounded-[26px] bg-white px-4 py-3.5 shadow-[0_22px_40px_-20px_rgba(15,23,42,.45)]">
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0455BF]">
+          {t('loginPage.heroFlashcardLabel', 'Flashcard')}
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-[#0455BF]">
+            {t('loginPage.heroFlashcardFrontLabel', 'Mặt trước')}
+          </span>
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+        </div>
+        <div className="mt-3 text-[15px] font-black leading-tight text-slate-900">
+          {t('loginPage.heroFlashcardFrontText', 'Định lý Pitago')}
+        </div>
+        <div className="mt-3 rounded-[18px] bg-slate-50 px-3 py-2.5">
+          <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
+            {t('loginPage.heroFlashcardBackLabel', 'Mặt sau')}
+          </div>
+          <div className="mt-1 text-[12px] font-semibold text-slate-700">
+            {t('loginPage.heroFlashcardBackText', 'a² + b² = c²')}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewDeckCard({ t, style, delay = '0s', rotation = '0deg' }) {
+  return (
+    <div
+      className="absolute w-[188px] rounded-[22px] rounded-tr-[16px] rounded-bl-[16px] bg-white px-4 py-3.5 shadow-[0_22px_40px_-22px_rgba(15,23,42,.45)]"
+      style={{
+        transform: `rotate(${rotation})`,
+        animation: `qm-fade-up .55s ease-out ${delay} both, qm-float-slow 7s ease-in-out ${delay} infinite`,
+        ...style,
+      }}
+    >
+      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0455BF]">
+        {t('loginPage.heroDeckLabel', 'Ôn nhanh')}
+      </div>
+      <div className="mt-2 text-[14px] font-black leading-tight text-slate-900">
+        {t('loginPage.heroDeckTitle', '3 thẻ cần ôn lại')}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-[#0455BF]">
+          {t('loginPage.heroDeckChipMath', 'Toán')}
+        </span>
+        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">
+          {t('loginPage.heroDeckChipEnglish', 'Anh')}
+        </span>
+        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
+          {t('loginPage.heroDeckChipPhysics', 'Lý')}
+        </span>
+      </div>
+      <div className="mt-4 flex items-center justify-between text-[11px] text-slate-500">
+        <span>{t('loginPage.heroDeckFooter', 'Sẵn sàng cho buổi học tiếp theo')}</span>
+        <span className="font-bold text-[#0455BF]">12/15</span>
+      </div>
+    </div>
+  );
+}
+
+function DiagonalHeroPanel({ t }) {
+  return (
+    <div
+      className="hidden md:block flex-1 relative overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, #0455BF 0%, #2563EB 60%, #3b82f6 100%)',
+        clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0 100%)',
+      }}
+    >
+      <div
+        className="absolute -top-16 -right-16 w-[300px] h-[300px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(250,204,21,.35), transparent 70%)',
+          animation: 'qm-mesh 12s ease-in-out infinite',
+        }}
+      />
+      <div
+        className="absolute -bottom-20 left-10 w-[260px] h-[260px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(255,134,130,.3), transparent 70%)',
+          animation: 'qm-mesh 15s ease-in-out infinite reverse',
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,.15) 1.5px, transparent 1.5px)',
+          backgroundSize: '24px 24px',
+          maskImage: 'linear-gradient(180deg, transparent, #000 40%, #000 70%, transparent)',
+          WebkitMaskImage: 'linear-gradient(180deg, transparent, #000 40%, #000 70%, transparent)',
+        }}
+      />
+      <div
+        className="absolute left-[10%] top-[22%] h-[240px] w-[240px] rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,.14) 0%, rgba(255,255,255,.05) 38%, transparent 72%)' }}
+      />
+      <div
+        className="absolute left-[18%] top-[47%] h-[180px] w-[180px] rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,.1) 0%, rgba(99,179,255,.06) 34%, transparent 74%)' }}
+      />
+      <div
+        className="absolute left-[24%] bottom-[8%] h-[220px] w-[220px] rounded-full opacity-70 blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(147,197,253,.16) 0%, rgba(96,165,250,.07) 35%, transparent 72%)' }}
+      />
+      <FlashcardStack
+        t={t}
+        delay=".15s"
+        rotation="-9deg"
+        style={{ left: '12%', top: '28%' }}
+      />
+      <ReviewDeckCard
+        t={t}
+        delay=".4s"
+        rotation="7deg"
+        style={{ left: '21%', top: '57%' }}
+      />
+      <div
+        className="absolute top-9 right-10 flex items-start gap-3"
+        style={{ animation: 'qm-fade-up .6s ease-out' }}
+      >
+        <div className="bg-white rounded-[18px] rounded-bl-[12px] px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_14px_28px_-14px_rgba(15,23,42,.45)]">
+          {t('loginPage.heroGreeting', 'Xin chào!')}{' '}
+          <span
+            className="inline-block"
+            style={{ animation: 'qm-wave 2s ease-in-out infinite', transformOrigin: '70% 80%' }}
+          >
+            👋
+          </span>
+        </div>
+        <div className="h-[72px] w-[72px] overflow-hidden rounded-full shadow-[0_16px_28px_-16px_rgba(15,23,42,.55)]">
+          <img
+            src={HeroLogo}
+            alt={t('loginPage.logoAlt', 'QuizMate AI Logo')}
+            className="h-full w-full scale-[1.14] object-cover object-top"
+          />
+        </div>
+      </div>
+
+      <FloatingQuizCard
+        style={{ top: 170, right: 90 }}
+        delay="0s"
+        active
+        rotation="-5deg"
+        className="rounded-[22px] rounded-tr-[16px] rounded-bl-[18px]"
+      >
+        <div className="text-[10px] text-[#0455BF] dark:text-blue-400 font-bold uppercase tracking-wider">
+          {t('loginPage.heroQuestionProgress', 'Câu hỏi 3/10')}
+        </div>
+        <div className="text-[13px] font-bold text-slate-900 dark:text-white my-1.5 leading-tight">
+          {t('loginPage.heroQuestionText', 'Thủ đô của Việt Nam là?')}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <QuizOption label={t('loginPage.heroOptionHanoi', 'Hà Nội')} correct />
+          <QuizOption label={t('loginPage.heroOptionHcm', 'TP.HCM')} />
+          <QuizOption label={t('loginPage.heroOptionDanang', 'Đà Nẵng')} />
+        </div>
+      </FloatingQuizCard>
+
+      <FloatingQuizCard
+        style={{ top: 395, right: 180 }}
+        delay=".3s"
+        rotation="4deg"
+        className="rounded-[20px] rounded-tr-[14px] rounded-bl-[14px]"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-300">
+            <Zap className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[12px] font-bold text-slate-900 dark:text-white">{t('loginPage.heroStreakTitle', 'Streak 7 ngày')}</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">{t('loginPage.heroStreakSubtitle', '+50 XP hôm nay')}</div>
+          </div>
+        </div>
+        <div className="h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{
+              background: 'linear-gradient(90deg, #FACC15, #F59E0B)',
+              animation: 'qm-progress 1.5s ease-out .5s both',
+            }}
+          />
+        </div>
+      </FloatingQuizCard>
+
+      <FloatingQuizCard
+        style={{ top: 560, right: 60 }}
+        delay=".5s"
+        rotation="-3deg"
+        className="rounded-[20px] rounded-tl-[14px] rounded-br-[16px]"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-[#0455BF] dark:text-blue-400">
+            <Users className="w-4 h-4" />
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+            <div className="text-[13px] font-bold text-slate-900 dark:text-white">{t('loginPage.heroOnlineCount', '15,432 học sinh')}</div>
+            {t('loginPage.heroOnlineNow', 'Đã trải nghiệm Quizmate AI')}
+          </div>
+        </div>
+      </FloatingQuizCard>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────
 const LoginPageContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
-  // Lấy ngôn ngữ hiện tại và tính toán font class
-  const currentLang = i18n.language;
+  const currentLang = i18n.resolvedLanguage || i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
-  // Hàm chuyển đổi ngôn ngữ
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
     i18n.changeLanguage(newLang);
   };
 
-  // State để chuyển đổi giữa 'login', 'register' và 'forgot-password'
   const [view, setView] = useState(location.state?.view || 'login');
 
-  // Init Hooks
   const loginHook = useLogin(navigate, location, t);
   const registerHook = useRegister(setView, t);
   const forgotPasswordHook = useForgotPassword(setView, t);
 
-  return (
-    <div className={`min-h-screen bg-white dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-300 ${fontClass}`}>
-      {/* Header: Logo & Language Toggle */}
-      <header className="flex justify-between items-center px-12 pt-4">
-        <div className="flex items-center gap-2">
-          {/* Logo - Import từ assets */}
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            aria-label={t('loginPage.goToLandingPageAria', 'Go to landing page')}
-            className="flex h-[120px] w-[150px] items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
-          >
-            <img src={isDarkMode ? LogoDark : LogoLight} alt={t('loginPage.logoAlt', 'QuizMate AI Logo')} className="w-full h-full object-contain" />
-          </button>
-        </div>
+  const handleNavigateBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
 
-        <div className="flex items-center gap-3">
-          {/* Nút chuyển đổi Dark Mode */}
+    navigate('/');
+  };
+
+  return (
+    <div className={`min-h-screen flex bg-white dark:bg-slate-950 overflow-hidden transition-colors duration-300 ${fontClass}`}>
+      {/* ── LEFT: Form column ───────────────────────────────────────────── */}
+      <div className="w-full md:w-[52%] flex flex-col relative z-10 px-6 sm:px-10 lg:px-14 pt-8 pb-6">
+        <div className="mb-4 flex justify-end gap-2 sm:mb-6">
           <button
             type="button"
             onClick={toggleDarkMode}
             aria-label={isDarkMode ? t('loginPage.switchToLightModeAria', 'Switch to light mode') : t('loginPage.switchToDarkModeAria', 'Switch to dark mode')}
-            className={`p-2 rounded-lg border transition-all duration-300 ${isDarkMode
-              ? 'border-slate-700 hover:bg-slate-800 text-yellow-400'
-              : 'border-gray-200 hover:bg-gray-50 text-gray-600'
-              }`}
             title={isDarkMode ? t('loginPage.switchToLightModeTitle', 'Switch to Light Mode') : t('loginPage.switchToDarkModeTitle', 'Switch to Dark Mode')}
+            className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+              isDarkMode
+                ? 'border-slate-700 bg-slate-900 text-yellow-400 hover:bg-slate-800'
+                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+            }`}
           >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-
-          {/* Nút đổi ngôn ngữ */}
           <button
             type="button"
             onClick={toggleLanguage}
             aria-label={t('loginPage.switchLanguageAria', 'Switch language')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-sm font-medium text-gray-600 dark:text-slate-400"
+            className="flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            <Globe className="w-4 h-4" />
+            <Globe className="h-4 w-4" />
             <span>{currentLang === 'vi' ? t('loginPage.langShortVi', 'VI') : t('loginPage.langShortEn', 'EN')}</span>
           </button>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-8 items-center px-4 pb-2">
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="w-full max-w-[420px] mx-auto">
 
-        {/* Left Side: Form Container */}
-        <div className="max-w-md w-full mx-auto md:mx-0">
-
-          {/* --- VIEW: LOGIN --- */}
-          {view === 'login' && (
-            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-              {/* Nút quay về trang chủ */}
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-6 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" /> {t('auth.backToHome')}
-              </button>
-
-              <div className="mb-5">
-                <h1 className="text-4xl font-semibold text-[#313131] dark:text-white mb-4">{t('auth.login')}</h1>
-                <p className="text-gray-500 dark:text-slate-400">{t('auth.loginSubtitle')}</p>
-              </div>
-
-              <form className="space-y-4" onSubmit={loginHook.handleLoginSubmit}>
-                {/* Error Message */}
-                {loginHook.error && view === 'login' && (
-                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                    {loginHook.error}
-                  </div>
-                )}
-
-                {/* Username Input - API yêu cầu username */}
-                <FloatingInput
-                  id="username"
-                  type="text"
-                  label={t('auth.username', 'Username')}
-                  value={loginHook.loginData.username}
-                  onChange={loginHook.handleLoginChange('username')}
-                  error={Boolean(loginHook.fieldErrors?.username)}
-                />
-                {loginHook.fieldErrors?.username && (
-                  <p className="text-red-500 text-xs mt-1 ml-1">{loginHook.fieldErrors.username}</p>
-                )}
-
-                {/* Password Input - Floating Label */}
-                <FloatingPasswordInput
-                  id="password"
-                  label={t('auth.password')}
-                  value={loginHook.loginData.password}
-                  onChange={loginHook.handleLoginChange('password')}
-                  showPassword={loginHook.showPassword}
-                  onTogglePassword={() => loginHook.setShowPassword(!loginHook.showPassword)}
-                  error={Boolean(loginHook.fieldErrors?.password)}
-                />
-                {loginHook.fieldErrors?.password && (
-                  <p className="text-red-500 text-xs mt-1 ml-1">{loginHook.fieldErrors.password}</p>
-                )}
-
-                <div className="flex items-center justify-between">
-                  {/* ...existing code... */}
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="remember" className="border-gray-300 dark:border-slate-600 data-[state=checked]:bg-[#0455BF] dark:data-[state=checked]:bg-blue-600" />
-                    <label htmlFor="remember" className="text-sm font-medium text-[#313131] dark:text-slate-300 cursor-pointer">
-                      {t('auth.rememberMe')}
-                    </label>
-                  </div>
-                  {/* Chuyển sang View Quên mật khẩu */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setView('forgot-password');
-                    }}
-                    className="text-sm font-medium text-[#FF8682] hover:underline"
-                  >
-                    {t('auth.forgotPassword')}
-                  </button>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={loginHook.isLoading}
-                  className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
+            {/* ─── VIEW: LOGIN ─── */}
+            {view === 'login' && (
+              <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                <button
+                  type="button"
+                  onClick={handleNavigateBack}
+                  className="mb-5 flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 transition-colors hover:text-[#0455BF] dark:hover:text-blue-400"
                 >
-                  {loginHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.loginButton')}
-                </Button>
-
-                <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
-                  {t('auth.noAccount')}{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setView('register'); loginHook.setError(''); }}
-                    className="text-[#FF8682] hover:underline"
-                  >
-                    {t('auth.signUp')}
-                  </button>
-                </p>
-
-                <div className="relative flex items-center py-1">
-                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
-                  <span className="flex-shrink mx-4 text-gray-400 dark:text-slate-500 text-sm">{t('auth.orLoginWith')}</span>
-                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                  <ChevronLeft className="h-4 w-4" />
+                  {t('loginPage.backToPrevious', 'Quay lại')}
+                </button>
+                <div className="text-[12px] text-[#0455BF] dark:text-blue-400 font-bold uppercase tracking-[0.15em] mb-2">
+                  {t('loginPage.welcomeBack', 'Chào mừng trở lại')}
                 </div>
+                <h1 className="text-[40px] font-black text-slate-900 dark:text-white leading-[1.02] tracking-tight mb-6">
+                  {t('auth.login')}
+                  <span className="block text-[#0455BF] dark:text-blue-400">{t('loginPage.continueLearning', 'để tiếp tục học')}</span>
+                </h1>
 
-                {/* Google Login Button */}
-                {isGoogleAuthEnabled() ? (
-                  <div className="flex justify-center w-full mt-2">
-                    <div className="w-full flex justify-center">
+                <form className="space-y-3.5" onSubmit={loginHook.handleLoginSubmit}>
+                  {loginHook.error && (
+                    <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+                      {loginHook.error}
+                    </div>
+                  )}
+
+                  <div>
+                    <QMInput
+                      id="username"
+                      icon={User}
+                      label={t('auth.username', 'Username')}
+                      value={loginHook.loginData.username}
+                      onChange={loginHook.handleLoginChange('username')}
+                      error={loginHook.fieldErrors?.username}
+                      success={loginHook.loginData.username.length > 2 && !loginHook.fieldErrors?.username}
+                      autoComplete="username"
+                    />
+                    {loginHook.fieldErrors?.username && (
+                      <p className="text-red-500 text-xs mt-1.5 ml-1">{loginHook.fieldErrors.username}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <QMPasswordInput
+                      id="password"
+                      label={t('auth.password')}
+                      value={loginHook.loginData.password}
+                      onChange={loginHook.handleLoginChange('password')}
+                      showPassword={loginHook.showPassword}
+                      onTogglePassword={() => loginHook.setShowPassword(!loginHook.showPassword)}
+                      error={loginHook.fieldErrors?.password}
+                      autoComplete="current-password"
+                    />
+                    {loginHook.fieldErrors?.password && (
+                      <p className="text-red-500 text-xs mt-1.5 ml-1">{loginHook.fieldErrors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="remember" className="border-gray-300 dark:border-slate-600 data-[state=checked]:bg-[#0455BF] dark:data-[state=checked]:bg-blue-600" />
+                      <label htmlFor="remember" className="text-sm font-medium text-[#313131] dark:text-slate-300 cursor-pointer">
+                        {t('auth.rememberMe')}
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setView('forgot-password')}
+                      className="text-sm font-semibold text-[#FF8682] hover:underline"
+                    >
+                      {t('auth.forgotPassword')}
+                    </button>
+                  </div>
+
+                  <PrimaryButton type="submit" loading={loginHook.isLoading}>
+                    {t('auth.loginButton')} <ArrowRight className="w-4 h-4" />
+                  </PrimaryButton>
+
+                  <div className="relative flex items-center py-1">
+                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                    <span className="flex-shrink mx-3 text-gray-400 dark:text-slate-500 text-[11px] uppercase tracking-wider">
+                      {t('auth.orLoginWith')}
+                    </span>
+                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                  </div>
+
+                  <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
+                    {t('auth.noAccount')}{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setView('register'); loginHook.setError(''); }}
+                      className="text-[#FF8682] font-bold hover:underline"
+                    >
+                      {t('auth.signUp')}
+                    </button>
+                  </p>
+
+                  {isGoogleAuthEnabled() ? (
+                    <div className="flex justify-center w-full">
                       <GoogleLogin
                         onSuccess={loginHook.handleGoogleSubmit}
                         onError={() => loginHook.setError(t('auth.loginGoogleFailed', 'Google login failed. Please try again.'))}
                         useOneTap
-                        theme={isDarkMode ? 'filled_black' : 'outline'}
+                        theme="outline"
                         shape="pill"
                         width="384"
                         text="signin_with"
                         locale={currentLang}
                       />
                     </div>
-                  </div>
-                ) : null}
-              </form>
-            </div>
-          )}
+                  ) : null}
+                </form>
+              </div>
+            )}
 
-          {/* --- VIEW: FORGOT PASSWORD --- */}
-          {view === 'forgot-password' && (
-            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-              <button
-                onClick={() => {
-                  setView('login');
-                  forgotPasswordHook.resetState();
-                }}
-                className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-8 hover:text-black dark:hover:text-white"
-              >
-                <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
-              </button>
+            {/* ─── VIEW: FORGOT PASSWORD ─── */}
+            {view === 'forgot-password' && (
+              <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                <button
+                  onClick={() => {
+                    setView('login');
+                    forgotPasswordHook.resetState();
+                  }}
+                  className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-6 hover:text-black dark:hover:text-white"
+                >
+                  <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
+                </button>
 
-              <div className="mb-8">
-                <h1 className="text-4xl font-semibold text-[#313131] dark:text-white mb-4">{t('auth.forgotPasswordTitle')}</h1>
-                <p className="text-gray-500 dark:text-slate-400 leading-relaxed">
+                <h1 className="text-[34px] font-black text-slate-900 dark:text-white leading-[1.1] tracking-tight mb-3">
+                  {t('auth.forgotPasswordTitle')}
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed mb-6">
                   {forgotPasswordHook.forgotPasswordStep === 'email' && t('auth.forgotPasswordSubtitle', "Don't worry, happens to all of us. Enter your email below to recover your password")}
                   {forgotPasswordHook.forgotPasswordStep === 'otp' && t('auth.enterOTPSubtitle', 'Enter the OTP code sent to your email')}
                   {forgotPasswordHook.forgotPasswordStep === 'newPassword' && t('auth.newPasswordSubtitle', 'Enter your new password')}
                 </p>
-              </div>
 
-              {/* Error Message */}
-              {forgotPasswordHook.error && view === 'forgot-password' && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                  {forgotPasswordHook.error}
-                </div>
-              )}
-
-              {/* Success Message */}
-              {forgotPasswordHook.successMessage && view === 'forgot-password' && (
-                <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
-                  {forgotPasswordHook.successMessage}
-                </div>
-              )}
-
-              {/* Step 1: Enter Email */}
-              {forgotPasswordHook.forgotPasswordStep === 'email' && (
-                <form className="space-y-6" onSubmit={forgotPasswordHook.handleSendOTP}>
-                  <div>
-                    <FloatingInput
-                      id="forgot-email"
-                      type="email"
-                      label={t('auth.email')}
-                      value={forgotPasswordHook.forgotPasswordData.email}
-                      onChange={forgotPasswordHook.handleForgotPasswordChange('email')}
-                      onBlur={forgotPasswordHook.handleForgotPasswordEmailBlur}
-                      error={Boolean(forgotPasswordHook.fieldErrors?.email)}
-                    />
-                    {forgotPasswordHook.fieldErrors?.email && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.email}</p>
-                    )}
+                {forgotPasswordHook.error && (
+                  <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+                    {forgotPasswordHook.error}
                   </div>
+                )}
 
-                  <Button
-                    type="submit"
-                    disabled={forgotPasswordHook.isLoading}
-                    className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
-                  >
-                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.sendOTP', 'Send OTP')}
-                  </Button>
-                </form>
-              )}
-
-              {/* Step 2: Enter OTP */}
-              {forgotPasswordHook.forgotPasswordStep === 'otp' && (
-                <form className="space-y-6" onSubmit={forgotPasswordHook.handleVerifyOTP}>
-                  <div>
-                    <FloatingInput
-                      id="otp-code"
-                      type="text"
-                      label={t('auth.otpCode', 'OTP Code')}
-                      value={forgotPasswordHook.forgotPasswordData.otp}
-                      onChange={forgotPasswordHook.handleForgotPasswordChange('otp')}
-                      error={Boolean(forgotPasswordHook.fieldErrors?.otp)}
-                    />
-                    {forgotPasswordHook.fieldErrors?.otp && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.otp}</p>
-                    )}
+                {forgotPasswordHook.successMessage && (
+                  <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
+                    {forgotPasswordHook.successMessage}
                   </div>
+                )}
 
-                  <Button
-                    type="submit"
-                    disabled={forgotPasswordHook.isLoading}
-                    className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
-                  >
-                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.verifyOTP', 'Verify OTP')}
-                  </Button>
+                {forgotPasswordHook.forgotPasswordStep === 'email' && (
+                  <form className="space-y-4" onSubmit={forgotPasswordHook.handleSendOTP}>
+                    <div>
+                      <QMInput
+                        id="forgot-email"
+                        type="email"
+                        icon={Mail}
+                        label={t('auth.email')}
+                        value={forgotPasswordHook.forgotPasswordData.email}
+                        onChange={forgotPasswordHook.handleForgotPasswordChange('email')}
+                        onBlur={forgotPasswordHook.handleForgotPasswordEmailBlur}
+                        error={forgotPasswordHook.fieldErrors?.email}
+                        autoComplete="email"
+                      />
+                      {forgotPasswordHook.fieldErrors?.email && (
+                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.email}</p>
+                      )}
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => { forgotPasswordHook.setForgotPasswordStep('email'); forgotPasswordHook.setError(''); forgotPasswordHook.setSuccessMessage(''); }}
-                    className="w-full text-center text-sm text-gray-500 dark:text-slate-400 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
-                  >
-                    {t('auth.resendOTP', 'Resend OTP')}
-                  </button>
-                </form>
-              )}
+                    <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
+                      {t('auth.sendOTP', 'Send OTP')} <ArrowRight className="w-4 h-4" />
+                    </PrimaryButton>
+                  </form>
+                )}
 
-              {/* Step 3: Enter New Password */}
-              {forgotPasswordHook.forgotPasswordStep === 'newPassword' && (
-                <form className="space-y-6" onSubmit={forgotPasswordHook.handleResetPassword}>
-                  <div>
-                    <FloatingPasswordInput
-                      id="new-password"
-                      label={t('auth.newPassword', 'New Password')}
-                      value={forgotPasswordHook.forgotPasswordData.newPassword}
-                      onChange={forgotPasswordHook.handleForgotPasswordChange('newPassword')}
-                      showPassword={forgotPasswordHook.showPassword}
-                      onTogglePassword={() => forgotPasswordHook.setShowPassword(!forgotPasswordHook.showPassword)}
-                      error={Boolean(forgotPasswordHook.fieldErrors?.newPassword)}
-                    />
-                    {forgotPasswordHook.fieldErrors?.newPassword && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.newPassword}</p>
-                    )}
-                  </div>
+                {forgotPasswordHook.forgotPasswordStep === 'otp' && (
+                  <form className="space-y-4" onSubmit={forgotPasswordHook.handleVerifyOTP}>
+                    <div>
+                      <QMInput
+                        id="otp-code"
+                        icon={KeyRound}
+                        label={t('auth.otpCode', 'OTP Code')}
+                        value={forgotPasswordHook.forgotPasswordData.otp}
+                        onChange={forgotPasswordHook.handleForgotPasswordChange('otp')}
+                        error={forgotPasswordHook.fieldErrors?.otp}
+                        autoComplete="one-time-code"
+                      />
+                      {forgotPasswordHook.fieldErrors?.otp && (
+                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.otp}</p>
+                      )}
+                    </div>
 
-                  <div>
-                    <FloatingPasswordInput
-                      id="confirm-new-password"
-                      label={t('auth.confirmNewPassword', 'Confirm New Password')}
-                      value={forgotPasswordHook.forgotPasswordData.confirmNewPassword}
-                      onChange={forgotPasswordHook.handleForgotPasswordChange('confirmNewPassword')}
-                      showPassword={forgotPasswordHook.showConfirmPassword}
-                      onTogglePassword={() => forgotPasswordHook.setShowConfirmPassword(!forgotPasswordHook.showConfirmPassword)}
-                      error={Boolean(forgotPasswordHook.fieldErrors?.confirmNewPassword)}
-                    />
-                    {forgotPasswordHook.fieldErrors?.confirmNewPassword && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.confirmNewPassword}</p>
-                    )}
-                  </div>
+                    <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
+                      {t('auth.verifyOTP', 'Verify OTP')}
+                    </PrimaryButton>
 
-                  <Button
-                    type="submit"
-                    disabled={forgotPasswordHook.isLoading}
-                    className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
-                  >
-                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.resetPassword', 'Reset Password')}
-                  </Button>
-                </form>
-              )}
-
-              {/* Progress Indicator */}
-              <div className="flex justify-center items-center gap-2 mt-8">
-                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'email' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
-                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'otp' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
-                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'newPassword' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
-              </div>
-            </div>
-          )}
-
-          {/* --- VIEW: REGISTER --- */}
-          {view === 'register' && (
-            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-              {/* Nút quay về Login hoặc quay lại form đăng ký */}
-              <button
-                onClick={() => {
-                  if (registerHook.registerStep === 'otp') {
-                    // Quay lại bước nhập form
-                    registerHook.setRegisterStep('form');
-                    registerHook.setOtp('');
-                    registerHook.setError('');
-                    registerHook.setSuccessMessage('');
-                  } else {
-                    setView('login');
-                    registerHook.resetRegisterState();
-                  }
-                }}
-                className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-6 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" /> {registerHook.registerStep === 'otp' ? t('auth.backToRegisterForm', 'Go back') : t('auth.backToLogin')}
-              </button>
-
-              <div className="mb-6">
-                <h1 className="text-4xl font-semibold text-[#313131] dark:text-white mb-4">
-                  {registerHook.registerStep === 'otp' ? t('auth.verifyEmailTitle', 'Verify Email') : t('auth.signUpTitle')}
-                </h1>
-                <p className="text-gray-500 dark:text-slate-400">
-                  {registerHook.registerStep === 'otp'
-                    ? t('loginPage.registerOtpSubtitleWithEmail', 'Enter the OTP code sent to {{email}}', { email: registerHook.formData.email })
-                    : t('auth.signUpSubtitle')}
-                </p>
-              </div>
-
-              {/* Error Message */}
-              {registerHook.error && view === 'register' && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                  {registerHook.error}
-                </div>
-              )}
-
-              {/* Success Message */}
-              {registerHook.successMessage && view === 'register' && (
-                <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
-                  {registerHook.successMessage}
-                </div>
-              )}
-
-              {/* --- BƯỚC 1: Form đăng ký --- */}
-              {registerHook.registerStep === 'form' && (
-                <form className="space-y-4" onSubmit={registerHook.handleRegisterSubmit}>
-                  {/* Fullname */}
-                  <div>
-                    <FloatingInput
-                      id="fullname"
-                      type="text"
-                      label={t('auth.fullname', 'Full Name')}
-                      value={registerHook.formData.fullname}
-                      onChange={registerHook.handleChange('fullname')}
-                      error={Boolean(registerHook.fieldErrors?.fullname)}
-                    />
-                    {registerHook.fieldErrors?.fullname && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.fullname}</p>
-                    )}
-                  </div>
-
-                  {/* Username */}
-                  <div>
-                    <FloatingInput
-                      id="register-username"
-                      type="text"
-                      label={t('auth.username', 'Username')}
-                      value={registerHook.formData.username}
-                      onChange={registerHook.handleChange('username')}
-                      onBlur={registerHook.handleAvailabilityBlur('username')}
-                      error={Boolean(registerHook.fieldErrors?.username)}
-                    />
-                    {registerHook.fieldErrors?.username ? (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.username}</p>
-                    ) : registerHook.availabilityStatus?.username?.message ? (
-                      <p className={`text-xs mt-1 ml-1 ${
-                        registerHook.availabilityStatus.username.available === true
-                          ? 'text-green-600 dark:text-green-400'
-                          : registerHook.availabilityStatus.username.available === false
-                            ? 'text-red-500 dark:text-red-400'
-                            : 'text-gray-500 dark:text-slate-400'
-                      }`}>
-                        {registerHook.availabilityStatus.username.message}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <FloatingInput
-                      id="register-email"
-                      type="email"
-                      label={t('auth.email')}
-                      value={registerHook.formData.email}
-                      onChange={registerHook.handleChange('email')}
-                      onBlur={registerHook.handleAvailabilityBlur('email')}
-                      error={Boolean(registerHook.fieldErrors?.email)}
-                    />
-                    {registerHook.fieldErrors?.email ? (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.email}</p>
-                    ) : registerHook.availabilityStatus?.email?.message ? (
-                      <p className={`text-xs mt-1 ml-1 ${
-                        registerHook.availabilityStatus.email.available === true
-                          ? 'text-green-600 dark:text-green-400'
-                          : registerHook.availabilityStatus.email.available === false
-                            ? 'text-red-500 dark:text-red-400'
-                            : 'text-gray-500 dark:text-slate-400'
-                      }`}>
-                        {registerHook.availabilityStatus.email.message}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <FloatingPasswordInput
-                      id="register-password"
-                      label={t('auth.password')}
-                      value={registerHook.formData.password}
-                      onChange={registerHook.handleChange('password')}
-                      showPassword={registerHook.showPassword}
-                      onTogglePassword={() => registerHook.setShowPassword(!registerHook.showPassword)}
-                      error={Boolean(registerHook.fieldErrors?.password)}
-                    />
-                    {registerHook.fieldErrors?.password && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.password}</p>
-                    )}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <FloatingPasswordInput
-                      id="confirmPassword"
-                      label={t('auth.confirmPassword')}
-                      value={registerHook.formData.confirmPassword}
-                      onChange={registerHook.handleChange('confirmPassword')}
-                      showPassword={registerHook.showConfirmPassword}
-                      onTogglePassword={() => registerHook.setShowConfirmPassword(!registerHook.showConfirmPassword)}
-                      error={Boolean(registerHook.fieldErrors?.confirmPassword)}
-                    />
-                    {registerHook.fieldErrors?.confirmPassword && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.confirmPassword}</p>
-                    )}
-                  </div>
-
-                  {/* Terms and Conditions */}
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="agreeToTerms"
-                      checked={registerHook.formData.agreeToTerms}
-                      onCheckedChange={(checked) => registerHook.setFormData(prev => ({ ...prev, agreeToTerms: checked }))}
-                      required
-                      className="border-gray-300 dark:border-slate-600 data-[state=checked]:bg-[#0455BF] dark:data-[state=checked]:bg-blue-600"
-                    />
-                    <label htmlFor="agreeToTerms" className="text-sm text-[#313131] dark:text-slate-300 cursor-pointer leading-relaxed">
-                      {t('auth.agreeToTerms')} <span className="text-[#FF8682]">{t('auth.terms')}</span> {t('auth.and')} <span className="text-[#FF8682]">{t('auth.privacyPolicies')}</span>
-                    </label>
-                  </div>
-                  {registerHook.fieldErrors?.agreeToTerms && (
-                    <p className="text-red-500 text-xs -mt-2 ml-1">{registerHook.fieldErrors.agreeToTerms}</p>
-                  )}
-
-                  {/* Submit Button - Gửi OTP */}
-                  <Button
-                    type="submit"
-                    disabled={registerHook.isLoading || registerHook.availabilityStatus?.username?.checking || registerHook.availabilityStatus?.email?.checking}
-                    className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
-                  >
-                    {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.createAccount')}
-                  </Button>
-
-                  {/* Login Link */}
-                  <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
-                    {t('auth.alreadyHaveAccount')} {' '}
                     <button
                       type="button"
+                      onClick={() => { forgotPasswordHook.setForgotPasswordStep('email'); forgotPasswordHook.setError(''); forgotPasswordHook.setSuccessMessage(''); }}
+                      className="w-full text-center text-sm text-gray-500 dark:text-slate-400 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
+                    >
+                      {t('auth.resendOTP', 'Resend OTP')}
+                    </button>
+                  </form>
+                )}
+
+                {forgotPasswordHook.forgotPasswordStep === 'newPassword' && (
+                  <form className="space-y-4" onSubmit={forgotPasswordHook.handleResetPassword}>
+                    <div>
+                      <QMPasswordInput
+                        id="new-password"
+                        label={t('auth.newPassword', 'New Password')}
+                        value={forgotPasswordHook.forgotPasswordData.newPassword}
+                        onChange={forgotPasswordHook.handleForgotPasswordChange('newPassword')}
+                        showPassword={forgotPasswordHook.showPassword}
+                        onTogglePassword={() => forgotPasswordHook.setShowPassword(!forgotPasswordHook.showPassword)}
+                        error={forgotPasswordHook.fieldErrors?.newPassword}
+                        autoComplete="new-password"
+                      />
+                      <StrengthMeter value={forgotPasswordHook.forgotPasswordData.newPassword} t={t} />
+                      {forgotPasswordHook.fieldErrors?.newPassword && (
+                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.newPassword}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <QMPasswordInput
+                        id="confirm-new-password"
+                        label={t('auth.confirmNewPassword', 'Confirm New Password')}
+                        value={forgotPasswordHook.forgotPasswordData.confirmNewPassword}
+                        onChange={forgotPasswordHook.handleForgotPasswordChange('confirmNewPassword')}
+                        showPassword={forgotPasswordHook.showConfirmPassword}
+                        onTogglePassword={() => forgotPasswordHook.setShowConfirmPassword(!forgotPasswordHook.showConfirmPassword)}
+                        error={forgotPasswordHook.fieldErrors?.confirmNewPassword}
+                        autoComplete="new-password"
+                      />
+                      {forgotPasswordHook.fieldErrors?.confirmNewPassword && (
+                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.confirmNewPassword}</p>
+                      )}
+                    </div>
+
+                    <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
+                      {t('auth.resetPassword', 'Reset Password')}
+                    </PrimaryButton>
+                  </form>
+                )}
+
+                <div className="flex justify-center items-center gap-2 mt-6">
+                  <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'email' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
+                  <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'otp' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
+                  <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'newPassword' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
+                </div>
+              </div>
+            )}
+
+            {/* ─── VIEW: REGISTER ─── */}
+            {view === 'register' && (
+              <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                {registerHook.registerStep === 'form' && (
+                  <>
+                    <button
                       onClick={() => {
                         setView('login');
                         registerHook.resetRegisterState();
                       }}
-                      className="text-[#FF8682] hover:underline cursor-pointer"
+                      className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-5 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
                     >
-                      {t('auth.login')}
+                      <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
                     </button>
-                  </p>
 
-                  {/* Divider */}
-                  <div className="relative flex items-center py-2">
-                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
-                    <span className="flex-shrink mx-4 text-gray-400 dark:text-slate-500 text-sm">{t('auth.orRegisterWith')}</span>
-                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                    <h1 className="text-[34px] font-black text-slate-900 dark:text-white leading-[1.1] tracking-tight mb-3">
+                      {t('auth.signUpTitle')}
+                    </h1>
+                    <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">
+                      {t('auth.signUpSubtitle')}
+                    </p>
+                  </>
+                )}
+
+                {registerHook.registerStep === 'form' && registerHook.error && (
+                  <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+                    {registerHook.error}
                   </div>
+                )}
 
-                  {/* Social Login Buttons - Register View */}
-                  {isGoogleAuthEnabled() ? (
-                    <div className="flex justify-center w-full mt-2">
-                      <div className="w-full flex justify-center">
+                {registerHook.registerStep === 'form' && registerHook.successMessage && (
+                  <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
+                    {registerHook.successMessage}
+                  </div>
+                )}
+
+                {registerHook.registerStep === 'form' && (
+                  <form className="space-y-3" onSubmit={registerHook.handleRegisterSubmit}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <QMInput
+                          id="fullname"
+                          icon={User}
+                          label={t('auth.fullname', 'Full Name')}
+                          value={registerHook.formData.fullname}
+                          onChange={registerHook.handleChange('fullname')}
+                          error={registerHook.fieldErrors?.fullname}
+                          autoComplete="name"
+                          compact
+                        />
+                        {registerHook.fieldErrors?.fullname && (
+                          <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.fullname}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <QMInput
+                          id="register-username"
+                          icon={User}
+                          label={t('auth.username', 'Username')}
+                          value={registerHook.formData.username}
+                          onChange={registerHook.handleChange('username')}
+                          onBlur={registerHook.handleAvailabilityBlur('username')}
+                          error={registerHook.fieldErrors?.username}
+                          success={registerHook.availabilityStatus?.username?.available === true}
+                          autoComplete="username"
+                          compact
+                        />
+                        {registerHook.fieldErrors?.username ? (
+                          <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.username}</p>
+                        ) : registerHook.availabilityStatus?.username?.message ? (
+                          <p className={`text-xs mt-1.5 ml-1 ${
+                            registerHook.availabilityStatus.username.available === true
+                              ? 'text-green-600 dark:text-green-400'
+                              : registerHook.availabilityStatus.username.available === false
+                                ? 'text-red-500 dark:text-red-400'
+                                : 'text-gray-500 dark:text-slate-400'
+                          }`}>
+                            {registerHook.availabilityStatus.username.message}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div>
+                      <QMInput
+                        id="register-email"
+                        type="email"
+                        icon={Mail}
+                        label={t('auth.email')}
+                        value={registerHook.formData.email}
+                        onChange={registerHook.handleChange('email')}
+                        onBlur={registerHook.handleAvailabilityBlur('email')}
+                        error={registerHook.fieldErrors?.email}
+                        success={registerHook.availabilityStatus?.email?.available === true}
+                        autoComplete="email"
+                        compact
+                      />
+                      {registerHook.fieldErrors?.email ? (
+                        <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.email}</p>
+                      ) : registerHook.availabilityStatus?.email?.message ? (
+                        <p className={`text-xs mt-1.5 ml-1 ${
+                          registerHook.availabilityStatus.email.available === true
+                            ? 'text-green-600 dark:text-green-400'
+                            : registerHook.availabilityStatus.email.available === false
+                              ? 'text-red-500 dark:text-red-400'
+                              : 'text-gray-500 dark:text-slate-400'
+                        }`}>
+                          {registerHook.availabilityStatus.email.message}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <QMPasswordInput
+                        id="register-password"
+                        label={t('auth.password')}
+                        value={registerHook.formData.password}
+                        onChange={registerHook.handleChange('password')}
+                        showPassword={registerHook.showPassword}
+                        onTogglePassword={() => registerHook.setShowPassword(!registerHook.showPassword)}
+                        error={registerHook.fieldErrors?.password}
+                        autoComplete="new-password"
+                        compact
+                      />
+                      <StrengthMeter value={registerHook.formData.password} t={t} />
+                      {registerHook.fieldErrors?.password && (
+                        <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.password}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <QMPasswordInput
+                        id="confirmPassword"
+                        label={t('auth.confirmPassword')}
+                        value={registerHook.formData.confirmPassword}
+                        onChange={registerHook.handleChange('confirmPassword')}
+                        showPassword={registerHook.showConfirmPassword}
+                        onTogglePassword={() => registerHook.setShowConfirmPassword(!registerHook.showConfirmPassword)}
+                        error={registerHook.fieldErrors?.confirmPassword}
+                        autoComplete="new-password"
+                        compact
+                      />
+                      {registerHook.fieldErrors?.confirmPassword && (
+                        <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.confirmPassword}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-start space-x-2">
+                      <Checkbox
+                        id="agreeToTerms"
+                        checked={registerHook.formData.agreeToTerms}
+                        onCheckedChange={(checked) => registerHook.setFormData(prev => ({ ...prev, agreeToTerms: checked }))}
+                        required
+                        className="border-gray-300 dark:border-slate-600 data-[state=checked]:bg-[#0455BF] dark:data-[state=checked]:bg-blue-600 mt-0.5"
+                      />
+                      <label htmlFor="agreeToTerms" className="text-sm text-[#313131] dark:text-slate-300 cursor-pointer leading-relaxed">
+                        {t('auth.agreeToTerms')} <span className="text-[#FF8682]">{t('auth.terms')}</span> {t('auth.and')} <span className="text-[#FF8682]">{t('auth.privacyPolicies')}</span>
+                      </label>
+                    </div>
+                    {registerHook.fieldErrors?.agreeToTerms && (
+                      <p className="text-red-500 text-xs -mt-2 ml-1">{registerHook.fieldErrors.agreeToTerms}</p>
+                    )}
+
+                    <PrimaryButton
+                      type="submit"
+                      loading={registerHook.isLoading}
+                      disabled={registerHook.availabilityStatus?.username?.checking || registerHook.availabilityStatus?.email?.checking}
+                    >
+                      {t('auth.createAccount')} <ArrowRight className="w-4 h-4" />
+                    </PrimaryButton>
+
+                    <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
+                      {t('auth.alreadyHaveAccount')}{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView('login');
+                          registerHook.resetRegisterState();
+                        }}
+                        className="text-[#FF8682] font-bold hover:underline cursor-pointer"
+                      >
+                        {t('auth.login')}
+                      </button>
+                    </p>
+
+                    <div className="relative flex items-center py-1">
+                      <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                      <span className="flex-shrink mx-3 text-gray-400 dark:text-slate-500 text-[11px] uppercase tracking-wider">
+                        {t('auth.orRegisterWith')}
+                      </span>
+                      <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                    </div>
+
+                    {isGoogleAuthEnabled() ? (
+                      <div className="flex justify-center w-full">
                         <GoogleLogin
                           onSuccess={loginHook.handleGoogleSubmit}
                           onError={() => loginHook.setError(t('auth.loginGoogleFailed', 'Google login failed. Please try again.'))}
                           useOneTap
-                          theme={isDarkMode ? 'filled_black' : 'outline'}
+                          theme="outline"
                           shape="pill"
                           width="384"
                           text="signin_with"
                           locale={currentLang}
                         />
                       </div>
-                    </div>
-                  ) : null}
-                </form>
-              )}
+                    ) : null}
+                  </form>
+                )}
 
-              {/* --- BƯỚC 2: Xác thực OTP --- */}
-              {registerHook.registerStep === 'otp' && (
-                <form className="space-y-6" onSubmit={registerHook.handleVerifyOTPAndRegister}>
-                  <FloatingInput
-                    id="register-otp-code"
-                    type="text"
-                    label={t('auth.otpCode', 'OTP Code')}
-                    value={registerHook.otp}
-                    onChange={registerHook.handleOtpChange}
-                    error={Boolean(registerHook.fieldErrors?.otp)}
+                {registerHook.registerStep === 'otp' && (
+                  <RegisterOtpVerificationCard
+                    t={t}
+                    registerHook={registerHook}
+                    onBackToRegisterForm={() => {
+                      registerHook.setRegisterStep('form');
+                      registerHook.setOtp('');
+                      registerHook.setError('');
+                      registerHook.setSuccessMessage('');
+                    }}
                   />
-                  {registerHook.fieldErrors?.otp && (
-                    <p className="text-red-500 text-xs -mt-4 ml-1">{registerHook.fieldErrors.otp}</p>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={registerHook.isLoading}
-                    className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
-                  >
-                    {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.verifyAndRegister', 'Verify & Register')}
-                  </Button>
-
-                  <button
-                    type="button"
-                    onClick={registerHook.handleResendOTP}
-                    disabled={registerHook.isLoading}
-                    className="w-full text-center text-sm text-gray-500 dark:text-slate-400 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors disabled:opacity-50"
-                  >
-                    {t('auth.resendOTP', 'Resend OTP')}
-                  </button>
-
-                  {/* Progress Indicator */}
-                  <div className="flex justify-center items-center gap-2 mt-4">
-                    <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-slate-700 transition-colors" />
-                    <div className="w-3 h-3 rounded-full bg-[#0455BF] dark:bg-blue-500 transition-colors" />
-                  </div>
-                </form>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Right Side: Decorative Image */}
-        <div className="hidden md:flex justify-end relative">
-          <div className="relative z-10 w-[750px] h-[585px] bg-gray-100 dark:bg-slate-900 rounded-[30px] overflow-hidden shadow-xl dark:shadow-blue-900/50 flex items-center justify-center transition-all duration-500 border dark:border-slate-800">
-            <AuthIllustration
-              alt=""
-              imgClassName="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
-            />
+                )}
+              </div>
+            )}
           </div>
-          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 dark:bg-blue-900/30 rounded-full blur-3xl -z-0" />
         </div>
-      </main>
+      </div>
+
+      {/* ── RIGHT: Diagonal hero panel ─────────────────────────────────── */}
+      <DiagonalHeroPanel t={t} />
     </div>
   );
 };

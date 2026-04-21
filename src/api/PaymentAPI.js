@@ -34,3 +34,17 @@ export const createVnPayCreditPayment = (creditPackageId, workspaceId = null) =>
   return api.post(`/vnpay/create-credit/${creditPackageId}`, null, { params });
 };
 
+export const createStripePayment = (planId, workspaceId = null) => {
+  if (workspaceId) {
+    return api.post(`/stripe/create-workspace/${workspaceId}`, null, {
+      params: { planId },
+    });
+  }
+  return api.post(`/stripe/create/${planId}`);
+};
+
+export const createStripeCreditPayment = (creditPackageId, workspaceId = null) => {
+  const params = workspaceId ? { workspaceId } : {};
+  return api.post(`/stripe/create-credit/${creditPackageId}`, null, { params });
+};
+
