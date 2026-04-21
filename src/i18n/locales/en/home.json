@@ -488,7 +488,8 @@
       "hasAdvancedAiConfiguration": "Advanced quiz configuration"
     },
     "paymentError": "Payment Error",
-    "vnpayError": "Vnpay Error"
+    "vnpayError": "Vnpay Error",
+    "stripeError": "Unable to create Stripe payment. Please try again."
   },
   "paymentResult": {
     "successTitle": "Payment Successful!",

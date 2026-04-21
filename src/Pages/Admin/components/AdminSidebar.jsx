@@ -5,7 +5,7 @@ import {
   Users, UsersRound,
   CreditCard, LogOut,
   PanelLeftClose, Coins, ChevronDown, ChevronRight,
-  Settings2,
+  Settings2, KeyRound,
 } from 'lucide-react';
 import { Banknote } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -82,6 +82,17 @@ const MENU_SECTIONS = [
         labelKey: 'sidebar.systemSettings',
         path: '/admin/system-settings',
         requiredPerm: 'system-settings:read',
+        matchPrefix: true,
+      },
+    ],
+  },
+  {
+    labelKey: 'sidebarSections.access',
+    items: [
+      {
+        icon: KeyRound,
+        labelKey: 'sidebar.myPermissions',
+        path: '/admin/my-permissions',
         matchPrefix: true,
       },
     ],

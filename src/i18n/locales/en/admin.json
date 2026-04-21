@@ -19,13 +19,15 @@
     "payments": "Payments",
     "systemSettings": "System Settings",
     "aiActionPolicies": "AI Policies",
-    "feedback": "Feedback"
+    "feedback": "Feedback",
+    "myPermissions": "My permissions"
   },
   "sidebarSections": {
     "overview": "Overview",
     "workspace": "Users & groups",
     "commerce": "Plans & payments",
     "system": "Internal systems",
+    "access": "Access",
     "accessControl": "Access control",
     "aiGovernance": "AI governance",
     "platformConfig": "Platform config"
@@ -455,7 +457,12 @@
     "categories": {
       "plans": "Plans",
       "materials": "Materials",
-      "audit": "Audit"
+      "audit": "Audit",
+      "feedback": "Feedback",
+      "aiProvider": "AI Provider",
+      "aiModel": "AI Model",
+      "aiCost": "AI Cost",
+      "aiAudit": "AI Audit"
     },
     "errors": {
       "loadAdmins": "Unable to load the admin list."
@@ -511,6 +518,15 @@
     "expireConfirm": "Expire Now",
     "expiring": "Processing...",
     "expireSuccess": "{{count}} overdue payment(s) have been cancelled",
+    "expireForm": {
+      "confirmTextLabel": "Confirmation",
+      "confirmTextHint": "Type EXPIRE-OVERDUE exactly to confirm.",
+      "confirmTextInvalid": "Must be exactly EXPIRE-OVERDUE.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Explain why you are expiring these payments (for audit log).",
+      "reasonHint": "Required. 10–500 characters.",
+      "reasonInvalid": "Reason must be 10–500 characters."
+    },
     "validation": {
       "positiveInteger": "{{field}} must be a positive integer"
     },
@@ -1158,6 +1174,9 @@
       "unmatched": "unmatched requests"
     },
     "filters": {
+      "open": "Filters",
+      "dialogTitle": "Filter AI cost requests",
+      "dialogDescription": "Choose the conditions used to narrow the AI cost ledger.",
       "taskId": "Task ID",
       "actorUserId": "User ID",
       "plan": "Plan",

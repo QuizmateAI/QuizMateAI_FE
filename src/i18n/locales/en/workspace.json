@@ -1699,6 +1699,7 @@
       "statusDRAFT": "Draft",
       "statusACTIVE": "Active",
       "createVia": "Created via",
+      "quickReview": "Quick review",
       "feedback": "Feedback",
       "contextType": "Context",
       "assign": "Assign",

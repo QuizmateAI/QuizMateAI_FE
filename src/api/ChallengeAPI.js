@@ -85,13 +85,6 @@ export const batchInviteQuizReviewers = async (workspaceId, quizId, invitations)
   );
 };
 
-/** Legacy endpoint: hiện không còn phân reviewer chính/phụ. */
-export const setPrimaryQuizReviewer = async (workspaceId, quizId, userId) => {
-  return await api.patch(
-    `/group/${workspaceId}/quiz-review-contributors/${quizId}/set-primary/${userId}`,
-  );
-};
-
 export const removeQuizReviewContributor = async (workspaceId, quizId, userId) => {
   return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/${userId}`);
 };

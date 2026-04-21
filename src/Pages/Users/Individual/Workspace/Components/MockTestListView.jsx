@@ -15,6 +15,7 @@ import {
   Clock,
   FolderOpen,
   Loader2,
+  MoreVertical,
   Plus,
   RefreshCw,
   Search,
@@ -33,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/Components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import { deleteQuiz, getQuizzesByScope } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
@@ -306,7 +308,7 @@ function MockTestListView({
                       }
                     }}
                     aria-disabled={isViewDisabled || undefined}
-                    className={`group h-full rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                    className={`group flex h-[204px] flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
                       isViewDisabled
                         ? (
                           isDarkMode
@@ -315,42 +317,56 @@ function MockTestListView({
                         )
                         : (
                           isDarkMode
-                            ? "cursor-pointer border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(168,85,247,0.26)]"
-                            : "cursor-pointer border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(168,85,247,0.24)]"
+                            ? "cursor-pointer border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
+                            : "cursor-pointer border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
                         )
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <h3 className={`line-clamp-2 text-[21px] font-semibold leading-snug tracking-[-0.02em] ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
+                        <h3 className={`line-clamp-2 min-h-[3.5rem] text-[21px] font-semibold leading-snug tracking-[-0.02em] ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
                           {mockTest?.title || t("quizListView.cards.noTitle", "—")}
                         </h3>
                       </div>
 
                       <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
-                          {statusLabel}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (deletingId) return;
-                            setDeleteTargetQuiz(mockTest);
-                          }}
-                          className={`rounded-full p-2 transition-all ${
-                            isDarkMode
-                              ? "text-slate-400 hover:bg-rose-400/15 hover:text-rose-300"
-                              : "text-slate-400 hover:bg-white hover:text-rose-600"
-                          }`}
-                          title={t("workspace.quiz.deleteQuiz")}
-                        >
-                          {deletingId === resolvedQuizId ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(event) => event.stopPropagation()}
+                              className={`h-8 w-8 rounded-full ${
+                                isDarkMode
+                                  ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                                  : "text-slate-500 hover:bg-white hover:text-slate-900"
+                              }`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className={`w-48 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                          >
+                            <DropdownMenuItem
+                              disabled={deletingId === resolvedQuizId}
+                              onSelect={() => {
+                                if (deletingId) return;
+                                setDeleteTargetQuiz(mockTest);
+                              }}
+                              className={`cursor-pointer ${isDarkMode ? "text-red-300 focus:text-red-200" : "text-red-600 focus:text-red-600"}`}
+                            >
+                              {deletingId === resolvedQuizId ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              <span>{t("workspace.quiz.deleteQuiz")}</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 
@@ -377,14 +393,17 @@ function MockTestListView({
                       </div>
                     ) : null}
 
-                    <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
-                      <div className="flex items-center gap-2">
+                    <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                      <div className="flex min-w-0 items-center gap-2">
                         <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
                         <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                       </div>
+                      <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                        {statusLabel}
+                      </span>
                     </div>
 
-                    <div className={`mt-4 flex items-end justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                    <div className={`mt-auto flex items-end justify-between gap-3 border-t pt-3 ${isDarkMode ? "mt-4 border-slate-800" : "mt-4 border-slate-200/80"}`}>
                       <div className="flex flex-wrap items-center gap-3">
                         <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
                           <BarChart3 className="h-3.5 w-3.5" />

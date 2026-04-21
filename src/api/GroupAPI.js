@@ -301,3 +301,11 @@ export const getGroupRankingMemberDetail = async (workspaceId, userId) => {
   const response = await api.get(`/group/${workspaceId}/ranking/overall/members/${userId}`);
   return response;
 };
+
+/** Leader xóa nhóm (soft delete). Yêu cầu confirmText = "delete group". */
+export const deleteGroup = async (workspaceId, confirmText) => {
+  const response = await api.delete(`/group/${workspaceId}`, {
+    data: { confirmText },
+  });
+  return response;
+};

@@ -474,6 +474,15 @@
     "expireConfirm": "Hủy ngay",
     "expiring": "Đang xử lý...",
     "expireSuccess": "Đã hủy {{count}} giao dịch quá hạn",
+    "expireForm": {
+      "confirmTextLabel": "Xác nhận",
+      "confirmTextHint": "Gõ chính xác EXPIRE-OVERDUE để xác nhận.",
+      "confirmTextInvalid": "Phải đúng chuỗi EXPIRE-OVERDUE.",
+      "reasonLabel": "Lý do",
+      "reasonPlaceholder": "Giải thích lý do hủy các giao dịch này (ghi vào audit log).",
+      "reasonHint": "Bắt buộc. 10–500 ký tự.",
+      "reasonInvalid": "Lý do phải dài 10–500 ký tự."
+    },
     "validation": {
       "positiveInteger": "{{field}} phải là số nguyên dương"
     },
@@ -4014,6 +4023,9 @@
     "processing": "Đang xử lý...",
     "secureNote": "Giao dịch được bảo mật & mã hóa",
     "momoError": "Không thể tạo thanh toán MoMo. Vui lòng thử lại.",
+    "vnpayError": "Không thể tạo thanh toán VNPay. Vui lòng thử lại.",
+    "stripeError": "Không thể tạo thanh toán Stripe. Vui lòng thử lại.",
+    "paymentError": "Lỗi thanh toán. Vui lòng thử lại.",
     "noPlanId": "Chưa chọn gói. Vui lòng quay lại và chọn gói đăng ký.",
     "fetchError": "Không thể tải thông tin gói. Vui lòng thử lại.",
     "selectGroup": "Chọn nhóm áp dụng",

@@ -2,12 +2,14 @@ import React, { startTransition, useDeferredValue, useMemo, useState } from "rea
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
+  BadgeCheck,
   ChevronLeft,
   ChevronRight,
   Clock3,
   CreditCard,
   FolderOpen,
   Loader2,
+  MoreVertical,
   Plus,
   RefreshCw,
   Search,
@@ -15,11 +17,20 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import HomeButton from "@/Components/ui/HomeButton";
 import { getFlashcardsByScope, getFlashcardsByUser } from "@/api/FlashcardAPI";
 
 const ITEMS_PER_PAGE = 6;
 const CREATING_STATUSES = new Set(["PENDING", "PROCESSING", "GENERATING", "IN_PROGRESS", "QUEUED"]);
+const STATUS_STYLES = {
+  ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
+  DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
+  COMPLETED: { light: "bg-blue-100 text-blue-700", dark: "bg-blue-950/50 text-blue-400" },
+  INACTIVE: { light: "bg-slate-100 text-slate-500", dark: "bg-slate-800 text-slate-400" },
+  PROCESSING: { light: "bg-sky-100 text-sky-700", dark: "bg-sky-950/50 text-sky-300" },
+  ERROR: { light: "bg-rose-100 text-rose-700", dark: "bg-rose-950/50 text-rose-300" },
+};
 
 function isFlashcardCreating(item) {
   if (!item) return false;
@@ -109,11 +120,7 @@ function FlashcardListView({
   }, [effectivePage, filtered]);
 
   const showPagination = filtered.length > ITEMS_PER_PAGE;
-  const cardShellClass = isDarkMode
-    ? "border-slate-700/70 bg-slate-900/55"
-    : "border-slate-200 bg-white";
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
-  const titleTextClass = isDarkMode ? "text-slate-100" : "text-slate-900";
 
   return (
     <div className="flex h-full min-h-0 flex-col px-4 py-5 sm:px-5 lg:px-6">
@@ -212,74 +219,113 @@ function FlashcardListView({
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedFlashcards.map((flashcard) => (
-                <article
-                  key={flashcard.flashcardSetId}
-                  onClick={() => onViewFlashcard?.(flashcard)}
-                  className={`group flex cursor-pointer flex-col gap-4 rounded-[24px] border p-4 shadow-[0_14px_40px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 ${cardShellClass}`}
-                  style={{ contentVisibility: "auto" }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div
-                        className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${
-                          isDarkMode
-                            ? "border-amber-300/20 bg-amber-400/10 text-amber-200"
-                            : "border-amber-200 bg-amber-50 text-amber-600"
-                        }`}
-                      >
-                        <CreditCard className="h-5 w-5" />
-                      </div>
+                (() => {
+                  const resolvedFlashcardId = flashcard.flashcardSetId || flashcard.id || flashcard.flashcardId;
+                  const normalizedStatus = isFlashcardCreating(flashcard)
+                    ? "PROCESSING"
+                    : String(flashcard?.status || "DRAFT").toUpperCase();
+                  const statusStyles = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
+                  const statusLabel = t(`quizListView.status.${normalizedStatus}`, normalizedStatus);
+                  const cardCount = Number(flashcard?.itemCount ?? flashcard?.items?.length ?? flashcard?.cardCount ?? 0) || 0;
+                  const updatedAtLabel = formatShortDate(flashcard.updatedAt || flashcard.createdAt);
 
-                      <div className="min-w-0">
-                        <p className={`line-clamp-2 text-sm font-semibold ${fontClass} ${titleTextClass}`}>
-                          {flashcard.flashcardSetName}
-                        </p>
-                        <p className={`mt-1 text-xs ${mutedTextClass}`}>
-                          {t("workspace.flashcard.createVia")}: {flashcard.createVia || "AI"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                  return (
+                    <article
+                      key={resolvedFlashcardId || flashcard.flashcardSetName}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onViewFlashcard?.(flashcard)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onViewFlashcard?.(flashcard);
+                        }
+                      }}
+                      className={`group flex h-[204px] cursor-pointer flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
                         isDarkMode
-                          ? "bg-slate-800 text-slate-200"
-                          : "bg-slate-100 text-slate-700"
+                          ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
+                          : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
                       }`}
+                      style={{ contentVisibility: "auto" }}
                     >
-                      {flashcard.itemCount ?? flashcard.items?.length ?? 0} {t("workspace.flashcard.cards")}
-                    </span>
-                  </div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className={`line-clamp-2 min-h-[3.5rem] text-[21px] font-semibold leading-snug tracking-[-0.02em] ${fontClass} ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
+                            {flashcard.flashcardSetName || t("quizListView.cards.noTitle", "—")}
+                          </h3>
+                        </div>
 
-                  <div
-                    className={`flex items-center justify-between gap-3 border-t pt-3 text-xs ${
-                      isDarkMode ? "border-slate-700" : "border-slate-100"
-                    }`}
-                  >
-                    <div className={`inline-flex items-center gap-1.5 ${mutedTextClass}`}>
-                      <Clock3 className="h-3.5 w-3.5" />
-                      <span>{formatShortDate(flashcard.updatedAt || flashcard.createdAt)}</span>
-                    </div>
+                        {onDeleteFlashcard ? (
+                          <div className="flex shrink-0 items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(event) => event.stopPropagation()}
+                                  className={`h-8 w-8 rounded-full ${
+                                    isDarkMode
+                                      ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                                      : "text-slate-500 hover:bg-white hover:text-slate-900"
+                                  }`}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className={`w-48 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                              >
+                                <DropdownMenuItem
+                                  onSelect={() => onDeleteFlashcard(flashcard)}
+                                  className={`cursor-pointer ${isDarkMode ? "text-red-300 focus:text-red-200" : "text-red-600 focus:text-red-600"}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span>{t("workspace.flashcard.deleteSet")}</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        ) : null}
+                      </div>
 
-                    {onDeleteFlashcard ? (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onDeleteFlashcard(flashcard);
-                        }}
-                        className={`rounded-xl p-2 transition-all sm:opacity-0 sm:group-hover:opacity-100 ${
-                          isDarkMode
-                            ? "text-slate-400 hover:bg-rose-400/15 hover:text-rose-300"
-                            : "text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                        }`}
-                        title={t("workspace.flashcard.deleteSet")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    ) : null}
-                  </div>
-                </article>
+                      <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                            {t("workspace.flashcard.cards")}
+                          </span>
+                          <span className="font-semibold">{cardCount > 0 ? cardCount : "-"}</span>
+                        </div>
+                        <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+
+                      <div className={`mt-auto flex items-start justify-between gap-3 border-t pt-3 ${isDarkMode ? "mt-4 border-slate-800" : "mt-4 border-slate-200/80"}`}>
+                        <div className="flex min-w-0 flex-wrap items-center gap-3">
+                          <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
+                            <BadgeCheck className="h-3.5 w-3.5" />
+                            <span>{t("workspace.flashcard.quickReview", "Quick review")}</span>
+                          </div>
+                        </div>
+
+                        <div className={`flex flex-wrap items-center justify-end gap-2 text-[11px] font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                            <CreditCard className="h-3.5 w-3.5" />
+                            <span>{t("workspace.roadmap.canvas.flashcard", "Flashcard")}</span>
+                          </span>
+                          {updatedAtLabel ? (
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                              <Clock3 className="h-3.5 w-3.5" />
+                              <span>{updatedAtLabel}</span>
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })()
               ))}
             </div>
 

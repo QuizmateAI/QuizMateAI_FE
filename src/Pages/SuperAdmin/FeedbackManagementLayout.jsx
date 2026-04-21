@@ -1,4 +1,4 @@
-import { Activity, FileText, Ticket } from 'lucide-react';
+import { Activity, FileText } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -10,12 +10,6 @@ const FEEDBACK_MANAGEMENT_NAV = [
     icon: FileText,
     labelEn: 'Forms',
     labelVi: 'Forms',
-  },
-  {
-    to: '/super-admin/feedbacks/tickets',
-    icon: Ticket,
-    labelEn: 'Tickets',
-    labelVi: 'Tickets',
   },
   {
     to: '/super-admin/feedbacks/activity',
@@ -40,7 +34,7 @@ function FeedbackManagementLayout() {
             isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white',
           )}
         >
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {FEEDBACK_MANAGEMENT_NAV.map((item) => (
               <NavLink
                 key={item.to}
