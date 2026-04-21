@@ -11,27 +11,15 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronRight,
-  Clock3,
   History,
-  Lock,
   Minus,
   PenLine,
   RefreshCw,
-  Sparkles,
   Target,
   TrendingDown,
   TrendingUp,
   Users,
 } from 'lucide-react';
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { Button } from '@/Components/ui/button';
 import {
   Dialog,

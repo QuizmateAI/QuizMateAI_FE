@@ -38,6 +38,10 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAiAuditLogs } from '@/api/ManagementSystemAPI';
 import AdminPagination from '@/Pages/Admin/components/AdminPagination';
 import { getWebSocketUrl } from '@/lib/websocketUrl';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from './Components/SuperAdminSurface';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 const STATUS_OPTIONS = ['', 'PROCESSING', 'SUCCESS', 'ERROR'];
@@ -514,18 +518,15 @@ function AiAuditManagement() {
     : '-';
 
   return (
-    <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
-      <div>
-        <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          {t('aiAudit.title', 'AI Audit')}
-        </h1>
-        <p className={`mt-1 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-          {t(
-            'aiAudit.description',
-            'Track AI requests, token usage, models, statuses, and open detailed traces when needed.'
-          )}
-        </p>
-      </div>
+    <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
+      <SuperAdminPageHeader
+        eyebrow="AI Governance"
+        title={t('aiAudit.title', 'AI Audit')}
+        description={t(
+          'aiAudit.description',
+          'Track AI requests, token usage, models, statuses, and open detailed traces when needed.'
+        )}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <MetricCard
@@ -944,7 +945,7 @@ function AiAuditManagement() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </SuperAdminPage>
   );
 }
 

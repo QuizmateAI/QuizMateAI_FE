@@ -70,6 +70,12 @@ export const updateFlashcardSetStatus = async (flashcardSetId, status) => {
   return response;
 };
 
+// Cấu hình flashcard chung cho nhóm hoặc gán thành viên cụ thể
+export const setGroupFlashcardAudience = async (flashcardSetId, body) => {
+  const response = await api.put(`/flashcards/${flashcardSetId}/group/audience`, body);
+  return response;
+};
+
 // Thêm flashcard item vào flashcard set
 export const addFlashcardItem = async (flashcardSetId, data) => {
   const response = await api.post(`/flashcards/${flashcardSetId}/items`, data);

@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3 } from "lucide-react";
+import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -401,7 +401,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       case "createFlashcard":
         return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "flashcardDetail":
-        return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} hideEditButton={readOnly} contextType="GROUP" /> : null;
+        return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} hideEditButton={readOnly} contextType="GROUP" contextId={workspaceId} isGroupLeader={isGroupLeader} groupAudiencePickerExcludeUserId={isGroupLeader ? groupWorkspaceCurrentUserId : null} /> : null;
       case "quizDetail":
         return selectedQuiz ? <LazyQuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={readOnly ? undefined : onEditQuiz} contextType="GROUP" contextId={workspaceId} hideEditButton={readOnly} isGroupLeader={isGroupLeader} groupAudiencePickerExcludeUserId={isGroupLeader ? groupWorkspaceCurrentUserId : null} onGroupQuizUpdated={onGroupQuizUpdated} challengeSnapshotReviewMode={challengeSnapshotReviewMode} /> : null;
       case "editQuiz":

@@ -275,6 +275,21 @@ describe('QuizResultPage', () => {
     });
   });
 
+  it('shows the actual score in the summary card', async () => {
+    mockGetAttemptResult.mockResolvedValue({
+      data: buildAttemptResult({
+        score: 8,
+        maxScore: 20,
+      }),
+    });
+    mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
+
+    render(<QuizResultPage />);
+
+    expect(await screen.findByText('Score')).toBeInTheDocument();
+    expect(screen.getByText('8/20')).toBeInTheDocument();
+  });
+
   it('updates the grading UI from websocket events even if result refresh fails', async () => {
     mockGetAttemptResult
       .mockResolvedValueOnce({

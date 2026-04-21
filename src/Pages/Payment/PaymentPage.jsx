@@ -9,11 +9,12 @@ import DarkLogo from '@/assets/DarkMode_Logo.webp';
 import LightLogo from '@/assets/LightMode_Logo.webp';
 import PlanInfoCard from './components/PlanInfoCard';
 import PaymentSidebar from './components/PaymentSidebar';
+import PaymentMethods from './components/PaymentMethods';
+import usePaymentCheckout from './hooks/usePaymentCheckout';
 import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
 import { getPlanById } from '@/api/PaymentAPI';
 import { useGroup } from '@/hooks/useGroup';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
-import { buildPlansPath } from '@/lib/routePaths';
 
 /** Chuẩn hóa plan-catalog API response sang format PlanInfoCard / PaymentSidebar / PlanDetails */
 function mapPlanCatalogToPaymentPlan(raw) {
@@ -65,6 +66,7 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null);
+  const [selectedMethod, setSelectedMethod] = useState(null);
 
   const { groups } = useGroup({ enabled: true });
   const { summary: currentPlanSummary } = useCurrentSubscription();
@@ -122,7 +124,18 @@ export default function PaymentPage() {
   const needGroupSelect = isGroupPlan && !searchParams.get('workspaceId');
 
   const selectedGroup = groups.find((g) => String(g.workspaceId) === String(workspaceId));
-  const plansPath = buildPlansPath();
+  const {
+    clearPaymentError,
+    handlePay,
+    isPaying,
+    paymentError,
+  } = usePaymentCheckout({
+    paymentType: 'plan',
+    planId: plan?.planId,
+    planName: plan?.planName,
+    planType: plan?.type,
+    workspaceId,
+  });
 
   return (
     <div className={`min-h-screen ${fontClass} transition-colors ${
@@ -252,7 +265,7 @@ export default function PaymentPage() {
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="flex-1 min-w-0">
               <PlanInfoCard plan={plan} />
 
@@ -328,11 +341,32 @@ export default function PaymentPage() {
                 </div>
               )}
             </div>
-            <div className="w-full lg:w-[400px] shrink-0">
-              <div className="lg:sticky lg:top-24">
-                <PaymentSidebar plan={plan} workspaceId={workspaceId} needGroupSelect={needGroupSelect && !selectedWorkspaceId} />
+
+            <div className="w-full shrink-0 xl:row-span-2">
+              <div className="xl:sticky xl:top-24">
+                <PaymentSidebar
+                  plan={plan}
+                  selectedMethod={selectedMethod}
+                  onPay={() => handlePay(selectedMethod)}
+                  isPaying={isPaying}
+                  paymentError={paymentError}
+                  needGroupSelect={needGroupSelect && !selectedWorkspaceId}
+                />
               </div>
             </div>
+
+            {!needGroupSelect || selectedWorkspaceId ? (
+              <div className="min-w-0">
+                <PaymentMethods
+                  selectedMethod={selectedMethod}
+                  onSelectMethod={(methodId) => {
+                    setSelectedMethod(methodId);
+                    clearPaymentError();
+                  }}
+                  disabled={isPaying}
+                />
+              </div>
+            ) : null}
           </div>
         )}
       </main>
