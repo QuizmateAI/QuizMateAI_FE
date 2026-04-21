@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, Coins, DatabaseZap, MoreVertical, ReceiptText, RefreshCw, Search, Wallet } from 'lucide-react';
+import { ArrowUpRight, Coins, DatabaseZap, MoreVertical, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
 import {
@@ -40,8 +40,26 @@ import {
   getAiActionLabel,
   getAiModelGroupLabel,
 } from '@/lib/aiModelCatalog';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from './Components/SuperAdminSurface';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
+
+function createEmptyFilters() {
+  return {
+    taskId: '',
+    actorUserId: '',
+    planCatalogId: '',
+    provider: '',
+    modelGroup: '',
+    actionKey: '',
+    status: '',
+    from: '',
+    to: '',
+  };
+}
 
 function extractData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
@@ -286,29 +304,9 @@ function AiCostManagement() {
   const [detailRow, setDetailRow] = useState(null);
   const [exchangeRate, setExchangeRate] = useState(null);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    taskId: '',
-    actorUserId: '',
-    planCatalogId: '',
-    provider: '',
-    modelGroup: '',
-    actionKey: '',
-    status: '',
-    from: '',
-    to: '',
-  });
-
-  const resetFilters = {
-    taskId: '',
-    actorUserId: '',
-    planCatalogId: '',
-    provider: '',
-    modelGroup: '',
-    actionKey: '',
-    status: '',
-    from: '',
-    to: '',
-  };
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [filters, setFilters] = useState(createEmptyFilters);
+  const [draftFilters, setDraftFilters] = useState(createEmptyFilters);
 
   const fetchPlans = async () => {
     try {
@@ -382,40 +380,58 @@ function AiCostManagement() {
     fetchCostData(page, pageSize, filters);
   }, [page, pageSize]);
 
-  const applyFilters = () => {
-    setPage(0);
-    fetchCostData(0, pageSize, filters);
-  };
-
   const detailActualTokenEquivalent = detailRow ? getActualTokenEquivalent(detailRow) : null;
   const isDetailProfitPositive = Number(detailRow?.profitVnd || 0) >= 0;
   const tableStroke = isDarkMode ? 'border-slate-700' : 'border-slate-300';
+  const activeFilterCount = Object.values(filters).filter((value) => String(value ?? '').trim() !== '').length;
+
+  const handleDraftFilterChange = (field, value) => {
+    setDraftFilters((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleOpenFilterDialog = () => {
+    setDraftFilters({ ...filters });
+    setIsFilterDialogOpen(true);
+  };
+
+  const handleApplyFilters = () => {
+    const nextFilters = { ...draftFilters };
+    setFilters(nextFilters);
+    setPage(0);
+    fetchCostData(0, pageSize, nextFilters);
+    setIsFilterDialogOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    const clearedFilters = createEmptyFilters();
+    setDraftFilters(clearedFilters);
+    setFilters(clearedFilters);
+    setPage(0);
+    fetchCostData(0, pageSize, clearedFilters);
+    setIsFilterDialogOpen(false);
+  };
 
   return (
-    <div className={`space-y-6 p-6 ${fontClass}`}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-3">
-          <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-slate-700 bg-slate-800/80' : 'border-slate-200 bg-white'}`}>
-            <ReceiptText className={`h-6 w-6 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`} />
-          </div>
-          <div>
-            <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('aiCosts.title')}</h1>
-            <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiCosts.subtitle')}</p>
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => { fetchCostData(page, pageSize, filters); fetchExchangeRate(); }}
-          disabled={loading || exchangeRateLoading}
-          className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
-          aria-label={t('aiCosts.refresh')}
-          title={t('aiCosts.refresh')}
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
+    <SuperAdminPage className={fontClass}>
+      <SuperAdminPageHeader
+        eyebrow="AI Governance"
+        title={t('aiCosts.title')}
+        description={t('aiCosts.subtitle')}
+        actions={(
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => { fetchCostData(page, pageSize, filters); fetchExchangeRate(); }}
+            disabled={loading || exchangeRateLoading}
+            className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            aria-label={t('aiCosts.refresh')}
+            title={t('aiCosts.refresh')}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        )}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label={t('aiCosts.metrics.requests')} value={formatInteger(summary?.requestCount)} icon={DatabaseZap} tone="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.matchedRequestCount)} ${t('aiCosts.metrics.matched')}`} />
@@ -424,7 +440,7 @@ function AiCostManagement() {
         <MetricCard label={t('aiCosts.metrics.profit')} value={formatVnd(summary?.totalProfitVnd)} icon={ArrowUpRight} tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.unmatchedRequestCount)} ${t('aiCosts.metrics.unmatched')}`} />
       </div>
 
-      <div className={`flex flex-col gap-3 rounded-2xl border p-5 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
+      <div className={`flex flex-col gap-4 rounded-2xl border p-5 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
         <div>
           <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.exchangeRate.title')}</p>
           <p className={`mt-1 text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatExchangeRate(exchangeRate?.rate)}</p>
@@ -433,88 +449,154 @@ function AiCostManagement() {
             {exchangeRate?.fetchedAt ? ` • ${formatDateTime(exchangeRate.fetchedAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}` : ''}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => fetchExchangeRate()}
-          disabled={exchangeRateLoading}
-          className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
-          aria-label={t('aiCosts.exchangeRate.refresh')}
-          title={t('aiCosts.exchangeRate.refresh')}
-        >
-          <RefreshCw className={`h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
-
-      <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
-        <div className="grid gap-3 lg:grid-cols-4">
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.taskId')}</Label>
-            <Input value={filters.taskId} onChange={(event) => setFilters((prev) => ({ ...prev, taskId: event.target.value }))} className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`} placeholder="task-..." />
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.actorUserId')}</Label>
-            <Input value={filters.actorUserId} onChange={(event) => setFilters((prev) => ({ ...prev, actorUserId: event.target.value }))} className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`} placeholder="123" />
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.plan')}</Label>
-            <select value={filters.planCatalogId} onChange={(event) => setFilters((prev) => ({ ...prev, planCatalogId: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiCosts.filters.allPlans')}</option>
-              {plans.map((plan) => <option key={plan.planCatalogId} value={plan.planCatalogId}>{plan.displayName}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.provider')}</Label>
-            <select value={filters.provider} onChange={(event) => setFilters((prev) => ({ ...prev, provider: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiCosts.filters.allProviders')}</option>
-              {PROVIDER_OPTIONS.filter(Boolean).map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.group')}</Label>
-            <select value={filters.modelGroup} onChange={(event) => setFilters((prev) => ({ ...prev, modelGroup: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiCosts.filters.allGroups')}</option>
-              {AI_MODEL_GROUP_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.action')}</Label>
-            <select value={filters.actionKey} onChange={(event) => setFilters((prev) => ({ ...prev, actionKey: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiCosts.filters.allActions')}</option>
-              {AI_ACTION_OPTIONS.map((option) => <option key={option} value={option}>{getAiActionLabel(option, t)}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.status')}</Label>
-            <select value={filters.status} onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiCosts.filters.allStatuses')}</option>
-              {AI_COST_STATUS_OPTIONS.map((option) => <option key={option} value={option}>{t(`aiCosts.status.${option}`)}</option>)}
-            </select>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.from')}</Label>
-              <Input type="datetime-local" value={filters.from} onChange={(event) => setFilters((prev) => ({ ...prev, from: event.target.value }))} className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`} />
-            </div>
-            <div>
-              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.to')}</Label>
-              <Input type="datetime-local" value={filters.to} onChange={(event) => setFilters((prev) => ({ ...prev, to: event.target.value }))} className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`} />
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={() => {
-            setFilters(resetFilters);
-            setPage(0);
-            fetchCostData(0, pageSize, resetFilters);
-          }}>{t('aiCosts.clear')}</Button>
-          <Button onClick={applyFilters}>
-            <Search className="mr-2 h-4 w-4" />
-            {t('aiCosts.apply')}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => fetchExchangeRate()}
+            disabled={exchangeRateLoading}
+            className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+            aria-label={t('aiCosts.exchangeRate.refresh')}
+            title={t('aiCosts.exchangeRate.refresh')}
+          >
+            <RefreshCw className={`h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleOpenFilterDialog}
+            className={`rounded-xl ${isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}`}
+          >
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            {t('aiCosts.filters.open')}
+            {activeFilterCount > 0 ? (
+              <span className={`ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                {activeFilterCount}
+              </span>
+            ) : null}
           </Button>
         </div>
       </div>
+
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent className={`sm:max-w-5xl ${isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : 'bg-white'}`}>
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? 'text-white' : 'text-slate-900'}>
+              {t('aiCosts.filters.dialogTitle')}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
+              {t('aiCosts.filters.dialogDescription')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3 lg:grid-cols-4">
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.taskId')}</Label>
+              <Input
+                value={draftFilters.taskId}
+                onChange={(event) => handleDraftFilterChange('taskId', event.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="task-..."
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.actorUserId')}</Label>
+              <Input
+                value={draftFilters.actorUserId}
+                onChange={(event) => handleDraftFilterChange('actorUserId', event.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="123"
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.plan')}</Label>
+              <select
+                value={draftFilters.planCatalogId}
+                onChange={(event) => handleDraftFilterChange('planCatalogId', event.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiCosts.filters.allPlans')}</option>
+                {plans.map((plan) => <option key={plan.planCatalogId} value={plan.planCatalogId}>{plan.displayName}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.provider')}</Label>
+              <select
+                value={draftFilters.provider}
+                onChange={(event) => handleDraftFilterChange('provider', event.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiCosts.filters.allProviders')}</option>
+                {PROVIDER_OPTIONS.filter(Boolean).map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.group')}</Label>
+              <select
+                value={draftFilters.modelGroup}
+                onChange={(event) => handleDraftFilterChange('modelGroup', event.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiCosts.filters.allGroups')}</option>
+                {AI_MODEL_GROUP_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.action')}</Label>
+              <select
+                value={draftFilters.actionKey}
+                onChange={(event) => handleDraftFilterChange('actionKey', event.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiCosts.filters.allActions')}</option>
+                {AI_ACTION_OPTIONS.map((option) => <option key={option} value={option}>{getAiActionLabel(option, t)}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.status')}</Label>
+              <select
+                value={draftFilters.status}
+                onChange={(event) => handleDraftFilterChange('status', event.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiCosts.filters.allStatuses')}</option>
+                {AI_COST_STATUS_OPTIONS.map((option) => <option key={option} value={option}>{t(`aiCosts.status.${option}`)}</option>)}
+              </select>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:col-span-1">
+              <div>
+                <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.from')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={draftFilters.from}
+                  onChange={(event) => handleDraftFilterChange('from', event.target.value)}
+                  className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                />
+              </div>
+              <div>
+                <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.to')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={draftFilters.to}
+                  onChange={(event) => handleDraftFilterChange('to', event.target.value)}
+                  className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleResetFilters}>
+              {t('aiCosts.clear')}
+            </Button>
+            <Button onClick={handleApplyFilters}>
+              <Search className="mr-2 h-4 w-4" />
+              {t('aiCosts.apply')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className={`overflow-hidden rounded-2xl border-2 ${isDarkMode ? 'border-slate-700 bg-slate-900 shadow-lg shadow-slate-950/20' : 'border-slate-300 bg-white shadow-sm'}`}>
         <Table className="min-w-[1600px]">
@@ -708,7 +790,7 @@ function AiCostManagement() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </div>
+    </SuperAdminPage>
   );
 }
 

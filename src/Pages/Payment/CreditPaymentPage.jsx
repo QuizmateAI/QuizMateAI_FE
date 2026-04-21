@@ -8,7 +8,6 @@ import {
   Globe,
   Plus,
   Settings,
-  Sparkles,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -22,6 +21,8 @@ import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
 import { getPurchaseableCreditPackages } from '@/api/ManagementSystemAPI';
 import PaymentSidebar from './components/PaymentSidebar';
+import PaymentMethods from './components/PaymentMethods';
+import usePaymentCheckout from './hooks/usePaymentCheckout';
 import { buildWalletsPath } from '@/lib/routePaths';
 
 function formatNumber(value, locale) {
@@ -52,6 +53,7 @@ export default function CreditPaymentPage() {
   const [creditPackage, setCreditPackage] = useState(null);
   const [loading, setLoading] = useState(Boolean(creditPackageId));
   const [error, setError] = useState(null);
+  const [selectedMethod, setSelectedMethod] = useState(null);
   const settingsRef = useRef(null);
 
   const walletsPath = buildWalletsPath();
@@ -59,6 +61,16 @@ export default function CreditPaymentPage() {
   const bonusCredit = Number(creditPackage?.bonusCredit ?? 0);
   const baseCredit = Number(creditPackage?.baseCredit ?? 0);
   const totalCredit = baseCredit + bonusCredit;
+  const {
+    clearPaymentError,
+    handlePay,
+    isPaying,
+    paymentError,
+  } = usePaymentCheckout({
+    paymentType: 'credit',
+    creditPackageId: creditPackage?.creditPackageId,
+    workspaceId,
+  });
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
@@ -234,7 +246,7 @@ export default function CreditPaymentPage() {
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col gap-8 lg:flex-row">
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="min-w-0 flex-1">
               <Card className={`overflow-hidden backdrop-blur-xl ${
                 isDarkMode ? 'bg-slate-900/50 border-slate-700/50' : 'bg-white/80 border-white/70 shadow-slate-900/10'
@@ -336,19 +348,31 @@ export default function CreditPaymentPage() {
                       </p>
                     </div>
                   </div>
-
-                  <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
-                    <span>{t('payment.chooseMethod')}</span>
-                  </div>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="w-full shrink-0 lg:w-[400px]">
-              <div className="lg:sticky lg:top-24">
-                <PaymentSidebar creditPackage={creditPackage} workspaceId={workspaceId} />
+            <div className="w-full shrink-0 xl:row-span-2">
+              <div className="xl:sticky xl:top-24">
+                <PaymentSidebar
+                  creditPackage={creditPackage}
+                  selectedMethod={selectedMethod}
+                  onPay={() => handlePay(selectedMethod)}
+                  isPaying={isPaying}
+                  paymentError={paymentError}
+                />
               </div>
+            </div>
+
+            <div className="min-w-0">
+              <PaymentMethods
+                selectedMethod={selectedMethod}
+                onSelectMethod={(methodId) => {
+                  setSelectedMethod(methodId);
+                  clearPaymentError();
+                }}
+                disabled={isPaying}
+              />
             </div>
           </div>
         )}

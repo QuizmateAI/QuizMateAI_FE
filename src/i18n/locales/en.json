@@ -473,6 +473,15 @@
     "expireConfirm": "Expire Now",
     "expiring": "Processing...",
     "expireSuccess": "{{count}} overdue payment(s) have been cancelled",
+    "expireForm": {
+      "confirmTextLabel": "Confirmation",
+      "confirmTextHint": "Type EXPIRE-OVERDUE exactly to confirm.",
+      "confirmTextInvalid": "Must be exactly EXPIRE-OVERDUE.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Explain why you are expiring these payments (for audit log).",
+      "reasonHint": "Required. 10–500 characters.",
+      "reasonInvalid": "Reason must be 10–500 characters."
+    },
     "validation": {
       "positiveInteger": "{{field}} must be a positive integer"
     },
@@ -4184,7 +4193,8 @@
       "hasAdvancedAiConfiguration": "Advanced quiz configuration"
     },
     "paymentError": "Payment Error",
-    "vnpayError": "Vnpay Error"
+    "vnpayError": "Vnpay Error",
+    "stripeError": "Unable to create Stripe payment. Please try again."
   },
   "paymentResult": {
     "successTitle": "Payment Successful!",

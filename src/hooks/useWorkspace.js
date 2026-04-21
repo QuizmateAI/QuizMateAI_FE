@@ -207,7 +207,7 @@ export function useWorkspace(options = {}) {
     const resolved = newSortMode === 'created' ? 'created' : 'recent';
     setSortMode(resolved);
     setPage(0);
-    try { localStorage.setItem('qm_workspace_sort_mode', resolved); } catch {}
+    try { localStorage.setItem('qm_workspace_sort_mode', resolved); } catch { /* ignore storage errors */ }
   }, []);
 
   // Tạo workspace mới
