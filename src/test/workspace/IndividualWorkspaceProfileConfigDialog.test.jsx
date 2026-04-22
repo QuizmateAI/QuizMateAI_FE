@@ -6,6 +6,7 @@ import IndividualWorkspaceProfileConfigDialog from '@/Pages/Users/Individual/Wor
 
 // Mock the StudyProfileAPI module
 vi.mock('@/api/StudyProfileAPI', () => ({
+  searchStudyCatalog: vi.fn(),
   analyzeKnowledge: vi.fn(),
   suggestProfileFields: vi.fn(),
   suggestExamTemplates: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock('@/api/StudyProfileAPI', () => ({
 }));
 
 import {
+  searchStudyCatalog,
   analyzeKnowledge,
   suggestProfileFields,
   validateProfileConsistency,
@@ -83,6 +85,12 @@ function createDeferred() {
 }
 
 function setupApiMocks({ analysisResponse, fieldSuggestionResponse, consistencyResponse } = {}) {
+  searchStudyCatalog.mockResolvedValue({
+    analysisId: '',
+    source: 'CATALOG',
+    knowledgeOptions: [],
+    domainOptions: [],
+  });
   analyzeKnowledge.mockResolvedValue(
     analysisResponse || createAnalysisResponse(['React', 'Frontend Development', 'JavaScript'])
   );
@@ -1211,6 +1219,12 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined);
     const onConfirm = vi.fn().mockResolvedValue(undefined);
+
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['IELTS Writing'], {
+        normalizedKnowledge: 'IELTS Writing task 2',
+      }),
+    });
 
     renderDialog({ onSave, onConfirm });
 
