@@ -4126,7 +4126,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
+    const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', createManualFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
     if (activeView === 'quizDetail' && Number.isInteger(Number(selectedRoadmapQuizId)) && Number(selectedRoadmapQuizId) > 0) {
       formToList.quizDetail = 'roadmap';
     }

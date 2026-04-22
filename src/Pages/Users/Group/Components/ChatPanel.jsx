@@ -16,6 +16,7 @@ const LazyQuizDetailView = React.lazy(() => import("@/Pages/Users/Group/Componen
 const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyFlashcardListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/FlashcardDetailView"));
+const LazyManualFlashcardEditor = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/ManualFlashcardEditor"));
 const LazyMockTestListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/MockTestListView"));
 const LazyCreateGroupMockTestForm = React.lazy(() => import("./CreateGroupMockTestForm"));
 const LazyGroupRankingTab = React.lazy(() => import("./GroupRankingTab"));
@@ -199,7 +200,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
           />
         );
       case "flashcard":
-        return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateFlashcard} disableCreate={!canCreateFlashcard} />;
+        return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onCreateManualFlashcard={canCreateFlashcard ? () => onChangeView?.("createManualFlashcard") : undefined} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateFlashcard} disableCreate={!canCreateFlashcard} />;
       case "mockTest":
         return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly || !planEntitlements?.hasAdvanceQuizConfig} />;
       case "ranking":
@@ -354,8 +355,9 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
     const lacksCreatePermission = (
       (activeView === 'createQuiz' && !canCreateQuiz)
       || (activeView === 'createFlashcard' && !canCreateFlashcard)
+      || (activeView === 'createManualFlashcard' && !canCreateFlashcard)
     );
-    if ((readOnly && ['createQuiz', 'createFlashcard', 'editQuiz', 'createMockTest', 'createPostLearning', 'editMockTest'].includes(activeView)) || lacksCreatePermission) {
+    if ((readOnly && ['createQuiz', 'createFlashcard', 'createManualFlashcard', 'editQuiz', 'createMockTest', 'createPostLearning', 'editMockTest'].includes(activeView)) || lacksCreatePermission) {
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center h-full">
           <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -400,8 +402,56 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       }
       case "createFlashcard":
         return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
-      case "flashcardDetail":
-        return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} hideEditButton={readOnly} contextType="GROUP" contextId={workspaceId} isGroupLeader={isGroupLeader} groupAudiencePickerExcludeUserId={isGroupLeader ? groupWorkspaceCurrentUserId : null} /> : null;
+      case "createManualFlashcard":
+        return (
+          <LazyManualFlashcardEditor
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            contextType="GROUP"
+            contextId={workspaceId}
+            canActivate={Boolean(isGroupLeader && canCreateFlashcard)}
+            onCreated={onCreateFlashcard}
+            onActivated={(saved) => {
+              // Sau khi kích hoạt → mở detail view để leader/member xem flip cards như AI flashcard.
+              onViewFlashcard?.(saved);
+            }}
+            onBack={onBack}
+          />
+        );
+      case "flashcardDetail": {
+        if (!selectedFlashcard) return null;
+        const fcStatus = String(selectedFlashcard?.status || "").toUpperCase();
+        // Mọi DRAFT (AI/MANUAL) đều vào draft editor; ACTIVE dùng flip-card detail view.
+        if (fcStatus === "DRAFT" && canCreateFlashcard && !readOnly) {
+          return (
+            <LazyManualFlashcardEditor
+              isDarkMode={isDarkMode}
+              workspaceId={workspaceId}
+              contextType="GROUP"
+              contextId={workspaceId}
+              editingSetId={selectedFlashcard.flashcardSetId}
+              canActivate={Boolean(isGroupLeader)}
+              onSaved={onBack}
+              onActivated={(saved) => {
+                onViewFlashcard?.(saved);
+              }}
+              onBack={onBack}
+            />
+          );
+        }
+        return (
+          <LazyFlashcardDetailView
+            isDarkMode={isDarkMode}
+            flashcard={selectedFlashcard}
+            onBack={onBack}
+            hideEditButton={readOnly}
+            contextType="GROUP"
+            contextId={workspaceId}
+            isGroupLeader={isGroupLeader}
+            groupAudiencePickerExcludeUserId={isGroupLeader ? groupWorkspaceCurrentUserId : null}
+          />
+        );
+      }
       case "quizDetail":
         return selectedQuiz ? <LazyQuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={readOnly ? undefined : onEditQuiz} contextType="GROUP" contextId={workspaceId} hideEditButton={readOnly} isGroupLeader={isGroupLeader} groupAudiencePickerExcludeUserId={isGroupLeader ? groupWorkspaceCurrentUserId : null} onGroupQuizUpdated={onGroupQuizUpdated} challengeSnapshotReviewMode={challengeSnapshotReviewMode} /> : null;
       case "editQuiz":

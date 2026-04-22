@@ -126,6 +126,7 @@ function CreateQuizFormGroup({
 		<BaseCreateQuizForm
 			{...restProps}
 			contextId={contextId}
+			contextType="GROUP"
 			sources={sources}
 			selectedSourceIds={selectedIds}
 			onToggleMaterialSelection={handleToggleMaterialSelection}

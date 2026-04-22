@@ -1349,7 +1349,13 @@
         "reviewHint": "Each card shows question type, difficulty, cognitive level, and all answer options. Correct options are highlighted.",
         "stepCheck": "1 ? Check",
         "stepPublish": "2 ? Publish",
-        "stepDistribute": "3 ? Distribute"
+        "stepDistribute": "3 ? Distribute",
+        "duplicate": {
+          "button": "Duplicate to edit",
+          "tooltip": "Create a fresh draft copy (without distribution or attempt history) so you can edit it",
+          "toastSuccess": "Quiz duplicated to a new MANUAL draft. You can edit it now.",
+          "toastError": "Failed to duplicate the quiz."
+        }
       },
       "edit": {
         "title": "Edit Quiz",
@@ -1731,7 +1737,57 @@
       "emptyRoadmap": "No roadmaps yet.",
       "emptyPhase": "No phases yet.",
       "emptyKnowledge": "No knowledge items yet.",
-      "aiOnlyHint": "Ai Only Hint"
+      "aiOnlyHint": "Ai Only Hint",
+      "createMenu": {
+        "ai": "Create with AI",
+        "aiDesc": "Generate flashcards from a material",
+        "manual": "Create manually",
+        "manualDesc": "Enter each card yourself"
+      },
+      "manualEditor": {
+        "createTitle": "Create flashcard set",
+        "createDescription": "Auto-saves as you type. Click Confirm to activate.",
+        "editTitle": "Edit flashcard set",
+        "editDescription": "Auto-saves as you type. Click Confirm to activate.",
+        "back": "Back",
+        "save": "Save",
+        "saving": "Saving...",
+        "activate": "Confirm",
+        "activating": "Confirming...",
+        "activateHint": "To confirm: ",
+        "setNameLabel": "Flashcard set name",
+        "setNameOptional": "optional",
+        "setNamePlaceholder": "e.g. Chapter 1 vocabulary",
+        "itemNumber": "Card {{number}}",
+        "frontLabel": "Front",
+        "backLabel": "Back",
+        "frontPlaceholder": "Question or term to remember...",
+        "backPlaceholder": "Answer or explanation...",
+        "removeItem": "Remove card",
+        "addItem": "Add card",
+        "maxReached": "(max {{max}} reached)",
+        "loadError": "Unable to load the flashcard set.",
+        "backWithUnsavedConfirm": "Auto-save failed. Leave the page anyway?",
+        "indicator": {
+          "dirty": "Unsaved",
+          "saving": "Saving...",
+          "saved": "Saved",
+          "error": "Save failed"
+        },
+        "validation": {
+          "nameTooLong": "Set name can be up to {{max}} characters.",
+          "itemsRequiredForActivate": "The set must contain at least 1 card with both front and back filled in.",
+          "itemTooLong": "Card {{number}} exceeds the character limit.",
+          "workspaceMissing": "Workspace information is missing."
+        },
+        "toasts": {
+          "saveCreateSuccess": "Saved flashcard set \"{{name}}\".",
+          "saveUpdateSuccess": "Saved flashcard set \"{{name}}\".",
+          "saveError": "Something went wrong while saving the flashcard set.",
+          "activateSuccess": "Flashcard set \"{{name}}\" activated."
+        }
+      },
+      "untitled": "Untitled flashcard"
     },
     "phase": {
       "fallbackName": "Phase #{{id}}"
@@ -2018,7 +2074,8 @@
       "pagination": {
         "prev": "Previous page",
         "next": "Next page",
-        "pageInfo": "Page {{page}} / {{totalPages}} · {{count}} items"
+        "pageInfo": "Page {{page}} / {{totalPages}} · {{count}} items",
+        "pageSize": "Per page"
       },
       "levels": {
         "roadmap": "All Roadmaps",

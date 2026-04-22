@@ -47,6 +47,7 @@ import {
 } from "@/api/MaterialAPI";
 import {
   deleteQuiz,
+  duplicateQuiz,
   getQuizzesByScope,
   shareQuizToCommunity,
 } from "@/api/QuizAPI";
@@ -2180,11 +2181,31 @@ function WorkspacePage() {
     setActiveView("editQuiz");
   }, []);
 
-  const handleCreateSimilarQuiz = useCallback((quiz) => {
-    setSelectedQuiz({ ...quiz, _editMode: "clone" });
-    setQuizBackTarget(null);
-    setActiveView("editQuiz");
-  }, []);
+  const handleCreateSimilarQuiz = useCallback(async (quiz) => {
+    const quizId = Number(quiz?.quizId);
+    if (!Number.isInteger(quizId) || quizId <= 0) return;
+
+    try {
+      const res = await duplicateQuiz(quizId);
+      const duplicatedQuiz = res?.data?.data ?? res?.data;
+
+      if (!duplicatedQuiz?.quizId) {
+        throw new Error(t("workspace.quiz.detail.duplicate.toastError", "Không thể sao chép quiz."));
+      }
+
+      showSuccess(
+        t(
+          "workspace.quiz.detail.duplicate.toastSuccess",
+          "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
+        ),
+      );
+      setSelectedQuiz(duplicatedQuiz);
+      setQuizBackTarget(null);
+      setActiveView("editQuiz");
+    } catch (error) {
+      showError(getErrorMessage(t, error));
+    }
+  }, [showError, showSuccess, t]);
 
   // Save quiz edits and return to detail view
 
@@ -2376,6 +2397,7 @@ function WorkspacePage() {
       createRoadmap: "roadmap",
       createQuiz: "quiz",
       createFlashcard: "flashcard",
+      createManualFlashcard: "flashcard",
       quizDetail: "quiz",
       editQuiz: "quizDetail",
       flashcardDetail: "flashcard",

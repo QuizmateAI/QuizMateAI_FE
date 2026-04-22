@@ -10,9 +10,11 @@ import {
   FolderOpen,
   Loader2,
   MoreVertical,
+  PenLine,
   Plus,
   RefreshCw,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -21,7 +23,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import HomeButton from "@/Components/ui/HomeButton";
 import { getFlashcardsByScope, getFlashcardsByUser } from "@/api/FlashcardAPI";
 
-const ITEMS_PER_PAGE = 6;
+const DEFAULT_ITEMS_PER_PAGE = 8;
+const PAGE_SIZE_OPTIONS = [8, 12, 16];
 const CREATING_STATUSES = new Set(["PENDING", "PROCESSING", "GENERATING", "IN_PROGRESS", "QUEUED"]);
 const STATUS_STYLES = {
   ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
@@ -66,6 +69,7 @@ function formatShortDate(dateStr) {
 function FlashcardListView({
   isDarkMode = false,
   onCreateFlashcard,
+  onCreateManualFlashcard,
   onNavigateHome,
   onViewFlashcard,
   onDeleteFlashcard,
@@ -78,6 +82,7 @@ function FlashcardListView({
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_ITEMS_PER_PAGE);
   const deferredSearch = useDeferredValue(searchQuery.trim().toLowerCase());
 
   const {
@@ -111,15 +116,16 @@ function FlashcardListView({
     [deferredSearch, flashcards],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const effectivePage = Math.min(page, totalPages);
 
   const paginatedFlashcards = useMemo(() => {
-    const start = (effectivePage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [effectivePage, filtered]);
+    const start = (effectivePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [effectivePage, filtered, pageSize]);
 
-  const showPagination = filtered.length > ITEMS_PER_PAGE;
+  const showPaginationFooter = filtered.length > 0;
+  const showPageNavigation = filtered.length > pageSize;
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
 
   return (
@@ -178,14 +184,61 @@ function FlashcardListView({
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
           {!hideCreateButton ? (
-            <Button
-              disabled={disableCreate}
-              onClick={onCreateFlashcard}
-              className="h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {t("workspace.listView.create")}
-            </Button>
+            typeof onCreateManualFlashcard === "function" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    disabled={disableCreate}
+                    className="h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("workspace.listView.create")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className={`w-56 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                >
+                  <DropdownMenuItem
+                    onSelect={() => onCreateFlashcard?.()}
+                    className="cursor-pointer"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">
+                        {t("workspace.flashcard.createMenu.ai", "Tạo bằng AI")}
+                      </span>
+                      <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                        {t("workspace.flashcard.createMenu.aiDesc", "Sinh flashcard từ tài liệu")}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => onCreateManualFlashcard?.()}
+                    className="cursor-pointer"
+                  >
+                    <PenLine className="h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">
+                        {t("workspace.flashcard.createMenu.manual", "Tạo thủ công")}
+                      </span>
+                      <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                        {t("workspace.flashcard.createMenu.manualDesc", "Nhập từng thẻ theo ý bạn")}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                disabled={disableCreate}
+                onClick={onCreateFlashcard}
+                className="h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t("workspace.listView.create")}
+              </Button>
+            )
           ) : null}
         </div>
       </div>
@@ -251,7 +304,8 @@ function FlashcardListView({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <h3 className={`line-clamp-2 min-h-[3.5rem] text-[21px] font-semibold leading-snug tracking-[-0.02em] ${fontClass} ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
-                            {flashcard.flashcardSetName || t("quizListView.cards.noTitle", "—")}
+                            {(flashcard.flashcardSetName && flashcard.flashcardSetName.trim())
+                              || t("workspace.flashcard.untitled", "Flashcard không có tiêu đề")}
                           </h3>
                         </div>
 
@@ -329,7 +383,7 @@ function FlashcardListView({
               ))}
             </div>
 
-            {showPagination ? (
+            {showPaginationFooter ? (
               <div
                 className={`mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4 ${
                   isDarkMode ? "border-slate-700" : "border-slate-200"
@@ -342,32 +396,59 @@ function FlashcardListView({
                     count: filtered.length,
                   })}
                 </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 rounded-full px-3"
-                    disabled={effectivePage <= 1}
-                    onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-                    aria-label={t("workspace.listView.pagination.prev")}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className={`text-xs font-medium ${mutedTextClass}`}>
+                    {t("workspace.listView.pagination.pageSize", "Mỗi trang")}
+                  </label>
+                  <select
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                    aria-label={t("workspace.listView.pagination.pageSize", "Mỗi trang")}
+                    className={`h-9 rounded-full border px-3 text-xs font-medium outline-none transition-colors ${
+                      isDarkMode
+                        ? "border-slate-700 bg-slate-900 text-slate-200"
+                        : "border-slate-200 bg-white text-slate-700"
+                    }`}
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className={`text-xs font-medium ${mutedTextClass}`}>
-                    {t("workspace.quiz.pagination.page")} {effectivePage}/{totalPages}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 rounded-full px-3"
-                    disabled={effectivePage >= totalPages}
-                    onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
-                    aria-label={t("workspace.listView.pagination.next")}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+
+                  {showPageNavigation ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-full px-3"
+                        disabled={effectivePage <= 1}
+                        onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+                        aria-label={t("workspace.listView.pagination.prev")}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className={`text-xs font-medium ${mutedTextClass}`}>
+                        {t("workspace.quiz.pagination.page")} {effectivePage}/{totalPages}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-full px-3"
+                        disabled={effectivePage >= totalPages}
+                        onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
+                        aria-label={t("workspace.listView.pagination.next")}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ) : null}

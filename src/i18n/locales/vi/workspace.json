@@ -1351,7 +1351,13 @@
         "reviewHint": "Mỗi thẻ hiển thị loại câu, độ khó, mức Bloom và toàn bộ phương án. Đáp án đúng được đánh dấu màu xanh.",
         "stepCheck": "1. Kiểm tra",
         "stepPublish": "2. Xuất bản",
-        "stepDistribute": "3. Phân phối"
+        "stepDistribute": "3. Phân phối",
+        "duplicate": {
+          "button": "Sao chép để chỉnh sửa",
+          "tooltip": "Tạo bản nháp sao chép (không kèm phân phối và lịch sử làm bài) để chỉnh sửa",
+          "toastSuccess": "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
+          "toastError": "Không thể sao chép quiz."
+        }
       },
       "edit": {
         "title": "Chỉnh sửa Quiz",
@@ -1700,7 +1706,57 @@
       "cardType": "Loại thẻ",
       "emptyRoadmap": "Chưa có Lộ trình nào.",
       "emptyPhase": "Chưa có Giai đoạn nào.",
-      "emptyKnowledge": "Chưa có Kiến thức nào."
+      "emptyKnowledge": "Chưa có Kiến thức nào.",
+      "createMenu": {
+        "ai": "Tạo bằng AI",
+        "aiDesc": "Sinh flashcard từ tài liệu",
+        "manual": "Tạo thủ công",
+        "manualDesc": "Nhập từng thẻ theo ý bạn"
+      },
+      "manualEditor": {
+        "createTitle": "Tạo bộ flashcard",
+        "createDescription": "Tự động lưu khi bạn gõ. Nhấn Xác nhận để kích hoạt.",
+        "editTitle": "Chỉnh sửa bộ flashcard",
+        "editDescription": "Tự động lưu khi bạn gõ. Nhấn Xác nhận để kích hoạt.",
+        "back": "Quay lại",
+        "save": "Lưu",
+        "saving": "Đang lưu...",
+        "activate": "Xác nhận",
+        "activating": "Đang xác nhận...",
+        "activateHint": "Để Xác nhận: ",
+        "setNameLabel": "Tên bộ flashcard",
+        "setNameOptional": "không bắt buộc",
+        "setNamePlaceholder": "VD: Từ vựng chương 1",
+        "itemNumber": "Thẻ {{number}}",
+        "frontLabel": "Mặt trước",
+        "backLabel": "Mặt sau",
+        "frontPlaceholder": "Câu hỏi hoặc từ cần nhớ...",
+        "backPlaceholder": "Đáp án hoặc giải thích...",
+        "removeItem": "Xóa thẻ",
+        "addItem": "Thêm thẻ",
+        "maxReached": "(đã đạt tối đa {{max}})",
+        "loadError": "Không thể tải bộ flashcard.",
+        "backWithUnsavedConfirm": "Có lỗi khi lưu bản nháp. Rời khỏi trang vẫn?",
+        "indicator": {
+          "dirty": "Chưa lưu",
+          "saving": "Đang lưu...",
+          "saved": "Đã lưu",
+          "error": "Lỗi khi lưu"
+        },
+        "validation": {
+          "nameTooLong": "Tên bộ flashcard tối đa {{max}} ký tự.",
+          "itemsRequiredForActivate": "Bộ flashcard phải có ít nhất 1 thẻ đã điền đủ mặt trước và mặt sau.",
+          "itemTooLong": "Thẻ {{number}} vượt quá giới hạn ký tự.",
+          "workspaceMissing": "Thiếu thông tin workspace."
+        },
+        "toasts": {
+          "saveCreateSuccess": "Đã lưu bộ flashcard \"{{name}}\".",
+          "saveUpdateSuccess": "Đã lưu bộ flashcard \"{{name}}\".",
+          "saveError": "Có lỗi khi lưu bộ flashcard.",
+          "activateSuccess": "Đã kích hoạt bộ flashcard \"{{name}}\"."
+        }
+      },
+      "untitled": "Flashcard không có tiêu đề"
     },
     "phase": {
       "fallbackName": "Giai đoạn #{{id}}"
@@ -1961,7 +2017,8 @@
       "pagination": {
         "prev": "Trang trước",
         "next": "Trang sau",
-        "pageInfo": "Trang {{page}} / {{totalPages}} · {{count}} mục"
+        "pageInfo": "Trang {{page}} / {{totalPages}} · {{count}} mục",
+        "pageSize": "Mỗi trang"
       },
       "levels": {
         "roadmap": "Tất cả Lộ trình Học tập",

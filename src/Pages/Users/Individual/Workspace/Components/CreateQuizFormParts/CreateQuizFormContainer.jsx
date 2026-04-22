@@ -63,6 +63,8 @@ function CreateQuizForm({
   planUpgradeScope = "INDIVIDUAL",
   currentPlanSummaryOverride = null,
   planUpgradeWorkspaceId = null,
+  /** "INDIVIDUAL" | "GROUP" — forward xuống ManualQuizWizard để disable ImportQuestionsPanel cho group. */
+  contextType = "INDIVIDUAL",
 }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -338,6 +340,7 @@ function CreateQuizForm({
         <div className="flex-1 overflow-hidden">
           <ManualQuizWizard
             workspaceId={defaultContextId}
+            contextType={contextType}
             onCreateQuiz={onCreateQuiz}
             onBack={onBack}
             isDarkMode={isDarkMode}
