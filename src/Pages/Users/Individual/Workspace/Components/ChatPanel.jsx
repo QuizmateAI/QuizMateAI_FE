@@ -24,6 +24,7 @@ const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyManualQuizWizard = React.lazy(() => import("./ManualQuizWizard"));
 const LazyFlashcardListView = React.lazy(() => import("./FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("./FlashcardDetailView"));
+const LazyManualFlashcardEditor = React.lazy(() => import("./ManualFlashcardEditor"));
 const LazyMockTestListView = React.lazy(() => import("./MockTestListView"));
 const LazyCreateMockTestForm = React.lazy(() => import("./CreateMockTestForm"));
 const LazyMockTestDetailView = React.lazy(() => import("./MockTestDetailView"));
@@ -320,6 +321,7 @@ function ChatPanel({
           <LazyFlashcardListView
             isDarkMode={isDarkMode}
             onCreateFlashcard={() => onChangeView?.("createFlashcard")}
+            onCreateManualFlashcard={() => onChangeView?.("createManualFlashcard")}
             onNavigateHome={onNavigateHome}
             onViewFlashcard={onViewFlashcard}
             onDeleteFlashcard={onDeleteFlashcard}
@@ -379,8 +381,44 @@ function ChatPanel({
             onToggleMaterialSelection={onToggleMaterialSelection}
           />
         );
-      case "flashcardDetail":
-        return selectedFlashcard ? (
+      case "createManualFlashcard":
+        return (
+          <LazyManualFlashcardEditor
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            canActivate
+            onCreated={onCreateFlashcard}
+            onActivated={(saved) => {
+              // Sau khi kích hoạt → mở detail view (giống luồng AI flashcard: flip UI).
+              onViewFlashcard?.(saved);
+            }}
+            onBack={onBack}
+          />
+        );
+      case "flashcardDetail": {
+        if (!selectedFlashcard) return null;
+        const fcStatus = String(selectedFlashcard?.status || "").toUpperCase();
+        // Mọi DRAFT (AI/MANUAL) đều vào draft editor; ACTIVE dùng flip-card detail view.
+        if (fcStatus === "DRAFT") {
+          return (
+            <LazyManualFlashcardEditor
+              isDarkMode={isDarkMode}
+              workspaceId={workspaceId}
+              contextType="WORKSPACE"
+              contextId={workspaceId}
+              editingSetId={selectedFlashcard.flashcardSetId}
+              canActivate
+              onSaved={onBack}
+              onActivated={(saved) => {
+                onViewFlashcard?.(saved);
+              }}
+              onBack={onBack}
+            />
+          );
+        }
+        return (
           <LazyFlashcardDetailView
             isDarkMode={isDarkMode}
             flashcard={selectedFlashcard}
@@ -388,7 +426,8 @@ function ChatPanel({
             contextType="WORKSPACE"
             contextId={workspaceId}
           />
-        ) : null;
+        );
+      }
       case "quizDetail":
         return selectedQuiz ? (
           <LazyQuizDetailView

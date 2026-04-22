@@ -99,3 +99,19 @@ export const deleteFlashcardSet = async (flashcardSetId) => {
   const response = await api.delete(`/flashcards/${flashcardSetId}`);
   return response;
 };
+
+// Bulk create flashcard set + items. Default trạng thái DRAFT; nếu activate=true thì chuyển ACTIVE nguyên tử.
+// payload: { workspaceId, flashcardSetName, items: [{ frontContent, backContent }, ...],
+//           roadmapId?, phaseId?, knowledgeId?, activate?: boolean }
+export const createManualFlashcardBulk = async (payload) => {
+  const response = await api.post('/flashcards/manual:create-bulk', payload);
+  return response;
+};
+
+// Bulk update flashcard set + items (diff-based upsert). Chỉ áp dụng ở DRAFT.
+// Nếu activate=true: sau khi diff xong → chuyển sang ACTIVE.
+// payload: { flashcardSetName, items: [{ flashcardItemId?, frontContent, backContent }, ...], activate?: boolean }
+export const updateManualFlashcardBulk = async (flashcardSetId, payload) => {
+  const response = await api.put(`/flashcards/${flashcardSetId}/manual:update-bulk`, payload);
+  return response;
+};
