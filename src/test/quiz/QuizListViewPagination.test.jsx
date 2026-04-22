@@ -119,4 +119,42 @@ describe('QuizListView pagination sizing', () => {
     expect(screen.getByText('Page 1/2')).toBeInTheDocument();
     expect(screen.getByText('Showing 1-6 of 7')).toBeInTheDocument();
   });
+
+  it('hides metadata on processing quiz cards and only keeps progress visible', async () => {
+    getQuizzesByScope.mockResolvedValue({
+      data: [
+        {
+          quizId: 55,
+          title: 'Processing quiz',
+          status: 'PROCESSING',
+          percent: 55,
+          questionCount: 10,
+          overallDifficulty: 'EASY',
+          duration: 15,
+          timerMode: false,
+          communityShared: false,
+          createdAt: '2026-04-22T17:27:00',
+          myAttempted: false,
+          myPassed: false,
+        },
+      ],
+    });
+
+    render(
+      <QuizListView
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onViewQuiz={vi.fn()}
+        contextId={42}
+      />,
+    );
+
+    expect(await screen.findByText('Processing quiz')).toBeInTheDocument();
+    expect(screen.getByText('55%')).toBeInTheDocument();
+    expect(screen.queryByText('Generating quiz')).not.toBeInTheDocument();
+    expect(screen.queryByText('Questions')).not.toBeInTheDocument();
+    expect(screen.queryByText('15 min')).not.toBeInTheDocument();
+    expect(screen.queryByText('Private')).not.toBeInTheDocument();
+    expect(screen.queryByText('22/04/2026 17:27')).not.toBeInTheDocument();
+  });
 });

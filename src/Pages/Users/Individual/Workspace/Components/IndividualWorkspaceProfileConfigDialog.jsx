@@ -494,6 +494,7 @@ function IndividualWorkspaceProfileConfigDialog({
           values={wizard.values}
           errors={wizard.errors}
           analysisStatus={wizard.analysisStatus}
+          knowledgeOptions={wizard.knowledgeOptions}
           domainOptions={wizard.domainOptions}
           needsKnowledgeDescription={wizard.needsKnowledgeDescription}
           knowledgeAnalysis={wizard.knowledgeAnalysis}
@@ -501,6 +502,7 @@ function IndividualWorkspaceProfileConfigDialog({
           canCreateRoadmap={canCreateRoadmap}
           onPurposeChange={wizard.setPurpose}
           onFieldChange={wizard.updateField}
+          onKnowledgeSelect={wizard.selectKnowledgeOption}
           onDomainSelect={wizard.selectInferredDomain}
           onRetryAnalysis={wizard.retryKnowledgeAnalysis}
         />
