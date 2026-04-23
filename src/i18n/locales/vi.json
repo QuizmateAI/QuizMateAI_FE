@@ -1736,12 +1736,15 @@
       "create": "Tạo mới",
       "createWorkspace": "Tạo không gian học tập mới",
       "createGroup": "Tạo nhóm",
-      "share": "Chia sẻ"
+      "share": "Chia sẻ",
+      "openGroupCommunity": "Cộng đồng nhóm QuizMate AI",
+      "backToHome": "Về home"
     },
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
       "groupPlaceholder": "Tìm kiếm nhóm...",
-      "noResults": "Không tìm thấy kết quả"
+      "noResults": "Không tìm thấy kết quả",
+      "clear": "Xóa tìm kiếm"
     },
     "create": {
       "personalTab": "Không gian học tập cá nhân",
@@ -1891,6 +1894,46 @@
         "GROUP": "Nhóm"
       }
     },
+    "groupHub": {
+      "eyebrow": "Community groups",
+      "title": "Khám phá nhóm học phù hợp ngay trên home",
+      "subtitle": "Xem nhanh mục tiêu, nhịp học, các phần đang có trong group và tham gia khi thấy phù hợp. Giao diện giữ ít màu, rõ thứ tự thông tin và dễ quét ở cả desktop lẫn mobile.",
+      "public": "Công khai",
+      "joined": "Đã tham gia",
+      "join": "Tham gia nhóm",
+      "joining": "Đang tham gia...",
+      "joinSuccess": "Đã tham gia nhóm thành công.",
+      "joinError": "Không thể tham gia nhóm này.",
+      "emptyTitle": "Chưa có nhóm public nào",
+      "emptyDescription": "Khi có nhóm mở công khai, bạn sẽ thấy mục tiêu học và có thể tham gia trực tiếp từ đây.",
+      "emptyCardDescription": "Nhóm này chưa thêm mô tả ngắn.",
+      "noResultsDescription": "Thử đổi từ khóa theo mục tiêu học, lĩnh vực hoặc kỳ thi.",
+      "myGroupsEyebrow": "Nhóm của bạn",
+      "myGroupsSubtitle": "Các nhóm bạn đang học cùng hoặc đang quản lý.",
+      "requirementsTitle": "Nhu cầu và định hướng",
+      "sectionsTitle": "Các phần trong nhóm",
+      "sharedPace": "Nhịp học chung",
+      "fallbackNeed": "Phù hợp cho vai trò {{role}} với nhịp học {{mode}}.",
+      "createdBy": "Tạo bởi {{owner}}",
+      "metrics": {
+        "community": "Nhóm public",
+        "readyToJoin": "Có thể tham gia",
+        "myGroups": "Nhóm của bạn"
+      },
+      "labels": {
+        "goal": "Mục tiêu",
+        "focus": "Trọng tâm",
+        "rules": "Quy ước",
+        "fit": "Phù hợp với"
+      },
+      "sections": {
+        "discussion": "Discussion",
+        "materials": "Tài liệu",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test"
+      }
+    },
     "pagination": {
       "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",
       "page": "trang"
@@ -1976,16 +2019,16 @@
         }
       },
       "steps": {
-      "1": {
-        "title": "Bước 1",
-        "stepperLabel": "Xác định kiến thức",
-        "description": "Chọn cách học và để Quizmate AI xác định phạm vi kiến thức phù hợp."
-      },
-      "2": {
-        "title": "Bước 2",
-        "stepperLabel": "Hồ sơ cá nhân",
-        "description": "Bổ sung trình độ hiện tại, mục tiêu và các điểm cần tập trung để AI gợi ý sát hơn."
-      },
+        "1": {
+          "title": "Bước 1",
+          "stepperLabel": "Xác định kiến thức",
+          "description": "Chọn cách học và để Quizmate AI xác định phạm vi kiến thức phù hợp."
+        },
+        "2": {
+          "title": "Bước 2",
+          "stepperLabel": "Hồ sơ cá nhân",
+          "description": "Bổ sung trình độ hiện tại, mục tiêu và các điểm cần tập trung để AI gợi ý sát hơn."
+        },
         "3": {
           "title": "Bước 3",
           "stepperLabel": "Cấu hình lộ trình",
@@ -1997,14 +2040,14 @@
         }
       },
       "purpose": {
-      "STUDY_NEW": {
-        "title": "Học mới",
-        "description": "Bắt đầu một chủ đề mới, xây dựng nền tảng và vẫn có thể tạo mock test khi cần."
-      },
-      "REVIEW": {
-        "title": "Ôn tập",
-        "description": "Củng cố phần đã học, tập trung vào chỗ cần cải thiện và vẫn có thể tạo mock test khi cần."
-      },
+        "STUDY_NEW": {
+          "title": "Học mới",
+          "description": "Bắt đầu một chủ đề mới, xây dựng nền tảng và vẫn có thể tạo mock test khi cần."
+        },
+        "REVIEW": {
+          "title": "Ôn tập",
+          "description": "Củng cố phần đã học, tập trung vào chỗ cần cải thiện và vẫn có thể tạo mock test khi cần."
+        },
         "MOCK_TEST": {
           "title": "Mock test",
           "description": "Luyện theo kỳ thi mục tiêu với bản mẫu đề, điểm mục tiêu và ngày thi dự kiến."
@@ -2024,9 +2067,9 @@
           "description": "Xác nhận lĩnh vực Quizmate AI đề xuất để tiếp tục sang bước tiếp theo."
         }
       },
-    "stepOne": {
-      "title": "Xác định kiến thức và cách học",
-      "description": "Chọn cách học chính, nhập kiến thức bạn muốn học và để Quizmate AI gợi ý domain phù hợp.",
+      "stepOne": {
+        "title": "Xác định kiến thức và cách học",
+        "description": "Chọn cách học chính, nhập kiến thức bạn muốn học và để Quizmate AI gợi ý domain phù hợp.",
         "knowledgeTitle": "Nhập kiến thức bạn muốn học",
         "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. Quizmate AI sẽ suy ra lĩnh vực phù hợp với bạn.",
         "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
@@ -2143,8 +2186,8 @@
         "finishSuccess": "Hoàn thành thiết lập Không gian Học tập thành công.",
         "saveError": "Không thể lưu tiến trình thiết lập Không gian Học tập."
       },
-    "fields": {
-      "workspacePurpose": "Cách học chính",
+      "fields": {
+        "workspacePurpose": "Cách học chính",
         "knowledgeInput": "Kiến thức bạn muốn học",
         "knowledgeDescription": "Mô tả chi tiết knowledge",
         "primaryDomain": "Lĩnh vực chính",

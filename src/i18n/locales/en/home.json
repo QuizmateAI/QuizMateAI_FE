@@ -14,7 +14,9 @@
       "create": "Create new",
       "createWorkspace": "Create new workspace",
       "createGroup": "Create group",
-      "share": "Share"
+      "share": "Share",
+      "openGroupCommunity": "QuizMate AI group community",
+      "backToHome": "Back to home"
     },
     "search": {
       "workspacePlaceholder": "Search workspaces...",
@@ -186,6 +188,55 @@
         "INDIVIDUAL": "Personal",
         "GROUP": "Group"
       }
+    },
+    "groupHub": {
+      "eyebrow": "QuizMate AI community",
+      "title": "Find a group that matches how you want to study",
+      "subtitle": "Open the QuizMate AI group community to review the shared goal, learning rhythm, and the sections each group already has before you decide to join.",
+      "public": "Public",
+      "joined": "Joined",
+      "join": "Join group",
+      "joining": "Joining...",
+      "full": "Full",
+      "joinSuccess": "Joined the group successfully.",
+      "joinError": "Unable to join this group.",
+      "emptyTitle": "No public groups yet",
+      "emptyDescription": "Once public groups are available, you will be able to review them and join directly from here.",
+      "emptyCardDescription": "This group has not added a short description yet.",
+      "noResultsDescription": "Try a different keyword based on the goal, domain, or exam target.",
+      "requirementsTitle": "What this group is looking for",
+      "sectionsTitle": "Available sections",
+      "sharedPace": "Shared study pace",
+      "fallbackNeed": "Best suited for the {{role}} role with a {{mode}} rhythm.",
+      "createdBy": "Created by {{owner}}",
+      "metrics": {
+        "community": "Public groups",
+        "readyToJoin": "Ready to join",
+        "myGroups": "Your groups"
+      },
+      "labels": {
+        "goal": "Goal",
+        "focus": "Focus",
+        "rules": "Rules",
+        "capacity": "Capacity",
+        "fit": "Best fit",
+        "meta": "Group info"
+      },
+      "sections": {
+        "discussion": "Discussion",
+        "materials": "Materials",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test"
+      },
+      "emptyPreviewTitle": "What you will see here",
+      "emptyPreview": {
+        "goal": "The study goal and shared direction of each group",
+        "sections": "The core sections inside the group such as roadmap, quiz, materials, and discussion",
+        "join": "A direct join action when the group is open to the community"
+      },
+      "viewDetails": "View details",
+      "capacitySummary": "{{active}} active • {{pending}} pending invites • {{remaining}} left of {{limit}}"
     },
     "pagination": {
       "showing": "Showing {{start}} - {{end}} of {{total}}",

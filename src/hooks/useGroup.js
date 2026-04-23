@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrapApiData } from '@/Utils/apiResponse';
 import {
   getMyJoinedGroups,
+  getPublicGroups as getPublicGroupsAPI,
+  joinPublicGroup as joinPublicGroupAPI,
   createGroup as createGroupAPI,
   getGroupMembers as getGroupMembersAPI,
   grantUpload as grantUploadAPI,
@@ -32,6 +34,7 @@ import {
 } from '@/api/GroupAPI';
 
 const GROUPS_QUERY_KEY = ['groups'];
+const PUBLIC_GROUPS_QUERY_KEY = ['groups', 'public'];
 
 const emptyPage = (size = 20) => ({
   content: [],
@@ -45,7 +48,7 @@ const emptyPage = (size = 20) => ({
 
 // Hook quản lý toàn bộ logic group: CRUD + members + invitations
 export function useGroup(options = {}) {
-  const { enabled = true } = options;
+  const { enabled = true, publicEnabled = enabled } = options;
   const queryClient = useQueryClient();
 
   const { data: groups = [], isLoading: loading, error: queryError, refetch: fetchGroups } = useQuery({
@@ -78,12 +81,36 @@ export function useGroup(options = {}) {
     enabled,
   });
 
-  const error = queryError?.message || null;
+  const {
+    data: publicGroups = [],
+    isLoading: publicGroupsLoading,
+    error: publicGroupsQueryError,
+    refetch: fetchPublicGroups,
+  } = useQuery({
+    queryKey: PUBLIC_GROUPS_QUERY_KEY,
+    queryFn: async () => {
+      const res = await getPublicGroupsAPI();
+      const rawGroups = unwrapApiData(res) ?? [];
+      return Array.isArray(rawGroups) ? rawGroups : [];
+    },
+    enabled: publicEnabled,
+  });
+
+  const error = queryError?.message || publicGroupsQueryError?.message || null;
 
   // Tạo nhóm mới
   const createGroup = useCallback(async (data) => {
     const res = await createGroupAPI(data);
     await queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY });
+    return unwrapApiData(res);
+  }, [queryClient]);
+
+  const joinPublicGroup = useCallback(async (workspaceId) => {
+    const res = await joinPublicGroupAPI(workspaceId);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PUBLIC_GROUPS_QUERY_KEY }),
+    ]);
     return unwrapApiData(res);
   }, [queryClient]);
 
@@ -244,10 +271,14 @@ export function useGroup(options = {}) {
 
   return {
     groups,
+    publicGroups,
     loading,
+    publicGroupsLoading,
     error,
     fetchGroups,
+    fetchPublicGroups,
     createGroup,
+    joinPublicGroup,
     fetchMembers,
     grantUpload,
     revokeUpload,

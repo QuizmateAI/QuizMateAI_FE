@@ -1736,12 +1736,15 @@
       "create": "Create new",
       "createWorkspace": "Create new workspace",
       "createGroup": "Create group",
-      "share": "Share"
+      "share": "Share",
+      "openGroupCommunity": "QuizMate AI group community",
+      "backToHome": "Back to home"
     },
     "search": {
       "workspacePlaceholder": "Search workspaces...",
       "groupPlaceholder": "Search groups...",
-      "noResults": "No results found"
+      "noResults": "No results found",
+      "clear": "Clear search"
     },
     "create": {
       "personalTab": "Personal Workspace",
@@ -1892,6 +1895,46 @@
         "GROUP": "Group"
       }
     },
+    "groupHub": {
+      "eyebrow": "Community groups",
+      "title": "Discover the right study group directly from home",
+      "subtitle": "Scan the goal, learning rhythm, and available sections of each group, then join when it fits. The layout stays restrained, readable, and fast to navigate on both desktop and mobile.",
+      "public": "Public",
+      "joined": "Joined",
+      "join": "Join group",
+      "joining": "Joining...",
+      "joinSuccess": "Joined the group successfully.",
+      "joinError": "Unable to join this group.",
+      "emptyTitle": "No public groups yet",
+      "emptyDescription": "Once groups open public access, you will be able to review their direction and join directly from here.",
+      "emptyCardDescription": "This group has not added a short description yet.",
+      "noResultsDescription": "Try a different keyword based on goals, domain, or exam target.",
+      "myGroupsEyebrow": "Your groups",
+      "myGroupsSubtitle": "Groups you are currently learning with or managing.",
+      "requirementsTitle": "Needs and direction",
+      "sectionsTitle": "What is inside the group",
+      "sharedPace": "Shared study pace",
+      "fallbackNeed": "Best suited for the {{role}} role with a {{mode}} rhythm.",
+      "createdBy": "Created by {{owner}}",
+      "metrics": {
+        "community": "Public groups",
+        "readyToJoin": "Ready to join",
+        "myGroups": "Your groups"
+      },
+      "labels": {
+        "goal": "Goal",
+        "focus": "Focus",
+        "rules": "Rules",
+        "fit": "Best fit"
+      },
+      "sections": {
+        "discussion": "Discussion",
+        "materials": "Materials",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test"
+      }
+    },
     "pagination": {
       "showing": "Showing {{start}} - {{end}} of {{total}}",
       "page": "page"
@@ -1979,16 +2022,16 @@
         }
       },
       "steps": {
-      "1": {
-        "title": "Step 1",
-        "stepperLabel": "Knowledge focus",
-        "description": "Choose how you want to learn and let AI identify the right knowledge area."
-      },
-      "2": {
-        "title": "Step 2",
-        "stepperLabel": "Current profile",
-        "description": "Add your current level, goals, and focus areas so AI can guide the next steps."
-      },
+        "1": {
+          "title": "Step 1",
+          "stepperLabel": "Knowledge focus",
+          "description": "Choose how you want to learn and let AI identify the right knowledge area."
+        },
+        "2": {
+          "title": "Step 2",
+          "stepperLabel": "Current profile",
+          "description": "Add your current level, goals, and focus areas so AI can guide the next steps."
+        },
         "3": {
           "title": "Step 3",
           "stepperLabel": "Roadmap setup",
@@ -2000,14 +2043,14 @@
         }
       },
       "purpose": {
-      "STUDY_NEW": {
-        "title": "Study new",
-        "description": "Start a new topic, build the foundation, and still create mock tests when needed."
-      },
-      "REVIEW": {
-        "title": "Review",
-        "description": "Reinforce what you already studied, focus on gaps, and still create mock tests when needed."
-      },
+        "STUDY_NEW": {
+          "title": "Study new",
+          "description": "Start a new topic, build the foundation, and still create mock tests when needed."
+        },
+        "REVIEW": {
+          "title": "Review",
+          "description": "Reinforce what you already studied, focus on gaps, and still create mock tests when needed."
+        },
         "MOCK_TEST": {
           "title": "Mock test",
           "description": "Prepare for a target exam with template setup, target score, and expected exam date."
@@ -2027,9 +2070,9 @@
           "description": "Confirm the suggested domain to continue to the next step."
         }
       },
-    "stepOne": {
-      "title": "Define the knowledge focus and learning style",
-      "description": "Choose the main learning mode, enter what you want to learn, and let Quizmate AI suggest the right domain.",
+      "stepOne": {
+        "title": "Define the knowledge focus and learning style",
+        "description": "Choose the main learning mode, enter what you want to learn, and let Quizmate AI suggest the right domain.",
         "knowledgeTitle": "Your knowledge topic and AI-inferred domain",
         "knowledgeDescription": "Describe what you want to learn. AI will infer the most relevant domain and suggest a field for you to confirm.",
         "knowledgeSuggestionTitle": "Suggested domains",
@@ -2147,8 +2190,8 @@
         "finishSuccess": "Workspace setup completed successfully.",
         "saveError": "Unable to save the workspace setup progress."
       },
-    "fields": {
-      "workspacePurpose": "Primary learning mode",
+      "fields": {
+        "workspacePurpose": "Primary learning mode",
         "knowledgeInput": "Knowledge you want to learn",
         "knowledgeDescription": "Detailed knowledge description",
         "primaryDomain": "Primary domain",

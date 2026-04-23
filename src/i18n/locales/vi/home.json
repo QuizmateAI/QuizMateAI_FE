@@ -14,7 +14,9 @@
       "create": "Tạo mới",
       "createWorkspace": "Tạo không gian học tập mới",
       "createGroup": "Tạo nhóm",
-      "share": "Chia sẻ"
+      "share": "Chia sẻ",
+      "openGroupCommunity": "Cộng đồng nhóm QuizMate AI",
+      "backToHome": "Về home"
     },
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
@@ -185,6 +187,55 @@
         "INDIVIDUAL": "Cá nhân",
         "GROUP": "Nhóm"
       }
+    },
+    "groupHub": {
+      "eyebrow": "Cộng đồng QuizMate AI",
+      "title": "Tìm nhóm học phù hợp với cách bạn muốn học",
+      "subtitle": "Mở cộng đồng nhóm của QuizMate AI để xem mục tiêu chung, nhịp học, và các phần sẵn có trong từng nhóm trước khi quyết định tham gia.",
+      "public": "Công khai",
+      "joined": "Đã tham gia",
+      "join": "Tham gia nhóm",
+      "joining": "Đang tham gia...",
+      "full": "Hết slot",
+      "joinSuccess": "Đã tham gia nhóm thành công.",
+      "joinError": "Không thể tham gia nhóm này.",
+      "emptyTitle": "Chưa có nhóm public nào",
+      "emptyDescription": "Khi có nhóm mở công khai, bạn sẽ xem được thông tin và tham gia trực tiếp từ đây.",
+      "emptyCardDescription": "Nhóm này chưa thêm mô tả ngắn.",
+      "noResultsDescription": "Thử đổi từ khóa theo mục tiêu, lĩnh vực hoặc kỳ thi.",
+      "requirementsTitle": "Nhóm này đang cần gì",
+      "sectionsTitle": "Các phần đang có",
+      "sharedPace": "Nhịp học chung",
+      "fallbackNeed": "Phù hợp cho vai trò {{role}} với nhịp học {{mode}}.",
+      "createdBy": "Tạo bởi {{owner}}",
+      "metrics": {
+        "community": "Nhóm public",
+        "readyToJoin": "Có thể tham gia",
+        "myGroups": "Nhóm của bạn"
+      },
+      "labels": {
+        "goal": "Mục tiêu",
+        "focus": "Trọng tâm",
+        "rules": "Quy ước",
+        "capacity": "Sức chứa",
+        "fit": "Phù hợp với",
+        "meta": "Thông tin nhóm"
+      },
+      "sections": {
+        "discussion": "Discussion",
+        "materials": "Tài liệu",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test"
+      },
+      "emptyPreviewTitle": "Khi có dữ liệu, bạn sẽ xem được",
+      "emptyPreview": {
+        "goal": "Mục tiêu học và hướng đi chung của từng nhóm",
+        "sections": "Các phần chính trong nhóm như roadmap, quiz, tài liệu và discussion",
+        "join": "Nút tham gia trực tiếp nếu nhóm đang mở cho cộng đồng"
+      },
+      "viewDetails": "Xem chi tiết",
+      "capacitySummary": "{{active}} đang học • {{pending}} lời mời còn hiệu lực • còn {{remaining}} trên {{limit}} slot"
     },
     "pagination": {
       "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from "@/Components/ui/button";
-import { Globe, Grid3x3, List, Moon, Settings, Sun, CreditCard } from 'lucide-react';
+import { CreditCard, Globe, Grid3x3, List, Moon, Settings, Sparkles, Sun } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserWorkspace, { WorkspaceFilterControls } from "@/Pages/Users/Home/Components/UserWorkspace";
 import UserGroup, { GroupFilterControls } from "@/Pages/Users/Home/Components/UserGroup";
+import CommunityGroupBoard from "@/Pages/Users/Home/Components/CommunityGroupBoard";
 import EditWorkspaceDialog from "@/Pages/Users/Home/Components/EditWorkspaceDialog";
 import DeleteWorkspaceDialog from "@/Pages/Users/Home/Components/DeleteWorkspaceDialog";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
@@ -38,6 +39,7 @@ const EMPTY_WALLET_SUMMARY = {
 };
 
 function normalizeHomeTab(value) {
+  if (value === 'community') return 'community';
   if (value === 'group') return 'group';
   return 'workspace';
 }
@@ -111,7 +113,9 @@ function HomePage() {
   const [viewMode, setViewMode] = useState('grid');
   const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState('');
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
+  const [communitySearchQuery, setCommunitySearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [joiningPublicGroupId, setJoiningPublicGroupId] = useState(null);
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -120,7 +124,7 @@ function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { showError, showSuccess } = useToast();
   const activeTab = normalizeHomeTab(searchParams.get('tab'));
-  const shouldLoadGroups = activeTab === 'group';
+  const shouldLoadGroups = activeTab === 'group' || activeTab === 'community';
   const { summary: currentPlanSummary } = useCurrentSubscription();
   const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [loadingWallet, setLoadingWallet] = useState(true);
@@ -139,9 +143,17 @@ function HomePage() {
     sortMode,
     changeSortMode,
   } = useWorkspace({ enabled: true });
-  const { groups, loading: groupsLoading } = useGroup({ enabled: shouldLoadGroups });
+  const {
+    groups,
+    loading: groupsLoading,
+    publicGroups,
+    publicGroupsLoading,
+    joinPublicGroup,
+    fetchPublicGroups,
+  } = useGroup({ enabled: shouldLoadGroups, publicEnabled: shouldLoadGroups });
   const mergedGroups = shouldLoadGroups ? mergeGroupsWithOwnedWorkspaces(groups, workspaces) : [];
-  const groupTabLoading = shouldLoadGroups && (groupsLoading || loading) && mergedGroups.length === 0;
+  const groupTabLoading = activeTab === 'group' && (groupsLoading || loading) && mergedGroups.length === 0;
+  const publicGroupTabLoading = activeTab === 'community' && publicGroupsLoading && publicGroups.length === 0;
 
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -205,6 +217,32 @@ function HomePage() {
     setDeleteDialogOpen(true);
   };
 
+  const handleOpenExistingGroup = (group) => {
+    if (!group?.workspaceId) {
+      return;
+    }
+    void preloadGroupWorkspacePage();
+    navigate(buildGroupWorkspacePath(group.workspaceId));
+  };
+
+  const handleJoinPublicGroup = async (group) => {
+    const workspaceId = group?.workspaceId;
+    if (!workspaceId) {
+      return;
+    }
+
+    try {
+      setJoiningPublicGroupId(workspaceId);
+      await joinPublicGroup(workspaceId);
+      showSuccess(t('home.groupHub.joinSuccess') || 'Tham gia nhóm thành công');
+    } catch (err) {
+      await fetchPublicGroups();
+      showError(err?.message || t('home.groupHub.joinError') || 'Không thể tham gia nhóm');
+    } finally {
+      setJoiningPublicGroupId(null);
+    }
+  };
+
   // Xử lý cập nhật workspace
   const handleEdit = async (workspaceId, data) => {
     await editWorkspace(workspaceId, data);
@@ -230,7 +268,7 @@ function HomePage() {
 
   useEffect(() => {
     const currentTab = searchParams.get('tab');
-    if (currentTab === 'workspace' || currentTab === 'group') {
+    if (currentTab === 'workspace' || currentTab === 'group' || currentTab === 'community') {
       return;
     }
 
@@ -246,6 +284,10 @@ function HomePage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('tab', normalizedTab);
     setSearchParams(nextParams);
+  };
+
+  const handleOpenCommunity = () => {
+    handleTabChange('community');
   };
 
   useEffect(() => {
@@ -354,6 +396,22 @@ function HomePage() {
           onOpenCreate={handleOpenCreateGroup}
           searchQuery={groupSearchQuery}
           onSearchQueryChange={setGroupSearchQuery}
+        />
+      );
+    }
+
+    if (activeTab === 'community') {
+      return (
+        <CommunityGroupBoard
+          groups={publicGroups}
+          loading={publicGroupTabLoading}
+          searchQuery={communitySearchQuery}
+          isDarkMode={isDarkMode}
+          onJoinGroup={handleJoinPublicGroup}
+          onOpenGroup={handleOpenExistingGroup}
+          onCreateGroup={handleOpenCreateGroup}
+          joiningWorkspaceId={joiningPublicGroupId}
+          myGroupCount={mergedGroups.length}
         />
       );
     }
@@ -491,30 +549,48 @@ function HomePage() {
       <main className={`max-w-[1640px] mx-auto px-20 pb-5 ${fontClass}`}>
         {/* Top Controls Row */}
         <div className="flex flex-wrap justify-between items-center gap-4 ">
-          {/* Left: Tab Filter */}
-          <div className={`flex items-center gap-1 rounded-full p-1 border ${
-            isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-gray-50 border-gray-200'
-          }`}>
-            <button 
-              onClick={() => handleTabChange('workspace')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'workspace' 
-                  ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
-                  : isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
+          <div className="flex flex-wrap items-center gap-3">
+            <div className={`flex items-center gap-1 rounded-full p-1 border ${
+              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <button 
+                onClick={() => handleTabChange('workspace')}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                  activeTab === 'workspace' 
+                    ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
+                    : isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {t('home.tabs.workspace')}
+              </button>
+              <button 
+                onClick={() => handleTabChange('group')}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                  activeTab === 'group'
+                    ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
+                    : isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {t('home.tabs.group')}
+              </button>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleOpenCommunity}
+              className={`h-10 rounded-full px-4 ${
+                activeTab === 'community'
+                  ? isDarkMode
+                    ? 'bg-slate-800 text-blue-300'
+                    : 'bg-blue-50 text-blue-700'
+                  : isDarkMode
+                    ? 'border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800'
+                    : 'border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
               }`}
             >
-              {t('home.tabs.workspace')}
-            </button>
-            <button 
-              onClick={() => handleTabChange('group')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === 'group'
-                  ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
-                  : isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              {t('home.tabs.group')}
-            </button>
+              <Sparkles className="mr-2 h-4 w-4" />
+              {t('home.actions.openGroupCommunity')}
+            </Button>
           </div>
 
           {/* Right: Search, Sort & View Mode */}
@@ -535,27 +611,36 @@ function HomePage() {
                 isDarkMode={isDarkMode}
               />
             ) : null}
+            {activeTab === 'community' ? (
+              <GroupFilterControls
+                searchQuery={communitySearchQuery}
+                onSearchQueryChange={setCommunitySearchQuery}
+                isDarkMode={isDarkMode}
+              />
+            ) : null}
 
             {/* View Toggle */}
-            <div className={`flex items-center rounded-lg overflow-hidden border ${
-              isDarkMode ? 'border-slate-700' : 'border-gray-300'
-            }`}>
-              <button 
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700' : isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-600'}`}
-                title={t('home.view.grid')}
-              >
-                <Grid3x3 className="w-4 h-4" />
-              </button>
-              <div className={`w-px h-6 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-300'}`} />
-              <button 
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700' : isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-600'}`}
-                title={t('home.view.list')}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
+            {activeTab !== 'community' ? (
+              <div className={`flex items-center rounded-lg overflow-hidden border ${
+                isDarkMode ? 'border-slate-700' : 'border-gray-300'
+              }`}>
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 ${viewMode === 'grid' ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700' : isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-600'}`}
+                  title={t('home.view.grid')}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </button>
+                <div className={`w-px h-6 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-300'}`} />
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 ${viewMode === 'list' ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700' : isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-600'}`}
+                  title={t('home.view.list')}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            ) : null}
 
             {/* Sort Dropdown
             <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-1 rounded-full border-gray-300">
