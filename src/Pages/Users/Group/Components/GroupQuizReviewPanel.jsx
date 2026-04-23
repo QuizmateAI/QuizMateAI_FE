@@ -524,7 +524,7 @@ function GroupQuizReviewPanel({
             <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
               {t(
                 "workspace.quiz.reviewDeleteQuestionConfirmDescription",
-                "Câu hỏi sẽ bị xóa khỏi quiz challenge. Chỉ tiếp tục nếu câu hỏi này thực sự không đạt yêu cầu review.",
+                "Câu hỏi sẽ bị xóa khỏi đề challenge. Chỉ tiếp tục nếu câu hỏi này thực sự không đạt yêu cầu review.",
               )}
             </DialogDescription>
           </DialogHeader>
