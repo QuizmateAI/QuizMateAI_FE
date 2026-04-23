@@ -543,7 +543,6 @@ function ChatPanel({
     "roadmap",
     "quiz",
     "communityQuiz",
-    "createQuiz",
     "editQuiz",
     "flashcard",
     "mockTest",

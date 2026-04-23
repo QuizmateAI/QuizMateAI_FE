@@ -5,6 +5,7 @@ import { getCurrentRoadmapKnowledgeProgress, getRoadmapGraph } from "@/api/Roadm
 import { getCurrentRoadmapPhaseProgress } from "@/api/RoadmapPhaseAPI";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
+import { hasReadyRoadmapQuiz } from "../utils/roadmapProcessing";
 
 function RoadmapJourPanel({
   isDarkMode = false,
@@ -162,7 +163,7 @@ function RoadmapJourPanel({
 
     if (isStudyNewRoadmap) {
       const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
-        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
         const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
         const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
         const isFinished = isPhaseFinishedStatus(phase?.status);
@@ -334,8 +335,7 @@ function RoadmapJourPanel({
                 {phases.map((phase, index) => {
                       const normalizedPhaseId = Number(phase?.phaseId);
                       const active = effectiveSelectedPhaseId === phase.phaseId;
-                      const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
-                        && phase.preLearningQuizzes.length > 0;
+                      const hasExistingPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
                       const isLockedPhase = index > maxUnlockedPhaseIndex && !hasExistingPreLearning;
                       const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
                       const isCompletedPhase = isPhaseVisuallyCompleted(phase, index);

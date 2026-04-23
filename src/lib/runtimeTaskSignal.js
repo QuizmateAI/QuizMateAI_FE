@@ -109,8 +109,7 @@ export function normalizeRuntimeTaskSignal(payload, options = {}) {
     );
 
   const isPreLearningByStatus = normalizedStatus.includes("PRE_LEARNING");
-  const isPreLearningByTaskType = isGenericStatus
-    && (taskType === "ROADMAP_PRE_LEARNING" || taskType === "PRE_LEARNING");
+  const isPreLearningByTaskType = taskType === "ROADMAP_PRE_LEARNING" || taskType === "PRE_LEARNING";
   const isPreLearningByMessage = isGenericStatus
     && (
       normalizedMessage.includes("PRE_LEARNING")
@@ -120,17 +119,17 @@ export function normalizeRuntimeTaskSignal(payload, options = {}) {
   const isPreLearningSignal = isPreLearningByStatus || isPreLearningByTaskType || isPreLearningByMessage;
 
   const isPhaseContentByStatus = normalizedStatus.includes("ROADMAP_PHASE_CONTENT");
-  const isPhaseContentByTaskType = isGenericStatus
-    && (taskType === "ROADMAP_PHASE_CONTENT" || taskType === "PHASE_CONTENT");
+  const isPhaseContentByTaskType = taskType === "ROADMAP_PHASE_CONTENT" || taskType === "PHASE_CONTENT";
   const isPhaseContentSignal = isPhaseContentByStatus || isPhaseContentByTaskType;
 
   const isKnowledgeQuizByStatus = normalizedStatus.includes("KNOWLEDGE_QUIZ");
-  const isKnowledgeQuizByTaskType = isGenericStatus
-    && (taskType === "ROADMAP_KNOWLEDGE_QUIZ" || taskType === "KNOWLEDGE_QUIZ");
+  const isKnowledgeQuizByTaskType = taskType === "ROADMAP_KNOWLEDGE_QUIZ" || taskType === "KNOWLEDGE_QUIZ";
   const isKnowledgeQuizSignal = isKnowledgeQuizByStatus || isKnowledgeQuizByTaskType;
 
   const isKnowledgeSignal = normalizedStatus.includes("KNOWLEDGE") && !isKnowledgeQuizSignal;
-  const isPostLearningSignal = normalizedStatus.includes("POST_LEARNING") || normalizedStep.includes("POST_LEARNING");
+  const isPostLearningSignal = normalizedStatus.includes("POST_LEARNING")
+    || normalizedStep.includes("POST_LEARNING")
+    || taskType.includes("POST_LEARNING");
   const isQuizSignal = hasValidQuizId
     || (
       !normalizedStatus.startsWith("ROADMAP_")
