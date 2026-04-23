@@ -3639,6 +3639,7 @@ function GroupWorkspacePage() {
     );
 
     if (scopeId > 0 && Number.isInteger(flashcardSetId) && flashcardSetId > 0) {
+      const createdPayload = createdFlashcard?.data || createdFlashcard || {};
       queryClient.setQueryData(queryKey, (previousItems = []) => {
         const safePreviousItems = Array.isArray(previousItems) ? previousItems : [];
 
@@ -3649,14 +3650,19 @@ function GroupWorkspacePage() {
         const nowIso = new Date().toISOString();
         const optimisticItem = {
           flashcardSetId,
-          flashcardSetName: createdFlashcard?.flashcardSetName
-            || createdFlashcard?.name
+          flashcardSetName: createdPayload?.flashcardSetName
+            || createdPayload?.name
             || `${t('workspace.flashcard.createTitle')} #${flashcardSetId}`,
-          status: String(createdFlashcard?.status || 'DRAFT').toUpperCase(),
-          createVia: createdFlashcard?.createVia || 'AI',
-          itemCount: Number(createdFlashcard?.itemCount ?? 0),
-          createdAt: createdFlashcard?.createdAt || nowIso,
-          updatedAt: createdFlashcard?.updatedAt || nowIso,
+          status: String(createdPayload?.status || 'DRAFT').toUpperCase(),
+          createVia: createdPayload?.createVia || 'AI',
+          itemCount: Number(createdPayload?.itemCount ?? 0),
+          taskId: createdPayload?.taskId ?? createdPayload?.websocketTaskId ?? null,
+          websocketTaskId: createdPayload?.websocketTaskId ?? createdPayload?.taskId ?? null,
+          percent: createdPayload?.percent ?? createdPayload?.progressPercent ?? 0,
+          progressPercent: createdPayload?.progressPercent ?? createdPayload?.percent ?? 0,
+          processingObject: createdPayload?.processingObject,
+          createdAt: createdPayload?.createdAt || nowIso,
+          updatedAt: createdPayload?.updatedAt || nowIso,
         };
 
         return [optimisticItem, ...safePreviousItems];
