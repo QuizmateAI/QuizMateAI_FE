@@ -991,52 +991,6 @@ function QuizDetailView({
         </div>
       </div>
 
-      {false && canActivateManualDraftQuiz && (
-        <div className="px-4 pb-3 pt-1">
-          <div
-            className={`relative overflow-hidden rounded-2xl border shadow-sm ${
-              isDarkMode
-                ? "border-slate-700/80 bg-gradient-to-br from-slate-900/95 via-slate-900 to-emerald-950/35"
-                : "border-slate-200/90 bg-gradient-to-br from-white via-slate-50/90 to-emerald-50/70"
-            }`}
-          >
-            <div
-              className={`pointer-events-none absolute inset-y-0 left-0 w-1 ${
-                isDarkMode ? "bg-gradient-to-b from-emerald-400/90 to-teal-500/80" : "bg-gradient-to-b from-emerald-500 to-teal-500"
-              }`}
-              aria-hidden
-            />
-            <div className="flex gap-3.5 pl-5 pr-4 py-4">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                  isDarkMode ? "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-400/20" : "bg-emerald-100 text-emerald-600 ring-1 ring-emerald-200/80"
-                }`}
-              >
-                <Play className="h-5 w-5" strokeWidth={2} />
-              </div>
-              <div className="min-w-0 flex-1 space-y-2">
-                <p className={`text-[13px] font-semibold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                  Quiz này đang ở trạng thái bản nháp
-                </p>
-                <p className={`text-[13px] leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                  Bạn có thể tiếp tục chỉnh sửa thoải mái khi quiz chưa có attempt. Khi đã sẵn sàng cho người dùng làm bài, hãy kích hoạt quiz.
-                </p>
-                <div className="flex flex-wrap gap-2 pt-0.5">
-                  <Button
-                    disabled={activating}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
-                    onClick={handleActivateWorkspaceQuiz}
-                  >
-                    {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                    <span className="text-sm">{t("workspace.quiz.detail.confirmActivateQuiz", "Xác nhận & kích hoạt")}</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {_contextType === "GROUP" && String(currentStatus || "").toUpperCase() === "DRAFT" && (
         <div className="px-4 pb-3 pt-1">
           <div
