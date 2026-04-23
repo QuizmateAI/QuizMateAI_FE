@@ -32,6 +32,16 @@ export const getMyJoinedGroups = async () => {
   return response;
 };
 
+export const getPublicGroups = async (search) => {
+  const response = await api.get(buildUrl('/group/public', { search }));
+  return response;
+};
+
+export const joinPublicGroup = async (workspaceId) => {
+  const response = await api.post(`/group/${workspaceId}/join`);
+  return response;
+};
+
 // Tạo nhóm mới (dùng endpoint tạo group workspace)
 export const createGroup = async (data) => {
   const response = await api.post('/workspace/create/group', data);
