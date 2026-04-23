@@ -47,6 +47,7 @@ import {
 } from "@/api/MaterialAPI";
 import {
   deleteQuiz,
+  duplicateQuiz,
   getQuizzesByScope,
   shareQuizToCommunity,
 } from "@/api/QuizAPI";
@@ -2180,11 +2181,31 @@ function WorkspacePage() {
     setActiveView("editQuiz");
   }, []);
 
-  const handleCreateSimilarQuiz = useCallback((quiz) => {
-    setSelectedQuiz({ ...quiz, _editMode: "clone" });
-    setQuizBackTarget(null);
-    setActiveView("editQuiz");
-  }, []);
+  const handleCreateSimilarQuiz = useCallback(async (quiz) => {
+    const quizId = Number(quiz?.quizId);
+    if (!Number.isInteger(quizId) || quizId <= 0) return;
+
+    try {
+      const res = await duplicateQuiz(quizId);
+      const duplicatedQuiz = res?.data?.data ?? res?.data;
+
+      if (!duplicatedQuiz?.quizId) {
+        throw new Error(t("workspace.quiz.detail.duplicate.toastError", "Không thể sao chép quiz."));
+      }
+
+      showSuccess(
+        t(
+          "workspace.quiz.detail.duplicate.toastSuccess",
+          "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
+        ),
+      );
+      setSelectedQuiz(duplicatedQuiz);
+      setQuizBackTarget(null);
+      setActiveView("editQuiz");
+    } catch (error) {
+      showError(getErrorMessage(t, error));
+    }
+  }, [showError, showSuccess, t]);
 
   // Save quiz edits and return to detail view
 
@@ -2206,6 +2227,7 @@ function WorkspacePage() {
     );
 
     if (scopeId > 0 && Number.isInteger(flashcardSetId) && flashcardSetId > 0) {
+      const createdPayload = createdFlashcard?.data || createdFlashcard || {};
       queryClient.setQueryData(queryKey, (previousItems = []) => {
         const safePreviousItems = Array.isArray(previousItems) ? previousItems : [];
 
@@ -2221,14 +2243,19 @@ function WorkspacePage() {
         const optimisticItem = {
           flashcardSetId,
           flashcardSetName:
-            createdFlashcard?.flashcardSetName ||
-            createdFlashcard?.name ||
+            createdPayload?.flashcardSetName ||
+            createdPayload?.name ||
             `${t("workspace.flashcard.createTitle")} #${flashcardSetId}`,
-          status: String(createdFlashcard?.status || "DRAFT").toUpperCase(),
-          createVia: createdFlashcard?.createVia || "AI",
-          itemCount: Number(createdFlashcard?.itemCount ?? 0),
-          createdAt: createdFlashcard?.createdAt || nowIso,
-          updatedAt: createdFlashcard?.updatedAt || nowIso,
+          status: String(createdPayload?.status || "DRAFT").toUpperCase(),
+          createVia: createdPayload?.createVia || "AI",
+          itemCount: Number(createdPayload?.itemCount ?? 0),
+          taskId: createdPayload?.taskId ?? createdPayload?.websocketTaskId ?? null,
+          websocketTaskId: createdPayload?.websocketTaskId ?? createdPayload?.taskId ?? null,
+          percent: createdPayload?.percent ?? createdPayload?.progressPercent ?? 0,
+          progressPercent: createdPayload?.progressPercent ?? createdPayload?.percent ?? 0,
+          processingObject: createdPayload?.processingObject,
+          createdAt: createdPayload?.createdAt || nowIso,
+          updatedAt: createdPayload?.updatedAt || nowIso,
         };
 
         return [optimisticItem, ...safePreviousItems];
@@ -2254,18 +2281,41 @@ function WorkspacePage() {
   const handleDeleteFlashcard = useCallback(async (flashcard) => {
     if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
 
-    try {
-      const { deleteFlashcardSet } = await import("@/api/FlashcardAPI");
+    const flashcardSetId = Number(
+      flashcard?.flashcardSetId ?? flashcard?.id ?? flashcard?.flashcardId,
+    );
+    if (!Number.isInteger(flashcardSetId) || flashcardSetId <= 0) {
+      showError(t("workspace.flashcard.deleteFailed", "Không thể xóa bộ flashcard này."));
+      return;
+    }
 
-      await deleteFlashcardSet(flashcard.flashcardSetId);
+    const scopeId = Number(workspaceId) || 0;
+    const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
+
+    try {
+      await deleteFlashcardSet(flashcardSetId);
+
+      queryClient.setQueryData(queryKey, (previousItems = []) => {
+        if (!Array.isArray(previousItems)) return previousItems;
+        return previousItems.filter(
+          (item) => Number(item?.flashcardSetId ?? item?.id ?? item?.flashcardId) !== flashcardSetId,
+        );
+      });
+      void queryClient.invalidateQueries({ queryKey });
+      setSelectedFlashcard((current) => (
+        Number(current?.flashcardSetId ?? current?.id ?? current?.flashcardId) === flashcardSetId
+          ? null
+          : current
+      ));
 
       // Return to the list view so it can refresh
 
       setActiveView("flashcard");
     } catch (err) {
       console.error("Delete flashcard failed:", err);
+      showError(getErrorMessage(t, err));
     }
-  }, []);
+  }, [queryClient, showError, t, workspaceId]);
 
   // Create a roadmap for the individual workspace
 
@@ -2376,6 +2426,7 @@ function WorkspacePage() {
       createRoadmap: "roadmap",
       createQuiz: "quiz",
       createFlashcard: "flashcard",
+      createManualFlashcard: "flashcard",
       quizDetail: "quiz",
       editQuiz: "quizDetail",
       flashcardDetail: "flashcard",

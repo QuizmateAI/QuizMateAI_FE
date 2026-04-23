@@ -1483,8 +1483,8 @@ function QuizListView({
           <div className={useLegacyRoadmapCards
             ? "space-y-2"
             : embedded
-              ? "grid grid-cols-1 gap-3"
-              : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
+              ? "grid grid-cols-1 items-start gap-3"
+              : "grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
             {paginatedQuizzes.map((quiz) => {
               if (useLegacyRoadmapCards) {
                 return renderLegacyRoadmapCard(quiz);
@@ -1576,7 +1576,7 @@ function QuizListView({
                       onViewQuiz?.(quiz);
                     }
                   }}
-                  className={`group flex h-[204px] flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                  className={`group flex ${isProcessing ? "min-h-[204px]" : "h-[204px]"} flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
                     isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
                   } ${
                     isDarkMode
@@ -1672,10 +1672,14 @@ function QuizListView({
                     </div>
                   ) : null}
 
-                  {!isProcessing ? (
-                    <div className="mt-auto">
-                      <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
+                  <div className="mt-auto">
+                    <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                          <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
+                        </div>
+                        {shouldShowResultSummary ? (
                           <div className="flex items-center gap-2">
                             <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
                             <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
@@ -1705,33 +1709,32 @@ function QuizListView({
                         />
                       ) : null}
 
-                      <div className={`mt-4 flex items-start justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
-                        <div className="flex min-w-0 flex-wrap items-center gap-3">
-                          <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
-                            <BarChart3 className="h-3.5 w-3.5" />
-                            <span>{difficultyLabel}</span>
+                    <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-3">
+                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
+                          <BarChart3 className="h-3.5 w-3.5" />
+                          <span>{difficultyLabel}</span>
+                        </div>
+                        {durationLabel ? (
+                          <div className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                            <Timer className="h-3.5 w-3.5" />
+                            <span>{durationLabel}</span>
                           </div>
-                          {durationLabel ? (
-                            <div className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
-                              <Timer className="h-3.5 w-3.5" />
-                              <span>{durationLabel}</span>
-                            </div>
-                          ) : null}
-                        </div>
-                        <div className={`flex flex-wrap items-center justify-end gap-2 text-[11px] font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                          {!shouldHideRoadmapVisibility ? (
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                              {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                              <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
-                            </span>
-                          ) : null}
-                          {createdAtLabel ? (
-                            <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                              <Clock className="h-3.5 w-3.5" />
-                              <span className="whitespace-nowrap">{createdAtLabel}</span>
-                            </span>
-                          ) : null}
-                        </div>
+                        ) : null}
+                      </div>
+                      <div className={`flex flex-wrap items-center justify-start gap-2 text-[11px] font-semibold sm:justify-end ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                        {!shouldHideRoadmapVisibility ? (
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                            {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
+                          </span>
+                        ) : null}
+                        {createdAtLabel ? (
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span className="whitespace-nowrap">{createdAtLabel}</span>
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   ) : null}

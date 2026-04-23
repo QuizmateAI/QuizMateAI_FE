@@ -12,6 +12,7 @@ function Step2Questions({
   questions,
   setQuestions,
   workspaceId,
+  contextType = "INDIVIDUAL",
   excludeQuizId,
   onBack,
   onSubmit,
@@ -20,6 +21,7 @@ function Step2Questions({
   submitting = false,
   isDarkMode = false,
 }) {
+  const importEnabled = contextType !== "GROUP";
   const { t } = useTranslation();
   const { addToast } = useToast();
   const [importOpen, setImportOpen] = useState(false);
@@ -194,7 +196,7 @@ function Step2Questions({
           submittingLabel={submittingLabel}
           submitting={submitting}
           onAddQuestion={addQuestion}
-          onOpenImport={() => setImportOpen(true)}
+          onOpenImport={importEnabled ? () => setImportOpen(true) : undefined}
           onJumpTo={handleJumpTo}
           onDistributeEvenly={handleDistributeEvenly}
           isDarkMode={isDarkMode}
@@ -240,14 +242,16 @@ function Step2Questions({
         </div>
       </div>
 
-      <ImportQuestionsPanel
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        workspaceId={workspaceId}
-        excludeQuizId={excludeQuizId}
-        onImport={handleImport}
-        isDarkMode={isDarkMode}
-      />
+      {importEnabled ? (
+        <ImportQuestionsPanel
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          workspaceId={workspaceId}
+          excludeQuizId={excludeQuizId}
+          onImport={handleImport}
+          isDarkMode={isDarkMode}
+        />
+      ) : null}
     </div>
   );
 }
