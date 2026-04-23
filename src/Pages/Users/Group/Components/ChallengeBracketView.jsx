@@ -584,7 +584,7 @@ export default function ChallengeBracketView({
             Sơ đồ slot đấu cúp
           </div>
           <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            {registeredCount}/{resolvedBracketSize} slot đã có người đăng ký. {published ? 'Challenge đã publish.' : 'Quiz và slot vẫn bị ẩn với member trước khi publish và trước giờ làm bài.'}
+            {registeredCount}/{resolvedBracketSize} slot đã có người đăng ký. {published ? 'Challenge đã publish.' : 'Đề và slot vẫn bị ẩn với member trước khi publish và trước giờ làm bài.'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

@@ -38,7 +38,7 @@ function isQuizEligibleForChallengeSource(quiz) {
 
 const STEPS = [
   { key: 'mode', labelKey: 'createChallengeWizard.steps.mode', labelFallback: 'Mode' },
-  { key: 'quiz', labelKey: 'createChallengeWizard.steps.quiz', labelFallback: 'Select quiz' },
+  { key: 'quiz', labelKey: 'createChallengeWizard.steps.quiz', labelFallback: 'Select content' },
   { key: 'schedule', labelKey: 'createChallengeWizard.steps.schedule', labelFallback: 'Schedule' },
   { key: 'registration', labelKey: 'createChallengeWizard.steps.registration', labelFallback: 'Registration' },
   { key: 'review', labelKey: 'createChallengeWizard.steps.review', labelFallback: 'Review' },
@@ -523,8 +523,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
             {/* Source mode selection */}
             <div className="grid gap-3 md:grid-cols-2">
               {[
-                { key: 'EXISTING_SNAPSHOT', label: t('createChallengeWizard.sourceMode.existingLabel', 'Existing quiz'), desc: t('createChallengeWizard.sourceMode.existingDesc', 'Create a snapshot from an existing quiz') },
-                { key: 'NEW_CHALLENGE_QUIZ', label: t('createChallengeWizard.sourceMode.newLabel', 'New quiz'), desc: t('createChallengeWizard.sourceMode.newDesc', 'Compose the quiz later in the challenge detail') },
+                { key: 'EXISTING_SNAPSHOT', label: t('createChallengeWizard.sourceMode.existingLabel', 'Existing content'), desc: t('createChallengeWizard.sourceMode.existingDesc', 'Create a snapshot from an existing content set') },
+                { key: 'NEW_CHALLENGE_QUIZ', label: t('createChallengeWizard.sourceMode.newLabel', 'New match'), desc: t('createChallengeWizard.sourceMode.newDesc', 'Compose the match later in the challenge detail') },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -547,13 +547,13 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   <div className="flex items-center gap-2">
                     <ListChecks className={`h-4 w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
                     <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {t('createChallengeWizard.quizList.sectionTitle', 'Shared workspace quizzes')}
+                      {t('createChallengeWizard.quizList.sectionTitle', 'Shared workspace content')}
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
                       }`}
-                      title={t('createChallengeWizard.quizList.countTitle', 'Only shared (non-assigned) quizzes can be used for a challenge')}
+                      title={t('createChallengeWizard.quizList.countTitle', 'Only shared (non-assigned) content can be used for a challenge')}
                     >
                       {quizzesLoading ? '…' : challengeEligibleQuizzes.length}
                     </span>
@@ -564,11 +564,11 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   <Search className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
                   <input
                     type="text"
-                    placeholder={t('createChallengeWizard.quizList.searchPlaceholder', 'Search by quiz name...')}
+                    placeholder={t('createChallengeWizard.quizList.searchPlaceholder', 'Search by name...')}
                     value={quizSearch}
                     onChange={(e) => setQuizSearch(e.target.value)}
                     className={`${inputCls} pl-10 shadow-sm`}
-                    aria-label={t('createChallengeWizard.quizList.searchAriaLabel', 'Search quizzes')}
+                    aria-label={t('createChallengeWizard.quizList.searchAriaLabel', 'Search content')}
                   />
                 </div>
 
@@ -587,16 +587,16 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                       <FileText className={`h-10 w-10 opacity-40 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
                       <p className="text-sm font-medium">
                         {quizzes.length === 0
-                          ? t('createChallengeWizard.quizList.emptyNoQuizzes', 'No quizzes in this workspace yet')
+                          ? t('createChallengeWizard.quizList.emptyNoQuizzes', 'No shared content in this workspace yet')
                           : challengeEligibleQuizzes.length === 0
-                            ? t('createChallengeWizard.quizList.emptyNoEligible', 'No shared quizzes available for a challenge')
+                            ? t('createChallengeWizard.quizList.emptyNoEligible', 'No shared content available for a challenge')
                             : t('createChallengeWizard.quizList.emptyNoMatches', 'No matches for your search')}
                       </p>
                       <p className="max-w-xs text-xs opacity-90">
                         {quizzes.length === 0
-                          ? t('createChallengeWizard.quizList.emptyNoQuizzesHint', 'Create a quiz in the workspace first, or choose "New quiz" above.')
+                          ? t('createChallengeWizard.quizList.emptyNoQuizzesHint', 'Create a content set in the workspace first, or choose "New match" above.')
                           : challengeEligibleQuizzes.length === 0
-                            ? t('createChallengeWizard.quizList.emptyNoEligibleHint', 'Quizzes assigned to specific members cannot be used. Publish the quiz as shared for the whole group or remove the per-member assignment first.')
+                            ? t('createChallengeWizard.quizList.emptyNoEligibleHint', 'Content assigned to specific members cannot be used. Publish it as shared for the whole group or remove the per-member assignment first.')
                             : t('createChallengeWizard.quizList.emptyNoMatchesHint', 'Try a different keyword or clear the search box.')}
                       </p>
                     </div>
@@ -691,11 +691,11 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                 <FileText className={`mx-auto mb-2 h-8 w-8 ${isDarkMode ? 'text-orange-300/60' : 'text-orange-400'}`} />
                 <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                   {t('createChallengeWizard.newQuizNotice.leadBefore', 'After creating the challenge, open its detail page and click ')}
-                  <strong className="font-medium">{t('createChallengeWizard.newQuizNotice.composeLabel', 'Compose quiz')}</strong>
-                  {t('createChallengeWizard.newQuizNotice.leadAfter', ' to launch the quiz editor (Quiz tab).')}
+                  <strong className="font-medium">{t('createChallengeWizard.newQuizNotice.composeLabel', 'Compose match')}</strong>
+                  {t('createChallengeWizard.newQuizNotice.leadAfter', ' to launch the match editor.')}
                 </p>
                 <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-                  {t('createChallengeWizard.newQuizNotice.hint', 'The start date must be at least 3 days from now; after creation, open the challenge detail to compose the quiz before the challenge starts.')}
+                  {t('createChallengeWizard.newQuizNotice.hint', 'The start date must be at least 3 days from now; after creation, open the challenge detail to compose the match before the challenge starts.')}
                 </p>
               </div>
             )}
@@ -771,10 +771,10 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               />
               <span>
                 <span className={`block text-sm font-medium ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
-                  {t('createChallengeWizard.schedule.leaderParticipatesLabel', 'I will take the test with everyone')}
+                  {t('createChallengeWizard.schedule.leaderParticipatesLabel', 'I will take the match with everyone')}
                 </span>
                 <span className={`mt-1 block text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                  {t('createChallengeWizard.schedule.leaderParticipatesDesc', 'You get a slot in the participant list. After the quiz is published, you cannot preview questions (for fairness to members). While the quiz is still a draft (DRAFT), you can still author and test it.')}
+                  {t('createChallengeWizard.schedule.leaderParticipatesDesc', 'You get a slot in the participant list. After the match is published, you cannot preview questions (for fairness to members). While the match is still a draft (DRAFT), you can still author and test it.')}
                 </span>
               </span>
             </label>
@@ -937,14 +937,14 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
 
             <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
               <h4 className={`mb-2 text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {t('createChallengeWizard.review.quizHeading', 'Quiz')}
+                {t('createChallengeWizard.review.quizHeading', 'Match content')}
               </h4>
               <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                 {sourceMode === 'EXISTING_SNAPSHOT'
                   ? (selectedQuiz
-                      ? t('createChallengeWizard.review.quizExistingSelected', '{{title}} (shared quiz snapshot)', { title: selectedQuiz.title })
+                      ? t('createChallengeWizard.review.quizExistingSelected', '{{title}} (shared content snapshot)', { title: selectedQuiz.title })
                       : t('createChallengeWizard.review.quizNotChosen', 'Not selected'))
-                  : t('createChallengeWizard.review.quizNewNotice', 'New quiz (author the questions in the challenge detail after creation)')}
+                  : t('createChallengeWizard.review.quizNewNotice', 'New match (author the questions in the challenge detail after creation)')}
               </p>
               {sourceMode === 'EXISTING_SNAPSHOT' && selectedQuiz ? (
                 <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>

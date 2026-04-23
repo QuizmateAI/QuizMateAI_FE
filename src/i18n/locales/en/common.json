@@ -139,6 +139,7 @@
     "challengeParticipantNotFound": "You have not joined this challenge.",
     "challengeNotPlaying": "Challenge has not started or you are not in PLAYING state.",
     "challengeAlreadySubmitted": "You have already submitted.",
+    "challengeFinishNotAllowed": "Manual finish is only allowed once every registered participant has submitted.",
     "defaultPlanCannotDelete": "Default plan cannot be deleted.",
     "defaultPlanCannotUpdateType": "Default plan type cannot be updated.",
     "defaultPlanCannotInactive": "Default plan cannot be deactivated.",

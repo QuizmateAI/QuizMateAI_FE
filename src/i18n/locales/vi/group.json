@@ -351,7 +351,7 @@
     },
     "challenge": {
       "title": "Challenge",
-      "description": "Thi đấu cùng các thành viên trong nhóm qua các bài quiz theo thời gian thực.",
+      "description": "Thi đấu cùng các thành viên trong nhóm qua các đề challenge theo thời gian thực.",
       "badge": "Challenge",
       "noItems": "Chưa có challenge nào.",
       "createChallenge": "Tạo Challenge",
@@ -359,12 +359,16 @@
       "cancelDialogDescription": "Bạn có chắc muốn huỷ challenge này? Thành viên sẽ không còn tham gia và lịch challenge sẽ bị gỡ.",
       "cancelDialogBack": "Đóng",
       "cancelDialogConfirm": "Huỷ challenge",
-      "snapshotQuizDefaultTitle": "Quiz challenge",
-      "viewSnapshotQuiz": "Xem quiz",
-      "snapshotQuizHint": "Xem nhanh trạng thái quiz.",
+      "finishDialogTitle": "Kết thúc challenge ngay?",
+      "finishDialogDescription": "Ranking sẽ được chốt và challenge chuyển sang trạng thái kết thúc. Chỉ kết thúc sớm được khi tất cả người đăng ký đã nộp bài. Không thể hoàn tác.",
+      "finishDialogBack": "Đóng",
+      "finishDialogConfirm": "Kết thúc ngay",
+      "snapshotQuizDefaultTitle": "Đề challenge",
+      "viewSnapshotQuiz": "Xem đề",
+      "snapshotQuizHint": "Xem nhanh trạng thái đề challenge.",
       "quizSnapshotReviewDraftTitle": "Đề challenge (chỉ xem & chỉnh sửa)",
-      "quizSnapshotReviewDraftBody": "Đây là bài thi gắn với challenge, không phải quiz chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như quiz nhóm.",
-      "quizSnapshotReviewNoTakeHint": "Bài thi này chỉ mở khi challenge bắt đầu (theo lịch hoặc khi leader điều khiển). Xếp hạng theo từng challenge — không làm bài từ màn hình này.",
+      "quizSnapshotReviewDraftBody": "Đây là đề thi gắn với challenge, không phải nội dung chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như bài tập chung của nhóm.",
+      "quizSnapshotReviewNoTakeHint": "Đề này chỉ mở khi challenge bắt đầu (theo lịch hoặc khi leader điều khiển). Xếp hạng theo từng challenge — không làm bài từ màn hình này.",
       "leaderboardTitle": "Bảng xếp hạng",
       "editSchedule": "Sửa lịch & thông tin",
       "editDialogTitle": "Cập nhật challenge",
@@ -386,7 +390,7 @@
         "PROCESSING": "Đang tạo",
         "ACTIVE": "Sẵn sàng",
         "REVIEW_PENDING": "Chờ reviewer",
-        "ERROR": "Lỗi tạo quiz"
+        "ERROR": "Lỗi tạo đề"
       },
       "reviewContributorsTitle": "Người review đề",
       "reviewContributorsHint": "Thành viên được gán ở đây không thể đăng ký tham gia challenge. Không gán người đã tham gia.",
@@ -395,8 +399,8 @@
       "reviewContributorAdd": "Thêm",
       "reviewContributorRemove": "Gỡ",
       "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này.",
-      "reviewInviteeNotice": "Bạn được mời review đề cho challenge này. Hãy mở «Xem quiz» → tab Kiểm tra: xác nhận «Đề ổn» hoặc gửi phiếu duyệt APPROVED khi thấy ổn. Đến giờ bắt đầu, hệ thống sẽ tự mở challenge nếu đã đủ điều kiện review.",
-      "reviewInviteeShortHint": "Chỉ cần bấm «Xem quiz» ở khối Quiz challenge phía trên, rồi mở tab «Kiểm tra».",
+      "reviewInviteeNotice": "Bạn được mời review đề cho challenge này. Hãy mở «Xem đề» → tab Kiểm tra: xác nhận «Đề ổn» hoặc gửi phiếu duyệt APPROVED khi thấy ổn. Đến giờ bắt đầu, hệ thống sẽ tự mở challenge nếu đã đủ điều kiện review.",
+      "reviewInviteeShortHint": "Chỉ cần bấm «Xem đề» ở khối Đề challenge phía trên, rồi mở tab «Kiểm tra».",
       "reviewQuizNotReadyHint": "Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau."
     },
     "members": {
@@ -1258,7 +1262,7 @@
   },
   "createChallengeWizard": {
     "steps": {
-      "quiz": "Chọn Quiz",
+      "quiz": "Chọn đề",
       "schedule": "Lịch trình",
       "registration": "Đăng ký",
       "review": "Xác nhận"
@@ -1267,22 +1271,22 @@
       "createFailed": "Không thể tạo challenge"
     },
     "sourceMode": {
-      "existingLabel": "Quiz có sẵn",
-      "existingDesc": "Tạo bản sao từ quiz đã có",
-      "newLabel": "Quiz mới",
+      "existingLabel": "Đề có sẵn",
+      "existingDesc": "Tạo bản sao từ nội dung đã có",
+      "newLabel": "Đề mới",
       "newDesc": "Soạn đề sau trong chi tiết challenge"
     },
     "quizList": {
-      "sectionTitle": "Quiz chung trong workspace",
-      "countTitle": "Chỉ quiz không giao riêng mới dùng được cho challenge",
-      "searchPlaceholder": "Tìm theo tên quiz...",
-      "searchAriaLabel": "Tìm quiz",
+      "sectionTitle": "Nội dung chia sẻ trong workspace",
+      "countTitle": "Chỉ nội dung chia sẻ (không giao riêng) mới dùng được cho challenge",
+      "searchPlaceholder": "Tìm theo tên...",
+      "searchAriaLabel": "Tìm nội dung",
       "loading": "Đang tải danh sách…",
-      "emptyNoQuizzes": "Chưa có quiz nào trong workspace",
-      "emptyNoEligible": "Không có quiz chung để tạo challenge",
+      "emptyNoQuizzes": "Chưa có nội dung chia sẻ nào trong workspace",
+      "emptyNoEligible": "Không có nội dung chia sẻ để tạo challenge",
       "emptyNoMatches": "Không khớp từ khóa tìm kiếm",
-      "emptyNoQuizzesHint": "Tạo quiz trong workspace trước, hoặc chọn \"Quiz mới\" ở trên.",
-      "emptyNoEligibleHint": "Quiz đã giao riêng thành viên không dùng được. Xuất bản quiz dạng chung cho cả nhóm hoặc bỏ giao riêng trước.",
+      "emptyNoQuizzesHint": "Tạo nội dung trong workspace trước, hoặc chọn \"Đề mới\" ở trên.",
+      "emptyNoEligibleHint": "Nội dung đã giao riêng thành viên không dùng được. Xuất bản dạng chia sẻ cho cả nhóm hoặc bỏ giao riêng trước.",
       "emptyNoMatchesHint": "Thử từ khóa khác hoặc xóa ô tìm kiếm.",
       "questionCount": "{{count}} câu",
       "durationMinutes": "{{minutes}} phút"
@@ -1290,7 +1294,7 @@
     "newQuizNotice": {
       "leadBefore": "Sau khi tạo challenge, vào chi tiết challenge và bấm ",
       "composeLabel": "Soạn đề",
-      "leadAfter": " để mở trình soạn quiz (tab Quiz).",
+      "leadAfter": " để mở trình soạn đề challenge.",
       "hint": "Chọn thời gian trong tương lai; sau khi tạo, vào chi tiết challenge để soạn đề trước khi challenge diễn ra."
     },
     "schedule": {
@@ -1317,10 +1321,10 @@
       "fieldDescription": "Mô tả:",
       "fieldStart": "Bắt đầu:",
       "fieldEnd": "Kết thúc:",
-      "quizHeading": "Quiz",
-      "quizExistingSelected": "{{title}} (bản sao quiz chung)",
+      "quizHeading": "Nội dung đề",
+      "quizExistingSelected": "{{title}} (bản sao nội dung chia sẻ)",
       "quizNotChosen": "Chưa chọn",
-      "quizNewNotice": "Quiz mới (soạn đề trong chi tiết challenge sau khi tạo)",
+      "quizNewNotice": "Đề mới (soạn đề trong chi tiết challenge sau khi tạo)",
       "snapshotNote": "Snapshot không giao riêng thành viên; toàn bộ người đăng ký challenge dùng chung nội dung này.",
       "registrationHeading": "Đăng ký",
       "registrationPublic": "Công khai - mọi thành viên đều có thể đăng ký",
@@ -1629,12 +1633,12 @@
     "back": "Quay lại",
     "waitingReviewerConfirm": "Chờ reviewer xác nhận",
     "publishHints": {
-      "needDraftQuizContent": "Leader phải soạn nội dung quiz trước.",
-      "needActiveQuiz": "Quiz challenge phải được chuyển từ draft sang active trước khi xuất bản challenge.",
-      "needReviewer": "Cần ít nhất 1 reviewer cho quiz challenge.",
+      "needDraftQuizContent": "Leader phải soạn nội dung đề trước.",
+      "needActiveQuiz": "Đề challenge phải được chuyển từ draft sang active trước khi xuất bản challenge.",
+      "needReviewer": "Cần ít nhất 1 reviewer cho đề challenge.",
       "needBothReviewers": "Không bắt buộc đủ reviewer chính và reviewer phụ. Chỉ cần reviewer chính trước khi xuất bản challenge.",
-      "needPrimaryReviewer": "Cần có reviewer chính cho quiz challenge trước khi xuất bản.",
-      "needAssistantReviewer": "Reviewer phụ là tuỳ chọn cho quiz challenge.",
+      "needPrimaryReviewer": "Cần có reviewer chính cho đề challenge trước khi xuất bản.",
+      "needAssistantReviewer": "Reviewer phụ là tuỳ chọn cho đề challenge.",
       "assistantConfirmedWaitingPrimary": "Reviewer phụ đã xác nhận. Còn chờ reviewer chính, hoặc đổi người đã xác nhận thành reviewer chính.",
       "needReviewersConfirm": "Cần ít nhất 1 reviewer xác nhận đề ổn trước khi leader xuất bản challenge.",
       "startTimePassed": "Challenge đã tới giờ bắt đầu nên không thể xuất bản.",
@@ -1648,14 +1652,14 @@
       "inviteOnly": "Mời riêng",
       "public": "Công khai"
     },
-    "quizChallengeLabel": "Quiz challenge",
+    "quizChallengeLabel": "Đề challenge",
     "minutesShort": "{{count}} phút",
     "questionsShort": "câu hỏi",
     "composeChallengeQuiz": "Soạn đề challenge",
-    "draftQuizHint": "Tạo nội dung quiz trước, sau đó mới xem lại được đề challenge.",
-    "leaderSetupFlowHint": "Leader soạn quiz, reviewer chính xác nhận, rồi publish challenge.",
-    "processingQuizTitle": "Quiz challenge đang được tạo",
-    "processingQuizHint": "Hệ thống vẫn đang sinh câu hỏi cho challenge này. Quay lại đây sau ít phút để tiếp tục review hoặc chỉnh sửa quiz.",
+    "draftQuizHint": "Tạo nội dung đề trước, sau đó mới xem lại được đề challenge.",
+    "leaderSetupFlowHint": "Leader soạn đề, reviewer chính xác nhận, rồi publish challenge.",
+    "processingQuizTitle": "Đề challenge đang được tạo",
+    "processingQuizHint": "Hệ thống vẫn đang sinh câu hỏi cho challenge này. Quay lại đây sau ít phút để tiếp tục review hoặc chỉnh sửa đề.",
     "processingQuizProgressLabel": "Tiến độ WebSocket",
     "reviewerPanel": {
       "orderHint": "Người đầu tiên là reviewer chính.",
@@ -1670,7 +1674,8 @@
       "confirmedShort": "Đã xác nhận {{time}}",
       "noEligibleMembersHint": "Không còn thành viên phù hợp để mời.",
       "needTwoReviewersHint": "Chỉ cần reviewer chính để publish.",
-      "setPrimary": "Đặt chính"
+      "setPrimary": "Đặt chính",
+      "inviteSentToast": "Đã gửi lời mời review. Hệ thống đã gửi email thông báo cho reviewer."
     },
     "actions": {
       "publish": "Xuất bản challenge",
@@ -1678,7 +1683,13 @@
       "acceptInvite": "Chấp nhận lời mời",
       "continueAttempt": "Tiếp tục làm bài",
       "startAttempt": "Bắt đầu làm bài",
-      "cancel": "Huỷ challenge"
+      "cancel": "Huỷ challenge",
+      "start": "Bắt đầu challenge",
+      "finish": "Kết thúc challenge"
+    },
+    "finishBlocked": {
+      "noParticipants": "Chưa có người đăng ký nên chưa thể kết thúc challenge sớm.",
+      "pending": "Còn {{count}} người chưa hoàn thành bài. Chỉ được kết thúc sớm khi tất cả đã nộp."
     },
     "participantsTitle": "Người tham gia ({{count}})",
     "memberFallback": "Thành viên",
@@ -1687,6 +1698,20 @@
       "playing": "Đang làm",
       "waiting": "Chờ"
     }
+  },
+  "challengeLeaderboard": {
+    "empty": "Chưa có người tham gia",
+    "memberHeader": "Thành viên",
+    "memberFallback": "Thành viên",
+    "scoreHeader": "Điểm",
+    "accuracyHeader": "Tỉ lệ đúng",
+    "timeHeader": "Thời gian",
+    "statusHeader": "Trạng thái",
+    "statusFinished": "Hoàn thành",
+    "statusPlaying": "Đang làm",
+    "statusWaiting": "Chờ",
+    "sortTooltip": "Xếp hạng theo kết quả; cùng kết quả thì ai hoàn thành sớm hơn đứng trên.",
+    "sortHint": "Xếp hạng theo kết quả cao nhất; cùng kết quả thì ai hoàn thành sớm hơn đứng trên."
   },
   "groupSettingsTab": {
     "identityState": "Trạng thái nhận diện",

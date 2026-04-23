@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/context/ToastContext';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import { Button } from '@/Components/ui/button';
 import {
   ArrowLeft, Clock, Users, Calendar, Shield, Swords, Play,
   UserPlus, XCircle, CheckCircle, Loader2, PenLine, Eye, Pencil, UserMinus,
-  Trophy, Lock,
+  Trophy, Lock, Flag,
 } from 'lucide-react';
 import { getDurationInMinutes } from '@/lib/quizDurationDisplay';
 import {
@@ -26,7 +27,7 @@ import {
 import ChallengeScheduleFields from './ChallengeScheduleFields';
 import {
   getChallengeDetail, registerForChallenge, acceptChallengeInvitation,
-  startChallengeAttempt, cancelChallenge, updateChallenge,
+  startChallengeAttempt, cancelChallenge, updateChallenge, finishChallenge,
   removeQuizReviewContributor, publishChallenge,
   batchInviteQuizReviewers, startChallenge,
   createChallengeRoundQuiz,
@@ -235,11 +236,13 @@ export default function ChallengeDetailView({
   quizGenerationProgressByQuizId = {},
 }) {
   const { t } = useTranslation();
+  const { showSuccess } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [actionLoading, setActionLoading] = useState(null);
   const [error, setError] = useState('');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -336,6 +339,11 @@ export default function ChallengeDetailView({
 
   const handleStartChallenge = () => handleAction(
     () => startChallenge(workspaceId, eventId), 'manualStart');
+
+  const handleFinishConfirm = () => {
+    setFinishDialogOpen(false);
+    handleAction(() => finishChallenge(workspaceId, eventId), 'manualFinish');
+  };
 
   const openEditDialog = useCallback(() => {
     setEditTitle(detail?.title || '');
@@ -435,7 +443,7 @@ export default function ChallengeDetailView({
         payload?.challengeQuizId,
       );
       if (!qid) {
-        throw new Error('Không nhận được quiz của vòng đấu từ server.');
+        throw new Error('Không nhận được đề của vòng đấu từ server.');
       }
       navigate(buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
         challengeDraftQuizId: qid,
@@ -489,8 +497,14 @@ export default function ChallengeDetailView({
         }],
       );
       setReviewerPick('');
+      showSuccess(
+        t(
+          'challengeDetailView.reviewerPanel.inviteSentToast',
+          'Đã gửi lời mời review. Hệ thống đã gửi email thông báo cho reviewer.',
+        ),
+      );
     }, 'addReviewer');
-  }, [reviewerPick, detail?.snapshotQuizId, detail?.reviewContributors, handleAction, workspaceId]);
+  }, [reviewerPick, detail?.snapshotQuizId, detail?.reviewContributors, handleAction, workspaceId, showSuccess, t]);
 
   const handleRemoveReviewer = useCallback((userId) => {
     const qid = detail?.snapshotQuizId;
@@ -738,17 +752,17 @@ export default function ChallengeDetailView({
   const publishRequirementHint = !showPublishChallengeAction
     ? ''
     : isBracketChallenge && bracketRoundQuizPlan.length === 0
-      ? 'Đấu cúp cần cấu hình quiz cho từng vòng trước khi publish challenge.'
+      ? 'Đấu cúp cần cấu hình đề cho từng vòng trước khi publish challenge.'
       : isBracketChallenge && !bracketRoundQuizReady
-        ? `Đấu cúp cần đủ quiz chính thức cho từng vòng. Hiện đã sẵn sàng ${bracketRoundReadyCount}/${bracketRoundQuizPlan.length} vòng.`
+        ? `Đấu cúp cần đủ đề chính thức cho từng vòng. Hiện đã sẵn sàng ${bracketRoundReadyCount}/${bracketRoundQuizPlan.length} vòng.`
             : !hasSnapshotQuizContent
-              ? t('challengeDetailView.publishHints.needDraftQuizContent', 'The leader must compose the quiz content first.')
+              ? t('challengeDetailView.publishHints.needDraftQuizContent', 'The leader must compose the match content first.')
               : snapshotStatusKeyRaw !== 'ACTIVE'
-                ? t('challengeDetailView.publishHints.needActiveQuiz', 'The challenge quiz must be moved from draft to active before publishing the challenge.')
+                ? t('challengeDetailView.publishHints.needActiveQuiz', 'The challenge match must be moved from draft to active before publishing the challenge.')
                 : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && Boolean(detail.leaderParticipates) && !hasAnyReviewer
                   ? t('challengeDetailView.publishHints.needReviewerWhenLeaderParticipates', 'Leader is participating, so invite 1 or 2 reviewers before publishing the challenge.')
                   : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && Boolean(detail.leaderParticipates) && !reviewerConfirmed && !detail.leaderPublishBypass
-                    ? t('challengeDetailView.publishHints.needReviewersConfirm', 'At least one reviewer must confirm the quiz is OK before the leader can publish the challenge.')
+                    ? t('challengeDetailView.publishHints.needReviewersConfirm', 'At least one reviewer must confirm the match is OK before the leader can publish the challenge.')
                     : new Date(detail.startTime).getTime() <= Date.now()
                       ? t('challengeDetailView.publishHints.startTimePassed', 'The challenge has reached its start time, so it can no longer be published.')
                       : t('challengeDetailView.publishHints.afterPublishInfo', 'After publishing, members will see the challenge and be able to register.');
@@ -758,6 +772,29 @@ export default function ChallengeDetailView({
     && (isLeader || myAcceptedReviewContributor)
     && Boolean(detail.challengeReviewReadyForLive || effectiveChallengePublishReady)
     && Number(detail.participantCount || 0) >= minParticipantCount;
+
+  const showManualFinishChallenge =
+    detail.status === 'LIVE'
+    && (isLeader || myAcceptedReviewContributor);
+  const participantList = Array.isArray(detail.participants) ? detail.participants : [];
+  const hasParticipants = participantList.length > 0;
+  const pendingParticipantCount = participantList.filter((p) => p?.status !== 'FINISHED').length;
+  const canManualFinishChallenge =
+    showManualFinishChallenge && hasParticipants && pendingParticipantCount === 0;
+  const manualFinishBlockedReason = !showManualFinishChallenge
+    ? ''
+    : !hasParticipants
+      ? t(
+          'challengeDetailView.finishBlocked.noParticipants',
+          'Chưa có người đăng ký nên chưa thể kết thúc challenge sớm.',
+        )
+      : pendingParticipantCount > 0
+        ? t(
+            'challengeDetailView.finishBlocked.pending',
+            'Còn {{count}} người chưa hoàn thành bài. Chỉ được kết thúc sớm khi tất cả đã nộp.',
+            { count: pendingParticipantCount },
+          )
+        : '';
 
   const cardCls = `rounded-2xl border p-6 ${
     isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'
@@ -790,10 +827,10 @@ export default function ChallengeDetailView({
         <div>
           <div className={`flex items-center gap-2 text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
             <Trophy className="h-3.5 w-3.5" />
-            Quiz theo từng vòng đấu cúp
+            Đề theo từng vòng đấu cúp
           </div>
           <p className={`mt-1 max-w-3xl text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            Mỗi vòng dùng một bài quiz riêng để tất cả cặp đấu trong vòng đó làm cùng lúc. Leader hoặc reviewer được mời có thể chuẩn bị quiz cho từng vòng; khi quiz đủ điều kiện review thì mới tính là quiz chính thức.
+            Mỗi vòng dùng một đề riêng để tất cả cặp đấu trong vòng đó làm cùng lúc. Leader hoặc reviewer được mời có thể chuẩn bị đề cho từng vòng; khi đề đủ điều kiện review thì mới tính là đề chính thức.
           </p>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -824,8 +861,8 @@ export default function ChallengeDetailView({
                   </div>
                   <div className={`mt-1 truncate text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                     {round.quizId
-                      ? (canPreview ? (round.quizTitle || 'Quiz vòng đấu') : 'Quiz đã được gắn, member chỉ thấy khi đến lượt làm bài')
-                      : 'Chưa có quiz cho vòng này'}
+                      ? (canPreview ? (round.quizTitle || 'Đề vòng đấu') : 'Đề đã được gắn, member chỉ thấy khi đến lượt làm bài')
+                      : 'Chưa có đề cho vòng này'}
                   </div>
                 </div>
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roundStatusClass(round)}`}>
@@ -833,7 +870,7 @@ export default function ChallengeDetailView({
                     ? 'Sẵn sàng'
                     : round.quizId
                       ? (round.quizStatus === 'ACTIVE' ? 'Chờ duyệt' : (round.quizStatus || 'Bản nháp'))
-                      : 'Thiếu quiz'}
+                      : 'Thiếu đề'}
                 </span>
               </div>
 
@@ -857,7 +894,7 @@ export default function ChallengeDetailView({
                   isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-gray-50 text-gray-500'
                 }`}>
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Quiz vòng này chỉ mở khi challenge đã publish và đến giờ làm bài.
+                  Đề vòng này chỉ mở khi challenge đã publish và đến giờ làm bài.
                 </p>
               )}
 
@@ -873,7 +910,7 @@ export default function ChallengeDetailView({
                     }`}
                   >
                     <Eye className="h-3.5 w-3.5" />
-                    Xem quiz
+                    Xem đề
                   </button>
                 )}
                 {canManageRoundQuiz && (
@@ -888,7 +925,7 @@ export default function ChallengeDetailView({
                     }`}
                   >
                     {actionLoading === loadingKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}
-                    {round.quizId ? 'Soạn quiz vòng' : 'Tạo quiz vòng'}
+                    {round.quizId ? 'Soạn đề vòng' : 'Tạo đề vòng'}
                   </button>
                 )}
               </div>
@@ -899,7 +936,7 @@ export default function ChallengeDetailView({
 
       {!bracketRoundQuizReady && (
         <p className={`mt-3 text-xs leading-relaxed ${isDarkMode ? 'text-amber-200/90' : 'text-amber-900'}`}>
-          Đấu cúp chỉ được publish khi tất cả vòng có quiz ACTIVE và đủ reviewer xác nhận theo rule hiện tại. Member hoặc người được mời riêng không thấy quiz trước khi publish và trước giờ làm bài.
+          Đấu cúp chỉ được publish khi tất cả vòng có đề ACTIVE và đủ reviewer xác nhận theo rule hiện tại. Member hoặc người được mời riêng không thấy đề trước khi publish và trước giờ làm bài.
         </p>
       )}
     </div>
@@ -1021,7 +1058,7 @@ export default function ChallengeDetailView({
           }`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                {t('challengeDetailView.quizChallengeLabel', 'Challenge quiz')}
+                {t('challengeDetailView.quizChallengeLabel', 'Challenge match')}
               </div>
               {(snapshotStatusLabel || snapshotDisplayStatusKeyRaw === 'PROCESSING') && (
                 <span
@@ -1061,10 +1098,10 @@ export default function ChallengeDetailView({
                 <Loader2 className="mt-0.5 h-4 w-4 flex-shrink-0 animate-spin" />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">
-                    {t('challengeDetailView.processingQuizTitle', 'Challenge quiz is being generated')}
+                    {t('challengeDetailView.processingQuizTitle', 'Challenge match is being generated')}
                   </p>
                   <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-sky-100/80' : 'text-sky-900/75'}`}>
-                    {t('challengeDetailView.processingQuizHint', 'The system is still generating questions for this challenge. Return here in a moment to continue reviewing or editing the quiz.')}
+                    {t('challengeDetailView.processingQuizHint', 'The system is still generating questions for this challenge. Return here in a moment to continue reviewing or editing the match.')}
                   </p>
                   {realtimeChallengeQuizPercent > 0 && realtimeChallengeQuizPercent < 100 && (
                     <div className="mt-3">
@@ -1110,7 +1147,7 @@ export default function ChallengeDetailView({
                     }`}
                   >
                     <PenLine className="h-4 w-4" />
-                    {t('challengeDetailView.composeChallengeQuiz', 'Compose challenge quiz')}
+                    {t('challengeDetailView.composeChallengeQuiz', 'Compose match')}
                   </button>
                 )}
               </div>
@@ -1122,7 +1159,7 @@ export default function ChallengeDetailView({
             )}
             {!canPreviewSnapshotQuiz && !showChallengeQuizProcessingState && showDraftQuizCta && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                {t('challengeDetailView.draftQuizHint', 'Create the quiz content first, then you can preview the challenge quiz.')}
+                {t('challengeDetailView.draftQuizHint', 'Create the match content first, then you can preview the challenge match.')}
               </p>
             )}
             {Boolean(detail.leaderParticipates) && snapshotStatusKeyRaw !== 'ACTIVE' && (
@@ -1252,7 +1289,7 @@ export default function ChallengeDetailView({
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                 {detail.leaderParticipates
                   ? t('challengeDetailView.reviewerPanel.needReviewerWhenLeaderParticipates', 'Leader is participating, so invite 1 reviewer at minimum. You can invite up to 2 reviewers.')
-                  : t('challengeDetailView.reviewerPanel.optionalReviewersHint', 'Reviewers are optional here. If invited, they can help check and clean up the quiz before you publish it.')}
+                  : t('challengeDetailView.reviewerPanel.optionalReviewersHint', 'Reviewers are optional here. If invited, they can help check and clean up the match before you publish it.')}
               </p>
             )}
           </div>
@@ -1308,12 +1345,12 @@ export default function ChallengeDetailView({
               {t('groupWorkspace.challenge.reviewInviteeNotice')}
             </p>
             <p className={`mt-2 text-xs ${isDarkMode ? 'text-cyan-200/90' : 'text-cyan-900/80'}`}>
-              {t('groupWorkspace.challenge.reviewInviteeShortHint', 'Click “View quiz” in the Quiz challenge block above, then open the “Check” tab.',
+              {t('groupWorkspace.challenge.reviewInviteeShortHint', 'Click “Open match” in the Challenge match block above, then open the “Check” tab.',
               )}
             </p>
             {!canPreviewSnapshotQuiz && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-900'}`}>
-                {t('groupWorkspace.challenge.reviewQuizNotReadyHint', 'The exam is not ready to preview yet (for example still generating). Please try again later.',
+                {t('groupWorkspace.challenge.reviewQuizNotReadyHint', 'The match is not ready to preview yet (for example still generating). Please try again later.',
                 )}
               </p>
             )}
@@ -1359,7 +1396,24 @@ export default function ChallengeDetailView({
               }`}
             >
               {actionLoading === 'manualStart' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Bắt đầu challenge
+              {t('challengeDetailView.actions.start', 'Bắt đầu challenge')}
+            </button>
+          )}
+
+          {showManualFinishChallenge && (
+            <button
+              type="button"
+              onClick={() => setFinishDialogOpen(true)}
+              disabled={!canManualFinishChallenge || !!actionLoading}
+              title={manualFinishBlockedReason || undefined}
+              className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                isDarkMode
+                  ? 'bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/30'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              {actionLoading === 'manualFinish' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Flag className="h-4 w-4" />}
+              {t('challengeDetailView.actions.finish', 'Kết thúc challenge')}
             </button>
           )}
 
@@ -1417,6 +1471,11 @@ export default function ChallengeDetailView({
         {showPublishChallengeAction && publishRequirementHint && (
           <p className={`mt-3 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
             {publishRequirementHint}
+          </p>
+        )}
+        {showManualFinishChallenge && manualFinishBlockedReason && (
+          <p className={`mt-3 text-xs leading-relaxed ${isDarkMode ? 'text-amber-200/90' : 'text-amber-800'}`}>
+            {manualFinishBlockedReason}
           </p>
         )}
       </div>
@@ -1625,6 +1684,50 @@ export default function ChallengeDetailView({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               {t('groupWorkspace.challenge.cancelDialogConfirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
+        <DialogContent
+          hideClose={false}
+          className={
+            isDarkMode
+              ? 'border-slate-700 bg-slate-900 text-slate-100 sm:max-w-md'
+              : 'sm:max-w-md'
+          }
+        >
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? 'text-white' : undefined}>
+              {t('groupWorkspace.challenge.finishDialogTitle', 'Kết thúc challenge ngay?')}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? 'text-slate-400' : undefined}>
+              {t(
+                'groupWorkspace.challenge.finishDialogDescription',
+                'Những người chưa nộp bài sẽ bị auto-submit với kết quả hiện tại, ranking được chốt và challenge chuyển sang trạng thái kết thúc. Không thể hoàn tác.',
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              className={isDarkMode ? 'border-slate-600 bg-transparent text-slate-200 hover:bg-slate-800' : ''}
+              onClick={() => setFinishDialogOpen(false)}
+            >
+              {t('groupWorkspace.challenge.finishDialogBack', 'Đóng')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleFinishConfirm}
+              disabled={!!actionLoading}
+              className="bg-indigo-600 text-white hover:bg-indigo-700"
+            >
+              {actionLoading === 'manualFinish' ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {t('groupWorkspace.challenge.finishDialogConfirm', 'Kết thúc ngay')}
             </Button>
           </DialogFooter>
         </DialogContent>
