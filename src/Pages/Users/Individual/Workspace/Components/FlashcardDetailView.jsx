@@ -11,7 +11,6 @@ import {
   Plus,
   Save,
   ToggleLeft,
-  ToggleRight,
   Trash2,
   Users,
   X,
@@ -73,7 +72,6 @@ function FlashcardDetailView({
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const normalizedContextType = String(contextType || "").toUpperCase();
   const isGroupContext = normalizedContextType === "GROUP";
-  const canManageGroupPublishing = isGroupContext && isGroupLeader && !hideEditButton;
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
   const [items, setItems] = useState([]);
@@ -129,6 +127,10 @@ function FlashcardDetailView({
 
   const activeItem = useMemo(() => items[activeIndex] || null, [activeIndex, items]);
   const inputCls = "w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-400 dark:focus:border-emerald-500";
+  const detailStatus = String(detail?.status || flashcard?.status || "").toUpperCase();
+  const canMutateContent = !hideEditButton && detailStatus === "ACTIVE";
+  const canManageGroupPublishing = isGroupContext && isGroupLeader && detailStatus === "DRAFT";
+  const canManageGroupAudience = isGroupContext && isGroupLeader && detailStatus === "ACTIVE";
   const resolvedAudienceLabel = detail?.groupAudienceMode === "SELECTED_MEMBERS"
     ? t("workspace.flashcard.audience.selectedMembers", "Chỉ thành viên được chọn")
     : t("workspace.flashcard.audience.allMembers", "Cả nhóm");
@@ -349,8 +351,8 @@ function FlashcardDetailView({
                 </div>
               ) : (
                 <>
-                  <p className={`truncate text-lg font-semibold text-slate-950 dark:text-white ${fontClass}`}>{detail.flashcardSetName}</p>
-                  {!hideEditButton ? (
+                  <p className={`truncate text-lg font-semibold text-slate-950 dark:text-white ${fontClass}`}>{(detail.flashcardSetName && detail.flashcardSetName.trim()) || t("workspace.flashcard.untitled", "Flashcard không có tiêu đề")}</p>
+                  {canMutateContent ? (
                     <button type="button" onClick={() => { setIsRenaming(true); setNewName(detail.flashcardSetName || ""); }} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300">
                       <Edit3 className="h-4 w-4" />
                     </button>
@@ -375,60 +377,64 @@ function FlashcardDetailView({
             isDarkMode={isDarkMode}
             className="h-9 text-xs"
           />
-          {!hideEditButton ? (
+          {canMutateContent || canManageGroupPublishing || canManageGroupAudience ? (
             <>
               {isGroupContext ? (
                 canManageGroupPublishing ? (
                   <>
-                    <Button
-                      variant={detail.status === "ACTIVE" ? "outline" : "default"}
-                      size="sm"
-                      onClick={handleToggleStatus}
-                      disabled={statusSaving}
-                      className={detail.status === "ACTIVE"
-                        ? "rounded-full dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                        : "rounded-full bg-emerald-600 text-white hover:bg-emerald-700"}
-                    >
-                      {statusSaving ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : detail.status === "ACTIVE" ? (
-                        <ToggleRight className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-500" />
-                      ) : (
-                        <ToggleLeft className="mr-2 h-4 w-4" />
-                      )}
-                      {detail.status === "ACTIVE"
-                        ? t("workspace.flashcard.deactivate", "Set as Draft")
-                        : t("workspace.flashcard.publish", "Publish")}
-                    </Button>
-                    {detail.status === "ACTIVE" ? (
+                    {/* Chỉ hiện nút Publish khi đang DRAFT. Đã ACTIVE thì chuyển sang flip view. */}
+                    {detailStatus !== "ACTIVE" ? (
                       <Button
-                        variant="outline"
                         size="sm"
-                        onClick={openAudienceDialog}
-                        className="rounded-full dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        onClick={handleToggleStatus}
+                        disabled={statusSaving}
+                        className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
                       >
-                        <Users className="mr-2 h-4 w-4" />
-                        {t("workspace.flashcard.distribution", "Distribution")}
+                        {statusSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <ToggleLeft className="mr-2 h-4 w-4" />
+                        )}
+                        {t("workspace.flashcard.publish", "Publish")}
                       </Button>
                     ) : null}
                   </>
                 ) : null
-              ) : (
-                <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={statusSaving} className="rounded-full dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-                  {statusSaving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : detail.status === "ACTIVE" ? (
-                    <ToggleRight className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-500" />
-                  ) : (
-                    <ToggleLeft className="mr-2 h-4 w-4" />
-                  )}
-                  {detail.status === "ACTIVE" ? t("workspace.flashcard.deactivate") : t("workspace.flashcard.activate")}
+              ) : detailStatus === "DRAFT" ? (
+                /* Individual: chỉ hiện nút Kích hoạt khi đang DRAFT. Đã ACTIVE thì ẩn — không cho về DRAFT. */
+                detailStatus !== "ACTIVE" ? (
+                  <Button
+                    size="sm"
+                    onClick={handleToggleStatus}
+                    disabled={statusSaving}
+                    className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                  >
+                    {statusSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ToggleLeft className="mr-2 h-4 w-4" />
+                    )}
+                    {t("workspace.flashcard.activate")}
+                  </Button>
+                ) : null
+              ) : null}
+              {canManageGroupAudience ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAudienceDialog}
+                  className="rounded-full dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  {t("workspace.flashcard.distribution", "Distribution")}
                 </Button>
-              )}
-              <Button size="sm" onClick={() => setShowAddForm(true)} className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("workspace.flashcard.addItem")}
-              </Button>
+              ) : null}
+              {canMutateContent ? (
+                <Button size="sm" onClick={() => setShowAddForm(true)} className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("workspace.flashcard.addItem")}
+                </Button>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -551,7 +557,7 @@ function FlashcardDetailView({
                       <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                         {t("workspace.flashcard.itemNumber", { number: index + 1 })}
                       </span>
-                      {!hideEditButton && !isEditing ? (
+                      {canMutateContent && !isEditing ? (
                         <div className="flex items-center gap-1">
                           <button type="button" onClick={() => { setEditingItemId(item.flashcardItemId); setEditFront(item.frontContent || ""); setEditBack(item.backContent || ""); }} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300">
                             <Edit3 className="h-4 w-4" />

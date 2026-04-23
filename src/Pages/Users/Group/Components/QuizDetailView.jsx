@@ -3,9 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
+  ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star, Pencil,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare, Eye, Lock,
+  Share2, UserPlus, MessageSquare, Eye, Lock, Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
@@ -21,7 +21,9 @@ import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory,
   getGroupQuizHistory,
   publishGroupQuiz, setGroupQuizAudience,
+  duplicateQuiz,
 } from "@/api/QuizAPI";
+import { useToast } from "@/context/ToastContext";
 import { recordQuizReviewView } from "@/api/ChallengeAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
@@ -214,6 +216,8 @@ function QuizDetailView({
   const [examStartOpen, setExamStartOpen] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  const { addToast } = useToast();
   // Per-question discussion popup
   const [discussionOpenQId, setDiscussionOpenQId] = useState(null);
   const [qCommentCounts, setQCommentCounts] = useState({});
@@ -613,6 +617,46 @@ function QuizDetailView({
     }
   }, [quiz?.quizId, fetchFullDetail, onGroupQuizUpdated, t]);
 
+  // Group duplicate-to-edit:
+  //   AI quiz group không được bulk-edit trực tiếp → leader phải duplicate → bản sao MANUAL_FROM_AI (DRAFT)
+  //   → route vào bulk wizard để chỉnh sửa.
+  // Manual quiz group đã publish (không DRAFT) cũng cần duplicate vì BE chặn bulk-update non-DRAFT.
+  // BE duplicate() đã tự: creator = user hiện tại, workspace giữ nguyên group, roadmap/phase/knowledge giữ,
+  // title += "(bản sao)", sections/questions/answers + materials được copy, createVia=MANUAL_FROM_AI (nếu source AI),
+  // visibility bị strip, AI taxonomy bị strip, status=DRAFT.
+  // KHÔNG duplicate: groupAudienceMode (→ null; leader có thể cấu hình lại nếu cần), QuizAssignment,
+  // lịch sử attempt, community state.
+  const handleDuplicateAndEdit = useCallback(async () => {
+    if (!quiz?.quizId || duplicating) return;
+    setDuplicating(true);
+    try {
+      const res = await duplicateQuiz(quiz.quizId);
+      const newQuiz = unwrapApiData(res);
+      if (!newQuiz?.quizId) {
+        throw new Error("Duplicate response missing quizId");
+      }
+      addToast?.({
+        type: "success",
+        message: t(
+          "workspace.quiz.detail.duplicate.toastSuccess",
+          "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
+        ),
+      });
+      quizDetailCache.clear();
+      onEdit?.(newQuiz);
+    } catch (err) {
+      console.error("[Group/QuizDetailView] duplicate error", err);
+      addToast?.({
+        type: "error",
+        message: err?.message
+          || err?.response?.data?.message
+          || t("workspace.quiz.detail.duplicate.toastError", "Không thể sao chép quiz."),
+      });
+    } finally {
+      setDuplicating(false);
+    }
+  }, [quiz?.quizId, duplicating, onEdit, addToast, t]);
+
   const handleSaveAudience = useCallback(async () => {
     if (!quiz?.quizId) return;
     if (audienceMode === "SELECTED_MEMBERS" && selectedAudienceUserIds.length === 0) {
@@ -787,6 +831,80 @@ function QuizDetailView({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
+          {(() => {
+            if (_contextType !== "GROUP" || !isGroupLeader || hideEditButton || challengeSnapshotReviewMode || typeof onEdit !== "function") {
+              return null;
+            }
+            const normalizedStatus = String(currentStatus || "").toUpperCase();
+            const normalizedCreateVia = String(effectiveQuiz?.createVia || "").toUpperCase();
+            const isDraftManualFamily =
+              normalizedStatus === "DRAFT"
+              && ["MANUAL", "MANUAL_FROM_AI"].includes(normalizedCreateVia);
+
+            if (!isDraftManualFamily) {
+              return null;
+            }
+
+            return (
+              <Button
+                variant="outline"
+                onClick={() => onEdit?.(effectiveQuiz)}
+                className={cn(
+                  "rounded-full h-9 px-4 flex items-center gap-2",
+                  isDarkMode
+                    ? "border-slate-600 text-slate-200 hover:bg-slate-700"
+                    : "text-slate-700 hover:bg-slate-100",
+                )}
+              >
+                <Pencil className="w-4 h-4" />
+                <span className="text-sm">{t("workspace.quiz.detail.edit", "Chỉnh sửa")}</span>
+              </Button>
+            );
+          })()}
+          {(() => {
+            // Duplicate-to-edit cho group leader:
+            //  - AI quiz: bắt buộc duplicate → bản sao MANUAL_FROM_AI DRAFT → edit qua wizard.
+            //  - Manual quiz đã ACTIVE/INACTIVE: bulk-update bị chặn ở BE, phải duplicate trước.
+            //  - Quiz đang DRAFT + manual family: edit in-place qua wizard (từ Group/EditQuizForm), không cần button này.
+            if (_contextType !== "GROUP" || !isGroupLeader || hideEditButton || challengeSnapshotReviewMode) {
+              return null;
+            }
+            const normalizedStatus = String(currentStatus || "").toUpperCase();
+            if (["PROCESSING", "ERROR", "DELETED", "PENDING_LEADER"].includes(normalizedStatus)) {
+              return null;
+            }
+            const normalizedCreateVia = String(effectiveQuiz?.createVia || "").toUpperCase();
+            const isAi = normalizedCreateVia === "AI";
+            const isPublishedManualFamily =
+              ["MANUAL", "MANUAL_FROM_AI"].includes(normalizedCreateVia)
+              && normalizedStatus !== "DRAFT";
+            if (!isAi && !isPublishedManualFamily) {
+              return null;
+            }
+            return (
+              <Button
+                variant="outline"
+                disabled={duplicating}
+                onClick={handleDuplicateAndEdit}
+                className={cn(
+                  "rounded-full h-9 px-4 flex items-center gap-2",
+                  isDarkMode
+                    ? "border-slate-600 text-slate-200 hover:bg-slate-700"
+                    : "text-slate-700 hover:bg-slate-100",
+                )}
+                title={t("workspace.quiz.detail.duplicate.tooltip", "Tạo bản nháp sao chép để chỉnh sửa")}
+              >
+                {duplicating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+                <span className="text-sm">
+                  {t("workspace.quiz.detail.duplicate.button", "Sao chép để chỉnh sửa")}
+                </span>
+              </Button>
+            );
+          })()}
           {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "DRAFT" && (
             <Button
               disabled={publishing || String(currentStatus || "").toUpperCase() === "PROCESSING"}

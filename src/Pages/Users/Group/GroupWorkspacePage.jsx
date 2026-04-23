@@ -3639,6 +3639,7 @@ function GroupWorkspacePage() {
     );
 
     if (scopeId > 0 && Number.isInteger(flashcardSetId) && flashcardSetId > 0) {
+      const createdPayload = createdFlashcard?.data || createdFlashcard || {};
       queryClient.setQueryData(queryKey, (previousItems = []) => {
         const safePreviousItems = Array.isArray(previousItems) ? previousItems : [];
 
@@ -3649,14 +3650,19 @@ function GroupWorkspacePage() {
         const nowIso = new Date().toISOString();
         const optimisticItem = {
           flashcardSetId,
-          flashcardSetName: createdFlashcard?.flashcardSetName
-            || createdFlashcard?.name
+          flashcardSetName: createdPayload?.flashcardSetName
+            || createdPayload?.name
             || `${t('workspace.flashcard.createTitle')} #${flashcardSetId}`,
-          status: String(createdFlashcard?.status || 'DRAFT').toUpperCase(),
-          createVia: createdFlashcard?.createVia || 'AI',
-          itemCount: Number(createdFlashcard?.itemCount ?? 0),
-          createdAt: createdFlashcard?.createdAt || nowIso,
-          updatedAt: createdFlashcard?.updatedAt || nowIso,
+          status: String(createdPayload?.status || 'DRAFT').toUpperCase(),
+          createVia: createdPayload?.createVia || 'AI',
+          itemCount: Number(createdPayload?.itemCount ?? 0),
+          taskId: createdPayload?.taskId ?? createdPayload?.websocketTaskId ?? null,
+          websocketTaskId: createdPayload?.websocketTaskId ?? createdPayload?.taskId ?? null,
+          percent: createdPayload?.percent ?? createdPayload?.progressPercent ?? 0,
+          progressPercent: createdPayload?.progressPercent ?? createdPayload?.percent ?? 0,
+          processingObject: createdPayload?.processingObject,
+          createdAt: createdPayload?.createdAt || nowIso,
+          updatedAt: createdPayload?.updatedAt || nowIso,
         };
 
         return [optimisticItem, ...safePreviousItems];
@@ -3669,14 +3675,34 @@ function GroupWorkspacePage() {
   const handleViewFlashcard = useCallback((fc) => { setSelectedFlashcard(fc); setActiveView('flashcardDetail'); }, []);
   const handleDeleteFlashcard = useCallback(async (fc) => {
     if (!window.confirm(t('workspace.confirmDeleteFlashcard'))) return;
+    const flashcardSetId = Number(fc?.flashcardSetId ?? fc?.id ?? fc?.flashcardId);
+    if (!Number.isInteger(flashcardSetId) || flashcardSetId <= 0) {
+      showError(t('workspace.flashcard.deleteFailed', 'Cannot delete this flashcard set.'));
+      return;
+    }
+    const scopeId = Number(workspaceId) || 0;
+    const queryKey = ['workspace-flashcards', 'GROUP', scopeId];
     try {
       const { deleteFlashcardSet } = await import('@/api/FlashcardAPI');
-      await deleteFlashcardSet(fc.flashcardSetId);
+      await deleteFlashcardSet(flashcardSetId);
+      queryClient.setQueryData(queryKey, (previousItems = []) => {
+        if (!Array.isArray(previousItems)) return previousItems;
+        return previousItems.filter(
+          (item) => Number(item?.flashcardSetId ?? item?.id ?? item?.flashcardId) !== flashcardSetId,
+        );
+      });
+      void queryClient.invalidateQueries({ queryKey });
+      setSelectedFlashcard((current) => (
+        Number(current?.flashcardSetId ?? current?.id ?? current?.flashcardId) === flashcardSetId
+          ? null
+          : current
+      ));
       setActiveView('flashcard');
     } catch (err) {
+      showError(getErrorMessage(t, err));
       console.error('Xóa flashcard thất bại:', err);
     }
-  }, [t]);
+  }, [queryClient, showError, t, workspaceId]);
 
   const handleCreateRoadmap = useCallback(async (data) => {
     if (!canCreateContent) {
@@ -4126,7 +4152,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
+    const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', createManualFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
     if (activeView === 'quizDetail' && Number.isInteger(Number(selectedRoadmapQuizId)) && Number(selectedRoadmapQuizId) > 0) {
       formToList.quizDetail = 'roadmap';
     }

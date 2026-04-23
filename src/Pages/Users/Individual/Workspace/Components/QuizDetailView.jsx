@@ -676,14 +676,6 @@ function QuizDetailView({
     const quizId = effectiveQuiz?.quizId;
     if (!quizId) return;
 
-    const confirmed = window.confirm(
-      t(
-        "workspace.quiz.detail.activateConfirm",
-        "Kích hoạt quiz này? Sau khi kích hoạt, người dùng có thể làm bài. Bạn vẫn có thể chỉnh sửa tự do cho đến khi có attempt đầu tiên.",
-      ),
-    );
-    if (!confirmed) return;
-
     setActivating(true);
     try {
       const res = await updateQuiz(quizId, { status: "ACTIVE" });
@@ -922,7 +914,9 @@ function QuizDetailView({
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Nút Edit — chỉ hiển thị cho creator, scope cá nhân */}
-          {canShowEditButton && (
+          {canShowEditButton
+            && String(effectiveQuiz?.createVia || "").toUpperCase() !== "AI"
+            && String(currentStatus || "").toUpperCase() !== "ACTIVE" && (
             <div className="relative group/edit">
               <Button
                 variant="outline"
@@ -948,8 +942,8 @@ function QuizDetailView({
               )}
             </div>
           )}
-          {/* Nút Tạo quiz tương tự — chỉ dành cho manual quiz */}
-          {canShowDuplicateButton && (
+          {/* Nút sao chép để chỉnh sửa: ẩn ở DRAFT để tránh dư action, chỉ dùng khi quiz đã active / có lịch sử phù hợp */}
+          {canShowDuplicateButton && String(currentStatus || "").toUpperCase() !== "DRAFT" && (
             <Button
               variant="outline"
               onClick={() => onCreateSimilar(effectiveQuiz)}
@@ -961,7 +955,7 @@ function QuizDetailView({
               )}
               >
                 <Copy className="w-4 h-4" />
-                <span className="text-sm">{t("workspace.quiz.detail.createSimilar", "Tạo tương tự")}</span>
+                <span className="text-sm">{t("workspace.quiz.detail.duplicate.button", "Sao chép để chỉnh sửa")}</span>
             </Button>
           )}
           {canActivateManualDraftQuiz && (
@@ -971,7 +965,7 @@ function QuizDetailView({
               onClick={handleActivateWorkspaceQuiz}
             >
               {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              <span className="text-sm">{t("workspace.quiz.detail.activateQuiz", "Kích hoạt quiz")}</span>
+              <span className="text-sm">{t("workspace.quiz.detail.confirmActivateQuiz", "Xác nhận & kích hoạt")}</span>
             </Button>
           )}
           {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "DRAFT" && (
@@ -997,7 +991,7 @@ function QuizDetailView({
         </div>
       </div>
 
-      {canActivateManualDraftQuiz && (
+      {false && canActivateManualDraftQuiz && (
         <div className="px-4 pb-3 pt-1">
           <div
             className={`relative overflow-hidden rounded-2xl border shadow-sm ${

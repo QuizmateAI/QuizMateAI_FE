@@ -10,9 +10,11 @@ import {
   FolderOpen,
   Loader2,
   MoreVertical,
+  PenLine,
   Plus,
   RefreshCw,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -21,7 +23,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import HomeButton from "@/Components/ui/HomeButton";
 import { getFlashcardsByScope, getFlashcardsByUser } from "@/api/FlashcardAPI";
 
-const ITEMS_PER_PAGE = 6;
+const DEFAULT_ITEMS_PER_PAGE = 8;
+const PAGE_SIZE_OPTIONS = [8, 12, 16];
 const CREATING_STATUSES = new Set(["PENDING", "PROCESSING", "GENERATING", "IN_PROGRESS", "QUEUED"]);
 const STATUS_STYLES = {
   ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
@@ -31,6 +34,12 @@ const STATUS_STYLES = {
   PROCESSING: { light: "bg-sky-100 text-sky-700", dark: "bg-sky-950/50 text-sky-300" },
   ERROR: { light: "bg-rose-100 text-rose-700", dark: "bg-rose-950/50 text-rose-300" },
 };
+
+function clampPercent(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
+}
 
 function isFlashcardCreating(item) {
   if (!item) return false;
@@ -53,6 +62,31 @@ function isFlashcardCreating(item) {
   return false;
 }
 
+function resolveFlashcardProcessingPercent(item) {
+  const percentCandidates = [
+    item?.percent,
+    item?.progressPercent,
+    item?.processingPercent,
+    item?.generationProgressPercent,
+    item?.generationProgress,
+    item?.progress?.percent,
+    item?.progress?.progressPercent,
+    item?.task?.percent,
+    item?.task?.progressPercent,
+    item?.taskStatus?.percent,
+    item?.taskStatus?.progressPercent,
+    item?.activeTask?.percent,
+    item?.activeTask?.progressPercent,
+  ];
+  const directPercent = percentCandidates.reduce((highest, value) => {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? Math.max(highest, numericValue) : highest;
+  }, 0);
+
+  if (directPercent > 0) return clampPercent(directPercent);
+  return isFlashcardCreating(item) ? 5 : 0;
+}
+
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
@@ -66,6 +100,7 @@ function formatShortDate(dateStr) {
 function FlashcardListView({
   isDarkMode = false,
   onCreateFlashcard,
+  onCreateManualFlashcard,
   onNavigateHome,
   onViewFlashcard,
   onDeleteFlashcard,
@@ -78,6 +113,7 @@ function FlashcardListView({
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_ITEMS_PER_PAGE);
   const deferredSearch = useDeferredValue(searchQuery.trim().toLowerCase());
 
   const {
@@ -111,16 +147,74 @@ function FlashcardListView({
     [deferredSearch, flashcards],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const effectivePage = Math.min(page, totalPages);
 
   const paginatedFlashcards = useMemo(() => {
-    const start = (effectivePage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [effectivePage, filtered]);
+    const start = (effectivePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [effectivePage, filtered, pageSize]);
 
-  const showPagination = filtered.length > ITEMS_PER_PAGE;
+  const showPaginationFooter = filtered.length > 0;
+  const showPageNavigation = filtered.length > pageSize;
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
+  const renderCreateFlashcardAction = ({
+    label = t("workspace.listView.create"),
+    className = "h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50",
+  } = {}) => {
+    if (typeof onCreateManualFlashcard === "function") {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button disabled={disableCreate} className={className}>
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="text-sm">{label}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className={`w-56 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+          >
+            <DropdownMenuItem
+              onSelect={() => onCreateFlashcard?.()}
+              className="cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">
+                  {t("workspace.flashcard.createMenu.ai", "Create by AI")}
+                </span>
+                <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                  {t("workspace.flashcard.createMenu.aiDesc", "Generate flashcards from materials")}
+                </span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => onCreateManualFlashcard?.()}
+              className="cursor-pointer"
+            >
+              <PenLine className="h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">
+                  {t("workspace.flashcard.createMenu.manual", "Create manually")}
+                </span>
+                <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                  {t("workspace.flashcard.createMenu.manualDesc", "Enter each card yourself")}
+                </span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    return (
+      <Button disabled={disableCreate} onClick={onCreateFlashcard} className={className}>
+        <Plus className="mr-2 h-4 w-4" />
+        <span className="text-sm">{label}</span>
+      </Button>
+    );
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col px-4 py-5 sm:px-5 lg:px-6">
@@ -178,14 +272,61 @@ function FlashcardListView({
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
           {!hideCreateButton ? (
-            <Button
-              disabled={disableCreate}
-              onClick={onCreateFlashcard}
-              className="h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {t("workspace.listView.create")}
-            </Button>
+            typeof onCreateManualFlashcard === "function" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    disabled={disableCreate}
+                    className="h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("workspace.listView.create")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className={`w-56 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                >
+                  <DropdownMenuItem
+                    onSelect={() => onCreateFlashcard?.()}
+                    className="cursor-pointer"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">
+                        {t("workspace.flashcard.createMenu.ai", "Tạo bằng AI")}
+                      </span>
+                      <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                        {t("workspace.flashcard.createMenu.aiDesc", "Sinh flashcard từ tài liệu")}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => onCreateManualFlashcard?.()}
+                    className="cursor-pointer"
+                  >
+                    <PenLine className="h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">
+                        {t("workspace.flashcard.createMenu.manual", "Tạo thủ công")}
+                      </span>
+                      <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                        {t("workspace.flashcard.createMenu.manualDesc", "Nhập từng thẻ theo ý bạn")}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                disabled={disableCreate}
+                onClick={onCreateFlashcard}
+                className="h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t("workspace.listView.create")}
+              </Button>
+            )
           ) : null}
         </div>
       </div>
@@ -200,14 +341,10 @@ function FlashcardListView({
             <CreditCard className={`mb-3 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.flashcard.noFlashcards")}</p>
             {!hideCreateButton ? (
-              <Button
-                disabled={disableCreate}
-                onClick={onCreateFlashcard}
-                className="mt-4 h-10 rounded-full bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="text-sm">{t("workspace.flashcard.createFirstFlashcard")}</span>
-              </Button>
+              renderCreateFlashcardAction({
+                label: t("workspace.flashcard.createFirstFlashcard"),
+                className: "mt-4 h-10 rounded-full bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50",
+              })
             ) : null}
           </div>
         ) : !filtered.length ? (
@@ -217,13 +354,17 @@ function FlashcardListView({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedFlashcards.map((flashcard) => (
                 (() => {
                   const resolvedFlashcardId = flashcard.flashcardSetId || flashcard.id || flashcard.flashcardId;
                   const normalizedStatus = isFlashcardCreating(flashcard)
                     ? "PROCESSING"
                     : String(flashcard?.status || "DRAFT").toUpperCase();
+                  const isProcessing = normalizedStatus === "PROCESSING";
+                  const isInteractionBlocked = isProcessing;
+                  const processingPercent = resolveFlashcardProcessingPercent(flashcard);
+                  const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
                   const statusStyles = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
                   const statusLabel = t(`quizListView.status.${normalizedStatus}`, normalizedStatus);
                   const cardCount = Number(flashcard?.itemCount ?? flashcard?.items?.length ?? flashcard?.cardCount ?? 0) || 0;
@@ -232,16 +373,22 @@ function FlashcardListView({
                   return (
                     <article
                       key={resolvedFlashcardId || flashcard.flashcardSetName}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => onViewFlashcard?.(flashcard)}
+                      role={isInteractionBlocked ? undefined : "button"}
+                      tabIndex={isInteractionBlocked ? -1 : 0}
+                      onClick={() => {
+                        if (isInteractionBlocked) return;
+                        onViewFlashcard?.(flashcard);
+                      }}
                       onKeyDown={(event) => {
+                        if (isInteractionBlocked) return;
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           onViewFlashcard?.(flashcard);
                         }
                       }}
-                      className={`group flex h-[204px] cursor-pointer flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                      className={`group flex ${isProcessing ? "min-h-[204px]" : "h-[204px]"} flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                        isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
+                      } ${
                         isDarkMode
                           ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
                           : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
@@ -251,7 +398,8 @@ function FlashcardListView({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <h3 className={`line-clamp-2 min-h-[3.5rem] text-[21px] font-semibold leading-snug tracking-[-0.02em] ${fontClass} ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
-                            {flashcard.flashcardSetName || t("quizListView.cards.noTitle", "—")}
+                            {(flashcard.flashcardSetName && flashcard.flashcardSetName.trim())
+                              || t("workspace.flashcard.untitled", "Flashcard không có tiêu đề")}
                           </h3>
                         </div>
 
@@ -289,6 +437,20 @@ function FlashcardListView({
                           </div>
                         ) : null}
                       </div>
+
+                      {isProcessing ? (
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                              {t("workspace.flashcard.processing", t("workspace.flashcard.generating", "Generating flashcards"))}
+                            </p>
+                            <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
+                          </div>
+                          <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
+                            <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
+                          </div>
+                        </div>
+                      ) : null}
 
                       <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
                         <div className="flex min-w-0 items-center gap-2">
@@ -329,7 +491,7 @@ function FlashcardListView({
               ))}
             </div>
 
-            {showPagination ? (
+            {showPaginationFooter ? (
               <div
                 className={`mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4 ${
                   isDarkMode ? "border-slate-700" : "border-slate-200"
@@ -342,32 +504,59 @@ function FlashcardListView({
                     count: filtered.length,
                   })}
                 </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 rounded-full px-3"
-                    disabled={effectivePage <= 1}
-                    onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-                    aria-label={t("workspace.listView.pagination.prev")}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className={`text-xs font-medium ${mutedTextClass}`}>
+                    {t("workspace.listView.pagination.pageSize", "Mỗi trang")}
+                  </label>
+                  <select
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                    aria-label={t("workspace.listView.pagination.pageSize", "Mỗi trang")}
+                    className={`h-9 rounded-full border px-3 text-xs font-medium outline-none transition-colors ${
+                      isDarkMode
+                        ? "border-slate-700 bg-slate-900 text-slate-200"
+                        : "border-slate-200 bg-white text-slate-700"
+                    }`}
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className={`text-xs font-medium ${mutedTextClass}`}>
-                    {t("workspace.quiz.pagination.page")} {effectivePage}/{totalPages}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 rounded-full px-3"
-                    disabled={effectivePage >= totalPages}
-                    onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
-                    aria-label={t("workspace.listView.pagination.next")}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+
+                  {showPageNavigation ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-full px-3"
+                        disabled={effectivePage <= 1}
+                        onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+                        aria-label={t("workspace.listView.pagination.prev")}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className={`text-xs font-medium ${mutedTextClass}`}>
+                        {t("workspace.quiz.pagination.page")} {effectivePage}/{totalPages}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-full px-3"
+                        disabled={effectivePage >= totalPages}
+                        onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
+                        aria-label={t("workspace.listView.pagination.next")}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ) : null}

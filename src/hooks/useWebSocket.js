@@ -75,6 +75,16 @@ function buildProcessingObjectFromProgressPayload(payload) {
   if (!payload || typeof payload !== "object") return undefined;
 
   const data = payload?.data && typeof payload.data === "object" ? payload.data : {};
+  const taskType = String(
+    data?.taskType
+      ?? data?.task_type
+      ?? payload?.taskType
+      ?? payload?.task_type
+      ?? payload?.processingObject?.taskType
+      ?? payload?.processingObject?.task_type
+      ?? ""
+  ).toUpperCase();
+  const workspaceId = toNumberOrNull(data?.workspaceId ?? data?.workspace_id ?? payload?.workspaceId ?? payload?.workspace_id);
   const roadmapId = toNumberOrNull(data?.roadmapId ?? data?.roadmap_id ?? payload?.roadmapId ?? payload?.roadmap_id);
   const phaseId = toNumberOrNull(data?.phaseId ?? data?.phase_id ?? payload?.phaseId ?? payload?.phase_id);
   const knowledgeId = toNumberOrNull(data?.knowledgeId ?? data?.knowledge_id ?? payload?.knowledgeId ?? payload?.knowledge_id);
@@ -82,6 +92,8 @@ function buildProcessingObjectFromProgressPayload(payload) {
   const materialId = toNumberOrNull(data?.materialId ?? data?.material_id ?? payload?.materialId ?? payload?.material_id);
 
   const processingObject = {
+    ...(taskType ? { taskType } : {}),
+    ...(workspaceId ? { workspaceId } : {}),
     ...(roadmapId ? { roadmapId } : {}),
     ...(phaseId ? { phaseId } : {}),
     ...(knowledgeId ? { knowledgeId } : {}),
@@ -90,6 +102,29 @@ function buildProcessingObjectFromProgressPayload(payload) {
   };
 
   return Object.keys(processingObject).length > 0 ? processingObject : undefined;
+}
+
+function isRoadmapScopedProgressPayload(payload, processingObject = {}) {
+  const data = payload?.data && typeof payload.data === "object" ? payload.data : {};
+  const status = String(payload?.status ?? payload?.final_status ?? data?.status ?? data?.final_status ?? "").toUpperCase();
+  const taskType = String(
+    processingObject?.taskType
+      ?? processingObject?.task_type
+      ?? data?.taskType
+      ?? data?.task_type
+      ?? payload?.taskType
+      ?? payload?.task_type
+      ?? ""
+  ).toUpperCase();
+  const roadmapId = toNumberOrNull(processingObject?.roadmapId ?? processingObject?.roadmap_id ?? data?.roadmapId ?? data?.roadmap_id ?? payload?.roadmapId ?? payload?.roadmap_id);
+  const phaseId = toNumberOrNull(processingObject?.phaseId ?? processingObject?.phase_id ?? data?.phaseId ?? data?.phase_id ?? payload?.phaseId ?? payload?.phase_id);
+
+  return Boolean(
+    status.startsWith("ROADMAP_")
+      || taskType.includes("ROADMAP")
+      || roadmapId
+      || phaseId
+  );
 }
 
 export function resolveMaterialEventFromProgressPayload(payload) {
@@ -102,6 +137,10 @@ export function resolveMaterialEventFromProgressPayload(payload) {
   const processingObject = payload?.processingObject && typeof payload.processingObject === "object"
     ? payload.processingObject
     : (buildProcessingObjectFromProgressPayload(payload) || {});
+
+  if (isRoadmapScopedProgressPayload(payload, processingObject)) {
+    return null;
+  }
 
   const materialId = toNumberOrNull(
     data?.materialId
