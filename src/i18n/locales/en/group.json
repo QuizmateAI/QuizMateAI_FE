@@ -1952,6 +1952,9 @@
     },
     "header": {
       "title": "General discussion",
+      "subtitle": "A shared thread for the whole group, with replies and question tags in one place.",
+      "live": "Live",
+      "offline": "Offline",
       "hintPrefix": "Press",
       "hintSuffix": "to tag a question"
     },

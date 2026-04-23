@@ -12,7 +12,7 @@ import PaymentSidebar from './components/PaymentSidebar';
 import PaymentMethods from './components/PaymentMethods';
 import usePaymentCheckout from './hooks/usePaymentCheckout';
 import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
-import { getPlanById } from '@/api/PaymentAPI';
+import { getPlanById, getWorkspaceSlotInfo } from '@/api/PaymentAPI';
 import { useGroup } from '@/hooks/useGroup';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 
@@ -67,6 +67,8 @@ export default function PaymentPage() {
   const [error, setError] = useState(null);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
+  const [slotInfo, setSlotInfo] = useState(null);
+  const [extraSlotCount, setExtraSlotCount] = useState(0);
 
   const { groups } = useGroup({ enabled: true });
   const { summary: currentPlanSummary } = useCurrentSubscription();
@@ -123,6 +125,37 @@ export default function PaymentPage() {
   const isGroupPlan = plan?.type === 'GROUP' || planTypeParam === 'GROUP';
   const needGroupSelect = isGroupPlan && !searchParams.get('workspaceId');
 
+  useEffect(() => {
+    let cancelled = false;
+    const shouldFetch = isGroupPlan && Boolean(workspaceId);
+
+    if (!shouldFetch) {
+      // Đưa việc reset state sang microtask để không cascade render trong effect.
+      Promise.resolve().then(() => {
+        if (cancelled) return;
+        setSlotInfo(null);
+        setExtraSlotCount((prev) => (prev === 0 ? prev : 0));
+      });
+      return () => { cancelled = true; };
+    }
+
+    getWorkspaceSlotInfo(workspaceId)
+      .then((res) => {
+        if (cancelled) return;
+        const data = res?.data ?? res;
+        setSlotInfo(data || null);
+        setExtraSlotCount((prev) => (prev === 0 ? prev : 0));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSlotInfo(null);
+          setExtraSlotCount((prev) => (prev === 0 ? prev : 0));
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [isGroupPlan, workspaceId]);
+
   const selectedGroup = groups.find((g) => String(g.workspaceId) === String(workspaceId));
   const {
     clearPaymentError,
@@ -135,6 +168,7 @@ export default function PaymentPage() {
     planName: plan?.planName,
     planType: plan?.type,
     workspaceId,
+    extraSlotCount,
   });
 
   return (
@@ -340,6 +374,74 @@ export default function PaymentPage() {
                   </div>
                 </div>
               )}
+
+              {/* Mua thêm slot — chỉ hiện khi mua group plan và đã chọn workspace */}
+              {isGroupPlan && workspaceId && slotInfo && (
+                <div className={`mt-6 rounded-2xl p-6 ${
+                  isDarkMode ? 'bg-slate-900 ring-1 ring-slate-700/50' : 'bg-white ring-1 ring-slate-200 shadow-lg shadow-slate-300/30'
+                }`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Users className={`w-5 h-5 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                    <h3 className={`text-sm font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                      {t('payment.extraSlots.title', 'Mua thêm slot thành viên')}
+                    </h3>
+                  </div>
+                  <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {t(
+                      'payment.extraSlots.description',
+                      'Slot mua thêm được cộng vĩnh viễn vào giới hạn thành viên của group, thanh toán cùng lúc với gói.',
+                    )}
+                  </p>
+                  <div className={`grid grid-cols-2 gap-3 text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <div>
+                      <span className="block opacity-70">{t('payment.extraSlots.currentMax', 'Slot hiện tại')}</span>
+                      <span className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                        {slotInfo.currentMaxSlots} / {slotInfo.maxSlotsPerWorkspace}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block opacity-70">{t('payment.extraSlots.unitPrice', 'Giá 1 slot')}</span>
+                      <span className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                        {new Intl.NumberFormat('vi-VN').format(slotInfo.unitPriceVnd || 0)}₫
+                      </span>
+                    </div>
+                  </div>
+                  {slotInfo.remainingPurchasableSlots > 0 ? (
+                    <div className="flex items-center gap-3">
+                      <label className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`} htmlFor="extraSlotCount">
+                        {t('payment.extraSlots.inputLabel', 'Số slot cần mua')}
+                      </label>
+                      <input
+                        id="extraSlotCount"
+                        type="number"
+                        min={0}
+                        max={slotInfo.remainingPurchasableSlots}
+                        value={extraSlotCount}
+                        onChange={(e) => {
+                          const raw = Number(e.target.value);
+                          if (!Number.isFinite(raw) || raw < 0) {
+                            setExtraSlotCount(0);
+                            return;
+                          }
+                          setExtraSlotCount(Math.min(raw, slotInfo.remainingPurchasableSlots));
+                        }}
+                        className={`w-24 rounded-lg border px-3 py-2 text-sm ${
+                          isDarkMode
+                            ? 'border-slate-600 bg-slate-800 text-slate-100'
+                            : 'border-slate-300 bg-white text-slate-800'
+                        }`}
+                      />
+                      <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                        {t('payment.extraSlots.maxAvailable', 'Tối đa {{count}}', { count: slotInfo.remainingPurchasableSlots })}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className={`text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-700'}`}>
+                      {t('payment.extraSlots.capReached', 'Group đã đạt số slot tối đa theo cấu hình hệ thống, không thể mua thêm.')}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="w-full shrink-0 xl:row-span-2">
@@ -351,6 +453,8 @@ export default function PaymentPage() {
                   isPaying={isPaying}
                   paymentError={paymentError}
                   needGroupSelect={needGroupSelect && !selectedWorkspaceId}
+                  extraSlotCount={extraSlotCount}
+                  slotUnitPrice={slotInfo?.unitPriceVnd ?? 0}
                 />
               </div>
             </div>
