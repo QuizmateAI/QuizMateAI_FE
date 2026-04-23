@@ -139,6 +139,7 @@
     "challengeParticipantNotFound": "Bạn chưa tham gia thử thách này.",
     "challengeNotPlaying": "Thử thách chưa bắt đầu hoặc bạn chưa ở trạng thái PLAYING.",
     "challengeAlreadySubmitted": "Bạn đã nộp bài rồi.",
+    "challengeFinishNotAllowed": "Chỉ kết thúc sớm được khi tất cả người đăng ký đã nộp bài.",
     "defaultPlanCannotDelete": "Gói mặc định không được xóa.",
     "defaultPlanCannotUpdateType": "Gói mặc định không được cập nhật loại.",
     "defaultPlanCannotInactive": "Gói mặc định không được vô hiệu hóa.",

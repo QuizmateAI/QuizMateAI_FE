@@ -625,7 +625,7 @@
     "quiz": {
       "createTitle": "Create Quiz",
       "createDesc": "Create a quiz for your workspace.",
-      "challengeDraftDesc": "Draft the challenge quiz: set the name, difficulty, timing, questions, and answers.",
+      "challengeDraftDesc": "Draft the challenge match: set the name, difficulty, timing, questions, and answers.",
       "manualWizard": {
         "header": {
           "createTitle": "Create manual quiz",
