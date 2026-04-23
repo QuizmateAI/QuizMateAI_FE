@@ -2275,18 +2275,41 @@ function WorkspacePage() {
   const handleDeleteFlashcard = useCallback(async (flashcard) => {
     if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
 
-    try {
-      const { deleteFlashcardSet } = await import("@/api/FlashcardAPI");
+    const flashcardSetId = Number(
+      flashcard?.flashcardSetId ?? flashcard?.id ?? flashcard?.flashcardId,
+    );
+    if (!Number.isInteger(flashcardSetId) || flashcardSetId <= 0) {
+      showError(t("workspace.flashcard.deleteFailed", "Không thể xóa bộ flashcard này."));
+      return;
+    }
 
-      await deleteFlashcardSet(flashcard.flashcardSetId);
+    const scopeId = Number(workspaceId) || 0;
+    const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
+
+    try {
+      await deleteFlashcardSet(flashcardSetId);
+
+      queryClient.setQueryData(queryKey, (previousItems = []) => {
+        if (!Array.isArray(previousItems)) return previousItems;
+        return previousItems.filter(
+          (item) => Number(item?.flashcardSetId ?? item?.id ?? item?.flashcardId) !== flashcardSetId,
+        );
+      });
+      void queryClient.invalidateQueries({ queryKey });
+      setSelectedFlashcard((current) => (
+        Number(current?.flashcardSetId ?? current?.id ?? current?.flashcardId) === flashcardSetId
+          ? null
+          : current
+      ));
 
       // Return to the list view so it can refresh
 
       setActiveView("flashcard");
     } catch (err) {
       console.error("Delete flashcard failed:", err);
+      showError(getErrorMessage(t, err));
     }
-  }, []);
+  }, [queryClient, showError, t, workspaceId]);
 
   // Create a roadmap for the individual workspace
 

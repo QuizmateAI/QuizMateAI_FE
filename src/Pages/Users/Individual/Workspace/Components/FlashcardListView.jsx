@@ -127,6 +127,63 @@ function FlashcardListView({
   const showPaginationFooter = filtered.length > 0;
   const showPageNavigation = filtered.length > pageSize;
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
+  const renderCreateFlashcardAction = ({
+    label = t("workspace.listView.create"),
+    className = "h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50",
+  } = {}) => {
+    if (typeof onCreateManualFlashcard === "function") {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button disabled={disableCreate} className={className}>
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="text-sm">{label}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className={`w-56 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+          >
+            <DropdownMenuItem
+              onSelect={() => onCreateFlashcard?.()}
+              className="cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">
+                  {t("workspace.flashcard.createMenu.ai", "Create by AI")}
+                </span>
+                <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                  {t("workspace.flashcard.createMenu.aiDesc", "Generate flashcards from materials")}
+                </span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => onCreateManualFlashcard?.()}
+              className="cursor-pointer"
+            >
+              <PenLine className="h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">
+                  {t("workspace.flashcard.createMenu.manual", "Create manually")}
+                </span>
+                <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                  {t("workspace.flashcard.createMenu.manualDesc", "Enter each card yourself")}
+                </span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    return (
+      <Button disabled={disableCreate} onClick={onCreateFlashcard} className={className}>
+        <Plus className="mr-2 h-4 w-4" />
+        <span className="text-sm">{label}</span>
+      </Button>
+    );
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col px-4 py-5 sm:px-5 lg:px-6">
@@ -253,14 +310,10 @@ function FlashcardListView({
             <CreditCard className={`mb-3 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.flashcard.noFlashcards")}</p>
             {!hideCreateButton ? (
-              <Button
-                disabled={disableCreate}
-                onClick={onCreateFlashcard}
-                className="mt-4 h-10 rounded-full bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="text-sm">{t("workspace.flashcard.createFirstFlashcard")}</span>
-              </Button>
+              renderCreateFlashcardAction({
+                label: t("workspace.flashcard.createFirstFlashcard"),
+                className: "mt-4 h-10 rounded-full bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50",
+              })
             ) : null}
           </div>
         ) : !filtered.length ? (
