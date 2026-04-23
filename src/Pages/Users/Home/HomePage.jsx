@@ -1,15 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from "@/Components/ui/button";
-import { CreditCard, Globe, Grid3x3, List, Moon, Settings, Sparkles, Sun } from 'lucide-react';
+import { CreditCard, Globe, Grid3x3, List, Moon, Search, Settings, Sparkles, Sun, X } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserWorkspace, { WorkspaceFilterControls } from "@/Pages/Users/Home/Components/UserWorkspace";
-import UserGroup, { GroupFilterControls } from "@/Pages/Users/Home/Components/UserGroup";
-import CommunityGroupBoard from "@/Pages/Users/Home/Components/CommunityGroupBoard";
-import EditWorkspaceDialog from "@/Pages/Users/Home/Components/EditWorkspaceDialog";
-import DeleteWorkspaceDialog from "@/Pages/Users/Home/Components/DeleteWorkspaceDialog";
-import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -21,6 +16,12 @@ import { getMyWallet } from '@/api/ManagementSystemAPI';
 import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
+
+const LazyUserGroup = lazy(() => import("@/Pages/Users/Home/Components/UserGroup"));
+const LazyCommunityGroupBoard = lazy(() => import("@/Pages/Users/Home/Components/CommunityGroupBoard"));
+const LazyEditWorkspaceDialog = lazy(() => import("@/Pages/Users/Home/Components/EditWorkspaceDialog"));
+const LazyDeleteWorkspaceDialog = lazy(() => import("@/Pages/Users/Home/Components/DeleteWorkspaceDialog"));
+const LazyUserProfilePopover = lazy(() => import("@/Components/features/Users/UserProfilePopover"));
 
 function formatNumber(value, locale) {
   try {
@@ -106,6 +107,49 @@ function mergeGroupsWithOwnedWorkspaces(groups = [], workspaces = []) {
 
   return Array.from(mergedGroups.values()).sort((left, right) =>
     toTimestamp(right?.joinedAt || right?.createdAt) - toTimestamp(left?.joinedAt || left?.createdAt)
+  );
+}
+
+function GroupSearchControls({ searchQuery, onSearchQueryChange, isDarkMode }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="relative w-full sm:w-80">
+      <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(event) => onSearchQueryChange(event.target.value)}
+        placeholder={t("home.search.groupPlaceholder")}
+        className={`h-10 w-full rounded-xl border pl-9 pr-9 text-sm outline-none transition-colors ${
+          isDarkMode
+            ? "border-slate-700 bg-slate-900 text-white placeholder:text-slate-500 focus:border-blue-500"
+            : "border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-blue-500"
+        }`}
+      />
+      {searchQuery ? (
+        <button
+          type="button"
+          onClick={() => onSearchQueryChange("")}
+          className={`absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg transition-colors ${
+            isDarkMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          }`}
+          aria-label={t("home.search.clear")}
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function LazySectionFallback({ isDarkMode }) {
+  return (
+    <div
+      className={`min-h-[240px] rounded-[28px] border ${
+        isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-slate-50/70"
+      }`}
+    />
   );
 }
 
@@ -388,31 +432,35 @@ function HomePage() {
 
     if (activeTab === 'group') {
       return (
-        <UserGroup
-          viewMode={viewMode}
-          isDarkMode={isDarkMode}
-          groups={mergedGroups}
-          loading={groupTabLoading}
-          onOpenCreate={handleOpenCreateGroup}
-          searchQuery={groupSearchQuery}
-          onSearchQueryChange={setGroupSearchQuery}
-        />
+        <Suspense fallback={<LazySectionFallback isDarkMode={isDarkMode} />}>
+          <LazyUserGroup
+            viewMode={viewMode}
+            isDarkMode={isDarkMode}
+            groups={mergedGroups}
+            loading={groupTabLoading}
+            onOpenCreate={handleOpenCreateGroup}
+            searchQuery={groupSearchQuery}
+            onSearchQueryChange={setGroupSearchQuery}
+          />
+        </Suspense>
       );
     }
 
     if (activeTab === 'community') {
       return (
-        <CommunityGroupBoard
-          groups={publicGroups}
-          loading={publicGroupTabLoading}
-          searchQuery={communitySearchQuery}
-          isDarkMode={isDarkMode}
-          onJoinGroup={handleJoinPublicGroup}
-          onOpenGroup={handleOpenExistingGroup}
-          onCreateGroup={handleOpenCreateGroup}
-          joiningWorkspaceId={joiningPublicGroupId}
-          myGroupCount={mergedGroups.length}
-        />
+        <Suspense fallback={<LazySectionFallback isDarkMode={isDarkMode} />}>
+          <LazyCommunityGroupBoard
+            groups={publicGroups}
+            loading={publicGroupTabLoading}
+            searchQuery={communitySearchQuery}
+            isDarkMode={isDarkMode}
+            onJoinGroup={handleJoinPublicGroup}
+            onOpenGroup={handleOpenExistingGroup}
+            onCreateGroup={handleOpenCreateGroup}
+            joiningWorkspaceId={joiningPublicGroupId}
+            myGroupCount={mergedGroups.length}
+          />
+        </Suspense>
       );
     }
 
@@ -541,7 +589,9 @@ function HomePage() {
             <Menu className="w-5 h-5 text-gray-600" />
           </button> */}
           
-          <UserProfilePopover isDarkMode={isDarkMode} />
+          <Suspense fallback={<div className={`h-10 w-10 rounded-full ${isDarkMode ? 'bg-slate-900' : 'bg-gray-100'}`} />}>
+            <LazyUserProfilePopover isDarkMode={isDarkMode} />
+          </Suspense>
         </div>
       </header>
 
@@ -605,14 +655,14 @@ function HomePage() {
               />
             ) : null}
             {activeTab === 'group' ? (
-              <GroupFilterControls
+              <GroupSearchControls
                 searchQuery={groupSearchQuery}
                 onSearchQueryChange={setGroupSearchQuery}
                 isDarkMode={isDarkMode}
               />
             ) : null}
             {activeTab === 'community' ? (
-              <GroupFilterControls
+              <GroupSearchControls
                 searchQuery={communitySearchQuery}
                 onSearchQueryChange={setCommunitySearchQuery}
                 isDarkMode={isDarkMode}
@@ -667,20 +717,28 @@ function HomePage() {
       </div>
 
       {/* Dialogs */}
-      <EditWorkspaceDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        workspace={selectedWorkspace}
-        onEdit={handleEdit}
-        isDarkMode={isDarkMode}
-      />
-      <DeleteWorkspaceDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        workspace={selectedWorkspace}
-        onDelete={handleDelete}
-        isDarkMode={isDarkMode}
-      />
+      {editDialogOpen ? (
+        <Suspense fallback={null}>
+          <LazyEditWorkspaceDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            workspace={selectedWorkspace}
+            onEdit={handleEdit}
+            isDarkMode={isDarkMode}
+          />
+        </Suspense>
+      ) : null}
+      {deleteDialogOpen ? (
+        <Suspense fallback={null}>
+          <LazyDeleteWorkspaceDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            workspace={selectedWorkspace}
+            onDelete={handleDelete}
+            isDarkMode={isDarkMode}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }
