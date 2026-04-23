@@ -10,6 +10,7 @@ import {
 import { isAbsoluteBeginnerLevel } from './profileWizardBeginnerUtils';
 import {
   analyzeKnowledge,
+  searchStudyCatalog,
   suggestProfileFields,
   suggestExamTemplates,
   validateProfileConsistency,
@@ -24,6 +25,11 @@ const CONSISTENCY_DEBOUNCE_MS = 1000;
 const LIVE_ALLOWED_INPUT_REGEX = /^[\p{L}\p{M}\p{N}\s.,:;!?()[\]/'"&+#%+-]*$/u;
 const SHORT_KNOWLEDGE_TOKEN_REGEX = /^[\p{L}\p{M}\p{N}#+./-]{2,5}$/u;
 const REPEATED_CHARACTER_REGEX = /(.)\1{5,}/u;
+const STUDY_PROFILE_ANALYSIS_ERROR_CODES = {
+  EXPIRED: 1190,
+  NOT_FOUND: 1191,
+  OPTION_INVALID: 1192,
+};
 const LIVE_INPUT_RULES = {
   knowledgeInput: {
     minCompactLength: 3,
@@ -296,9 +302,12 @@ function createInitialValues(initialData, options = {}) {
 
   return {
     workspacePurpose: purpose,
+    analysisId: ensureString(initialData?.analysisId || ''),
     knowledgeInput: ensureString(initialData?.knowledgeInput || initialData?.knowledge || initialData?.customKnowledge || ''),
     knowledgeDescription: ensureString(initialData?.knowledgeDescription || initialData?.customSchemeDescription || ''),
     inferredDomain: ensureString(initialData?.inferredDomain || initialData?.domain || initialData?.customDomain || ''),
+    selectedKnowledgeOptionId: ensureString(initialData?.selectedKnowledgeOptionId || ''),
+    selectedDomainOptionId: ensureString(initialData?.selectedDomainOptionId || ''),
     selectedKnowledgeOption: ensureString(initialData?.selectedKnowledgeOption || initialData?.knowledgeInput || initialData?.knowledge || initialData?.customKnowledge || ''),
     enableRoadmap: roadmapLockedByPlan
       ? false
@@ -519,8 +528,26 @@ function normalizeDomainSuggestionDetail(detail) {
   };
 }
 
-function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails, knowledge }) {
+function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails, knowledge, domainOptions = [] }) {
   const normalizedKnowledge = (knowledge || '').toString().trim();
+
+  if (Array.isArray(domainOptions) && domainOptions.length > 0) {
+    return domainOptions
+      .filter((option) => option && (option.canonicalName || option.label))
+      .slice(0, 5)
+      .map((option, index) => {
+        const label = (option.canonicalName || option.label || '').toString().trim();
+        return {
+          id: option.optionId || option.id || `domain-option-${index + 1}`,
+          label,
+          signal: normalizedKnowledge,
+          knowledge: normalizedKnowledge,
+          confidence: Number(option.confidence) || null,
+          reasonType: resolveDomainReasonType(label, normalizedKnowledge, index),
+          reason: (option.reason || '').toString().trim(),
+        };
+      });
+  }
 
   const normalizedDetails = (Array.isArray(domainSuggestionDetails) ? domainSuggestionDetails : [])
     .map(normalizeDomainSuggestionDetail)
@@ -528,6 +555,7 @@ function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails,
 
   if (normalizedDetails.length > 0) {
     return normalizedDetails.slice(0, 5).map((item, index) => ({
+      id: `domain-option-${index + 1}`,
       label: item.label,
       signal: normalizedKnowledge,
       knowledge: normalizedKnowledge,
@@ -541,11 +569,50 @@ function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails,
   }
 
   return domainSuggestions.slice(0, 5).map((label, index) => ({
+    id: `domain-option-${index + 1}`,
     label,
     signal: normalizedKnowledge,
     knowledge: normalizedKnowledge,
     reasonType: resolveDomainReasonType(label, normalizedKnowledge, index),
   }));
+}
+
+function buildKnowledgeOptionsFromApi({ knowledgeOptions = [], knowledge, domainOptions = [] }) {
+  const normalizedKnowledge = (knowledge || '').toString().trim();
+  const availableDomainOptionIds = new Set(
+    (Array.isArray(domainOptions) ? domainOptions : [])
+      .map((option) => option?.id)
+      .filter(Boolean)
+  );
+
+  if (Array.isArray(knowledgeOptions) && knowledgeOptions.length > 0) {
+    return knowledgeOptions
+      .filter((option) => option && (option.canonicalName || option.label))
+      .slice(0, 5)
+      .map((option, index) => ({
+        id: option.optionId || option.id || `knowledge-option-${index + 1}`,
+        label: (option.canonicalName || option.label || '').toString().trim(),
+        description:
+          (option.coreMeaningShort || option.coreDefinitionShort || option.description || '').toString().trim(),
+        confidence: Number(option.confidence) || null,
+        existingKnowledge: Boolean(option.existingKnowledge ?? option.isExistingKnowledge ?? option.existingKnowledgeId),
+        suggestedDomainOptionIds: (Array.isArray(option.suggestedDomainOptionIds) ? option.suggestedDomainOptionIds : [])
+          .filter((id) => availableDomainOptionIds.has(id)),
+      }));
+  }
+
+  if (!normalizedKnowledge) {
+    return [];
+  }
+
+  return [{
+    id: 'knowledge-option-1',
+    label: normalizedKnowledge,
+    description: normalizedKnowledge,
+    confidence: null,
+    existingKnowledge: false,
+    suggestedDomainOptionIds: [],
+  }];
 }
 
 function localizeDomainOptions(options, t) {
@@ -561,6 +628,18 @@ function localizeDomainOptions(options, t) {
   }));
 }
 
+function getSelectedKnowledgeForAi(values) {
+  const selectedKnowledge = ensureString(values.selectedKnowledgeOption).trim();
+  if (selectedKnowledge) {
+    return selectedKnowledge;
+  }
+  return getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
+}
+
+function getSelectedDomainForAi(values) {
+  return ensureString(values.inferredDomain).trim() || getReadyLiveFieldValue('inferredDomain', values.inferredDomain);
+}
+
 function splitProfileFieldValues(value) {
   if (!value || typeof value !== 'string') {
     return [];
@@ -573,8 +652,8 @@ function splitProfileFieldValues(value) {
 }
 
 function buildFieldSuggestionPayload(values) {
-  const readyKnowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
-  const readyDomain = getReadyLiveFieldValue('inferredDomain', values.inferredDomain);
+  const readyKnowledge = getSelectedKnowledgeForAi(values);
+  const readyDomain = getSelectedDomainForAi(values);
   const readyCurrentLevel = getReadyLiveFieldValue('currentLevel', values.currentLevel);
   const readyStrongAreas = getReadyLiveFieldValue('strongAreas', values.strongAreas);
   const readyWeakAreas = getReadyLiveFieldValue('weakAreas', values.weakAreas);
@@ -591,14 +670,14 @@ function buildFieldSuggestionPayload(values) {
 
 function buildExamTemplateSuggestionPayload(values) {
   return {
-    knowledge: getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput),
-    domain: getReadyLiveFieldValue('inferredDomain', values.inferredDomain),
+    knowledge: getSelectedKnowledgeForAi(values),
+    domain: getSelectedDomainForAi(values),
   };
 }
 
 function buildConsistencyPayload(values) {
-  const readyKnowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
-  const readyDomain = getReadyLiveFieldValue('inferredDomain', values.inferredDomain);
+  const readyKnowledge = getSelectedKnowledgeForAi(values);
+  const readyDomain = getSelectedDomainForAi(values);
   const readyCurrentLevel = getReadyLiveFieldValue('currentLevel', values.currentLevel);
   const readyLearningGoal = getReadyLiveFieldValue('learningGoal', values.learningGoal);
   const readyMockExamName = getReadyLiveFieldValue('mockExamName', values.mockExamName);
@@ -619,8 +698,8 @@ function buildConsistencyPayload(values) {
 
 function shouldRunLiveConsistency(values) {
   const beginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
-  const hasReadyKnowledge = Boolean(getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput));
-  const hasReadyDomain = Boolean(getReadyLiveFieldValue('inferredDomain', values.inferredDomain));
+  const hasReadyKnowledge = Boolean(getSelectedKnowledgeForAi(values));
+  const hasReadyDomain = Boolean(getSelectedDomainForAi(values));
   const hasReadyCurrentLevel = Boolean(getReadyLiveFieldValue('currentLevel', values.currentLevel));
   const hasReadyLearningGoal = Boolean(getReadyLiveFieldValue('learningGoal', values.learningGoal));
   const hasReadyStrongAreas = Boolean(getReadyLiveFieldValue('strongAreas', values.strongAreas));
@@ -651,10 +730,13 @@ function buildPayload(values, options = {}) {
   const shouldPersistRoadmapFields = shouldShowRoadmapFields(values, options);
   const sharedPayload = {
     workspacePurpose: values.workspacePurpose,
+    analysisId: values.analysisId || null,
     knowledgeInput: values.knowledgeInput.trim(),
     knowledgeDescription: values.knowledgeDescription.trim() || null,
     inferredDomain: values.inferredDomain || null,
-    selectedKnowledgeOption: values.knowledgeInput.trim() || null,
+    selectedKnowledgeOptionId: values.selectedKnowledgeOptionId || null,
+    selectedDomainOptionId: values.selectedDomainOptionId || null,
+    selectedKnowledgeOption: values.selectedKnowledgeOption?.trim() || values.knowledgeInput.trim() || null,
     enableRoadmap: options?.canCreateRoadmap === false
       ? false
       : (values.workspacePurpose === 'STUDY_NEW' ? true : Boolean(values.enableRoadmap)),
@@ -789,6 +871,10 @@ function buildStepSnapshot(stepNumber, values, options = {}) {
       knowledgeInput: normalizeSnapshotText(values.knowledgeInput),
       knowledgeDescription: normalizeSnapshotText(values.knowledgeDescription),
       inferredDomain: normalizeSnapshotText(values.inferredDomain),
+      analysisId: normalizeSnapshotText(values.analysisId),
+      selectedKnowledgeOptionId: normalizeSnapshotText(values.selectedKnowledgeOptionId),
+      selectedDomainOptionId: normalizeSnapshotText(values.selectedDomainOptionId),
+      selectedKnowledgeOption: normalizeSnapshotText(values.selectedKnowledgeOption),
       enableRoadmap: values.workspacePurpose === 'STUDY_NEW' ? true : Boolean(values.enableRoadmap),
     };
   }
@@ -999,11 +1085,11 @@ function canFetchFieldSuggestions(values) {
     return false;
   }
 
-  if (!getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput)) {
+  if (!getSelectedKnowledgeForAi(values)) {
     return false;
   }
 
-  if (!getReadyLiveFieldValue('inferredDomain', values.inferredDomain)) {
+  if (!getSelectedDomainForAi(values)) {
     return false;
   }
 
@@ -1016,9 +1102,23 @@ function canFetchFieldSuggestions(values) {
 
 function canFetchExamTemplateSuggestions(values) {
   return Boolean(
-    getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput)
-    && getReadyLiveFieldValue('inferredDomain', values.inferredDomain)
+    getSelectedKnowledgeForAi(values)
+    && getSelectedDomainForAi(values)
   );
+}
+
+function getStudyProfileAnalysisErrorType(error) {
+  const statusCode = Number(error?.data?.statusCode ?? error?.code);
+  if (statusCode === STUDY_PROFILE_ANALYSIS_ERROR_CODES.EXPIRED) {
+    return 'STUDY_PROFILE_ANALYSIS_EXPIRED';
+  }
+  if (statusCode === STUDY_PROFILE_ANALYSIS_ERROR_CODES.NOT_FOUND) {
+    return 'STUDY_PROFILE_ANALYSIS_NOT_FOUND';
+  }
+  if (statusCode === STUDY_PROFILE_ANALYSIS_ERROR_CODES.OPTION_INVALID) {
+    return 'STUDY_PROFILE_ANALYSIS_OPTION_INVALID';
+  }
+  return '';
 }
 
 export function useWorkspaceProfileWizard({
@@ -1042,6 +1142,7 @@ export function useWorkspaceProfileWizard({
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [analysisStatus, setAnalysisStatus] = useState('idle');
+  const [knowledgeOptions, setKnowledgeOptions] = useState([]);
   const [domainOptions, setDomainOptions] = useState([]);
   const [templateStatus, setTemplateStatus] = useState('idle');
   const [templatePreview, setTemplatePreview] = useState(null);
@@ -1234,11 +1335,16 @@ export function useWorkspaceProfileWizard({
     if (!canRequestKnowledgeAnalysis) {
       analysisFingerprintRef.current = '';
       setAnalysisStatus('idle');
+      setKnowledgeOptions([]);
       setDomainOptions([]);
       setKnowledgeAnalysis(null);
       setValues((current) => ({
         ...current,
+        analysisId: '',
         inferredDomain: '',
+        selectedKnowledgeOptionId: '',
+        selectedDomainOptionId: '',
+        selectedKnowledgeOption: '',
       }));
       return;
     }
@@ -1255,37 +1361,102 @@ export function useWorkspaceProfileWizard({
       analysisAbortRef.current = abortController;
 
       try {
-        const result = await analyzeKnowledge(trimmedKnowledge, {
+        const catalogResult = await searchStudyCatalog(trimmedKnowledge, {
           signal: abortController.signal,
         });
 
         if (abortController.signal.aborted) return;
 
-        setKnowledgeAnalysis(result);
-
-        const rawOptions = buildDomainOptionsFromApi({
-          domainSuggestions: result.domainSuggestions || [],
-          domainSuggestionDetails: extractDomainSuggestionDetails(result),
+        const catalogKnowledgeOptions = buildKnowledgeOptionsFromApi({
+          knowledgeOptions: catalogResult?.knowledgeOptions || [],
           knowledge: values.knowledgeInput.trim(),
+          domainOptions: buildDomainOptionsFromApi({
+            domainOptions: catalogResult?.domainOptions || [],
+            knowledge: values.knowledgeInput.trim(),
+          }),
         });
-        const localizedOptions = localizeDomainOptions(rawOptions, t);
+        const catalogDomainOptions = localizeDomainOptions(
+          buildDomainOptionsFromApi({
+            domainOptions: catalogResult?.domainOptions || [],
+            knowledge: values.knowledgeInput.trim(),
+          }),
+          t
+        );
 
-        setDomainOptions(localizedOptions);
-        setAnalysisStatus('success');
-        setValues((current) => ({
-          ...current,
-          inferredDomain:
-            localizedOptions.some((option) => option.label === current.inferredDomain) && current.inferredDomain
-              ? current.inferredDomain
-              : '',
-          selectedKnowledgeOption: current.knowledgeInput.trim(),
-        }));
+        const applyResolvedAnalysis = (result, { preferSelectedKnowledgeLabel = '', preferSelectedDomainLabel = '' } = {}) => {
+          const rawDomainOptions = buildDomainOptionsFromApi({
+            domainSuggestions: result?.domainSuggestions || [],
+            domainSuggestionDetails: extractDomainSuggestionDetails(result),
+            domainOptions: result?.domainOptions || [],
+            knowledge: values.knowledgeInput.trim(),
+          });
+          const localizedDomainOptions = localizeDomainOptions(rawDomainOptions, t);
+          const rawKnowledgeOptions = buildKnowledgeOptionsFromApi({
+            knowledgeOptions: result?.knowledgeOptions || [],
+            knowledge: values.knowledgeInput.trim(),
+            domainOptions: localizedDomainOptions,
+          });
+
+          setKnowledgeAnalysis(result);
+          setKnowledgeOptions(rawKnowledgeOptions);
+          setDomainOptions(localizedDomainOptions);
+          setAnalysisStatus('success');
+          setValues((current) => {
+            const preferredKnowledgeLabel = preferSelectedKnowledgeLabel || current.selectedKnowledgeOption || current.knowledgeInput.trim();
+            const preferredDomainLabel = preferSelectedDomainLabel || current.inferredDomain;
+            const matchedKnowledgeOption = rawKnowledgeOptions.find((option) => option.label === preferredKnowledgeLabel) || rawKnowledgeOptions[0] || null;
+            const matchedDomainOption = localizedDomainOptions.find((option) => option.label === preferredDomainLabel)
+              || localizedDomainOptions.find((option) => matchedKnowledgeOption?.suggestedDomainOptionIds?.includes(option.id))
+              || localizedDomainOptions[0]
+              || null;
+
+            return {
+              ...current,
+              analysisId: result?.analysisId || '',
+              selectedKnowledgeOptionId: matchedKnowledgeOption?.id || '',
+              selectedKnowledgeOption: matchedKnowledgeOption?.label || '',
+              inferredDomain: matchedDomainOption?.label || '',
+              selectedDomainOptionId: matchedDomainOption?.id || '',
+            };
+          });
+        };
+
+        if (catalogKnowledgeOptions.length > 0 && catalogDomainOptions.length > 0) {
+          applyResolvedAnalysis({
+            analysisId: catalogResult?.analysisId || '',
+            source: catalogResult?.source || 'CATALOG',
+            warning: false,
+            message: '',
+            advice: '',
+            tooBroad: false,
+            quizCompatible: true,
+            confidence: 1,
+            normalizedKnowledge: catalogKnowledgeOptions[0]?.label || values.knowledgeInput.trim(),
+            validationHighlights: [],
+            refinementSuggestions: [],
+            quizConstraintWarnings: [],
+            knowledgeOptions: catalogResult?.knowledgeOptions || [],
+            domainOptions: catalogResult?.domainOptions || [],
+          });
+          return;
+        }
+
+        const result = await analyzeKnowledge(trimmedKnowledge, {
+          signal: abortController.signal,
+        });
+
+        if (abortController.signal.aborted) return;
+        applyResolvedAnalysis(result, {
+          preferSelectedKnowledgeLabel: catalogKnowledgeOptions[0]?.label || '',
+          preferSelectedDomainLabel: catalogDomainOptions[0]?.label || '',
+        });
       } catch (error) {
         if (abortController.signal.aborted) return;
         console.error('[StudyProfile] Knowledge analysis failed:', error);
         analysisFingerprintRef.current = '';
         setAnalysisStatus('error');
         setKnowledgeAnalysis(null);
+        setKnowledgeOptions([]);
         setDomainOptions([]);
       }
     }, ANALYSIS_DEBOUNCE_MS);
@@ -1415,7 +1586,7 @@ export function useWorkspaceProfileWizard({
       }, FIELD_SUGGESTION_DEBOUNCE_MS);
     } else {
       fieldSuggestionTimerRef.current = null;
-      if (!getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput) || !getReadyLiveFieldValue('inferredDomain', values.inferredDomain)) {
+      if (!getSelectedKnowledgeForAi(values) || !getSelectedDomainForAi(values)) {
         fieldSuggestionFingerprintRef.current = '';
         setFieldSuggestions(null);
       }
@@ -1423,8 +1594,8 @@ export function useWorkspaceProfileWizard({
     }
 
     if (values.workspacePurpose === 'MOCK_TEST' && canRequestExamTemplateSuggestion) {
-      const knowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
-      const domain = getReadyLiveFieldValue('inferredDomain', values.inferredDomain);
+      const knowledge = getSelectedKnowledgeForAi(values);
+      const domain = getSelectedDomainForAi(values);
       examTemplateSuggestionTimerRef.current = setTimeout(() => {
         fetchExamTemplateSuggestions({ knowledge, domain });
       }, EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS);
@@ -1446,7 +1617,10 @@ export function useWorkspaceProfileWizard({
     fetchExamTemplateSuggestions,
     values.workspacePurpose,
     values.knowledgeInput,
+    values.selectedKnowledgeOption,
+    values.selectedKnowledgeOptionId,
     values.inferredDomain,
+    values.selectedDomainOptionId,
     values.currentLevel,
     values.strongAreas,
     values.weakAreas,
@@ -1517,7 +1691,10 @@ export function useWorkspaceProfileWizard({
     runConsistencyValidation,
     values.workspacePurpose,
     values.knowledgeInput,
+    values.selectedKnowledgeOption,
+    values.selectedKnowledgeOptionId,
     values.inferredDomain,
+    values.selectedDomainOptionId,
     values.currentLevel,
     values.learningGoal,
     values.strongAreas,
@@ -1548,6 +1725,15 @@ export function useWorkspaceProfileWizard({
         workspacePurpose: normalizedPurposeValue,
         enableRoadmap: enableRoadmapNext,
         ...roadmapConfigPatch,
+        ...(field === 'knowledgeInput'
+          ? {
+              analysisId: '',
+              inferredDomain: '',
+              selectedKnowledgeOptionId: '',
+              selectedDomainOptionId: '',
+              selectedKnowledgeOption: '',
+            }
+          : {}),
       };
 
       const savedBasic = savedStepSnapshotsRef.current?.[1];
@@ -1626,7 +1812,45 @@ export function useWorkspaceProfileWizard({
   }
 
   function selectInferredDomain(domain) {
-    updateField('inferredDomain', domain);
+    const selectedOption = domainOptions.find((option) => option.label === domain);
+    setValues((current) => ({
+      ...current,
+      inferredDomain: selectedOption?.label || domain,
+      selectedDomainOptionId: selectedOption?.id || '',
+    }));
+    setSaveError('');
+    setErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors.inferredDomain;
+      return nextErrors;
+    });
+  }
+
+  function selectKnowledgeOption(optionId) {
+    const selectedOption = knowledgeOptions.find((option) => option.id === optionId);
+    if (!selectedOption) return;
+
+    setValues((current) => {
+      const preferredDomainOption = domainOptions.find((option) => selectedOption.suggestedDomainOptionIds?.includes(option.id))
+        || domainOptions.find((option) => option.id === current.selectedDomainOptionId)
+        || domainOptions.find((option) => option.label === current.inferredDomain)
+        || null;
+
+      return {
+        ...current,
+        selectedKnowledgeOptionId: selectedOption.id,
+        selectedKnowledgeOption: selectedOption.label,
+        inferredDomain: preferredDomainOption?.label || current.inferredDomain,
+        selectedDomainOptionId: preferredDomainOption?.id || current.selectedDomainOptionId,
+      };
+    });
+    setSaveError('');
+    setErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors.selectedKnowledgeOption;
+      delete nextErrors.inferredDomain;
+      return nextErrors;
+    });
   }
 
   function selectPublicExam(examId) {
@@ -1688,7 +1912,27 @@ export function useWorkspaceProfileWizard({
           )
         );
       }
+      if (!values.selectedKnowledgeOptionId) {
+        nextErrors.selectedKnowledgeOption = translateOrFallback(
+          t,
+          'workspace.profileConfig.validation.knowledgeOptionRequired',
+          t(
+            'useWorkspaceProfileWizard.validation.knowledgeOptionRequired',
+            'Please choose one main knowledge option from the AI suggestions.'
+          )
+        );
+      }
       if (!values.inferredDomain) {
+        nextErrors.inferredDomain = translateOrFallback(
+          t,
+          'workspace.profileConfig.validation.domainRequired',
+          t(
+            'useWorkspaceProfileWizard.validation.domainRequired',
+            'Please select a domain suggested by the AI.'
+          )
+        );
+      }
+      if (values.inferredDomain && !values.selectedDomainOptionId) {
         nextErrors.inferredDomain = translateOrFallback(
           t,
           'workspace.profileConfig.validation.domainRequired',
@@ -1837,6 +2081,25 @@ export function useWorkspaceProfileWizard({
       markStepAsSaved(stepToPersist);
       return { ok: true, result };
     } catch (error) {
+      if (stepToPersist === 1) {
+        const analysisErrorType = getStudyProfileAnalysisErrorType(error);
+        if (analysisErrorType) {
+          analysisFingerprintRef.current = '';
+          setKnowledgeAnalysis(null);
+          setKnowledgeOptions([]);
+          setDomainOptions([]);
+          setAnalysisStatus('idle');
+          setValues((current) => ({
+            ...current,
+            analysisId: '',
+            inferredDomain: '',
+            selectedKnowledgeOptionId: '',
+            selectedDomainOptionId: '',
+            selectedKnowledgeOption: '',
+          }));
+          setAnalysisRetryTick((current) => current + 1);
+        }
+      }
       setSaveError(
         error?.message
           || translateOrFallback(
@@ -2017,6 +2280,7 @@ export function useWorkspaceProfileWizard({
     isWaitingForOverallReview,
     submitting,
     analysisStatus,
+    knowledgeOptions,
     domainOptions,
     needsKnowledgeDescription,
     selectedExam: null,
@@ -2035,6 +2299,7 @@ export function useWorkspaceProfileWizard({
     updateField,
     setPurpose,
     setMockExamMode,
+    selectKnowledgeOption,
     selectInferredDomain,
     selectPublicExam,
     generateTemplatePreviewAsync,

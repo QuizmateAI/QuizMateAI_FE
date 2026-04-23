@@ -106,6 +106,7 @@ function CommentThread({
   onSubmitReply,
   replyDrafts,
   submittingCommentId,
+  readOnly = false,
   isDarkMode,
   t,
 }) {
@@ -133,20 +134,22 @@ function CommentThread({
             <p className={`mt-2 whitespace-pre-wrap text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
               {comment?.body}
             </p>
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => (isReplyOpen ? onCloseReply() : onOpenReply(comment?.commentId))}
-                className={`inline-flex items-center gap-1 text-xs font-semibold ${
-                  isDarkMode ? 'text-blue-300' : 'text-blue-700'
-                }`}
-              >
-                <Reply className="h-3.5 w-3.5" />
-                <span>{t('workspace.quiz.communityDetail.replyAction', 'Reply')}</span>
-              </button>
-            </div>
+            {!readOnly ? (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => (isReplyOpen ? onCloseReply() : onOpenReply(comment?.commentId))}
+                  className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                    isDarkMode ? 'text-blue-300' : 'text-blue-700'
+                  }`}
+                >
+                  <Reply className="h-3.5 w-3.5" />
+                  <span>{t('workspace.quiz.communityDetail.replyAction', 'Reply')}</span>
+                </button>
+              </div>
+            ) : null}
 
-            {isReplyOpen ? (
+            {!readOnly && isReplyOpen ? (
               <div className="mt-3 space-y-2">
                 <textarea
                   value={replyDraft}
@@ -193,6 +196,7 @@ function CommentThread({
               onSubmitReply={onSubmitReply}
               replyDrafts={replyDrafts}
               submittingCommentId={submittingCommentId}
+              readOnly={readOnly}
               isDarkMode={isDarkMode}
               t={t}
             />
@@ -215,6 +219,7 @@ export default function CommunityQuizDetailDialog({
   cloneLoading = false,
   showCloneAction = false,
   cloneActionLabel,
+  readOnly = false,
 }) {
   const { showError, showSuccess } = useToast();
   const [loading, setLoading] = React.useState(false);
@@ -455,30 +460,32 @@ export default function CommunityQuizDetailDialog({
                 <p className={`text-sm font-semibold ${fontClass}`}>Public Discussion</p>
               </div>
 
-              <div className="mt-4 space-y-3">
-                <textarea
-                  value={commentDraft}
-                  onChange={(event) => setCommentDraft(event.target.value)}
-                  rows={4}
-                  placeholder="Comment công khai để mọi người cùng thấy."
-                  className={`w-full rounded-3xl border px-4 py-3 text-sm outline-none transition-colors ${
-                    isDarkMode
-                      ? 'border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500'
-                      : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500'
-                  }`}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    onClick={() => handleSubmitComment(null)}
-                    disabled={!commentDraft.trim() || submittingCommentId === 0}
-                    className="bg-blue-600 text-white hover:bg-blue-700"
-                  >
-                    {submittingCommentId === 0 ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
-                    <span>Gửi comment</span>
-                  </Button>
+              {!readOnly ? (
+                <div className="mt-4 space-y-3">
+                  <textarea
+                    value={commentDraft}
+                    onChange={(event) => setCommentDraft(event.target.value)}
+                    rows={4}
+                    placeholder="Comment công khai để mọi người cùng thấy."
+                    className={`w-full rounded-3xl border px-4 py-3 text-sm outline-none transition-colors ${
+                      isDarkMode
+                        ? 'border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500'
+                        : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500'
+                    }`}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={() => handleSubmitComment(null)}
+                      disabled={!commentDraft.trim() || submittingCommentId === 0}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      {submittingCommentId === 0 ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
+                      <span>Gửi comment</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               <div className="mt-5 space-y-3">
                 {comments.length === 0 ? (
@@ -500,6 +507,7 @@ export default function CommunityQuizDetailDialog({
                     onSubmitReply={(commentId) => handleSubmitComment(commentId)}
                     replyDrafts={replyDrafts}
                     submittingCommentId={submittingCommentId}
+                    readOnly={readOnly}
                     isDarkMode={isDarkMode}
                     t={(key, fallback) => fallback}
                   />

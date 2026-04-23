@@ -221,6 +221,7 @@ const ERROR_CODES = {
   1181: 'error.challengeCreatorCannotRegister',
   1182: 'error.quizReviewBatchPrimaryRequired',
   1183: 'error.quizReviewBatchEmpty',
+  1184: 'error.challengeFinishNotAllowed',
 
   // ========== USERNAME / EMAIL VALIDATION ==========
   2001: 'error.usernameInvalidFormat',

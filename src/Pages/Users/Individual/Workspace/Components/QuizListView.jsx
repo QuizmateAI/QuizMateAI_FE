@@ -1663,10 +1663,7 @@ function QuizListView({
 
                   {isProcessing ? (
                     <div className="mt-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                          {t("quizListView.cards.processing", "Generating quiz")}
-                        </p>
+                      <div className="flex items-center justify-end gap-3">
                         <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
                       </div>
                       <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
@@ -1675,67 +1672,69 @@ function QuizListView({
                     </div>
                   ) : null}
 
-                  <div className="mt-auto">
-                    <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
-                      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
-                          <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
-                        </div>
-                        {shouldShowResultSummary ? (
+                  {!isProcessing ? (
+                    <div className="mt-auto">
+                      <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
                           <div className="flex items-center gap-2">
-                            <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                            <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                           </div>
-                        ) : null}
-                      </div>
-                      {shouldShowInlineStatusBadge ? (
-                        <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
-                          {statusLabel}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {isCommunityShared ? (
-                      <CommunityQuizSignals
-                        cloneCount={quiz?.communityCloneCount}
-                        averageRating={quiz?.communityAverageRating}
-                        ratingCount={quiz?.communityRatingCount}
-                        commentCount={quiz?.communityCommentCount}
-                        isDarkMode={isDarkMode}
-                        t={t}
-                        className="mt-4"
-                      />
-                    ) : null}
-
-                    <div className={`mt-4 flex items-start justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
-                      <div className="flex min-w-0 flex-wrap items-center gap-3">
-                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
-                          <BarChart3 className="h-3.5 w-3.5" />
-                          <span>{difficultyLabel}</span>
+                          {shouldShowResultSummary ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            </div>
+                          ) : null}
                         </div>
-                        {durationLabel ? (
-                          <div className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
-                            <Timer className="h-3.5 w-3.5" />
-                            <span>{durationLabel}</span>
-                          </div>
+                        {shouldShowInlineStatusBadge ? (
+                          <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                            {statusLabel}
+                          </span>
                         ) : null}
                       </div>
-                      <div className={`flex flex-wrap items-center justify-end gap-2 text-[11px] font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                        {!shouldHideRoadmapVisibility ? (
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                            {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                            <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
-                          </span>
-                        ) : null}
-                        {createdAtLabel ? (
-                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span className="whitespace-nowrap">{createdAtLabel}</span>
-                          </span>
-                        ) : null}
+
+                      {isCommunityShared ? (
+                        <CommunityQuizSignals
+                          cloneCount={quiz?.communityCloneCount}
+                          averageRating={quiz?.communityAverageRating}
+                          ratingCount={quiz?.communityRatingCount}
+                          commentCount={quiz?.communityCommentCount}
+                          isDarkMode={isDarkMode}
+                          t={t}
+                          className="mt-4"
+                        />
+                      ) : null}
+
+                      <div className={`mt-4 flex items-start justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                        <div className="flex min-w-0 flex-wrap items-center gap-3">
+                          <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
+                            <BarChart3 className="h-3.5 w-3.5" />
+                            <span>{difficultyLabel}</span>
+                          </div>
+                          {durationLabel ? (
+                            <div className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                              <Timer className="h-3.5 w-3.5" />
+                              <span>{durationLabel}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className={`flex flex-wrap items-center justify-end gap-2 text-[11px] font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                          {!shouldHideRoadmapVisibility ? (
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                              {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                              <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
+                            </span>
+                          ) : null}
+                          {createdAtLabel ? (
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span className="whitespace-nowrap">{createdAtLabel}</span>
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : null}
                 </article>
               );
             })}

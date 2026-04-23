@@ -368,6 +368,26 @@ export const getGroupLogs = async (workspaceId) => {
   return response;
 };
 
+export const getManagementCommunityQuizzes = async ({
+  page = 0,
+  size = 10,
+  search,
+  status,
+} = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  if (search) params.append('search', String(search));
+  if (status) params.append('status', String(status));
+  const response = await api.get(`/management/community-quizzes?${params.toString()}`);
+  return response;
+};
+
+export const updateManagementCommunityQuizVisibility = async (quizId, { shared = false } = {}) => {
+  const response = await api.patch(`/management/community-quizzes/${quizId}/visibility?shared=${shared}`);
+  return response;
+};
+
 // Plan APIs — maps to PlanCatalogController (/api/plan-catalog/...)
 export const getAllPlans = async () => {
   const response = await api.get('/plan-catalog/all');
