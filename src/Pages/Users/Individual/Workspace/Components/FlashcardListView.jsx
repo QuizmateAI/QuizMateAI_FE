@@ -35,6 +35,12 @@ const STATUS_STYLES = {
   ERROR: { light: "bg-rose-100 text-rose-700", dark: "bg-rose-950/50 text-rose-300" },
 };
 
+function clampPercent(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
+}
+
 function isFlashcardCreating(item) {
   if (!item) return false;
 
@@ -54,6 +60,31 @@ function isFlashcardCreating(item) {
   }
 
   return false;
+}
+
+function resolveFlashcardProcessingPercent(item) {
+  const percentCandidates = [
+    item?.percent,
+    item?.progressPercent,
+    item?.processingPercent,
+    item?.generationProgressPercent,
+    item?.generationProgress,
+    item?.progress?.percent,
+    item?.progress?.progressPercent,
+    item?.task?.percent,
+    item?.task?.progressPercent,
+    item?.taskStatus?.percent,
+    item?.taskStatus?.progressPercent,
+    item?.activeTask?.percent,
+    item?.activeTask?.progressPercent,
+  ];
+  const directPercent = percentCandidates.reduce((highest, value) => {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? Math.max(highest, numericValue) : highest;
+  }, 0);
+
+  if (directPercent > 0) return clampPercent(directPercent);
+  return isFlashcardCreating(item) ? 5 : 0;
 }
 
 function formatShortDate(dateStr) {
@@ -323,13 +354,17 @@ function FlashcardListView({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedFlashcards.map((flashcard) => (
                 (() => {
                   const resolvedFlashcardId = flashcard.flashcardSetId || flashcard.id || flashcard.flashcardId;
                   const normalizedStatus = isFlashcardCreating(flashcard)
                     ? "PROCESSING"
                     : String(flashcard?.status || "DRAFT").toUpperCase();
+                  const isProcessing = normalizedStatus === "PROCESSING";
+                  const isInteractionBlocked = isProcessing;
+                  const processingPercent = resolveFlashcardProcessingPercent(flashcard);
+                  const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
                   const statusStyles = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
                   const statusLabel = t(`quizListView.status.${normalizedStatus}`, normalizedStatus);
                   const cardCount = Number(flashcard?.itemCount ?? flashcard?.items?.length ?? flashcard?.cardCount ?? 0) || 0;
@@ -338,16 +373,22 @@ function FlashcardListView({
                   return (
                     <article
                       key={resolvedFlashcardId || flashcard.flashcardSetName}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => onViewFlashcard?.(flashcard)}
+                      role={isInteractionBlocked ? undefined : "button"}
+                      tabIndex={isInteractionBlocked ? -1 : 0}
+                      onClick={() => {
+                        if (isInteractionBlocked) return;
+                        onViewFlashcard?.(flashcard);
+                      }}
                       onKeyDown={(event) => {
+                        if (isInteractionBlocked) return;
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           onViewFlashcard?.(flashcard);
                         }
                       }}
-                      className={`group flex h-[204px] cursor-pointer flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                      className={`group flex ${isProcessing ? "min-h-[204px]" : "h-[204px]"} flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                        isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
+                      } ${
                         isDarkMode
                           ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
                           : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
@@ -396,6 +437,20 @@ function FlashcardListView({
                           </div>
                         ) : null}
                       </div>
+
+                      {isProcessing ? (
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                              {t("workspace.flashcard.processing", t("workspace.flashcard.generating", "Generating flashcards"))}
+                            </p>
+                            <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
+                          </div>
+                          <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
+                            <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
+                          </div>
+                        </div>
+                      ) : null}
 
                       <div className={`mt-4 flex items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
                         <div className="flex min-w-0 items-center gap-2">
