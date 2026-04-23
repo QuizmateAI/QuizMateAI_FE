@@ -222,6 +222,7 @@ const ERROR_CODES = {
   1182: 'error.quizReviewBatchPrimaryRequired',
   1183: 'error.quizReviewBatchEmpty',
   1184: 'error.challengeFinishNotAllowed',
+  1185: 'error.workspaceSlotLimitExceeded',
 
   // ========== USERNAME / EMAIL VALIDATION ==========
   2001: 'error.usernameInvalidFormat',

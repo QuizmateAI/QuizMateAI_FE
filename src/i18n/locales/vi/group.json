@@ -1924,6 +1924,9 @@
     },
     "header": {
       "title": "Thảo luận chung",
+      "subtitle": "Một luồng thảo luận chung cho cả nhóm, gồm phản hồi và tag câu hỏi trong cùng một nơi.",
+      "live": "Đang trực tiếp",
+      "offline": "Ngoại tuyến",
       "hintPrefix": "Gõ",
       "hintSuffix": "để tag câu hỏi"
     },

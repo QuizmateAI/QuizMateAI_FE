@@ -15,6 +15,8 @@ export default function PaymentSidebar({
   isPaying = false,
   paymentError = '',
   needGroupSelect = false,
+  extraSlotCount = 0,
+  slotUnitPrice = 0,
 }) {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
@@ -27,9 +29,22 @@ export default function PaymentSidebar({
   const bonusCredit = Number(creditPackage?.bonusCredit ?? 0);
   const totalCredits = baseCredit + bonusCredit;
 
-  const formattedPrice = useMemo(
-    () => new Intl.NumberFormat('vi-VN').format(item?.price ?? 0),
-    [item?.price]
+  const normalizedExtraSlots = Number(extraSlotCount) > 0 ? Number(extraSlotCount) : 0;
+  const slotSubtotal = normalizedExtraSlots * Number(slotUnitPrice || 0);
+  const basePrice = Number(item?.price ?? 0);
+  const grandTotal = basePrice + slotSubtotal;
+
+  const formattedBasePrice = useMemo(
+    () => new Intl.NumberFormat('vi-VN').format(basePrice),
+    [basePrice]
+  );
+  const formattedSlotSubtotal = useMemo(
+    () => new Intl.NumberFormat('vi-VN').format(slotSubtotal),
+    [slotSubtotal]
+  );
+  const formattedGrandTotal = useMemo(
+    () => new Intl.NumberFormat('vi-VN').format(grandTotal),
+    [grandTotal]
   );
 
   const primaryLabel = isCreditPayment
@@ -93,9 +108,22 @@ export default function PaymentSidebar({
             <span className={`text-[1.15rem] font-bold tabular-nums ${
               isDarkMode ? 'text-slate-100' : 'text-slate-900'
             }`}>
-              {formattedPrice}₫
+              {formattedBasePrice}₫
             </span>
           </div>
+
+          {normalizedExtraSlots > 0 && (
+            <div className={`flex items-start justify-between gap-4 rounded-[22px] px-4 py-4 ${
+              isDarkMode ? 'bg-indigo-500/10' : 'bg-indigo-50'
+            }`}>
+              <span className={`text-[1.05rem] ${isDarkMode ? 'text-indigo-200' : 'text-indigo-800'}`}>
+                {t('payment.extraSlotLine', '{{count}} slot bổ sung', { count: normalizedExtraSlots })}
+              </span>
+              <span className={`text-[1.05rem] font-bold tabular-nums ${isDarkMode ? 'text-indigo-100' : 'text-indigo-900'}`}>
+                {formattedSlotSubtotal}₫
+              </span>
+            </div>
+          )}
           <div className={`flex items-start justify-between gap-4 rounded-[22px] px-4 py-4 ${
             isCreditPayment
               ? isDarkMode
@@ -139,7 +167,7 @@ export default function PaymentSidebar({
               ? 'bg-gradient-to-r from-white via-sky-200 to-emerald-200 bg-clip-text text-transparent'
               : 'bg-gradient-to-r from-slate-900 via-sky-700 to-indigo-700 bg-clip-text text-transparent'
           }`}>
-            {formattedPrice}₫
+            {formattedGrandTotal}₫
           </span>
         </div>
 
