@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { BrainCircuit, PlayCircle  } from 'lucide-react';
+import { BrainCircuit } from 'lucide-react';
 import LocalAvatar from '@/Components/ui/LocalAvatar';
 
 const HERO_AVATARS = [

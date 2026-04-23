@@ -1546,6 +1546,9 @@ function QuizListView({
               const resultDisplay = resolvedScoreValue != null
                 ? (maxScore > 0 ? `${resolvedScoreValue}/${maxScore}` : `${resolvedScoreValue}`)
                 : resultLabel;
+              const resultSummaryLabel = resolvedScoreValue != null
+                ? t("quizListView.cards.score", "Score")
+                : t("quizListView.cards.result", "Result");
               const durationLabel = durationInMinutes > 0
                 ? `${durationInMinutes} ${t("quizListView.cards.minutesShort", "min")}`
                 : null;
@@ -1681,15 +1684,10 @@ function QuizListView({
                         </div>
                         {shouldShowResultSummary ? (
                           <div className="flex items-center gap-2">
-                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
-                            <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
+                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{resultSummaryLabel}</span>
+                            <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
                           </div>
-                          {shouldShowResultSummary ? (
-                            <div className="flex items-center gap-2">
-                              <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
-                            </div>
-                          ) : null}
-                        </div>
+                        ) : null}
                         {shouldShowInlineStatusBadge ? (
                           <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
                             {statusLabel}
@@ -1708,6 +1706,7 @@ function QuizListView({
                           className="mt-4"
                         />
                       ) : null}
+                    </div>
 
                     <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
                       <div className="flex min-w-0 flex-wrap items-center gap-3">
@@ -1737,7 +1736,7 @@ function QuizListView({
                         ) : null}
                       </div>
                     </div>
-                  ) : null}
+                  </div>
                 </article>
               );
             })}
