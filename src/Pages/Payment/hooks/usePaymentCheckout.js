@@ -17,6 +17,7 @@ export default function usePaymentCheckout({
   planType,
   workspaceId,
   creditPackageId,
+  extraSlotCount = 0,
 }) {
   const { t } = useTranslation();
   const [isPaying, setIsPaying] = useState(false);
@@ -49,10 +50,14 @@ export default function usePaymentCheckout({
           workspaceId: targetWorkspaceId,
         };
 
+      const normalizedExtraSlots = !isCreditPayment && targetWorkspaceId && Number(extraSlotCount) > 0
+        ? Number(extraSlotCount)
+        : 0;
+
       if (selectedMethod === 'momo') {
         const res = isCreditPayment
           ? await createMomoCreditPayment(creditPackageId, targetWorkspaceId)
-          : await createMomoPayment(planId, targetWorkspaceId);
+          : await createMomoPayment(planId, targetWorkspaceId, normalizedExtraSlots);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         const orderId = res?.data?.orderId || res?.orderId || '';
         if (payUrl) {
@@ -67,7 +72,7 @@ export default function usePaymentCheckout({
       if (selectedMethod === 'vnpay') {
         const res = isCreditPayment
           ? await createVnPayCreditPayment(creditPackageId, targetWorkspaceId)
-          : await createVnPayPayment(planId, targetWorkspaceId);
+          : await createVnPayPayment(planId, targetWorkspaceId, normalizedExtraSlots);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         const orderId = res?.data?.orderId || res?.orderId || '';
         if (payUrl) {
@@ -82,7 +87,7 @@ export default function usePaymentCheckout({
       if (selectedMethod === 'stripe') {
         const res = isCreditPayment
           ? await createStripeCreditPayment(creditPackageId, targetWorkspaceId)
-          : await createStripePayment(planId, targetWorkspaceId);
+          : await createStripePayment(planId, targetWorkspaceId, normalizedExtraSlots);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         const orderId = res?.data?.orderId || res?.orderId || '';
         if (payUrl) {
@@ -101,7 +106,7 @@ export default function usePaymentCheckout({
     }
 
     return false;
-  }, [paymentType, workspaceId, creditPackageId, planId, planName, planType, t]);
+  }, [paymentType, workspaceId, creditPackageId, planId, planName, planType, extraSlotCount, t]);
 
   return {
     clearPaymentError,

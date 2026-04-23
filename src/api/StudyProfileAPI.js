@@ -2,6 +2,15 @@ import api from './api';
 
 const AI_TIMEOUT = 30000;
 
+export const searchStudyCatalog = async (query, { signal } = {}) => {
+  const response = await api.get('/study-catalog/search', {
+    params: { query },
+    timeout: AI_TIMEOUT,
+    signal,
+  });
+  return response;
+};
+
 /**
  * POST /ai/study-profile/knowledge:analyze
  * Phân tích kiến thức người dùng nhập, gợi ý lĩnh vực liên quan.

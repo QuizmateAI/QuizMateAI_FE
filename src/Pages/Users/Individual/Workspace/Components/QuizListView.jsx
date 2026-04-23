@@ -1663,10 +1663,7 @@ function QuizListView({
 
                   {isProcessing ? (
                     <div className="mt-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                          {t("quizListView.cards.processing", "Generating quiz")}
-                        </p>
+                      <div className="flex items-center justify-end gap-3">
                         <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
                       </div>
                       <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
@@ -1684,28 +1681,33 @@ function QuizListView({
                         </div>
                         {shouldShowResultSummary ? (
                           <div className="flex items-center gap-2">
-                            <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                            <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                           </div>
+                          {shouldShowResultSummary ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                        {shouldShowInlineStatusBadge ? (
+                          <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                            {statusLabel}
+                          </span>
                         ) : null}
                       </div>
-                      {shouldShowInlineStatusBadge ? (
-                        <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
-                          {statusLabel}
-                        </span>
-                      ) : null}
-                    </div>
 
-                    {isCommunityShared ? (
-                      <CommunityQuizSignals
-                        cloneCount={quiz?.communityCloneCount}
-                        averageRating={quiz?.communityAverageRating}
-                        ratingCount={quiz?.communityRatingCount}
-                        commentCount={quiz?.communityCommentCount}
-                        isDarkMode={isDarkMode}
-                        t={t}
-                        className="mt-4"
-                      />
-                    ) : null}
+                      {isCommunityShared ? (
+                        <CommunityQuizSignals
+                          cloneCount={quiz?.communityCloneCount}
+                          averageRating={quiz?.communityAverageRating}
+                          ratingCount={quiz?.communityRatingCount}
+                          commentCount={quiz?.communityCommentCount}
+                          isDarkMode={isDarkMode}
+                          t={t}
+                          className="mt-4"
+                        />
+                      ) : null}
 
                     <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
                       <div className="flex min-w-0 flex-wrap items-center gap-3">
@@ -1735,7 +1737,7 @@ function QuizListView({
                         ) : null}
                       </div>
                     </div>
-                  </div>
+                  ) : null}
                 </article>
               );
             })}

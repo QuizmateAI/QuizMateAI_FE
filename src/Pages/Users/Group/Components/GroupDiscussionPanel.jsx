@@ -9,6 +9,8 @@
  */
 
 import React, {
+  startTransition,
+  useDeferredValue,
   useState,
   useEffect,
   useRef,
@@ -29,12 +31,14 @@ import {
   X,
   Info,
   Lock,
+  MoreHorizontal,
   Reply,
 } from 'lucide-react';
 import i18n from '@/i18n';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { getUserDisplayParts } from '@/Utils/userProfile';
 import {
   getThreadMessages,
@@ -46,7 +50,10 @@ import {
   formatDiscussionPreview,
   getDiscussionReplyDepth,
   getDiscussionReplyPreview,
+  matchesDiscussionRealtimeThread,
   normalizeDiscussionMessageId,
+  removeDiscussionMessage,
+  upsertDiscussionMessage,
 } from './groupDiscussionReplyUtils';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -225,8 +232,8 @@ function MessageItem({
   return (
     <div
       className={cn(
-        'flex gap-3 group',
-        depth > 0 && (isDarkMode ? 'border-l border-slate-800 pl-3' : 'border-l border-blue-100 pl-3'),
+        'flex gap-3',
+        depth > 0 && (isDarkMode ? 'border-l border-slate-800 pl-4' : 'border-l border-slate-200 pl-4'),
       )}
       style={depth > 0 ? { marginLeft: `${Math.min(depth, 2) * 18}px` } : undefined}
     >
@@ -242,7 +249,7 @@ function MessageItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className={cn('text-sm font-semibold', isDarkMode ? 'text-slate-100' : 'text-gray-900')}>
             {authorDisplay.name}
           </span>
@@ -261,13 +268,13 @@ function MessageItem({
         {replyPreview && (
           <div
             className={cn(
-              'mb-1.5 flex items-start gap-2 rounded-xl border-l-2 px-2.5 py-1.5 text-xs',
+              'mt-2 flex items-start gap-2 rounded-2xl border-l-2 px-3 py-2 text-xs',
               isDarkMode
                 ? 'border-blue-700 bg-slate-900/80 text-slate-400'
-                : 'border-blue-300 bg-white text-gray-500',
+                : 'border-orange-300 bg-orange-50/70 text-gray-500',
             )}
           >
-            <Reply className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
+            <Reply className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', isDarkMode ? 'text-blue-400' : 'text-orange-500')} />
             <div className="min-w-0">
               <p className={cn('font-medium', isDarkMode ? 'text-slate-300' : 'text-gray-700')}>
                 {replyPreview.missing
@@ -286,8 +293,8 @@ function MessageItem({
           </div>
         )}
         <div className={cn(
-          'text-sm leading-relaxed rounded-xl px-3 py-2 inline-block max-w-full',
-          isDarkMode ? 'bg-slate-800/70 text-slate-200' : 'bg-blue-50 text-gray-800',
+          'mt-2 max-w-full text-[15px] leading-7',
+          isDarkMode ? 'text-slate-200' : 'text-gray-800',
         )}>
           {parts.map((part, i) => {
             const match = part.match(/^\[\[q:(\d+):(\d+)\]\]$/);
@@ -307,48 +314,43 @@ function MessageItem({
           })}
         </div>
 
-        <div className="mt-1.5 flex items-center gap-3">
+        <div className={cn(
+          'mt-3 flex items-center gap-4 text-[12px]',
+          isDarkMode ? 'text-slate-500' : 'text-gray-500',
+        )}>
           <button
             type="button"
             onClick={() => onReply(msg)}
             className={cn(
-              'inline-flex items-center gap-1 text-[11px] font-medium transition-colors',
-              isDarkMode ? 'text-slate-500 hover:text-blue-300' : 'text-gray-400 hover:text-blue-600',
+              'inline-flex items-center gap-1 font-medium transition-colors',
+              isDarkMode ? 'hover:text-blue-300' : 'hover:text-blue-600',
             )}
           >
             <Reply className="h-3 w-3" />
             {t('groupDiscussionPanel.reply.action', 'Reply')}
           </button>
-        </div>
-      </div>
-
-      {/* Delete button */}
-      {canDelete && (
-        <div className="shrink-0 flex items-start pt-1">
           {pendingDelete ? (
             <button
               onClick={handleDeleteClick}
-              className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+              className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-white transition-colors hover:bg-red-600"
             >
               <Trash2 className="w-3 h-3" />
               {t('groupDiscussionPanel.confirmDelete', 'Confirm')}
             </button>
-          ) : (
+          ) : canDelete ? (
             <button
               onClick={handleDeleteClick}
               className={cn(
-                'p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100',
-                isDarkMode
-                  ? 'text-slate-500 hover:text-red-400 hover:bg-red-950/30'
-                  : 'text-gray-400 hover:text-red-500 hover:bg-red-50',
+                'inline-flex items-center gap-1 transition-colors',
+                isDarkMode ? 'hover:text-red-300' : 'hover:text-red-500',
               )}
               title={t('groupDiscussionPanel.deleteCommentTooltip', 'Delete comment')}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
-          )}
+          ) : null}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -551,11 +553,12 @@ export default function GroupDiscussionPanel({
   const textareaRef = useRef(null);
   const canAccess = isLeader || hasAttempted;
   const messageMap = useMemo(() => buildDiscussionMessageMap(messages), [messages]);
+  const deferredSlashQuery = useDeferredValue(slashQuery);
 
   // ── Filtered suggestions
   const filteredSuggestions = useMemo(() => {
     if (!showSuggestions) return [];
-    const q = slashQuery.toLowerCase().trim();
+    const q = deferredSlashQuery.toLowerCase().trim();
     return allQuestions
       .filter((question) => {
         if (!q) return true;
@@ -564,7 +567,7 @@ export default function GroupDiscussionPanel({
         return text.includes(q) || idx.includes(q);
       })
       .slice(0, 8);
-  }, [allQuestions, slashQuery, showSuggestions]);
+  }, [allQuestions, deferredSlashQuery, showSuggestions]);
 
   // ── Load messages
   const loadMessages = useCallback(async () => {
@@ -597,6 +600,47 @@ export default function GroupDiscussionPanel({
       setReplyTarget(null);
     }
   }, [messageMap, replyTarget]);
+
+  const handleDiscussionRealtime = useCallback((event = {}) => {
+    const eventType = String(event?.type || '').trim().toUpperCase();
+    if (!workspaceId || Number(event?.workspaceId) !== Number(workspaceId)) {
+      return;
+    }
+
+    if (eventType === 'SOCKET_RESTORED') {
+      void loadMessages();
+      return;
+    }
+
+    if (!matchesDiscussionRealtimeThread(event, quizId, null)) {
+      return;
+    }
+
+    if (eventType === 'DISCUSSION_MESSAGE_CREATED' && event?.message) {
+      startTransition(() => {
+        setMessages((current) => upsertDiscussionMessage(current, event.message));
+      });
+      return;
+    }
+
+    if (eventType === 'DISCUSSION_MESSAGE_DELETED') {
+      const deletedMessageId = event?.messageId ?? event?.deletedMessageId;
+      startTransition(() => {
+        setMessages((current) => removeDiscussionMessage(current, deletedMessageId));
+        setReplyTarget((current) => (
+          current?.id === normalizeDiscussionMessageId(deletedMessageId)
+            ? null
+            : current
+        ));
+      });
+    }
+  }, [loadMessages, quizId, workspaceId]);
+
+  const { isConnected: isDiscussionSocketConnected } = useWebSocket({
+    workspaceId,
+    enabled: canAccess && Boolean(workspaceId) && Boolean(quizId),
+    onDiscussionUpdate: handleDiscussionRealtime,
+  });
 
   // ── Input change: detect slash command
   const handleInputChange = useCallback((e) => {
@@ -665,10 +709,12 @@ export default function GroupDiscussionPanel({
         body: encodedBody,
         parentMessageId,
       });
-      setMessages((prev) => [...prev, msg]);
-      setDraft('');
-      setDraftTags({});
-      setReplyTarget(null);
+      startTransition(() => {
+        setMessages((current) => upsertDiscussionMessage(current, msg));
+        setDraft('');
+        setDraftTags({});
+        setReplyTarget(null);
+      });
     } catch {
       // upstream handles errors
     } finally {
@@ -710,8 +756,10 @@ export default function GroupDiscussionPanel({
   const handleDelete = useCallback(async (messageId) => {
     try {
       await deleteMessage(workspaceId, quizId, null, messageId);
-      setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      setReplyTarget((prev) => (prev?.id === normalizeDiscussionMessageId(messageId) ? null : prev));
+      startTransition(() => {
+        setMessages((current) => removeDiscussionMessage(current, messageId));
+        setReplyTarget((current) => (current?.id === normalizeDiscussionMessageId(messageId) ? null : current));
+      });
     } catch {
       // ignore
     }
@@ -756,20 +804,47 @@ export default function GroupDiscussionPanel({
     <div className={cn('h-full flex flex-col overflow-hidden rounded-xl', isDarkMode ? 'bg-slate-900' : 'bg-white')}>
       {/* Header */}
       <div className={cn(
-        'px-4 py-3 border-b flex items-center justify-between shrink-0',
-        isDarkMode ? 'border-slate-700/60' : 'border-blue-100',
+        'px-5 py-4 border-b flex items-center justify-between shrink-0',
+        isDarkMode ? 'border-slate-700/60 bg-slate-950/80' : 'border-slate-200 bg-white',
       )}>
-        <div className="flex items-center gap-2">
-          <MessageSquare className={cn('w-4 h-4', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
-          <p className={cn('text-sm font-semibold', isDarkMode ? 'text-slate-200' : 'text-gray-800')}>
-            {t('groupDiscussionPanel.header.title', 'General discussion')}
-          </p>
-          <span className={cn(
-            'text-xs px-2 py-0.5 rounded-full',
-            isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-blue-100 text-blue-600',
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-full',
+            isDarkMode ? 'bg-blue-500/15 text-blue-300' : 'bg-orange-100 text-orange-600',
           )}>
-            {messages.length}
-          </span>
+            <MessageSquare className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className={cn('text-sm font-semibold', isDarkMode ? 'text-slate-100' : 'text-gray-900')}>
+                {t('groupDiscussionPanel.header.title', 'General discussion')}
+              </p>
+              <span className={cn(
+                'inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600',
+              )}>
+                {messages.length}
+              </span>
+              <span className={cn(
+                'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                isDiscussionSocketConnected
+                  ? isDarkMode
+                    ? 'bg-emerald-950/50 text-emerald-300'
+                    : 'bg-emerald-100 text-emerald-700'
+                  : isDarkMode
+                    ? 'bg-slate-800 text-slate-400'
+                    : 'bg-slate-100 text-slate-500',
+              )}>
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {isDiscussionSocketConnected
+                  ? t('groupDiscussionPanel.header.live', 'Live')
+                  : t('groupDiscussionPanel.header.offline', 'Offline')}
+              </span>
+            </div>
+            <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-gray-500')}>
+              {t('groupDiscussionPanel.header.subtitle', 'A shared thread for the whole group, with replies and question tags in one place.')}
+            </p>
+          </div>
         </div>
 
         {/* Hint */}
@@ -780,21 +855,24 @@ export default function GroupDiscussionPanel({
           <AtSign className="w-3 h-3" />
           <span>{t('groupDiscussionPanel.header.hintPrefix', 'Press')} <kbd className={cn(
             'px-1.5 py-0.5 rounded text-[10px] font-mono border',
-            isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-600',
+            isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-gray-600',
           )}>/</kbd> {t('groupDiscussionPanel.header.hintSuffix', 'to tag a question')}</span>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className={cn(
+        'flex-1 overflow-y-auto px-5 py-5',
+        isDarkMode ? 'bg-slate-900' : 'bg-white',
+      )}>
         {loadingMessages ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className={cn('w-5 h-5 animate-spin', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
+            <Loader2 className={cn('w-5 h-5 animate-spin', isDarkMode ? 'text-blue-400' : 'text-orange-500')} />
           </div>
         ) : messages.length === 0 ? (
           <EmptyThread isDarkMode={isDarkMode} />
         ) : (
-          <div className="space-y-4">
+          <div className="mx-auto max-w-4xl space-y-6">
             {messages.map((msg) => (
               <MessageItem
                 key={msg.id}
@@ -817,15 +895,15 @@ export default function GroupDiscussionPanel({
       {/* Slash-command suggestions dropdown (above input) */}
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div className={cn(
-          'mx-4 mb-1 rounded-xl border shadow-lg overflow-hidden',
+          'mx-5 mb-2 rounded-2xl border shadow-lg overflow-hidden',
           isDarkMode
             ? 'bg-slate-800 border-slate-700 shadow-black/40'
-            : 'bg-white border-blue-200 shadow-blue-900/10',
+            : 'bg-white border-slate-200 shadow-slate-900/10',
         )}>
           {/* Dropdown header */}
           <div className={cn(
             'px-3 py-1.5 border-b flex items-center justify-between',
-            isDarkMode ? 'border-slate-700 bg-slate-900/50' : 'border-blue-100 bg-blue-50/60',
+            isDarkMode ? 'border-slate-700 bg-slate-900/50' : 'border-slate-100 bg-slate-50/80',
           )}>
             <span className={cn('text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
               <BookOpen className="w-3 h-3" />
@@ -838,7 +916,7 @@ export default function GroupDiscussionPanel({
             </span>
           </div>
 
-          <div className={cn('divide-y max-h-52 overflow-y-auto', isDarkMode ? 'divide-slate-700/60' : 'divide-blue-50')}>
+          <div className={cn('divide-y max-h-52 overflow-y-auto', isDarkMode ? 'divide-slate-700/60' : 'divide-slate-100')}>
             {filteredSuggestions.map((q, i) => (
               <SuggestionItem
                 key={q.questionId}
@@ -866,7 +944,7 @@ export default function GroupDiscussionPanel({
       {/* Active tags preview strip */}
       {activeTagCount > 0 && (
         <div className={cn(
-          'mx-4 mb-1 px-3 py-1.5 rounded-lg flex items-center gap-2 flex-wrap',
+          'mx-5 mb-2 px-3 py-1.5 rounded-xl flex items-center gap-2 flex-wrap',
           isDarkMode ? 'bg-blue-900/20 border border-blue-800/40' : 'bg-blue-50 border border-blue-200',
         )}>
           <span className={cn('text-[10px] font-medium shrink-0', isDarkMode ? 'text-blue-400' : 'text-blue-600')}>
@@ -894,13 +972,13 @@ export default function GroupDiscussionPanel({
 
       {/* Input area */}
       <div className={cn(
-        'px-4 py-3 border-t shrink-0',
-        isDarkMode ? 'border-slate-700/60' : 'border-blue-100',
+        'px-5 py-4 border-t shrink-0',
+        isDarkMode ? 'border-slate-700/60 bg-slate-950/90' : 'border-slate-200 bg-white',
       )}>
         {replyTarget && (
           <div
             className={cn(
-              'mb-2 flex items-start justify-between gap-3 rounded-xl border px-3 py-2',
+              'mb-3 flex items-start justify-between gap-3 rounded-2xl border px-3 py-2',
               isDarkMode ? 'border-blue-900/60 bg-blue-950/20' : 'border-blue-200 bg-blue-50',
             )}
           >
@@ -930,10 +1008,10 @@ export default function GroupDiscussionPanel({
         )}
 
         <div className={cn(
-          'flex items-end gap-2 rounded-xl border p-2 transition-colors',
+          'mx-auto flex max-w-4xl items-end gap-3 rounded-[28px] border px-3 py-2.5 transition-colors',
           showSuggestions
-            ? isDarkMode ? 'border-blue-600/60 bg-slate-800/70' : 'border-blue-400 bg-blue-50/80'
-            : isDarkMode ? 'border-slate-700 bg-slate-800/70' : 'border-blue-200 bg-blue-50/40',
+            ? isDarkMode ? 'border-blue-600/60 bg-slate-800/70' : 'border-blue-300 bg-orange-50/80'
+            : isDarkMode ? 'border-slate-700 bg-slate-800/70' : 'border-slate-200 bg-[#f4f5f7]',
         )}>
           <UserAvatar
             src={getProfileAvatar(profile)}
@@ -942,7 +1020,7 @@ export default function GroupDiscussionPanel({
             userId={currentUserId}
             sizeClass="w-7 h-7"
             textClass="text-xs"
-            className="mb-0.5"
+            className="mb-1"
           />
 
           <textarea
@@ -974,17 +1052,17 @@ export default function GroupDiscussionPanel({
             disabled={!draft.trim() || posting}
             onClick={handlePost}
             className={cn(
-              'h-8 w-8 rounded-lg shrink-0',
+              'h-9 w-9 rounded-full shrink-0',
               draft.trim()
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : isDarkMode ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-blue-100 text-blue-300 cursor-not-allowed',
+                ? isDarkMode ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'
+                : isDarkMode ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-300 text-slate-500 cursor-not-allowed',
             )}
           >
             {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           </Button>
         </div>
 
-        <p className={cn('text-[10px] mt-1 text-right', isDarkMode ? 'text-slate-600' : 'text-gray-400')}>
+        <p className={cn('mx-auto mt-2 max-w-4xl text-[10px] text-right', isDarkMode ? 'text-slate-600' : 'text-gray-400')}>
           {t('groupDiscussionPanel.input.footerPrefix', 'Enter to send · Shift+Enter for new line ·')} {isLeader
             ? t('groupDiscussionPanel.input.leaderCanDelete', 'Leader can delete any comment')
             : t('groupDiscussionPanel.input.memberCanDelete', 'You can only delete your own comments')}

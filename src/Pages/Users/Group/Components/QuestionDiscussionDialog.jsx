@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
@@ -24,6 +24,7 @@ import {
 } from "@/Components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useUserProfile } from "@/context/UserProfileContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { getUserDisplayParts } from "@/Utils/userProfile";
 import {
   deleteMessage,
@@ -35,7 +36,10 @@ import {
   formatDiscussionPreview,
   getDiscussionReplyDepth,
   getDiscussionReplyPreview,
+  matchesDiscussionRealtimeThread,
   normalizeDiscussionMessageId,
+  removeDiscussionMessage,
+  upsertDiscussionMessage,
 } from "./groupDiscussionReplyUtils";
 
 const BLOOM_KEYS = ["remember", "understand", "apply", "analyze", "evaluate"];
@@ -465,6 +469,61 @@ function useQuestionDiscussionThread({
     }
   }, [messageMap, replyTarget]);
 
+  const handleDiscussionRealtime = useCallback((event = {}) => {
+    const eventType = String(event?.type || "").trim().toUpperCase();
+    if (!workspaceId || Number(event?.workspaceId) !== Number(workspaceId)) {
+      return;
+    }
+
+    if (eventType === "SOCKET_RESTORED") {
+      if (!canAccess || !workspaceId || !quizId || !questionId) {
+        return;
+      }
+
+      setLoading(true);
+      getThreadMessages(workspaceId, quizId, questionId)
+        .then(({ messages: nextMessages }) => {
+          setMessages(nextMessages || []);
+        })
+        .catch(() => {
+          setMessages([]);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+      return;
+    }
+
+    if (!matchesDiscussionRealtimeThread(event, quizId, questionId)) {
+      return;
+    }
+
+    if (eventType === "DISCUSSION_MESSAGE_CREATED" && event?.message) {
+      startTransition(() => {
+        setMessages((current) => upsertDiscussionMessage(current, event.message));
+      });
+      return;
+    }
+
+    if (eventType === "DISCUSSION_MESSAGE_DELETED") {
+      const deletedMessageId = event?.messageId ?? event?.deletedMessageId;
+      startTransition(() => {
+        setMessages((current) => removeDiscussionMessage(current, deletedMessageId));
+        setReplyTarget((current) => (
+          current?.id === normalizeDiscussionMessageId(deletedMessageId)
+            ? null
+            : current
+        ));
+      });
+    }
+  }, [canAccess, questionId, quizId, workspaceId]);
+
+  useWebSocket({
+    workspaceId,
+    enabled: canAccess && Boolean(workspaceId) && Boolean(quizId) && Boolean(questionId),
+    onDiscussionUpdate: handleDiscussionRealtime,
+  });
+
   const handlePost = useCallback(async () => {
     const body = draft.trim();
     if (!body || posting || !canAccess) return;
@@ -478,9 +537,11 @@ function useQuestionDiscussionThread({
         body,
         parentMessageId,
       });
-      setMessages((prev) => [...prev, nextMessage]);
-      setDraft("");
-      setReplyTarget(null);
+      startTransition(() => {
+        setMessages((current) => upsertDiscussionMessage(current, nextMessage));
+        setDraft("");
+        setReplyTarget(null);
+      });
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
@@ -497,8 +558,10 @@ function useQuestionDiscussionThread({
   const handleDelete = useCallback(async (messageId) => {
     try {
       await deleteMessage(workspaceId, quizId, questionId, messageId);
-      setMessages((prev) => prev.filter((message) => message.id !== messageId));
-      setReplyTarget((prev) => (prev?.id === normalizeDiscussionMessageId(messageId) ? null : prev));
+      startTransition(() => {
+        setMessages((current) => removeDiscussionMessage(current, messageId));
+        setReplyTarget((current) => (current?.id === normalizeDiscussionMessageId(messageId) ? null : current));
+      });
     } catch {
       //
     }

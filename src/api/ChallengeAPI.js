@@ -29,6 +29,10 @@ export const startChallenge = async (workspaceId, eventId) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/start`);
 };
 
+export const finishChallenge = async (workspaceId, eventId) => {
+  return await api.post(`/group/${workspaceId}/challenges/${eventId}/finish`);
+};
+
 export const inviteToChallenge = async (workspaceId, eventId, userIds) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/invite`, { userIds });
 };

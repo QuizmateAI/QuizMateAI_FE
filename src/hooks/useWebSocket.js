@@ -224,6 +224,7 @@ function enrichProgressWithActiveTaskShape(payload) {
  * @param {Function} options.onMaterialDeleted - Callback khi có tài liệu bị xóa
  * @param {Function} options.onMaterialUpdated - Callback khi có tài liệu được cập nhật
  * @param {Function} options.onGroupUpdate - Callback khi có cập nhật thành viên/lời mời/cấu hình group
+ * @param {Function} options.onDiscussionUpdate - Callback khi có cập nhật realtime cho discussion trong group
  * @param {Function} options.onProgress - Callback khi có progress update
  * @param {Function} options.onWalletUpdate - Callback khi ví cá nhân thay đổi
  * @param {Function} options.onWorkspaceWalletUpdate - Callback khi ví workspace/group thay đổi
@@ -235,6 +236,7 @@ export function useWebSocket({
   onMaterialDeleted,
   onMaterialUpdated,
   onGroupUpdate,
+  onDiscussionUpdate,
   onProgress,
   onWalletUpdate,
   onWorkspaceWalletUpdate,
@@ -252,6 +254,7 @@ export function useWebSocket({
     onMaterialDeleted,
     onMaterialUpdated,
     onGroupUpdate,
+    onDiscussionUpdate,
     onProgress,
     onWalletUpdate,
     onWorkspaceWalletUpdate,
@@ -270,12 +273,14 @@ export function useWebSocket({
   );
   const hasChallengeSubscription = Boolean(workspaceId && onChallengeUpdate);
   const hasGroupSubscription = Boolean(workspaceId && onGroupUpdate);
+  const hasDiscussionSubscription = Boolean(workspaceId && onDiscussionUpdate);
   const hasWorkspaceWalletSubscription = Boolean(workspaceId && onWorkspaceWalletUpdate);
   const hasWorkspaceSubscription = Boolean(
     workspaceId && (
       hasMaterialSubscription
       || hasChallengeSubscription
       || hasGroupSubscription
+      || hasDiscussionSubscription
       || hasWorkspaceWalletSubscription
     ),
   );
@@ -293,6 +298,7 @@ export function useWebSocket({
     hasMaterialSubscription ? "material" : null,
     hasChallengeSubscription ? "challenge" : null,
     hasGroupSubscription ? "group" : null,
+    hasDiscussionSubscription ? "discussion" : null,
     hasWorkspaceWalletSubscription ? "workspace-wallet" : null,
   ].filter(Boolean).join("|") || null;
 
@@ -302,6 +308,7 @@ export function useWebSocket({
       onMaterialDeleted,
       onMaterialUpdated,
       onGroupUpdate,
+      onDiscussionUpdate,
       onProgress,
       onWalletUpdate,
       onWorkspaceWalletUpdate,
@@ -313,6 +320,7 @@ export function useWebSocket({
     onMaterialDeleted,
     onMaterialUpdated,
     onGroupUpdate,
+    onDiscussionUpdate,
     onProgress,
     onWalletUpdate,
     onWorkspaceWalletUpdate,
@@ -403,6 +411,9 @@ export function useWebSocket({
         if (hasGroupSubscription && workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/group`);
         }
+        if (hasDiscussionSubscription && workspaceId) {
+          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/discussion`);
+        }
         if (hasWorkspaceWalletSubscription && workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/wallet`);
         }
@@ -421,6 +432,14 @@ export function useWebSocket({
           }
           if (hasGroupSubscription) {
             callbackRefs.current.onGroupUpdate?.({
+              type: "SOCKET_RESTORED",
+              workspaceId,
+              restoredFromRegistry,
+              timestamp: Date.now(),
+            });
+          }
+          if (hasDiscussionSubscription) {
+            callbackRefs.current.onDiscussionUpdate?.({
               type: "SOCKET_RESTORED",
               workspaceId,
               restoredFromRegistry,
@@ -587,6 +606,23 @@ export function useWebSocket({
           subscriptionsRef.current.push(groupSubscription);
         }
 
+        if (hasDiscussionSubscription && workspaceId) {
+          const discussionSubscription = stompClient.subscribe(
+            `/topic/workspace/${workspaceId}/discussion`,
+            (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                console.log("💬 Discussion update:", data);
+                setLastMessage({ type: "discussion:update", data, timestamp: Date.now() });
+                callbackRefs.current.onDiscussionUpdate?.(data);
+              } catch (err) {
+                console.error("Failed to parse discussion message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(discussionSubscription);
+        }
+
         if (hasWorkspaceWalletSubscription && workspaceId) {
           const workspaceWalletSubscription = stompClient.subscribe(
             `/topic/workspace/${workspaceId}/wallet`,
@@ -665,6 +701,7 @@ export function useWebSocket({
     connectionKey,
     getAuthToken,
     hasGroupSubscription,
+    hasDiscussionSubscription,
     hasMaterialSubscription,
     hasWorkspaceSubscription,
     hasWorkspaceWalletSubscription,
