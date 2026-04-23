@@ -360,15 +360,15 @@
       "cancelDialogBack": "Đóng",
       "cancelDialogConfirm": "Huỷ challenge",
       "finishDialogTitle": "Kết thúc challenge ngay?",
-      "finishDialogDescription": "Ranking sẽ được chốt và challenge chuyển sang trạng thái kết thúc. Chỉ kết thúc sớm được khi tất cả người đăng ký đã nộp bài. Không thể hoàn tác.",
+      "finishDialogDescription": "Ranking sẽ được chốt và challenge chuyển sang kết thúc. Chỉ kết thúc sớm khi mọi người đăng ký đã nộp bài.",
       "finishDialogBack": "Đóng",
       "finishDialogConfirm": "Kết thúc ngay",
       "snapshotQuizDefaultTitle": "Đề challenge",
       "viewSnapshotQuiz": "Xem đề",
       "snapshotQuizHint": "Xem nhanh trạng thái đề challenge.",
       "quizSnapshotReviewDraftTitle": "Đề challenge (chỉ xem & chỉnh sửa)",
-      "quizSnapshotReviewDraftBody": "Đây là đề thi gắn với challenge, không phải nội dung chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như bài tập chung của nhóm.",
-      "quizSnapshotReviewNoTakeHint": "Đề này chỉ mở khi challenge bắt đầu (theo lịch hoặc khi leader điều khiển). Xếp hạng theo từng challenge — không làm bài từ màn hình này.",
+      "quizSnapshotReviewDraftBody": "Đây là đề của challenge, không phải nội dung chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt, Soạn đề để chỉnh sửa, rồi Xuất bản khi sẵn sàng.",
+      "quizSnapshotReviewNoTakeHint": "Đề chỉ mở khi challenge bắt đầu. Không làm bài ở màn hình này.",
       "leaderboardTitle": "Bảng xếp hạng",
       "editSchedule": "Sửa lịch & thông tin",
       "editDialogTitle": "Cập nhật challenge",
@@ -399,7 +399,7 @@
       "reviewContributorAdd": "Thêm",
       "reviewContributorRemove": "Gỡ",
       "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này.",
-      "reviewInviteeNotice": "Bạn được mời review đề cho challenge này. Hãy mở «Xem đề» → tab Kiểm tra: xác nhận «Đề ổn» hoặc gửi phiếu duyệt APPROVED khi thấy ổn. Đến giờ bắt đầu, hệ thống sẽ tự mở challenge nếu đã đủ điều kiện review.",
+      "reviewInviteeNotice": "Bạn được mời review đề. Mở «Xem đề» → tab Kiểm tra, xác nhận «Đề ổn» hoặc gửi phiếu APPROVED. Challenge tự mở nếu đủ điều kiện.",
       "reviewInviteeShortHint": "Chỉ cần bấm «Xem đề» ở khối Đề challenge phía trên, rồi mở tab «Kiểm tra».",
       "reviewQuizNotReadyHint": "Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau."
     },
@@ -941,7 +941,7 @@
       "checkingTitle": "Đang kiểm tra profile nhóm...",
       "completeTitle": "Hoàn thành profile nhóm trước khi dùng không gian nhóm",
       "checkingDescription": "QuizMate AI đang tải trạng thái setup hiện tại của nhóm này.",
-      "completeDescription": "Leader cần hoàn tất profile dùng chung của nhóm trước. Trước khi xong, việc mời thành viên, tải tài liệu và dùng các tab studio sẽ bị khóa.",
+      "completeDescription": "Leader phải hoàn tất profile chung trước. Trước đó, mời thành viên, tải tài liệu và tab studio bị khóa.",
       "continueSetup": "Tiếp tục điền form setup"
     },
     "roadmap": {
@@ -1303,7 +1303,7 @@
       "descriptionLabel": "Mô tả",
       "descriptionPlaceholder": "Mô tả ngắn về challenge...",
       "leaderParticipatesLabel": "Tôi tham gia thi cùng mọi người",
-      "leaderParticipatesDesc": "Bạn được giữ một suất trong danh sách thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi (công bằng với thành viên). Trong lúc đề còn nháp (DRAFT) bạn vẫn soạn và kiểm tra được."
+      "leaderParticipatesDesc": "Bạn giữ một suất trong danh sách thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi. Khi đề còn nháp (DRAFT), bạn vẫn soạn và kiểm tra được."
     },
     "registration": {
       "publicLabel": "Công khai",
@@ -1531,7 +1531,7 @@
     "badgeLeaderControl": "Leader quản lý",
     "badgeMemberRequests": "Member gửi yêu cầu",
     "heroTitle": "Quản lý tài liệu học tập của group trong một nơi",
-    "heroSubtitle": "Tải tài liệu dùng chung, theo dõi yêu cầu member gửi lên, và tách riêng các tài liệu warning vẫn đang chờ leader quyết định.",
+    "heroSubtitle": "Tải tài liệu chung, theo dõi yêu cầu member, xử lý warning.",
     "refreshButton": "Làm mới",
     "uploadButton": "Tải tài liệu",
     "tabDocuments": "Tài liệu",
@@ -1780,7 +1780,7 @@
       "structure": "2. Cấu trúc",
       "generating": "3. Sinh câu hỏi"
     },
-    "scopeNotice": "Mock test chỉ sinh câu hỏi trắc nghiệm một đáp án. Listening, Writing và Speaking hiện chưa được hỗ trợ nên AI sẽ tự bỏ qua. Đề được tạo ở trạng thái DRAFT để leader publish sau.",
+    "scopeNotice": "Mock test chỉ tạo câu hỏi trắc nghiệm một đáp án. Listening, Writing và Speaking sẽ bị bỏ qua. Đề lưu ở trạng thái DRAFT để publish.",
     "tabs": {
       "examName": "Tên kỳ thi",
       "custom": "Yêu cầu tuỳ chỉnh"
