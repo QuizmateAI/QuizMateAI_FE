@@ -5,7 +5,7 @@ import {
   Users, UsersRound,
   CreditCard, LogOut,
   PanelLeftClose, Coins, ChevronDown, ChevronRight,
-  Settings2, KeyRound,
+  Settings2, KeyRound, Globe2,
 } from 'lucide-react';
 import { Banknote } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -44,6 +44,12 @@ const MENU_SECTIONS = [
         labelKey: 'sidebar.groups',
         path: '/admin/groups',
         requiredPerm: 'group:read_all',
+        matchPrefix: true,
+      },
+      {
+        icon: Globe2,
+        labelKey: 'sidebar.communityQuizzes',
+        path: '/admin/community-quizzes',
         matchPrefix: true,
       },
     ],

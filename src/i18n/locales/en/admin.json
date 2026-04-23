@@ -20,7 +20,8 @@
     "systemSettings": "System Settings",
     "aiActionPolicies": "AI Policies",
     "feedback": "Feedback",
-    "myPermissions": "My permissions"
+    "myPermissions": "My permissions",
+    "communityQuizzes": "Community Quizzes"
   },
   "sidebarSections": {
     "overview": "Overview",

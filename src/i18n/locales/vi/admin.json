@@ -20,7 +20,8 @@
     "systemSettings": "Cấu hình hệ thống",
     "aiActionPolicies": "Chính sách AI",
     "feedback": "Phản hồi",
-    "myPermissions": "Quyền của tôi"
+    "myPermissions": "Quyền của tôi",
+    "communityQuizzes": "Quiz cộng đồng"
   },
   "sidebarSections": {
     "overview": "Tổng quan",

@@ -49,6 +49,7 @@ const AdminPaymentManagement = lazy(() => import('./Pages/Admin/AdminPaymentMana
 const SystemSettingManagement = lazy(() => import('./Pages/Admin/SystemSettingManagement'));
 const AiActionPolicyManagement = lazy(() => import('./Pages/Admin/AiActionPolicyManagement'));
 const MyPermissionsPage = lazy(() => import('./Pages/Admin/MyPermissionsPage'));
+const CommunityQuizManagement = lazy(() => import('./Pages/Admin/CommunityQuizManagement'));
 
 // Quiz
 const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
@@ -148,6 +149,7 @@ function MainRoutes() {
           <Route path="users" element={<UserManagement />} />
           <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
           <Route path="groups" element={<GroupManagement />} />
+          <Route path="community-quizzes" element={<CommunityQuizManagement />} />
             <Route path="plans" element={<PlanManagement />} />
           <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
@@ -169,6 +171,7 @@ function MainRoutes() {
           <Route path="users" element={<UserManagement />} />
           <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
           <Route path="groups" element={<GroupManagement />} />
+          <Route path="community-quizzes" element={<CommunityQuizManagement />} />
             <Route path="plans" element={<PlanManagement />} />
           <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
