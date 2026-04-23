@@ -10,7 +10,7 @@
  *  - First-time guideline card shown at top
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Send, Trash2, Loader2, Info, Lock, CheckCircle2, X, Smile, Camera, ImageIcon, Sparkles, Reply,
@@ -19,6 +19,7 @@ import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
 import { getUserDisplayParts } from '@/Utils/userProfile';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import {
   getThreadMessages,
   postMessage,
@@ -29,7 +30,10 @@ import {
   formatDiscussionPreview,
   getDiscussionReplyDepth,
   getDiscussionReplyPreview,
+  matchesDiscussionRealtimeThread,
   normalizeDiscussionMessageId,
+  removeDiscussionMessage,
+  upsertDiscussionMessage,
 } from './groupDiscussionReplyUtils';
 
 // ─── Storage key for dismissed guideline ─────────────────────────────────────
@@ -410,6 +414,48 @@ export default function QuestionInlineDiscussion({
       bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [loading, messages.length]);
+
+  // ── Realtime: nhận CREATED / DELETED từ WS và patch state cục bộ, không phải refetch.
+  const handleDiscussionRealtime = useCallback((event = {}) => {
+    const eventType = String(event?.type || '').trim().toUpperCase();
+    if (!workspaceId || Number(event?.workspaceId) !== Number(workspaceId)) return;
+
+    if (eventType === 'SOCKET_RESTORED') {
+      // Reconnect: refetch để bù các message đã miss trong lúc offline.
+      if (!canAccess || !workspaceId || !quizId || !questionId) return;
+      setLoading(true);
+      getThreadMessages(workspaceId, quizId, questionId)
+        .then(({ messages: msgs }) => setMessages(msgs || []))
+        .catch(() => setMessages([]))
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    if (!matchesDiscussionRealtimeThread(event, quizId, questionId)) return;
+
+    if (eventType === 'DISCUSSION_MESSAGE_CREATED' && event?.message) {
+      startTransition(() => {
+        setMessages((current) => upsertDiscussionMessage(current, event.message));
+      });
+      return;
+    }
+
+    if (eventType === 'DISCUSSION_MESSAGE_DELETED') {
+      const deletedMessageId = event?.messageId ?? event?.deletedMessageId;
+      startTransition(() => {
+        setMessages((current) => removeDiscussionMessage(current, deletedMessageId));
+        setReplyTarget((current) => (
+          current?.id === normalizeDiscussionMessageId(deletedMessageId) ? null : current
+        ));
+      });
+    }
+  }, [canAccess, workspaceId, quizId, questionId]);
+
+  useWebSocket({
+    workspaceId,
+    enabled: canAccess && Boolean(workspaceId) && Boolean(quizId) && Boolean(questionId),
+    onDiscussionUpdate: handleDiscussionRealtime,
+  });
 
   useEffect(() => {
     if (replyTarget?.id && !messageMap.has(replyTarget.id)) {
