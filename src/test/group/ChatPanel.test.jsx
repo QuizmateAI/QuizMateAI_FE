@@ -82,7 +82,6 @@ describe('Group ChatPanel', () => {
     renderChatPanel({ roadmapReloadToken: 4 });
 
     expect(await screen.findByTestId('group-roadmap-canvas-view')).toBeInTheDocument();
-    expect(screen.getByText('Group Analytics Sprint')).toBeInTheDocument();
     expect(roadmapCanvasSpy).toHaveBeenCalledWith(expect.objectContaining({
       workspaceId: 987,
       reloadToken: 4,

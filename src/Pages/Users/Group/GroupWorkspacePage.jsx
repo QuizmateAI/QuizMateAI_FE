@@ -857,7 +857,9 @@ function GroupWorkspacePage() {
   // Create mode
   const isCreating = workspaceId === 'new';
   const openProfileConfig = Boolean(location.state?.openProfileConfig);
-  const [profileConfigOpen, setProfileConfigOpen] = useState(false);
+  // Mở dialog ngay từ render đầu khi user đến từ HomePage với intent tạo/config profile.
+  // Effect hiện tại (line ~2091) vẫn chạy nhưng không còn gây trễ 2-4s vì dialog đã bật.
+  const [profileConfigOpen, setProfileConfigOpen] = useState(() => Boolean(location.state?.openProfileConfig));
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
   const [isResettingWorkspaceForProfileUpdate, setIsResettingWorkspaceForProfileUpdate] = useState(false);
   const [groupHasLearningData, setGroupHasLearningData] = useState(false);
@@ -1388,7 +1390,11 @@ function GroupWorkspacePage() {
   const {
     canCreateQuiz,
     canCreateFlashcard,
+    canCreateMockTest,
+    canCreateRoadmap,
     canCreateContent,
+    canPublishQuiz,
+    canAssignQuizAudience,
     canUploadSource,
     canManageMembers,
     canViewMemberDashboard,
@@ -1398,6 +1404,8 @@ function GroupWorkspacePage() {
     fallbackCanUploadSource,
     fallbackCanManageMembers: isLeader,
     fallbackCanViewMemberDashboard,
+    fallbackCanPublishQuiz: isLeader,
+    fallbackCanAssignQuizAudience: isLeader,
   });
   const pendingInvitationsQueryKey = useMemo(
     () => ['group-pending-invitations', resolvedWorkspaceId],
@@ -3705,7 +3713,7 @@ function GroupWorkspacePage() {
   }, [queryClient, showError, t, workspaceId]);
 
   const handleCreateRoadmap = useCallback(async (data) => {
-    if (!canCreateContent) {
+    if (!canCreateRoadmap) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmap', 'Member cannot create roadmap.'));
       return;
     }
@@ -3739,7 +3747,7 @@ function GroupWorkspacePage() {
       console.error('Tạo roadmap thất bại:', err);
       throw err;
     }
-  }, [workspaceId, canCreateContent, currentLang, fetchWorkspaceDetail, loadGroupProfile, showInfo, planEntitlements.canCreateRoadmap, t]);
+  }, [workspaceId, canCreateRoadmap, currentLang, fetchWorkspaceDetail, loadGroupProfile, showInfo, planEntitlements.canCreateRoadmap, t]);
 
   const [roadmapConfigInitialValues, setRoadmapConfigInitialValues] = useState({});
 
@@ -3859,7 +3867,7 @@ function GroupWorkspacePage() {
   ]);
 
   const handleCreateGroupRoadmapPhases = useCallback(async () => {
-    if (!canCreateContent) {
+    if (!canCreateRoadmap) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
       return;
     }
@@ -3879,7 +3887,7 @@ function GroupWorkspacePage() {
       showError(error?.message || t('groupWorkspacePage.toast.roadmapGenerationFailed', 'Failed to generate roadmap.'));
     }
   }, [
-    canCreateContent,
+    canCreateRoadmap,
     handleOpenRoadmapConfigSetup,
     hasGroupRoadmapConfig,
     resolveGroupRoadmapMaterialIds,
@@ -3890,7 +3898,7 @@ function GroupWorkspacePage() {
   ]);
 
   const handleOpenRoadmapPhaseGenerateDialog = useCallback(() => {
-    if (!canCreateContent) {
+    if (!canCreateRoadmap) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
       return;
     }
@@ -3904,7 +3912,7 @@ function GroupWorkspacePage() {
     setPhaseGenerateDialogDefaultIds(defaultMaterialIds);
     setPhaseGenerateDialogOpen(true);
   }, [
-    canCreateContent,
+    canCreateRoadmap,
     handleOpenRoadmapConfigSetup,
     hasGroupRoadmapConfig,
     resolveGroupRoadmapMaterialIds,
@@ -3913,7 +3921,7 @@ function GroupWorkspacePage() {
   ]);
 
   const handleSubmitRoadmapPhaseDialog = useCallback(async ({ files = [], materialIds = [] } = {}) => {
-    if (!canCreateContent) {
+    if (!canCreateRoadmap) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
       return;
     }
@@ -3948,7 +3956,7 @@ function GroupWorkspacePage() {
       setIsSubmittingRoadmapPhaseRequest(false);
     }
   }, [
-    canCreateContent,
+    canCreateRoadmap,
     fetchSources,
     handleUploadFiles,
     handleOpenRoadmapConfigSetup,
@@ -3960,7 +3968,7 @@ function GroupWorkspacePage() {
   ]);
 
   const handleCreateGroupRoadmapPreLearning = useCallback(async ({ totalQuestion } = {}) => {
-    if (!canCreateContent) {
+    if (!canCreateRoadmap) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
       return false;
     }
@@ -3993,7 +4001,7 @@ function GroupWorkspacePage() {
     }
   }, [
     bumpRoadmapReloadToken,
-    canCreateContent,
+    canCreateRoadmap,
     currentRoadmapId,
     showError,
     showInfo,
@@ -4041,13 +4049,13 @@ function GroupWorkspacePage() {
   }, [resolvedWorkspaceId, workspaceId, t]);
 
   const handleCreateMockTest = useCallback(async () => {
-    if (!canCreateContent) {
+    if (!canCreateMockTest) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateMockTest', 'Member cannot create mock tests.'));
       return;
     }
     invalidateMockTestQueries();
     setActiveView('mockTest');
-  }, [canCreateContent, invalidateMockTestQueries, showInfo, t]);
+  }, [canCreateMockTest, invalidateMockTestQueries, showInfo, t]);
   const handleViewMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('mockTestDetail'); }, []);
   const handleEditMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('editMockTest'); }, []);
   const handleSaveMockTest = useCallback((updatedMt) => { setSelectedMockTest((p) => ({ ...p, ...updatedMt })); setActiveView('mockTestDetail'); }, []);
@@ -4595,6 +4603,10 @@ function GroupWorkspacePage() {
         readOnly={!canCreateContent}
         canCreateQuiz={canCreateQuiz}
         canCreateFlashcard={canCreateFlashcard}
+        canCreateMockTest={canCreateMockTest}
+        canCreateRoadmap={canCreateRoadmap}
+        canPublishQuiz={canPublishQuiz}
+        canAssignQuizAudience={canAssignQuizAudience}
         role={currentRoleKey}
         isGroupLeader={isLeader}
         groupWorkspaceCurrentUserId={currentUser?.userID}

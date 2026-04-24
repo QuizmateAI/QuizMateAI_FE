@@ -41,7 +41,9 @@ QuizMate AI là một nền tảng học tập hiện đại hỗ trợ bởi AI
 
 # Component Breakdown Rules (Critical)
 - KHÔNG dồn tất cả chức năng vào một file.
-- Khi một file vượt quá 150 dòng, bắt buộc phải tách các sub-components vào thư mục `features/` tương ứng.
+- File source/test/docs không được vượt quá 1000 dòng.
+- Khi một file vượt quá 800 dòng, phải ưu tiên tách component, hook, util hoặc service trước khi thêm logic đáng kể.
+- Nếu file đã vượt quá 1000 dòng, không thêm logic mới trừ khi là hotfix tối thiểu; hãy split file trước.
 - Logic phức tạp phải được tách ra Custom Hooks thay vì để trực tiếp trong Component.
 
 # Styling Approach
@@ -60,6 +62,12 @@ QuizMate AI là một nền tảng học tập hiện đại hỗ trợ bởi AI
 - Keep It Simple: Viết code đơn giản nhất có thể để các thành viên khác trong nhóm dễ hiểu.
 - No Over-Engineering: Tránh sử dụng các pattern quá phức tạp hoặc các thư viện không cần thiết.
 - Project Focus: Mọi dòng code phải phục vụ trực tiếp cho yêu cầu của QuizMate AI.
+
+# Agent Review Rules (Critical)
+- Nếu yêu cầu là review/kiểm tra/phân tích/audit, KHÔNG sửa code; chỉ report findings với file + line.
+- Chỉ sửa code khi user yêu cầu rõ: fix, implement, sửa, làm code.
+- Không sửa thư mục generated/dependency như `node_modules`, `dist`, `coverage`, `.claude/worktrees`.
+- Luôn chạy targeted test/lint phù hợp; nếu không chạy được phải nói rõ lý do.
 
 # Styling Rules for New Pages
 - Inline Styling: Tất cả style phải nằm trong `className` của JSX.
