@@ -232,7 +232,7 @@ function AiModelsManagement() {
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
 
-  const canWrite = !permLoading && permissions.has('system-settings:write');
+  const canWrite = !permLoading && permissions.has('ai-model:write');
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);

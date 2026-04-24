@@ -16,6 +16,7 @@ These files are intended to be the practical working specs, not only planning no
 - [02-user-core.md](/C:/Learning/SEP490/Proj/QuizMateAI_FE/docs/screen-specs/02-user-core.md)
 - [03-individual-workspace.md](/C:/Learning/SEP490/Proj/QuizMateAI_FE/docs/screen-specs/03-individual-workspace.md)
 - [04-group-workspace.md](/C:/Learning/SEP490/Proj/QuizMateAI_FE/docs/screen-specs/04-group-workspace.md)
+- [04-group-workspace-appendix.md](/C:/Learning/SEP490/Proj/QuizMateAI_FE/docs/screen-specs/04-group-workspace-appendix.md)
 - [05-quiz-runtime.md](/C:/Learning/SEP490/Proj/QuizMateAI_FE/docs/screen-specs/05-quiz-runtime.md)
 - [06-admin-superadmin.md](/C:/Learning/SEP490/Proj/QuizMateAI_FE/docs/screen-specs/06-admin-superadmin.md)
 

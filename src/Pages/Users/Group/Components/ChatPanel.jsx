@@ -34,7 +34,7 @@ function DeferredPanel({ children }) {
 }
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onRefreshRoadmapPhases, onCreateRoadmapPreLearning, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, canCreateQuiz = true, canCreateFlashcard = true, role = "MEMBER", planEntitlements = null, quizTitleMaxLength = null, currentPlanSummaryOverride = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, isGeneratingRoadmapPhases = false, isGeneratingRoadmapPreLearning = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad, hasRoadmap = false }) {
+function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onRefreshRoadmapPhases, onCreateRoadmapPreLearning, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, canCreateQuiz = true, canCreateFlashcard = true, canCreateMockTest = true, canCreateRoadmap = true, canPublishQuiz = true, canAssignQuizAudience = true, role = "MEMBER", planEntitlements = null, quizTitleMaxLength = null, currentPlanSummaryOverride = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, isGeneratingRoadmapPhases = false, isGeneratingRoadmapPreLearning = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad, hasRoadmap = false }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -181,7 +181,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
     switch (activeView) {
       case "roadmap":
-        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} onCreateRoadmapPreLearning={onCreateRoadmapPreLearning} onViewQuiz={onViewQuiz} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed} />;
+        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} onCreateRoadmapPreLearning={onCreateRoadmapPreLearning} onViewQuiz={onViewQuiz} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={!canCreateRoadmap} hideCreateButton={!canCreateRoadmap} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={canCreateRoadmap ? onEditRoadmapConfig : undefined} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed} />;
       case "quiz":
         return (
           <LazyQuizListView
@@ -202,7 +202,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       case "flashcard":
         return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onCreateManualFlashcard={canCreateFlashcard ? () => onChangeView?.("createManualFlashcard") : undefined} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateFlashcard} disableCreate={!canCreateFlashcard} />;
       case "mockTest":
-        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly || !planEntitlements?.hasAdvanceQuizConfig} />;
+        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateMockTest} disableCreate={!canCreateMockTest || !planEntitlements?.hasAdvanceQuizConfig} />;
       case "ranking":
         return <LazyGroupRankingTab workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "postLearning":
@@ -354,8 +354,11 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
     // If readOnly is true, block "create/edit" paths, but allow viewing details
     const lacksCreatePermission = (
       (activeView === 'createQuiz' && !canCreateQuiz)
+      || (activeView === 'editQuiz' && !canCreateQuiz)
       || (activeView === 'createFlashcard' && !canCreateFlashcard)
       || (activeView === 'createManualFlashcard' && !canCreateFlashcard)
+      || (activeView === 'createMockTest' && !canCreateMockTest)
+      || (activeView === 'editMockTest' && !canCreateMockTest)
     );
     if ((readOnly && ['createQuiz', 'createFlashcard', 'createManualFlashcard', 'editQuiz', 'createMockTest', 'createPostLearning', 'editMockTest'].includes(activeView)) || lacksCreatePermission) {
       return (
@@ -409,7 +412,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             workspaceId={workspaceId}
             contextType="GROUP"
             contextId={workspaceId}
-            canActivate={Boolean(isGroupLeader && canCreateFlashcard)}
+            canActivate={Boolean(canCreateFlashcard)}
             onCreated={onCreateFlashcard}
             onActivated={(saved) => {
               // Sau khi kích hoạt → mở detail view để leader/member xem flip cards như AI flashcard.
@@ -430,7 +433,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
               contextType="GROUP"
               contextId={workspaceId}
               editingSetId={selectedFlashcard.flashcardSetId}
-              canActivate={Boolean(isGroupLeader)}
+              canActivate={Boolean(canCreateFlashcard)}
               onSaved={onBack}
               onActivated={(saved) => {
                 onViewFlashcard?.(saved);
@@ -444,7 +447,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             isDarkMode={isDarkMode}
             flashcard={selectedFlashcard}
             onBack={onBack}
-            hideEditButton={readOnly}
+            hideEditButton={!canCreateFlashcard}
             contextType="GROUP"
             contextId={workspaceId}
             isGroupLeader={isGroupLeader}
@@ -453,7 +456,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
         );
       }
       case "quizDetail":
-        return selectedQuiz ? <LazyQuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={readOnly ? undefined : onEditQuiz} contextType="GROUP" contextId={workspaceId} hideEditButton={readOnly} isGroupLeader={isGroupLeader} groupAudiencePickerExcludeUserId={isGroupLeader ? groupWorkspaceCurrentUserId : null} onGroupQuizUpdated={onGroupQuizUpdated} challengeSnapshotReviewMode={challengeSnapshotReviewMode} /> : null;
+        return selectedQuiz ? <LazyQuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={canCreateQuiz ? onEditQuiz : undefined} contextType="GROUP" contextId={workspaceId} hideEditButton={!canCreateQuiz} isGroupLeader={isGroupLeader} canEditQuiz={canCreateQuiz} canPublishQuiz={canPublishQuiz} canAssignQuizAudience={canAssignQuizAudience} groupAudiencePickerExcludeUserId={(canAssignQuizAudience || isGroupLeader) ? groupWorkspaceCurrentUserId : null} onGroupQuizUpdated={onGroupQuizUpdated} challengeSnapshotReviewMode={challengeSnapshotReviewMode} /> : null;
       case "editQuiz":
         return selectedQuiz ? (
           <LazyEditQuizForm
@@ -468,8 +471,8 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
           />
         ) : null;
       case "createMockTest":
-        return readOnly || !planEntitlements?.hasAdvanceQuizConfig
-          ? <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate />
+        return !canCreateMockTest || !planEntitlements?.hasAdvanceQuizConfig
+          ? <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateMockTest} disableCreate />
           : <LazyCreateGroupMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "createPostLearning":
         return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { Globe } from 'lucide-react';
+import { Facebook, Youtube, Linkedin } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 
@@ -54,9 +54,9 @@ const Footer = () => {
           <ul className={`space-y-4 font-semibold text-sm ${
             isDarkMode ? 'text-slate-400' : 'text-gray-500'
           }`}>
-            <li><span>{t('landingPage.footer.companyLinks.about')}</span></li>
-            <li><span>{t('landingPage.footer.companyLinks.privacy')}</span></li>
-            <li><span>{t('landingPage.footer.companyLinks.terms')}</span></li>
+            <li><a href="/#about" className={linkClass}>{t('landingPage.footer.companyLinks.about')}</a></li>
+            <li><a href="/#privacy" className={linkClass}>{t('landingPage.footer.companyLinks.privacy')}</a></li>
+            <li><a href="/#terms" className={linkClass}>{t('landingPage.footer.companyLinks.terms')}</a></li>
           </ul>
         </div>
 
@@ -66,14 +66,25 @@ const Footer = () => {
             isDarkMode ? 'text-white' : 'text-[#12141D]'
           }`}>{t('landingPage.footer.connect')}</h5>
           <div className="flex gap-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:-translate-y-1 shadow-sm border ${
-                isDarkMode 
-                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-blue-400 border-slate-700 hover:border-blue-500' 
-                  : 'bg-gray-50 hover:bg-blue-50 hover:text-[#2563EB] border-transparent hover:border-blue-100'
-              }`}>
-                <Globe className="w-5 h-5" />
-              </div>
+            {[
+              { Icon: Facebook, label: 'Facebook', href: 'https://facebook.com' },
+              { Icon: Youtube, label: 'YouTube', href: 'https://youtube.com' },
+              { Icon: Linkedin, label: 'LinkedIn', href: 'https://linkedin.com' },
+            ].map(({ Icon, label, href }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:-translate-y-1 shadow-sm border ${
+                  isDarkMode
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-blue-400 border-slate-700 hover:border-blue-500'
+                    : 'bg-gray-50 hover:bg-blue-50 hover:text-[#2563EB] border-transparent hover:border-blue-100'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+              </a>
             ))}
           </div>
         </div>

@@ -41,6 +41,9 @@ function saveLoginDataToCache(data) {
   if (Array.isArray(data?.groups) && data.groups.length >= 0) {
     queryClient.setQueryData(['groups'], data.groups);
   }
+  // Đảm bảo mọi query còn lại trong cache (nếu có từ session cũ) được refetch
+  // với token mới → tránh tình trạng user phải reload trang sau khi login.
+  queryClient.invalidateQueries();
 }
 
 function notifyAuthChanged(type) {

@@ -80,6 +80,9 @@ const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagem
 const FeedbackResponseActivityPage = lazy(() => import('./Pages/SuperAdmin/FeedbackResponseActivityPage'));
 const PermissionRequestsPage = lazy(() => import('./Pages/SuperAdmin/PermissionRequestsPage'));
 
+// 404
+const NotFoundPage = lazy(() => import('./Pages/NotFound/NotFoundPage'));
+
 function MainRoutes() {
   return (
     <Routes>
@@ -179,6 +182,9 @@ function MainRoutes() {
           <Route path="my-permissions" element={<MyPermissionsPage />} />
         </Route>
       </Route>
+
+      {/* Fallback 404 cho mọi route không khớp */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
