@@ -132,7 +132,7 @@ function AdminSidebar({ collapsed, onToggle }) {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true, state: { fromLogout: true } });
   };
 
   const toggleSection = (section) => {
