@@ -9,6 +9,7 @@ import {
   createVnPayPayment,
 } from '@/api/PaymentAPI';
 import { setPendingPlanPurchase } from '@/Utils/planPurchaseState';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 export default function usePaymentCheckout({
   paymentType = 'plan',
@@ -38,12 +39,15 @@ export default function usePaymentCheckout({
       const targetWorkspaceId = workspaceId != null && workspaceId !== '' ? String(workspaceId) : null;
       const pendingPurchasePayload = isCreditPayment
         ? {
-          planId: creditPackageId,
+          purchaseType: 'CREDIT',
+          planId: '',
+          creditPackageId,
           planName: '',
           planType: targetWorkspaceId ? 'GROUP' : 'INDIVIDUAL',
           workspaceId: targetWorkspaceId,
         }
         : {
+          purchaseType: 'PLAN',
           planId,
           planName,
           planType,
@@ -98,8 +102,11 @@ export default function usePaymentCheckout({
         setPaymentError(t('payment.stripeError', t('payment.paymentError', 'Payment error')));
         return false;
       }
-    } catch {
-      setPaymentError(t('payment.paymentError', t('payment.momoError')));
+    } catch (err) {
+      const mappedMessage = getErrorMessage(t, err);
+      setPaymentError(mappedMessage && mappedMessage !== 'error.unknown'
+        ? mappedMessage
+        : t('payment.paymentError', t('payment.momoError')));
       return false;
     } finally {
       setIsPaying(false);

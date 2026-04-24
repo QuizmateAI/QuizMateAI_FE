@@ -115,6 +115,12 @@ function AdminPaymentManagement() {
     return new Intl.NumberFormat(locale).format(amount);
   };
 
+  const formatGatewayAmount = (payment) => {
+    if (payment?.gatewayAmount == null) return '-';
+    const currency = payment.gatewayCurrency ? ` ${payment.gatewayCurrency}` : '';
+    return `${formatMoney(payment.gatewayAmount)}${currency}`;
+  };
+
   const formatTargetType = (paymentTargetType) => {
     const key = TARGET_TYPE_LABELS[paymentTargetType];
     if (!key) return paymentTargetType || '-';
@@ -632,6 +638,22 @@ function AdminPaymentManagement() {
               <div className="space-y-1">
                 <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.status')}</div>
                 <div>{renderStatusBadge(selectedPayment.paymentStatus)}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayTransactionId')}</div>
+                <div className="font-mono text-sm break-all">{selectedPayment.gatewayTransactionId || '-'}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayAmount')}</div>
+                <div className="font-medium">{formatGatewayAmount(selectedPayment)}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayCurrency')}</div>
+                <div className="font-medium">{selectedPayment.gatewayCurrency || '-'}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayVerifiedAt')}</div>
+                <div className="font-medium">{formatDate(selectedPayment.gatewayVerifiedAt)}</div>
               </div>
               <div className="space-y-1">
                 <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.createdAt')}</div>

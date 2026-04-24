@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminPaymentManagement from '@/Pages/Admin/AdminPaymentManagement';
 import { getAdminPayments, getAdminPaymentByOrderId, expireOverduePayments } from '@/api/ManagementSystemAPI';
@@ -49,7 +49,24 @@ vi.mock('@/api/ManagementSystemAPI', () => ({
 describe('AdminPaymentManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getAdminPaymentByOrderId.mockResolvedValue({ data: null });
+    getAdminPaymentByOrderId.mockResolvedValue({
+      data: {
+        paymentId: 1,
+        orderId: 'VNPAY-001',
+        userId: 77,
+        workspaceId: 99,
+        chargedUserId: 77,
+        paymentTargetType: 'USER_PLAN',
+        amount: 150000,
+        paymentMethod: 'VNPAY',
+        paymentStatus: 'COMPLETED',
+        paidAt: '2026-03-31T10:00:00.000Z',
+        gatewayTransactionId: 'VNP-TXN-001',
+        gatewayAmount: 150000,
+        gatewayCurrency: 'VND',
+        gatewayVerifiedAt: '2026-03-31T10:00:05.000Z',
+      },
+    });
     expireOverduePayments.mockResolvedValue({ data: { data: 0 } });
     getAdminPayments.mockResolvedValue({
       data: {
@@ -98,5 +115,17 @@ describe('AdminPaymentManagement', () => {
     expect(within(paymentRow).getByText('150,000')).toBeInTheDocument();
     expect(within(paymentRow).getByText('COMPLETED')).toBeInTheDocument();
     expect(within(paymentRow).getByText('VNPAY')).toBeInTheDocument();
+  });
+
+  it('shows gateway reconciliation metadata in the payment detail dialog', async () => {
+    render(<AdminPaymentManagement />);
+
+    const detailButton = await screen.findByRole('button', { name: /adminPayments\.detail\.action/i });
+    fireEvent.click(detailButton);
+
+    expect(await screen.findByText('VNP-TXN-001')).toBeInTheDocument();
+    expect(screen.getByText('150,000 VND')).toBeInTheDocument();
+    expect(screen.getByText('VND')).toBeInTheDocument();
+    expect(screen.getByText('adminPayments.detail.fields.gatewayVerifiedAt')).toBeInTheDocument();
   });
 });

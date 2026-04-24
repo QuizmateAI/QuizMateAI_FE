@@ -168,7 +168,7 @@ function parseAiUsageNote(note) {
 
 function sanitizeActivityNote(note) {
   return String(note || "")
-    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED)[^\]]*\]/gi, "")
+    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED|PLAN_CREDIT_FORFEITED)[^\]]*\]/gi, "")
     .trim();
 }
 
@@ -405,7 +405,7 @@ export default function WalletPage() {
   const walletRefreshTimerRef = useRef(null);
 
   const subscription = getCachedSubscription();
-  const canBuyCredit = subscription?.entitlement?.canBuyCredit !== false;
+  const canBuyCredit = subscription?.entitlement?.canBuyCredit === true;
 
   const getFriendlyError = (err) => {
     const mapped = getErrorMessage(t, err);
