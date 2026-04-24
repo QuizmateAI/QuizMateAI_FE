@@ -1680,6 +1680,13 @@
       "configNotSet": "Chưa thiết lập",
       "viewConfig": "Xem cấu hình",
       "editConfigAction": "Chỉnh sửa",
+      "summaryDropdown": "Nội dung lộ trình",
+      "summaryFallback": "Lộ trình này chưa có phần mô tả tổng hợp.",
+      "summaryStats": {
+        "phases": "giai đoạn",
+        "knowledges": "kiến thức",
+        "quizzes": "bộ câu hỏi"
+      },
       "setupButton": "Thiết lập lộ trình",
       "groupSetupPromptTitle": "Bạn hãy thiết lập lộ trình cho nhóm",
       "groupSetupPromptDescription": "Hãy thiết lập lượng kiến thức, nhịp học, số ngày dự kiến và số phút học mỗi ngày để roadmap bám đúng kế hoạch học của nhóm.",
@@ -1794,6 +1801,7 @@
         "selectorDescription": "Chọn một canvas view, hệ thống sẽ tự tạo lộ trình bằng mock data và mở đúng giao diện tương ứng.",
         "quiz": "Bộ câu hỏi",
         "flashcard": "Thẻ ghi nhớ",
+        "view2TopSectionTitle": "Lộ trình theo giai đoạn",
         "view2Badge": "Canvas view 2",
         "view2TimelineTitle": "Khung show lộ trình",
         "view2TimelineHint": "Lộ trình đi theo một hàng dài từ lộ trình đến từng Giai đoạn. Kéo ngang để xem toàn bộ lộ trình.",

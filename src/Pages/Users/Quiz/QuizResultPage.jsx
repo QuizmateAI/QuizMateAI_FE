@@ -7,7 +7,7 @@ import { Button } from '@/Components/ui/button';
 import DirectFeedbackButton from '@/Components/feedback/DirectFeedbackButton';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
-import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
+import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, refreshAttemptAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
 import {
@@ -21,7 +21,6 @@ import MixedMathText from '@/Components/math/MixedMathText';
 import {
   buildGroupWorkspaceSectionPath,
   buildQuizAttemptPath,
-  buildWorkspacePath,
   buildWorkspaceQuizPath,
   buildWorkspaceRoadmapQuizPath,
   buildWorkspaceRoadmapsPath,
@@ -210,7 +209,6 @@ export default function QuizResultPage() {
   const [assessmentData, setAssessmentData] = useState(null);
   const [assessmentStatus, setAssessmentStatus] = useState('NOT_AVAILABLE');
   const [assessmentLoading, setAssessmentLoading] = useState(false);
-  const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [generatingKnowledge, setGeneratingKnowledge] = useState(false);
   const [loadingCurrentPhase, setLoadingCurrentPhase] = useState(false);
   const [currentPhaseProgress, setCurrentPhaseProgress] = useState(null);
@@ -490,22 +488,45 @@ export default function QuizResultPage() {
     setKnowledgeGenerationHydrated(true);
   }, [preLearningGenerateDedupeKey]);
 
+  const applyAssessmentPayload = useCallback((payload) => {
+    setAssessmentStatus(payload?.status || 'NOT_AVAILABLE');
+    setAssessmentData(payload || null);
+  }, []);
+
   const fetchAssessment = useCallback(async () => {
     if (!attemptId) return;
     setAssessmentLoading(true);
     try {
       const res = await getAttemptAssessment(attemptId);
-      const payload = res?.data || null;
-      setAssessmentStatus(payload?.status || 'NOT_AVAILABLE');
-      setAssessmentData(payload);
+      applyAssessmentPayload(res?.data || null);
     } catch (err) {
       console.error('Failed to load assessment:', err);
-      setAssessmentStatus('NOT_AVAILABLE');
-      setAssessmentData(null);
+      applyAssessmentPayload(null);
     } finally {
       setAssessmentLoading(false);
     }
-  }, [attemptId]);
+  }, [applyAssessmentPayload, attemptId]);
+
+  const handleRefreshAssessment = useCallback(async () => {
+    if (!attemptId) return;
+    if (assessmentStatus !== 'FAILED') {
+      await fetchAssessment();
+      return;
+    }
+
+    setAssessmentLoading(true);
+    try {
+      const res = await refreshAttemptAssessment(attemptId);
+      applyAssessmentPayload(res?.data || null);
+      showSuccess(t('quizResultPage.refreshAssessmentQueued', 'AI assessment refresh has started.'));
+    } catch (err) {
+      console.error('Failed to refresh assessment:', err);
+      showError(t('quizResultPage.refreshAssessmentFail', 'Unable to refresh AI assessment right now.'));
+      await fetchAssessment();
+    } finally {
+      setAssessmentLoading(false);
+    }
+  }, [applyAssessmentPayload, assessmentStatus, attemptId, fetchAssessment, showError, showSuccess, t]);
 
   useEffect(() => {
     fetchAssessment();
@@ -1390,44 +1411,6 @@ handleBack,
   const aiSummary = assessmentData?.summary;
   const strengths = Array.isArray(assessmentData?.strengths) ? assessmentData.strengths.filter(Boolean) : [];
   const weaknesses = Array.isArray(assessmentData?.weaknesses) ? assessmentData.weaknesses.filter(Boolean) : [];
-  const nextQuizPlan = assessmentData?.nextQuizPlan;
-  const profileReadiness = assessmentData?.profileReadiness || null;
-  const communityQuizSuggestions = Array.isArray(assessmentData?.communityQuizSuggestions)
-    ? assessmentData.communityQuizSuggestions.slice(0, 2)
-    : [];
-  const recommendedQuizTitle = nextQuizPlan?.displayTitle || null;
-  const recommendedQuizGoal = nextQuizPlan?.goal || null;
-  const communitySuggestionText = communityQuizSuggestions
-    .map((quiz) => quiz?.title)
-    .filter(Boolean)
-    .join(', ');
-  const recommendationFootnote = profileReadiness?.remainingQuizCount > 0
-    ? t('quizResultPage.profileResultPending', 'The system will suggest more accurately after a few more quizzes.')
-    : '';
-  const canGenerateRecommendedQuiz = assessmentData?.recommendationStatus === 'PENDING' && Number(assessmentData?.assessmentId) > 0;
-
-  const handleGenerateQuizFromAssessment = async () => {
-    const assessmentId = Number(assessmentData?.assessmentId);
-    const workspaceId = Number(quizDetails?.workspaceId);
-    if (!assessmentId || !workspaceId || generatingQuiz) return;
-
-    setGeneratingQuiz(true);
-    try {
-      await generateQuizFromWorkspaceAssessment(assessmentId);
-      showSuccess(t('quizResultPage.generateFromAssessmentSuccess', 'Quiz generated from AI assessment successfully.'));
-      // Navigate back to the correct workspace type (group or individual)
-      if (isGroupWorkspacePath(returnToQuizPath)) {
-        navigate(returnToQuizPath, { replace: true });
-      } else {
-        navigate(buildWorkspacePath(workspaceId, 'quizzes'), { replace: true });
-      }
-    } catch (err) {
-      showError(err?.message || t('quizResultPage.generateFromAssessmentFail', 'Failed to generate quiz from AI assessment.'));
-    } finally {
-      setGeneratingQuiz(false);
-    }
-  };
-
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
       <QuizHeader
@@ -1494,7 +1477,7 @@ handleBack,
                   <Sparkles className="w-4 h-4" />
                   {t('quizResultPage.aiAssessment', 'AI Assessment')}
                 </h3>
-                <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
+                <Button variant="outline" size="sm" onClick={handleRefreshAssessment} disabled={assessmentLoading} className="gap-2">
                   <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
                   {t('quizResultPage.refreshAssessment', 'Refresh')}
                 </Button>
@@ -1557,53 +1540,6 @@ handleBack,
                       {aiSummary || t('quizResultPage.assessmentNoSummary', 'No AI assessment summary yet.')}
                     </p>
 
-                    {(((recommendedQuizTitle || recommendedQuizGoal) && canGenerateRecommendedQuiz) || communitySuggestionText || recommendationFootnote) && (
-                      <div className="rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 dark:border-violet-800/70 dark:bg-violet-950/20">
-                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-violet-700 dark:text-violet-300">
-                          {t('quizResultPage.nextResultSummary', 'Next suggestion')}
-                        </p>
-                        <div className="mt-3 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
-                          {recommendedQuizTitle && canGenerateRecommendedQuiz && (
-                            <p>
-                              <span className="font-semibold text-violet-700 dark:text-violet-300">
-                                {t('quizResultPage.recommendedQuizTitle', 'Recommended next quiz')}:
-                              </span>{' '}
-                              {recommendedQuizTitle}
-                            </p>
-                          )}
-                          {recommendedQuizGoal && canGenerateRecommendedQuiz && (
-                            <p>
-                              <span className="font-semibold text-violet-700 dark:text-violet-300">
-                                {t('quizResultPage.recommendedQuizGoal', 'Goal')}:
-                              </span>{' '}
-                              {recommendedQuizGoal}
-                            </p>
-                          )}
-                          {communitySuggestionText && (
-                            <p>
-                              <span className="font-semibold text-violet-700 dark:text-violet-300">
-                                {t('quizResultPage.communitySuggestionTitle', 'Relevant community quiz')}:
-                              </span>{' '}
-                              {communitySuggestionText}
-                            </p>
-                          )}
-                          {recommendationFootnote && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              {recommendationFootnote}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                  {canGenerateRecommendedQuiz && (
-                    <div className="pt-1">
-                      <Button onClick={handleGenerateQuizFromAssessment} disabled={generatingQuiz || !quizDetails?.workspaceId} className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
-                        {generatingQuiz ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
-                        {t('quizResultPage.generateQuizFromAssessment', 'Generate quiz from AI assessment')}
-                      </Button>
-                    </div>
-                  )}
                 </div>
               )}
                 </div>

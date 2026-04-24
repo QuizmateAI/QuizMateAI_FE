@@ -1,8 +1,14 @@
 import React from "react";
-import { Map, Pencil, Rows3 } from "lucide-react";
+import { ChevronDown, FileText, Map, Pencil, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import RoadmapGuideButton from "@/Components/workspace/RoadmapGuideButton";
 import { workspaceSurface } from "./workspaceShellTheme";
 import SourcesPanel from "./SourcesPanel";
 import CreateQuizForm from "./CreateQuizForm";
@@ -150,6 +156,7 @@ function ChatPanel({
   const resolvedView = activeView || "sources";
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view2");
+  const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
   const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
 
@@ -279,6 +286,7 @@ function ChatPanel({
             onToggleAllEmptyStateMaterials={handleToggleAllRoadmapMaterials}
             activeSourceCount={activeSourceCount}
             disableCreate={shouldDisableRoadmap && !roadmapHasPhases}
+            onRoadmapMetaChange={setRoadmapMeta}
             onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed}
           />
         );
@@ -506,6 +514,11 @@ function ChatPanel({
     || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
 
   if (resolvedView === "roadmap") {
+    const isOverviewMode = roadmapCanvasView === "overview";
+    const roadmapHeading = isOverviewMode
+      ? (roadmapMeta?.title || t("workspace.roadmap.title", "Lộ trình"))
+      : t("workspace.roadmap.title", "Lộ trình");
+
     return (
       <section
         className={workspaceSurface(
@@ -520,8 +533,83 @@ function ChatPanel({
         <div className={`px-6 pb-5 pt-6 border-b flex flex-wrap items-center justify-between gap-3 transition-colors duration-200 ${isDarkMode ? "border-slate-700/80" : "border-slate-200"}`}>
           <div className="min-w-0 flex-1">
             <h2 className={`truncate text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
-              {t("workspace.roadmap.title", "Roadmap")}
+              {roadmapHeading}
             </h2>
+
+            {isOverviewMode ? (
+              <div className="mt-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={`group h-10 w-fit max-w-[260px] justify-start rounded-full border px-3 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                        isDarkMode
+                          ? "border-sky-500/30 bg-sky-500/10 text-slate-100 hover:border-sky-400/50 hover:bg-sky-500/14"
+                          : "border-sky-200 bg-sky-50 text-slate-900 hover:border-sky-300 hover:bg-sky-100/80"
+                      } ${fontClass}`}
+                    >
+                      <span
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                          isDarkMode
+                            ? "bg-sky-500/18 text-sky-200"
+                            : "bg-sky-100 text-sky-700"
+                        }`}
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1 px-2">
+                        <span className="block text-sm font-semibold leading-5">
+                          {t("workspace.roadmap.summaryDropdown", "Roadmap content")}
+                        </span>
+                      </span>
+                      <ChevronDown className={`h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180 ${isDarkMode ? "text-sky-200" : "text-sky-700"}`} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={10}
+                    className={`w-[min(440px,calc(100vw-3rem))] rounded-2xl border p-0 shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
+                  >
+                    <div className="space-y-4 p-4">
+                      <div>
+                        <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
+                          {t("workspace.roadmap.summaryDropdown", "Roadmap content")}
+                        </p>
+                        <h3 className={`mt-1 text-base font-semibold leading-6 ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
+                          {roadmapHeading}
+                        </h3>
+                      </div>
+
+                      {(roadmapMeta?.phaseCount || roadmapMeta?.knowledgeCount || roadmapMeta?.quizCount) ? (
+                        <div className="flex flex-wrap gap-2">
+                          {roadmapMeta?.phaseCount ? (
+                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                              {roadmapMeta.phaseCount} {t("workspace.roadmap.summaryStats.phases", "phases")}
+                            </span>
+                          ) : null}
+                          {roadmapMeta?.knowledgeCount ? (
+                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                              {roadmapMeta.knowledgeCount} {t("workspace.roadmap.summaryStats.knowledges", "knowledges")}
+                            </span>
+                          ) : null}
+                          {roadmapMeta?.quizCount ? (
+                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                              {roadmapMeta.quizCount} {t("workspace.roadmap.summaryStats.quizzes", "quizzes")}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      <p className={`text-sm leading-7 whitespace-pre-wrap ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
+                        {roadmapMeta?.description || t("workspace.roadmap.summaryFallback", "This roadmap does not have a summary description yet.")}
+                      </p>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2">
@@ -551,6 +639,15 @@ function ChatPanel({
                 <span className={fontClass}>{t("workspace.roadmap.editConfigAction", "Edit")}</span>
               </Button>
             ) : null}
+
+            <RoadmapGuideButton
+              isDarkMode={isDarkMode}
+              autoOpen={resolvedView === "roadmap"}
+              variant="workspace"
+              className={isDarkMode
+                ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
+            />
 
             <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
               <Button

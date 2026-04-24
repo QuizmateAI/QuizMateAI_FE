@@ -141,7 +141,7 @@ export function useProgressTracking(options = {}) {
 	// all five maps. Advances displayed values toward targets with easing;
 	// when at target, applies a slow creep. Using setTimeout instead of
 	// requestAnimationFrame keeps CPU cost low and avoids firing 60 updates/sec.
-	const tickAnimation = useCallback(() => {
+	const tickAnimation = useCallback(function tickAnimation() {
 		timerRef.current = null;
 		const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 		const last = lastTickRef.current || now;

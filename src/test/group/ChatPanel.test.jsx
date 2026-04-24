@@ -1,17 +1,29 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@/i18n';
 import ChatPanel from '@/Pages/Users/Group/Components/ChatPanel';
+import { ROADMAP_GUIDE_SEEN_STORAGE_KEY } from '@/Components/workspace/RoadmapGuideButton';
 
 const roadmapCanvasSpy = vi.fn();
 const quizListSpy = vi.fn();
 
+function MockGroupRoadmapCanvasView(props) {
+  React.useEffect(() => {
+    props.onRoadmapMetaChange?.({
+      roadmapId: 412,
+      title: 'Group Analytics Sprint',
+      description: 'A focused roadmap for the current group workspace.',
+      phaseCount: 4,
+    });
+  }, [props.onRoadmapMetaChange]);
+
+  roadmapCanvasSpy(props);
+  return <div data-testid="group-roadmap-canvas-view">Roadmap canvas mock</div>;
+}
+
 vi.mock('@/Pages/Users/Group/Components/RoadmapCanvasView', () => ({
-  default: (props) => {
-    roadmapCanvasSpy(props);
-    return <div data-testid="group-roadmap-canvas-view">Roadmap canvas mock</div>;
-  },
+  default: MockGroupRoadmapCanvasView,
 }));
 
 vi.mock('@/Pages/Users/Group/Components/QuizListView', () => ({
@@ -70,6 +82,7 @@ describe('Group ChatPanel', () => {
     renderChatPanel({ roadmapReloadToken: 4 });
 
     expect(await screen.findByTestId('group-roadmap-canvas-view')).toBeInTheDocument();
+    expect(screen.getByText('Group Analytics Sprint')).toBeInTheDocument();
     expect(roadmapCanvasSpy).toHaveBeenCalledWith(expect.objectContaining({
       workspaceId: 987,
       reloadToken: 4,
@@ -97,5 +110,21 @@ describe('Group ChatPanel', () => {
       quizGenerationTaskByQuizId: { 15: 'task-15' },
       quizGenerationProgressByQuizId: { 15: 42 },
     }));
+  });
+
+  it('auto opens the roadmap guide once and keeps it available from the roadmap header', async () => {
+    const firstRender = renderChatPanel();
+
+    expect(await screen.findByRole('heading', { name: /how to use roadmap/i })).toBeInTheDocument();
+    expect(window.localStorage.getItem(ROADMAP_GUIDE_SEEN_STORAGE_KEY)).toBe('true');
+
+    firstRender.unmount();
+
+    renderChatPanel();
+
+    expect(screen.queryByRole('heading', { name: /how to use roadmap/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /roadmap guide/i }));
+    expect(await screen.findByRole('heading', { name: /how to use roadmap/i })).toBeInTheDocument();
   });
 });

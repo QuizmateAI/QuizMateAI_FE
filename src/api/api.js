@@ -1,6 +1,7 @@
 import axios from 'axios';
 import i18n from '@/i18n';
 import { clearUserCache } from '@/Utils/userCache';
+import { clearPlanPurchaseState } from '@/Utils/planPurchaseState';
 
 function readEnvString(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -89,6 +90,7 @@ api.interceptors.response.use(
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         clearUserCache();
+        clearPlanPurchaseState();
         window.location.href = '/login';
       }
     }

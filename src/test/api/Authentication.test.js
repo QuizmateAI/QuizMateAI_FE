@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import api from '@/api/api';
+import { clearPlanPurchaseState } from '@/Utils/planPurchaseState';
+import { setCachedSubscription } from '@/Utils/userCache';
 import {
   googleLogin,
   login,
@@ -19,6 +21,10 @@ vi.mock('@/Utils/userCache', () => ({
   clearUserCache: vi.fn(),
   setCachedProfile: vi.fn(),
   setCachedSubscription: vi.fn(),
+}));
+
+vi.mock('@/Utils/planPurchaseState', () => ({
+  clearPlanPurchaseState: vi.fn(),
 }));
 
 vi.mock('@/Utils/userProfile', () => ({
@@ -65,6 +71,15 @@ describe('Authentication API request timeouts', () => {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
       }),
     );
+  });
+
+  it('clears stale plan state when login response has no active subscription', async () => {
+    api.post.mockResolvedValue(successfulLoginResponse);
+
+    await login({ username: 'new-user', password: 'Password123' });
+
+    expect(clearPlanPurchaseState).toHaveBeenCalledTimes(1);
+    expect(setCachedSubscription).toHaveBeenCalledWith(null);
   });
 
   it('uses the extended timeout for Google login', async () => {

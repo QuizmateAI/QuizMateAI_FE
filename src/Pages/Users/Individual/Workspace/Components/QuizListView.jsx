@@ -393,7 +393,7 @@ function QuizListView({
   }, [contextId, contextType, intentFilterKey]);
 
   useEffect(() => {
-    if (!isGroupQuizList || !contextId) {
+    if (!isGroupQuizList || !contextId || !canFilterGroupAssignees) {
       setGroupMembers([]);
       return undefined;
     }
@@ -415,7 +415,7 @@ function QuizListView({
     return () => {
       cancelled = true;
     };
-  }, [isGroupQuizList, contextId]);
+  }, [isGroupQuizList, contextId, canFilterGroupAssignees]);
 
   const hasAppliedSelectedMembersFilter = useMemo(
     () => appliedGroupFilters.includes("SELECTED_MEMBERS") && !appliedGroupFilters.includes("all"),
@@ -723,6 +723,18 @@ function QuizListView({
       items = items.filter((q) => q.title?.toLowerCase().includes(query));
     }
     if (isGroupQuizList) {
+      if (!canFilterGroupAssignees) {
+        items = items.filter((q) => {
+          const mode = normalizeGroupAudienceMode(q);
+          if (mode === "ALL_MEMBERS") {
+            return true;
+          }
+          if (!Number.isInteger(currentGroupUserId) || currentGroupUserId <= 0) {
+            return false;
+          }
+          return getQuizAssignedUserIds(q).includes(currentGroupUserId);
+        });
+      }
       const activeGroupFilters = appliedGroupFilters.includes("all")
         ? []
         : appliedGroupFilters.filter((value) => value !== "all");
@@ -751,7 +763,7 @@ function QuizListView({
             const uid = Number(enforcedMemberUserId);
             return getQuizAssignedUserIds(q).includes(uid);
           }
-          return true;
+          return canFilterGroupAssignees;
         });
       }
     }
@@ -1252,7 +1264,7 @@ function QuizListView({
                       {label}
                     </button>
                   ))}
-                  {groupAudienceFilter === "SELECTED_MEMBERS" ? (
+                  {groupAudienceFilter === "SELECTED_MEMBERS" && canFilterGroupAssignees ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button

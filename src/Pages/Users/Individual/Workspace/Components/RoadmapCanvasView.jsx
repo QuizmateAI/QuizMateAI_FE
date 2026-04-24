@@ -222,6 +222,7 @@ function RoadmapCanvasView({
   onToggleEmptyStateMaterial,
   onToggleAllEmptyStateMaterials,
   onRoadmapLoad,
+  onRoadmapMetaChange,
   onStageTopSectionCollapsedChange,
 }) {
   const { t, i18n } = useTranslation();
@@ -298,6 +299,25 @@ function RoadmapCanvasView({
         ? { ...nextRoadmap, canvasView: resolvedCanvasView }
         : null;
       setRoadmap(mergedRoadmap);
+      onRoadmapMetaChange?.(mergedRoadmap
+        ? {
+          title: mergedRoadmap?.title || "",
+          description: mergedRoadmap?.description || "",
+          phaseCount: Array.isArray(mergedRoadmap?.phases) ? mergedRoadmap.phases.length : 0,
+          knowledgeCount: Array.isArray(mergedRoadmap?.phases)
+            ? mergedRoadmap.phases.reduce((total, phase) => total + (Array.isArray(phase?.knowledges) ? phase.knowledges.length : 0), 0)
+            : 0,
+          quizCount: Array.isArray(mergedRoadmap?.phases)
+            ? mergedRoadmap.phases.reduce((total, phase) => {
+              const phaseQuizCount = Array.isArray(phase?.quizzes) ? phase.quizzes.length : 0;
+              const knowledgeQuizCount = Array.isArray(phase?.knowledges)
+                ? phase.knowledges.reduce((sum, knowledge) => sum + (Array.isArray(knowledge?.quizzes) ? knowledge.quizzes.length : 0), 0)
+                : 0;
+              return total + phaseQuizCount + knowledgeQuizCount;
+            }, 0)
+            : 0,
+        }
+        : null);
       if (mergedRoadmap?.canvasView) {
         onCanvasViewChange?.(mergedRoadmap.canvasView);
       }
@@ -343,7 +363,7 @@ function RoadmapCanvasView({
         setLoading(false);
       }
     }
-  }, [forcedCanvasView, onCanvasViewChange, workspaceId]);
+  }, [forcedCanvasView, onCanvasViewChange, onRoadmapMetaChange, workspaceId]);
 
   useEffect(() => {
     if (!forcedCanvasView) return;

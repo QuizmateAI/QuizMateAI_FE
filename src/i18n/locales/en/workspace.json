@@ -1723,6 +1723,13 @@
       "configNotSet": "Not set",
       "viewConfig": "View config",
       "editConfigAction": "Edit",
+      "summaryDropdown": "Roadmap content",
+      "summaryFallback": "This roadmap does not have a summary description yet.",
+      "summaryStats": {
+        "phases": "phases",
+        "knowledges": "knowledges",
+        "quizzes": "quizzes"
+      },
       "setupButton": "Set up roadmap",
       "groupSetupPromptTitle": "Set up a roadmap for your group",
       "groupSetupPromptDescription": "Set the knowledge amount, pacing, total days, and daily study time first so the roadmap matches the group learning plan.",
@@ -1835,6 +1842,7 @@
         "selectorDescription": "Pick a canvas view and the system will open a mock roadmap directly in that layout.",
         "quiz": "Quiz",
         "flashcard": "Flashcard",
+        "view2TopSectionTitle": "Roadmap by phase",
         "view2Badge": "Canvas view 2",
         "view2TimelineTitle": "Roadmap preview panel",
         "view2TimelineHint": "The roadmap runs in a single horizontal line from the roadmap root through each phase. Drag left and right to inspect it.",

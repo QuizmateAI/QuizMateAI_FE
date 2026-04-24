@@ -346,6 +346,11 @@ export const getAttemptAssessment = async (attemptId) => {
   return response;
 };
 
+export const refreshAttemptAssessment = async (attemptId) => {
+  const response = await api.post(`/quiz-attempts/${attemptId}/assessment/refresh`);
+  return response;
+};
+
 export const getActiveTask = async () => {
   const response = await api.get('/v1/quiz/active-task');
   return response;
