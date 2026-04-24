@@ -31,7 +31,7 @@ function UserProfilePopover({ isDarkMode = false }) {
     // Logic nghiệp vụ: đăng xuất người dùng, xóa phiên và quay về trang đăng nhập.
     logout();
     setIsProfileOpen(false);
-    navigate("/login", { replace: true });
+    navigate("/login", { replace: true, state: { fromLogout: true } });
   };
 
   useEffect(() => {

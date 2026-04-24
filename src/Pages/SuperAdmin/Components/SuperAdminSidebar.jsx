@@ -16,7 +16,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true, state: { fromLogout: true } });
   };
 
   return (
