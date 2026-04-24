@@ -10,7 +10,6 @@ import {
 import { isAbsoluteBeginnerLevel } from './profileWizardBeginnerUtils';
 import {
   analyzeKnowledge,
-  searchStudyCatalog,
   suggestProfileFields,
   suggestExamTemplates,
   validateProfileConsistency,
@@ -1361,27 +1360,11 @@ export function useWorkspaceProfileWizard({
       analysisAbortRef.current = abortController;
 
       try {
-        const catalogResult = await searchStudyCatalog(trimmedKnowledge, {
+        const result = await analyzeKnowledge(trimmedKnowledge, {
           signal: abortController.signal,
         });
 
         if (abortController.signal.aborted) return;
-
-        const catalogKnowledgeOptions = buildKnowledgeOptionsFromApi({
-          knowledgeOptions: catalogResult?.knowledgeOptions || [],
-          knowledge: values.knowledgeInput.trim(),
-          domainOptions: buildDomainOptionsFromApi({
-            domainOptions: catalogResult?.domainOptions || [],
-            knowledge: values.knowledgeInput.trim(),
-          }),
-        });
-        const catalogDomainOptions = localizeDomainOptions(
-          buildDomainOptionsFromApi({
-            domainOptions: catalogResult?.domainOptions || [],
-            knowledge: values.knowledgeInput.trim(),
-          }),
-          t
-        );
 
         const applyResolvedAnalysis = (result, { preferSelectedKnowledgeLabel = '', preferSelectedDomainLabel = '' } = {}) => {
           const rawDomainOptions = buildDomainOptionsFromApi({
@@ -1421,35 +1404,7 @@ export function useWorkspaceProfileWizard({
           });
         };
 
-        if (catalogKnowledgeOptions.length > 0 && catalogDomainOptions.length > 0) {
-          applyResolvedAnalysis({
-            analysisId: catalogResult?.analysisId || '',
-            source: catalogResult?.source || 'CATALOG',
-            warning: false,
-            message: '',
-            advice: '',
-            tooBroad: false,
-            quizCompatible: true,
-            confidence: 1,
-            normalizedKnowledge: catalogKnowledgeOptions[0]?.label || values.knowledgeInput.trim(),
-            validationHighlights: [],
-            refinementSuggestions: [],
-            quizConstraintWarnings: [],
-            knowledgeOptions: catalogResult?.knowledgeOptions || [],
-            domainOptions: catalogResult?.domainOptions || [],
-          });
-          return;
-        }
-
-        const result = await analyzeKnowledge(trimmedKnowledge, {
-          signal: abortController.signal,
-        });
-
-        if (abortController.signal.aborted) return;
-        applyResolvedAnalysis(result, {
-          preferSelectedKnowledgeLabel: catalogKnowledgeOptions[0]?.label || '',
-          preferSelectedDomainLabel: catalogDomainOptions[0]?.label || '',
-        });
+        applyResolvedAnalysis(result);
       } catch (error) {
         if (abortController.signal.aborted) return;
         console.error('[StudyProfile] Knowledge analysis failed:', error);
