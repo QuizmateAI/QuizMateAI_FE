@@ -113,7 +113,14 @@ export function useWorkspace(options = {}) {
   const [workspaceDetailLoading, setWorkspaceDetailLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
-  const [sortMode, setSortMode] = useState('recent');
+  const [sortMode, setSortMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('qm_workspace_sort_mode');
+      return saved === 'created' ? 'created' : 'recent';
+    } catch {
+      return 'recent';
+    }
+  });
 
   const { data, isLoading: loading, error: queryError, refetch } = useQuery({
     queryKey: [...WORKSPACES_QUERY_KEY, page, size, sortMode],
@@ -197,8 +204,10 @@ export function useWorkspace(options = {}) {
   }, []);
 
   const changeSortMode = useCallback((newSortMode) => {
-    setSortMode(newSortMode === 'created' ? 'created' : 'recent');
+    const resolved = newSortMode === 'created' ? 'created' : 'recent';
+    setSortMode(resolved);
     setPage(0);
+    try { localStorage.setItem('qm_workspace_sort_mode', resolved); } catch { /* ignore storage errors */ }
   }, []);
 
   // Tạo workspace mới

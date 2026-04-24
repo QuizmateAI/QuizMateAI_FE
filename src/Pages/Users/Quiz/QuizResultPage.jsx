@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button';
 import DirectFeedbackButton from '@/Components/feedback/DirectFeedbackButton';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
+import CommunityQuizFeedbackDialog from '@/Pages/Users/Quiz/components/CommunityQuizFeedbackDialog';
 import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, refreshAttemptAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
@@ -216,6 +217,7 @@ export default function QuizResultPage() {
   const [knowledgeGenerationTriggered, setKnowledgeGenerationTriggered] = useState(false);
   const [knowledgeGenerationHydrated, setKnowledgeGenerationHydrated] = useState(false);
   const [expandedReviewSections, setExpandedReviewSections] = useState({});
+  const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
@@ -276,6 +278,12 @@ export default function QuizResultPage() {
     ?? quizDetails?.quizId
   );
   const hasQuizIdForBack = Boolean(normalizedQuizIdForBack);
+  const communitySourceQuizId = normalizePositiveInteger(
+    quizRawDetails?.communitySourceQuizId
+    ?? result?.communitySourceQuizId
+    ?? quizDetails?.communitySourceQuizId,
+  );
+  const canLeaveCommunityFeedback = Boolean(communitySourceQuizId && hasQuizIdForBack);
 
   useEffect(() => {
     writeStoredResultContext(attemptId, {
@@ -1167,7 +1175,14 @@ handleBack,
     : (passScore != null && accuracyPercent != null
       ? accuracyPercent >= passScore
       : null);
-  const scoreValue = Number(result.maxScore) > 0 ? `${result.score ?? 0}/${result.maxScore}` : `${result.score ?? 0}`;
+  const normalizedAccuracyPercent = Number.isFinite(Number(result.accuracyPercent))
+    ? Number(result.accuracyPercent)
+    : accuracyPercent;
+  const scoreValue = Number(result.maxScore) > 0
+    ? `${result.score ?? 0}/${result.maxScore}`
+    : (normalizedAccuracyPercent != null
+      ? `${Math.round(normalizedAccuracyPercent * 10) / 10}%`
+      : `${result.score ?? 0}`);
   const correctValue = `${correctQuestion}/${totalQuestion}`;
   const answeredValue = `${result.answeredQuestion ?? 0}/${totalQuestion}`;
   const gradingProgressText = t('quizResultPage.gradingProgress', 'Grading: {{pending}}/{{total}}', {
@@ -1339,7 +1354,7 @@ handleBack,
         key={question.id}
         onClick={() => jumpToQuestion(questionNumber - 1)}
         className={cn(
-          'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+          'relative aspect-square min-h-[44px] w-full rounded-[16px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
           isPending
             ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
             : isCorrect
@@ -1383,8 +1398,10 @@ handleBack,
         </div>
 
         {Array.isArray(section?.questions) && section.questions.length > 0 && (
-          <div className="grid grid-cols-5 gap-1.5">
-            {section.questions.map((question, questionIndex) => renderReviewNavButton(question, questionIndex))}
+          <div className="rounded-[18px] border border-slate-200/80 bg-slate-50/85 p-2.5 dark:border-slate-700/80 dark:bg-slate-800/55">
+            <div className="grid grid-cols-5 gap-2">
+              {section.questions.map((question, questionIndex) => renderReviewNavButton(question, questionIndex))}
+            </div>
           </div>
         )}
 
@@ -1453,8 +1470,8 @@ handleBack,
 
             <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-white/70 bg-white/45 p-4 shadow-inner shadow-white/60 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/25 dark:shadow-slate-950/20">
               {/* Score display */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto">
-                {/* <ScoreStat label="Score" value={scoreValue} icon={BarChart3} /> */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 max-w-4xl mx-auto">
+                <ScoreStat label={t('quizResultPage.score', 'Score')} value={scoreValue} icon={BarChart3} />
                 <ScoreStat label={t('quizResultPage.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
                 <ScoreStat label={t('quizResultPage.answered', 'Answered')} value={answeredValue} icon={Eye} />
                 <ScoreStat label={t('quizResultPage.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
@@ -1489,7 +1506,10 @@ handleBack,
 
               {assessmentStatus === 'PROCESSING' && (
                 <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-950/20 dark:text-amber-300">
-                  {t('quizResultPage.assessmentProcessing', 'AI assessment is still processing. This page will refresh automatically.')}
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t('quizResultPage.assessmentProcessing', 'AI assessment is still processing. This page will refresh automatically.')}</span>
+                  </div>
                 </div>
               )}
 
@@ -1622,6 +1642,21 @@ handleBack,
                   label={t('quizResultPage.feedbackAction', 'Feedback')}
                   className="min-w-[180px] gap-2"
                 />
+              ) : null}
+              {canLeaveCommunityFeedback ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCommunityFeedbackOpen(true)}
+                  className="min-w-[220px] gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>
+                    {quizRawDetails?.communityFeedbackSubmitted
+                      ? t('quizResultPage.communityFeedbackUpdate', 'Update community feedback')
+                      : t('quizResultPage.communityFeedbackAction', 'Leave community feedback')}
+                  </span>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -1774,37 +1809,37 @@ handleBack,
                       </div>
 
                       {isMockTestReviewLayout ? (
-                        <div className="max-h-[48vh] space-y-4 overflow-y-auto pr-0.5">
+                        <div className="max-h-[48vh] space-y-4 overflow-y-auto pr-1">
                           {reviewSectionGroups.map((section, sectionIndex) => renderReviewNavSection(section, sectionIndex))}
                         </div>
                       ) : (
-                        <div className="grid max-h-[48vh] grid-cols-5 gap-1.5 overflow-y-auto pr-0.5">
-                          {navQuestions.map((q, idx) => {
-                            const globalIdx = navStartIndex + idx;
-                            const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
-                            const isCorrect = q.isCorrect === true;
-                            const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
+                        <div className="max-h-[48vh] overflow-y-auto pr-1">
+                          <div className="rounded-[20px] border border-slate-200/80 bg-slate-50/85 p-2.5 dark:border-slate-700/80 dark:bg-slate-800/55">
+                            <div className="grid grid-cols-5 gap-2">
+                              {navQuestions.map((q, idx) => {
+                                const globalIdx = navStartIndex + idx;
+                                const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
+                                const isCorrect = q.isCorrect === true;
 
-                            return (
-                              <button
-                                key={q.id}
-                                onClick={() => jumpToQuestion(globalIdx)}
-                                className={cn(
-                                  'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
-                                  isPending
-                                    ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
-                                    : isCorrect
-                                      ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
-                                      : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
-                                  inCurrentPage
-                                    ? 'ring-2 ring-sky-500 ring-offset-2 dark:ring-offset-slate-900'
-                                    : ''
-                                )}
-                              >
-                                <span className="relative z-10 leading-none">{globalIdx + 1}</span>
-                              </button>
-                            );
-                          })}
+                                return (
+                                  <button
+                                    key={q.id}
+                                    onClick={() => jumpToQuestion(globalIdx)}
+                                    className={cn(
+                                      'relative aspect-square min-h-[44px] w-full rounded-[16px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+                                      isPending
+                                        ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
+                                        : isCorrect
+                                          ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
+                                          : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
+                                    )}
+                                  >
+                                    <span className="relative z-10 leading-none">{globalIdx + 1}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -1846,6 +1881,23 @@ handleBack,
           </>
         )}
       </div>
+
+      <CommunityQuizFeedbackDialog
+        open={communityFeedbackOpen}
+        onOpenChange={setCommunityFeedbackOpen}
+        sourceQuizId={communitySourceQuizId}
+        clonedQuizId={normalizedQuizIdForBack}
+        initialRating={quizRawDetails?.communityMyRating}
+        initialComment={quizRawDetails?.communityMyComment || ''}
+        onSubmitted={(nextFeedback) => {
+          setQuizRawDetails((prev) => prev ? {
+            ...prev,
+            communityFeedbackSubmitted: true,
+            communityMyRating: nextFeedback?.rating ?? prev.communityMyRating,
+            communityMyComment: nextFeedback?.comment ?? prev.communityMyComment,
+          } : prev);
+        }}
+      />
       </div>
     </div>
   );

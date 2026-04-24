@@ -19,13 +19,16 @@
     "payments": "Thanh toán",
     "systemSettings": "Cấu hình hệ thống",
     "aiActionPolicies": "Chính sách AI",
-    "feedback": "Phản hồi"
+    "feedback": "Phản hồi",
+    "myPermissions": "Quyền của tôi",
+    "communityQuizzes": "Quiz cộng đồng"
   },
   "sidebarSections": {
     "overview": "Tổng quan",
     "workspace": "Người dùng & nhóm",
     "commerce": "Gói & thanh toán",
     "system": "Hệ thống nội bộ",
+    "access": "Truy cập",
     "accessControl": "Quản trị truy cập",
     "aiGovernance": "Điều phối AI",
     "platformConfig": "Cấu hình nền tảng"
@@ -456,7 +459,12 @@
     "categories": {
       "plans": "Gói",
       "materials": "Tài liệu",
-      "audit": "Kiểm toán"
+      "audit": "Kiểm toán",
+      "feedback": "Phản hồi",
+      "aiProvider": "Nhà cung cấp AI",
+      "aiModel": "Mô hình AI",
+      "aiCost": "Chi phí AI",
+      "aiAudit": "Kiểm toán AI"
     },
     "errors": {
       "loadAdmins": "Không thể tải danh sách admin."
@@ -512,6 +520,15 @@
     "expireConfirm": "Hủy ngay",
     "expiring": "Đang xử lý...",
     "expireSuccess": "Đã hủy {{count}} giao dịch quá hạn",
+    "expireForm": {
+      "confirmTextLabel": "Xác nhận",
+      "confirmTextHint": "Gõ chính xác EXPIRE-OVERDUE để xác nhận.",
+      "confirmTextInvalid": "Phải đúng chuỗi EXPIRE-OVERDUE.",
+      "reasonLabel": "Lý do",
+      "reasonPlaceholder": "Giải thích lý do hủy các giao dịch này (ghi vào audit log).",
+      "reasonHint": "Bắt buộc. 10–500 ký tự.",
+      "reasonInvalid": "Lý do phải dài 10–500 ký tự."
+    },
     "validation": {
       "positiveInteger": "{{field}} phải là số nguyên dương"
     },
@@ -578,6 +595,10 @@
         "amount": "Số tiền",
         "method": "Phương thức",
         "status": "Trạng thái",
+        "gatewayTransactionId": "Mã giao dịch gateway",
+        "gatewayAmount": "Số tiền gateway",
+        "gatewayCurrency": "Tiền tệ gateway",
+        "gatewayVerifiedAt": "Gateway xác thực lúc",
         "createdAt": "Tạo lúc",
         "paidAt": "Thanh toán lúc",
         "expiresAt": "Hết hạn lúc",
@@ -942,7 +963,7 @@
       "canProcessVideo": "Video",
       "canProcessAudio": "Audio",
       "canBuyCredit": "Mua credit",
-      "hasAdvanceQuizConfig": "Loại quiz nâng cao",
+      "hasAdvanceQuizConfig": "Cấu hình quiz nâng cao",
       "canCreateRoadMap": "Tạo roadmap",
       "hasAiCompanionMode": "AI companion",
       "hasWorkspaceAnalytics": "Analytics",
@@ -1189,6 +1210,9 @@
       "unmatched": "Request chưa đối soát"
     },
     "filters": {
+      "open": "Bộ lọc",
+      "dialogTitle": "Lọc request chi phí AI",
+      "dialogDescription": "Chọn các điều kiện để thu gọn danh sách thu chi AI.",
       "taskId": "Task ID",
       "actorUserId": "User ID",
       "plan": "Gói",

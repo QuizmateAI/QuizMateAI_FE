@@ -377,7 +377,7 @@
     },
     "challenge": {
       "title": "Challenge",
-      "description": "Compete with your group members in real-time quiz challenges.",
+      "description": "Compete with your group members in real-time challenge matches.",
       "badge": "Challenge",
       "noItems": "No challenges yet.",
       "createChallenge": "Create Challenge",
@@ -385,12 +385,16 @@
       "cancelDialogDescription": "Are you sure you want to cancel this challenge? Members will no longer be able to join and the schedule will be removed.",
       "cancelDialogBack": "Close",
       "cancelDialogConfirm": "Cancel challenge",
-      "snapshotQuizDefaultTitle": "Challenge quiz",
-      "viewSnapshotQuiz": "View quiz",
-      "snapshotQuizHint": "Quick quiz status.",
-      "quizSnapshotReviewDraftTitle": "Challenge exam (review & edit only)",
-      "quizSnapshotReviewDraftBody": "This exam belongs to a challenge, not the shared group quiz list. Members only take it when the challenge starts. Use the Check tab to review content, edit via Compose, then Publish when ready — there is no group-wide distribution like normal group quizzes.",
-      "quizSnapshotReviewNoTakeHint": "This exam only opens when the challenge starts (on schedule or when the leader runs it). Rankings are per challenge — you cannot start the exam from this screen.",
+      "finishDialogTitle": "Finish this challenge now?",
+      "finishDialogDescription": "The leaderboard will be locked in and the challenge will move to FINISHED. Manual finish is only allowed once everyone has submitted. This cannot be undone.",
+      "finishDialogBack": "Close",
+      "finishDialogConfirm": "Finish now",
+      "snapshotQuizDefaultTitle": "Challenge match",
+      "viewSnapshotQuiz": "Open match",
+      "snapshotQuizHint": "Quick match status.",
+      "quizSnapshotReviewDraftTitle": "Challenge match (review & edit only)",
+      "quizSnapshotReviewDraftBody": "This match belongs to a challenge, not the shared group content list. Members only take it when the challenge starts. Use the Check tab to review content, edit via Compose, then Publish when ready — there is no group-wide distribution like regular group assignments.",
+      "quizSnapshotReviewNoTakeHint": "This match only opens when the challenge starts (on schedule or when the leader runs it). Rankings are per challenge — you cannot start the match from this screen.",
       "leaderboardTitle": "Leaderboard",
       "editSchedule": "Edit schedule & details",
       "editDialogTitle": "Update challenge",
@@ -406,7 +410,7 @@
         "FINISHED": "Finished",
         "CANCELLED": "Cancelled"
       },
-      "leaderFairPlayQuizHint": "You're competing: after the quiz is published you can't preview questions. While it's still a draft you can compose and review.",
+      "leaderFairPlayQuizHint": "You're competing: after the match is published you can't preview questions. While it's still a draft you can compose and review.",
       "quizStatus": {
         "DRAFT": "Draft",
         "PROCESSING": "Generating",
@@ -414,16 +418,16 @@
         "REVIEW_PENDING": "Awaiting reviewer",
         "ERROR": "Generation error"
       },
-      "reviewContributorsTitle": "Quiz reviewers",
+      "reviewContributorsTitle": "Match reviewers",
       "reviewContributorsHint": "Assigned members cannot register for this challenge. You cannot assign someone who is already a participant.",
       "reviewContributorPickLabel": "Group member",
       "reviewContributorPickPlaceholder": "Select a member…",
       "reviewContributorAdd": "Add",
       "reviewContributorRemove": "Remove",
-      "reviewContributorCannotRegister": "You are assigned as a quiz reviewer, so you cannot register for this challenge.",
-      "reviewInviteeNotice": "You were invited to review this challenge quiz. Open “View quiz” → Check tab: mark the exam as OK or submit an APPROVED vote when ready. At the start time, the system will open the challenge automatically once review requirements are met.",
-      "reviewInviteeShortHint": "Click “View quiz” in the Quiz challenge block above, then open the “Check” tab.",
-      "reviewQuizNotReadyHint": "The exam is not ready to preview yet (for example still generating). Please try again later."
+      "reviewContributorCannotRegister": "You are assigned as a match reviewer, so you cannot register for this challenge.",
+      "reviewInviteeNotice": "You were invited to review this challenge match. Open “Open match” → Check tab: mark the match as OK or submit an APPROVED vote when ready. At the start time, the system will open the challenge automatically once review requirements are met.",
+      "reviewInviteeShortHint": "Click “Open match” in the Challenge match block above, then open the “Check” tab.",
+      "reviewQuizNotReadyHint": "The match is not ready to preview yet (for example still generating). Please try again later."
     },
     "members": {
       "loading": "Loading members...",
@@ -431,7 +435,7 @@
     },
     "ranking": {
       "title": "Group ranking",
-      "description": "This is the overall group ranking. Per-quiz ranking is available inside each quiz's Ranking tab.",
+      "description": "This is the overall group ranking in a single table. Challenge leaderboards are shown inside each challenge.",
       "loading": "Aggregating data from all quizzes…",
       "error": "Unable to load ranking data.",
       "retry": "Try again",
@@ -439,6 +443,56 @@
       "empty": "No member has completed any quiz yet.",
       "noData": "No data yet.",
       "meta": "Aggregated from {{quizCount}} active quizzes · {{memberCount}} participating members",
+      "tableTitle": "Ranking points",
+      "priority": "Ranked by RP",
+      "description": "Current top 3 and the full RP board for the group.",
+      "podiumTitle": "Current top 3",
+      "podiumSubtitle": "The leading three are setting the pace for the group.",
+      "detail": {
+        "title": "Why are they ranked here?",
+        "description": "Detailed RP earned from valid attempts in the shared published area.",
+        "currentRank": "Current rank",
+        "totalRp": "Total RP",
+        "evidenceTitle": "RP history",
+        "evidenceHint": "Each quiz counts only the first official attempt.",
+        "empty": "No detailed RP evidence yet.",
+        "formula": "Base {{base}} · Bonus {{bonus}}",
+        "breakdown": {
+          "regular": "Regular quiz",
+          "roadmap": "Roadmap quiz",
+          "mockTest": "Mock test"
+        },
+        "types": {
+          "REGULAR": "Regular quiz",
+          "ROADMAP": "Roadmap quiz",
+          "MOCK_TEST": "Mock test"
+        }
+      },
+      "snapshotTitle": "Quick snapshot",
+      "snapshotStats": {
+        "quizzes": "Quizzes counting RP",
+        "members": "Members on board",
+        "leaderRp": "Leading RP"
+      },
+      "note": "Only shared published content counts. Each quiz uses only the first official attempt to prevent spam.",
+      "topBadge": "Top 1",
+      "topBadges": {
+        "1": "Top 1",
+        "2": "Top 2",
+        "3": "Top 3"
+      },
+      "completedValue": "{{count}} quiz",
+      "columns": {
+        "rank": "Rank",
+        "member": "Member",
+        "points": "RP",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test",
+        "accuracy": "Accuracy",
+        "completed": "Completed",
+        "totalScore": "Total score"
+      },
       "metrics": {
         "accuracy": {
           "title": "Accuracy",
@@ -449,20 +503,6 @@
           "subtitle": "Ranked by how many quizzes were completed at least once",
           "value": "{{count}} quizzes"
         }
-      }
-    },
-    "quizRanking": {
-      "title": "Ranking · {{count}} members",
-      "loading": "Loading…",
-      "error": "Unable to load the ranking.",
-      "retry": "Try again",
-      "refresh": "Refresh",
-      "empty": "No member has completed this quiz yet.",
-      "columns": {
-        "member": "Member",
-        "accuracy": "Accuracy",
-        "time": "Time",
-        "submittedAt": "Submitted"
       }
     },
     "profile": {
@@ -1250,7 +1290,7 @@
   },
   "createChallengeWizard": {
     "steps": {
-      "quiz": "Select quiz",
+      "quiz": "Select content",
       "schedule": "Schedule",
       "registration": "Registration",
       "review": "Review"
@@ -1259,39 +1299,39 @@
       "createFailed": "Unable to create challenge"
     },
     "sourceMode": {
-      "existingLabel": "Existing quiz",
-      "existingDesc": "Create a snapshot from an existing quiz",
-      "newLabel": "New quiz",
-      "newDesc": "Compose the quiz later in the challenge detail"
+      "existingLabel": "Existing content",
+      "existingDesc": "Create a snapshot from an existing content set",
+      "newLabel": "New match",
+      "newDesc": "Compose the match later in the challenge detail"
     },
     "quizList": {
-      "sectionTitle": "Shared workspace quizzes",
-      "countTitle": "Only shared (non-assigned) quizzes can be used for a challenge",
-      "searchPlaceholder": "Search by quiz name...",
-      "searchAriaLabel": "Search quizzes",
+      "sectionTitle": "Shared workspace content",
+      "countTitle": "Only shared (non-assigned) content can be used for a challenge",
+      "searchPlaceholder": "Search by name...",
+      "searchAriaLabel": "Search content",
       "loading": "Loading list…",
-      "emptyNoQuizzes": "No quizzes in this workspace yet",
-      "emptyNoEligible": "No shared quizzes available for a challenge",
+      "emptyNoQuizzes": "No shared content in this workspace yet",
+      "emptyNoEligible": "No shared content available for a challenge",
       "emptyNoMatches": "No matches for your search",
-      "emptyNoQuizzesHint": "Create a quiz in the workspace first, or choose \"New quiz\" above.",
-      "emptyNoEligibleHint": "Quizzes assigned to specific members cannot be used. Publish the quiz as shared for the whole group or remove the per-member assignment first.",
+      "emptyNoQuizzesHint": "Create a content set in the workspace first, or choose \"New match\" above.",
+      "emptyNoEligibleHint": "Content assigned to specific members cannot be used. Publish it as shared for the whole group or remove the per-member assignment first.",
       "emptyNoMatchesHint": "Try a different keyword or clear the search box.",
       "questionCount": "{{count}} questions",
       "durationMinutes": "{{minutes}} min"
     },
     "newQuizNotice": {
       "leadBefore": "After creating the challenge, open its detail page and click ",
-      "composeLabel": "Compose quiz",
-      "leadAfter": " to launch the quiz editor (Quiz tab).",
-      "hint": "Choose a future start time; after creation, open the challenge detail to compose the quiz before the challenge starts."
+      "composeLabel": "Compose match",
+      "leadAfter": " to launch the match editor.",
+      "hint": "Choose a future start time; after creation, open the challenge detail to compose the match before the challenge starts."
     },
     "schedule": {
       "titleLabel": "Challenge name *",
       "titlePlaceholder": "e.g. Chapter 3 knowledge check",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "A short description of the challenge...",
-      "leaderParticipatesLabel": "I will take the test with everyone",
-      "leaderParticipatesDesc": "You get a slot in the participant list. After the quiz is published, you cannot preview questions (for fairness to members). While the quiz is still a draft (DRAFT), you can still author and test it."
+      "leaderParticipatesLabel": "I will take the match with everyone",
+      "leaderParticipatesDesc": "You get a slot in the participant list. After the match is published, you cannot preview questions (for fairness to members). While the match is still a draft (DRAFT), you can still author and test it."
     },
     "registration": {
       "publicLabel": "Public",
@@ -1309,10 +1349,10 @@
       "fieldDescription": "Description:",
       "fieldStart": "Start:",
       "fieldEnd": "End:",
-      "quizHeading": "Quiz",
-      "quizExistingSelected": "{{title}} (shared quiz snapshot)",
+      "quizHeading": "Match content",
+      "quizExistingSelected": "{{title}} (shared content snapshot)",
       "quizNotChosen": "Not selected",
-      "quizNewNotice": "New quiz (author the questions in the challenge detail after creation)",
+      "quizNewNotice": "New match (author the questions in the challenge detail after creation)",
       "snapshotNote": "The snapshot is not assigned per member; all challenge participants share this same content.",
       "registrationHeading": "Registration",
       "registrationPublic": "Public — any member can register",
@@ -1621,14 +1661,14 @@
     "back": "Back",
     "waitingReviewerConfirm": "Waiting for reviewer confirmation",
     "publishHints": {
-      "needDraftQuizContent": "The leader must compose the quiz content first.",
-      "needActiveQuiz": "The challenge quiz must be moved from draft to active before publishing the challenge.",
+      "needDraftQuizContent": "The leader must compose the match content first.",
+      "needActiveQuiz": "The challenge match must be moved from draft to active before publishing the challenge.",
       "needReviewer": "At least one reviewer is required before publishing the challenge.",
       "needBothReviewers": "Both a primary and an assistant reviewer are not required. Only the primary reviewer is needed before publishing the challenge.",
-      "needPrimaryReviewer": "A primary reviewer for the challenge quiz is required before publishing.",
-      "needAssistantReviewer": "An assistant reviewer for the challenge quiz is optional.",
-      "assistantConfirmedWaitingPrimary": "An assistant reviewer has confirmed the quiz. The leader still needs the primary reviewer, or can switch the confirmed reviewer to primary.",
-      "needReviewersConfirm": "At least one reviewer must confirm the quiz is OK before the leader can publish the challenge.",
+      "needPrimaryReviewer": "A primary reviewer for the challenge match is required before publishing.",
+      "needAssistantReviewer": "An assistant reviewer for the challenge match is optional.",
+      "assistantConfirmedWaitingPrimary": "An assistant reviewer has confirmed the match. The leader still needs the primary reviewer, or can switch the confirmed reviewer to primary.",
+      "needReviewersConfirm": "At least one reviewer must confirm the match is OK before the leader can publish the challenge.",
       "startTimePassed": "The challenge has reached its start time, so it can no longer be published.",
       "afterPublishInfo": "After publishing, members will see the challenge and be able to register."
     },
@@ -1640,29 +1680,30 @@
       "inviteOnly": "Invite only",
       "public": "Public"
     },
-    "quizChallengeLabel": "Challenge quiz",
+    "quizChallengeLabel": "Challenge match",
     "minutesShort": "{{count}} minutes",
     "questionsShort": "questions",
-    "composeChallengeQuiz": "Compose challenge quiz",
-    "draftQuizHint": "Create the quiz content first, then you can preview the challenge quiz.",
-    "leaderSetupFlowHint": "Leader composes the quiz, the primary reviewer confirms it, then the challenge can be published.",
-    "processingQuizTitle": "Challenge quiz is being generated",
-    "processingQuizHint": "The system is still generating questions for this challenge. Return here shortly to continue reviewing or editing the quiz.",
+    "composeChallengeQuiz": "Compose match",
+    "draftQuizHint": "Create the match content first, then you can preview the challenge match.",
+    "leaderSetupFlowHint": "Leader composes the match, the primary reviewer confirms it, then the challenge can be published.",
+    "processingQuizTitle": "Challenge match is being generated",
+    "processingQuizHint": "The system is still generating questions for this challenge. Return here shortly to continue reviewing or editing the match.",
     "processingQuizProgressLabel": "WebSocket progress",
     "reviewerPanel": {
       "orderHint": "The first reviewer is primary.",
       "primaryBadge": "Primary reviewer",
       "assistantBadge": "Assistant reviewer",
-      "lastViewedAt": "Opened the quiz at: {{time}}",
-      "lastViewedEmpty": "Has not opened the quiz yet",
-      "confirmedOkAt": "Confirmed quiz is OK at: {{time}}",
-      "confirmedOkEmpty": "Has not confirmed the quiz yet",
+      "lastViewedAt": "Opened the match at: {{time}}",
+      "lastViewedEmpty": "Has not opened the match yet",
+      "confirmedOkAt": "Confirmed match is OK at: {{time}}",
+      "confirmedOkEmpty": "Has not confirmed the match yet",
       "pendingShort": "Not opened • Not confirmed",
       "openedPendingShort": "Opened {{time}} • Not confirmed",
       "confirmedShort": "Confirmed {{time}}",
       "noEligibleMembersHint": "No eligible members to invite.",
       "needTwoReviewersHint": "Only the primary reviewer is needed to publish.",
-      "setPrimary": "Set primary"
+      "setPrimary": "Set primary",
+      "inviteSentToast": "Review invitation sent. The system has emailed the reviewer."
     },
     "actions": {
       "publish": "Publish challenge",
@@ -1670,7 +1711,13 @@
       "acceptInvite": "Accept invitation",
       "continueAttempt": "Continue attempt",
       "startAttempt": "Start attempt",
-      "cancel": "Cancel challenge"
+      "cancel": "Cancel challenge",
+      "start": "Start challenge",
+      "finish": "Finish challenge"
+    },
+    "finishBlocked": {
+      "noParticipants": "No one has registered yet, so the challenge cannot be finished early.",
+      "pending": "{{count}} participant(s) have not submitted yet. Manual finish is only allowed once everyone has submitted."
     },
     "participantsTitle": "Participants ({{count}})",
     "memberFallback": "Member",
@@ -1679,6 +1726,20 @@
       "playing": "In progress",
       "waiting": "Waiting"
     }
+  },
+  "challengeLeaderboard": {
+    "empty": "No participants yet",
+    "memberHeader": "Member",
+    "memberFallback": "Member",
+    "scoreHeader": "Score",
+    "accuracyHeader": "Accuracy",
+    "timeHeader": "Time",
+    "statusHeader": "Status",
+    "statusFinished": "Finished",
+    "statusPlaying": "In progress",
+    "statusWaiting": "Waiting",
+    "sortTooltip": "Ranked by result; on a tie, whoever finished sooner is ranked higher.",
+    "sortHint": "Ranked by highest result; on a tie, the one who finished sooner is ranked higher."
   },
   "groupSettingsTab": {
     "identityState": "Identity state",
@@ -1891,6 +1952,9 @@
     },
     "header": {
       "title": "General discussion",
+      "subtitle": "A shared thread for the whole group, with replies and question tags in one place.",
+      "live": "Live",
+      "offline": "Offline",
       "hintPrefix": "Press",
       "hintSuffix": "to tag a question"
     },

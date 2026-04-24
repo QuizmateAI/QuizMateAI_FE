@@ -230,6 +230,8 @@ function buildUpdatePayload(config, questions, editingSectionId, questionTypes, 
  *
  * Props:
  *  - workspaceId: number
+ *  - contextType?: "INDIVIDUAL" | "GROUP" — mặc định INDIVIDUAL. GROUP disables import panel
+ *    (tránh lộ catalog quiz workspace cá nhân của leader vào flow group).
  *  - editingQuizId?: number — if set, loads quiz and edits in-place via update-bulk
  *  - cloneFromQuizId?: number — if set, loads quiz as template and creates new via create-bulk
  *  - onCreateQuiz(quiz): called after successful create (create or clone mode)
@@ -239,6 +241,7 @@ function buildUpdatePayload(config, questions, editingSectionId, questionTypes, 
  */
 function ManualQuizWizard({
   workspaceId,
+  contextType = "INDIVIDUAL",
   editingQuizId,
   cloneFromQuizId,
   onCreateQuiz,
@@ -566,6 +569,7 @@ function ManualQuizWizard({
             questions={questions}
             setQuestions={setQuestions}
             workspaceId={workspaceId}
+            contextType={contextType}
             excludeQuizId={editingQuizId || cloneFromQuizId || undefined}
             onBack={handleBackToStep1}
             onSubmit={handleSubmit}

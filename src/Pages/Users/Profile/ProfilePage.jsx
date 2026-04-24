@@ -287,7 +287,7 @@ function ProfilePage() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login", { replace: true });
+    navigate("/login", { replace: true, state: { fromLogout: true } });
   };
 
   // Xử lý upload avatar

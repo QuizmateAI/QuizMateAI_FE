@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { BrainCircuit, PlayCircle  } from 'lucide-react';
+import { BrainCircuit } from 'lucide-react';
 import LocalAvatar from '@/Components/ui/LocalAvatar';
 
 const HERO_AVATARS = [
@@ -16,6 +17,7 @@ const HERO_AVATARS = [
 const HeroSection = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const navigate = useNavigate();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   return (
@@ -43,16 +45,16 @@ const HeroSection = () => {
             isDarkMode 
               ? 'bg-blue-600 hover:bg-blue-500 shadow-2xl shadow-blue-900/30' 
               : 'bg-[#2563EB] hover:bg-blue-700 shadow-2xl shadow-blue-200'
-          }`}>
+          }`} onClick={() => navigate('/login')}>
             {t('landingPage.hero.startLearning')}
           </Button>
-          <Button size="lg" variant="outline" className={`h-14 px-8 text-base font-bold rounded-2xl border-2 gap-2 group ${
+          {/* <Button size="lg" variant="outline" className={`h-14 px-8 text-base font-bold rounded-2xl border-2 gap-2 group ${
             isDarkMode 
               ? 'border-slate-700 bg-transparent hover:bg-slate-800 text-slate-100' 
               : 'bg-white'
           }`}>
             <PlayCircle className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" /> {t('landingPage.hero.watchDemo')}
-          </Button>
+          </Button> */}
         </div>
         
         <div className={`flex items-center gap-6 pt-6 transition-all duration-500 cursor-default ${

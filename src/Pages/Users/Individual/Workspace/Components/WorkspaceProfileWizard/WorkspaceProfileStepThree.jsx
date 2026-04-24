@@ -1,9 +1,13 @@
 import React from 'react';
 import {
+  BrainCircuit,
+  CheckCircle2,
   Clock3,
   Gauge,
   Layers3,
+  Loader2,
   ShieldCheck,
+  Sparkles,
   TimerReset,
   TrendingUp,
 } from 'lucide-react';
@@ -41,10 +45,14 @@ function WorkspaceProfileStepThree({
   errors,
   disabled = false,
   onFieldChange,
+  onSuggestRoadmapConfig,
   roadmapTitle,
   roadmapDescription,
   canCreateRoadmap = true,
 }) {
+  const [suggesting, setSuggesting] = React.useState(false);
+  const [suggestError, setSuggestError] = React.useState('');
+  const [suggestionMeta, setSuggestionMeta] = React.useState(null);
   const inputClass = cn(
     'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all',
     isDarkMode
@@ -75,6 +83,74 @@ function WorkspaceProfileStepThree({
     && currentMinutesPerDay
     && currentMinutesPerDay !== recommendedRoadmapMinutesPerDay
   );
+  const canSuggestRoadmap = showRoadmap && typeof onSuggestRoadmapConfig === 'function';
+
+  const applySuggestion = (suggestion) => {
+    const knowledgeLoad = ['BASIC', 'INTERMEDIATE', 'ADVANCED'].includes(suggestion?.knowledgeLoad)
+      ? suggestion.knowledgeLoad
+      : null;
+    const adaptationMode = suggestion?.adaptationMode === 'FLEXIBLE'
+      ? 'FLEXIBLE'
+      : suggestion?.adaptationMode === 'STRICT'
+        ? 'BALANCED'
+        : null;
+    const roadmapSpeedMode = suggestion?.speedMode === 'FAST'
+      ? 'FAST'
+      : suggestion?.speedMode === 'SLOW'
+        ? 'SLOW'
+        : suggestion?.speedMode === 'MEDIUM'
+          ? 'STANDARD'
+          : null;
+    const estimatedTotalDays = Number(suggestion?.estimatedTotalDays);
+    const estimatedMinutesPerDay = Number(suggestion?.estimatedMinutesPerDay);
+
+    if (knowledgeLoad) onFieldChange('knowledgeLoad', knowledgeLoad);
+    if (adaptationMode) onFieldChange('adaptationMode', adaptationMode);
+    if (roadmapSpeedMode) onFieldChange('roadmapSpeedMode', roadmapSpeedMode);
+    if (Number.isFinite(estimatedTotalDays) && estimatedTotalDays > 0) {
+      onFieldChange('estimatedTotalDays', estimatedTotalDays);
+    }
+    if (Number.isFinite(estimatedMinutesPerDay) && estimatedMinutesPerDay > 0) {
+      onFieldChange('recommendedMinutesPerDay', estimatedMinutesPerDay);
+    }
+  };
+
+  const handleSuggest = async () => {
+    if (!canSuggestRoadmap || suggesting || disabled) return;
+
+    setSuggesting(true);
+    setSuggestError('');
+
+    try {
+      const suggestion = await onSuggestRoadmapConfig();
+      if (!suggestion || typeof suggestion !== 'object') {
+        throw new Error(t(
+          'workspace.profileConfig.stepThree.suggestInvalid',
+          'AI did not return a valid roadmap suggestion.'
+        ));
+      }
+
+      applySuggestion(suggestion);
+      setSuggestionMeta({
+        rationale: String(suggestion?.rationale || '').trim(),
+        recommendations: Array.isArray(suggestion?.recommendations)
+          ? suggestion.recommendations.filter(Boolean)
+          : [],
+        preLearningRequired: null,
+      });
+    } catch (error) {
+      console.error('[WorkspaceProfileStepThree] Failed to suggest roadmap config:', error);
+      setSuggestError(
+        error?.message
+        || t(
+          'workspace.profileConfig.stepThree.suggestFailed',
+          'Unable to generate an AI roadmap suggestion right now.'
+        )
+      );
+    } finally {
+      setSuggesting(false);
+    }
+  };
 
   const getKnowledgeLoadOptionClasses = (value, active) => {
     if (value === 'ADVANCED') {
@@ -182,6 +258,117 @@ function WorkspaceProfileStepThree({
               <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{resolvedRoadmapDescription}</p>
             </div>
           </div>
+
+          {canSuggestRoadmap ? (
+            <div
+              className={cn(
+                'mt-5 rounded-[24px] border px-4 py-4',
+                isDarkMode
+                  ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100'
+                  : 'border-cyan-200 bg-cyan-50 text-cyan-900'
+              )}
+            >
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="flex items-start gap-3">
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+                      isDarkMode ? 'bg-cyan-400/15 text-cyan-100' : 'bg-white text-cyan-700'
+                    )}
+                  >
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">
+                      {t(
+                        'workspace.profileConfig.stepThree.suggestTitle',
+                        'Quizmate AI gợi ý cấu hình lộ trình'
+                      )}
+                    </p>
+                    <p className={cn('mt-1 text-sm leading-6', isDarkMode ? 'text-cyan-100/80' : 'text-cyan-800/75')}>
+                      {t(
+                        'workspace.profileConfig.stepThree.suggestDescription',
+                        'Dùng hồ sơ đã lưu ở bước trước để đề xuất lượng kiến thức, nhịp học, số ngày và số phút học mỗi ngày.'
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={disabled || suggesting}
+                  onClick={handleSuggest}
+                  className={cn(
+                    'inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border px-5 text-sm font-semibold transition-all',
+                    isDarkMode
+                      ? 'border-cyan-300/30 bg-slate-950/40 text-cyan-100 hover:bg-slate-900'
+                      : 'border-cyan-200 bg-white text-cyan-700 hover:bg-cyan-100'
+                  )}
+                >
+                  {suggesting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t('workspace.profileConfig.stepThree.suggesting', 'Đang gợi ý...')}
+                    </>
+                  ) : (
+                    <>
+                      <BrainCircuit className="mr-2 h-4 w-4" />
+                      {t('workspace.profileConfig.stepThree.suggestButton', 'Lấy gợi ý AI')}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {suggestError ? (
+                <p className="mt-3 text-sm font-medium text-rose-500">{suggestError}</p>
+              ) : null}
+
+              {suggestionMeta ? (
+                <div className={cn(
+                  'mt-4 rounded-[20px] border px-4 py-3',
+                  isDarkMode ? 'border-emerald-300/15 bg-emerald-500/10' : 'border-emerald-200 bg-white'
+                )}>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className={cn('mt-0.5 h-5 w-5 shrink-0', isDarkMode ? 'text-emerald-200' : 'text-emerald-600')} />
+                    <div className="min-w-0 flex-1 space-y-3">
+                      {suggestionMeta.rationale ? (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em] opacity-75">
+                            {t('workspace.profileConfig.stepThree.suggestRationaleLabel', 'Vì sao AI gợi ý')}
+                          </p>
+                          <p className="mt-1 text-sm leading-6">{suggestionMeta.rationale}</p>
+                        </div>
+                      ) : null}
+
+                      {suggestionMeta.preLearningRequired != null ? (
+                        <p className={cn('text-sm font-medium', isDarkMode ? 'text-amber-100' : 'text-amber-700')}>
+                          {suggestionMeta.preLearningRequired
+                            ? t('workspace.profileConfig.stepThree.preLearningRequired', 'AI khuyên nên có bài kiểm tra đầu vào trước khi bắt đầu lộ trình.')
+                            : t('workspace.profileConfig.stepThree.preLearningNotRequired', 'AI cho rằng có thể bắt đầu lộ trình trực tiếp với cấu hình này.')}
+                        </p>
+                      ) : null}
+
+                      {suggestionMeta.recommendations.length > 0 ? (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em] opacity-75">
+                            {t('workspace.profileConfig.stepThree.suggestRecommendationsLabel', 'Ghi chú từ AI')}
+                          </p>
+                          <ul className="mt-2 space-y-1 text-sm leading-6">
+                            {suggestionMeta.recommendations.map((item) => (
+                              <li key={item} className="flex gap-2">
+                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="mt-5 grid gap-4">
             <FieldBlock label={t('workspace.profileConfig.fields.knowledgeLoad')} error={errors.knowledgeLoad} required>

@@ -37,6 +37,12 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import {
+  SuperAdminMetricCard,
+  SuperAdminPage,
+  SuperAdminPageHeader,
+  SuperAdminTabs,
+} from './Components/SuperAdminSurface';
+import {
   filterRemovedLearningConfigAuditLogs,
   filterRemovedLearningConfigPermissionCodes,
   filterRemovedLearningConfigPermissions,
@@ -296,6 +302,7 @@ function RbacManagement() {
   };
 
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+  const customPermissionUsers = users.filter((user) => Array.isArray(user?.permissions) && user.permissions.length > 0).length;
 
   const formatDate = (d) => {
     if (!d) return '-';
@@ -309,12 +316,46 @@ function RbacManagement() {
   ];
 
   return (
-    <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
-      <div>
-        <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          {t('rbac.title')}
-        </h1>
-        <p className={`${isDarkMode ? 'text-slate-400' : 'text-gray-500'} font-medium`}>{t('rbac.desc')}</p>
+    <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
+      <SuperAdminPageHeader
+        eyebrow="Access Control"
+        title={t('rbac.title')}
+        description={t('rbac.desc')}
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <SuperAdminMetricCard
+          label={t('rbac.tabs.roles')}
+          value={roles.length.toLocaleString(locale)}
+          helper={t('rbac.metricRoles', 'Configured system roles')}
+          icon={Shield}
+          tone="blue"
+          isDarkMode={isDarkMode}
+        />
+        <SuperAdminMetricCard
+          label={t('rbac.tabs.permissions')}
+          value={permissions.length.toLocaleString(locale)}
+          helper={t('rbac.metricPermissions', 'Available permission codes')}
+          icon={Key}
+          tone="amber"
+          isDarkMode={isDarkMode}
+        />
+        <SuperAdminMetricCard
+          label={t('rbac.tabs.auditLogs')}
+          value={auditLogs.length.toLocaleString(locale)}
+          helper={t('rbac.metricAudit', 'Recorded permission changes')}
+          icon={ClipboardList}
+          tone="slate"
+          isDarkMode={isDarkMode}
+        />
+        <SuperAdminMetricCard
+          label={t('rbac.metricUsersLabel', 'Overrides')}
+          value={customPermissionUsers.toLocaleString(locale)}
+          helper={t('rbac.metricUsersHelper', 'Users with direct permission overrides')}
+          icon={Shield}
+          tone="emerald"
+          isDarkMode={isDarkMode}
+        />
       </div>
 
       {error && (
@@ -322,22 +363,14 @@ function RbacManagement() {
           {error}
         </div>
       )}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
-        {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.labelKey.startsWith('rbac.') ? t(tab.labelKey) : tab.labelKey}
-            </button>
-        ))}
-      </div>
+      <SuperAdminTabs
+        tabs={tabs.map((tab) => ({
+          id: tab.id,
+          label: tab.labelKey.startsWith('rbac.') ? t(tab.labelKey) : tab.labelKey,
+        }))}
+        active={activeTab}
+        onChange={setActiveTab}
+      />
 
       {activeTab === 'roles' && (
         <Card
@@ -828,7 +861,7 @@ function RbacManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </SuperAdminPage>
   );
 }
 

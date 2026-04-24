@@ -340,19 +340,21 @@ function StickyQuestionBar({
           <span className="whitespace-nowrap">{t("workspace.quiz.manualWizard.stickyBar.addQuestion", "Thêm câu")}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={onOpenImport}
-          title={t("workspace.quiz.manualWizard.stickyBar.importQuestions", "Import câu")}
-          aria-label={t("workspace.quiz.manualWizard.stickyBar.importQuestions", "Import câu")}
-          className={importActionCls}
-        >
-          <span className={miniTagCls}>
-            {t("workspace.quiz.manualWizard.stickyBar.importQuestionsBadge", "Quiz khác")}
-          </span>
-          <Download className="w-3.5 h-3.5" />
-          <span className="whitespace-nowrap">{t("workspace.quiz.manualWizard.stickyBar.importQuestions", "Import câu")}</span>
-        </button>
+        {onOpenImport ? (
+          <button
+            type="button"
+            onClick={onOpenImport}
+            title={t("workspace.quiz.manualWizard.stickyBar.importQuestions", "Import câu")}
+            aria-label={t("workspace.quiz.manualWizard.stickyBar.importQuestions", "Import câu")}
+            className={importActionCls}
+          >
+            <span className={miniTagCls}>
+              {t("workspace.quiz.manualWizard.stickyBar.importQuestionsBadge", "Quiz khác")}
+            </span>
+            <Download className="w-3.5 h-3.5" />
+            <span className="whitespace-nowrap">{t("workspace.quiz.manualWizard.stickyBar.importQuestions", "Import câu")}</span>
+          </button>
+        ) : null}
       </div>
     </div>
   );

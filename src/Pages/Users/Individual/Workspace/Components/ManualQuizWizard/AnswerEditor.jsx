@@ -32,10 +32,9 @@ const normalizeMatchingPairsInput = (raw) => {
 
   return pairs
     .map((pair) => ({
-      leftKey: String(pair?.leftKey ?? pair?.left ?? "").trim(),
-      rightKey: String(pair?.rightKey ?? pair?.right ?? "").trim(),
-    }))
-    .filter((pair) => pair.leftKey || pair.rightKey);
+      leftKey: String(pair?.leftKey ?? pair?.left ?? ""),
+      rightKey: String(pair?.rightKey ?? pair?.right ?? ""),
+    }));
 };
 
 const confirmRemove = (message) => window.confirm(message);

@@ -44,13 +44,17 @@ function normalizePurchase(payload) {
 
   const planName = String(payload.planName || "").trim();
   const normalizedPlanId = payload.planId != null ? String(payload.planId) : "";
+  const normalizedCreditPackageId = payload.creditPackageId != null ? String(payload.creditPackageId) : "";
+  const purchaseType = String(payload.purchaseType || (normalizedCreditPackageId ? "CREDIT" : "PLAN")).toUpperCase();
 
-  if (!planName && !normalizedPlanId) {
+  if (!planName && !normalizedPlanId && !normalizedCreditPackageId) {
     return null;
   }
 
   return {
+    purchaseType,
     planId: normalizedPlanId,
+    creditPackageId: normalizedCreditPackageId,
     planName,
     planType: String(payload.planType || "INDIVIDUAL").toUpperCase(),
     workspaceId: payload.workspaceId != null ? String(payload.workspaceId) : "",

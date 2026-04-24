@@ -32,6 +32,16 @@ export const getMyJoinedGroups = async () => {
   return response;
 };
 
+export const getPublicGroups = async (search) => {
+  const response = await api.get(buildUrl('/group/public', { search }));
+  return response;
+};
+
+export const joinPublicGroup = async (workspaceId) => {
+  const response = await api.post(`/group/${workspaceId}/join`);
+  return response;
+};
+
 // Tạo nhóm mới (dùng endpoint tạo group workspace)
 export const createGroup = async (data) => {
   const response = await api.post('/workspace/create/group', data);
@@ -44,19 +54,19 @@ export const getGroupMembers = async (workspaceId, page = 0, size = 50) => {
   return response;
 };
 
-// Leader cấp quyền upload cho thành viên (tối đa 3 member)
+// Leader cấp quyền upload cho thành viên theo workspaceMemberId
 export const grantUpload = async (workspaceId, memberId) => {
   const response = await api.post(`/group/${workspaceId}/members/${memberId}/grant-upload`);
   return response;
 };
 
-// Leader thu hồi quyền upload của thành viên
+// Leader thu hồi quyền upload của thành viên theo workspaceMemberId
 export const revokeUpload = async (workspaceId, memberId) => {
   const response = await api.delete(`/group/${workspaceId}/members/${memberId}/grant-upload`);
   return response;
 };
 
-// Leader cập nhật vai trò thành viên
+// Leader cập nhật vai trò thành viên theo workspaceMemberId
 export const updateMemberRole = async (workspaceId, memberId, roleName) => {
   const response = await api.put(`/group/${workspaceId}/members/${memberId}/role?roleName=${roleName}`);
   return response;
@@ -113,6 +123,26 @@ export const getGroupLogs = async (workspaceId) => {
   return response;
 };
 
+// Lấy capability hiện tại của tôi trong group
+export const getGroupMyPermissions = async (workspaceId) => {
+  const response = await api.get(`/group/${workspaceId}/me/permissions`);
+  return response;
+};
+
+// Lấy permission assignment của một member theo workspaceMemberId
+export const getGroupMemberPermissions = async (workspaceId, memberId) => {
+  const response = await api.get(`/group/${workspaceId}/members/${memberId}/permissions`);
+  return response;
+};
+
+// Sync permission assignment của một member theo workspaceMemberId
+export const syncGroupMemberPermissions = async (workspaceId, memberId, permissionCodes = []) => {
+  const response = await api.put(`/group/${workspaceId}/members/${memberId}/permissions`, {
+    permissionCodes,
+  });
+  return response;
+};
+
 /** Thống kê tổng hợp nhóm (leader): quiz, tài liệu, phân loại AI */
 export const getGroupDashboardSummary = async (workspaceId) => {
   const response = await api.get(`/group/${workspaceId}/dashboard/summary`);
@@ -125,10 +155,10 @@ export const getMemberDashboardCards = async (workspaceId, page = 0, size = 20) 
   return response;
 };
 
-/** Chi tiết dashboard một thành viên (leader xem mọi người; member chỉ xem chính mình — policy BE) */
-export const getMemberDashboardDetail = async (workspaceId, memberUserId, attemptMode = 'ALL') => {
+/** Chi tiết dashboard một thành viên theo workspaceMemberId */
+export const getMemberDashboardDetail = async (workspaceId, memberId, attemptMode = 'ALL') => {
   const mode = encodeURIComponent(String(attemptMode || 'ALL').toUpperCase());
-  const response = await api.get(`/group/${workspaceId}/dashboard/members/${memberUserId}?attemptMode=${mode}`);
+  const response = await api.get(`/group/${workspaceId}/dashboard/members/${memberId}?attemptMode=${mode}`);
   return response;
 };
 
@@ -273,5 +303,19 @@ export const toggleVisibility = async (workspaceId) => {
 /** Xếp hạng tổng hợp nhóm — aggregate 1 API thay vì N+1 */
 export const getGroupOverallRanking = async (workspaceId) => {
   const response = await api.get(`/group/${workspaceId}/ranking/overall`);
+  return response;
+};
+
+/** Chi tiết điểm RP của một thành viên trong bảng xếp hạng nhóm */
+export const getGroupRankingMemberDetail = async (workspaceId, userId) => {
+  const response = await api.get(`/group/${workspaceId}/ranking/overall/members/${userId}`);
+  return response;
+};
+
+/** Leader xóa nhóm (soft delete). Yêu cầu confirmText = "delete group". */
+export const deleteGroup = async (workspaceId, confirmText) => {
+  const response = await api.delete(`/group/${workspaceId}`, {
+    data: { confirmText },
+  });
   return response;
 };

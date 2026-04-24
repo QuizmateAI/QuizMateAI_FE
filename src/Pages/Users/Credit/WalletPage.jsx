@@ -168,7 +168,7 @@ function parseAiUsageNote(note) {
 
 function sanitizeActivityNote(note) {
   return String(note || "")
-    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED)[^\]]*\]/gi, "")
+    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED|PLAN_CREDIT_FORFEITED)[^\]]*\]/gi, "")
     .trim();
 }
 
@@ -405,7 +405,7 @@ export default function WalletPage() {
   const walletRefreshTimerRef = useRef(null);
 
   const subscription = getCachedSubscription();
-  const canBuyCredit = subscription?.entitlement?.canBuyCredit !== false;
+  const canBuyCredit = subscription?.entitlement?.canBuyCredit === true;
 
   const getFriendlyError = (err) => {
     const mapped = getErrorMessage(t, err);
@@ -846,22 +846,19 @@ export default function WalletPage() {
                       {t("walletPage.history.table.workspace", "Workspace")}
                     </TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("walletPage.history.table.amount", "Credits")}</TableHead>
-                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-                      {t("walletPage.history.table.source", "Source")}
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoadingTransactions && (
                     <TableRow>
-                      <TableCell colSpan={5} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                      <TableCell colSpan={4} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                         {t("walletPage.history.loading", "Loading...")}
                       </TableCell>
                     </TableRow>
                   )}
                   {!isLoadingTransactions && transactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                      <TableCell colSpan={4} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                         {t("walletPage.history.noHistory", "No transactions yet.")}
                       </TableCell>
                     </TableRow>
@@ -903,11 +900,7 @@ export default function WalletPage() {
                         <TableCell className={`font-bold tabular-nums ${tx.amount >= 0 ? (isDarkMode ? "text-emerald-400" : "text-emerald-700") : (isDarkMode ? "text-amber-400" : "text-amber-700")}`}>
                           {tx.amount >= 0 ? "+" : ""}{formatNumber(tx.amount, numberLocale)}
                         </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getTransactionSourceBadgeClass(tx.source, isDarkMode)}`}>
-                            {getTransactionSourceLabel(tx.source, t)}
-                          </span>
-                        </TableCell>
+
                       </TableRow>
                     );})
                   )}

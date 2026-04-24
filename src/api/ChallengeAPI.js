@@ -29,6 +29,10 @@ export const startChallenge = async (workspaceId, eventId) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/start`);
 };
 
+export const finishChallenge = async (workspaceId, eventId) => {
+  return await api.post(`/group/${workspaceId}/challenges/${eventId}/finish`);
+};
+
 export const inviteToChallenge = async (workspaceId, eventId, userIds) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/invite`, { userIds });
 };
@@ -75,20 +79,13 @@ export const addQuizReviewContributor = async (workspaceId, quizId, body) => {
 };
 
 /**
- * Gửi đồng loạt lời mời reviewer (1 chính + tối đa 2 phụ) → BE gửi email song song.
- * body = { invitations: [{ userId, primaryReviewer }, ...] }
+ * Gửi đồng loạt lời mời reviewer (tối đa 2 người) → BE gửi email song song.
+ * body = { invitations: [{ userId }, ...] }
  */
 export const batchInviteQuizReviewers = async (workspaceId, quizId, invitations) => {
   return await api.post(
     `/group/${workspaceId}/quiz-review-contributors/${quizId}/invite-batch`,
     { invitations },
-  );
-};
-
-/** Hoán đổi reviewer chính: demote primary hiện tại → phụ, promote userId → chính */
-export const setPrimaryQuizReviewer = async (workspaceId, quizId, userId) => {
-  return await api.patch(
-    `/group/${workspaceId}/quiz-review-contributors/${quizId}/set-primary/${userId}`,
   );
 };
 
@@ -134,7 +131,20 @@ export const getMyQuizReviewContributor = async (workspaceId, quizId) => {
   return await api.get(`/group/${workspaceId}/quiz-review-contributors/${quizId}/me`);
 };
 
+export const acceptQuizReviewInvitation = async (workspaceId, quizId) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-invitation/accept`);
+};
+
+export const declineQuizReviewInvitation = async (workspaceId, quizId) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-invitation/decline`);
+};
+
 /** Reviewer: xác nhận đã xem xong — đề ổn (acknowledged=false để bỏ xác nhận) */
 export const setQuizReviewCompleteOk = async (workspaceId, quizId, acknowledged = true) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-complete-ok`, { acknowledged });
+};
+
+/** Leader: xóa câu hỏi khỏi snapshot quiz (chỉ leader mới có quyền, reviewer chỉ được flag) */
+export const deleteQuestionFromSnapshot = async (workspaceId, quizId, questionId) => {
+  return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/questions/${questionId}`);
 };

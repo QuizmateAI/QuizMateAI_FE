@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, FileText, Map, Pencil, Rows3 } from "lucide-react";
+import { ChevronDown, FileText, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import {
@@ -24,6 +24,7 @@ const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyManualQuizWizard = React.lazy(() => import("./ManualQuizWizard"));
 const LazyFlashcardListView = React.lazy(() => import("./FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("./FlashcardDetailView"));
+const LazyManualFlashcardEditor = React.lazy(() => import("./ManualFlashcardEditor"));
 const LazyMockTestListView = React.lazy(() => import("./MockTestListView"));
 const LazyCreateMockTestForm = React.lazy(() => import("./CreateMockTestForm"));
 const LazyMockTestDetailView = React.lazy(() => import("./MockTestDetailView"));
@@ -320,6 +321,7 @@ function ChatPanel({
           <LazyFlashcardListView
             isDarkMode={isDarkMode}
             onCreateFlashcard={() => onChangeView?.("createFlashcard")}
+            onCreateManualFlashcard={() => onChangeView?.("createManualFlashcard")}
             onNavigateHome={onNavigateHome}
             onViewFlashcard={onViewFlashcard}
             onDeleteFlashcard={onDeleteFlashcard}
@@ -379,14 +381,53 @@ function ChatPanel({
             onToggleMaterialSelection={onToggleMaterialSelection}
           />
         );
-      case "flashcardDetail":
-        return selectedFlashcard ? (
+      case "createManualFlashcard":
+        return (
+          <LazyManualFlashcardEditor
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            canActivate
+            onCreated={onCreateFlashcard}
+            onActivated={(saved) => {
+              // Sau khi kích hoạt → mở detail view (giống luồng AI flashcard: flip UI).
+              onViewFlashcard?.(saved);
+            }}
+            onBack={onBack}
+          />
+        );
+      case "flashcardDetail": {
+        if (!selectedFlashcard) return null;
+        const fcStatus = String(selectedFlashcard?.status || "").toUpperCase();
+        // Mọi DRAFT (AI/MANUAL) đều vào draft editor; ACTIVE dùng flip-card detail view.
+        if (fcStatus === "DRAFT") {
+          return (
+            <LazyManualFlashcardEditor
+              isDarkMode={isDarkMode}
+              workspaceId={workspaceId}
+              contextType="WORKSPACE"
+              contextId={workspaceId}
+              editingSetId={selectedFlashcard.flashcardSetId}
+              canActivate
+              onSaved={onBack}
+              onActivated={(saved) => {
+                onViewFlashcard?.(saved);
+              }}
+              onBack={onBack}
+            />
+          );
+        }
+        return (
           <LazyFlashcardDetailView
             isDarkMode={isDarkMode}
             flashcard={selectedFlashcard}
             onBack={onBack}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
           />
-        ) : null;
+        );
+      }
       case "quizDetail":
         return selectedQuiz ? (
           <LazyQuizDetailView
@@ -502,7 +543,6 @@ function ChatPanel({
     "roadmap",
     "quiz",
     "communityQuiz",
-    "createQuiz",
     "editQuiz",
     "flashcard",
     "mockTest",
@@ -649,8 +689,8 @@ function ChatPanel({
                 : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
             />
 
-            <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
-              <Button
+            {/* <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}> */}
+              {/* <Button
                 type="button"
                 size="sm"
                 variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
@@ -669,7 +709,7 @@ function ChatPanel({
               >
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle", "Tổng quan")}</span>
-              </Button>
+              </Button> */}
               {/* <Button
                 type="button"
                 size="sm"
@@ -680,7 +720,7 @@ function ChatPanel({
                 <Eye className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>{t("workspace.roadmap.canvasView1Title", "Kiểm thử")}</span>
               </Button> */}
-            </div>
+            {/* </div> */}
           </div>
         </div>
 

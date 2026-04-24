@@ -11,6 +11,7 @@ import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDec
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
 import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
+import { hasReadyRoadmapQuiz } from "../utils/roadmapProcessing";
 
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;
@@ -285,7 +286,7 @@ function RoadmapCanvasViewStage({
   const maxUnlockedPhaseIndex = useMemo(() => {
     if (isStudyNewRoadmap) {
       const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
-        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
         const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
         const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
         const isFinished = isFinishedPhaseStatus(phase?.status);
@@ -349,7 +350,7 @@ function RoadmapCanvasViewStage({
   };
 
   const selectedPhaseIndex = phases.findIndex((phase) => normalizePositiveId(phase?.phaseId) === normalizedSelectedPhaseId);
-  const selectedPhaseHasExistingPreLearning = Array.isArray(selectedPhase?.preLearningQuizzes) && selectedPhase.preLearningQuizzes.length > 0;
+  const selectedPhaseHasExistingPreLearning = hasReadyRoadmapQuiz(selectedPhase?.preLearningQuizzes);
   const isSelectedPhaseCurrentByPayload = isCurrentPhaseByPayload(selectedPhase?.phaseId);
   const isSelectedPhaseLocked = selectedType === "phase"
     && Boolean(selectedPhase)
@@ -390,7 +391,7 @@ function RoadmapCanvasViewStage({
 
   const resolveKnowledgeLockState = (phase, phaseIndex, knowledgeIndex) => {
     const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
-    const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+    const hasExistingPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
     const isPhaseLockedForKnowledge = phaseIndex > maxUnlockedPhaseIndex
       && !hasExistingPreLearning
       && !isCurrentPhaseByPayload(phase?.phaseId);
@@ -1296,7 +1297,7 @@ function RoadmapCanvasViewStage({
       const shouldShowKnowledgePlaceholder = phaseKnowledges.length === 0 && isGeneratingKnowledge;
       const phaseKnowledgePercent = progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0;
       const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
-      const hasPreLearningQuiz = phasePreLearningQuizzes.length > 0;
+      const hasPreLearningQuiz = hasReadyRoadmapQuiz(phasePreLearningQuizzes);
       const hasPostLearningQuiz = phasePostLearningQuizzes.length > 0;
       const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);
       const isDecisionHandled = decisionHandledPhaseIds.includes(normalizedPhaseId);
@@ -1882,7 +1883,7 @@ function RoadmapCanvasViewStage({
 
                   {phases.map((phase, index) => {
                     const active = selectedType !== "roadmap" && normalizedSelectedPhaseId === normalizePositiveId(phase?.phaseId);
-                    const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+                    const hasExistingPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
                     const isPhaseLocked = index > maxUnlockedPhaseIndex
                       && !hasExistingPreLearning
                       && !isCurrentPhaseByPayload(phase?.phaseId);

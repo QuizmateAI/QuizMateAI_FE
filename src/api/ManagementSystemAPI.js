@@ -63,6 +63,20 @@ export const createAdmin = async (data) => {
   return response;
 };
 
+export const deleteAdmin = async (adminId, data) => {
+  const response = await api.delete(`/management/users/${adminId}`, { data });
+  return response;
+};
+
+// SUPER_ADMIN force-delete user account (soft delete).
+// BE yêu cầu confirmText = "FORCE-DELETE-USER" và reason 10-500 ký tự.
+export const forceDeleteUser = async (userId, { confirmText, reason }) => {
+  const response = await api.delete(`/management/users/${userId}`, {
+    data: { confirmText, reason },
+  });
+  return response;
+};
+
 export const getAllSystemUsers = async (page = 0, size = 100) => {
   const response = await api.get(`/rbac/system/users?page=${page}&size=${size}`);
   return response;
@@ -140,6 +154,61 @@ export const grantPermissionToUser = async (userId, permissionCode) => {
 
 export const revokePermissionFromUser = async (userId, permissionCode) => {
   const response = await api.delete(`/rbac/system/users/${userId}/permissions/${encodeURIComponent(permissionCode)}`);
+  return response;
+};
+
+// Lấy quyền của user kèm grantedAt/expiresAt (chỉ quyền còn hạn)
+export const getUserPermissionDetails = async (userId) => {
+  const response = await api.get(`/rbac/system/users/${userId}/permissions/details`);
+  return response;
+};
+
+// ============ Permission Request APIs ============
+// Admin tạo yêu cầu cấp quyền
+export const createPermissionRequest = async ({ permissionCode, reason, requestedDurationDays }) => {
+  const response = await api.post('/rbac/system/permission-requests', {
+    permissionCode,
+    reason,
+    requestedDurationDays: requestedDurationDays ?? null,
+  });
+  return response;
+};
+
+// Admin xem danh sách yêu cầu của chính mình
+export const getMyPermissionRequests = async () => {
+  const response = await api.get('/rbac/system/permission-requests/mine');
+  return response;
+};
+
+// Admin huỷ yêu cầu PENDING
+export const cancelPermissionRequest = async (requestId) => {
+  const response = await api.post(`/rbac/system/permission-requests/${requestId}/cancel`);
+  return response;
+};
+
+// Super-admin xem list request (status optional: PENDING/APPROVED/REJECTED/CANCELLED)
+export const listPermissionRequests = async ({ status, page = 0, size = 20 } = {}) => {
+  const params = new URLSearchParams();
+  if (status) params.append('status', status);
+  params.append('page', page);
+  params.append('size', size);
+  const response = await api.get(`/rbac/system/permission-requests?${params.toString()}`);
+  return response;
+};
+
+// Super-admin duyệt request. Gửi { expiresAt? | durationDays? | note? }. Cả hai null = vĩnh viễn.
+export const approvePermissionRequest = async (requestId, { expiresAt, durationDays, note } = {}) => {
+  const response = await api.post(`/rbac/system/permission-requests/${requestId}/approve`, {
+    expiresAt: expiresAt || null,
+    durationDays: durationDays ?? null,
+    note: note || null,
+  });
+  return response;
+};
+
+// Super-admin từ chối request (note bắt buộc)
+export const rejectPermissionRequest = async (requestId, { note }) => {
+  const response = await api.post(`/rbac/system/permission-requests/${requestId}/reject`, { note });
   return response;
 };
 
@@ -299,6 +368,26 @@ export const getGroupLogs = async (workspaceId) => {
   return response;
 };
 
+export const getManagementCommunityQuizzes = async ({
+  page = 0,
+  size = 10,
+  search,
+  status,
+} = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  if (search) params.append('search', String(search));
+  if (status) params.append('status', String(status));
+  const response = await api.get(`/management/community-quizzes?${params.toString()}`);
+  return response;
+};
+
+export const updateManagementCommunityQuizVisibility = async (quizId, { shared = false } = {}) => {
+  const response = await api.patch(`/management/community-quizzes/${quizId}/visibility?shared=${shared}`);
+  return response;
+};
+
 // Plan APIs — maps to PlanCatalogController (/api/plan-catalog/...)
 export const getAllPlans = async () => {
   const response = await api.get('/plan-catalog/all');
@@ -424,8 +513,10 @@ export const getAdminPaymentByOrderId = async (orderId) => {
   return response;
 };
 
-export const expireOverduePayments = async () => {
-  const response = await api.post('/payment/admin/expire-overdue');
+export const expireOverduePayments = async ({ confirmText, reason, maxCount } = {}) => {
+  const body = { confirmText, reason };
+  if (maxCount != null) body.maxCount = maxCount;
+  const response = await api.post('/payment/admin/expire-overdue', body);
   return response;
 };
 

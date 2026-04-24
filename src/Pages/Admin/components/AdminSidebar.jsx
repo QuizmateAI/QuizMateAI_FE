@@ -5,7 +5,7 @@ import {
   Users, UsersRound,
   CreditCard, LogOut,
   PanelLeftClose, Coins, ChevronDown, ChevronRight,
-  Settings2,
+  Settings2, KeyRound, Globe2,
 } from 'lucide-react';
 import { Banknote } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -44,6 +44,13 @@ const MENU_SECTIONS = [
         labelKey: 'sidebar.groups',
         path: '/admin/groups',
         requiredPerm: 'group:read_all',
+        matchPrefix: true,
+      },
+      {
+        icon: Globe2,
+        labelKey: 'sidebar.communityQuizzes',
+        path: '/admin/community-quizzes',
+        requiredPerm: 'material:moderate',
         matchPrefix: true,
       },
     ],
@@ -86,6 +93,17 @@ const MENU_SECTIONS = [
       },
     ],
   },
+  {
+    labelKey: 'sidebarSections.access',
+    items: [
+      {
+        icon: KeyRound,
+        labelKey: 'sidebar.myPermissions',
+        path: '/admin/my-permissions',
+        matchPrefix: true,
+      },
+    ],
+  },
 ];
 
 const isActive = (item, pathname) => {
@@ -114,7 +132,7 @@ function AdminSidebar({ collapsed, onToggle }) {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true, state: { fromLogout: true } });
   };
 
   const toggleSection = (section) => {

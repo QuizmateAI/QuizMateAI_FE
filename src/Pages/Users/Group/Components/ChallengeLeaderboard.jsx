@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getChallengeLeaderboard } from '../../../../api/ChallengeAPI';
 import { Trophy, Medal, Clock } from 'lucide-react';
 import UserDisplayName from '@/Components/users/UserDisplayName';
@@ -10,9 +11,20 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function formatScore(score, scoreIsPercent) {
+  if (score == null) return '-';
+  const numeric = Number(score);
+  if (!Number.isFinite(numeric)) return '-';
+  const formatted = Number.isInteger(numeric)
+    ? numeric.toLocaleString()
+    : numeric.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  return scoreIsPercent ? `${formatted}%` : formatted;
+}
+
 const MEDAL_COLORS = ['text-yellow-400', 'text-slate-300', 'text-amber-600'];
 
 export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode }) {
+  const { t } = useTranslation();
   const { data: leaderboard } = useQuery({
     queryKey: ['challenge-leaderboard', workspaceId, eventId],
     queryFn: async () => {
@@ -24,6 +36,10 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
   });
 
   const entries = leaderboard?.entries || [];
+  const scoreIsPercent = entries.some((e) => e?.scoreIsPercent);
+  const scoreHeaderLabel = scoreIsPercent
+    ? t('challengeLeaderboard.accuracyHeader', 'Tỉ lệ đúng')
+    : t('challengeLeaderboard.scoreHeader', 'Điểm');
 
   if (entries.length === 0) {
     return (
@@ -31,7 +47,7 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
         isDarkMode ? 'border-slate-700 bg-slate-800/50 text-slate-400' : 'border-gray-200 bg-gray-50 text-gray-500'
       }`}>
         <Trophy className="mx-auto mb-2 h-8 w-8 opacity-40" />
-        Chưa có người tham gia
+        {t('challengeLeaderboard.empty', 'Chưa có người tham gia')}
       </div>
     );
   }
@@ -44,10 +60,15 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
         <thead>
           <tr className={isDarkMode ? 'border-b border-slate-700 bg-slate-800' : 'border-b border-gray-100 bg-gray-50'}>
             <th className="px-4 py-3 text-left font-medium">#</th>
-            <th className="px-4 py-3 text-left font-medium">Thành viên</th>
-            <th className="px-4 py-3 text-right font-medium">Điểm</th>
-            <th className="px-4 py-3 text-right font-medium">Thời gian</th>
-            <th className="px-4 py-3 text-center font-medium">Trạng thái</th>
+            <th className="px-4 py-3 text-left font-medium">{t('challengeLeaderboard.memberHeader', 'Thành viên')}</th>
+            <th
+              className="px-4 py-3 text-right font-medium"
+              title={t('challengeLeaderboard.sortTooltip', 'Xếp hạng theo kết quả; cùng kết quả thì ai hoàn thành nhanh hơn xếp trên.')}
+            >
+              {scoreHeaderLabel}
+            </th>
+            <th className="px-4 py-3 text-right font-medium">{t('challengeLeaderboard.timeHeader', 'Thời gian')}</th>
+            <th className="px-4 py-3 text-center font-medium">{t('challengeLeaderboard.statusHeader', 'Trạng thái')}</th>
           </tr>
         </thead>
         <tbody>
@@ -81,7 +102,7 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
                       </div>
                     )}
                     <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      <UserDisplayName user={entry} fallback="Thành viên" isDarkMode={isDarkMode} />
+                      <UserDisplayName user={entry} fallback={t('challengeLeaderboard.memberFallback', 'Thành viên')} isDarkMode={isDarkMode} />
                     </span>
                   </div>
                 </td>
@@ -90,7 +111,7 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
                     ? (isDarkMode ? 'text-orange-300' : 'text-orange-600')
                     : (isDarkMode ? 'text-slate-500' : 'text-gray-400')
                 }`}>
-                  {isFinished ? (entry.score ?? 0) : '-'}
+                  {isFinished ? formatScore(entry.score, entry.scoreIsPercent) : '-'}
                 </td>
                 <td className={`px-4 py-3 text-right ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                   <div className="inline-flex items-center gap-1">
@@ -106,9 +127,9 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
                         ? (isDarkMode ? 'bg-blue-500/15 text-blue-300' : 'bg-blue-50 text-blue-700')
                         : (isDarkMode ? 'bg-slate-600/30 text-slate-400' : 'bg-gray-100 text-gray-500')
                   }`}>
-                    {entry.participantStatus === 'FINISHED' ? 'Hoàn thành'
-                      : entry.participantStatus === 'PLAYING' ? 'Đang làm'
-                      : 'Chờ'}
+                    {entry.participantStatus === 'FINISHED' ? t('challengeLeaderboard.statusFinished', 'Hoàn thành')
+                      : entry.participantStatus === 'PLAYING' ? t('challengeLeaderboard.statusPlaying', 'Đang làm')
+                      : t('challengeLeaderboard.statusWaiting', 'Chờ')}
                   </span>
                 </td>
               </tr>
@@ -116,6 +137,9 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
           })}
         </tbody>
       </table>
+      <div className={`border-t px-4 py-2 text-xs ${isDarkMode ? 'border-slate-700 text-slate-500' : 'border-gray-100 text-gray-500'}`}>
+        {t('challengeLeaderboard.sortHint', 'Xếp hạng theo kết quả cao nhất; cùng kết quả thì ai hoàn thành sớm hơn đứng trên.')}
+      </div>
     </div>
   );
 }

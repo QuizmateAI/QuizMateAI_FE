@@ -361,6 +361,7 @@ function IndividualWorkspaceProfileConfigDialog({
   canCreateRoadmap = true,
   isReadOnly = false,
   forceStartAtStepOne = false,
+  onSuggestRoadmapConfig,
   mockTestGenerationState = 'idle',
   mockTestGenerationMessage = '',
   mockTestGenerationProgress = 0,
@@ -493,6 +494,7 @@ function IndividualWorkspaceProfileConfigDialog({
           values={wizard.values}
           errors={wizard.errors}
           analysisStatus={wizard.analysisStatus}
+          knowledgeOptions={wizard.knowledgeOptions}
           domainOptions={wizard.domainOptions}
           needsKnowledgeDescription={wizard.needsKnowledgeDescription}
           knowledgeAnalysis={wizard.knowledgeAnalysis}
@@ -500,6 +502,7 @@ function IndividualWorkspaceProfileConfigDialog({
           canCreateRoadmap={canCreateRoadmap}
           onPurposeChange={wizard.setPurpose}
           onFieldChange={wizard.updateField}
+          onKnowledgeSelect={wizard.selectKnowledgeOption}
           onDomainSelect={wizard.selectInferredDomain}
           onRetryAnalysis={wizard.retryKnowledgeAnalysis}
         />
@@ -542,6 +545,7 @@ function IndividualWorkspaceProfileConfigDialog({
         disabled={isReadOnly}
         canCreateRoadmap={canCreateRoadmap}
         onFieldChange={wizard.updateField}
+        onSuggestRoadmapConfig={onSuggestRoadmapConfig}
       />
     );
   }

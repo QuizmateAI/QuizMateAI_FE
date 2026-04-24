@@ -7,7 +7,7 @@ import { AnswerEditor, buildDefaultAnswers, parseMatchingPairs } from "./AnswerE
 const QUESTION_TYPE_VALUES = [
   "multipleChoice",
   "multipleSelect",
-  "imageBased",
+  // "imageBased", // Tạm ẩn loại câu hỏi kèm ảnh theo yêu cầu
   "trueFalse",
   "shortAnswer",
   "fillBlank",

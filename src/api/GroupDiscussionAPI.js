@@ -1,73 +1,46 @@
-const STORE_KEY = 'qm_group_discussions_v1';
+import api from './api';
 
-function readStore() {
-  try {
-    return JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
-  } catch {
+function buildDiscussionPath(workspaceId, quizId, suffix = '') {
+  return `/group/${encodeURIComponent(String(workspaceId))}/quizzes/${encodeURIComponent(String(quizId))}/discussion${suffix}`;
+}
+
+function buildThreadParams(questionId = null) {
+  if (questionId == null) {
     return {};
   }
-}
-
-function writeStore(data) {
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(data));
-  } catch {
-    // quota exceeded — silently ignore
-  }
-}
-
-function threadKey(workspaceId, quizId, questionId) {
-  return questionId != null
-    ? `w${workspaceId}:q${quizId}:qu${questionId}`
-    : `w${workspaceId}:q${quizId}`;
+  return { questionId };
 }
 
 export async function getThreadMessages(workspaceId, quizId, questionId = null) {
-  const store = readStore();
-  const key = threadKey(workspaceId, quizId, questionId);
-  return { messages: store[key]?.messages || [] };
+  const response = await api.get(buildDiscussionPath(workspaceId, quizId), {
+    params: buildThreadParams(questionId),
+  });
+  return response?.data ?? { messages: [] };
 }
 
-export async function postMessage(workspaceId, quizId, questionId = null, { body, authorId, authorName, authorUserName, authorAvatar, authorRole }) {
-  const store = readStore();
-  const key = threadKey(workspaceId, quizId, questionId);
-  if (!store[key]) store[key] = { messages: [] };
-
-  const msg = {
-    id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    authorId,
-    authorName,
-    authorUserName: authorUserName || null,
-    authorAvatar: authorAvatar || null,
-    authorRole,
-    body: body.trim(),
-    createdAt: new Date().toISOString(),
-  };
-
-  store[key].messages.push(msg);
-  writeStore(store);
-  return msg;
+export async function postMessage(workspaceId, quizId, questionId = null, payload = {}) {
+  const response = await api.post(buildDiscussionPath(workspaceId, quizId), {
+    questionId,
+    parentMessageId: payload?.parentMessageId ?? null,
+    body: String(payload?.body || ''),
+  });
+  return response?.data ?? null;
 }
 
-export async function deleteMessage(workspaceId, quizId, questionId = null, messageId) {
-  const store = readStore();
-  const key = threadKey(workspaceId, quizId, questionId);
-  if (!store[key]) return;
-  store[key].messages = store[key].messages.filter((m) => m.id !== messageId);
-  writeStore(store);
+export async function deleteMessage(workspaceId, quizId, _questionId = null, messageId) {
+  await api.delete(buildDiscussionPath(workspaceId, quizId, `/${encodeURIComponent(String(messageId))}`));
 }
 
 export async function getThreadCounts(workspaceId, quizId, questionIds = []) {
-  const store = readStore();
+  const safeQuestionIds = Array.isArray(questionIds)
+    ? questionIds.filter((questionId) => questionId != null)
+    : [];
 
-  const quizKey = threadKey(workspaceId, quizId, null);
-  const quizCount = (store[quizKey]?.messages || []).length;
+  const response = await api.get(buildDiscussionPath(workspaceId, quizId, '/counts'), {
+    params: safeQuestionIds.length > 0
+      ? { questionIds: safeQuestionIds.join(',') }
+      : {},
+  });
 
-  const questions = {};
-  for (const qId of questionIds) {
-    const k = threadKey(workspaceId, quizId, qId);
-    questions[String(qId)] = (store[k]?.messages || []).length;
-  }
-
-  return { quiz: quizCount, questions };
+  return response?.data ?? { quiz: 0, questions: {} };
 }

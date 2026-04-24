@@ -75,6 +75,16 @@ function buildProcessingObjectFromProgressPayload(payload) {
   if (!payload || typeof payload !== "object") return undefined;
 
   const data = payload?.data && typeof payload.data === "object" ? payload.data : {};
+  const taskType = String(
+    data?.taskType
+      ?? data?.task_type
+      ?? payload?.taskType
+      ?? payload?.task_type
+      ?? payload?.processingObject?.taskType
+      ?? payload?.processingObject?.task_type
+      ?? ""
+  ).toUpperCase();
+  const workspaceId = toNumberOrNull(data?.workspaceId ?? data?.workspace_id ?? payload?.workspaceId ?? payload?.workspace_id);
   const roadmapId = toNumberOrNull(data?.roadmapId ?? data?.roadmap_id ?? payload?.roadmapId ?? payload?.roadmap_id);
   const phaseId = toNumberOrNull(data?.phaseId ?? data?.phase_id ?? payload?.phaseId ?? payload?.phase_id);
   const knowledgeId = toNumberOrNull(data?.knowledgeId ?? data?.knowledge_id ?? payload?.knowledgeId ?? payload?.knowledge_id);
@@ -82,6 +92,8 @@ function buildProcessingObjectFromProgressPayload(payload) {
   const materialId = toNumberOrNull(data?.materialId ?? data?.material_id ?? payload?.materialId ?? payload?.material_id);
 
   const processingObject = {
+    ...(taskType ? { taskType } : {}),
+    ...(workspaceId ? { workspaceId } : {}),
     ...(roadmapId ? { roadmapId } : {}),
     ...(phaseId ? { phaseId } : {}),
     ...(knowledgeId ? { knowledgeId } : {}),
@@ -90,6 +102,29 @@ function buildProcessingObjectFromProgressPayload(payload) {
   };
 
   return Object.keys(processingObject).length > 0 ? processingObject : undefined;
+}
+
+function isRoadmapScopedProgressPayload(payload, processingObject = {}) {
+  const data = payload?.data && typeof payload.data === "object" ? payload.data : {};
+  const status = String(payload?.status ?? payload?.final_status ?? data?.status ?? data?.final_status ?? "").toUpperCase();
+  const taskType = String(
+    processingObject?.taskType
+      ?? processingObject?.task_type
+      ?? data?.taskType
+      ?? data?.task_type
+      ?? payload?.taskType
+      ?? payload?.task_type
+      ?? ""
+  ).toUpperCase();
+  const roadmapId = toNumberOrNull(processingObject?.roadmapId ?? processingObject?.roadmap_id ?? data?.roadmapId ?? data?.roadmap_id ?? payload?.roadmapId ?? payload?.roadmap_id);
+  const phaseId = toNumberOrNull(processingObject?.phaseId ?? processingObject?.phase_id ?? data?.phaseId ?? data?.phase_id ?? payload?.phaseId ?? payload?.phase_id);
+
+  return Boolean(
+    status.startsWith("ROADMAP_")
+      || taskType.includes("ROADMAP")
+      || roadmapId
+      || phaseId
+  );
 }
 
 export function resolveMaterialEventFromProgressPayload(payload) {
@@ -102,6 +137,10 @@ export function resolveMaterialEventFromProgressPayload(payload) {
   const processingObject = payload?.processingObject && typeof payload.processingObject === "object"
     ? payload.processingObject
     : (buildProcessingObjectFromProgressPayload(payload) || {});
+
+  if (isRoadmapScopedProgressPayload(payload, processingObject)) {
+    return null;
+  }
 
   const materialId = toNumberOrNull(
     data?.materialId
@@ -185,6 +224,7 @@ function enrichProgressWithActiveTaskShape(payload) {
  * @param {Function} options.onMaterialDeleted - Callback khi có tài liệu bị xóa
  * @param {Function} options.onMaterialUpdated - Callback khi có tài liệu được cập nhật
  * @param {Function} options.onGroupUpdate - Callback khi có cập nhật thành viên/lời mời/cấu hình group
+ * @param {Function} options.onDiscussionUpdate - Callback khi có cập nhật realtime cho discussion trong group
  * @param {Function} options.onProgress - Callback khi có progress update
  * @param {Function} options.onWalletUpdate - Callback khi ví cá nhân thay đổi
  * @param {Function} options.onWorkspaceWalletUpdate - Callback khi ví workspace/group thay đổi
@@ -196,6 +236,7 @@ export function useWebSocket({
   onMaterialDeleted,
   onMaterialUpdated,
   onGroupUpdate,
+  onDiscussionUpdate,
   onProgress,
   onWalletUpdate,
   onWorkspaceWalletUpdate,
@@ -213,6 +254,7 @@ export function useWebSocket({
     onMaterialDeleted,
     onMaterialUpdated,
     onGroupUpdate,
+    onDiscussionUpdate,
     onProgress,
     onWalletUpdate,
     onWorkspaceWalletUpdate,
@@ -231,12 +273,14 @@ export function useWebSocket({
   );
   const hasChallengeSubscription = Boolean(workspaceId && onChallengeUpdate);
   const hasGroupSubscription = Boolean(workspaceId && onGroupUpdate);
+  const hasDiscussionSubscription = Boolean(workspaceId && onDiscussionUpdate);
   const hasWorkspaceWalletSubscription = Boolean(workspaceId && onWorkspaceWalletUpdate);
   const hasWorkspaceSubscription = Boolean(
     workspaceId && (
       hasMaterialSubscription
       || hasChallengeSubscription
       || hasGroupSubscription
+      || hasDiscussionSubscription
       || hasWorkspaceWalletSubscription
     ),
   );
@@ -254,6 +298,7 @@ export function useWebSocket({
     hasMaterialSubscription ? "material" : null,
     hasChallengeSubscription ? "challenge" : null,
     hasGroupSubscription ? "group" : null,
+    hasDiscussionSubscription ? "discussion" : null,
     hasWorkspaceWalletSubscription ? "workspace-wallet" : null,
   ].filter(Boolean).join("|") || null;
 
@@ -263,6 +308,7 @@ export function useWebSocket({
       onMaterialDeleted,
       onMaterialUpdated,
       onGroupUpdate,
+      onDiscussionUpdate,
       onProgress,
       onWalletUpdate,
       onWorkspaceWalletUpdate,
@@ -274,6 +320,7 @@ export function useWebSocket({
     onMaterialDeleted,
     onMaterialUpdated,
     onGroupUpdate,
+    onDiscussionUpdate,
     onProgress,
     onWalletUpdate,
     onWorkspaceWalletUpdate,
@@ -364,6 +411,9 @@ export function useWebSocket({
         if (hasGroupSubscription && workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/group`);
         }
+        if (hasDiscussionSubscription && workspaceId) {
+          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/discussion`);
+        }
         if (hasWorkspaceWalletSubscription && workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/wallet`);
         }
@@ -382,6 +432,14 @@ export function useWebSocket({
           }
           if (hasGroupSubscription) {
             callbackRefs.current.onGroupUpdate?.({
+              type: "SOCKET_RESTORED",
+              workspaceId,
+              restoredFromRegistry,
+              timestamp: Date.now(),
+            });
+          }
+          if (hasDiscussionSubscription) {
+            callbackRefs.current.onDiscussionUpdate?.({
               type: "SOCKET_RESTORED",
               workspaceId,
               restoredFromRegistry,
@@ -548,6 +606,23 @@ export function useWebSocket({
           subscriptionsRef.current.push(groupSubscription);
         }
 
+        if (hasDiscussionSubscription && workspaceId) {
+          const discussionSubscription = stompClient.subscribe(
+            `/topic/workspace/${workspaceId}/discussion`,
+            (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                console.log("💬 Discussion update:", data);
+                setLastMessage({ type: "discussion:update", data, timestamp: Date.now() });
+                callbackRefs.current.onDiscussionUpdate?.(data);
+              } catch (err) {
+                console.error("Failed to parse discussion message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(discussionSubscription);
+        }
+
         if (hasWorkspaceWalletSubscription && workspaceId) {
           const workspaceWalletSubscription = stompClient.subscribe(
             `/topic/workspace/${workspaceId}/wallet`,
@@ -626,6 +701,7 @@ export function useWebSocket({
     connectionKey,
     getAuthToken,
     hasGroupSubscription,
+    hasDiscussionSubscription,
     hasMaterialSubscription,
     hasWorkspaceSubscription,
     hasWorkspaceWalletSubscription,

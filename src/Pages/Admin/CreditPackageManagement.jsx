@@ -26,7 +26,10 @@ import {
   updateCreditPackage,
   updateCreditPackageStatus,
   deleteCreditPackage,
+  getAllSystemSettings,
 } from '@/api/ManagementSystemAPI';
+
+const DEFAULT_CREDIT_UNIT_PRICE = 200;
 
 const EMPTY_FORM = {
   name: '',
@@ -34,6 +37,21 @@ const EMPTY_FORM = {
   creditAmount: '0',
   price: '0',
   bonusCredit: '0',
+};
+
+// BE regex: ^[A-Z0-9_\-]+$, length 2–64. Must strip diacritics + force uppercase.
+const slugifyCode = (name) => {
+  const base = (name || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toUpperCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^A-Z0-9_-]/g, '')
+    .slice(0, 64);
+  return base.length >= 2 ? base : `${base}PACK`.slice(0, 64);
 };
 
 const STATUS_META = {
@@ -67,6 +85,7 @@ function CreditPackageManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [creditUnitPrice, setCreditUnitPrice] = useState(DEFAULT_CREDIT_UNIT_PRICE);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingPackage, setDeletingPackage] = useState(null);
@@ -96,9 +115,20 @@ function CreditPackageManagement() {
   const fetchPackages = async () => {
     setIsLoading(true);
     try {
-      const res = await getAllCreditPackages();
+      const [res, settingsRes] = await Promise.all([
+        getAllCreditPackages(),
+        getAllSystemSettings().catch(() => null),
+      ]);
       const data = res?.data ?? res;
       setPackages(Array.isArray(data) ? data : []);
+      const settingsData = settingsRes?.data ?? settingsRes;
+      const unitPriceSetting = Array.isArray(settingsData)
+        ? settingsData.find((s) => s.key === 'credit.unit_price_vnd')
+        : null;
+      const resolvedUnitPrice = Number(unitPriceSetting?.value);
+      if (Number.isFinite(resolvedUnitPrice) && resolvedUnitPrice > 0) {
+        setCreditUnitPrice(resolvedUnitPrice);
+      }
     } catch (err) {
       showError(getFriendlyError(err, 'creditPackageManagement.fetchError'));
     } finally {
@@ -108,8 +138,12 @@ function CreditPackageManagement() {
 
   useEffect(() => {
     fetchPackages();
-     
   }, []);
+
+  const calculatePrice = (baseCredit) => {
+    const credit = parseInt(baseCredit, 10) || 0;
+    return credit * creditUnitPrice;
+  };
 
   const openCreateForm = () => {
     setEditingPackage(null);
@@ -141,19 +175,22 @@ function CreditPackageManagement() {
     try {
       const baseCredit = parseInt(formData.creditAmount, 10) || 0;
       const bonusCredit = Math.floor(baseCredit * 0.1);
-      const price = parseInt(formData.price, 10) || (baseCredit * 200);
+      const price = calculatePrice(baseCredit);
+      const displayName = formData.name.trim();
 
-      const payload = {
-        code: formData.name.trim().toLowerCase().replace(/\s+/g, '-'),
-        displayName: formData.name.trim(),
-        baseCredit,
-        bonusCredit,
-        price,
-      };
       if (editingPackage) {
+        // Do not send `code` on update — keep existing stable and avoid unique-collision.
+        const payload = { displayName, baseCredit, bonusCredit, price };
         await updateCreditPackage(editingPackage.creditPackageId ?? editingPackage.id, payload);
         showSuccess(t('creditPackageManagement.updateSuccess', 'Credit package updated successfully.'));
       } else {
+        const payload = {
+          code: slugifyCode(displayName),
+          displayName,
+          baseCredit,
+          bonusCredit,
+          price,
+        };
         await createCreditPackage(payload);
         showSuccess(t('creditPackageManagement.createSuccess', 'Credit package created successfully.'));
       }
@@ -586,7 +623,7 @@ function CreditPackageManagement() {
                         const next = {
                           ...formData,
                           creditAmount: value,
-                          price: String(n * 200),
+                          price: String(calculatePrice(n)),
                           bonusCredit: String(bonus),
                         };
                         setFormData(next);
@@ -598,7 +635,7 @@ function CreditPackageManagement() {
                         const next = {
                           ...formData,
                           creditAmount: String(n),
-                          price: String(n * 200),
+                          price: String(calculatePrice(n)),
                           bonusCredit: String(bonus),
                         };
                         setFormData(next);
@@ -622,20 +659,28 @@ function CreditPackageManagement() {
                       type="text"
                       value={(parseInt(formData.price, 10) || 0).toLocaleString('vi-VN')}
                       readOnly
-                      className={`${inputCls} bg-slate-900/40 dark:bg-slate-900/40 cursor-not-allowed`}
+                      tabIndex={-1}
+                      aria-disabled="true"
+                      className={`${inputCls} bg-transparent dark:bg-transparent cursor-default pointer-events-none select-none`}
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {t('creditPackageManagement.form.bonusCredit', 'Bonus credits')}
-                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {t('creditPackageManagement.form.bonusCredit', 'Bonus credits')}
+                    </Label>
+                    <span className={`text-[11px] ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {t('creditPackageManagement.form.bonusCreditHint', '+10% of Credit Amount')}
+                    </span>
+                  </div>
                   <Input
-                    type="number"
-                    min="0"
-                    value={formData.bonusCredit}
+                    type="text"
+                    value={(parseInt(formData.bonusCredit, 10) || 0).toLocaleString('vi-VN')}
                     readOnly
-                    className={`${inputCls} bg-slate-900/40 dark:bg-slate-900/40 cursor-not-allowed`}
+                    tabIndex={-1}
+                    aria-disabled="true"
+                    className={`${inputCls} bg-transparent dark:bg-transparent cursor-default pointer-events-none select-none`}
                   />
                 </div>
               </div>
