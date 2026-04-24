@@ -3287,6 +3287,13 @@
       "configNotSet": "Chưa thiết lập",
       "viewConfig": "Xem cấu hình",
       "editConfigAction": "Chỉnh sửa",
+      "summaryDropdown": "Nội dung lộ trình",
+      "summaryFallback": "Lộ trình này chưa có phần mô tả tổng hợp.",
+      "summaryStats": {
+        "phases": "giai đoạn",
+        "knowledges": "kiến thức",
+        "quizzes": "bộ câu hỏi"
+      },
       "setupButton": "Thiết lập lộ trình",
       "groupSetupPromptTitle": "Bạn hãy thiết lập lộ trình cho nhóm",
       "groupSetupPromptDescription": "Hãy thiết lập lượng kiến thức, nhịp học, số ngày dự kiến và số phút học mỗi ngày để roadmap bám đúng kế hoạch học của nhóm.",

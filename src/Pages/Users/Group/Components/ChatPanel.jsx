@@ -5,6 +5,7 @@ import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { getRoadmapReview } from "@/api/RoadmapAPI";
 import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
+import RoadmapGuideButton from "@/Components/workspace/RoadmapGuideButton";
 import RoadmapJourPanel from "./RoadmapJourPanel";
 import CreateQuizForm from "./CreateQuizForm";
 
@@ -251,6 +252,15 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <span className={fontClass}>{t("workspace.roadmap.editConfigAction", "Edit")}</span>
               </Button>
             ) : null}
+
+            <RoadmapGuideButton
+              isDarkMode={isDarkMode}
+              autoOpen={activeView === "roadmap"}
+              variant="group"
+              className={isDarkMode
+                ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}
+            />
 
             <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
               <Button
