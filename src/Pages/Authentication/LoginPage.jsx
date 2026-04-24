@@ -377,6 +377,11 @@ const LoginPageContent = () => {
   const forgotPasswordHook = useForgotPassword(setView, t);
 
   const handleNavigateBack = () => {
+    if (location?.state?.fromLogout) {
+      navigate('/', { replace: true });
+      return;
+    }
+
     if (typeof window !== 'undefined' && window.history.length > 1) {
       navigate(-1);
       return;
