@@ -5,7 +5,7 @@ import { queryClient } from './queryClient'
 import './index.css'
 import App from './App.jsx'
 import { DarkModeProvider } from './hooks/useDarkMode'
-import { i18nReady } from './i18n'
+import { i18nReady, preloadLanguage } from './i18n'
 import { RuntimeRecoveryScreen } from '@/Components/system/RuntimeRecoveryBoundary'
 import { installRuntimeRecoveryListeners, tryScheduleRuntimeRecovery } from '@/lib/runtimeRecovery'
 
@@ -32,6 +32,21 @@ async function bootstrap() {
         </QueryClientProvider>
       </StrictMode>,
     )
+
+    // Sau khi app đã render với namespace của route hiện tại, warm phần còn lại
+    // trong nền để các lần navigate sau không phải chờ load i18n (gate không block).
+    const warmCurrentLanguage = () => {
+      const currentLang = typeof window !== 'undefined'
+        ? (window.localStorage.getItem('app_language') || 'vi')
+        : 'vi'
+      void preloadLanguage(currentLang)
+    }
+
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(warmCurrentLanguage, { timeout: 2000 })
+    } else {
+      setTimeout(warmCurrentLanguage, 500)
+    }
   } catch (error) {
     const isReloading = tryScheduleRuntimeRecovery(error)
 

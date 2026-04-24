@@ -50,6 +50,7 @@ const MENU_SECTIONS = [
         icon: Globe2,
         labelKey: 'sidebar.communityQuizzes',
         path: '/admin/community-quizzes',
+        requiredPerm: 'material:moderate',
         matchPrefix: true,
       },
     ],
