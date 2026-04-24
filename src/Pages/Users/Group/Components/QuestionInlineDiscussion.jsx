@@ -10,20 +10,31 @@
  *  - First-time guideline card shown at top
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Send, Trash2, Loader2, Info, Lock, CheckCircle2, X, Smile, Camera, ImageIcon, Sparkles,
+  Send, Trash2, Loader2, Info, Lock, CheckCircle2, X, Smile, Camera, ImageIcon, Sparkles, Reply,
 } from 'lucide-react';
 import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
 import { getUserDisplayParts } from '@/Utils/userProfile';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import {
   getThreadMessages,
   postMessage,
   deleteMessage,
 } from '@/api/GroupDiscussionAPI';
+import {
+  buildDiscussionMessageMap,
+  formatDiscussionPreview,
+  getDiscussionReplyDepth,
+  getDiscussionReplyPreview,
+  matchesDiscussionRealtimeThread,
+  normalizeDiscussionMessageId,
+  removeDiscussionMessage,
+  upsertDiscussionMessage,
+} from './groupDiscussionReplyUtils';
 
 // ─── Storage key for dismissed guideline ─────────────────────────────────────
 const GUIDE_DISMISSED_KEY = 'qm_q_discussion_guide_dismissed';
@@ -172,7 +183,7 @@ function LockedState({ isDarkMode }) {
 
 // ─── Message row ──────────────────────────────────────────────────────────────
 
-function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
+function MessageRow({ msg, canDelete, onDelete, onReply, replyPreview, depth, isDarkMode }) {
   const { t } = useTranslation();
   const [pending, setPending] = useState(false);
   const timer = useRef(null);
@@ -180,6 +191,10 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
     fullName: msg.authorName,
     username: msg.authorUserName,
   }, msg.authorName || t('questionDiscussion.shared.userFallback', 'User'));
+  const replyAuthorDisplay = getUserDisplayParts({
+    fullName: replyPreview?.authorName,
+    username: replyPreview?.authorUserName,
+  }, replyPreview?.authorName || t('questionDiscussion.shared.userFallback', 'User'));
 
   const handleDeleteClick = () => {
     if (pending) {
@@ -195,7 +210,13 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   return (
-    <div className="flex gap-2.5 group">
+    <div
+      className={cn(
+        'flex gap-2.5 group',
+        depth > 0 && (isDarkMode ? 'border-l border-slate-800 pl-3' : 'border-l border-blue-100 pl-3'),
+      )}
+      style={depth > 0 ? { marginLeft: `${Math.min(depth, 2) * 18}px` } : undefined}
+    >
       {/* Avatar */}
       <UserAvatar
         src={msg.authorAvatar}
@@ -209,6 +230,32 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
+        {replyPreview && (
+          <div
+            className={cn(
+              'mb-1.5 flex items-start gap-2 rounded-xl border-l-2 px-2.5 py-1.5 text-[11px]',
+              isDarkMode ? 'border-blue-700 bg-slate-900/80 text-slate-400' : 'border-blue-300 bg-white text-gray-500',
+            )}
+          >
+            <Reply className={cn('mt-0.5 h-3 w-3 shrink-0', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
+            <div className="min-w-0">
+              <p className={cn('font-medium', isDarkMode ? 'text-slate-300' : 'text-gray-700')}>
+                {replyPreview.missing
+                  ? t('questionDiscussion.reply.originalUnavailable', 'Original comment unavailable')
+                  : t('questionDiscussion.reply.replyingTo', {
+                    name: replyAuthorDisplay.name,
+                    defaultValue: 'Replying to {{name}}',
+                  })}
+              </p>
+              {!replyPreview.missing && (
+                <p className="truncate">
+                  {replyPreview.body || t('questionDiscussion.reply.emptyBody', 'No content')}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
           <span className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-200' : 'text-gray-800')}>
             {authorDisplay.name}
@@ -244,6 +291,20 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
           isDarkMode ? 'bg-slate-800/80 text-slate-300' : 'bg-blue-50 text-gray-700',
         )}>
           {msg.body}
+        </div>
+
+        <div className="mt-1 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onReply(msg)}
+            className={cn(
+              'inline-flex items-center gap-1 text-[10px] font-medium transition-colors',
+              isDarkMode ? 'text-slate-500 hover:text-blue-300' : 'text-gray-400 hover:text-blue-600',
+            )}
+          >
+            <Reply className="h-3 w-3" />
+            {t('questionDiscussion.reply.action', 'Reply')}
+          </button>
         </div>
       </div>
 
@@ -309,6 +370,7 @@ export default function QuestionInlineDiscussion({
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
   const [posting, setPosting] = useState(false);
+  const [replyTarget, setReplyTarget] = useState(null);
   const [showGuide, setShowGuide] = useState(
     () => !hideGuide && !localStorage.getItem(GUIDE_DISMISSED_KEY),
   );
@@ -317,6 +379,7 @@ export default function QuestionInlineDiscussion({
   const textareaRef = useRef(null);
   const onMessagesChangeRef = useRef(onMessagesChange);
   const currentUserId = profile?.userId ?? profile?.id ?? 0;
+  const messageMap = useMemo(() => buildDiscussionMessageMap(messages), [messages]);
   const composerNameFallback = t('questionDiscussion.shared.composerNameFallback', 'you');
   const composerDisplayName = String(profile?.fullName ?? profile?.name ?? composerNameFallback).trim() || composerNameFallback;
   const composerTools = [
@@ -352,6 +415,54 @@ export default function QuestionInlineDiscussion({
     }
   }, [loading, messages.length]);
 
+  // ── Realtime: nhận CREATED / DELETED từ WS và patch state cục bộ, không phải refetch.
+  const handleDiscussionRealtime = useCallback((event = {}) => {
+    const eventType = String(event?.type || '').trim().toUpperCase();
+    if (!workspaceId || Number(event?.workspaceId) !== Number(workspaceId)) return;
+
+    if (eventType === 'SOCKET_RESTORED') {
+      // Reconnect: refetch để bù các message đã miss trong lúc offline.
+      if (!canAccess || !workspaceId || !quizId || !questionId) return;
+      setLoading(true);
+      getThreadMessages(workspaceId, quizId, questionId)
+        .then(({ messages: msgs }) => setMessages(msgs || []))
+        .catch(() => setMessages([]))
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    if (!matchesDiscussionRealtimeThread(event, quizId, questionId)) return;
+
+    if (eventType === 'DISCUSSION_MESSAGE_CREATED' && event?.message) {
+      startTransition(() => {
+        setMessages((current) => upsertDiscussionMessage(current, event.message));
+      });
+      return;
+    }
+
+    if (eventType === 'DISCUSSION_MESSAGE_DELETED') {
+      const deletedMessageId = event?.messageId ?? event?.deletedMessageId;
+      startTransition(() => {
+        setMessages((current) => removeDiscussionMessage(current, deletedMessageId));
+        setReplyTarget((current) => (
+          current?.id === normalizeDiscussionMessageId(deletedMessageId) ? null : current
+        ));
+      });
+    }
+  }, [canAccess, workspaceId, quizId, questionId]);
+
+  useWebSocket({
+    workspaceId,
+    enabled: canAccess && Boolean(workspaceId) && Boolean(quizId) && Boolean(questionId),
+    onDiscussionUpdate: handleDiscussionRealtime,
+  });
+
+  useEffect(() => {
+    if (replyTarget?.id && !messageMap.has(replyTarget.id)) {
+      setReplyTarget(null);
+    }
+  }, [messageMap, replyTarget]);
+
   useEffect(() => {
     onMessagesChangeRef.current = onMessagesChange;
   }, [onMessagesChange]);
@@ -370,20 +481,19 @@ export default function QuestionInlineDiscussion({
   const handlePost = useCallback(async () => {
     const body = draft.trim();
     if (!body || posting || !canAccess) return;
-
-    const authorId = profile?.userId ?? profile?.id ?? 0;
-    const authorName = profile?.fullName ?? profile?.name ?? t('questionDiscussion.shared.userFallback', 'User');
-    const authorUserName = profile?.username ?? null;
-    const authorAvatar = profile?.avatarUrl ?? profile?.avatar ?? null;
-    const authorRole = isLeader ? 'LEADER' : 'MEMBER';
+    const parentMessageId = replyTarget?.id && Number.isFinite(Number(replyTarget.id))
+      ? Number(replyTarget.id)
+      : null;
 
     setPosting(true);
     try {
       const msg = await postMessage(workspaceId, quizId, questionId, {
-        body, authorId, authorName, authorUserName, authorAvatar, authorRole,
+        body,
+        parentMessageId,
       });
       setMessages((prev) => [...prev, msg]);
       setDraft('');
+      setReplyTarget(null);
       // Reset textarea height
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
       requestAnimationFrame(() => {
@@ -394,17 +504,36 @@ export default function QuestionInlineDiscussion({
     } finally {
       setPosting(false);
     }
-  }, [draft, posting, canAccess, profile, isLeader, workspaceId, quizId, questionId, t]);
+  }, [draft, posting, canAccess, questionId, quizId, replyTarget, workspaceId]);
 
   // ── Delete
   const handleDelete = useCallback(async (messageId) => {
     try {
       await deleteMessage(workspaceId, quizId, questionId, messageId);
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      setReplyTarget((prev) => (prev?.id === normalizeDiscussionMessageId(messageId) ? null : prev));
     } catch {
       //
     }
   }, [workspaceId, quizId, questionId]);
+
+  const handleReply = useCallback((message) => {
+    const messageId = normalizeDiscussionMessageId(message?.id ?? message?.messageId);
+    if (!messageId) {
+      return;
+    }
+
+    setReplyTarget({
+      id: messageId,
+      authorName: message?.authorName || null,
+      authorUserName: message?.authorUserName || null,
+      body: formatDiscussionPreview(message?.body),
+    });
+
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, []);
 
   // ── Keyboard: Enter = send, Shift+Enter = new line
   const handleKeyDown = (e) => {
@@ -420,6 +549,13 @@ export default function QuestionInlineDiscussion({
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 80)}px`;
   };
+
+  const replyTargetDisplay = replyTarget
+    ? getUserDisplayParts({
+      fullName: replyTarget.authorName,
+      username: replyTarget.authorUserName,
+    }, replyTarget.authorName || t('questionDiscussion.shared.userFallback', 'User'))
+    : null;
 
   // ─── Render: Locked ─────────────────────────────────────────────────────────
   if (!canAccess) {
@@ -512,6 +648,9 @@ export default function QuestionInlineDiscussion({
                     msg={msg}
                     canDelete={isLeader || Number(msg.authorId) === Number(currentUserId)}
                     onDelete={handleDelete}
+                    onReply={handleReply}
+                    replyPreview={getDiscussionReplyPreview(messageMap, msg)}
+                    depth={getDiscussionReplyDepth(messageMap, msg)}
                     isDarkMode={isDarkMode}
                   />
                 ))
@@ -544,6 +683,38 @@ export default function QuestionInlineDiscussion({
                 : 'border-slate-200 bg-[#f1f2f4] focus-within:border-slate-300',
             )}
           >
+            {replyTarget && (
+              <div
+                className={cn(
+                  'mb-3 flex items-start justify-between gap-3 rounded-2xl border px-3 py-2',
+                  isDarkMode ? 'border-blue-900/60 bg-blue-950/20' : 'border-blue-200 bg-blue-50',
+                )}
+              >
+                <div className="min-w-0">
+                  <p className={cn('text-xs font-semibold', isDarkMode ? 'text-blue-300' : 'text-blue-700')}>
+                    {t('questionDiscussion.reply.replyingTo', {
+                      name: replyTargetDisplay?.name || t('questionDiscussion.shared.userFallback', 'User'),
+                      defaultValue: 'Replying to {{name}}',
+                    })}
+                  </p>
+                  <p className={cn('mt-0.5 truncate text-xs', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
+                    {replyTarget.body || t('questionDiscussion.reply.emptyBody', 'No content')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyTarget(null)}
+                  className={cn(
+                    'rounded-full p-1 transition-colors',
+                    isDarkMode ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-300' : 'text-slate-400 hover:bg-white hover:text-slate-600',
+                  )}
+                  title={t('questionDiscussion.reply.cancel', 'Cancel reply')}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* Textarea */}
             <textarea
               ref={textareaRef}
@@ -551,7 +722,12 @@ export default function QuestionInlineDiscussion({
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
               onInput={handleInput}
-              placeholder={t('questionDiscussion.shared.composerPlaceholder', 'Comment as {{name}}', { name: composerDisplayName })}
+              placeholder={replyTarget
+                ? t('questionDiscussion.reply.placeholder', {
+                  name: replyTargetDisplay?.name || t('questionDiscussion.shared.userFallback', 'User'),
+                  defaultValue: 'Reply to {{name}}',
+                })
+                : t('questionDiscussion.shared.composerPlaceholder', 'Comment as {{name}}', { name: composerDisplayName })}
               rows={1}
               className={cn(
                 'w-full resize-none bg-transparent text-sm leading-6 outline-none min-h-[28px] max-h-24',

@@ -14,7 +14,9 @@
       "create": "Create new",
       "createWorkspace": "Create new workspace",
       "createGroup": "Create group",
-      "share": "Share"
+      "share": "Share",
+      "openGroupCommunity": "QuizMate AI group community",
+      "backToHome": "Back to home"
     },
     "search": {
       "workspacePlaceholder": "Search workspaces...",
@@ -187,6 +189,55 @@
         "GROUP": "Group"
       }
     },
+    "groupHub": {
+      "eyebrow": "QuizMate AI community",
+      "title": "Find a group that matches how you want to study",
+      "subtitle": "Open the QuizMate AI group community to review the shared goal, learning rhythm, and the sections each group already has before you decide to join.",
+      "public": "Public",
+      "joined": "Joined",
+      "join": "Join group",
+      "joining": "Joining...",
+      "full": "Full",
+      "joinSuccess": "Joined the group successfully.",
+      "joinError": "Unable to join this group.",
+      "emptyTitle": "No public groups yet",
+      "emptyDescription": "Once public groups are available, you will be able to review them and join directly from here.",
+      "emptyCardDescription": "This group has not added a short description yet.",
+      "noResultsDescription": "Try a different keyword based on the goal, domain, or exam target.",
+      "requirementsTitle": "What this group is looking for",
+      "sectionsTitle": "Available sections",
+      "sharedPace": "Shared study pace",
+      "fallbackNeed": "Best suited for the {{role}} role with a {{mode}} rhythm.",
+      "createdBy": "Created by {{owner}}",
+      "metrics": {
+        "community": "Public groups",
+        "readyToJoin": "Ready to join",
+        "myGroups": "Your groups"
+      },
+      "labels": {
+        "goal": "Goal",
+        "focus": "Focus",
+        "rules": "Rules",
+        "capacity": "Capacity",
+        "fit": "Best fit",
+        "meta": "Group info"
+      },
+      "sections": {
+        "discussion": "Discussion",
+        "materials": "Materials",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test"
+      },
+      "emptyPreviewTitle": "What you will see here",
+      "emptyPreview": {
+        "goal": "The study goal and shared direction of each group",
+        "sections": "The core sections inside the group such as roadmap, quiz, materials, and discussion",
+        "join": "A direct join action when the group is open to the community"
+      },
+      "viewDetails": "View details",
+      "capacitySummary": "{{active}} active • {{pending}} pending invites • {{remaining}} left of {{limit}}"
+    },
     "pagination": {
       "showing": "Showing {{start}} - {{end}} of {{total}}",
       "page": "page"
@@ -324,13 +375,13 @@
       "group": "Group"
     },
     "badges": {
-      "permanent": "Permanent purchase",
+      "permanent": "Fixed-term plans",
       "credits": "Credit-based AI usage",
       "transparent": "Clear & transparent"
     },
     "creditModel": {
       "title": "Credit model for AI",
-      "desc": "Buy the plan once, then top up Credits only when you need more AI usage.",
+      "desc": "Choose the plan that fits, then top up Credits only when you need more AI usage.",
       "cta": "Open Credit Wallet",
       "guide": "See credit pricing"
     },
@@ -430,8 +481,8 @@
       }
     },
     "notes": {
-      "permanentTitle": "Buy once, keep access longer",
-      "permanentDesc": "Plans do not have to be monthly. Depending on configuration, some plans can be purchased permanently.",
+      "permanentTitle": "Clear plan duration",
+      "permanentDesc": "QuizMateAI does not offer permanent purchases. Each plan has its own duration and benefits so you can choose what fits your study needs.",
       "creditsTitle": "AI is credit-based",
       "creditsDesc": "AI features only consume Credits when you actually use them, so spend stays easier to control.",
       "refundTitle": "Clear checkout flow",
@@ -485,10 +536,11 @@
       "hasAiContentStructuring": "AI Content Structuring",
       "hasPersonalizedLearningAnalytic": "Personalized Learning Analytics",
       "hasAiTextReadingAndSummarization": "AI Text Reading & Summarization",
-      "hasAdvancedAiConfiguration": "Advanced quiz types"
+      "hasAdvancedAiConfiguration": "Advanced quiz configuration"
     },
     "paymentError": "Payment Error",
-    "vnpayError": "Vnpay Error"
+    "vnpayError": "Vnpay Error",
+    "stripeError": "Unable to create Stripe payment. Please try again."
   },
   "paymentResult": {
     "successTitle": "Payment Successful!",
@@ -499,11 +551,18 @@
     "orderId": "Order ID",
     "transId": "Transaction ID",
     "amount": "Amount",
+    "gatewayCurrency": "Gateway currency",
     "orderInfo": "Description",
     "payType": "Pay Type",
     "time": "Time",
     "backToPlans": "Back to plans",
-    "goHome": "Go to Home"
+    "backToWallet": "Back to wallet",
+    "backToGroup": "Back to group",
+    "goHome": "Go to Home",
+    "currentPlan": "Current plan",
+    "planReadyHint": "Your plan is ready - you can continue learning.",
+    "planExpiresAt": "Valid until {{date}}",
+    "backendRejected": "The payment was not verified by the server, so no credits or plan were activated."
   },
   "walletPage": {
     "logoAlt": "QuizMate AI Logo",

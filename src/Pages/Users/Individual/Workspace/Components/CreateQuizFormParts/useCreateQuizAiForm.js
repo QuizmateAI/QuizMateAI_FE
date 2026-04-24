@@ -363,6 +363,19 @@ export const useCreateQuizAiForm = ({
   }, [allQTypes, filterQuestionTypesByImageAvailability]);
 
   useEffect(() => {
+    if (hasAdvanceQuizConfig) {
+      return;
+    }
+
+    setStructurePreview(null);
+    setStructurePreviewError("");
+    setStructurePreviewLoading(false);
+    setStructureConfigSignature("");
+    setIsStructureEditing(false);
+    setEditableStructureItems([]);
+  }, [hasAdvanceQuizConfig]);
+
+  useEffect(() => {
     if (!Array.isArray(qTypes) || qTypes.length === 0) {
       setSelectedQTypes([]);
       return;
@@ -632,6 +645,10 @@ export const useCreateQuizAiForm = ({
   ]);
 
   const canFetchStructurePreview = useMemo(() => {
+    if (!hasAdvanceQuizConfig) {
+      return false;
+    }
+
     const previewBlockingFields = [
       "aiTotalQuestions",
       "aiDifficulty",
@@ -640,7 +657,7 @@ export const useCreateQuizAiForm = ({
     ];
 
     return previewBlockingFields.every((fieldKey) => !aiValidationState.fieldErrors[fieldKey]);
-  }, [aiValidationState.fieldErrors]);
+  }, [aiValidationState.fieldErrors, hasAdvanceQuizConfig]);
 
   useEffect(() => {
     latestErrorRef.current = error;
@@ -1184,6 +1201,14 @@ export const useCreateQuizAiForm = ({
   ]);
 
   const handlePreviewStructure = useCallback(async () => {
+    if (!hasAdvanceQuizConfig) {
+      setStructurePreviewError(t(
+        "workspace.quiz.aiConfig.structurePlanRequired",
+        "Quiz structure requires a plan with advanced quiz configuration.",
+      ));
+      return null;
+    }
+
     setStructurePreviewError("");
     setStructurePreviewLoading(true);
 
@@ -1204,9 +1229,13 @@ export const useCreateQuizAiForm = ({
     } finally {
       setStructurePreviewLoading(false);
     }
-  }, [buildStructurePreviewPayload, t]);
+  }, [buildStructurePreviewPayload, hasAdvanceQuizConfig, t]);
 
   const handleStartStructureEdit = useCallback(async () => {
+    if (!hasAdvanceQuizConfig) {
+      return;
+    }
+
     let preview = structurePreview;
     if (!preview?.structureJson) {
       preview = await handlePreviewStructure();
@@ -1238,16 +1267,22 @@ export const useCreateQuizAiForm = ({
     aiTotalQuestions,
     applyStructureItemsToConfig,
     customDifficulty,
+    hasAdvanceQuizConfig,
     handlePreviewStructure,
     lockedDifficultyLevel,
     questionUnit,
     selectedBloomSkills,
     selectedDifficultyId,
     selectedQTypes,
+    structureConfigSignature,
     structurePreview,
   ]);
 
   const updateStructureFromEditableItems = useCallback((nextItems) => {
+    if (!hasAdvanceQuizConfig) {
+      return;
+    }
+
     const normalizedItems = normalizeStructureItems(nextItems);
     const totalQuestion = normalizedItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
     const nextStructureJson = JSON.stringify({ items: normalizedItems });
@@ -1266,18 +1301,14 @@ export const useCreateQuizAiForm = ({
     });
 
     applyStructureItemsToConfig(normalizedItems);
-  }, [applyStructureItemsToConfig]);
+  }, [applyStructureItemsToConfig, hasAdvanceQuizConfig]);
 
   const handleStructureItemChange = useCallback((index, field, value) => {
-    if (!Array.isArray(editableStructureItems) || index < 0 || index >= editableStructureItems.length) {
+    if (!hasAdvanceQuizConfig) {
       return;
     }
 
-    if (
-      field === "questionType"
-      && !hasAdvanceQuizConfig
-      && isAdvancedQuizQuestionType(value)
-    ) {
+    if (!Array.isArray(editableStructureItems) || index < 0 || index >= editableStructureItems.length) {
       return;
     }
 
@@ -1303,6 +1334,10 @@ export const useCreateQuizAiForm = ({
   }, [editableStructureItems, hasAdvanceQuizConfig, updateStructureFromEditableItems]);
 
   const handleAddStructureItem = useCallback(() => {
+    if (!hasAdvanceQuizConfig) {
+      return;
+    }
+
     const currentTotal = (Array.isArray(editableStructureItems) ? editableStructureItems : [])
       .reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
     const targetTotal = Math.max(0, Number(aiTotalQuestions) || 0);
@@ -1322,9 +1357,13 @@ export const useCreateQuizAiForm = ({
     ];
 
     updateStructureFromEditableItems(nextItems);
-  }, [aiTotalQuestions, editableStructureItems, updateStructureFromEditableItems]);
+  }, [aiTotalQuestions, editableStructureItems, hasAdvanceQuizConfig, updateStructureFromEditableItems]);
 
   const handleRemoveStructureItem = useCallback((index) => {
+    if (!hasAdvanceQuizConfig) {
+      return;
+    }
+
     if (!Array.isArray(editableStructureItems) || editableStructureItems.length <= 1) {
       return;
     }
@@ -1335,9 +1374,13 @@ export const useCreateQuizAiForm = ({
 
     const nextItems = editableStructureItems.filter((_, itemIndex) => itemIndex !== index);
     updateStructureFromEditableItems(nextItems);
-  }, [editableStructureItems, updateStructureFromEditableItems]);
+  }, [editableStructureItems, hasAdvanceQuizConfig, updateStructureFromEditableItems]);
 
   const handleMoveStructureItem = useCallback((fromIndex, toIndex) => {
+    if (!hasAdvanceQuizConfig) {
+      return;
+    }
+
     if (!Array.isArray(editableStructureItems) || editableStructureItems.length === 0) {
       return;
     }
@@ -1366,7 +1409,7 @@ export const useCreateQuizAiForm = ({
     nextItems.splice(normalizedToIndex, 0, movedItem);
 
     updateStructureFromEditableItems(nextItems);
-  }, [editableStructureItems, updateStructureFromEditableItems]);
+  }, [editableStructureItems, hasAdvanceQuizConfig, updateStructureFromEditableItems]);
 
   const handleCancelStructureEdit = useCallback(() => {
     if (!isStructureEditing) {
@@ -1417,11 +1460,13 @@ export const useCreateQuizAiForm = ({
       }
 
       // Chỉ gửi cấu trúc khi user đã xem/chỉnh "Detailed configuration" — không gọi preview API khi Generate.
-      const structureJson = buildStructureJsonPayload(
-        structurePreview,
-        isStructureEditing,
-        editableStructureItems,
-      ) || "";
+      const structureJson = hasAdvanceQuizConfig
+        ? buildStructureJsonPayload(
+            structurePreview,
+            isStructureEditing,
+            editableStructureItems,
+          ) || ""
+        : "";
 
       console.log("[AI Quiz][Generate] structureJson:", structureJson);
 
@@ -1507,6 +1552,7 @@ export const useCreateQuizAiForm = ({
     isStructureEditing,
     editableStructureItems,
     existingQuizId,
+    hasAdvanceQuizConfig,
     t,
   ]);
 

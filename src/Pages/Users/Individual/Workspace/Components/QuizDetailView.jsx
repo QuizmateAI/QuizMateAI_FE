@@ -5,18 +5,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare, Trophy, Eye, Lock, Pencil, Copy,
+  Share2, UserPlus, MessageSquare, Eye, Lock, Pencil, Copy,
 } from "lucide-react";
 import { getCurrentUser } from "@/api/Authentication";
 import { resolveEditRule } from "./resolveEditRule";
-import ConfirmDuplicateDialog from "./ConfirmDuplicateDialog";
-import EditChoiceDialog from "./EditChoiceDialog";
-import QuizMetadataEditModal from "./QuizMetadataEditModal";
 import { duplicateQuiz, updateQuiz } from "@/api/QuizAPI";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/Components/ui/dropdown-menu";
 import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory,
   getGroupQuizHistory,
@@ -30,7 +33,6 @@ import UserDisplayName from "@/Components/users/UserDisplayName";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
 import GroupDiscussionPanel from "@/Pages/Users/Group/Components/GroupDiscussionPanel";
 import QuestionDiscussionDialog from "@/Pages/Users/Group/Components/QuestionDiscussionDialog";
-import GroupQuizRankingPanel from "@/Pages/Users/Group/Components/GroupQuizRankingPanel";
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
@@ -39,6 +41,7 @@ import {
   buildQuizResultPath,
   isWorkspaceRoadmapsPath,
 } from "@/lib/routePaths";
+import CommunityQuizSignals from "@/Pages/Users/Quiz/components/CommunityQuizSignals";
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
 const quizDetailCache = new Map();
@@ -91,6 +94,18 @@ function formatDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function getAttemptHistoryDate(attempt) {
+  return formatDate(attempt?.startedAt || attempt?.completedAt || attempt?.updatedAt || attempt?.createdAt);
+}
+
+function sortAttemptHistory(attempts) {
+  return attempts.slice().sort((left, right) => {
+    const leftTime = new Date(left?.startedAt || left?.completedAt || left?.updatedAt || left?.createdAt || 0).getTime();
+    const rightTime = new Date(right?.startedAt || right?.completedAt || right?.updatedAt || right?.createdAt || 0).getTime();
+    return rightTime - leftTime;
+  });
 }
 
 function getDurationInMinutes(quiz) {
@@ -215,6 +230,8 @@ function QuizDetailView({
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [communityDetailOpen, setCommunityDetailOpen] = useState(false);
+  const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
   const detailRequestRunRef = React.useRef(0);
   const attemptHistoryProbeKeyRef = React.useRef(null);
   const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false);
@@ -334,17 +351,15 @@ function QuizDetailView({
       let nextQuestionsMap = {};
       let nextAnswersMap = {};
 
-      // Nếu quiz chỉ có quizId (thiếu metadata như khi back từ kết quả), fetch thông tin đầy đủ
-      if (!quiz?.title) {
-        try {
-          const fullRes = await getQuizFull(quiz.quizId);
-          if (fullRes?.data) {
-            nextQuizMeta = fullRes.data;
-            nextStatus = fullRes.data.status || "DRAFT";
-          }
-        } catch (fullErr) {
-          console.error("Lỗi khi tải metadata quiz:", fullErr);
+      // Luôn đồng bộ metadata/status mới nhất để tránh giữ trạng thái cũ từ prop.
+      try {
+        const fullRes = await getQuizFull(quiz.quizId);
+        if (fullRes?.data) {
+          nextQuizMeta = fullRes.data;
+          nextStatus = fullRes.data.status || nextStatus;
         }
+      } catch (fullErr) {
+        console.error("Lỗi khi tải metadata quiz:", fullErr);
       }
 
       // Bước 1: Lấy sections
@@ -522,6 +537,9 @@ function QuizDetailView({
   };
 
   const effectiveQuiz = quizMeta || quiz;
+  const communitySourceQuizId = Number(effectiveQuiz?.communitySourceQuizId);
+  const isCommunityClone = Number.isInteger(communitySourceQuizId) && communitySourceQuizId > 0;
+  const showCommunitySignals = effectiveQuiz?.communityShared === true || isCommunityClone;
   const effectiveContextType = String(effectiveQuiz?.contextType || "").toUpperCase();
   const isRoadmapRouteSource = isWorkspaceRoadmapsPath(location.pathname);
   const isRoadmapQuizByData = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(effectiveContextType)
@@ -609,19 +627,11 @@ function QuizDetailView({
     };
   }, [audienceOpen, _contextId, groupAudiencePickerExcludeUserId]);
 
-  // Bước 1: Leader nhấn Xuất bản → mở dialog hỏi có tham gia ranking không
-  const handlePublishGroupQuiz = useCallback(() => {
+  const handlePublishGroupQuiz = useCallback(async () => {
     if (!quiz?.quizId) return;
-    setLeaderParticipationOpen(true);
-  }, [quiz?.quizId]);
-
-  // Bước 2a: Leader KHÔNG tham gia ranking → xuất bản trực tiếp
-  const handlePublishDirect = useCallback(async () => {
-    if (!quiz?.quizId) return;
-    setLeaderParticipationOpen(false);
     setPublishing(true);
     try {
-      const res = await publishGroupQuiz(quiz.quizId, { leaderJoinsRanking: false });
+      const res = await publishGroupQuiz(quiz.quizId);
       const next = unwrapApiData(res);
       if (next?.status) setCurrentStatus(next.status);
       setQuizMeta((m) => ({ ...(m || {}), ...next }));
@@ -635,38 +645,6 @@ function QuizDetailView({
       setPublishing(false);
     }
   }, [quiz?.quizId, fetchFullDetail, onGroupQuizUpdated, t]);
-
-  // Bước 2b: Leader THAM GIA ranking → xuất bản với cờ leaderJoinsRanking=true
-  //          Backend giữ quiz ở trạng thái PENDING_LEADER (hoặc DRAFT) cho đến khi leader hoàn thành.
-  //          FE sau khi publish → điều hướng leader làm bài ngay.
-  const handlePublishWithRanking = useCallback(async () => {
-    if (!quiz?.quizId) return;
-    setLeaderParticipationOpen(false);
-    setPublishing(true);
-    try {
-      const res = await publishGroupQuiz(quiz.quizId, { leaderJoinsRanking: true });
-      const next = unwrapApiData(res);
-      if (next?.status) setCurrentStatus(next.status);
-      setQuizMeta((m) => ({ ...(m || {}), ...next }));
-      onGroupQuizUpdated?.(next);
-      quizDetailCache.clear();
-      await fetchFullDetail();
-      // Điều hướng leader vào làm bài — khi hoàn thành backend sẽ tự kích hoạt quiz
-      const attemptPath = buildQuizAttemptPath("exam", quiz.quizId);
-      navigate(attemptPath, {
-        state: {
-          returnToQuizPath: location.pathname + location.search,
-          workspaceId: _contextId,
-          leaderRankingAttempt: true,
-        },
-      });
-    } catch (err) {
-      console.error(err);
-      window.alert(err?.message || t("workspace.quiz.detail.publishFailed", "Could not publish quiz."));
-    } finally {
-      setPublishing(false);
-    }
-  }, [quiz?.quizId, _contextId, fetchFullDetail, location, navigate, onGroupQuizUpdated, t]);
 
   const handleSaveAudience = useCallback(async () => {
     if (!quiz?.quizId) return;
@@ -697,14 +675,6 @@ function QuizDetailView({
   const handleActivateWorkspaceQuiz = useCallback(async () => {
     const quizId = effectiveQuiz?.quizId;
     if (!quizId) return;
-
-    const confirmed = window.confirm(
-      t(
-        "workspace.quiz.detail.activateConfirm",
-        "Kích hoạt quiz này? Sau khi kích hoạt, người dùng có thể làm bài. Bạn vẫn có thể chỉnh sửa tự do cho đến khi có attempt đầu tiên.",
-      ),
-    );
-    if (!confirmed) return;
 
     setActivating(true);
     try {
@@ -768,8 +738,7 @@ function QuizDetailView({
     && isCreator
     && String(currentStatus || "").toUpperCase() === "DRAFT"
     && !challengeSnapshotReviewMode;
-
-  const handleDuplicate = useCallback(async () => {
+  useCallback(async () => {
     const quizId = effectiveQuiz?.quizId;
     if (!quizId) return;
     const res = await duplicateQuiz(quizId);
@@ -779,7 +748,6 @@ function QuizDetailView({
     setConfirmDuplicateOpen(false);
     onEdit?.(newQuiz);
   }, [effectiveQuiz?.quizId, queryClient, onEdit]);
-
   const handleEditClick = useCallback(() => {
     if (editRule === "EDIT_IN_PLACE") {
       onEdit?.(effectiveQuiz);
@@ -892,9 +860,7 @@ function QuizDetailView({
     );
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
   const groupMemberCanOpenQuestions = _contextType !== "GROUP" || isGroupLeader || hasCurrentUserCompletedQuiz;
-  const showQuestionsTab = !isChallengeSnapshotReview && groupMemberCanOpenQuestions;
-  // Ranking tab: GROUP + ACTIVE + leader + not challenge snapshot
-  const showRankingTab = _contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview;
+  const showQuestionsTab = !fairPlayRestricts && !isChallengeSnapshotReview && groupMemberCanOpenQuestions;
 
   const snapshotReviewPreferCheckTabRef = React.useRef(false);
   useEffect(() => {
@@ -919,10 +885,13 @@ function QuizDetailView({
     if (!showGroupReviewTab && activeTab === "review") {
       setActiveTab("overview");
     }
-    if (!showRankingTab && activeTab === "ranking") {
+    if (fairPlayRestricts && (activeTab === "history" || activeTab === "discussion")) {
       setActiveTab("overview");
     }
-  }, [showQuestionsTab, showGroupReviewTab, showRankingTab, activeTab]);
+    if (activeTab === "ranking") {
+      setActiveTab("overview");
+    }
+  }, [showQuestionsTab, showGroupReviewTab, fairPlayRestricts, activeTab]);
 
   useEffect(() => {
     if (isChallengeSnapshotReview && activeTab === "history") {
@@ -945,7 +914,9 @@ function QuizDetailView({
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Nút Edit — chỉ hiển thị cho creator, scope cá nhân */}
-          {canShowEditButton && (
+          {canShowEditButton
+            && String(effectiveQuiz?.createVia || "").toUpperCase() !== "AI"
+            && String(currentStatus || "").toUpperCase() !== "ACTIVE" && (
             <div className="relative group/edit">
               <Button
                 variant="outline"
@@ -971,8 +942,8 @@ function QuizDetailView({
               )}
             </div>
           )}
-          {/* Nút Tạo quiz tương tự — chỉ dành cho manual quiz */}
-          {canShowDuplicateButton && (
+          {/* Nút sao chép để chỉnh sửa: ẩn ở DRAFT để tránh dư action, chỉ dùng khi quiz đã active / có lịch sử phù hợp */}
+          {canShowDuplicateButton && String(currentStatus || "").toUpperCase() !== "DRAFT" && (
             <Button
               variant="outline"
               onClick={() => onCreateSimilar(effectiveQuiz)}
@@ -984,7 +955,7 @@ function QuizDetailView({
               )}
               >
                 <Copy className="w-4 h-4" />
-                <span className="text-sm">{t("workspace.quiz.detail.createSimilar", "Tạo tương tự")}</span>
+                <span className="text-sm">{t("workspace.quiz.detail.duplicate.button", "Sao chép để chỉnh sửa")}</span>
             </Button>
           )}
           {canActivateManualDraftQuiz && (
@@ -994,7 +965,7 @@ function QuizDetailView({
               onClick={handleActivateWorkspaceQuiz}
             >
               {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              <span className="text-sm">{t("workspace.quiz.detail.activateQuiz", "Kích hoạt quiz")}</span>
+              <span className="text-sm">{t("workspace.quiz.detail.confirmActivateQuiz", "Xác nhận & kích hoạt")}</span>
             </Button>
           )}
           {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "DRAFT" && (
@@ -1007,7 +978,7 @@ function QuizDetailView({
               <span className="text-sm">{t("workspace.quiz.publish", "Publish")}</span>
             </Button>
           )}
-          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview && (
+          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !challengeSnapshotReviewMode && !fairPlayRestricts && (
             <Button
               variant="outline"
               className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-600 text-slate-100" : ""}`}
@@ -1019,52 +990,6 @@ function QuizDetailView({
           )}
         </div>
       </div>
-
-      {canActivateManualDraftQuiz && (
-        <div className="px-4 pb-3 pt-1">
-          <div
-            className={`relative overflow-hidden rounded-2xl border shadow-sm ${
-              isDarkMode
-                ? "border-slate-700/80 bg-gradient-to-br from-slate-900/95 via-slate-900 to-emerald-950/35"
-                : "border-slate-200/90 bg-gradient-to-br from-white via-slate-50/90 to-emerald-50/70"
-            }`}
-          >
-            <div
-              className={`pointer-events-none absolute inset-y-0 left-0 w-1 ${
-                isDarkMode ? "bg-gradient-to-b from-emerald-400/90 to-teal-500/80" : "bg-gradient-to-b from-emerald-500 to-teal-500"
-              }`}
-              aria-hidden
-            />
-            <div className="flex gap-3.5 pl-5 pr-4 py-4">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                  isDarkMode ? "bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-400/20" : "bg-emerald-100 text-emerald-600 ring-1 ring-emerald-200/80"
-                }`}
-              >
-                <Play className="h-5 w-5" strokeWidth={2} />
-              </div>
-              <div className="min-w-0 flex-1 space-y-2">
-                <p className={`text-[13px] font-semibold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                  Quiz này đang ở trạng thái bản nháp
-                </p>
-                <p className={`text-[13px] leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                  Bạn có thể tiếp tục chỉnh sửa thoải mái khi quiz chưa có attempt. Khi đã sẵn sàng cho người dùng làm bài, hãy kích hoạt quiz.
-                </p>
-                <div className="flex flex-wrap gap-2 pt-0.5">
-                  <Button
-                    disabled={activating}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
-                    onClick={handleActivateWorkspaceQuiz}
-                  >
-                    {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                    <span className="text-sm">{t("workspace.quiz.detail.confirmActivateQuiz", "Xác nhận & kích hoạt")}</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {_contextType === "GROUP" && String(currentStatus || "").toUpperCase() === "DRAFT" && (
         <div className="px-4 pb-3 pt-1">
@@ -1180,7 +1105,7 @@ function QuizDetailView({
             <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Câu hỏi")}
           </button>
         )}
-        {!isChallengeSnapshotReview && (
+        {!isChallengeSnapshotReview && !fairPlayRestricts && (
           <button
             type="button"
             onClick={() => setActiveTab("history")}
@@ -1193,7 +1118,7 @@ function QuizDetailView({
             <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
           </button>
         )}
-        {_contextType === "GROUP" && !isChallengeSnapshotReview && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
+        {_contextType === "GROUP" && !isChallengeSnapshotReview && !fairPlayRestricts && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
           <button
             type="button"
             onClick={() => setActiveTab("discussion")}
@@ -1204,19 +1129,6 @@ function QuizDetailView({
             }`}
           >
             <MessageSquare className="w-4 h-4" /> {t("quizDetailView.tabs.discussion", "Discussion")}
-          </button>
-        )}
-        {showRankingTab && (
-          <button
-            type="button"
-            onClick={() => setActiveTab("ranking")}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === "ranking"
-                ? "border-yellow-500 text-yellow-600 dark:text-yellow-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
-            }`}
-          >
-            <Trophy className="w-4 h-4" /> {t("quizDetailView.tabs.ranking", "Ranking")}
           </button>
         )}
       </div>
@@ -1237,17 +1149,6 @@ function QuizDetailView({
         </div>
       )}
 
-      {/* Tab Xếp hạng — per-quiz ranking */}
-      {activeTab === "ranking" && showRankingTab && (
-        <div className="flex-1 min-h-0 overflow-y-auto p-4">
-          <GroupQuizRankingPanel
-            workspaceId={_contextId}
-            quizId={quiz?.quizId}
-            isDarkMode={isDarkMode}
-          />
-        </div>
-      )}
-
       {/* Nội dung chi tiết (các tab khác) */}
       {activeTab !== "discussion" && (
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -1263,6 +1164,7 @@ function QuizDetailView({
             workspaceId={_contextId}
             isLeader={isGroupLeader}
             isReviewer={challengeSnapshotReviewMode && !isGroupLeader}
+            onQuestionDeleted={fetchFullDetail}
           />
         )}
 
@@ -1327,8 +1229,52 @@ function QuizDetailView({
                 )}
               </div>
 
+              {showCommunitySignals ? (
+                <div className={`mb-4 rounded-3xl border px-4 py-4 ${
+                  isDarkMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-blue-50/60"
+                }`}>
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                        {t("workspace.quiz.communityDetail.summaryTitle", "Community signals")}
+                      </p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                        {effectiveQuiz?.communityShared === true
+                          ? t("workspace.quiz.communityDetail.ownerSummary", "Theo dõi feedback và discussion công khai của quiz bạn đã chia sẻ.")
+                          : t("workspace.quiz.communityDetail.cloneSummary", "Xem rating và discussion gốc của community quiz này, rồi gửi feedback sau khi làm xong bản clone của bạn.")}
+                      </p>
+                    </div>
+                    <CommunityQuizSignals
+                      cloneCount={effectiveQuiz?.communityCloneCount}
+                      averageRating={effectiveQuiz?.communityAverageRating}
+                      ratingCount={effectiveQuiz?.communityRatingCount}
+                      commentCount={effectiveQuiz?.communityCommentCount}
+                      isDarkMode={isDarkMode}
+                      t={t}
+                    />
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" onClick={() => setCommunityDetailOpen(true)}>
+                      <MessageSquare className="h-4 w-4" />
+                      <span>{t("workspace.quiz.communityDetail.openCommunity", "Open community detail")}</span>
+                    </Button>
+                    {isCommunityClone && hasCurrentUserCompletedQuiz ? (
+                      <Button type="button" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => setCommunityFeedbackOpen(true)}>
+                        <Star className="h-4 w-4" />
+                        <span>
+                          {effectiveQuiz?.communityFeedbackSubmitted
+                            ? t("workspace.quiz.communityDetail.updateFeedback", "Update community feedback")
+                            : t("workspace.quiz.communityDetail.leaveFeedback", "Leave community feedback")}
+                        </span>
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Action Buttons in Overview — quiz challenge snapshot: không làm bài từ đây */}
-              {isActiveQuiz && !isChallengeSnapshotReview && (
+              {isActiveQuiz && !isChallengeSnapshotReview && !fairPlayRestricts && (
                 <div className={`mt-4 pt-4 border-t flex flex-row items-center gap-3 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
                   {!isRoadmapQuizSource && (
                     <div className="flex flex-1 flex-col gap-1">
@@ -1708,42 +1654,143 @@ function QuizDetailView({
                     }
                     byMember[key].attempts.push(attempt);
                   });
-                  return Object.entries(byMember).map(([memberId, { name, user, avatar, attempts: memberAttempts }]) => (
-                    <div key={memberId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-slate-200 bg-white"}`}>
-                      {/* Member header */}
-                      <div className={`px-4 py-2.5 flex items-center gap-2 border-b ${isDarkMode ? "bg-slate-800/60 border-slate-700/60" : "bg-slate-50 border-slate-100"}`}>
-                        <HistoryMemberAvatar src={avatar} name={name} isDarkMode={isDarkMode} />
-                        <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                          <UserDisplayName user={user} fallback={name} isDarkMode={isDarkMode} />
-                        </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
-                          {t("quizDetailView.history.attemptCount", "{{count}} attempts", { count: memberAttempts.length })}
-                        </span>
-                      </div>
-                      {/* Member's attempts */}
-                      <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                        {memberAttempts.map((attempt) => (
-                          <div key={attempt.attemptId} className={`px-4 py-3 flex items-center justify-between transition-colors cursor-pointer ${isDarkMode ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}
-                            onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
-                            <div className="flex items-center gap-3">
-                              <div className={`p-1.5 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
-                                {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                  return Object.entries(byMember).map(([memberId, { name, user, avatar, attempts: memberAttempts }]) => {
+                    const sortedMemberAttempts = sortAttemptHistory(memberAttempts);
+                    const latestAttempt = sortedMemberAttempts[0];
+                    const shouldUseAttemptDropdown = sortedMemberAttempts.length >= 3;
+
+                    return (
+                      <div key={memberId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-slate-200 bg-white"}`}>
+                        {/* Member header */}
+                        <div className={`px-4 py-2.5 flex items-center gap-2 border-b ${isDarkMode ? "bg-slate-800/60 border-slate-700/60" : "bg-slate-50 border-slate-100"}`}>
+                          <HistoryMemberAvatar src={avatar} name={name} isDarkMode={isDarkMode} />
+                          <span className={`min-w-0 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                            <UserDisplayName
+                              user={user}
+                              fallback={name}
+                              isDarkMode={isDarkMode}
+                              showUsernameSuffix={false}
+                            />
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
+                            {t("quizDetailView.history.attemptCount", "{{count}} attempts", { count: sortedMemberAttempts.length })}
+                          </span>
+                          {shouldUseAttemptDropdown ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className={`ml-auto h-8 rounded-full px-3 text-xs ${
+                                    isDarkMode
+                                      ? "border-slate-600 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                  }`}
+                                >
+                                  {t("workspace.quiz.history.viewAttempts", "Xem {{count}} lần làm", { count: sortedMemberAttempts.length })}
+                                  <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className={`w-72 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
+                              >
+                                {sortedMemberAttempts.map((attempt) => (
+                                  <DropdownMenuItem
+                                    key={attempt.attemptId}
+                                    className="flex items-center justify-between gap-3 py-2"
+                                    onSelect={() => navigate(buildQuizResultPath(attempt.attemptId), {
+                                      state: {
+                                        quizId: effectiveQuiz?.quizId,
+                                        returnToQuizPath: `${location.pathname}${location.search || ""}`,
+                                        ...resultSourceState,
+                                      },
+                                    })}
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="truncate text-xs font-medium">
+                                        {getAttemptHistoryDate(attempt)}
+                                      </p>
+                                      <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                                        {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
+                                      </p>
+                                    </div>
+                                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] ${
+                                      isDarkMode ? "bg-emerald-900/30 text-emerald-300" : "bg-emerald-100 text-emerald-700"
+                                    }`}>
+                                      {t("workspace.quiz.review", "Kiểm tra")}
+                                    </span>
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : null}
+                        </div>
+                        {shouldUseAttemptDropdown ? (
+                          latestAttempt ? (
+                            <div
+                              className={`px-4 py-3 flex items-center justify-between transition-colors cursor-pointer ${isDarkMode ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}
+                              onClick={() => navigate(buildQuizResultPath(latestAttempt.attemptId), {
+                                state: {
+                                  quizId: effectiveQuiz?.quizId,
+                                  returnToQuizPath: `${location.pathname}${location.search || ""}`,
+                                  ...resultSourceState,
+                                },
+                              })}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`p-1.5 rounded-lg ${latestAttempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
+                                  {latestAttempt.status === 'COMPLETED' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                </div>
+                                <div>
+                                  <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                                    {getAttemptHistoryDate(latestAttempt)}
+                                  </p>
+                                  <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                                    {t("workspace.quiz.history.latestAttempt", "Lần gần nhất")}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                                  {t("workspace.quiz.history.attempt", "Attempt")} #{attempt.attemptId}
-                                </p>
-                                <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatDate(attempt.startedAt)}</p>
-                              </div>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-md ${latestAttempt.isPracticeMode ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")}`}>
+                                {latestAttempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
+                              </span>
                             </div>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-md ${attempt.isPracticeMode ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")}`}>
-                              {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
-                            </span>
+                          ) : null
+                        ) : (
+                          <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                            {sortedMemberAttempts.map((attempt) => (
+                              <div
+                                key={attempt.attemptId}
+                                className={`px-4 py-3 flex items-center justify-between transition-colors cursor-pointer ${isDarkMode ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}
+                                onClick={() => navigate(buildQuizResultPath(attempt.attemptId), {
+                                  state: {
+                                    quizId: effectiveQuiz?.quizId,
+                                    returnToQuizPath: `${location.pathname}${location.search || ""}`,
+                                    ...resultSourceState,
+                                  },
+                                })}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`p-1.5 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
+                                    {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                  </div>
+                                  <div>
+                                    <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                                      {getAttemptHistoryDate(attempt)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-md ${attempt.isPracticeMode ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")}`}>
+                                  {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
-                    </div>
-                  ));
+                    );
+                  });
                 })() : (
                   /* Member: own attempts */
                   history.map((attempt) => (
@@ -1757,11 +1804,8 @@ function QuizDetailView({
                           </div>
                           <div>
                             <h4 className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                              {t("workspace.quiz.history.attempt", "Attempt")} #{attempt.attemptId}
+                              {getAttemptHistoryDate(attempt)}
                             </h4>
-                            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                              {formatDate(attempt.startedAt)}
-                            </p>
                           </div>
                         </div>
                         <div className="flex gap-2 justify-end">
@@ -2034,67 +2078,6 @@ function QuizDetailView({
         </DialogContent>
       </Dialog>
 
-      {/* Leader Participation Dialog — xuất bản quiz: có tham gia ranking không? */}
-      <Dialog open={leaderParticipationOpen} onOpenChange={setLeaderParticipationOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span className="text-xl">🏆</span>
-              {t("quizDetailView.leaderParticipation.title", "Do you want to join the ranking?")}
-            </DialogTitle>
-            <DialogDescription className="space-y-3 pt-1">
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                {t("quizDetailView.leaderParticipation.description", "Choose the leader's participation mode before publishing the quiz to the group.")}
-              </p>
-              <div className="space-y-2">
-                <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-[#BFDBFE] bg-[#EFF6FF]/60"}`}>
-                  <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-100" : "text-[#0455BF]"}`}>
-                    ✅ {t("quizDetailView.leaderParticipation.joinTitle", "Join ranking")}
-                  </p>
-                  <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    {t("quizDetailView.leaderParticipation.joinDescription", "The leader takes the quiz first. Once completed, the quiz will be activated for members. The leader's score will count toward the ranking.")}
-                  </p>
-                </div>
-                <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40" : "border-gray-200 bg-gray-50"}`}>
-                  <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
-                    ⏭️ {t("quizDetailView.leaderParticipation.skipTitle", "Do not join")}
-                  </p>
-                  <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    {t("quizDetailView.leaderParticipation.skipDescription", "Publish immediately to members. The leader can still take the quiz, but the result will not count toward the ranking.")}
-                  </p>
-                </div>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex gap-2 flex-col sm:flex-row">
-            <Button
-              variant="outline"
-              onClick={() => setLeaderParticipationOpen(false)}
-              disabled={publishing}
-              className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
-            >
-              {t("quizDetailView.leaderParticipation.cancel", "Cancel")}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handlePublishDirect}
-              disabled={publishing}
-              className={isDarkMode ? "border-slate-600 text-slate-200" : "border-gray-300"}
-            >
-              {t("quizDetailView.leaderParticipation.skipButton", "Do not join")}
-            </Button>
-            <Button
-              onClick={handlePublishWithRanking}
-              disabled={publishing}
-              className="bg-[#0455BF] hover:bg-blue-700 text-white"
-            >
-              {publishing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              {t("quizDetailView.leaderParticipation.joinButton", "Join ranking & take quiz")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={examStartOpen} onOpenChange={setExamStartOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -2118,36 +2101,6 @@ function QuizDetailView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Confirm/Edit Dialog — mở khi editRule === REQUIRES_DUPLICATE */}
-      {isManualQuiz ? (
-        <EditChoiceDialog
-          open={confirmDuplicateOpen}
-          onClose={() => setConfirmDuplicateOpen(false)}
-          onDuplicate={handleDuplicate}
-          onEditMetadata={() => {
-            setConfirmDuplicateOpen(false);
-            setMetadataEditOpen(true);
-          }}
-          quiz={effectiveQuiz}
-          isDarkMode={isDarkMode}
-        />
-      ) : (
-        <ConfirmDuplicateDialog
-          open={confirmDuplicateOpen}
-          onClose={() => setConfirmDuplicateOpen(false)}
-          onConfirm={handleDuplicate}
-          quiz={effectiveQuiz}
-          isDarkMode={isDarkMode}
-        />
-      )}
-      {/* Metadata edit modal — chỉ cho manual quiz */}
-      <QuizMetadataEditModal
-        open={metadataEditOpen}
-        onClose={() => setMetadataEditOpen(false)}
-        quiz={effectiveQuiz}
-        onSaved={handleMetadataSaved}
-        isDarkMode={isDarkMode}
-      />
     </div>
   );
 }

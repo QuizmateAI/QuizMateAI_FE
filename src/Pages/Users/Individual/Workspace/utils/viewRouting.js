@@ -21,6 +21,7 @@ export const VIEW_TO_PATH = {
 	postLearning: postLearnings,
 	createQuiz: `${quizzes}/create`,
 	createFlashcard: `${flashcards}/create`,
+	createManualFlashcard: `${flashcards}/create-manual`,
 	createMockTest: `${mockTests}/create`,
 	createPostLearning: `${postLearnings}/create`,
 };

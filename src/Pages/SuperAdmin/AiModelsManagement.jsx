@@ -4,7 +4,6 @@ import {
   Archive,
   Bot,
   Coins,
-  Cpu,
   DollarSign,
   MoreHorizontal,
   Pencil,
@@ -64,6 +63,10 @@ import {
   getAiModelGroupMeta,
 } from '@/lib/aiModelCatalog';
 import { cn } from '@/lib/utils';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from './Components/SuperAdminSurface';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 
@@ -229,7 +232,7 @@ function AiModelsManagement() {
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
 
-  const canWrite = !permLoading && permissions.has('system-settings:write');
+  const canWrite = !permLoading && permissions.has('ai-model:write');
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -455,39 +458,34 @@ function AiModelsManagement() {
   };
 
   return (
-    <div className={`space-y-6 p-6 ${fontClass}`}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-3">
-          <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
-            <Cpu className={`h-6 w-6 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`} />
-          </div>
-          <div>
-            <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('aiModels.title')}</h1>
-            <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.subtitle')}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={fetchModels}
-            disabled={loading}
-            className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
-            aria-label={t('aiModels.refresh')}
-            title={t('aiModels.refresh')}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-          {canWrite ? (
-            <Button onClick={openCreateForm} className="bg-gradient-to-r from-sky-600 to-blue-600 text-white hover:from-sky-700 hover:to-blue-700">
-              <Plus className="mr-2 h-4 w-4" />
-              {t('aiModels.add')}
+    <SuperAdminPage className={fontClass}>
+      <SuperAdminPageHeader
+        eyebrow="AI Governance"
+        title={t('aiModels.title')}
+        description={t('aiModels.subtitle')}
+        actions={(
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={fetchModels}
+              disabled={loading}
+              className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              aria-label={t('aiModels.refresh')}
+              title={t('aiModels.refresh')}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
-          ) : null}
-        </div>
-      </div>
+            {canWrite ? (
+              <Button onClick={openCreateForm} className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('aiModels.add')}
+              </Button>
+            ) : null}
+          </>
+        )}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label={t('aiModels.stats.total')} value={models.length} icon={Bot} tone="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300" isDarkMode={isDarkMode} subtext={t('aiModels.stats.totalHint')} />
@@ -1028,7 +1026,7 @@ function AiModelsManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </SuperAdminPage>
   );
 }
 

@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
 import PaymentResultPage from "@/Pages/Payment/PaymentResultPage";
 import { getPurchasablePlans } from "@/api/PaymentAPI";
+import { getPaymentByOrderId } from "@/api/ManagementSystemAPI";
 
 let mockQuery = "";
 const mockNavigate = vi.fn();
@@ -10,6 +11,15 @@ const mockNavigateWithLoading = vi.fn();
 
 vi.mock("@/api/PaymentAPI", () => ({
   getPurchasablePlans: vi.fn(),
+}));
+
+vi.mock("@/api/ManagementSystemAPI", () => ({
+  getPaymentByOrderId: vi.fn(),
+}));
+
+vi.mock("@/hooks/useCurrentSubscription", () => ({
+  createPlanSummaryFromPurchase: () => null,
+  useCurrentSubscription: () => ({ summary: null }),
 }));
 
 vi.mock("@/hooks/useDarkMode", () => ({
@@ -55,11 +65,14 @@ vi.mock("react-i18next", () => ({
         "paymentResult.orderId": "Order ID",
         "paymentResult.transId": "Transaction ID",
         "paymentResult.amount": "Amount",
+        "paymentResult.gatewayCurrency": "Gateway currency",
         "paymentResult.orderInfo": "Order Info",
         "paymentResult.payType": "Payment Type",
         "paymentResult.time": "Time",
         "paymentResult.details": "Details",
+        "paymentResult.backendRejected": "Payment was rejected by backend",
         "payment.backToPlans": "Back to plans",
+        "payment.processing": "Processing",
       };
       return map[key] || key;
     },
@@ -74,6 +87,11 @@ describe("Payment test cases execution", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockQuery = "";
+    getPaymentByOrderId.mockResolvedValue({ data: null });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("TC_PAY_01: shows purchasable plans with expected values", async () => {
@@ -112,15 +130,26 @@ describe("Payment test cases execution", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/payments?planId=7&workspaceId=123");
   });
 
-  it("TC_PAY_03: shows success result details from payment callback params", async () => {
-    mockQuery = "status=success&orderId=ORD123&amount=100000&transId=TX999&payType=qr&responseTime=1736206800000";
+  it("TC_PAY_03: shows success result details from verified backend payment record", async () => {
+    mockQuery = "status=success&orderId=ORD123&amount=100000&transId=QUERY-TX&payType=qr&responseTime=1736206800000";
+    getPaymentByOrderId.mockResolvedValue({
+      data: {
+        orderId: "ORD123",
+        paymentStatus: "COMPLETED",
+        amount: 100000,
+        gatewayTransactionId: "TX999",
+        gatewayCurrency: "VND",
+        gatewayVerifiedAt: "2026-04-24T03:00:00.000Z",
+      },
+    });
 
     render(<PaymentResultPage />);
 
-    expect(screen.getByText("Payment Successful")).toBeInTheDocument();
+    expect(await screen.findByText("Payment Successful")).toBeInTheDocument();
     expect(screen.getByText("ORD123")).toBeInTheDocument();
     expect(screen.getByText("TX999")).toBeInTheDocument();
     expect(screen.getByText("100.000₫")).toBeInTheDocument();
+    expect(screen.getByText("VND")).toBeInTheDocument();
     expect(screen.getByText("QR Code")).toBeInTheDocument();
   });
 
@@ -132,5 +161,49 @@ describe("Payment test cases execution", () => {
     await waitFor(() => {
       expect(screen.getByText("Payment Failed")).toBeInTheDocument();
     });
+  });
+
+  it("TC_PAY_04: polls pending payment result until backend marks it completed", async () => {
+    vi.useFakeTimers();
+    mockQuery = "status=success&orderId=ORD-POLL&amount=100000";
+    getPaymentByOrderId
+      .mockResolvedValueOnce({
+        data: { orderId: "ORD-POLL", paymentStatus: "PENDING", amount: 100000 },
+      })
+      .mockResolvedValueOnce({
+        data: { orderId: "ORD-POLL", paymentStatus: "COMPLETED", amount: 100000 },
+      });
+
+    render(<PaymentResultPage />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(getPaymentByOrderId).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText("Processing").length).toBeGreaterThan(0);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+
+    expect(getPaymentByOrderId).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Payment Successful")).toBeInTheDocument();
+  });
+
+  it("TC_PAY_05: shows failed result when backend rejects a gateway success callback", async () => {
+    mockQuery = "status=success&orderId=ORD-MISMATCH&amount=100000&transId=TX-MISMATCH";
+    getPaymentByOrderId.mockResolvedValue({
+      data: {
+        orderId: "ORD-MISMATCH",
+        paymentStatus: "FAILED",
+        amount: 100000,
+      },
+    });
+
+    render(<PaymentResultPage />);
+
+    expect(await screen.findByText("Payment Failed")).toBeInTheDocument();
+    expect(screen.queryByText("Payment Successful")).not.toBeInTheDocument();
   });
 });

@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer, BadgeCheck } from "lucide-react";
-import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
+import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer, BadgeCheck, Trash2 } from "lucide-react";
+import { QUESTION_TYPE_ID_MAP, deleteQuestion } from "@/api/QuizAPI";
 import {
   getMyQuizReviewContributor,
   setQuizReviewCompleteOk,
@@ -36,14 +36,18 @@ function GroupQuizReviewPanel({
   workspaceId,
   isLeader = false,
   isReviewer = false,
+  onQuestionDeleted,
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [reviewCompleteOkAt, setReviewCompleteOkAt] = useState(null);
   const [ackLoading, setAckLoading] = useState(false);
   const [confirmReviewOpen, setConfirmReviewOpen] = useState(false);
+  const [deleteLoadingQuestionId, setDeleteLoadingQuestionId] = useState(null);
+  const [pendingDeleteQuestion, setPendingDeleteQuestion] = useState(null);
 
   const canInteract = isLeader || isReviewer;
+  const canDeleteQuestions = isLeader || isReviewer;
 
   const fetchMyReviewRow = useCallback(async () => {
     if (!quizId || !workspaceId || !isReviewer) return;
@@ -83,6 +87,22 @@ function GroupQuizReviewPanel({
       setAckLoading(false);
     }
   }, [quizId, workspaceId, isReviewer, invalidateChallengeCaches]);
+
+  const confirmDeleteQuestion = useCallback(async () => {
+    const questionId = pendingDeleteQuestion?.questionId;
+    if (!questionId) return;
+    setDeleteLoadingQuestionId(questionId);
+    try {
+      await deleteQuestion(questionId);
+      invalidateChallengeCaches();
+      setPendingDeleteQuestion(null);
+      await onQuestionDeleted?.();
+    } catch {
+      /* toast / global */
+    } finally {
+      setDeleteLoadingQuestionId(null);
+    }
+  }, [pendingDeleteQuestion, invalidateChallengeCaches, onQuestionDeleted]);
 
   const flatItems = useMemo(() => {
     const out = [];
@@ -335,10 +355,29 @@ function GroupQuizReviewPanel({
                   {globalIdx + 1}
                 </span>
                 <div className="min-w-0 flex-1 space-y-4">
-                  <p className={`text-[10px] uppercase tracking-wider ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
-                    {t("workspace.quiz.detail.section", "Section")} {sIdx + 1}
-                    {section?.content ? ` · ${section.content}` : ""}
-                  </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className={`text-[10px] uppercase tracking-wider ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+                      {t("workspace.quiz.detail.section", "Section")} {sIdx + 1}
+                      {section?.content ? ` · ${section.content}` : ""}
+                    </p>
+                    {canDeleteQuestions ? (
+                      <button
+                        type="button"
+                        onClick={() => setPendingDeleteQuestion({ questionId: question.questionId, content: question.content })}
+                        disabled={deleteLoadingQuestionId === question.questionId}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors disabled:opacity-50 ${
+                          isDarkMode ? "text-red-300 hover:bg-red-500/15" : "text-red-600 hover:bg-red-50"
+                        }`}
+                      >
+                        {deleteLoadingQuestionId === question.questionId ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                        {t("workspace.quiz.reviewDeleteQuestion", "Xóa câu hỏi")}
+                      </button>
+                    ) : null}
+                  </div>
                   <div
                     className={`whitespace-pre-wrap text-sm font-medium leading-relaxed ${
                       isDarkMode ? "text-slate-100" : "text-gray-900"
@@ -466,6 +505,51 @@ function GroupQuizReviewPanel({
             >
               {ackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {t("workspace.quiz.reviewQuizOkConfirmSubmit", "Xác nhận")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingDeleteQuestion)} onOpenChange={(open) => {
+        if (!open && !deleteLoadingQuestionId) setPendingDeleteQuestion(null);
+      }}>
+        <DialogContent
+          className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}
+          hideClose={false}
+        >
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? "text-white" : ""}>
+              {t("workspace.quiz.reviewDeleteQuestionConfirmTitle", "Xóa câu hỏi này?")}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
+              {t(
+                "workspace.quiz.reviewDeleteQuestionConfirmDescription",
+                "Câu hỏi sẽ bị xóa khỏi đề challenge. Chỉ tiếp tục nếu câu hỏi này thực sự không đạt yêu cầu review.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {pendingDeleteQuestion?.content ? (
+            <div className={`rounded-lg border px-3 py-2 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/70 text-slate-200" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+              <MixedMathText>{pendingDeleteQuestion.content}</MixedMathText>
+            </div>
+          ) : null}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={Boolean(deleteLoadingQuestionId)}
+              onClick={() => setPendingDeleteQuestion(null)}
+            >
+              {t("workspace.quiz.reviewDeleteQuestionConfirmCancel", "Hủy")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={Boolean(deleteLoadingQuestionId)}
+              onClick={() => confirmDeleteQuestion()}
+            >
+              {deleteLoadingQuestionId ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {t("workspace.quiz.reviewDeleteQuestionConfirmSubmit", "Xóa câu hỏi")}
             </Button>
           </DialogFooter>
         </DialogContent>

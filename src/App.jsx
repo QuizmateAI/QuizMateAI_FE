@@ -48,6 +48,8 @@ const CreditPackageManagement = lazy(() => import('./Pages/Admin/CreditPackageMa
 const AdminPaymentManagement = lazy(() => import('./Pages/Admin/AdminPaymentManagement'));
 const SystemSettingManagement = lazy(() => import('./Pages/Admin/SystemSettingManagement'));
 const AiActionPolicyManagement = lazy(() => import('./Pages/Admin/AiActionPolicyManagement'));
+const MyPermissionsPage = lazy(() => import('./Pages/Admin/MyPermissionsPage'));
+const CommunityQuizManagement = lazy(() => import('./Pages/Admin/CommunityQuizManagement'));
 
 // Quiz
 const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
@@ -58,7 +60,9 @@ const QuizResultPage = lazy(() => import('./Pages/Users/Quiz/QuizResultPage'));
 const PaymentPage = lazy(() => import('./Pages/Payment/PaymentPage'));
 const CreditPaymentPage = lazy(() => import('./Pages/Payment/CreditPaymentPage'));
 const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
+const MomoReturnRedirect = lazy(() => import('./Pages/Payment/MomoReturnRedirect'));
 const VnPayReturnRedirect = lazy(() => import('./Pages/Payment/VnPayReturnRedirect'));
+const StripeReturnRedirect = lazy(() => import('./Pages/Payment/StripeReturnRedirect'));
 
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'));
@@ -73,8 +77,11 @@ const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
 const FeedbackManagementLayout = lazy(() => import('./Pages/SuperAdmin/FeedbackManagementLayout'));
 const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagement'));
-const FeedbackTicketManagementPage = lazy(() => import('./Pages/SuperAdmin/FeedbackTicketManagementPage'));
 const FeedbackResponseActivityPage = lazy(() => import('./Pages/SuperAdmin/FeedbackResponseActivityPage'));
+const PermissionRequestsPage = lazy(() => import('./Pages/SuperAdmin/PermissionRequestsPage'));
+
+// 404
+const NotFoundPage = lazy(() => import('./Pages/NotFound/NotFoundPage'));
 
 function MainRoutes() {
   return (
@@ -83,7 +90,9 @@ function MainRoutes() {
       {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home
       page của role đó */}
       {/* VNPay return: nếu request trúng frontend thay vì backend thì redirect sang backend */}
+      <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
       <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
+      <Route path="/api/stripe/return" element={<StripeReturnRedirect />} />
       <Route path="/accept-invite" element={<AcceptInvitationPage />} />
       <Route path="/pricing" element={<PricingGuidePage />} />
 
@@ -134,6 +143,7 @@ function MainRoutes() {
           <Route index element={<SuperAdminDashboard />} />
           <Route path="admins" element={<AdminManagement />} />
           <Route path="rbac" element={<RbacManagement />} />
+          <Route path="permission-requests" element={<PermissionRequestsPage />} />
           <Route path="ai-providers" element={<AiProvidersOverview />} />
           <Route path="ai-models" element={<AiModelsManagement />} />
           <Route path="ai-costs" element={<AiCostManagement />} />
@@ -142,6 +152,7 @@ function MainRoutes() {
           <Route path="users" element={<UserManagement />} />
           <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
           <Route path="groups" element={<GroupManagement />} />
+          <Route path="community-quizzes" element={<CommunityQuizManagement />} />
             <Route path="plans" element={<PlanManagement />} />
           <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
@@ -150,7 +161,6 @@ function MainRoutes() {
             <Route path="feedbacks" element={<FeedbackManagementLayout />}>
               <Route index element={<Navigate to="forms" replace />} />
               <Route path="forms" element={<FeedbackManagement />} />
-              <Route path="tickets" element={<FeedbackTicketManagementPage />} />
               <Route path="activity" element={<FeedbackResponseActivityPage />} />
             </Route>
         </Route>
@@ -164,12 +174,17 @@ function MainRoutes() {
           <Route path="users" element={<UserManagement />} />
           <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
           <Route path="groups" element={<GroupManagement />} />
+          <Route path="community-quizzes" element={<CommunityQuizManagement />} />
             <Route path="plans" element={<PlanManagement />} />
           <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
           <Route path="system-settings" element={<SystemSettingManagement />} />
+          <Route path="my-permissions" element={<MyPermissionsPage />} />
         </Route>
       </Route>
+
+      {/* Fallback 404 cho mọi route không khớp */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
@@ -226,7 +241,9 @@ function RouteNamespaceGate({ children }) {
 function LaunchRoutes() {
   return (
     <Routes>
+      <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
       <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
+      <Route path="/api/stripe/return" element={<StripeReturnRedirect />} />
       <Route path="*" element={<LaunchingPage />} />
     </Routes>
   );

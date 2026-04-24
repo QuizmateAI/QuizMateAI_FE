@@ -14,7 +14,9 @@
       "create": "Tạo mới",
       "createWorkspace": "Tạo không gian học tập mới",
       "createGroup": "Tạo nhóm",
-      "share": "Chia sẻ"
+      "share": "Chia sẻ",
+      "openGroupCommunity": "Cộng đồng nhóm QuizMate AI",
+      "backToHome": "Về home"
     },
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
@@ -186,6 +188,55 @@
         "GROUP": "Nhóm"
       }
     },
+    "groupHub": {
+      "eyebrow": "Cộng đồng QuizMate AI",
+      "title": "Tìm nhóm học phù hợp với cách bạn muốn học",
+      "subtitle": "Mở cộng đồng nhóm của QuizMate AI để xem mục tiêu chung, nhịp học, và các phần sẵn có trong từng nhóm trước khi quyết định tham gia.",
+      "public": "Công khai",
+      "joined": "Đã tham gia",
+      "join": "Tham gia nhóm",
+      "joining": "Đang tham gia...",
+      "full": "Hết slot",
+      "joinSuccess": "Đã tham gia nhóm thành công.",
+      "joinError": "Không thể tham gia nhóm này.",
+      "emptyTitle": "Chưa có nhóm public nào",
+      "emptyDescription": "Khi có nhóm mở công khai, bạn sẽ xem được thông tin và tham gia trực tiếp từ đây.",
+      "emptyCardDescription": "Nhóm này chưa thêm mô tả ngắn.",
+      "noResultsDescription": "Thử đổi từ khóa theo mục tiêu, lĩnh vực hoặc kỳ thi.",
+      "requirementsTitle": "Nhóm này đang cần gì",
+      "sectionsTitle": "Các phần đang có",
+      "sharedPace": "Nhịp học chung",
+      "fallbackNeed": "Phù hợp cho vai trò {{role}} với nhịp học {{mode}}.",
+      "createdBy": "Tạo bởi {{owner}}",
+      "metrics": {
+        "community": "Nhóm public",
+        "readyToJoin": "Có thể tham gia",
+        "myGroups": "Nhóm của bạn"
+      },
+      "labels": {
+        "goal": "Mục tiêu",
+        "focus": "Trọng tâm",
+        "rules": "Quy ước",
+        "capacity": "Sức chứa",
+        "fit": "Phù hợp với",
+        "meta": "Thông tin nhóm"
+      },
+      "sections": {
+        "discussion": "Discussion",
+        "materials": "Tài liệu",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test"
+      },
+      "emptyPreviewTitle": "Khi có dữ liệu, bạn sẽ xem được",
+      "emptyPreview": {
+        "goal": "Mục tiêu học và hướng đi chung của từng nhóm",
+        "sections": "Các phần chính trong nhóm như roadmap, quiz, tài liệu và discussion",
+        "join": "Nút tham gia trực tiếp nếu nhóm đang mở cho cộng đồng"
+      },
+      "viewDetails": "Xem chi tiết",
+      "capacitySummary": "{{active}} đang học • {{pending}} lời mời còn hiệu lực • còn {{remaining}} trên {{limit}} slot"
+    },
     "pagination": {
       "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",
       "page": "trang"
@@ -322,13 +373,13 @@
       "group": "Nhóm"
     },
     "badges": {
-      "permanent": "Mua vĩnh viễn",
+      "permanent": "Theo thời hạn gói",
       "credits": "Tính theo Credit",
       "transparent": "Minh bạch & rõ ràng"
     },
     "creditModel": {
       "title": "Mô hình Credit cho AI",
-      "desc": "Bạn mua plan một lần, sau đó chỉ cần nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
+      "desc": "Bạn chọn gói phù hợp, sau đó nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
       "cta": "Mở ví Credit",
       "guide": "Xem cách tính Credit"
     },
@@ -428,8 +479,8 @@
       }
     },
     "notes": {
-      "permanentTitle": "Mua một lần, dùng lâu dài",
-      "permanentDesc": "Plan không bắt buộc theo tháng. Tùy cấu hình hệ thống, bạn có thể sở hữu plan dạng vĩnh viễn.",
+      "permanentTitle": "Thời hạn gói rõ ràng",
+      "permanentDesc": "QuizMateAI không có gói mua vĩnh viễn. Mỗi plan có thời hạn và quyền lợi riêng để bạn chọn theo nhu cầu học.",
       "creditsTitle": "AI dùng theo Credit",
       "creditsDesc": "Các tính năng AI chỉ trừ Credit khi bạn thực sự dùng, nên dễ kiểm soát chi phí hơn.",
       "refundTitle": "Thanh toán rõ ràng",
@@ -452,6 +503,9 @@
     "processing": "Đang xử lý...",
     "secureNote": "Giao dịch được bảo mật & mã hóa",
     "momoError": "Không thể tạo thanh toán MoMo. Vui lòng thử lại.",
+    "vnpayError": "Không thể tạo thanh toán VNPay. Vui lòng thử lại.",
+    "stripeError": "Không thể tạo thanh toán Stripe. Vui lòng thử lại.",
+    "paymentError": "Lỗi thanh toán. Vui lòng thử lại.",
     "noPlanId": "Chưa chọn gói. Vui lòng quay lại và chọn gói đăng ký.",
     "fetchError": "Không thể tải thông tin gói. Vui lòng thử lại.",
     "selectGroup": "Chọn nhóm áp dụng",
@@ -482,7 +536,7 @@
       "hasAiContentStructuring": "AI Content Structuring",
       "hasPersonalizedLearningAnalytic": "Phân tích học tập cá nhân",
       "hasAiTextReadingAndSummarization": "AI đọc & tóm tắt văn bản",
-      "hasAdvancedAiConfiguration": "Loại quiz nâng cao"
+      "hasAdvancedAiConfiguration": "Cấu hình quiz nâng cao"
     }
   },
   "paymentResult": {
@@ -494,11 +548,18 @@
     "orderId": "Mã đơn hàng",
     "transId": "Mã giao dịch",
     "amount": "Số tiền",
+    "gatewayCurrency": "Tiền tệ gateway",
     "orderInfo": "Nội dung",
     "payType": "Hình thức",
     "time": "Thời gian",
     "backToPlans": "Quay lại gói đăng ký",
-    "goHome": "Về trang chủ"
+    "backToWallet": "Quay lại ví",
+    "backToGroup": "Quay lại nhóm",
+    "goHome": "Về trang chủ",
+    "currentPlan": "Gói hiện tại",
+    "planReadyHint": "Gói đã sẵn sàng để bạn tiếp tục học tập.",
+    "planExpiresAt": "Hiệu lực đến {{date}}",
+    "backendRejected": "Thanh toán chưa được backend xác thực, nên hệ thống chưa kích hoạt gói hoặc cộng credit."
   },
   "walletPage": {
     "logoAlt": "Logo QuizMate AI",

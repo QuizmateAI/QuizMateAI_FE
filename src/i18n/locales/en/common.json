@@ -139,6 +139,8 @@
     "challengeParticipantNotFound": "You have not joined this challenge.",
     "challengeNotPlaying": "Challenge has not started or you are not in PLAYING state.",
     "challengeAlreadySubmitted": "You have already submitted.",
+    "challengeFinishNotAllowed": "Manual finish is only allowed once every registered participant has submitted.",
+    "workspaceSlotLimitExceeded": "The number of requested slots exceeds the maximum allowed for a group workspace.",
     "defaultPlanCannotDelete": "Default plan cannot be deleted.",
     "defaultPlanCannotUpdateType": "Default plan type cannot be updated.",
     "defaultPlanCannotInactive": "Default plan cannot be deactivated.",
@@ -163,13 +165,33 @@
       "badge": "✨ AI-Powered Learning Innovation",
       "titlePart1": "Master Any Subject with",
       "titlePart2": "QuizMate AI",
-      "subtitle": "Upload your study materials (PDFs, Videos, or URLs) and let our AI build personalized roadmaps and interactive quizzes.",
+      "subtitle": "Turn any material into a quiz in seconds. Upload learning materials (PDF, DOC, or Youtube URL) to let AI automatically generate interactive question sets customized to your learning style.",
       "startLearning": "Start Learning Now",
       "watchDemo": "Watch Demo",
       "activeStudents": "Active Students"
     },
     "features": {
       "title": "Revolutionize Your Learning Journey",
+      "new": {
+        "generation": {
+          "title": "Automated Generation",
+          "bullet1": "Diverse sources: Upload PDFs, Videos, Images, YouTube links...",
+          "bullet2": "AI extracts knowledge & generates highly relevant questions.",
+          "bullet3": "Saves hours of manual quiz creation (Solves main pain point)."
+        },
+        "customization": {
+          "title": "Deep Customization",
+          "bullet1": "Adjust: Question types, difficulty, Bloom's cognitive levels.",
+          "bullet2": "Select purpose: Quick review, knowledge testing, or mock exams.",
+          "bullet3": "AI evaluates results and suggests key topics for review."
+        },
+        "collaborative": {
+          "title": "Collaborative Learning",
+          "bullet1": "Share study materials and assign quizzes to the whole group.",
+          "bullet2": "Host real-time multiplayer challenges to boost engagement.",
+          "bullet3": "Leaders can manage and track individual member progress."
+        }
+      },
       "roadmapTitle": "AI Roadmap",
       "roadmapDesc": "Our AI analyzes your materials and generates a step-by-step learning path from basics to advanced.",
       "quizTitle": "Smart Quizzes",

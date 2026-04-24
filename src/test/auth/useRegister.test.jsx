@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useRegister } from '@/Pages/Authentication/Register';
 import { checkEmail, checkUsername, sendOTP, verifyOTP, register } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
+import { resetAuthAvailabilityBloom } from '@/lib/authAvailabilityBloom';
 
 vi.mock('@/api/Authentication', () => ({
   checkEmail: vi.fn(),
@@ -34,6 +35,7 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
   beforeEach(() => {
     setView = vi.fn();
     vi.clearAllMocks();
+    resetAuthAvailabilityBloom();
     checkUsername.mockResolvedValue({ statusCode: 200, data: true });
     checkEmail.mockResolvedValue({ statusCode: 200, data: true });
   });
@@ -89,6 +91,52 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
     expect(result.current.successMessage).toBe('auth.registerOtpSent');
   });
 
+  it('runs availability check while typing username with debounce', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRegister(setView, t));
+
+    act(() => {
+      result.current.handleChange('username')({ target: { value: 'user123' } });
+    });
+
+    expect(checkUsername).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(260);
+      await Promise.resolve();
+    });
+
+    expect(checkUsername).toHaveBeenCalledWith('user123');
+  });
+
+  it('reuses cached unavailable username instantly for repeated input in the same session', async () => {
+    vi.useFakeTimers();
+    checkUsername.mockResolvedValue({ statusCode: 200, data: false });
+
+    const { result } = renderHook(() => useRegister(setView, t));
+
+    act(() => {
+      result.current.handleChange('username')({ target: { value: 'taken123' } });
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(260);
+      await Promise.resolve();
+    });
+
+    expect(checkUsername).toHaveBeenCalledTimes(1);
+    expect(result.current.fieldErrors.username).toBe('auth.usernameExists');
+
+    act(() => {
+      result.current.handleChange('username')({ target: { value: 'other123' } });
+      result.current.handleChange('username')({ target: { value: 'taken123' } });
+    });
+
+    expect(result.current.availabilityStatus.username.available).toBe(false);
+    expect(result.current.availabilityStatus.username.message).toBe('auth.usernameExists');
+    expect(checkUsername).toHaveBeenCalledTimes(1);
+  });
+
   it('blocks OTP sending when username or email already exists', async () => {
     checkUsername.mockResolvedValue({ statusCode: 200, data: false });
     checkEmail.mockResolvedValue({ statusCode: 200, data: false });
@@ -124,13 +172,13 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
     });
 
     expect(verifyOTP).toHaveBeenCalledWith('user@example.com', '123456');
-    expect(register).toHaveBeenCalledWith({
+    expect(register).toHaveBeenCalledWith(expect.objectContaining({
       fullname: 'Nguyen Van A',
       username: 'user123',
       email: 'user@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
-    });
+    }));
 
     await act(async () => {
       vi.runAllTimers();

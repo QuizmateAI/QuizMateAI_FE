@@ -1212,6 +1212,12 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       .mockResolvedValueOnce(undefined);
     const onConfirm = vi.fn().mockResolvedValue(undefined);
 
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['IELTS Writing'], {
+        normalizedKnowledge: 'IELTS Writing task 2',
+      }),
+    });
+
     renderDialog({ onSave, onConfirm });
 
     await moveToStepTwo({

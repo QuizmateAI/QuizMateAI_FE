@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -10,21 +11,26 @@ import {
   Plus,
   Save,
   ToggleLeft,
-  ToggleRight,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import {
   addFlashcardItem,
   deleteFlashcardItem,
   getFlashcardDetail,
+  setGroupFlashcardAudience,
   updateFlashcardItem,
   updateFlashcardSetName,
   updateFlashcardSetStatus,
 } from "@/api/FlashcardAPI";
+import { getGroupMembers } from "@/api/GroupAPI";
+import { unwrapApiData } from "@/Utils/apiResponse";
 
 function FlashcardFace({
   accentClassName,
@@ -51,9 +57,21 @@ function FlashcardFace({
   );
 }
 
-function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType }) {
+function FlashcardDetailView({
+  isDarkMode = false,
+  flashcard,
+  onBack,
+  hideEditButton,
+  contextType,
+  contextId = null,
+  isGroupLeader = false,
+  groupAudiencePickerExcludeUserId = null,
+}) {
+  const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const normalizedContextType = String(contextType || "").toUpperCase();
+  const isGroupContext = normalizedContextType === "GROUP";
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
   const [items, setItems] = useState([]);
@@ -73,6 +91,20 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
   const [deletingItemId, setDeletingItemId] = useState(null);
   const [statusSaving, setStatusSaving] = useState(false);
   const [slideDir, setSlideDir] = useState("");
+  const [audienceOpen, setAudienceOpen] = useState(false);
+  const [audienceSaving, setAudienceSaving] = useState(false);
+  const [audienceMode, setAudienceMode] = useState("ALL_MEMBERS");
+  const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+
+  const invalidateFlashcardList = useCallback(async () => {
+    const normalizedContextId = Number(contextId) || 0;
+    if (!normalizedContextType || normalizedContextId <= 0) return;
+    await queryClient.invalidateQueries({
+      queryKey: ["workspace-flashcards", normalizedContextType, normalizedContextId],
+    });
+  }, [contextId, normalizedContextType, queryClient]);
 
   const fetchDetail = useCallback(async () => {
     if (!flashcard?.flashcardSetId) return;
@@ -95,6 +127,13 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
 
   const activeItem = useMemo(() => items[activeIndex] || null, [activeIndex, items]);
   const inputCls = "w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-400 dark:focus:border-emerald-500";
+  const detailStatus = String(detail?.status || flashcard?.status || "").toUpperCase();
+  const canMutateContent = !hideEditButton && detailStatus === "ACTIVE";
+  const canManageGroupPublishing = isGroupContext && isGroupLeader && detailStatus === "DRAFT";
+  const canManageGroupAudience = isGroupContext && isGroupLeader && detailStatus === "ACTIVE";
+  const resolvedAudienceLabel = detail?.groupAudienceMode === "SELECTED_MEMBERS"
+    ? t("workspace.flashcard.audience.selectedMembers", "Chỉ thành viên được chọn")
+    : t("workspace.flashcard.audience.allMembers", "Cả nhóm");
 
   const handleRename = async () => {
     if (!detail || !newName.trim()) return;
@@ -104,6 +143,7 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
       const updatedName = response?.data?.flashcardSetName || newName.trim();
       setDetail((prev) => ({ ...prev, flashcardSetName: updatedName }));
       setIsRenaming(false);
+      await invalidateFlashcardList();
     } finally {
       setRenameSaving(false);
     }
@@ -111,11 +151,28 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
 
   const handleToggleStatus = async () => {
     if (!detail) return;
-    setStatusSaving(true);
     const nextStatus = detail.status === "ACTIVE" ? "DRAFT" : "ACTIVE";
+    const confirmed = window.confirm(
+      isGroupContext
+        ? (
+          nextStatus === "ACTIVE"
+            ? t("workspace.flashcard.publishConfirm", "Xuất bản bộ flashcard này cho nhóm?")
+            : t("workspace.flashcard.setDraftConfirm", "Đưa bộ flashcard này về bản nháp?")
+        )
+        : (
+          nextStatus === "ACTIVE"
+            ? t("workspace.flashcard.activateConfirm", "Kích hoạt bộ flashcard này?")
+            : t("workspace.flashcard.deactivateConfirm", "Đưa bộ flashcard này về bản nháp?")
+        ),
+    );
+    if (!confirmed) return;
+
+    setStatusSaving(true);
     try {
       const response = await updateFlashcardSetStatus(detail.flashcardSetId, nextStatus);
-      setDetail((prev) => ({ ...prev, status: response?.data?.status || nextStatus }));
+      const nextDetail = response?.data || {};
+      setDetail((prev) => ({ ...prev, ...nextDetail, status: nextDetail?.status || nextStatus }));
+      await invalidateFlashcardList();
     } finally {
       setStatusSaving(false);
     }
@@ -136,6 +193,7 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
       setNewFront("");
       setNewBack("");
       setShowAddForm(false);
+      await invalidateFlashcardList();
     } finally {
       setAddingSaving(false);
     }
@@ -162,6 +220,7 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
         ),
       );
       setEditingItemId(null);
+      await invalidateFlashcardList();
     } finally {
       setEditSaving(false);
     }
@@ -173,10 +232,92 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
       await deleteFlashcardItem(itemId);
       setItems((prev) => prev.filter((item) => item.flashcardItemId !== itemId));
       setActiveIndex((prev) => Math.max(0, Math.min(prev, items.length - 2)));
+      await invalidateFlashcardList();
     } finally {
       setDeletingItemId(null);
     }
   };
+
+  const openAudienceDialog = useCallback(() => {
+    const excludeUid = Number(groupAudiencePickerExcludeUserId);
+    const rawIds = Array.isArray(detail?.assignedUserIds)
+      ? detail.assignedUserIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
+      : [];
+    setAudienceMode(detail?.groupAudienceMode === "SELECTED_MEMBERS" ? "SELECTED_MEMBERS" : "ALL_MEMBERS");
+    setSelectedAudienceUserIds(
+      Number.isInteger(excludeUid) && excludeUid > 0
+        ? rawIds.filter((id) => id !== excludeUid)
+        : rawIds,
+    );
+    setAudienceOpen(true);
+  }, [detail?.assignedUserIds, detail?.groupAudienceMode, groupAudiencePickerExcludeUserId]);
+
+  useEffect(() => {
+    if (!audienceOpen || !isGroupContext || !contextId) return undefined;
+    let cancelled = false;
+
+    (async () => {
+      setMembersLoading(true);
+      try {
+        const response = await getGroupMembers(contextId, 0, 200);
+        const raw = unwrapApiData(response);
+        const list = raw?.content || raw?.data || (Array.isArray(raw) ? raw : []);
+        const excludeUid = Number(groupAudiencePickerExcludeUserId);
+        const filtered = Array.isArray(list)
+          ? list.filter((member) => {
+              if (!Number.isInteger(excludeUid) || excludeUid <= 0) return true;
+              const memberId = Number(member.userId ?? member.id ?? member.groupMemberId);
+              return !Number.isInteger(memberId) || memberId !== excludeUid;
+            })
+          : [];
+        if (!cancelled) setGroupMembers(filtered);
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) setGroupMembers([]);
+      } finally {
+        if (!cancelled) setMembersLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [audienceOpen, contextId, groupAudiencePickerExcludeUserId, isGroupContext]);
+
+  const toggleAudienceMember = useCallback((userId) => {
+    setSelectedAudienceUserIds((prev) => (
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    ));
+  }, []);
+
+  const handleSaveAudience = useCallback(async () => {
+    if (!detail?.flashcardSetId) return;
+    if (audienceMode === "SELECTED_MEMBERS" && selectedAudienceUserIds.length === 0) {
+      window.alert(t("workspace.flashcard.audience.selectMemberRequired", "Chọn ít nhất một thành viên."));
+      return;
+    }
+
+    setAudienceSaving(true);
+    try {
+      const body = audienceMode === "ALL_MEMBERS"
+        ? { mode: "ALL_MEMBERS" }
+        : { mode: "SELECTED_MEMBERS", assigneeUserIds: selectedAudienceUserIds };
+      const response = await setGroupFlashcardAudience(detail.flashcardSetId, body);
+      const nextDetail = response?.data || {};
+      setDetail((prev) => ({ ...prev, ...nextDetail }));
+      await invalidateFlashcardList();
+      setAudienceOpen(false);
+    } catch (error) {
+      console.error(error);
+      window.alert(
+        error?.response?.data?.message
+        || error?.message
+        || t("workspace.flashcard.audience.saveFailed", "Không thể lưu phân phối flashcard."),
+      );
+    } finally {
+      setAudienceSaving(false);
+    }
+  }, [audienceMode, detail?.flashcardSetId, invalidateFlashcardList, selectedAudienceUserIds, t]);
 
   if (loading) return <ListSpinner variant="section" />;
 
@@ -210,8 +351,8 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
                 </div>
               ) : (
                 <>
-                  <p className={`truncate text-lg font-semibold text-slate-950 dark:text-white ${fontClass}`}>{detail.flashcardSetName}</p>
-                  {!hideEditButton ? (
+                  <p className={`truncate text-lg font-semibold text-slate-950 dark:text-white ${fontClass}`}>{(detail.flashcardSetName && detail.flashcardSetName.trim()) || t("workspace.flashcard.untitled", "Flashcard không có tiêu đề")}</p>
+                  {canMutateContent ? (
                     <button type="button" onClick={() => { setIsRenaming(true); setNewName(detail.flashcardSetName || ""); }} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300">
                       <Edit3 className="h-4 w-4" />
                     </button>
@@ -223,6 +364,7 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
               <span>{items.length} {t("workspace.flashcard.items")}</span>
               <span>{t("workspace.flashcard.createVia")}: {detail.createVia}</span>
               <span>{t(`workspace.flashcard.status${detail.status}`)}</span>
+              {isGroupContext ? <span>{resolvedAudienceLabel}</span> : null}
             </div>
           </div>
         </div>
@@ -232,25 +374,67 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
             targetType="FLASHCARD"
             targetId={detail.flashcardSetId}
             label={t("workspace.flashcard.feedback")}
-            isDarkMode={false}
+            isDarkMode={isDarkMode}
             className="h-9 text-xs"
           />
-          {!hideEditButton ? (
+          {canMutateContent || canManageGroupPublishing || canManageGroupAudience ? (
             <>
-              <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={statusSaving} className="rounded-full dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-                {statusSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : detail.status === "ACTIVE" ? (
-                  <ToggleRight className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-500" />
-                ) : (
-                  <ToggleLeft className="mr-2 h-4 w-4" />
-                )}
-                {detail.status === "ACTIVE" ? t("workspace.flashcard.deactivate") : t("workspace.flashcard.activate")}
-              </Button>
-              <Button size="sm" onClick={() => setShowAddForm(true)} className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("workspace.flashcard.addItem")}
-              </Button>
+              {isGroupContext ? (
+                canManageGroupPublishing ? (
+                  <>
+                    {/* Chỉ hiện nút Publish khi đang DRAFT. Đã ACTIVE thì chuyển sang flip view. */}
+                    {detailStatus !== "ACTIVE" ? (
+                      <Button
+                        size="sm"
+                        onClick={handleToggleStatus}
+                        disabled={statusSaving}
+                        className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        {statusSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <ToggleLeft className="mr-2 h-4 w-4" />
+                        )}
+                        {t("workspace.flashcard.publish", "Publish")}
+                      </Button>
+                    ) : null}
+                  </>
+                ) : null
+              ) : detailStatus === "DRAFT" ? (
+                /* Individual: chỉ hiện nút Kích hoạt khi đang DRAFT. Đã ACTIVE thì ẩn — không cho về DRAFT. */
+                detailStatus !== "ACTIVE" ? (
+                  <Button
+                    size="sm"
+                    onClick={handleToggleStatus}
+                    disabled={statusSaving}
+                    className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                  >
+                    {statusSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ToggleLeft className="mr-2 h-4 w-4" />
+                    )}
+                    {t("workspace.flashcard.activate")}
+                  </Button>
+                ) : null
+              ) : null}
+              {canManageGroupAudience ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAudienceDialog}
+                  className="rounded-full dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  {t("workspace.flashcard.distribution", "Distribution")}
+                </Button>
+              ) : null}
+              {canMutateContent ? (
+                <Button size="sm" onClick={() => setShowAddForm(true)} className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("workspace.flashcard.addItem")}
+                </Button>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -336,12 +520,6 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
           </div>
         ) : null}
 
-        {contextType === "GROUP" ? (
-          <p className="mb-6 w-full text-center text-xs text-slate-400 dark:text-slate-500">
-            {t("workspace.flashcard.assignComingSoon")}
-          </p>
-        ) : null}
-
         <div className="w-full border-t border-slate-200 dark:border-slate-800 pb-4 pt-8">
           <p className={`mb-6 text-lg font-semibold text-slate-950 dark:text-white ${fontClass}`}>
             {t("workspace.flashcard.itemsList", "Flashcards in this set")}
@@ -379,7 +557,7 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
                       <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                         {t("workspace.flashcard.itemNumber", { number: index + 1 })}
                       </span>
-                      {!hideEditButton && !isEditing ? (
+                      {canMutateContent && !isEditing ? (
                         <div className="flex items-center gap-1">
                           <button type="button" onClick={() => { setEditingItemId(item.flashcardItemId); setEditFront(item.frontContent || ""); setEditBack(item.backContent || ""); }} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300">
                             <Edit3 className="h-4 w-4" />
@@ -428,6 +606,90 @@ function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType })
           )}
         </div>
       </div>
+
+      <Dialog open={audienceOpen} onOpenChange={setAudienceOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("workspace.flashcard.distribution", "Distribution")}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setAudienceMode("ALL_MEMBERS")}
+                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
+                  audienceMode === "ALL_MEMBERS"
+                    ? "border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950/30 dark:text-blue-200"
+                    : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                }`}
+              >
+                {t("workspace.flashcard.audience.allMembers", "Cả nhóm")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAudienceMode("SELECTED_MEMBERS")}
+                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
+                  audienceMode === "SELECTED_MEMBERS"
+                    ? "border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-950/30 dark:text-violet-200"
+                    : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                }`}
+              >
+                {t("workspace.flashcard.audience.selectedMembers", "Chỉ thành viên được chọn")}
+              </button>
+            </div>
+
+            {audienceMode === "SELECTED_MEMBERS" ? (
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/80 p-2 dark:border-slate-700 dark:bg-slate-950/40">
+                {membersLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                  </div>
+                ) : groupMembers.length === 0 ? (
+                  <p className="px-2 py-3 text-sm text-slate-500 dark:text-slate-400">
+                    {t("workspace.flashcard.audience.noMembers", "Không có thành viên khả dụng.")}
+                  </p>
+                ) : (
+                  groupMembers.map((member) => {
+                    const memberId = Number(member.userId ?? member.id);
+                    if (!Number.isInteger(memberId) || memberId <= 0) return null;
+
+                    return (
+                      <label
+                        key={memberId}
+                        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white dark:hover:bg-slate-800"
+                      >
+                        <Checkbox
+                          checked={selectedAudienceUserIds.includes(memberId)}
+                          onCheckedChange={() => toggleAudienceMember(memberId)}
+                        />
+                        <span className="text-slate-700 dark:text-slate-200">
+                          {member.fullName || member.username || `User ${memberId}`}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" className="rounded-xl" onClick={() => setAudienceOpen(false)}>
+              {t("workspace.flashcard.cancel", "Hủy")}
+            </Button>
+            <Button
+              type="button"
+              className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              disabled={audienceSaving}
+              onClick={handleSaveAudience}
+            >
+              {audienceSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {t("workspace.flashcard.save", "Lưu")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

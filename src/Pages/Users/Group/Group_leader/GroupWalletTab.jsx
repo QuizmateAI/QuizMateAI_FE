@@ -143,7 +143,7 @@ function creditSourceLabel(type, lang, t) {
 
 function sanitizeActivityNote(note) {
   return String(note || '')
-    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED)[^\]]*\]/gi, '')
+    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED|PLAN_CREDIT_FORFEITED)[^\]]*\]/gi, '')
     .trim();
 }
 
@@ -381,7 +381,9 @@ export default function GroupWalletTab({
   const usageHistoryPage = historyPages.workspaceId === workspaceId ? historyPages.usage : 0;
   const groupName = group?.groupName || group?.displayTitle || group?.name || t('groupWalletTab.group', 'Group');
   const currentGroupPlanName = String(groupSubscription?.plan?.displayName || groupSubscription?.plan?.code || '').trim();
-  const canBuyGroupCredits = groupSubscription?.plan?.entitlement?.canBuyCredit !== false;
+  const groupEntitlement = groupSubscription?.plan?.entitlement || groupSubscription?.entitlement || null;
+  const hasActiveGroupPlan = Boolean(groupSubscription?.plan || groupSubscription?.planCatalogId || groupSubscription?.planAssignmentId);
+  const canBuyGroupCredits = hasActiveGroupPlan && groupEntitlement?.canBuyCredit === true;
 
   const updateHistoryPage = (key, nextPage, maxPage = Number.POSITIVE_INFINITY) => {
     setHistoryPages((current) => {
@@ -804,7 +806,7 @@ export default function GroupWalletTab({
                 {t('groupWalletTab.noUsageRecords', 'No usage records yet.')}
               </div>
             ) : usageHistory.map((tx) => {
-              const totalChange = Number(tx.creditChange ?? 0) + Number(tx.planCreditChange ?? 0);
+              const totalChange = Number(tx.creditChange ?? 0);
               const isPositive = totalChange >= 0;
               const recentAt = toSafeDate(tx.createdAt)?.getTime() ?? 0;
               const isRecent = recentAt > 0 && renderTimestamp - recentAt <= 3 * DAY_MS;

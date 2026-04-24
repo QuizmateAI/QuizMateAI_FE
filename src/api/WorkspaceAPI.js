@@ -77,7 +77,9 @@ export function normalizeIndividualWorkspaceProfile(profile) {
     materialCount: normalizedMaterialCount,
     hasMaterials: Boolean(profile.hasMaterials ?? normalizedMaterialCount > 0),
     knowledgeInput: profile.knowledgeInput ?? profile.knowledge ?? '',
+    knowledgeDescription: profile.knowledgeDescription ?? '',
     inferredDomain: profile.inferredDomain ?? profile.domain ?? '',
+    selectedKnowledgeOption: profile.selectedKnowledgeOption ?? profile.knowledge ?? '',
     enableRoadmap:
       learningMode === 'STUDY_NEW'
         ? true
@@ -179,8 +181,12 @@ function buildBasicStepRequest(payload) {
 
   return {
     learningMode,
+    analysisId: trimToNull(payload.analysisId),
+    selectedKnowledgeOptionId: trimToNull(payload.selectedKnowledgeOptionId),
+    selectedDomainOptionId: trimToNull(payload.selectedDomainOptionId),
+    knowledgeDescription: trimToNull(payload.knowledgeDescription) || trimToNull(payload.knowledgeInput),
     domain: trimToNull(payload.inferredDomain) || trimToNull(payload.customDomain) || trimToNull(payload.domain),
-    knowledge: trimToNull(payload.knowledgeInput) || trimToNull(payload.customKnowledge) || trimToNull(payload.knowledge),
+    knowledge: trimToNull(payload.selectedKnowledgeOption) || trimToNull(payload.knowledgeInput) || trimToNull(payload.customKnowledge) || trimToNull(payload.knowledge),
     roadmapEnabled: learningMode === 'STUDY_NEW' ? true : Boolean(payload.enableRoadmap ?? payload.roadmapEnabled),
   };
 }
@@ -384,11 +390,6 @@ export const getWorkspaceLearningSnapshotMeTrend = async (
   return response;
 };
 
-export const getWorkspaceCommunityQuizzes = async (workspaceId) => {
-  const response = await api.get(`/workspace/${workspaceId}/community-quizzes`);
-  return response;
-};
-
 export const logWorkspaceQuizRecommendationEvents = async (workspaceId, data) => {
   const response = await api.post(`/workspace/${workspaceId}/quiz-recommendations/events`, data);
   return response;
@@ -449,6 +450,11 @@ export const saveIndividualWorkspaceRoadmapConfigStep = async (workspaceId, data
 
 export const confirmIndividualWorkspaceProfile = async (workspaceId) => {
   const response = await api.post(`/workspace-profile/individual/${workspaceId}/steps/confirm`);
+  return response;
+};
+
+export const suggestIndividualRoadmapConfig = async (workspaceId) => {
+  const response = await api.post(`/workspace-profile/individual/${workspaceId}/roadmap-config/suggest`);
   return response;
 };
 
@@ -546,6 +552,26 @@ export const updateGroupConfigStep = async (workspaceId, data) => {
 
 export const suggestGroupRoadmapConfig = async (workspaceId) => {
   const response = await api.post(`/workspace-profile/group/${workspaceId}/roadmap-config/suggest`);
+  return response;
+};
+
+export const saveGroupRoadmapConfigStep = async (workspaceId, data = {}) => {
+  const payload = {
+    knowledgeLoad: data.knowledgeLoad || null,
+    adaptationMode: mapAdaptationMode(data.adaptationMode),
+    speedMode: mapRoadmapSpeedMode(data.speedMode || data.roadmapSpeedMode),
+    estimatedTotalDays: Number(data.estimatedTotalDays) || null,
+    estimatedMinutesPerDay:
+      Number(data.estimatedMinutesPerDay)
+      || Number(data.recommendedMinutesPerDay)
+      || null,
+    preLearningRequired:
+      data.preLearningRequired == null ? null : Boolean(data.preLearningRequired),
+  };
+  const response = await api.put(
+    `/workspace-profile/group/${workspaceId}/steps/roadmap-config`,
+    payload,
+  );
   return response;
 };
 

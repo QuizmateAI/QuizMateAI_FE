@@ -589,6 +589,23 @@ function AIQuizTab({
         </div>
       </div>
 
+      <PlanGatedFeature
+        allowed={hasAdvanceQuizConfig}
+        featureName={t("workspace.quiz.planGate.structureTitleFallback", "Cấu trúc quiz cần gói nâng cao")}
+        isDarkMode={isDarkMode}
+        className="block w-full"
+        toastTitle={t("workspace.quiz.planGate.title", "Cần nâng cấp gói")}
+        toastDescription={t(
+          "workspace.quiz.planGate.structureDescriptionFallback",
+          "Cấu trúc quiz cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng.",
+        )}
+        toastMeta={t(
+          "workspace.quiz.planGate.structureMeta",
+          "Bạn vẫn có thể tạo quiz bằng các tỷ lệ độ khó, loại câu hỏi và Bloom hiện có trong gói hiện tại.",
+        )}
+        upgradeLabel={t("workspace.quiz.planGate.upgradeAction", "Nâng cấp")}
+        badgeLabel={t("workspace.quiz.planGate.vipBadge", "VIP")}
+      >
       <div className={`overflow-hidden rounded-2xl border transition-all ${isDarkMode ? "border-cyan-900/40 bg-slate-900/60 shadow-2xl shadow-blue-950/20" : "border-cyan-100 bg-white shadow-2xl shadow-slate-900/5"}`}>
         <div className={`border-b px-4 py-3 ${isDarkMode ? "border-cyan-900/30 bg-gradient-to-r from-cyan-950/20 to-transparent" : "border-cyan-100 bg-gradient-to-r from-cyan-50/80 to-transparent"}`}>
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -723,6 +740,7 @@ function AIQuizTab({
           )}
         </div>
       </div>
+      </PlanGatedFeature>
     </div>
   );
 }

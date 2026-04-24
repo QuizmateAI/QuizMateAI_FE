@@ -91,7 +91,7 @@
     "questionNotFound": "Không tìm thấy câu hỏi.",
     "answerNotFound": "Không tìm thấy đáp án.",
     "questionTypeNotFound": "Không tìm thấy loại câu hỏi.",
-    "bloomNotFound": "Không tìm thấy kỹ năng Bloom.",
+    "bloomNotFound": "Không tìm thấy thang đo Bloom.",
     "invalidSectionParent": "Phần cha không hợp lệ.",
     "invalidSectionType": "Loại phần không hợp lệ.",
     "quizNotInGroup": "Bộ câu hỏi không thuộc nhóm.",
@@ -139,6 +139,8 @@
     "challengeParticipantNotFound": "Bạn chưa tham gia thử thách này.",
     "challengeNotPlaying": "Thử thách chưa bắt đầu hoặc bạn chưa ở trạng thái PLAYING.",
     "challengeAlreadySubmitted": "Bạn đã nộp bài rồi.",
+    "challengeFinishNotAllowed": "Chỉ kết thúc sớm được khi tất cả người đăng ký đã nộp bài.",
+    "workspaceSlotLimitExceeded": "Số slot yêu cầu vượt quá giới hạn tối đa của một group workspace.",
     "defaultPlanCannotDelete": "Gói mặc định không được xóa.",
     "defaultPlanCannotUpdateType": "Gói mặc định không được cập nhật loại.",
     "defaultPlanCannotInactive": "Gói mặc định không được vô hiệu hóa.",
@@ -163,19 +165,33 @@
       "badge": "✨ Đột phá học tập cùng AI",
       "titlePart1": "Chinh phục kiến thức cùng",
       "titlePart2": "QuizMate AI",
-      "subtitle": "Tải lên tài liệu học tập (PDF, Video, hoặc URL) và để AI xây dựng lộ trình cá nhân hóa cùng bộ câu hỏi tương tác.",
+      "subtitle": "Biến mọi tài liệu thành bài trắc nghiệm chỉ trong tích tắc. Tải lên tài liệu học tập (PDF, DOC, hoặc Youtube URL) để AI tự động tạo các bộ câu hỏi tương tác và tùy chỉnh theo cách học của riêng bạn.",
       "startLearning": "Bắt đầu học ngay",
       "watchDemo": "Xem Demo",
       "activeStudents": "Học viên tích cực"
     },
     "features": {
       "title": "Cách mạng hóa hành trình học tập",
-      "roadmapTitle": "Lộ trình AI",
-      "roadmapDesc": "AI phân tích tài liệu và tạo lộ trình học tập từng bước từ cơ bản đến nâng cao.",
-      "quizTitle": "Trắc nghiệm thông minh",
-      "quizDesc": "Tạo câu hỏi trắc nghiệm hoặc tự luận tức thì từ bất kỳ file PDF, video YouTube nào.",
-      "companionTitle": "Trợ lý AI",
-      "companionDesc": "Tương tác với gia sư AI qua giọng nói để giải đáp thắc mắc và giải thích các khái niệm phức tạp theo thời gian thực."
+      "new": {
+        "generation": {
+          "title": "Tạo tự động",
+          "bullet1": "Đa dạng nguồn: Tải lên PDF, Video, Hình ảnh, YouTube links...",
+          "bullet2": "AI trích xuất kiến thức & tạo câu hỏi sát với thực tế.",
+          "bullet3": "Tiết kiệm hàng giờ tạo quiz thủ công (Giải quyết vấn đề cốt lõi)."
+        },
+        "customization": {
+          "title": "Tùy chỉnh sâu",
+          "bullet1": "Điều chỉnh: Loại câu hỏi, độ khó, mức độ nhận thức Bloom.",
+          "bullet2": "Chọn mục đích: Ôn tập nhanh, kiểm tra kiến thức, hoặc thi thử.",
+          "bullet3": "AI đánh giá kết quả và đề xuất các chủ đề cần ôn tập."
+        },
+        "collaborative": {
+          "title": "Học tập cộng tác",
+          "bullet1": "Chia sẻ tài liệu học tập và giao bài kiểm tra cho cả nhóm.",
+          "bullet2": "Tổ chức thử thách tương tác trong thời gian thực để tạo hứng thú.",
+          "bullet3": "Trưởng nhóm có thể quản lý và theo dõi tiến độ của từng học viên."
+        }
+      }
     },
     "pricing": {
       "titlePart1": "Chọn",
@@ -229,16 +245,16 @@
     "navHome": "Trang chủ",
     "heroBadge": "Minh bạch, công bằng, dễ dự đoán",
     "title": "Cách tính credit trong QuizmateAI",
-    "subtitle": "QuizmateAI không tính tiền theo tên tính năng. Hệ thống tính credit theo mức độ AI được sử dụng thực tế, để bạn biết vì sao bị trừ credit và có thể dự đoán chi phí trước khi chạy.",
+    "subtitle": "QuizmateAI tính credit theo mức dùng AI thực tế, giúp bạn hiểu vì sao bị trừ credit và dự đoán chi phí trước khi chạy.",
     "ctaPrimaryGuest": "Đăng nhập để xem ví",
     "ctaPrimaryUser": "Mở ví credit",
     "ctaSecondaryGuest": "Xem plans",
     "ctaSecondaryUser": "Xem plans",
     "openDashboard": "Mở dashboard",
     "viewPlans": "Xem plans",
-    "creditCardDescription": "Đơn vị dùng để quy đổi usage AI thành cách tính dễ mua, dễ hiểu và dễ giới hạn ngân sách.",
+    "creditCardDescription": "Đơn vị quy đổi usage AI thành cách tính dễ hiểu và dễ kiểm soát ngân sách.",
     "startingPointLabel": "Mốc khởi động",
-    "lightRequestHint": "Một tác vụ nhẹ như tạo quiz trộn 20 câu thường tiêu tốn khoảng 20-21 credit. OCR và các phần bổ sung sẽ làm tổng credit tăng thêm.",
+    "lightRequestHint": "Một tác vụ nhẹ như tạo quiz trộn 20 câu thường tốn khoảng 20-21 credit. OCR và phần bổ sung sẽ làm tổng credit tăng thêm.",
     "summaryCards": [
       {
         "title": "1 credit",
@@ -258,7 +274,7 @@
       }
     ],
     "bundleTitle": "Cách tính theo loại tài liệu được hỗ trợ",
-    "bundleDesc": "Hệ thống hiện dùng cách tính đơn giản để user dễ hiểu và dễ ước lượng. Mỗi loại tài liệu chỉ có một mức credit cơ bản theo đơn vị đo chính.",
+    "bundleDesc": "Hệ thống dùng cách tính đơn giản để dễ hiểu và dễ ước lượng. Mỗi loại tài liệu có một mức credit cơ bản theo đơn vị đo chính.",
     "bundleHeaders": [
       "Loại tài liệu",
       "Cách tính",
@@ -302,7 +318,7 @@
       ]
     ],
     "unitTitle": "Bảng credit cho tính năng AI chính",
-    "unitDesc": "Bảng này chỉ giữ các tính năng AI cốt lõi để user dễ ước lượng trước khi chạy. Riêng quiz sẽ tính đơn giản theo tổng số câu, không tách riêng từng loại câu hay config câu hỏi.",
+    "unitDesc": "Bảng này giữ các tính năng AI cốt lõi để dễ ước lượng trước khi chạy. Riêng quiz tính theo tổng số câu, không tách từng loại câu hay cấu hình câu hỏi.",
     "unitHeaders": [
       "Hạng mục",
       "Credit đề xuất",

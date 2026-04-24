@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrapApiData } from '@/Utils/apiResponse';
 import {
   getMyJoinedGroups,
+  getPublicGroups as getPublicGroupsAPI,
+  joinPublicGroup as joinPublicGroupAPI,
   createGroup as createGroupAPI,
   getGroupMembers as getGroupMembersAPI,
   grantUpload as grantUploadAPI,
@@ -13,6 +15,9 @@ import {
   cancelInvitation as cancelInvitationAPI,
   resendInvitation as resendInvitationAPI,
   getGroupLogs as getGroupLogsAPI,
+  getGroupMyPermissions as getGroupMyPermissionsAPI,
+  getGroupMemberPermissions as getGroupMemberPermissionsAPI,
+  syncGroupMemberPermissions as syncGroupMemberPermissionsAPI,
   removeMember as removeMemberAPI,
   getGroupDashboardSummary as getGroupDashboardSummaryAPI,
   getMemberDashboardCards as getMemberDashboardCardsAPI,
@@ -29,6 +34,7 @@ import {
 } from '@/api/GroupAPI';
 
 const GROUPS_QUERY_KEY = ['groups'];
+const PUBLIC_GROUPS_QUERY_KEY = ['groups', 'public'];
 
 const emptyPage = (size = 20) => ({
   content: [],
@@ -42,7 +48,7 @@ const emptyPage = (size = 20) => ({
 
 // Hook quản lý toàn bộ logic group: CRUD + members + invitations
 export function useGroup(options = {}) {
-  const { enabled = true } = options;
+  const { enabled = true, publicEnabled = enabled } = options;
   const queryClient = useQueryClient();
 
   const { data: groups = [], isLoading: loading, error: queryError, refetch: fetchGroups } = useQuery({
@@ -75,12 +81,36 @@ export function useGroup(options = {}) {
     enabled,
   });
 
-  const error = queryError?.message || null;
+  const {
+    data: publicGroups = [],
+    isLoading: publicGroupsLoading,
+    error: publicGroupsQueryError,
+    refetch: fetchPublicGroups,
+  } = useQuery({
+    queryKey: PUBLIC_GROUPS_QUERY_KEY,
+    queryFn: async () => {
+      const res = await getPublicGroupsAPI();
+      const rawGroups = unwrapApiData(res) ?? [];
+      return Array.isArray(rawGroups) ? rawGroups : [];
+    },
+    enabled: publicEnabled,
+  });
+
+  const error = queryError?.message || publicGroupsQueryError?.message || null;
 
   // Tạo nhóm mới
   const createGroup = useCallback(async (data) => {
     const res = await createGroupAPI(data);
     await queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY });
+    return unwrapApiData(res);
+  }, [queryClient]);
+
+  const joinPublicGroup = useCallback(async (workspaceId) => {
+    const res = await joinPublicGroupAPI(workspaceId);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PUBLIC_GROUPS_QUERY_KEY }),
+    ]);
     return unwrapApiData(res);
   }, [queryClient]);
 
@@ -135,6 +165,21 @@ export function useGroup(options = {}) {
     return Array.isArray(payload) ? payload : [];
   }, []);
 
+  const fetchMyPermissions = useCallback(async (workspaceId) => {
+    const res = await getGroupMyPermissionsAPI(workspaceId);
+    return unwrapApiData(res);
+  }, []);
+
+  const fetchMemberPermissions = useCallback(async (workspaceId, memberId) => {
+    const res = await getGroupMemberPermissionsAPI(workspaceId, memberId);
+    return unwrapApiData(res);
+  }, []);
+
+  const syncMemberPermissions = useCallback(async (workspaceId, memberId, permissionCodes = []) => {
+    const res = await syncGroupMemberPermissionsAPI(workspaceId, memberId, permissionCodes);
+    return unwrapApiData(res);
+  }, []);
+
   const fetchGroupDashboardSummary = useCallback(async (workspaceId) => {
     const res = await getGroupDashboardSummaryAPI(workspaceId);
     return unwrapApiData(res);
@@ -157,8 +202,8 @@ export function useGroup(options = {}) {
     };
   }, []);
 
-  const fetchMemberDashboardDetail = useCallback(async (workspaceId, memberUserId, attemptMode = 'ALL') => {
-    const res = await getMemberDashboardDetailAPI(workspaceId, memberUserId, attemptMode);
+  const fetchMemberDashboardDetail = useCallback(async (workspaceId, memberId, attemptMode = 'ALL') => {
+    const res = await getMemberDashboardDetailAPI(workspaceId, memberId, attemptMode);
     return unwrapApiData(res);
   }, []);
 
@@ -226,10 +271,14 @@ export function useGroup(options = {}) {
 
   return {
     groups,
+    publicGroups,
     loading,
+    publicGroupsLoading,
     error,
     fetchGroups,
+    fetchPublicGroups,
     createGroup,
+    joinPublicGroup,
     fetchMembers,
     grantUpload,
     revokeUpload,
@@ -239,6 +288,9 @@ export function useGroup(options = {}) {
     cancelInvitation,
     resendInvitation,
     fetchGroupLogs,
+    fetchMyPermissions,
+    fetchMemberPermissions,
+    syncMemberPermissions,
     fetchGroupDashboardSummary,
     fetchMemberDashboardCards,
     fetchMemberDashboardDetail,

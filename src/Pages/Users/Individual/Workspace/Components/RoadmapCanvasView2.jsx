@@ -12,6 +12,7 @@ import {
 } from "@/api/RoadmapPhaseAPI";
 import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
+import { hasReadyRoadmapQuiz } from "../utils/roadmapProcessing";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -237,7 +238,7 @@ function RoadmapCanvasView2({
 
     if (isStudyNewRoadmap) {
       const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
-        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
         const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
         const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
         const isFinished = isPhaseFinishedStatus(phase?.status);
@@ -951,8 +952,7 @@ function RoadmapCanvasView2({
           const normalizedPhaseId = Number(phase.phaseId);
           const phaseIndex = phases.findIndex((p) => Number(p.phaseId) === normalizedPhaseId);
 
-          const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
-            && phase.preLearningQuizzes.length > 0;
+          const hasExistingPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
           const phaseId = Number(phase?.phaseId);
           const isCurrentPhaseByPayload = isStudyNewRoadmap
             && isCurrentPayloadActiveStatus
@@ -1014,7 +1014,7 @@ function RoadmapCanvasView2({
             : t("workspace.quiz.statusLabels.ACTIVE", "Active");
           const hasKnowledge = (phase.knowledges || []).length > 0;
           const knowledgeItems = phase.knowledges || [];
-          const hasPreLearning = (phase.preLearningQuizzes || []).length > 0;
+          const hasPreLearning = hasReadyRoadmapQuiz(phase.preLearningQuizzes);
           const hasPostLearning = (phase.postLearningQuizzes || []).length > 0;
           const totalKnowledgeCount = knowledgeItems.length;
           const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);

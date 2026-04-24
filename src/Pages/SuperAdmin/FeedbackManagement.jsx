@@ -57,6 +57,10 @@ import {
   parseFeedbackQuestionConfig,
 } from '@/lib/feedback';
 import { cn } from '@/lib/utils';
+import {
+  SuperAdminPage,
+  SuperAdminPageHeader,
+} from './Components/SuperAdminSurface';
 
 const TARGET_OPTIONS = ['QUIZ', 'PHASE', 'FLASHCARD', 'ROADMAP', 'WORKSPACE', 'SYSTEM_MILESTONE', 'SUPPORT'];
 const TRIGGER_OPTIONS = ['AFTER_COMPLETION', 'AFTER_TIME', 'AFTER_N_COMPLETIONS', 'MANUAL'];
@@ -626,44 +630,32 @@ function FeedbackManagement() {
   };
 
   return (
-    <div className={`min-h-screen p-6 ${fontClass} ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <div className={cn('rounded-[30px] border p-6 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.2)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn('rounded-2xl p-3', isDarkMode ? 'bg-blue-500/10 text-blue-300' : 'bg-blue-50 text-blue-700')}>
-                <MessageSquareText className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">
-                  {t('feedbackManagement.header.title', 'Feedback Management')}
-                </h1>
-                <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {t('feedbackManagement.header.subtitle', 'Manage feedback forms and monitor response KPIs.')}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={refreshPage}
-                disabled={loading}
-                className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}
-                aria-label={t('feedbackManagement.header.refresh', 'Refresh')}
-                title={t('feedbackManagement.header.refresh', 'Refresh')}
-              >
-                <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
-              </Button>
-              <Button type="button" onClick={openCreateEditor}>
-                <Plus className="h-4 w-4" />
-                <span>{t('feedbackManagement.header.newForm', 'New form')}</span>
-              </Button>
-            </div>
-          </div>
-        </div>
+    <SuperAdminPage className={`${fontClass} ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+      <SuperAdminPageHeader
+        eyebrow="Platform"
+        title={t('feedbackManagement.header.title', 'Feedback Management')}
+        description={t('feedbackManagement.header.subtitle', 'Manage feedback forms and monitor response KPIs.')}
+        actions={(
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={refreshPage}
+              disabled={loading}
+              className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              aria-label={t('feedbackManagement.header.refresh', 'Refresh')}
+              title={t('feedbackManagement.header.refresh', 'Refresh')}
+            >
+              <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
+            </Button>
+            <Button type="button" className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]" onClick={openCreateEditor}>
+              <Plus className="h-4 w-4" />
+              <span>{t('feedbackManagement.header.newForm', 'New form')}</span>
+            </Button>
+          </>
+        )}
+      />
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
@@ -959,8 +951,7 @@ function FeedbackManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+    </SuperAdminPage>
   );
 }
 

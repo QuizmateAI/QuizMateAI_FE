@@ -7,6 +7,7 @@ const SUPER_ADMIN_PERMISSION_CODES = [
   'admin:create',
   'user:read',
   'user:status_update',
+  'user:delete',
   'subscription:read',
   'subscription:write',
   'plan:write',
@@ -19,8 +20,16 @@ const SUPER_ADMIN_PERMISSION_CODES = [
   'system-settings:read',
   'system-settings:write',
   'group:read_all',
+  'group:delete',
   'learning-config:read',
   'learning-config:write',
+  'ai-provider:read',
+  'ai-model:read',
+  'ai-model:write',
+  'ai-cost:read',
+  'ai-audit:read',
+  'feedback:read',
+  'feedback:write',
 ];
 
 export function AdminPermissionsProvider({ children }) {

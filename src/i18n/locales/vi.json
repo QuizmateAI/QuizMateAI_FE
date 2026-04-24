@@ -474,6 +474,15 @@
     "expireConfirm": "Hủy ngay",
     "expiring": "Đang xử lý...",
     "expireSuccess": "Đã hủy {{count}} giao dịch quá hạn",
+    "expireForm": {
+      "confirmTextLabel": "Xác nhận",
+      "confirmTextHint": "Gõ chính xác EXPIRE-OVERDUE để xác nhận.",
+      "confirmTextInvalid": "Phải đúng chuỗi EXPIRE-OVERDUE.",
+      "reasonLabel": "Lý do",
+      "reasonPlaceholder": "Giải thích lý do hủy các giao dịch này (ghi vào audit log).",
+      "reasonHint": "Bắt buộc. 10–500 ký tự.",
+      "reasonInvalid": "Lý do phải dài 10–500 ký tự."
+    },
     "validation": {
       "positiveInteger": "{{field}} phải là số nguyên dương"
     },
@@ -771,13 +780,13 @@
       "group": "Nhóm"
     },
     "badges": {
-      "permanent": "Mua vĩnh viễn",
+      "permanent": "Theo thời hạn gói",
       "credits": "Tính theo Credit",
       "transparent": "Minh bạch & rõ ràng"
     },
     "creditModel": {
       "title": "Mô hình Credit cho AI",
-      "desc": "Bạn mua plan một lần, sau đó chỉ cần nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
+      "desc": "Bạn chọn gói phù hợp, sau đó nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
       "cta": "Mở ví Credit",
       "guide": "Xem cách tính Credit"
     },
@@ -869,8 +878,8 @@
       }
     },
     "notes": {
-      "permanentTitle": "Mua một lần, dùng lâu dài",
-      "permanentDesc": "Plan không bắt buộc theo tháng. Tùy cấu hình hệ thống, bạn có thể sở hữu plan dạng vĩnh viễn.",
+      "permanentTitle": "Thời hạn gói rõ ràng",
+      "permanentDesc": "QuizMateAI không có gói mua vĩnh viễn. Mỗi plan có thời hạn và quyền lợi riêng để bạn chọn theo nhu cầu học.",
       "creditsTitle": "AI dùng theo Credit",
       "creditsDesc": "Các tính năng AI chỉ trừ Credit khi bạn thực sự dùng, nên dễ kiểm soát chi phí hơn.",
       "refundTitle": "Thanh toán rõ ràng",
@@ -1098,7 +1107,7 @@
       "canProcessVideo": "Video",
       "canProcessAudio": "Audio",
       "canBuyCredit": "Mua credit",
-      "hasAdvanceQuizConfig": "Loại quiz nâng cao",
+      "hasAdvanceQuizConfig": "Cấu hình quiz nâng cao",
       "canCreateRoadMap": "Tạo roadmap",
       "hasAiCompanionMode": "AI companion",
       "hasWorkspaceAnalytics": "Analytics",
@@ -1522,13 +1531,33 @@
       "badge": "✨ Đột phá học tập cùng AI",
       "titlePart1": "Chinh phục kiến thức cùng",
       "titlePart2": "QuizMate AI",
-      "subtitle": "Tải lên tài liệu học tập (PDF, Video, hoặc URL) và để AI xây dựng lộ trình cá nhân hóa cùng bộ câu hỏi tương tác.",
+      "subtitle": "Biến mọi tài liệu thành bài trắc nghiệm chỉ trong tích tắc. Tải lên tài liệu học tập (PDF, DOC, hoặc Youtube URL) để AI tự động tạo các bộ câu hỏi tương tác và tùy chỉnh theo cách học của riêng bạn.",
       "startLearning": "Bắt đầu học ngay",
       "watchDemo": "Xem Demo",
       "activeStudents": "Học viên tích cực"
     },
     "features": {
       "title": "Cách mạng hóa hành trình học tập",
+      "new": {
+        "generation": {
+          "title": "Tạo tự động",
+          "bullet1": "Đa dạng nguồn: Tải lên PDF, Video, Hình ảnh, YouTube links...",
+          "bullet2": "AI trích xuất kiến thức & tạo câu hỏi sát với thực tế.",
+          "bullet3": "Tiết kiệm hàng giờ tạo quiz thủ công (Giải quyết vấn đề cốt lõi)."
+        },
+        "customization": {
+          "title": "Tùy chỉnh sâu",
+          "bullet1": "Điều chỉnh: Loại câu hỏi, độ khó, mức độ nhận thức Bloom.",
+          "bullet2": "Chọn mục đích: Ôn tập nhanh, kiểm tra kiến thức, hoặc thi thử.",
+          "bullet3": "AI đánh giá kết quả và đề xuất các chủ đề cần ôn tập."
+        },
+        "collaborative": {
+          "title": "Học tập cộng tác",
+          "bullet1": "Chia sẻ tài liệu học tập và giao bài kiểm tra cho cả nhóm.",
+          "bullet2": "Tổ chức thử thách tương tác trong thời gian thực để tạo hứng thú.",
+          "bullet3": "Trưởng nhóm có thể quản lý và theo dõi tiến độ của từng học viên."
+        }
+      },
       "roadmapTitle": "Lộ trình AI",
       "roadmapDesc": "AI phân tích tài liệu và tạo lộ trình học tập từng bước từ cơ bản đến nâng cao.",
       "quizTitle": "Trắc nghiệm thông minh",
@@ -1707,12 +1736,15 @@
       "create": "Tạo mới",
       "createWorkspace": "Tạo không gian học tập mới",
       "createGroup": "Tạo nhóm",
-      "share": "Chia sẻ"
+      "share": "Chia sẻ",
+      "openGroupCommunity": "Cộng đồng nhóm QuizMate AI",
+      "backToHome": "Về home"
     },
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
       "groupPlaceholder": "Tìm kiếm nhóm...",
-      "noResults": "Không tìm thấy kết quả"
+      "noResults": "Không tìm thấy kết quả",
+      "clear": "Xóa tìm kiếm"
     },
     "create": {
       "personalTab": "Không gian học tập cá nhân",
@@ -1862,6 +1894,46 @@
         "GROUP": "Nhóm"
       }
     },
+    "groupHub": {
+      "eyebrow": "Community groups",
+      "title": "Khám phá nhóm học phù hợp ngay trên home",
+      "subtitle": "Xem nhanh mục tiêu, nhịp học, các phần đang có trong group và tham gia khi thấy phù hợp. Giao diện giữ ít màu, rõ thứ tự thông tin và dễ quét ở cả desktop lẫn mobile.",
+      "public": "Công khai",
+      "joined": "Đã tham gia",
+      "join": "Tham gia nhóm",
+      "joining": "Đang tham gia...",
+      "joinSuccess": "Đã tham gia nhóm thành công.",
+      "joinError": "Không thể tham gia nhóm này.",
+      "emptyTitle": "Chưa có nhóm public nào",
+      "emptyDescription": "Khi có nhóm mở công khai, bạn sẽ thấy mục tiêu học và có thể tham gia trực tiếp từ đây.",
+      "emptyCardDescription": "Nhóm này chưa thêm mô tả ngắn.",
+      "noResultsDescription": "Thử đổi từ khóa theo mục tiêu học, lĩnh vực hoặc kỳ thi.",
+      "myGroupsEyebrow": "Nhóm của bạn",
+      "myGroupsSubtitle": "Các nhóm bạn đang học cùng hoặc đang quản lý.",
+      "requirementsTitle": "Nhu cầu và định hướng",
+      "sectionsTitle": "Các phần trong nhóm",
+      "sharedPace": "Nhịp học chung",
+      "fallbackNeed": "Phù hợp cho vai trò {{role}} với nhịp học {{mode}}.",
+      "createdBy": "Tạo bởi {{owner}}",
+      "metrics": {
+        "community": "Nhóm public",
+        "readyToJoin": "Có thể tham gia",
+        "myGroups": "Nhóm của bạn"
+      },
+      "labels": {
+        "goal": "Mục tiêu",
+        "focus": "Trọng tâm",
+        "rules": "Quy ước",
+        "fit": "Phù hợp với"
+      },
+      "sections": {
+        "discussion": "Discussion",
+        "materials": "Tài liệu",
+        "quiz": "Quiz",
+        "roadmap": "Roadmap",
+        "mockTest": "Mock test"
+      }
+    },
     "pagination": {
       "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",
       "page": "trang"
@@ -1947,16 +2019,16 @@
         }
       },
       "steps": {
-      "1": {
-        "title": "Bước 1",
-        "stepperLabel": "Xác định kiến thức",
-        "description": "Chọn cách học và để Quizmate AI xác định phạm vi kiến thức phù hợp."
-      },
-      "2": {
-        "title": "Bước 2",
-        "stepperLabel": "Hồ sơ cá nhân",
-        "description": "Bổ sung trình độ hiện tại, mục tiêu và các điểm cần tập trung để AI gợi ý sát hơn."
-      },
+        "1": {
+          "title": "Bước 1",
+          "stepperLabel": "Xác định kiến thức",
+          "description": "Chọn cách học và để Quizmate AI xác định phạm vi kiến thức phù hợp."
+        },
+        "2": {
+          "title": "Bước 2",
+          "stepperLabel": "Hồ sơ cá nhân",
+          "description": "Bổ sung trình độ hiện tại, mục tiêu và các điểm cần tập trung để AI gợi ý sát hơn."
+        },
         "3": {
           "title": "Bước 3",
           "stepperLabel": "Cấu hình lộ trình",
@@ -1968,14 +2040,14 @@
         }
       },
       "purpose": {
-      "STUDY_NEW": {
-        "title": "Học mới",
-        "description": "Bắt đầu một chủ đề mới, xây dựng nền tảng và vẫn có thể tạo mock test khi cần."
-      },
-      "REVIEW": {
-        "title": "Ôn tập",
-        "description": "Củng cố phần đã học, tập trung vào chỗ cần cải thiện và vẫn có thể tạo mock test khi cần."
-      },
+        "STUDY_NEW": {
+          "title": "Học mới",
+          "description": "Bắt đầu một chủ đề mới, xây dựng nền tảng và vẫn có thể tạo mock test khi cần."
+        },
+        "REVIEW": {
+          "title": "Ôn tập",
+          "description": "Củng cố phần đã học, tập trung vào chỗ cần cải thiện và vẫn có thể tạo mock test khi cần."
+        },
         "MOCK_TEST": {
           "title": "Mock test",
           "description": "Luyện theo kỳ thi mục tiêu với bản mẫu đề, điểm mục tiêu và ngày thi dự kiến."
@@ -1995,9 +2067,9 @@
           "description": "Xác nhận lĩnh vực Quizmate AI đề xuất để tiếp tục sang bước tiếp theo."
         }
       },
-    "stepOne": {
-      "title": "Xác định kiến thức và cách học",
-      "description": "Chọn cách học chính, nhập kiến thức bạn muốn học và để Quizmate AI gợi ý domain phù hợp.",
+      "stepOne": {
+        "title": "Xác định kiến thức và cách học",
+        "description": "Chọn cách học chính, nhập kiến thức bạn muốn học và để Quizmate AI gợi ý domain phù hợp.",
         "knowledgeTitle": "Nhập kiến thức bạn muốn học",
         "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. Quizmate AI sẽ suy ra lĩnh vực phù hợp với bạn.",
         "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
@@ -2114,8 +2186,8 @@
         "finishSuccess": "Hoàn thành thiết lập Không gian Học tập thành công.",
         "saveError": "Không thể lưu tiến trình thiết lập Không gian Học tập."
       },
-    "fields": {
-      "workspacePurpose": "Cách học chính",
+      "fields": {
+        "workspacePurpose": "Cách học chính",
         "knowledgeInput": "Kiến thức bạn muốn học",
         "knowledgeDescription": "Mô tả chi tiết knowledge",
         "primaryDomain": "Lĩnh vực chính",
@@ -2510,9 +2582,9 @@
       "timerMode": "Chế độ tổng thời gian",
       "timerModeHintOn": "Tất cả câu hỏi dùng chung thời gian tổng",
       "timerModeHintOff": "Mỗi câu hỏi có thời gian riêng",
-      "examModeLabel": "Loại Exam",
-      "examModeType1": "Exam giới hạn thời gian tổng",
-      "examModeType2": "Exam theo từng câu",
+      "examModeLabel": "Hình thức kiểm tra",
+      "examModeType1": "Kiểm tra theo giới hạn thời gian tổng",
+      "examModeType2": "Kiểm tra theo từng câu",
       "examModeType1Short": "Giới hạn thời gian tổng",
       "examModeType2Short": "Theo từng câu",
       "minutes": "phút",
@@ -2858,7 +2930,7 @@
         "difficultyUnitByCount": "Đơn vị độ khó theo số lượng",
         "questionTypeUnitByCount": "Đơn vị loại câu hỏi theo số lượng",
         "bloomUnitByCount": "Đơn vị bloom skill theo số lượng",
-        "advancedConfig": "Loại quiz nâng cao",
+        "advancedConfig": "Cấu hình quiz nâng cao",
         "questionTypes": "Loại câu hỏi",
         "questionTypeLabels": {
           "SINGLE_CHOICE": "Một đáp án",
@@ -2869,7 +2941,7 @@
           "MATCHING": "Nối cặp",
           "IMAGED_BASED": "Dựa trên hình ảnh"
         },
-        "bloomSkills": "Kỹ năng Bloom",
+        "bloomSkills": "Thang đo Bloom",
         "bloomInfo": "Tham chiếu thang Bloom",
         "bloomInfoAlt": "Biểu đồ thang Bloom taxonomy",
         "countUnit": "câu",
@@ -2879,12 +2951,12 @@
         "remove": "Xóa",
         "lock": "Khóa",
         "unlock": "Mở khóa",
-        "settings": "Thời gian & hình thức thi",
+        "settings": "Tổng số câu, thời gian và hình thức kiểm tra",
         "timeMinutes": "Thời gian (phút)",
         "enableTimerMode": "Bật chế độ hẹn giờ",
-        "examType": "Loại exam",
-        "examTypeTimed": "Exam giới hạn thời gian tổng",
-        "examTypeSequential": "Exam theo từng câu (tuần tự)",
+        "examType": "Hình thức kiểm tra",
+        "examTypeTimed": "Kiểm tra theo giới hạn thời gian tổng",
+        "examTypeSequential": "Kiểm tra theo từng câu (tuần tự)",
         "examTypeHintTimed": "Người học có thể xem toàn bộ câu hỏi, quay lại câu trước, và chỉ nộp 1 lần khi kết thúc.",
         "examTypeHintSequential": "Người học chỉ thấy 1 câu tại 1 thời điểm, không quay lại câu trước. Hết giờ sẽ tự chuyển câu.",
         "perQuestionDurationHint": "Chế độ này dùng thời gian theo từng câu (đơn vị giây). AI sẽ sinh duration cho mỗi câu.",
@@ -3298,7 +3370,7 @@
       "groupSetupPromptTitle": "Bạn hãy thiết lập lộ trình cho nhóm",
       "groupSetupPromptDescription": "Hãy thiết lập lượng kiến thức, nhịp học, số ngày dự kiến và số phút học mỗi ngày để roadmap bám đúng kế hoạch học của nhóm.",
       "setupConfirmTitle": "Xác nhận thiết lập lộ trình",
-      "setupConfirmDescription": "Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho nhóm không?",
+      "setupConfirmDescription": "Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho workspace này không?",
       "setupConfirmAction": "Xác nhận thiết lập",
       "updateConfirmTitle": "Xác nhận cập nhật lộ trình",
       "updateConfirmDescription": "Bạn có chắc chắn muốn cập nhật thông tin lộ trình không?",
@@ -3799,7 +3871,7 @@
     "questionNotFound": "Không tìm thấy câu hỏi.",
     "answerNotFound": "Không tìm thấy đáp án.",
     "questionTypeNotFound": "Không tìm thấy loại câu hỏi.",
-    "bloomNotFound": "Không tìm thấy kỹ năng Bloom.",
+    "bloomNotFound": "Không tìm thấy thang đo Bloom.",
     "invalidSectionParent": "Phần cha không hợp lệ.",
     "invalidSectionType": "Loại phần không hợp lệ.",
     "quizNotInGroup": "Bộ câu hỏi không thuộc nhóm.",
@@ -3994,6 +4066,9 @@
     "processing": "Đang xử lý...",
     "secureNote": "Giao dịch được bảo mật & mã hóa",
     "momoError": "Không thể tạo thanh toán MoMo. Vui lòng thử lại.",
+    "vnpayError": "Không thể tạo thanh toán VNPay. Vui lòng thử lại.",
+    "stripeError": "Không thể tạo thanh toán Stripe. Vui lòng thử lại.",
+    "paymentError": "Lỗi thanh toán. Vui lòng thử lại.",
     "noPlanId": "Chưa chọn gói. Vui lòng quay lại và chọn gói đăng ký.",
     "fetchError": "Không thể tải thông tin gói. Vui lòng thử lại.",
     "selectGroup": "Chọn nhóm áp dụng",
@@ -4026,7 +4101,7 @@
       "hasAiContentStructuring": "AI Content Structuring",
       "hasPersonalizedLearningAnalytic": "Phân tích học tập cá nhân",
       "hasAiTextReadingAndSummarization": "AI đọc & tóm tắt văn bản",
-      "hasAdvancedAiConfiguration": "Loại quiz nâng cao"
+      "hasAdvancedAiConfiguration": "Cấu hình quiz nâng cao"
     }
   },
   "paymentResult": {
@@ -4347,6 +4422,73 @@
     },
     "profile": {
       "noRules": "Chưa có nội quy bổ sung."
+    }
+  },
+  "challengeDetailView": {
+    "reviewerPanel": {
+      "invitationPendingShort": "Chưa đồng ý review",
+      "invitationDeclinedShort": "Đã từ chối review",
+      "confirmedShort": "Đã xác nhận {{time}}",
+      "openedPendingShort": "Đã mở {{time}} • Chưa xác nhận",
+      "pendingShort": "Chưa mở • Chưa xác nhận",
+      "participatingLeaderHint": "Leader đang tham gia challenge, nên hãy mời 1 hoặc 2 reviewer ở đây. Tất cả reviewer có cùng vai trò.",
+      "optionalHint": "Bạn có thể mời tối đa 2 reviewer nếu muốn có thêm người rà soát trước khi xuất bản. Tất cả reviewer có cùng vai trò.",
+      "reviewerBadge": "Reviewer",
+      "noEligibleMembersHint": "Không còn thành viên phù hợp để mời. Danh sách này đã loại reviewer hiện có, thí sinh đã đăng ký và leader nếu leader đang tham gia.",
+      "needReviewerWhenLeaderParticipates": "Leader đang tham gia thi nên cần mời tối thiểu 1 reviewer. Bạn có thể mời tối đa 2 reviewer.",
+      "optionalReviewersHint": "Reviewer là tuỳ chọn ở bước này. Nếu mời, họ có thể giúp kiểm tra và dọn đề trước khi bạn xuất bản."
+    },
+    "errors": {
+      "generic": "Có lỗi xảy ra.",
+      "cannotStartAttempt": "Không thể bắt đầu lượt làm bài.",
+      "cannotLoadDetail": "Không thể tải chi tiết challenge."
+    },
+    "cannotOpenTitle": "Không thể mở challenge",
+    "back": "Quay lại",
+    "waitingReviewerConfirm": "Đang chờ reviewer xác nhận",
+    "publishHints": {
+      "needDraftQuizContent": "Leader cần soạn nội dung quiz trước.",
+      "needActiveQuiz": "Quiz challenge cần chuyển từ bản nháp sang sẵn sàng trước khi xuất bản challenge.",
+      "needReviewerWhenLeaderParticipates": "Leader đang tham gia thi, nên cần mời 1 hoặc 2 reviewer trước khi xuất bản challenge.",
+      "needReviewersConfirm": "Ít nhất một reviewer phải xác nhận đề ổn thì leader mới xuất bản challenge được.",
+      "startTimePassed": "Challenge đã tới giờ bắt đầu nên không thể xuất bản nữa.",
+      "afterPublishInfo": "Sau khi xuất bản, thành viên sẽ thấy challenge và có thể đăng ký."
+    },
+    "notPublishedBadge": "Chưa xuất bản",
+    "startLabel": "Bắt đầu",
+    "endLabel": "Kết thúc",
+    "participantCount": "{{count}} người tham gia",
+    "registrationMode": {
+      "inviteOnly": "Chỉ mời",
+      "public": "Công khai"
+    },
+    "quizChallengeLabel": "Quiz challenge",
+    "minutesShort": "{{count}} phút",
+    "questionsShort": "câu hỏi",
+    "processingQuizTitle": "Quiz challenge đang được tạo",
+    "processingQuizHint": "Hệ thống vẫn đang tạo câu hỏi cho challenge này. Quay lại sau ít phút để tiếp tục duyệt hoặc chỉnh sửa quiz.",
+    "composeChallengeQuiz": "Soạn quiz challenge",
+    "draftQuizHint": "Hãy tạo nội dung quiz trước, sau đó bạn có thể xem trước quiz challenge.",
+    "reviewInvitation": {
+      "title": "Bạn được mời review đề challenge này",
+      "body": "Leader đã chọn bạn làm reviewer. Nếu đồng ý, bạn sẽ được xem đề trước để kiểm tra và bạn sẽ không thể đăng ký tham gia challenge này như thí sinh.",
+      "accept": "Đồng ý review",
+      "decline": "Từ chối"
+    },
+    "actions": {
+      "publish": "Xuất bản challenge",
+      "register": "Đăng ký",
+      "acceptInvite": "Chấp nhận lời mời",
+      "continueAttempt": "Tiếp tục làm bài",
+      "startAttempt": "Bắt đầu làm bài",
+      "cancel": "Huỷ challenge"
+    },
+    "participantsTitle": "Người tham gia ({{count}})",
+    "memberFallback": "Thành viên",
+    "participantStatus": {
+      "finished": "Đã hoàn thành",
+      "playing": "Đang làm",
+      "waiting": "Đang chờ"
     }
   },
   "workspaceSettings": "Cài đặt không gian học tập",

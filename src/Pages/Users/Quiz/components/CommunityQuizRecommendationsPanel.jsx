@@ -1,10 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Clock3, Download, Loader2, Sparkles, Target, Users } from 'lucide-react';
+import { BarChart3, Clock3, Download, Eye, Loader2, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { getWorkspaceQuizRecommendations, logWorkspaceQuizRecommendationEvents } from '@/api/WorkspaceAPI';
 import { cloneCommunityQuizToWorkspace } from '@/api/QuizAPI';
 import { useToast } from '@/context/ToastContext';
+import CommunityQuizSignals from '@/Pages/Users/Quiz/components/CommunityQuizSignals';
+import CommunityQuizDetailDialog from '@/Pages/Users/Quiz/components/CommunityQuizDetailDialog';
 
 function extractApiData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
@@ -75,6 +77,7 @@ function RecommendationCard({
   item,
   cloningQuizId,
   onClone,
+  onPreview,
   fontClass,
   isDarkMode,
   t,
@@ -101,14 +104,6 @@ function RecommendationCard({
             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.badgeClassName}`}>
               {t(meta.labelKey, meta.defaultLabel)}
             </span>
-            {cloneCount > 0 ? (
-              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
-              }`}>
-                <Users className="h-3.5 w-3.5" />
-                {t('workspace.quiz.communityRecommendations.cloneCount', '{{count}} clones', { count: cloneCount })}
-              </span>
-            ) : null}
           </div>
 
           <p className={`mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
@@ -160,20 +155,44 @@ function RecommendationCard({
               ))}
             </div>
           ) : null}
+
+          <CommunityQuizSignals
+            cloneCount={cloneCount}
+            averageRating={item?.communityAverageRating}
+            ratingCount={item?.communityRatingCount}
+            commentCount={item?.communityCommentCount}
+            isDarkMode={isDarkMode}
+            t={t}
+            className="mt-4"
+          />
         </div>
 
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => onClone(item)}
-          disabled={isCloning}
-          className="shrink-0 rounded-full bg-blue-600 px-4 text-white hover:bg-blue-700"
-        >
-          {isCloning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          <span className={`ml-1 ${fontClass}`}>
-            {t('workspace.quiz.communityRecommendations.cloneAction', 'Clone to this workspace')}
-          </span>
-        </Button>
+        <div className="flex shrink-0 flex-col gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onPreview(item)}
+            className={`rounded-full px-4 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900' : ''}`}
+          >
+            <Eye className="h-4 w-4" />
+            <span className={`ml-1 ${fontClass}`}>
+              {t('workspace.quiz.communityDetail.previewAction', 'Preview')}
+            </span>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onClone(item)}
+            disabled={isCloning}
+            className="rounded-full bg-blue-600 px-4 text-white hover:bg-blue-700"
+          >
+            {isCloning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            <span className={`ml-1 ${fontClass}`}>
+              {t('workspace.quiz.communityRecommendations.cloneAction', 'Clone to this workspace')}
+            </span>
+          </Button>
+        </div>
       </div>
     </article>
   );
@@ -193,6 +212,7 @@ export default function CommunityQuizRecommendationsPanel({
   const [data, setData] = React.useState(null);
   const [error, setError] = React.useState('');
   const [cloningQuizId, setCloningQuizId] = React.useState(null);
+  const [selectedQuizItem, setSelectedQuizItem] = React.useState(null);
   const loggedImpressionRequestIdsRef = React.useRef(new Set());
 
   const loadRecommendations = React.useCallback(async () => {
@@ -291,6 +311,7 @@ export default function CommunityQuizRecommendationsPanel({
         recommendationScore: item?.recommendationScore,
       });
       showSuccess(t('workspace.quiz.communityRecommendations.cloneSuccess', 'Quiz cloned into this workspace.'));
+      setSelectedQuizItem(null);
       await loadRecommendations();
       if (typeof onAnalyticsChanged === 'function') {
         onAnalyticsChanged();
@@ -364,12 +385,31 @@ export default function CommunityQuizRecommendationsPanel({
             item={item}
             cloningQuizId={cloningQuizId}
             onClone={handleClone}
+            onPreview={setSelectedQuizItem}
             fontClass={fontClass}
             isDarkMode={isDarkMode}
             t={t}
           />
         ))}
       </div>
+
+      <CommunityQuizDetailDialog
+        open={Boolean(selectedQuizItem)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setSelectedQuizItem(null);
+          }
+        }}
+        quizId={selectedQuizItem?.quizId}
+        isDarkMode={isDarkMode}
+        fontClass={fontClass}
+        title={selectedQuizItem?.title}
+        description={t('workspace.quiz.communityDetail.previewDescription', 'Preview questions, community rating and public comments before cloning.')}
+        onClone={selectedQuizItem ? () => handleClone(selectedQuizItem) : undefined}
+        cloneLoading={Number(cloningQuizId) === Number(selectedQuizItem?.quizId)}
+        showCloneAction
+        cloneActionLabel={t('workspace.quiz.communityRecommendations.cloneAction', 'Clone to this workspace')}
+      />
     </section>
   );
 }

@@ -70,6 +70,12 @@ export const updateFlashcardSetStatus = async (flashcardSetId, status) => {
   return response;
 };
 
+// Cấu hình flashcard chung cho nhóm hoặc gán thành viên cụ thể
+export const setGroupFlashcardAudience = async (flashcardSetId, body) => {
+  const response = await api.put(`/flashcards/${flashcardSetId}/group/audience`, body);
+  return response;
+};
+
 // Thêm flashcard item vào flashcard set
 export const addFlashcardItem = async (flashcardSetId, data) => {
   const response = await api.post(`/flashcards/${flashcardSetId}/items`, data);
@@ -91,5 +97,21 @@ export const deleteFlashcardItem = async (flashcardItemId) => {
 // Xóa flashcard set
 export const deleteFlashcardSet = async (flashcardSetId) => {
   const response = await api.delete(`/flashcards/${flashcardSetId}`);
+  return response;
+};
+
+// Bulk create flashcard set + items. Default trạng thái DRAFT; nếu activate=true thì chuyển ACTIVE nguyên tử.
+// payload: { workspaceId, flashcardSetName, items: [{ frontContent, backContent }, ...],
+//           roadmapId?, phaseId?, knowledgeId?, activate?: boolean }
+export const createManualFlashcardBulk = async (payload) => {
+  const response = await api.post('/flashcards/manual:create-bulk', payload);
+  return response;
+};
+
+// Bulk update flashcard set + items (diff-based upsert). Chỉ áp dụng ở DRAFT.
+// Nếu activate=true: sau khi diff xong → chuyển sang ACTIVE.
+// payload: { flashcardSetName, items: [{ flashcardItemId?, frontContent, backContent }, ...], activate?: boolean }
+export const updateManualFlashcardBulk = async (flashcardSetId, payload) => {
+  const response = await api.put(`/flashcards/${flashcardSetId}/manual:update-bulk`, payload);
   return response;
 };

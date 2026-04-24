@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import {
   Activity,
@@ -40,6 +40,7 @@ import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
+import { resolveGroupUiPermissions } from '../utils/groupPermissionView';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
 import UserDisplayName from '@/Components/users/UserDisplayName';
 import {
@@ -343,6 +344,7 @@ export default function GroupReviewWorkspaceShell() {
     groups,
     fetchGroups,
     fetchMembers,
+    fetchMyPermissions,
     grantUpload,
     revokeUpload,
     updateMemberRole,
@@ -382,9 +384,31 @@ export default function GroupReviewWorkspaceShell() {
     () => members.find((member) => Number(member.userId) === Number(currentUser?.id ?? currentUser?.userId)),
     [currentUser?.id, currentUser?.userId, members],
   );
-  const canManageMembers = isLeader;
-  const canCreateContent = isLeader || isContributor;
-  const canUploadSource = isLeader || isContributor || Boolean(currentMember?.canUpload);
+  const hasGrantedContentAccess = Boolean(
+    currentMember?.canUpload
+    || currentGroupWorkspace?.canUpload
+    || currentGroupFromGroups?.canUpload,
+  );
+  const fallbackCanCreateContent = isLeader || isContributor || hasGrantedContentAccess;
+  const fallbackCanUploadSource = isLeader || isContributor || hasGrantedContentAccess;
+  const {
+    data: myGroupPermissions,
+  } = useQuery({
+    queryKey: ['group-review-my-permissions', resolvedWorkspaceId],
+    queryFn: () => fetchMyPermissions(resolvedWorkspaceId),
+    enabled: Boolean(resolvedWorkspaceId && !isCreating),
+    staleTime: 15 * 1000,
+  });
+  const {
+    canManageMembers,
+    canCreateContent,
+    canUploadSource,
+  } = resolveGroupUiPermissions({
+    myGroupPermissions,
+    fallbackCanCreateContent,
+    fallbackCanUploadSource,
+    fallbackCanManageMembers: isLeader,
+  });
   const hasUploadedMaterials = sources.length > 0 || Boolean(groupProfile?.hasMaterials);
   const hasCompletedGroupProfile = Boolean(groupProfile?.onboardingCompleted);
   const shouldForceProfileSetup = Boolean(
@@ -942,14 +966,16 @@ export default function GroupReviewWorkspaceShell() {
     if (!resolvedWorkspaceId) return;
     const memberFallback = t('groupReview.fallback.member', 'Member');
     try {
+      const memberId = member?.groupMemberId ?? member?.workspaceMemberId;
+      if (!memberId) return;
       if (member?.canUpload) {
-        await revokeUpload(resolvedWorkspaceId, member.userId);
+        await revokeUpload(resolvedWorkspaceId, memberId);
         showSuccess(t('groupReview.toast.revokeUploadSuccess', {
           name: getUserDisplayLabel(member, memberFallback),
           defaultValue: 'Upload permission revoked from {{name}}.',
         }));
       } else {
-        await grantUpload(resolvedWorkspaceId, member.userId);
+        await grantUpload(resolvedWorkspaceId, memberId);
         showSuccess(t('groupReview.toast.grantUploadSuccess', {
           name: getUserDisplayLabel(member, memberFallback),
           defaultValue: 'Upload permission granted to {{name}}.',
@@ -965,7 +991,9 @@ export default function GroupReviewWorkspaceShell() {
     if (!resolvedWorkspaceId || !nextRole || nextRole === member.role) return;
     const memberFallback = t('groupReview.fallback.member', 'Member');
     try {
-      await updateMemberRole(resolvedWorkspaceId, member.userId, nextRole);
+      const memberId = member?.groupMemberId ?? member?.workspaceMemberId;
+      if (!memberId) return;
+      await updateMemberRole(resolvedWorkspaceId, memberId, nextRole);
       showSuccess(t('groupReview.toast.updateRoleSuccess', {
         name: getUserDisplayLabel(member, memberFallback),
         defaultValue: 'Role updated for {{name}}.',
@@ -985,7 +1013,9 @@ export default function GroupReviewWorkspaceShell() {
       defaultValue: 'Remove {{name}} from the group?',
     }))) return;
     try {
-      await removeMember(resolvedWorkspaceId, member.userId);
+      const memberId = member?.groupMemberId ?? member?.workspaceMemberId;
+      if (!memberId) return;
+      await removeMember(resolvedWorkspaceId, memberId);
       showSuccess(t('groupReview.toast.removeSuccess', {
         name: displayName,
         defaultValue: 'Removed {{name}} from the group.',
