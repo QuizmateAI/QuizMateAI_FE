@@ -60,7 +60,7 @@ const EMPTY_ENTITLEMENT = {
   canProcessImage: false,
   canProcessVideo: false,
   canProcessAudio: false,
-  canBuyCredit: true,
+  canBuyCredit: false,
   planIncludedCredits: 0,
   hasAdvanceQuizConfig: false,
   canCreateRoadMap: false,
