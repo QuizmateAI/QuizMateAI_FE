@@ -551,11 +551,18 @@
     "orderId": "Order ID",
     "transId": "Transaction ID",
     "amount": "Amount",
+    "gatewayCurrency": "Gateway currency",
     "orderInfo": "Description",
     "payType": "Pay Type",
     "time": "Time",
     "backToPlans": "Back to plans",
-    "goHome": "Go to Home"
+    "backToWallet": "Back to wallet",
+    "backToGroup": "Back to group",
+    "goHome": "Go to Home",
+    "currentPlan": "Current plan",
+    "planReadyHint": "Your plan is ready - you can continue learning.",
+    "planExpiresAt": "Valid until {{date}}",
+    "backendRejected": "The payment was not verified by the server, so no credits or plan were activated."
   },
   "walletPage": {
     "logoAlt": "QuizMate AI Logo",

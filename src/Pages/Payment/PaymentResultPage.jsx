@@ -30,7 +30,7 @@ import {
   markPendingPlanPurchaseSucceeded,
 } from '@/Utils/planPurchaseState';
 import { setCachedSubscription } from '@/Utils/userCache';
-import { buildGroupWorkspacePath, buildPlansPath } from '@/lib/routePaths';
+import { buildGroupWorkspacePath, buildPlansPath, buildWalletsPath } from '@/lib/routePaths';
 
 const PAYMENT_POLL_DELAY_MS = 1500;
 const PAYMENT_POLL_MAX_ATTEMPTS = 6;
@@ -74,13 +74,16 @@ export default function PaymentResultPage() {
     () => getPendingPlanPurchase() ?? getRecentPlanPurchase(),
     [],
   );
+  const pendingPurchaseType = String(pendingPurchase?.purchaseType || 'PLAN').toUpperCase();
+  const isCreditPurchase = pendingPurchaseType === 'CREDIT';
 
   const urlStatus = searchParams.get('status') || '';
   const urlResultCode = searchParams.get('resultCode') || '';
   const urlIndicatesSuccess = urlStatus === 'success' || urlResultCode === '0' || urlResultCode === '00';
   const effectiveOrderId = searchParams.get('orderId') || pendingPurchase?.orderId || '';
-  const activePaymentRecord = paymentLookupOrderId === effectiveOrderId ? paymentRecord : null;
-  const isActivePaymentResolving = paymentLookupOrderId === effectiveOrderId && isResolvingPayment;
+  const hasLookupForCurrentOrder = paymentLookupOrderId === effectiveOrderId;
+  const activePaymentRecord = hasLookupForCurrentOrder ? paymentRecord : null;
+  const isActivePaymentResolving = hasLookupForCurrentOrder && isResolvingPayment;
 
   useEffect(() => {
     if (!effectiveOrderId) {
@@ -147,54 +150,46 @@ export default function PaymentResultPage() {
   const resultVariant = useMemo(() => {
     if (backendPaymentStatus === 'COMPLETED') return 'success';
     if (backendPaymentStatus === 'FAILED' || backendPaymentStatus === 'CANCELLED') return 'failed';
-    if (effectiveOrderId && (isActivePaymentResolving || backendPaymentStatus === 'PENDING')) return 'processing';
+    if (effectiveOrderId) {
+      if (!hasLookupForCurrentOrder || isActivePaymentResolving || backendPaymentStatus === 'PENDING') {
+        return 'processing';
+      }
+      return 'failed';
+    }
     if (urlIndicatesSuccess) return 'success';
     return 'failed';
-  }, [backendPaymentStatus, effectiveOrderId, isActivePaymentResolving, urlIndicatesSuccess]);
+  }, [backendPaymentStatus, effectiveOrderId, hasLookupForCurrentOrder, isActivePaymentResolving, urlIndicatesSuccess]);
 
   const isSuccess = resultVariant === 'success';
   const isProcessing = resultVariant === 'processing';
-  const shouldLoadCurrentSubscription = isSuccess && String(pendingPurchase?.planType || '').toUpperCase() !== 'GROUP';
+  const shouldLoadCurrentSubscription = isSuccess && !isCreditPurchase && String(pendingPurchase?.planType || '').toUpperCase() !== 'GROUP';
   const { summary: currentPlanSummary } = useCurrentSubscription({ enabled: shouldLoadCurrentSubscription });
 
   const details = useMemo(() => {
     const queryAmount = normalizeAmount(searchParams.get('amount'));
     const recordAmount = normalizeAmount(activePaymentRecord?.amount);
+    const gatewayAmount = normalizeAmount(activePaymentRecord?.gatewayAmount);
 
     return {
       orderId: searchParams.get('orderId') || activePaymentRecord?.orderId || effectiveOrderId || '',
-      amount: queryAmount || recordAmount,
+      amount: recordAmount || gatewayAmount || queryAmount,
       orderInfo: searchParams.get('orderInfo') || '',
-      transId: searchParams.get('transId') || '',
+      transId: activePaymentRecord?.gatewayTransactionId || searchParams.get('transId') || searchParams.get('session_id') || '',
       message: searchParams.get('message') || '',
       payType: searchParams.get('payType') || '',
-      responseTime: searchParams.get('responseTime') || '',
+      responseTime: activePaymentRecord?.gatewayVerifiedAt || searchParams.get('responseTime') || '',
+      gatewayCurrency: activePaymentRecord?.gatewayCurrency || '',
     };
-  }, [activePaymentRecord?.amount, activePaymentRecord?.orderId, effectiveOrderId, searchParams]);
-
-  const planPageTarget = useMemo(() => {
-    const purchasePlanType = String(pendingPurchase?.planType || '').toUpperCase();
-    if (purchasePlanType === 'GROUP' && pendingPurchase?.workspaceId) {
-      const query = new URLSearchParams({
-        planType: 'GROUP',
-        workspaceId: String(pendingPurchase.workspaceId),
-      });
-      return {
-        to: `/plans?${query.toString()}`,
-        options: {
-          state: {
-            workspaceId: Number(pendingPurchase.workspaceId),
-            planType: 'GROUP',
-          },
-        },
-      };
-    }
-
-    return {
-      to: '/plans',
-      options: undefined,
-    };
-  }, [pendingPurchase?.planType, pendingPurchase?.workspaceId]);
+  }, [
+    activePaymentRecord?.amount,
+    activePaymentRecord?.gatewayAmount,
+    activePaymentRecord?.gatewayCurrency,
+    activePaymentRecord?.gatewayTransactionId,
+    activePaymentRecord?.gatewayVerifiedAt,
+    activePaymentRecord?.orderId,
+    effectiveOrderId,
+    searchParams,
+  ]);
 
   const formattedAmount = useMemo(
     () => new Intl.NumberFormat('vi-VN').format(details.amount),
@@ -203,7 +198,9 @@ export default function PaymentResultPage() {
 
   const formattedTime = useMemo(() => {
     if (!details.responseTime) return '';
-    const date = new Date(Number(details.responseTime));
+    const rawTime = String(details.responseTime);
+    const date = /^\d+$/.test(rawTime) ? new Date(Number(rawTime)) : new Date(rawTime);
+    if (Number.isNaN(date.getTime())) return rawTime;
     return date.toLocaleString(currentLang === 'vi' ? 'vi-VN' : 'en-US');
   }, [details.responseTime, currentLang]);
 
@@ -211,17 +208,18 @@ export default function PaymentResultPage() {
     { label: t('paymentResult.orderId'), value: details.orderId },
     { label: t('paymentResult.transId'), value: details.transId },
     { label: t('paymentResult.amount'), value: `${formattedAmount}₫` },
+    { label: t('paymentResult.gatewayCurrency'), value: details.gatewayCurrency },
     { label: t('paymentResult.orderInfo'), value: details.orderInfo },
     { label: t('paymentResult.payType'), value: details.payType === 'qr' ? 'QR Code' : details.payType },
     { label: t('paymentResult.time'), value: formattedTime },
   ], [details, formattedAmount, formattedTime, t]);
 
   const fallbackPlanSummary = useMemo(() => {
-    if (!isSuccess) return null;
+    if (!isSuccess || isCreditPurchase) return null;
     return createPlanSummaryFromPurchase(pendingPurchase);
-  }, [isSuccess, pendingPurchase]);
+  }, [isCreditPurchase, isSuccess, pendingPurchase]);
 
-  const activePlanSummary = fallbackPlanSummary ?? currentPlanSummary;
+  const activePlanSummary = isCreditPurchase ? null : fallbackPlanSummary ?? currentPlanSummary;
   const formattedPlanEndDate = useMemo(() => {
     if (!activePlanSummary?.endDate) return '';
 
@@ -247,9 +245,12 @@ export default function PaymentResultPage() {
       : t('paymentResult.failTitle');
 
   /** Do not show gateway `message` on success (often duplicate / unaccented). */
+  const backendRejectedSuccessUrl = Boolean(effectiveOrderId && urlIndicatesSuccess && resultVariant === 'failed');
   const resultDescription = isSuccess
     ? ''
-    : details.message || (
+    : backendRejectedSuccessUrl
+      ? t('paymentResult.backendRejected')
+      : details.message || (
         isProcessing
           ? t('payment.processing')
           : t('paymentResult.failDesc')
@@ -257,6 +258,12 @@ export default function PaymentResultPage() {
 
   const isGroupPlanPurchase =
     isSuccess
+    && !isCreditPurchase
+    && String(pendingPurchase?.planType || '').toUpperCase() === 'GROUP'
+    && Boolean(pendingPurchase?.workspaceId);
+  const isGroupCreditPurchase =
+    isSuccess
+    && isCreditPurchase
     && String(pendingPurchase?.planType || '').toUpperCase() === 'GROUP'
     && Boolean(pendingPurchase?.workspaceId);
 
@@ -459,8 +466,12 @@ export default function PaymentResultPage() {
             <button
               type="button"
               onClick={() => {
-                if (isGroupPlanPurchase) {
+                if (isGroupPlanPurchase || isGroupCreditPurchase) {
                   navigate(buildGroupWorkspacePath(pendingPurchase.workspaceId));
+                  return;
+                }
+                if (isCreditPurchase) {
+                  navigate(buildWalletsPath());
                   return;
                 }
                 navigate(buildPlansPath());
@@ -472,9 +483,11 @@ export default function PaymentResultPage() {
               }`}
             >
               <ArrowLeft className="w-4 h-4" />
-              {isGroupPlanPurchase
+              {isGroupPlanPurchase || isGroupCreditPurchase
                 ? t('paymentResult.backToGroup')
-                : t('paymentResult.backToPlans')}
+                : isCreditPurchase
+                  ? t('paymentResult.backToWallet')
+                  : t('paymentResult.backToPlans')}
             </button>
             <button
               type="button"

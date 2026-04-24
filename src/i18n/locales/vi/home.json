@@ -548,11 +548,18 @@
     "orderId": "Mã đơn hàng",
     "transId": "Mã giao dịch",
     "amount": "Số tiền",
+    "gatewayCurrency": "Tiền tệ gateway",
     "orderInfo": "Nội dung",
     "payType": "Hình thức",
     "time": "Thời gian",
     "backToPlans": "Quay lại gói đăng ký",
-    "goHome": "Về trang chủ"
+    "backToWallet": "Quay lại ví",
+    "backToGroup": "Quay lại nhóm",
+    "goHome": "Về trang chủ",
+    "currentPlan": "Gói hiện tại",
+    "planReadyHint": "Gói đã sẵn sàng để bạn tiếp tục học tập.",
+    "planExpiresAt": "Hiệu lực đến {{date}}",
+    "backendRejected": "Thanh toán chưa được backend xác thực, nên hệ thống chưa kích hoạt gói hoặc cộng credit."
   },
   "walletPage": {
     "logoAlt": "Logo QuizMate AI",

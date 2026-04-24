@@ -26,7 +26,10 @@ import {
   updateCreditPackage,
   updateCreditPackageStatus,
   deleteCreditPackage,
+  getAllSystemSettings,
 } from '@/api/ManagementSystemAPI';
+
+const DEFAULT_CREDIT_UNIT_PRICE = 200;
 
 const EMPTY_FORM = {
   name: '',
@@ -82,6 +85,7 @@ function CreditPackageManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [creditUnitPrice, setCreditUnitPrice] = useState(DEFAULT_CREDIT_UNIT_PRICE);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingPackage, setDeletingPackage] = useState(null);
@@ -111,9 +115,20 @@ function CreditPackageManagement() {
   const fetchPackages = async () => {
     setIsLoading(true);
     try {
-      const res = await getAllCreditPackages();
+      const [res, settingsRes] = await Promise.all([
+        getAllCreditPackages(),
+        getAllSystemSettings().catch(() => null),
+      ]);
       const data = res?.data ?? res;
       setPackages(Array.isArray(data) ? data : []);
+      const settingsData = settingsRes?.data ?? settingsRes;
+      const unitPriceSetting = Array.isArray(settingsData)
+        ? settingsData.find((s) => s.key === 'credit.unit_price_vnd')
+        : null;
+      const resolvedUnitPrice = Number(unitPriceSetting?.value);
+      if (Number.isFinite(resolvedUnitPrice) && resolvedUnitPrice > 0) {
+        setCreditUnitPrice(resolvedUnitPrice);
+      }
     } catch (err) {
       showError(getFriendlyError(err, 'creditPackageManagement.fetchError'));
     } finally {
@@ -123,8 +138,12 @@ function CreditPackageManagement() {
 
   useEffect(() => {
     fetchPackages();
-     
   }, []);
+
+  const calculatePrice = (baseCredit) => {
+    const credit = parseInt(baseCredit, 10) || 0;
+    return credit * creditUnitPrice;
+  };
 
   const openCreateForm = () => {
     setEditingPackage(null);
@@ -156,7 +175,7 @@ function CreditPackageManagement() {
     try {
       const baseCredit = parseInt(formData.creditAmount, 10) || 0;
       const bonusCredit = Math.floor(baseCredit * 0.1);
-      const price = parseInt(formData.price, 10) || (baseCredit * 200);
+      const price = calculatePrice(baseCredit);
       const displayName = formData.name.trim();
 
       if (editingPackage) {
@@ -604,7 +623,7 @@ function CreditPackageManagement() {
                         const next = {
                           ...formData,
                           creditAmount: value,
-                          price: String(n * 200),
+                          price: String(calculatePrice(n)),
                           bonusCredit: String(bonus),
                         };
                         setFormData(next);
@@ -616,7 +635,7 @@ function CreditPackageManagement() {
                         const next = {
                           ...formData,
                           creditAmount: String(n),
-                          price: String(n * 200),
+                          price: String(calculatePrice(n)),
                           bonusCredit: String(bonus),
                         };
                         setFormData(next);
