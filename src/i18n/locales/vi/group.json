@@ -164,7 +164,7 @@
     },
     "stepOne": {
       "title": "Thiết lập thông tin cơ bản cho nhóm",
-      "description": "Đặt tên nhóm và thêm các ghi chú vận hành chung để cả nhóm theo cùng một nhịp học.",
+      "description": "Đặt tên nhóm và ghi chú vận hành chung.",
       "groupName": "Tên nhóm",
       "groupNameHint": "Dùng tên ngắn gọn, rõ mục tiêu để thành viên nhận ra nhóm ngay.",
       "groupNamePlaceholder": "Ví dụ: Ôn thi TOEIC 750+",
@@ -172,16 +172,16 @@
       "memberDescription": "Phù hợp cho thành viên học tập thông thường trong nhóm.",
       "contributorDescription": "Phù hợp cho thành viên có thể đóng góp nội dung và hoạt động học.",
       "rulesEyebrow": "Nguyên tắc chung",
-      "rulesHint": "Ghi cách học, nhịp sinh hoạt hoặc quy ước chia sẻ tài liệu để các thành viên theo cùng một chuẩn.",
-      "rulesPlaceholder": "Ví dụ: Mỗi tuần check-in 2 buổi, đặt câu hỏi theo chủ đề và ghi rõ nguồn khi chia sẻ tài liệu."
+      "rulesHint": "Ghi nhịp học và quy ước chia sẻ tài liệu.",
+      "rulesPlaceholder": "Ví dụ: Check-in 2 buổi/tuần, đặt câu hỏi theo chủ đề và ghi rõ nguồn."
     },
     "stepTwo": {
       "title": "Thiết lập hồ sơ học tập chung",
-      "description": "Bước này định nghĩa knowledge chung, domain AI hiểu và nhịp học mặc định cho cả nhóm.",
+      "description": "Định nghĩa knowledge, domain và nhịp học chung.",
       "workflow": {
         "eyebrow": "Thiết kế nhanh",
         "title": "Hoàn thiện cấu hình chỉ trong 3 lựa chọn",
-        "description": "Mô tả phạm vi học của nhóm, chọn domain AI gợi ý và bật các tùy chọn phù hợp cho lộ trình chung.",
+        "description": "Mô tả phạm vi học, chọn domain AI và bật tùy chọn phù hợp.",
         "describeTitle": "Mô tả knowledge",
         "describeDescription": "Nói ngắn gọn nhóm đang học gì hoặc đang hướng tới mục tiêu nào.",
         "domainTitle": "Chốt domain",
@@ -190,7 +190,7 @@
         "modeDescription": "Xác định nhóm ưu tiên học mới hay ôn tập."
       },
       "knowledgeLabel": "Knowledge chung của nhóm",
-      "knowledgePlaceholder": "Ví dụ: Cả nhóm đang học JLPT N3 để củng cố ngữ pháp, từ vựng và luyện đọc theo từng chủ điểm.",
+      "knowledgePlaceholder": "Ví dụ: Ôn JLPT N3 theo ngữ pháp, từ vựng và luyện đọc.",
       "domainSuggestions": "Domain được Quizmate AI gợi ý",
       "selectedDomain": "Domain đang dùng cho nhóm",
       "selectedDomainHint": "Domain này sẽ làm baseline chung để AI gợi ý roadmap, quiz và hoạt động học.",
@@ -204,14 +204,14 @@
       "groupGoal": "Mục tiêu học tập của nhóm",
       "groupGoalPlaceholder": "Ví dụ: Trong 8 tuần hoàn thành 20 chủ điểm ngữ pháp và 1500 từ vựng.",
       "learningSwitches": "Tùy chọn học tập",
-      "learningSwitchesHint": "Bạn có thể bật thêm roadmap hoặc đánh giá đầu vào tùy theo cách vận hành nhóm.",
+      "learningSwitchesHint": "Bật roadmap hoặc đánh giá đầu vào nếu cần.",
       "analysis": {
         "loading": "Quizmate AI đang phân tích knowledge để gợi ý domain phù hợp.",
         "error": "Quizmate AI chưa thể gợi ý domain đáng tin cậy. Bạn có thể thử lại ngay.",
         "interpretingLabel": "AI đang hiểu knowledge này là",
-        "tooBroad": "Knowledge hiện khá rộng. Nếu muốn gợi ý sát hơn, hãy mô tả rõ đối tượng học và mục tiêu hơn một chút.",
+        "tooBroad": "Knowledge còn rộng. Hãy mô tả rõ đối tượng học và mục tiêu hơn.",
         "emptyDomainTitle": "Chưa có domain khả dụng",
-        "emptyDomainDescription": "Quizmate AI chưa tạo được danh sách domain từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử phân tích lại."
+        "emptyDomainDescription": "Chưa có domain từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử lại."
       },
       "roadmap": {
         "title": "Bật roadmap chung",
@@ -295,7 +295,7 @@
     "memberStats": {
       "eyebrow": "Phân tích từng thành viên",
       "title": "Thống kê thành viên",
-      "description": "Dùng sau tab Tổng quan: xem từng người học, cập nhật snapshot riêng và giao việc học tập có trọng tâm.",
+      "description": "Xem từng người học, cập nhật snapshot và giao việc có trọng tâm.",
       "hero": {
         "questionValue": "Quyết định theo từng thành viên",
         "totalRosterLabel": "Phạm vi danh sách",
@@ -308,7 +308,7 @@
       },
       "scope": {
         "detailTitle": "Drill-down từng người",
-        "detailBody": "Lượt làm, số bài đạt, điểm trung bình, tỷ lệ đạt và phân loại AI nằm trên từng dòng.",
+        "detailBody": "Lượt làm, bài đạt, điểm TB, tỷ lệ đạt và phân loại AI theo từng dòng.",
         "refreshTitle": "Điều khiển snapshot",
         "refreshBody": "Cập nhật riêng một thành viên mà không cần tạo lại toàn bộ bảng nhóm.",
         "actionTitle": "Hành động tập trung",
@@ -334,7 +334,7 @@
       "prev": "Trước",
       "next": "Sau",
       "assignDialogTitle": "Giao quiz",
-      "assignDialogDescription": "Chọn một quiz để giao cho {{name}}.",
+      "assignDialogDescription": "Chọn quiz giao cho {{name}}.",
       "pickQuiz": "Chọn quiz",
       "pickQuizPlaceholder": "Chọn một quiz",
       "noQuiz": "Nhóm chưa có quiz nào.",
@@ -346,7 +346,7 @@
     "forms": {
       "loadingMaterials": "Đang tải tài liệu dùng chung...",
       "loadMaterialsError": "Không tải được danh sách tài liệu dùng chung. Vui lòng đóng và mở lại form.",
-      "workspaceMaterialsEmpty": "Nhóm chưa có tài liệu dùng chung. Hãy tải tài liệu ở tab Tài liệu rồi chọn trực tiếp trong form này.",
+      "workspaceMaterialsEmpty": "Nhóm chưa có tài liệu chung. Tải ở tab Tài liệu rồi chọn trong form.",
       "sourceSelectHint": "Chọn các tài liệu mà AI sẽ dùng để tạo nội dung."
     },
     "challenge": {
@@ -360,19 +360,19 @@
       "cancelDialogBack": "Đóng",
       "cancelDialogConfirm": "Huỷ challenge",
       "finishDialogTitle": "Kết thúc challenge ngay?",
-      "finishDialogDescription": "Ranking sẽ được chốt và challenge chuyển sang kết thúc. Chỉ kết thúc sớm khi mọi người đăng ký đã nộp bài.",
+      "finishDialogDescription": "Ranking sẽ chốt và challenge kết thúc. Chỉ kết thúc sớm khi người đăng ký đã nộp bài.",
       "finishDialogBack": "Đóng",
       "finishDialogConfirm": "Kết thúc ngay",
       "snapshotQuizDefaultTitle": "Đề challenge",
       "viewSnapshotQuiz": "Xem đề",
       "snapshotQuizHint": "Xem nhanh trạng thái đề challenge.",
       "quizSnapshotReviewDraftTitle": "Đề challenge (chỉ xem & chỉnh sửa)",
-      "quizSnapshotReviewDraftBody": "Đây là đề của challenge, không phải nội dung chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt, Soạn đề để chỉnh sửa, rồi Xuất bản khi sẵn sàng.",
+      "quizSnapshotReviewDraftBody": "Đề này chỉ dùng cho challenge. Thành viên làm bài khi challenge bắt đầu. Duyệt ở tab Kiểm tra, chỉnh ở Soạn đề rồi Xuất bản.",
       "quizSnapshotReviewNoTakeHint": "Đề chỉ mở khi challenge bắt đầu. Không làm bài ở màn hình này.",
       "leaderboardTitle": "Bảng xếp hạng",
       "editSchedule": "Sửa lịch & thông tin",
       "editDialogTitle": "Cập nhật challenge",
-      "editDialogDescription": "Chỉ chỉnh được khi còn hơn 1 giờ trước giờ bắt đầu. Kiểm tra lại múi giờ và khoảng thời gian.",
+      "editDialogDescription": "Chỉ chỉnh khi còn hơn 1 giờ trước giờ bắt đầu. Kiểm tra lại múi giờ.",
       "editTitleLabel": "Tên challenge",
       "editDescriptionLabel": "Mô tả",
       "editStartLabel": "Bắt đầu",
@@ -384,7 +384,7 @@
         "FINISHED": "Đã kết thúc",
         "CANCELLED": "Đã huỷ"
       },
-      "leaderFairPlayQuizHint": "Bạn tham gia thi cùng mọi người: sau khi xuất bản đề bạn không xem trước câu hỏi. Trong lúc đề còn nháp bạn vẫn soạn được.",
+      "leaderFairPlayQuizHint": "Bạn thi cùng nhóm: sau khi xuất bản sẽ không xem trước câu hỏi. Bản nháp vẫn soạn được.",
       "quizStatus": {
         "DRAFT": "Bản nháp",
         "PROCESSING": "Đang tạo",
@@ -399,8 +399,8 @@
       "reviewContributorAdd": "Thêm",
       "reviewContributorRemove": "Gỡ",
       "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này.",
-      "reviewInviteeNotice": "Bạn được mời review đề. Mở «Xem đề» → tab Kiểm tra, xác nhận «Đề ổn» hoặc gửi phiếu APPROVED. Challenge tự mở nếu đủ điều kiện.",
-      "reviewInviteeShortHint": "Chỉ cần bấm «Xem đề» ở khối Đề challenge phía trên, rồi mở tab «Kiểm tra».",
+      "reviewInviteeNotice": "Bạn được mời review đề. Mở «Xem đề» → «Kiểm tra», xác nhận «Đề ổn». Challenge tự mở khi đủ điều kiện.",
+      "reviewInviteeShortHint": "Bấm «Xem đề» ở khối Đề challenge rồi mở tab «Kiểm tra».",
       "reviewQuizNotReadyHint": "Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau."
     },
     "members": {
@@ -1090,7 +1090,7 @@
     },
     "analyticsUpgrade": {
       "title": "Thống kê không gian học tập",
-      "description": "Bảng thống kê học tập nhóm dùng cùng quyền thống kê với không gian cá nhân. Nâng gói để mở thẻ thành viên, biểu đồ và phần xem chi tiết.",
+      "description": "Nâng gói để mở thẻ thành viên, biểu đồ và phần xem chi tiết học tập nhóm.",
       "viewPlans": "Xem gói"
     },
     "detail": {
@@ -1295,7 +1295,7 @@
       "leadBefore": "Sau khi tạo challenge, vào chi tiết challenge và bấm ",
       "composeLabel": "Soạn đề",
       "leadAfter": " để mở trình soạn đề challenge.",
-      "hint": "Chọn thời gian trong tương lai; sau khi tạo, vào chi tiết challenge để soạn đề trước khi challenge diễn ra."
+      "hint": "Chọn thời gian tương lai; sau khi tạo, vào chi tiết challenge để soạn đề."
     },
     "schedule": {
       "titleLabel": "Tên Challenge *",
@@ -1303,7 +1303,7 @@
       "descriptionLabel": "Mô tả",
       "descriptionPlaceholder": "Mô tả ngắn về challenge...",
       "leaderParticipatesLabel": "Tôi tham gia thi cùng mọi người",
-      "leaderParticipatesDesc": "Bạn giữ một suất trong danh sách thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi. Khi đề còn nháp (DRAFT), bạn vẫn soạn và kiểm tra được."
+      "leaderParticipatesDesc": "Bạn giữ một suất thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi. Bản nháp vẫn soạn và kiểm tra được."
     },
     "registration": {
       "publicLabel": "Công khai",
@@ -1613,12 +1613,12 @@
     "confirm": {
       "badge": "XÁC NHẬN HỒ SƠ",
       "title": "Xác nhận sử dụng hồ sơ nhóm này",
-      "description": "Kiểm tra nhanh bản tóm tắt trước khi áp dụng. Sau khi xác nhận, cấu hình này sẽ trở thành hồ sơ đang dùng cho workspace nhóm.",
+      "description": "Kiểm tra tóm tắt trước khi áp dụng. Sau xác nhận, cấu hình này trở thành hồ sơ nhóm.",
       "finalReviewTitle": "Rà soát lần cuối trước khi áp dụng cho nhóm",
-      "finalReviewDescription": "Bạn vẫn có thể quay lại form để chỉnh sửa lại mục tiêu, nội quy hoặc phạm vi kiến thức trước khi lưu chính thức.",
+      "finalReviewDescription": "Bạn vẫn có thể quay lại sửa mục tiêu, nội quy hoặc phạm vi kiến thức.",
       "editHint": "Bạn có thể quay lại để chỉnh sửa trước khi áp dụng.",
       "applyEyebrow": "Hồ sơ nhóm sẽ được áp dụng",
-      "applyDescription": "Các mục bên dưới sẽ được lưu thành cấu hình học tập hiện tại của workspace nhóm.",
+      "applyDescription": "Các mục bên dưới sẽ được lưu thành cấu hình học tập hiện tại.",
       "backToEdit": "Quay lại chỉnh sửa",
       "confirmButton": "Xác nhận sử dụng hồ sơ này"
     }
@@ -1636,13 +1636,13 @@
       "needDraftQuizContent": "Leader phải soạn nội dung đề trước.",
       "needActiveQuiz": "Đề challenge phải được chuyển từ draft sang active trước khi xuất bản challenge.",
       "needReviewer": "Cần ít nhất 1 reviewer cho đề challenge.",
-      "needBothReviewers": "Không bắt buộc đủ reviewer chính và reviewer phụ. Chỉ cần reviewer chính trước khi xuất bản challenge.",
+      "needBothReviewers": "Không cần đủ reviewer chính và phụ. Chỉ cần reviewer chính trước khi xuất bản.",
       "needPrimaryReviewer": "Cần có reviewer chính cho đề challenge trước khi xuất bản.",
       "needAssistantReviewer": "Reviewer phụ là tuỳ chọn cho đề challenge.",
-      "assistantConfirmedWaitingPrimary": "Reviewer phụ đã xác nhận. Còn chờ reviewer chính, hoặc đổi người đã xác nhận thành reviewer chính.",
-      "needReviewersConfirm": "Cần ít nhất 1 reviewer xác nhận đề ổn trước khi leader xuất bản challenge.",
+      "assistantConfirmedWaitingPrimary": "Reviewer phụ đã xác nhận. Còn chờ reviewer chính hoặc đổi người đã xác nhận thành chính.",
+      "needReviewersConfirm": "Cần ít nhất 1 reviewer xác nhận đề ổn trước khi xuất bản.",
       "startTimePassed": "Challenge đã tới giờ bắt đầu nên không thể xuất bản.",
-      "afterPublishInfo": "Sau khi xuất bản, member mới thấy challenge và được đăng ký tham gia."
+      "afterPublishInfo": "Sau khi xuất bản, member mới thấy và đăng ký challenge."
     },
     "notPublishedBadge": "Chưa publish",
     "startLabel": "Bắt đầu",
@@ -1734,10 +1734,10 @@
     "governanceDeck": "Boong quản trị",
     "identityAndGuardrails": "Nhận diện và quy chuẩn",
     "heroTitle": "Tinh chỉnh không gian mà vẫn giữ đúng nhịp vận hành",
-    "heroDescription": "Đây là nơi định danh nhóm, làm rõ mục đích hoạt động và giữ các quyết định quan trọng của không gian học tập thật có kiểm soát.",
+    "heroDescription": "Định danh nhóm, làm rõ mục đích và quản lý các quyết định quan trọng.",
     "controlNote": "Ghi chú điều phối",
-    "controlNoteLeader": "Chỉ thay đổi những gì giúp nhóm rõ ràng hơn. Một cấu hình tốt là khi mọi người hiểu không gian này gần như ngay lập tức.",
-    "controlNoteMember": "Bạn có thể theo dõi cấu hình nhóm tại đây, còn các thay đổi cấu trúc vẫn thuộc quyền của trưởng nhóm.",
+    "controlNoteLeader": "Chỉ thay đổi những gì giúp nhóm rõ ràng hơn.",
+    "controlNoteMember": "Bạn có thể theo dõi cấu hình nhóm; thay đổi cấu trúc thuộc quyền trưởng nhóm.",
     "workspaceFingerprint": "Dấu vân tay không gian",
     "publicHeading": "Công khai — mọi người có thể tìm thấy",
     "privateHeading": "Riêng tư — chỉ được mời",
@@ -1747,7 +1747,7 @@
     "privateBadge": "Riêng tư",
     "nameIdentityMarkers": "Tên gọi và các dấu hiệu nhận diện",
     "guardrails": "Hàng rào vận hành",
-    "guardrailsDescription": "Các dữ liệu ổn định định nghĩa cách mọi người hiểu về nhóm",
+    "guardrailsDescription": "Dữ liệu ổn định giúp mọi người hiểu nhóm",
     "changeAuthority": "Quyền thay đổi",
     "leaderAuthorityNote": "Bạn có thể đổi tên, tinh chỉnh hoặc xóa nhóm này.",
     "retireHeading": "Kết thúc nhóm này một cách có kiểm soát",
@@ -1774,7 +1774,7 @@
     "header": {
       "title": "Tạo Mock Test bằng AI"
     },
-    "description": "AI sẽ tạo template đề thi phù hợp. Leader có thể xem trước rồi áp dụng để tạo bài mock test (DRAFT) cho nhóm.",
+    "description": "AI tạo template đề thi. Leader xem trước rồi tạo mock test DRAFT cho nhóm.",
     "steps": {
       "basic": "1. Cấu hình",
       "structure": "2. Cấu trúc",
@@ -1788,11 +1788,11 @@
     "examName": {
       "label": "Tên kỳ thi / đề thi",
       "placeholder": "VD: TOEIC 900, Thi thử THPTQG Toán 2025, AWS SAA-C03...",
-      "hint": "AI sẽ tạo template phù hợp với cấu trúc và nội dung của kỳ thi này."
+      "hint": "AI sẽ tạo template theo cấu trúc kỳ thi này."
     },
     "custom": {
       "label": "Yêu cầu tuỳ chỉnh",
-      "placeholder": "VD: Tạo bài kiểm tra 30 câu về Lập trình Python cơ bản, độ khó tăng dần, tập trung vào cú pháp và xử lý lỗi..."
+      "placeholder": "VD: Tạo 30 câu Python cơ bản, tăng dần độ khó, tập trung cú pháp và xử lý lỗi..."
     },
     "fields": {
       "difficulty": "Độ khó",
@@ -1804,12 +1804,12 @@
       "loading": "Đang tải tài liệu...",
       "selectAll": "Chọn tất cả",
       "deselectAll": "Bỏ chọn tất cả",
-      "empty": "Workspace chưa có tài liệu. AI sẽ sinh câu hỏi dựa trên tên đề.",
+      "empty": "Workspace chưa có tài liệu. AI sẽ dựa trên tên đề.",
       "itemFallback": "Tài liệu #{{index}}"
     },
     "generating": {
       "title": "Đang sinh câu hỏi cho mock test...",
-      "hint": "Quá trình có thể mất từ 30 giây đến vài phút tuỳ số lượng câu hỏi. Đề sẽ được lưu ở trạng thái DRAFT để bạn publish sau."
+      "hint": "Có thể mất 30 giây đến vài phút. Đề được lưu DRAFT để publish sau."
     },
     "structure": {
       "backToConfig": "Quay lại cấu hình",
