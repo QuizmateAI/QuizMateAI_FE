@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import BaseCreateFlashcardForm from "@/Pages/Users/Individual/Workspace/Components/CreateFlashcardForm";
 import { getMaterialsByWorkspace } from "@/api/MaterialAPI";
+
+const BaseCreateFlashcardForm = React.lazy(
+	() => import("@/Pages/Users/Individual/Workspace/Components/CreateFlashcardForm")
+);
 
 function unwrapMaterialList(response) {
 	const payload = response?.data?.data ?? response?.data ?? response;
@@ -43,10 +46,15 @@ function CreateFlashcardFormGroup({
 	const [sources, setSources] = useState([]);
 	const [loadingSources, setLoadingSources] = useState(false);
 	const [loadError, setLoadError] = useState("");
-	const [localSelectedIds, setLocalSelectedIds] = useState(normalizeSelectedIds(selectedSourceIds));
+	const [localSelectedIds, setLocalSelectedIds] = useState(() => normalizeSelectedIds(selectedSourceIds).slice(0, 1));
+	const selectedIdsRef = useRef(localSelectedIds);
 
 	useEffect(() => {
-		setLocalSelectedIds(normalizeSelectedIds(selectedSourceIds));
+		selectedIdsRef.current = localSelectedIds;
+	}, [localSelectedIds]);
+
+	useEffect(() => {
+		setLocalSelectedIds(normalizeSelectedIds(selectedSourceIds).slice(0, 1));
 	}, [selectedSourceIds]);
 
 	useEffect(() => {
@@ -104,6 +112,7 @@ function CreateFlashcardFormGroup({
 	const handleToggleMaterialSelection = useCallback((sourceId, shouldSelect) => {
 		const normalizedSourceId = Number(sourceId);
 		if (!Number.isInteger(normalizedSourceId) || normalizedSourceId <= 0) return;
+		const previousIds = selectedIdsRef.current;
 
 		setLocalSelectedIds((current) => {
 			if (shouldSelect) {
@@ -114,13 +123,13 @@ function CreateFlashcardFormGroup({
 
 		if (typeof onToggleMaterialSelection === "function") {
 			if (shouldSelect) {
-				localSelectedIds
+				previousIds
 					.filter((id) => id !== normalizedSourceId)
 					.forEach((id) => onToggleMaterialSelection(id, false));
 			}
 			onToggleMaterialSelection(normalizedSourceId, shouldSelect);
 		}
-	}, [localSelectedIds, onToggleMaterialSelection]);
+	}, [onToggleMaterialSelection]);
 
 	const workspaceMaterialsEmptyMessage = loadError
 		|| (loadingSources
@@ -128,14 +137,22 @@ function CreateFlashcardFormGroup({
 			: t("groupWorkspace.forms.workspaceMaterialsEmpty"));
 
 	return (
-		<BaseCreateFlashcardForm
-			{...restProps}
-			contextId={contextId}
-			sources={sources}
-			selectedSourceIds={selectedIds}
-			onToggleMaterialSelection={handleToggleMaterialSelection}
-			workspaceMaterialsEmptyMessage={workspaceMaterialsEmptyMessage}
-		/>
+		<Suspense
+			fallback={(
+				<div className="flex h-full items-center justify-center px-4 text-sm text-slate-500 dark:text-slate-400">
+					{t("common.loading", "Đang tải...")}
+				</div>
+			)}
+		>
+			<BaseCreateFlashcardForm
+				{...restProps}
+				contextId={contextId}
+				sources={sources}
+				selectedSourceIds={selectedIds}
+				onToggleMaterialSelection={handleToggleMaterialSelection}
+				workspaceMaterialsEmptyMessage={workspaceMaterialsEmptyMessage}
+			/>
+		</Suspense>
 	);
 }
 

@@ -45,26 +45,26 @@ function FlashcardStack({ t, style, delay = '0s', rotation = '0deg' }) {
         ...style,
       }}
     >
-      <div className="absolute inset-x-4 top-4 bottom-0 rounded-[26px] bg-white/16 backdrop-blur-md" />
-      <div className="absolute inset-x-2 top-2 bottom-4 rounded-[26px] bg-white/24" />
-      <div className="absolute inset-0 rounded-[26px] bg-white px-4 py-3.5 shadow-[0_22px_40px_-20px_rgba(15,23,42,.45)]">
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0455BF]">
+      <div className="absolute inset-x-4 top-4 bottom-0 rounded-[26px] bg-white/16 backdrop-blur-md dark:bg-slate-900/35" />
+      <div className="absolute inset-x-2 top-2 bottom-4 rounded-[26px] bg-white/24 dark:bg-slate-800/35" />
+      <div className="absolute inset-0 rounded-[26px] bg-white px-4 py-3.5 shadow-[0_22px_40px_-20px_rgba(15,23,42,.45)] dark:bg-slate-900 dark:shadow-[0_22px_40px_-20px_rgba(2,6,23,.85)]">
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0455BF] dark:text-blue-400">
           {t('loginPage.heroFlashcardLabel', 'Flashcard')}
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-[#0455BF]">
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-[#0455BF] dark:bg-blue-900/40 dark:text-blue-300">
             {t('loginPage.heroFlashcardFrontLabel', 'Mặt trước')}
           </span>
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 dark:bg-emerald-300" />
         </div>
-        <div className="mt-3 text-[15px] font-black leading-tight text-slate-900">
+        <div className="mt-3 text-[15px] font-black leading-tight text-slate-900 dark:text-white">
           {t('loginPage.heroFlashcardFrontText', 'Định lý Pitago')}
         </div>
-        <div className="mt-3 rounded-[18px] bg-slate-50 px-3 py-2.5">
-          <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
+        <div className="mt-3 rounded-[18px] bg-slate-50 px-3 py-2.5 dark:bg-slate-800/90">
+          <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
             {t('loginPage.heroFlashcardBackLabel', 'Mặt sau')}
           </div>
-          <div className="mt-1 text-[12px] font-semibold text-slate-700">
+          <div className="mt-1 text-[12px] font-semibold text-slate-700 dark:text-slate-200">
             {t('loginPage.heroFlashcardBackText', 'a² + b² = c²')}
           </div>
         </div>
@@ -76,33 +76,33 @@ function FlashcardStack({ t, style, delay = '0s', rotation = '0deg' }) {
 function ReviewDeckCard({ t, style, delay = '0s', rotation = '0deg' }) {
   return (
     <div
-      className="absolute w-[188px] rounded-[22px] rounded-tr-[16px] rounded-bl-[16px] bg-white px-4 py-3.5 shadow-[0_22px_40px_-22px_rgba(15,23,42,.45)]"
+      className="absolute w-[188px] rounded-[22px] rounded-tr-[16px] rounded-bl-[16px] bg-white px-4 py-3.5 shadow-[0_22px_40px_-22px_rgba(15,23,42,.45)] dark:bg-slate-900 dark:shadow-[0_22px_40px_-22px_rgba(2,6,23,.85)]"
       style={{
         transform: `rotate(${rotation})`,
         animation: `qm-fade-up .55s ease-out ${delay} both, qm-float-slow 7s ease-in-out ${delay} infinite`,
         ...style,
       }}
     >
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0455BF]">
+      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0455BF] dark:text-blue-400">
         {t('loginPage.heroDeckLabel', 'Ôn nhanh')}
       </div>
-      <div className="mt-2 text-[14px] font-black leading-tight text-slate-900">
+      <div className="mt-2 text-[14px] font-black leading-tight text-slate-900 dark:text-white">
         {t('loginPage.heroDeckTitle', '3 thẻ cần ôn lại')}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-[#0455BF]">
+        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-[#0455BF] dark:bg-blue-900/40 dark:text-blue-300">
           {t('loginPage.heroDeckChipMath', 'Toán')}
         </span>
-        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">
+        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
           {t('loginPage.heroDeckChipEnglish', 'Anh')}
         </span>
-        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
+        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
           {t('loginPage.heroDeckChipPhysics', 'Lý')}
         </span>
       </div>
-      <div className="mt-4 flex items-center justify-between text-[11px] text-slate-500">
+      <div className="mt-4 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
         <span>{t('loginPage.heroDeckFooter', 'Sẵn sàng cho buổi học tiếp theo')}</span>
-        <span className="font-bold text-[#0455BF]">12/15</span>
+        <span className="font-bold text-[#0455BF] dark:text-blue-400">12/15</span>
       </div>
     </div>
   );
@@ -168,7 +168,7 @@ export default function DiagonalHeroPanel({ t }) {
         className="absolute top-9 right-10 flex items-start gap-3"
         style={{ animation: 'qm-fade-up .6s ease-out' }}
       >
-        <div className="bg-white rounded-[18px] rounded-bl-[12px] px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_14px_28px_-14px_rgba(15,23,42,.45)]">
+        <div className="bg-white rounded-[18px] rounded-bl-[12px] px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_14px_28px_-14px_rgba(15,23,42,.45)] dark:bg-slate-900 dark:text-white dark:shadow-[0_14px_28px_-14px_rgba(2,6,23,.85)]">
           {t('loginPage.heroGreeting', 'Xin chào!')}{' '}
           <span
             className="inline-block"
