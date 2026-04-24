@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   CreditCard,
@@ -505,4 +505,6 @@ function PersonalWorkspaceSidebar({
   );
 }
 
-export default PersonalWorkspaceSidebar;
+// memo: sidebar re-render nhiều khi parent (WorkspacePage) update state nhỏ →
+// props ở đây (title, activeView, handler callbacks ổn định qua useCallback) ít đổi → memo giảm re-render.
+export default memo(PersonalWorkspaceSidebar);

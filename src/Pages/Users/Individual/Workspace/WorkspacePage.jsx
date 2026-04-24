@@ -183,8 +183,21 @@ function translateOrFallback(t, key, fallback) {
   return translated === key ? fallback : translated;
 }
 
+function WorkspaceDialogSkeleton() {
+  // Fallback hiển thị trong lúc chunk dialog đang tải → tránh "dead air" giữa click và dialog mount.
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 backdrop-blur-sm">
+      <div className="flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-white px-10 py-8 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-slate-200 border-t-[#2563EB] dark:border-slate-700 dark:border-t-blue-400" />
+        <div className="h-2 w-40 rounded-full bg-slate-200 dark:bg-slate-700" />
+        <div className="h-2 w-28 rounded-full bg-slate-100 dark:bg-slate-800" />
+      </div>
+    </div>
+  );
+}
+
 function DeferredWorkspaceDialog({ children }) {
-  return <React.Suspense fallback={null}>{children}</React.Suspense>;
+  return <React.Suspense fallback={<WorkspaceDialogSkeleton />}>{children}</React.Suspense>;
 }
 
 function WorkspacePage() {
@@ -209,7 +222,12 @@ function WorkspacePage() {
   const shouldReturnHomeOnIncompleteProfile = Boolean(
     location.state?.returnToHomeOnIncompleteProfile,
   );
-  const [profileConfigOpen, setProfileConfigOpen] = useState(false);
+  // Mở dialog ngay khi user đến từ HomePage với ý định tạo mới / chỉnh profile →
+  // không chờ Promise.all fetch workspace/sources/profile (2-4s) rồi mới setState.
+  // Useful effect phía dưới vẫn có thể đóng lại nếu profile thật sự đã configured.
+  const [profileConfigOpen, setProfileConfigOpen] = useState(
+    () => Boolean(location.state?.openProfileConfig || location.state?.continueProfileSetup),
+  );
   const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
   const [isProfileUpdateMode, setIsProfileUpdateMode] = useState(false);
@@ -915,7 +933,7 @@ function WorkspacePage() {
     navigate("/home?tab=workspace", { replace: true });
   }, [navigate]);
 
-  const handleIncompleteProfileExit = useCallback(async () => {
+  const handleIncompleteProfileExit = useCallback(() => {
     const shouldDeleteDraftWorkspace =
       shouldReturnHomeOnIncompleteProfile &&
       !hasSavedBasicProfileStep(workspaceProfile);
@@ -924,13 +942,26 @@ function WorkspacePage() {
     setIsProfileUpdateMode(false);
 
     if (shouldDeleteDraftWorkspace && workspaceId) {
-      try {
-        await deleteIndividualWorkspace(workspaceId);
-      } catch (error) {
-        console.error("Failed to delete incomplete draft workspace:", error);
-      } finally {
-        void queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-      }
+      // Gỡ workspace khỏi TẤT CẢ cache pages NGAY → Home render list không có draft.
+      const numericId = Number(workspaceId);
+      queryClient.setQueriesData({ queryKey: ["workspaces"] }, (old) => {
+        if (!old?.workspaces) return old;
+        const filtered = old.workspaces.filter(
+          (ws) => Number(ws.workspaceId) !== numericId
+        );
+        if (filtered.length === old.workspaces.length) return old;
+        return { ...old, workspaces: filtered };
+      });
+
+      // Fire-and-forget DELETE: không block UI. User được chuyển về Home ngay (<100ms)
+      // thay vì ngồi đợi 1-2s BE xóa xong. BE cleanup chạy nền, lỗi chỉ log.
+      void deleteIndividualWorkspace(workspaceId)
+        .catch((error) => {
+          console.error("Failed to delete incomplete draft workspace:", error);
+        })
+        .finally(() => {
+          void queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+        });
     }
 
     navigateToWorkspaceHomeTab();
@@ -2667,6 +2698,39 @@ function WorkspacePage() {
     activeSourceCount: activeSourceIds.length,
   };
 
+  // Stabilize props truyền vào PersonalWorkspaceSidebar để memo() hoạt động hiệu quả.
+  const personalSidebarTitle = (
+    currentWorkspace?.displayTitle
+    || currentWorkspace?.title
+    || currentWorkspace?.name
+    || ""
+  );
+  const handleEditWorkspaceFromSidebar = useCallback(async (data) => {
+    await editWorkspace(Number(workspaceId), data);
+  }, [editWorkspace, workspaceId]);
+  const personalSidebarDisabledMap = useMemo(() => ({
+    roadmap: shouldDisableRoadmapForStudio,
+    quiz: shouldDisableQuiz,
+    flashcard: shouldDisableFlashcard,
+    mockTest: shouldDisableMockTest,
+    questionStats: !planEntitlements.hasWorkspaceAnalytics,
+  }), [
+    shouldDisableRoadmapForStudio,
+    shouldDisableQuiz,
+    shouldDisableFlashcard,
+    shouldDisableMockTest,
+    planEntitlements.hasWorkspaceAnalytics,
+  ]);
+  const personalSidebarBadgeMap = useMemo(() => ({
+    sources: sources.length || undefined,
+    quiz: totalQuizCount || undefined,
+    flashcard: totalFlashcardCount || undefined,
+    mockTest: totalMockTestCount || undefined,
+  }), [sources.length, totalQuizCount, totalFlashcardCount, totalMockTestCount]);
+  const handleCloseMobileSidebar = useCallback(() => {
+    setIsMobileSidebarOpen(false);
+  }, []);
+
   return (
     <div
       className={cn(
@@ -2679,38 +2743,20 @@ function WorkspacePage() {
       <div className="flex h-full min-h-0 overflow-hidden transition-colors duration-200">
         <PersonalWorkspaceSidebar
           isDarkMode={isDarkMode}
-          workspaceTitle={
-            currentWorkspace?.displayTitle ||
-            currentWorkspace?.title ||
-            currentWorkspace?.name ||
-            ""
-          }
+          workspaceTitle={personalSidebarTitle}
           activeView={activeView || "sources"}
           onNavigate={handleStudioAction}
           onOpenProfile={handleWorkspaceProfileClick}
           onToggleLanguage={toggleLanguage}
           onToggleDarkMode={toggleDarkMode}
-          onEditWorkspace={async (data) => {
-            await editWorkspace(Number(workspaceId), data);
-            }}
-            wsConnected={wsConnected}
-            walletRefreshToken={walletRealtimeTick}
-            disabledMap={{
-            roadmap: shouldDisableRoadmapForStudio,
-            quiz: shouldDisableQuiz,
-            flashcard: shouldDisableFlashcard,
-            mockTest: shouldDisableMockTest,
-            questionStats: !planEntitlements.hasWorkspaceAnalytics,
-          }}
-          badgeMap={{
-            sources: sources.length || undefined,
-            quiz: totalQuizCount || undefined,
-            flashcard: totalFlashcardCount || undefined,
-            mockTest: totalMockTestCount || undefined,
-          }}
+          onEditWorkspace={handleEditWorkspaceFromSidebar}
+          wsConnected={wsConnected}
+          walletRefreshToken={walletRealtimeTick}
+          disabledMap={personalSidebarDisabledMap}
+          badgeMap={personalSidebarBadgeMap}
           isMobile={isMobileViewport}
           mobileOpen={isMobileSidebarOpen}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          onCloseMobile={handleCloseMobileSidebar}
         />
 
         <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-200">

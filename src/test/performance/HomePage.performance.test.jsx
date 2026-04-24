@@ -1,8 +1,22 @@
 import React from 'react';
 import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomePage from '@/Pages/Users/Home/HomePage';
 import { getMyWallet } from '@/api/ManagementSystemAPI';
+
+function renderHomePage() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: 0, gcTime: 0 },
+    },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <HomePage />
+    </QueryClientProvider>,
+  );
+}
 
 const hoisted = vi.hoisted(() => {
   let search = '';
@@ -136,13 +150,13 @@ describe('HomePage performance guards', () => {
   });
 
   it('keeps group query disabled on the default workspace tab', () => {
-    render(<HomePage />);
+    renderHomePage();
 
-    expect(useGroupSpy).toHaveBeenCalledWith({ enabled: false });
+    expect(useGroupSpy).toHaveBeenCalledWith({ enabled: false, publicEnabled: false });
   });
 
   it('defers wallet fetching until after the first paint fallback timer', async () => {
-    render(<HomePage />);
+    renderHomePage();
 
     expect(getMyWallet).not.toHaveBeenCalled();
 
@@ -162,7 +176,7 @@ describe('HomePage performance guards', () => {
     window.requestIdleCallback = vi.fn(() => 123);
     window.cancelIdleCallback = vi.fn();
 
-    render(<HomePage />);
+    renderHomePage();
 
     expect(getMyWallet).not.toHaveBeenCalled();
 
@@ -181,8 +195,8 @@ describe('HomePage performance guards', () => {
   it('enables group query when the group tab is the active entry point', () => {
     hoisted.setSearch('tab=group');
 
-    render(<HomePage />);
+    renderHomePage();
 
-    expect(useGroupSpy).toHaveBeenCalledWith({ enabled: true });
+    expect(useGroupSpy).toHaveBeenCalledWith({ enabled: true, publicEnabled: true });
   });
 });

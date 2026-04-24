@@ -7,6 +7,9 @@ describe('groupPermissionView', () => {
       myGroupPermissions: {
         canCreateQuiz: false,
         canCreateFlashcard: true,
+        canCreateMockTest: false,
+        canCreateRoadmap: false,
+        canCreateChallenge: false,
         canUpload: true,
         canManageMembers: false,
         canViewMemberDashboard: true,
@@ -19,7 +22,10 @@ describe('groupPermissionView', () => {
 
     expect(result.canCreateQuiz).toBe(false);
     expect(result.canCreateFlashcard).toBe(true);
-    expect(result.canCreateContent).toBe(false);
+    expect(result.canCreateMockTest).toBe(false);
+    expect(result.canCreateRoadmap).toBe(false);
+    expect(result.canCreateChallenge).toBe(false);
+    expect(result.canCreateContent).toBe(true);
     expect(result.canUploadSource).toBe(true);
     expect(result.canManageMembers).toBe(false);
     expect(result.canViewMemberDashboard).toBe(true);

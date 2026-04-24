@@ -5,6 +5,7 @@ import { logout } from "@/api/Authentication";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 import { useUserProfile } from "@/context/UserProfileContext";
 import { getUserDisplayName } from "@/Utils/userProfile";
+import { preloadProfilePage } from "@/lib/routeLoaders";
 
 function UserProfilePopover({ isDarkMode = false }) {
   const { t, i18n } = useTranslation();
@@ -50,6 +51,8 @@ function UserProfilePopover({ isDarkMode = false }) {
       <button
         type="button"
         onClick={() => setIsProfileOpen((prev) => !prev)}
+        onMouseEnter={preloadProfilePage}
+        onFocus={preloadProfilePage}
         className="relative w-9 h-9 rounded-full overflow-hidden border border-transparent hover:border-blue-400 transition-colors"
         aria-expanded={isProfileOpen}
         aria-haspopup="menu"
@@ -111,6 +114,8 @@ function UserProfilePopover({ isDarkMode = false }) {
               <button
                 type="button"
                 onClick={handleGoToProfile}
+                onMouseEnter={preloadProfilePage}
+                onFocus={preloadProfilePage}
                 className={`mt-1 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${fontClass} ${
                   isDarkMode
                     ? "border-blue-400 text-blue-300 hover:bg-blue-950/40"

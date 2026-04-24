@@ -185,6 +185,9 @@ function QuizDetailView({
   contextId: _contextId,
   hideEditButton = false,
   isGroupLeader = false,
+  canEditQuiz = isGroupLeader,
+  canPublishQuiz = isGroupLeader,
+  canAssignQuizAudience = isGroupLeader,
   /** Leader: ẩn chính mình khỏi danh sách giao quiz riêng */
   groupAudiencePickerExcludeUserId = null,
   onGroupQuizUpdated,
@@ -245,7 +248,7 @@ function QuizDetailView({
   const canViewAnswers =
     hasCurrentUserCompletedQuiz
     || currentStatus === "DRAFT"
-    || (_contextType === "GROUP" && isGroupLeader && !fairPlayRestricts)
+    || (_contextType === "GROUP" && canEditQuiz && !fairPlayRestricts)
     || (challengeSnapshotReviewMode && !fairPlayRestricts);
 
   useEffect(() => {
@@ -773,11 +776,11 @@ function QuizDetailView({
     _contextType === "GROUP"
     && !fairPlayRestricts
     && (
-      (isGroupLeader && currentStatus === "DRAFT")
+      (canEditQuiz && currentStatus === "DRAFT")
       || challengeSnapshotReviewMode
     );
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
-  const groupMemberCanOpenQuestions = _contextType !== "GROUP" || isGroupLeader || hasCurrentUserCompletedQuiz;
+  const groupMemberCanOpenQuestions = _contextType !== "GROUP" || canEditQuiz || hasCurrentUserCompletedQuiz;
   const showQuestionsTab = !fairPlayRestricts && !isChallengeSnapshotReview && groupMemberCanOpenQuestions;
 
   const snapshotReviewPreferCheckTabRef = React.useRef(false);
@@ -832,7 +835,7 @@ function QuizDetailView({
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {(() => {
-            if (_contextType !== "GROUP" || !isGroupLeader || hideEditButton || challengeSnapshotReviewMode || typeof onEdit !== "function") {
+            if (_contextType !== "GROUP" || !canEditQuiz || hideEditButton || challengeSnapshotReviewMode || typeof onEdit !== "function") {
               return null;
             }
             const normalizedStatus = String(currentStatus || "").toUpperCase();
@@ -866,7 +869,7 @@ function QuizDetailView({
             //  - AI quiz: bắt buộc duplicate → bản sao MANUAL_FROM_AI DRAFT → edit qua wizard.
             //  - Manual quiz đã ACTIVE/INACTIVE: bulk-update bị chặn ở BE, phải duplicate trước.
             //  - Quiz đang DRAFT + manual family: edit in-place qua wizard (từ Group/EditQuizForm), không cần button này.
-            if (_contextType !== "GROUP" || !isGroupLeader || hideEditButton || challengeSnapshotReviewMode) {
+            if (_contextType !== "GROUP" || !canEditQuiz || hideEditButton || challengeSnapshotReviewMode) {
               return null;
             }
             const normalizedStatus = String(currentStatus || "").toUpperCase();
@@ -905,7 +908,7 @@ function QuizDetailView({
               </Button>
             );
           })()}
-          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "DRAFT" && (
+          {_contextType === "GROUP" && canPublishQuiz && String(currentStatus || "").toUpperCase() === "DRAFT" && (
             <Button
               disabled={publishing || String(currentStatus || "").toUpperCase() === "PROCESSING"}
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
@@ -915,7 +918,7 @@ function QuizDetailView({
               <span className="text-sm">{t("workspace.quiz.publish", "Publish")}</span>
             </Button>
           )}
-          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !challengeSnapshotReviewMode && !fairPlayRestricts && (
+          {_contextType === "GROUP" && canAssignQuizAudience && String(currentStatus || "").toUpperCase() === "ACTIVE" && !challengeSnapshotReviewMode && !fairPlayRestricts && (
             <Button
               variant="outline"
               className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-600 text-slate-100" : ""}`}
