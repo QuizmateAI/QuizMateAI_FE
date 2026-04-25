@@ -1,8 +1,8 @@
 import api from "./api";
 import i18n from "@/i18n";
-import { getCachedProfile, setCachedProfile, clearUserCache } from "@/Utils/userCache";
+import { getCachedProfile, setCachedProfile, clearUserCache } from "@/utils/userCache";
 import { getCurrentUser } from "@/api/Authentication";
-import { normalizeUserProfile } from "@/Utils/userProfile";
+import { normalizeUserProfile } from "@/utils/userProfile";
 
 function getStoredToken() {
   return localStorage.getItem("accessToken") || localStorage.getItem("jwt_token") || "";

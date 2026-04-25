@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMemberIntelligence } from '@/Pages/Users/Group/Group_leader/memberStatsInsights';
+import { buildMemberIntelligence } from '@/pages/Users/Group/group-leader/memberStatsInsights';
 
 describe('memberStatsInsights', () => {
   it('flags a member with no attempts as new and recommends a baseline assignment', () => {

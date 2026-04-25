@@ -1,87 +1,87 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
-import HomeTabRedirect from './Pages/Route/HomeTabRedirect';
+import { ProtectedRoute, PublicRoute } from './pages/Route/protectedRoute';
+import HomeTabRedirect from './pages/Route/HomeTabRedirect';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
-import LoadingSpinner from '@/Components/ui/LoadingSpinner';
-import RouteMetaManager from '@/Components/seo/RouteMetaManager';
-import RuntimeRecoveryBoundary from '@/Components/system/RuntimeRecoveryBoundary';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import RouteMetaManager from '@/components/seo/RouteMetaManager';
+import RuntimeRecoveryBoundary from '@/components/system/RuntimeRecoveryBoundary';
 import { launchConfig } from '@/lib/launchConfig';
 import { hasRouteNamespacesLoaded, preloadRouteNamespaces } from '@/i18n';
 import { useTranslation } from 'react-i18next';
 import { loadGroupWorkspacePage, loadHomePage, loadWorkspacePage } from '@/lib/routeLoaders';
 
-const FeedbackAutoPrompt = lazy(() => import('@/Components/feedback/FeedbackAutoPrompt'));
-const PlanUpgradeModal = lazy(() => import('@/Components/plan/PlanUpgradeModal'));
+const FeedbackAutoPrompt = lazy(() => import('@/components/feedback/FeedbackAutoPrompt'));
+const PlanUpgradeModal = lazy(() => import('@/components/plan/PlanUpgradeModal'));
 import './App.css';
 
 // ── Lazy-loaded route components (code splitting) ──
-const LaunchingPage = lazy(() => import('./Pages/LaunchingPage/LaunchingPage'));
-const LandingPage = lazy(() => import('./Pages/LandingPage/LandingPage'));
-const PricingGuidePage = lazy(() => import('./Pages/Pricing/PricingGuidePage'));
-const LoginPage = lazy(() => import('./Pages/Authentication/LoginPage'));
-const RegisterPage = lazy(() => import('./Pages/Authentication/RegisterPage'));
-const ForgotPasswordPage = lazy(() => import('./Pages/Authentication/ForgotPasswordPage'));
+const LaunchingPage = lazy(() => import('./pages/LaunchingPage/LaunchingPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
+const PricingGuidePage = lazy(() => import('./pages/Pricing/PricingGuidePage'));
+const LoginPage = lazy(() => import('./pages/Authentication/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/Authentication/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/Authentication/ForgotPasswordPage'));
 const HomePage = lazy(loadHomePage);
-const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
-const PlanPage = lazy(() => import('./Pages/Users/Plan/PlanPage'));
-const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
-const FeedbackSystemLayout = lazy(() => import('./Pages/Users/Feedback/FeedbackSystemLayout'));
-const FeedbackCenterPage = lazy(() => import('./Pages/Users/Feedback/FeedbackCenterPage'));
-const FeedbackProductPage = lazy(() => import('./Pages/Users/Feedback/FeedbackProductPage'));
-const FeedbackSystemPage = lazy(() => import('./Pages/Users/Feedback/FeedbackSystemPage'));
-const FeedbackSurveyPage = lazy(() => import('./Pages/Users/Feedback/FeedbackSurveyPage'));
+const ProfilePage = lazy(() => import('./pages/Users/Profile/ProfilePage'));
+const PlanPage = lazy(() => import('./pages/Users/Plan/PlanPage'));
+const WalletPage = lazy(() => import('./pages/Users/Credit/WalletPage'));
+const FeedbackSystemLayout = lazy(() => import('./pages/Users/Feedback/FeedbackSystemLayout'));
+const FeedbackCenterPage = lazy(() => import('./pages/Users/Feedback/FeedbackCenterPage'));
+const FeedbackProductPage = lazy(() => import('./pages/Users/Feedback/FeedbackProductPage'));
+const FeedbackSystemPage = lazy(() => import('./pages/Users/Feedback/FeedbackSystemPage'));
+const FeedbackSurveyPage = lazy(() => import('./pages/Users/Feedback/FeedbackSurveyPage'));
 const WorkspacePage = lazy(loadWorkspacePage);
 const GroupWorkspacePage = lazy(loadGroupWorkspacePage);
-const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/GroupManagementPage'));
-const AcceptInvitationPage = lazy(() => import('./Pages/Users/Group/AcceptInvitationPage'));
+const GroupManagementPage = lazy(() => import('./pages/Users/Group/group-leader/GroupManagementPage'));
+const AcceptInvitationPage = lazy(() => import('./pages/Users/Group/AcceptInvitationPage'));
 
 // Admin
-const AdminLayout = lazy(() => import('./Pages/Admin/AdminLayout'));
-const AdminDashboard = lazy(() => import('./Pages/Admin/AdminDashboard'));
-const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
-const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
-const PlanManagement = lazy(() => import('./Pages/Admin/PlanManagement'));
-const CreditPackageManagement = lazy(() => import('./Pages/Admin/CreditPackageManagement'));
-const AdminPaymentManagement = lazy(() => import('./Pages/Admin/AdminPaymentManagement'));
-const SystemSettingManagement = lazy(() => import('./Pages/Admin/SystemSettingManagement'));
-const AiActionPolicyManagement = lazy(() => import('./Pages/Admin/AiActionPolicyManagement'));
-const MyPermissionsPage = lazy(() => import('./Pages/Admin/MyPermissionsPage'));
-const CommunityQuizManagement = lazy(() => import('./Pages/Admin/CommunityQuizManagement'));
+const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const UserManagement = lazy(() => import('./pages/Admin/UserManagement'));
+const GroupManagement = lazy(() => import('./pages/Admin/GroupManagement'));
+const PlanManagement = lazy(() => import('./pages/Admin/PlanManagement'));
+const CreditPackageManagement = lazy(() => import('./pages/Admin/CreditPackageManagement'));
+const AdminPaymentManagement = lazy(() => import('./pages/Admin/AdminPaymentManagement'));
+const SystemSettingManagement = lazy(() => import('./pages/Admin/SystemSettingManagement'));
+const AiActionPolicyManagement = lazy(() => import('./pages/Admin/AiActionPolicyManagement'));
+const MyPermissionsPage = lazy(() => import('./pages/Admin/MyPermissionsPage'));
+const CommunityQuizManagement = lazy(() => import('./pages/Admin/CommunityQuizManagement'));
 
 // Quiz
-const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
-const ExamQuizPage = lazy(() => import('./Pages/Users/Quiz/ExamQuizPage'));
-const QuizResultPage = lazy(() => import('./Pages/Users/Quiz/QuizResultPage'));
+const PracticeQuizPage = lazy(() => import('./pages/Users/Quiz/PracticeQuizPage'));
+const ExamQuizPage = lazy(() => import('./pages/Users/Quiz/ExamQuizPage'));
+const QuizResultPage = lazy(() => import('./pages/Users/Quiz/QuizResultPage'));
 
 // Payment
-const PaymentPage = lazy(() => import('./Pages/Payment/PaymentPage'));
-const CreditPaymentPage = lazy(() => import('./Pages/Payment/CreditPaymentPage'));
-const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
-const MomoReturnRedirect = lazy(() => import('./Pages/Payment/MomoReturnRedirect'));
-const VnPayReturnRedirect = lazy(() => import('./Pages/Payment/VnPayReturnRedirect'));
-const StripeReturnRedirect = lazy(() => import('./Pages/Payment/StripeReturnRedirect'));
+const PaymentPage = lazy(() => import('./pages/Payment/PaymentPage'));
+const CreditPaymentPage = lazy(() => import('./pages/Payment/CreditPaymentPage'));
+const PaymentResultPage = lazy(() => import('./pages/Payment/PaymentResultPage'));
+const MomoReturnRedirect = lazy(() => import('./pages/Payment/MomoReturnRedirect'));
+const VnPayReturnRedirect = lazy(() => import('./pages/Payment/VnPayReturnRedirect'));
+const StripeReturnRedirect = lazy(() => import('./pages/Payment/StripeReturnRedirect'));
 
 // Super Admin
-const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'));
-const SuperAdminDashboard = lazy(() => import('./Pages/SuperAdmin/SuperAdminDashboard'));
-const AdminManagement = lazy(() => import('./Pages/SuperAdmin/AdminManagement'));
-const RbacManagement = lazy(() => import('./Pages/SuperAdmin/RbacManagement'));
-const AiAuditManagement = lazy(() => import('./Pages/SuperAdmin/AiAuditManagement'));
-const AiProvidersOverview = lazy(() => import('./Pages/SuperAdmin/AiProvidersOverview'));
-const AiModelsManagement = lazy(() => import('./Pages/SuperAdmin/AiModelsManagement'));
-const AiCostManagement = lazy(() => import('./Pages/SuperAdmin/AiCostManagement'));
-const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
-const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
-const FeedbackManagementLayout = lazy(() => import('./Pages/SuperAdmin/FeedbackManagementLayout'));
-const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagement'));
-const FeedbackResponseActivityPage = lazy(() => import('./Pages/SuperAdmin/FeedbackResponseActivityPage'));
-const PermissionRequestsPage = lazy(() => import('./Pages/SuperAdmin/PermissionRequestsPage'));
+const SuperAdminLayout = lazy(() => import('./pages/SuperAdmin/SuperAdminLayout'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdmin/SuperAdminDashboard'));
+const AdminManagement = lazy(() => import('./pages/SuperAdmin/AdminManagement'));
+const RbacManagement = lazy(() => import('./pages/SuperAdmin/RbacManagement'));
+const AiAuditManagement = lazy(() => import('./pages/SuperAdmin/AiAuditManagement'));
+const AiProvidersOverview = lazy(() => import('./pages/SuperAdmin/AiProvidersOverview'));
+const AiModelsManagement = lazy(() => import('./pages/SuperAdmin/AiModelsManagement'));
+const AiCostManagement = lazy(() => import('./pages/SuperAdmin/AiCostManagement'));
+const UserDetailPage = lazy(() => import('./pages/SuperAdmin/UserDetailPage'));
+const GroupDetailPage = lazy(() => import('./pages/SuperAdmin/GroupDetailPage'));
+const FeedbackManagementLayout = lazy(() => import('./pages/SuperAdmin/FeedbackManagementLayout'));
+const FeedbackManagement = lazy(() => import('./pages/SuperAdmin/FeedbackManagement'));
+const FeedbackResponseActivityPage = lazy(() => import('./pages/SuperAdmin/FeedbackResponseActivityPage'));
+const PermissionRequestsPage = lazy(() => import('./pages/SuperAdmin/PermissionRequestsPage'));
 
 // 404
-const NotFoundPage = lazy(() => import('./Pages/NotFound/NotFoundPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 
 function MainRoutes() {
   return (

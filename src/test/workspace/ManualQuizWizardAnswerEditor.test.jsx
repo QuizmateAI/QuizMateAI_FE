@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { AnswerEditor, parseMatchingPairs, serializeMatchingPairs } from '@/Pages/Users/Individual/Workspace/Components/ManualQuizWizard/AnswerEditor';
+import { AnswerEditor, parseMatchingPairs, serializeMatchingPairs } from '@/pages/Users/Individual/Workspace/Components/ManualQuizWizard/AnswerEditor';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

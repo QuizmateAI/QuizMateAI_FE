@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import MatchingDragDrop from '@/Pages/Users/Quiz/components/MatchingDragDrop';
+import MatchingDragDrop from '@/pages/Users/Quiz/components/MatchingDragDrop';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

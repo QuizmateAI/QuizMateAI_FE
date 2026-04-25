@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import QuizResultPage from '@/Pages/Users/Quiz/QuizResultPage';
+import QuizResultPage from '@/pages/Users/Quiz/QuizResultPage';
 
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();
@@ -76,11 +76,11 @@ vi.mock('@/context/ToastContext', () => ({
   }),
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/QuizHeader', () => ({
+vi.mock('@/pages/Users/Quiz/components/QuizHeader', () => ({
   default: ({ title }) => <div data-testid="quiz-header">{title}</div>,
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/QuestionCard', () => ({
+vi.mock('@/pages/Users/Quiz/components/QuestionCard', () => ({
   default: ({ question }) => (
     <div data-testid="question-card">
       {question?.content}|{question?.gradingStatus || 'NONE'}|{String(question?.isCorrect)}

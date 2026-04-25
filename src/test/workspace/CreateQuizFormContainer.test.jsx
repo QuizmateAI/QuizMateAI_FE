@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import CreateQuizForm from '@/Pages/Users/Individual/Workspace/Components/CreateQuizFormParts/CreateQuizFormContainer';
+import CreateQuizForm from '@/pages/Users/Individual/Workspace/Components/CreateQuizFormParts/CreateQuizFormContainer';
 import {
   getDifficultyDefinitions,
   getBloomSkills,
@@ -14,7 +14,7 @@ import { getPendingRecommendations } from '@/api/QuizAPI';
 const mockNavigate = vi.fn();
 let mockLocationState = null;
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/QuickCreateDialog', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/QuickCreateDialog', () => ({
   default: () => null,
 }));
 

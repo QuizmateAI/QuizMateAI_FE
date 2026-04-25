@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import CreateChallengeWizard from '@/Pages/Users/Group/Components/CreateChallengeWizard';
+import CreateChallengeWizard from '@/pages/Users/Group/Components/CreateChallengeWizard';
 import { getQuizzesByScope } from '@/api/QuizAPI';
 import { getGroupMembers } from '@/api/GroupAPI';
 
@@ -25,11 +25,11 @@ vi.mock('@/api/ChallengeAPI', () => ({
   createChallenge: vi.fn(),
 }));
 
-vi.mock('@/Components/features/Users/UserDisplayName', () => ({
+vi.mock('@/components/features/users/UserDisplayName', () => ({
   default: ({ user, fallback }) => <span>{user?.fullName || user?.username || fallback}</span>,
 }));
 
-vi.mock('@/Pages/Users/Group/Components/ChallengeScheduleFields', () => ({
+vi.mock('@/pages/Users/Group/Components/ChallengeScheduleFields', () => ({
   default: () => <div>Schedule fields</div>,
 }));
 

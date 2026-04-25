@@ -2,7 +2,7 @@ import React from 'react';
 import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import HomePage from '@/Pages/Users/Home/HomePage';
+import HomePage from '@/pages/Users/Home/HomePage';
 import { getMyWallet } from '@/api/ManagementSystemAPI';
 
 function renderHomePage() {
@@ -102,33 +102,33 @@ vi.mock('@/api/ManagementSystemAPI', () => ({
   getMyWallet: vi.fn(),
 }));
 
-vi.mock('@/Components/ui/button', () => ({
+vi.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }) => <button type="button" {...props}>{children}</button>,
 }));
 
-vi.mock('@/Pages/Users/Home/Components/UserWorkspace', () => ({
+vi.mock('@/pages/Users/Home/Components/UserWorkspace', () => ({
   default: () => <div data-testid="workspace-content">workspace</div>,
   WorkspaceFilterControls: () => null,
 }));
 
-vi.mock('@/Pages/Users/Home/Components/UserGroup', () => ({
+vi.mock('@/pages/Users/Home/Components/UserGroup', () => ({
   default: () => <div data-testid="group-content">group</div>,
   GroupFilterControls: () => null,
 }));
 
-vi.mock('@/Pages/Users/Home/Components/EditWorkspaceDialog', () => ({
+vi.mock('@/pages/Users/Home/Components/EditWorkspaceDialog', () => ({
   default: () => null,
 }));
 
-vi.mock('@/Pages/Users/Home/Components/DeleteWorkspaceDialog', () => ({
+vi.mock('@/pages/Users/Home/Components/DeleteWorkspaceDialog', () => ({
   default: () => null,
 }));
 
-vi.mock('@/Components/features/Users/UserProfilePopover', () => ({
+vi.mock('@/components/features/users/UserProfilePopover', () => ({
   default: () => null,
 }));
 
-vi.mock('@/Components/ui/CreditIconImage', () => ({
+vi.mock('@/components/ui/CreditIconImage', () => ({
   default: () => null,
 }));
 

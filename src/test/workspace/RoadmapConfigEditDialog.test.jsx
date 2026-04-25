@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@/i18n';
-import RoadmapConfigEditDialog from '@/Components/features/Workspace/RoadmapConfigEditDialog';
+import RoadmapConfigEditDialog from '@/components/features/workspace/RoadmapConfigEditDialog';
 
 describe('RoadmapConfigEditDialog', () => {
   beforeEach(() => {

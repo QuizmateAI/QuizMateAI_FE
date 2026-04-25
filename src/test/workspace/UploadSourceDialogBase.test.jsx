@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import UploadSourceDialogBase from '@/Components/features/Workspace/UploadSourceDialogBase';
+import UploadSourceDialogBase from '@/components/features/workspace/UploadSourceDialogBase';
 import { getSuggestedResources, importSuggestedResources } from '@/api/AIAPI';
 
 const toastSpy = {
@@ -32,7 +32,7 @@ vi.mock('@/api/AIAPI', () => ({
   processYoutubeResource: vi.fn(),
 }));
 
-vi.mock('@/Components/plan/PlanUpgradeModal', () => ({
+vi.mock('@/components/plan/PlanUpgradeModal', () => ({
   default: ({ open, featureName }) => (open ? <div data-testid="plan-upgrade-modal">{featureName}</div> : null),
 }));
 

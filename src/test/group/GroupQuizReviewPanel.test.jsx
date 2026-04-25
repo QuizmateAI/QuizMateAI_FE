@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import GroupQuizReviewPanel from '@/Pages/Users/Group/Components/GroupQuizReviewPanel';
+import GroupQuizReviewPanel from '@/pages/Users/Group/Components/GroupQuizReviewPanel';
 import { deleteQuestion } from '@/api/QuizAPI';
 import { getMyQuizReviewContributor, setQuizReviewCompleteOk } from '@/api/ChallengeAPI';
 
