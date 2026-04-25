@@ -5,7 +5,6 @@ import { Checkbox } from "@/Components/ui/checkbox";
 import {
   ChevronLeft, Globe, Sun, Moon, Loader2,
   User, Mail, Lock, Eye, EyeOff, Check, ArrowRight,
-  KeyRound,
 } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -317,6 +316,86 @@ function RegisterOtpVerificationCard({ t, registerHook, onBackToRegisterForm }) 
   );
 }
 
+function ForgotPasswordOtpVerificationCard({ t, forgotPasswordHook, onBackToEmailStep }) {
+  return (
+    <div className="relative mx-auto flex w-full max-w-[430px] flex-col items-center py-4 sm:py-8">
+      <div className="absolute -left-8 top-6 h-36 w-36 rounded-full bg-amber-200/40 blur-3xl" />
+      <div className="absolute -right-6 bottom-0 h-40 w-40 rounded-full bg-rose-200/35 blur-3xl" />
+      <div className="absolute inset-x-8 top-10 h-40 rounded-full bg-blue-200/35 blur-3xl" />
+
+      <div className="relative mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-[0_24px_60px_-20px_rgba(4,85,191,.28)] ring-8 ring-blue-100/60">
+        <Mail className="h-9 w-9 text-[#0455BF]" strokeWidth={2.1} />
+        <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#FF8682] text-[10px] font-black text-white">
+          1
+        </div>
+      </div>
+
+      <div className="relative w-full rounded-[28px] bg-white px-6 py-7 text-center shadow-[0_28px_70px_-28px_rgba(4,85,191,.35)] sm:px-8">
+        <h2 className="text-[28px] font-black tracking-tight text-slate-900">
+          {t('auth.checkYourEmailTitle', 'Kiểm tra email của bạn')}
+        </h2>
+        <p className="mx-auto mt-2 max-w-[260px] text-[13px] leading-5 text-slate-500">
+          {t('auth.checkYourEmailSubtitle', 'Chúng tôi đã gửi mã xác thực 6 chữ số đến')}
+        </p>
+        <p className="mt-1 text-sm font-bold text-[#0455BF]">
+          {forgotPasswordHook.forgotPasswordData.email}
+        </p>
+
+        {forgotPasswordHook.error && (
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {forgotPasswordHook.error}
+          </div>
+        )}
+
+        {forgotPasswordHook.successMessage && !forgotPasswordHook.error && (
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
+            {forgotPasswordHook.successMessage}
+          </div>
+        )}
+
+        <form className="mt-6 space-y-5" onSubmit={forgotPasswordHook.handleVerifyOTP}>
+          <RegisterOtpInputs
+            value={forgotPasswordHook.forgotPasswordData.otp}
+            onChange={(nextOtp) => forgotPasswordHook.handleForgotPasswordChange('otp')({ target: { value: nextOtp } })}
+            hasError={Boolean(forgotPasswordHook.fieldErrors?.otp)}
+          />
+
+          {forgotPasswordHook.fieldErrors?.otp && (
+            <p className="text-left text-xs text-red-500">{forgotPasswordHook.fieldErrors.otp}</p>
+          )}
+
+          <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
+            {t('auth.verifyOTP', 'Xác thực OTP')} <ArrowRight className="w-4 h-4" />
+          </PrimaryButton>
+        </form>
+
+        <p className="mt-5 text-[13px] text-slate-500">
+          {t('auth.didNotReceiveEmail', 'Không nhận được email?')}{' '}
+          <button
+            type="button"
+            onClick={forgotPasswordHook.handleResendOTP}
+            disabled={forgotPasswordHook.isLoading}
+            className="font-bold text-[#FF8682] transition-opacity hover:underline disabled:opacity-50"
+          >
+            {t('auth.resendOTP', 'Gửi lại')}
+          </button>
+        </p>
+      </div>
+
+      <p className="relative mt-5 text-center text-[13px] text-slate-500">
+        {t('auth.wrongEmailPrompt', 'Sai email?')}{' '}
+        <button
+          type="button"
+          onClick={onBackToEmailStep}
+          className="font-bold text-[#FF8682] hover:underline"
+        >
+          {t('auth.backToEmailStep', 'Quay lại nhập email')}
+        </button>
+      </p>
+    </div>
+  );
+}
+
 function StrengthMeter({ value, t }) {
   if (!value) return null;
   let s = 0;
@@ -540,32 +619,37 @@ const LoginPageContent = () => {
             {/* ─── VIEW: FORGOT PASSWORD ─── */}
             {view === 'forgot-password' && (
               <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-                <button
-                  onClick={() => {
-                    setView('login');
-                    forgotPasswordHook.resetState();
-                  }}
-                  className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-6 hover:text-black dark:hover:text-white"
-                >
-                  <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
-                </button>
+                {forgotPasswordHook.forgotPasswordStep !== 'otp' && (
+                  <button
+                    onClick={() => {
+                      setView('login');
+                      forgotPasswordHook.resetState();
+                    }}
+                    className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-6 hover:text-black dark:hover:text-white"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
+                  </button>
+                )}
 
-                <h1 className="text-[34px] font-black text-slate-900 dark:text-white leading-[1.1] tracking-tight mb-3">
-                  {t('auth.forgotPasswordTitle')}
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed mb-6">
-                  {forgotPasswordHook.forgotPasswordStep === 'email' && t('auth.forgotPasswordSubtitle', "Don't worry, happens to all of us. Enter your email below to recover your password")}
-                  {forgotPasswordHook.forgotPasswordStep === 'otp' && t('auth.enterOTPSubtitle', 'Enter the OTP code sent to your email')}
-                  {forgotPasswordHook.forgotPasswordStep === 'newPassword' && t('auth.newPasswordSubtitle', 'Enter your new password')}
-                </p>
+                {forgotPasswordHook.forgotPasswordStep !== 'otp' && (
+                  <>
+                    <h1 className="text-[34px] font-black text-slate-900 dark:text-white leading-[1.1] tracking-tight mb-3">
+                      {t('auth.forgotPasswordTitle')}
+                    </h1>
+                    <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed mb-6">
+                      {forgotPasswordHook.forgotPasswordStep === 'email' && t('auth.forgotPasswordSubtitle', "Don't worry, happens to all of us. Enter your email below to recover your password")}
+                      {forgotPasswordHook.forgotPasswordStep === 'newPassword' && t('auth.newPasswordSubtitle', 'Enter your new password')}
+                    </p>
+                  </>
+                )}
 
-                {forgotPasswordHook.error && (
+                {forgotPasswordHook.error && forgotPasswordHook.forgotPasswordStep !== 'otp' && (
                   <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                     {forgotPasswordHook.error}
                   </div>
                 )}
 
-                {forgotPasswordHook.successMessage && (
+                {forgotPasswordHook.successMessage && forgotPasswordHook.forgotPasswordStep !== 'otp' && (
                   <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
                     {forgotPasswordHook.successMessage}
                   </div>
@@ -597,34 +681,15 @@ const LoginPageContent = () => {
                 )}
 
                 {forgotPasswordHook.forgotPasswordStep === 'otp' && (
-                  <form className="space-y-4" onSubmit={forgotPasswordHook.handleVerifyOTP}>
-                    <div>
-                      <QMInput
-                        id="otp-code"
-                        icon={KeyRound}
-                        label={t('auth.otpCode', 'OTP Code')}
-                        value={forgotPasswordHook.forgotPasswordData.otp}
-                        onChange={forgotPasswordHook.handleForgotPasswordChange('otp')}
-                        error={forgotPasswordHook.fieldErrors?.otp}
-                        autoComplete="one-time-code"
-                      />
-                      {forgotPasswordHook.fieldErrors?.otp && (
-                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.otp}</p>
-                      )}
-                    </div>
-
-                    <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
-                      {t('auth.verifyOTP', 'Verify OTP')}
-                    </PrimaryButton>
-
-                    <button
-                      type="button"
-                      onClick={() => { forgotPasswordHook.setForgotPasswordStep('email'); forgotPasswordHook.setError(''); forgotPasswordHook.setSuccessMessage(''); }}
-                      className="w-full text-center text-sm text-gray-500 dark:text-slate-400 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
-                    >
-                      {t('auth.resendOTP', 'Resend OTP')}
-                    </button>
-                  </form>
+                  <ForgotPasswordOtpVerificationCard
+                    t={t}
+                    forgotPasswordHook={forgotPasswordHook}
+                    onBackToEmailStep={() => {
+                      forgotPasswordHook.setForgotPasswordStep('email');
+                      forgotPasswordHook.setError('');
+                      forgotPasswordHook.setSuccessMessage('');
+                    }}
+                  />
                 )}
 
                 {forgotPasswordHook.forgotPasswordStep === 'newPassword' && (
