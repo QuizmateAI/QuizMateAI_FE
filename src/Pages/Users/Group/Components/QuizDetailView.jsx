@@ -8,6 +8,7 @@ import {
   Share2, UserPlus, MessageSquare, Eye, Lock, Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logSwallowed } from "@/Utils/logSwallowed";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
@@ -721,7 +722,7 @@ function QuizDetailView({
     const qIds = allQuestionsFlat.map((q) => q.questionId);
     getThreadCounts(_contextId, quiz.quizId, qIds)
       .then(({ questions }) => setQCommentCounts(questions))
-      .catch(() => {});
+      .catch(logSwallowed('QuizDetailView.Group.threadCounts'));
   }, [_contextId, quiz?.quizId, allQuestionsFlat, _contextType]);
 
   /** Navigate from Discussion tab to a specific question in the Questions tab. */

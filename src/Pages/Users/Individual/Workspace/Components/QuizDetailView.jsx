@@ -8,6 +8,7 @@ import {
   Share2, UserPlus, MessageSquare, Eye, Lock, Pencil, Copy,
 } from "lucide-react";
 import { getCurrentUser } from "@/api/Authentication";
+import { logSwallowed } from "@/Utils/logSwallowed";
 import { resolveEditRule } from "./resolveEditRule";
 import { duplicateQuiz, updateQuiz } from "@/api/QuizAPI";
 import { cn } from "@/lib/utils";
@@ -789,7 +790,7 @@ function QuizDetailView({
     const qIds = allQuestionsFlat.map((q) => q.questionId);
     getThreadCounts(_contextId, quiz.quizId, qIds)
       .then(({ questions }) => setQCommentCounts(questions))
-      .catch(() => {});
+      .catch(logSwallowed('QuizDetailView.Individual.threadCounts'));
   }, [_contextId, quiz?.quizId, allQuestionsFlat, _contextType]);
 
   /** Navigate from Discussion tab to a specific question in the Questions tab. */

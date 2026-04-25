@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import { cn } from "@/lib/utils";
+import { logSwallowed } from "@/Utils/logSwallowed";
 import { Menu } from "lucide-react";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import PersonalWorkspaceSidebar from "@/Pages/Users/Individual/Workspace/Components/PersonalWorkspaceSidebar";
@@ -1321,7 +1322,7 @@ function WorkspacePage() {
 
     let isMounted = true;
 
-    fetchWorkspaceDetail(workspaceId).catch(() => {});
+    fetchWorkspaceDetail(workspaceId).catch(logSwallowed('WorkspacePage.initialFetch'));
 
     const loadInitialData = async () => {
       try {
@@ -1440,7 +1441,7 @@ function WorkspacePage() {
             );
           })
 
-          .catch(() => {});
+          .catch(logSwallowed('WorkspacePage.profileConfig'));
       } else {
         setIsProfileUpdateMode(false);
 
@@ -1484,7 +1485,7 @@ function WorkspacePage() {
           refreshWorkspacePersonalization(),
         ])
 
-          .catch(() => {});
+          .catch(logSwallowed('WorkspacePage.overviewRefresh'));
       } else if (location.state?.openProfileConfig) {
         navigateToWorkspaceRoot();
       }
@@ -1692,7 +1693,7 @@ function WorkspacePage() {
 
       bumpRoadmapReloadToken();
 
-      await fetchWorkspaceDetail(workspaceId).catch(() => {});
+      await fetchWorkspaceDetail(workspaceId).catch(logSwallowed('WorkspacePage.postRoadmap'));
 
       await loadWorkspaceProfileData();
 
@@ -1851,7 +1852,7 @@ function WorkspacePage() {
 
       closeProfileDialogs();
 
-      fetchWorkspaceDetail(workspaceId).catch(() => {});
+      fetchWorkspaceDetail(workspaceId).catch(logSwallowed('WorkspacePage.postProfileClose'));
 
       if (sources.length === 0) {
         setUploadDialogOpen(true);

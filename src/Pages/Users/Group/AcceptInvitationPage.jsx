@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { acceptInvitation, previewInvitation } from '@/api/GroupAPI';
 import { logout } from '@/api/Authentication';
+import { getAccessToken } from '@/Utils/tokenStorage';
 import { unwrapApiData } from '@/Utils/apiResponse';
 import { useToast } from '@/context/ToastContext';
 import { buildGroupWorkspacePath, withQueryParams } from '@/lib/routePaths';
@@ -55,7 +56,7 @@ function readEmailFromAccessToken(token) {
 }
 
 function readCurrentSession() {
-  const accessToken = window.localStorage.getItem('accessToken') || '';
+  const accessToken = getAccessToken();
   const storedUser = readStoredUser();
   const tokenEmail = readEmailFromAccessToken(accessToken);
 

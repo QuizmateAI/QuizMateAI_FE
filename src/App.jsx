@@ -11,7 +11,7 @@ import RuntimeRecoveryBoundary from '@/Components/system/RuntimeRecoveryBoundary
 import { launchConfig } from '@/lib/launchConfig';
 import { hasRouteNamespacesLoaded, preloadRouteNamespaces } from '@/i18n';
 import { useTranslation } from 'react-i18next';
-import { loadGroupWorkspacePage, loadHomePage, loadWorkspacePage } from '@/lib/routeLoaders';
+import { loadGroupWorkspacePage, loadHomePage, loadWalletPage, loadWorkspacePage } from '@/lib/routeLoaders';
 
 const FeedbackAutoPrompt = lazy(() => import('@/Components/feedback/FeedbackAutoPrompt'));
 const PlanUpgradeModal = lazy(() => import('@/Components/plan/PlanUpgradeModal'));
@@ -27,7 +27,7 @@ const ForgotPasswordPage = lazy(() => import('./Pages/Authentication/ForgotPassw
 const HomePage = lazy(loadHomePage);
 const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
 const PlanPage = lazy(() => import('./Pages/Users/Plan/PlanPage'));
-const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
+const WalletPage = lazy(loadWalletPage);
 const FeedbackSystemLayout = lazy(() => import('./Pages/Users/Feedback/FeedbackSystemLayout'));
 const FeedbackCenterPage = lazy(() => import('./Pages/Users/Feedback/FeedbackCenterPage'));
 const FeedbackProductPage = lazy(() => import('./Pages/Users/Feedback/FeedbackProductPage'));

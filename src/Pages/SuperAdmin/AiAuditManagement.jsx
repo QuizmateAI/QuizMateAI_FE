@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { getAccessToken } from '@/Utils/tokenStorage';
 import {
   Activity,
   Bot,
@@ -215,11 +216,7 @@ function getProviderBadgeClass(provider) {
 
 function getAuthToken() {
   try {
-    return (
-      localStorage.getItem('accessToken') ||
-      localStorage.getItem('token') ||
-      localStorage.getItem('jwt_token')
-    );
+    return getAccessToken() || null;
   } catch {
     return null;
   }

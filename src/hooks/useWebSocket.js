@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getWebSocketUrl } from "@/lib/websocketUrl";
+import { getAccessToken } from "@/Utils/tokenStorage";
 
 const ACTIVE_WS_REGISTRY_KEY = "quizmate_active_websockets_v1";
 
@@ -331,11 +332,7 @@ export function useWebSocket({
   // Lấy token từ localStorage
   const getAuthToken = useCallback(() => {
     try {
-      return (
-        localStorage.getItem("accessToken") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("jwt_token")
-      );
+      return getAccessToken() || null;
     } catch (err) {
       console.error("Failed to get auth token:", err);
       return null;

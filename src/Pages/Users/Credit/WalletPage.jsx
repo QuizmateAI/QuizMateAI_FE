@@ -24,11 +24,11 @@ import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/Utils/getErrorMessage";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import {
-  getMyWallet,
   getPurchaseableCreditPackages,
   getMyWalletTransactions,
 } from "@/api/ManagementSystemAPI";
-import { getCachedSubscription } from "@/Utils/userCache";
+import { useCurrentSubscription } from "@/hooks/useCurrentSubscription";
+import { useWallet } from "@/hooks/useWallet";
 
 function formatNumber(n, locale) {
   return new Intl.NumberFormat(locale).format(n);
@@ -395,22 +395,28 @@ export default function WalletPage() {
     i18n.changeLanguage(newLang);
   };
 
-  const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [transactions, setTransactions] = useState([]);
   const [packages, setPackages] = useState([]);
-  const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
+  const [walletSummaryOverride, setWalletSummaryOverride] = useState(null);
   const isMountedRef = useRef(true);
   const walletRefreshTimerRef = useRef(null);
+  const walletSummaryRef = useRef(EMPTY_WALLET_SUMMARY);
 
-  const subscription = getCachedSubscription();
-  const canBuyCredit = subscription?.entitlement?.canBuyCredit === true;
+  const { subscription } = useCurrentSubscription();
+  const canBuyCredit = (subscription?.plan?.entitlement || subscription?.entitlement)?.canBuyCredit === true;
+  const {
+    wallet: walletQuerySummary,
+    error: walletError,
+    refetch: refetchWallet,
+  } = useWallet();
+  const walletSummary = walletSummaryOverride ?? walletQuerySummary;
 
-  const getFriendlyError = (err) => {
+  const getFriendlyError = useCallback((err) => {
     const mapped = getErrorMessage(t, err);
     return mapped && mapped !== "error.unknown" ? mapped : t("error.unknown");
-  };
+  }, [t]);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
@@ -435,6 +441,20 @@ export default function WalletPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setWalletSummaryOverride(null);
+  }, [walletQuerySummary]);
+
+  useEffect(() => {
+    walletSummaryRef.current = walletSummary;
+  }, [walletSummary]);
+
+  useEffect(() => {
+    if (walletError) {
+      showError(getFriendlyError(walletError));
+    }
+  }, [getFriendlyError, showError, walletError]);
+
   const fetchPackages = useCallback(async () => {
     setIsLoadingPackages(true);
     try {
@@ -451,44 +471,28 @@ export default function WalletPage() {
         setIsLoadingPackages(false);
       }
     }
-  }, [showError, t]);
+  }, [getFriendlyError, showError]);
 
-  const fetchWalletData = useCallback(async ({ silent = false } = {}) => {
+  const fetchTransactions = useCallback(async ({ silent = false, skipWalletReconcile = false } = {}) => {
     if (!silent) {
-      setIsLoadingWallet(true);
       setIsLoadingTransactions(true);
     }
 
     try {
-      const [walletRes, txRes] = await Promise.all([
-        getMyWallet(),
-        getMyWalletTransactions(0, 20),
-      ]);
+      const txRes = await getMyWalletTransactions(0, 20);
 
       if (!isMountedRef.current) return;
 
-      const walletData = walletRes?.data ?? walletRes;
-      const normalizedWallet = normalizeWalletSummary(walletData);
-
       const page = txRes?.data ?? txRes;
-      let mappedTx = normalizeTransactions(page);
-      let finalWallet = normalizedWallet;
+      const mappedTx = normalizeTransactions(page);
 
       const latestTxBalance = mappedTx[0]?.balanceAfter;
-      const walletBalance = normalizedWallet.totalAvailableCredits ?? 0;
+      const walletBalance = walletSummaryRef.current?.totalAvailableCredits ?? 0;
 
-      if (latestTxBalance != null && latestTxBalance !== walletBalance) {
-        const [walletRetryRes, txRetryRes] = await Promise.all([
-          getMyWallet(),
-          getMyWalletTransactions(0, 20),
-        ]);
-        if (!isMountedRef.current) return;
-
-        finalWallet = normalizeWalletSummary(walletRetryRes?.data ?? walletRetryRes);
-        mappedTx = normalizeTransactions(txRetryRes?.data ?? txRetryRes);
+      if (!skipWalletReconcile && latestTxBalance != null && latestTxBalance !== walletBalance) {
+        void refetchWallet();
       }
 
-      setWalletSummary(finalWallet);
       setTransactions(mappedTx);
     } catch (err) {
       if (isMountedRef.current) {
@@ -496,19 +500,18 @@ export default function WalletPage() {
       }
     } finally {
       if (isMountedRef.current && !silent) {
-        setIsLoadingWallet(false);
         setIsLoadingTransactions(false);
       }
     }
-  }, [showError, t]);
+  }, [getFriendlyError, refetchWallet, showError]);
 
   useEffect(() => {
     void fetchPackages();
   }, [fetchPackages]);
 
   useEffect(() => {
-    void fetchWalletData();
-  }, [fetchWalletData]);
+    void fetchTransactions();
+  }, [fetchTransactions]);
 
   const handleWalletRealtime = useCallback((payload = {}) => {
     if (!isMountedRef.current) return;
@@ -521,7 +524,8 @@ export default function WalletPage() {
     ].some((value) => value != null);
 
     if (hasWalletSnapshot) {
-      setWalletSummary((current) => normalizeWalletSummary({
+      setWalletSummaryOverride((current) => normalizeWalletSummary({
+        ...walletSummaryRef.current,
         ...current,
         ...payload,
       }));
@@ -532,9 +536,10 @@ export default function WalletPage() {
     }
     walletRefreshTimerRef.current = globalThis.setTimeout(() => {
       walletRefreshTimerRef.current = null;
-      void fetchWalletData({ silent: true });
+      void refetchWallet();
+      void fetchTransactions({ silent: true, skipWalletReconcile: true });
     }, 120);
-  }, [fetchWalletData]);
+  }, [fetchTransactions, refetchWallet]);
 
   useWebSocket({
     enabled: true,

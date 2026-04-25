@@ -33,6 +33,7 @@ import VietnamFlag from "@/assets/Viet_nam.png";
 import EnglishFlag from "@/assets/UK_flag.svg";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
+import { preloadWalletPage } from "@/lib/routeLoaders";
 
 const NAV_ITEMS = [
   { key: "sources", icon: Files },
@@ -333,6 +334,8 @@ function PersonalWorkspaceSidebar({
           <div className="grid grid-cols-4 gap-1.5">
             <button
               type="button"
+              onPointerEnter={() => void preloadWalletPage()}
+              onFocus={() => void preloadWalletPage()}
               onClick={() =>
                 navigate("/wallets", { state: { from: location.pathname } })
               }

@@ -3,6 +3,7 @@ import { fileURLToPath } from "url"
 import react from "@vitejs/plugin-react"
 import eslint from "vite-plugin-eslint"
 import { compression } from "vite-plugin-compression2"
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer"
 import { loadEnv } from "vite"
 import { defineConfig } from "vitest/config"
 
@@ -13,7 +14,6 @@ const manualChunkPackages = {
   'vendor-query': ['@tanstack/react-query'],
   'vendor-i18n': ['i18next', 'react-i18next'],
   'vendor-auth': ['@react-oauth/google'],
-  'vendor-flashcard': ['react-quizlet-flashcard'],
   'vendor-charts': ['recharts'],
   'vendor-http': ['axios'],
   'vendor-ws': ['@stomp/stompjs', 'sockjs-client'],
@@ -67,6 +67,22 @@ export default defineConfig(({ mode }) => {
         algorithms: ['gzip', 'brotliCompress'],
         exclude: [/\.(br)$/, /\.(gz)$/],
         threshold: 1024,
+      }),
+      ViteImageOptimizer({
+        test: /\.(jpe?g|png|gif|svg|webp|avif)$/i,
+        png: { quality: 80 },
+        jpeg: { quality: 80, progressive: true },
+        jpg: { quality: 80, progressive: true },
+        webp: { quality: 82 },
+        avif: { quality: 65 },
+        svg: {
+          multipass: true,
+          plugins: [
+            { name: 'preset-default', params: { overrides: { removeViewBox: false } } },
+          ],
+        },
+        includePublic: true,
+        logStats: true,
       }),
     ],
     test: {

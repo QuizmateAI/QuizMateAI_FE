@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, Zap, Users } from 'lucide-react';
-import HeroLogo from '@/assets/QuizmateAI_PIC.png';
+import HeroLogoAvif from '@/assets/QuizmateAI_PIC-640.avif';
+import HeroLogoWebp from '@/assets/QuizmateAI_PIC-640.webp';
 
 function QuizOption({ label, correct = false }) {
   return (
@@ -178,11 +179,19 @@ export default function DiagonalHeroPanel({ t }) {
           </span>
         </div>
         <div className="h-[72px] w-[72px] overflow-hidden rounded-full shadow-[0_16px_28px_-16px_rgba(15,23,42,.55)]">
-          <img
-            src={HeroLogo}
-            alt={t('loginPage.logoAlt', 'QuizMate AI Logo')}
-            className="h-full w-full scale-[1.14] object-cover object-top"
-          />
+          <picture>
+            <source type="image/avif" srcSet={HeroLogoAvif} />
+            <source type="image/webp" srcSet={HeroLogoWebp} />
+            <img
+              src={HeroLogoWebp}
+              alt={t('loginPage.logoAlt', 'QuizMate AI Logo')}
+              width="72"
+              height="72"
+              loading="eager"
+              decoding="async"
+              className="h-full w-full scale-[1.14] object-cover object-top"
+            />
+          </picture>
         </div>
       </div>
 
