@@ -38,7 +38,7 @@ import i18n from '@/i18n';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 import { useToast } from '@/context/ToastContext';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

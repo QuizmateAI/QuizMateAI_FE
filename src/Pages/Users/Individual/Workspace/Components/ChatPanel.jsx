@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 import ListSpinner from "@/Components/ui/ListSpinner";
-import RoadmapGuideButton from "@/Components/workspace/RoadmapGuideButton";
+import RoadmapGuideButton from "@/Components/features/Workspace/RoadmapGuideButton";
 import { workspaceSurface } from "./workspaceShellTheme";
 import SourcesPanel from "./SourcesPanel";
 import CreateQuizForm from "./CreateQuizForm";

@@ -25,7 +25,7 @@ vi.mock('@/api/ChallengeAPI', () => ({
   createChallenge: vi.fn(),
 }));
 
-vi.mock('@/Components/users/UserDisplayName', () => ({
+vi.mock('@/Components/features/Users/UserDisplayName', () => ({
   default: ({ user, fallback }) => <span>{user?.fullName || user?.username || fallback}</span>,
 }));
 

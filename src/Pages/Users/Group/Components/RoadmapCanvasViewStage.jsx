@@ -10,7 +10,7 @@ import { useToast } from "@/context/ToastContext";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
-import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
+import RoadmapReviewPanel from "@/Components/features/Workspace/RoadmapReviewPanel";
 
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;

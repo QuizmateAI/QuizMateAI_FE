@@ -16,7 +16,7 @@ import {
   defaultStartParts,
   getScheduleValidationIssues,
 } from '@/lib/challengeSchedule';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 import ChallengeScheduleFields from './ChallengeScheduleFields';
 
 function getQuizSummaryLine(q) {

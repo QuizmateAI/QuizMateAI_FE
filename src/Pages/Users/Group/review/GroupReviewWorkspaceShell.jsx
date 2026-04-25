@@ -33,7 +33,7 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
-import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
+import WorkspaceOnboardingUpdateGuardDialog from '@/Components/features/Workspace/WorkspaceOnboardingUpdateGuardDialog';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -42,7 +42,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { resolveGroupUiPermissions } from '../utils/groupPermissionView';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 import {
   deleteMaterial,
   getExtractedSummary,
