@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrapApiData } from '@/Utils/apiResponse';
-import { logSwallowed } from '@/Utils/logSwallowed';
+import { unwrapApiData } from '@/utils/apiResponse';
 import {
   getWorkspacesByUser,
   createWorkspace as createWorkspaceAPI,
@@ -180,7 +179,7 @@ export function useWorkspace(options = {}) {
           ));
           void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
         })
-        .catch(logSwallowed('useWorkspace.markAccess'));
+        .catch(() => {});
       return workspace;
     } catch (err) {
       console.error('Lỗi khi lấy chi tiết workspace:', err);

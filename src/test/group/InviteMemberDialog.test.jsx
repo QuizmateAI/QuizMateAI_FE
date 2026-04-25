@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import InviteMemberDialog from '@/Pages/Users/Group/Group_leader/InviteMemberDialog';
+import InviteMemberDialog from '@/pages/Users/Group/group-leader/InviteMemberDialog';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -10,7 +10,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/Components/ui/dialog', () => ({
+vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ open, children }) => (open ? <div role="dialog">{children}</div> : null),
   DialogContent: ({ children, className }) => <div className={className}>{children}</div>,
   DialogHeader: ({ children }) => <div>{children}</div>,

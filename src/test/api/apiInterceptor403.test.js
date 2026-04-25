@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 
 // Stubs for cross-cutting modules so api.js boots cleanly under test
-vi.mock('@/Utils/userCache', () => ({
+vi.mock('@/utils/userCache', () => ({
   clearUserCache: vi.fn(),
 }));
-vi.mock('@/Utils/planPurchaseState', () => ({
+vi.mock('@/utils/planPurchaseState', () => ({
   clearPlanPurchaseState: vi.fn(),
 }));
 vi.mock('@/i18n', () => ({

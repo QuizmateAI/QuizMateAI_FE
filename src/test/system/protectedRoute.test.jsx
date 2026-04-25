@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ProtectedRoute } from '@/Pages/Route/protectedRoute';
+import { ProtectedRoute } from '@/pages/Route/protectedRoute';
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {

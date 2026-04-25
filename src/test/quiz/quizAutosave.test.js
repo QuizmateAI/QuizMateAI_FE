@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildSavePayload } from '@/Pages/Users/Quiz/utils/quizTransform';
-import { useQuizAutoSave } from '@/Pages/Users/Quiz/hooks/useQuizAutoSave';
+import { buildSavePayload } from '@/pages/Users/Quiz/utils/quizTransform';
+import { useQuizAutoSave } from '@/pages/Users/Quiz/hooks/useQuizAutoSave';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
 
 vi.mock('@/api/QuizAPI', () => ({

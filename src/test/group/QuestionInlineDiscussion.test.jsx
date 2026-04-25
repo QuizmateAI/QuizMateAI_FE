@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import QuestionInlineDiscussion from '@/Pages/Users/Group/Components/QuestionInlineDiscussion';
+import QuestionInlineDiscussion from '@/pages/Users/Group/Components/QuestionInlineDiscussion';
 import { getThreadMessages } from '@/api/GroupDiscussionAPI';
 
 vi.mock('@/context/UserProfileContext', () => ({

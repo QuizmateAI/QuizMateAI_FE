@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { logSwallowed } from '@/Utils/logSwallowed';
+import { logSwallowed } from '@/utils/logSwallowed';
 
 describe('logSwallowed', () => {
   let warnSpy;

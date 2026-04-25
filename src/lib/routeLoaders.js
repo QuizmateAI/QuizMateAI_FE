@@ -29,17 +29,17 @@ function createNamespacedRouteLoader(pathname, loader) {
 
 export const loadWorkspacePage = createNamespacedRouteLoader(
 	"/workspaces",
-	() => import("@/Pages/Users/Individual/Workspace/WorkspacePage"),
+	() => import("@/pages/Users/Individual/Workspace/WorkspacePage"),
 );
 
 export const loadGroupWorkspacePage = createNamespacedRouteLoader(
 	"/group-workspaces",
-	() => import("@/Pages/Users/Group/GroupWorkspacePage"),
+	() => import("@/pages/Users/Group/GroupWorkspacePage"),
 );
 
 export const loadHomePage = createNamespacedRouteLoader(
 	"/home",
-	() => import("@/Pages/Users/Home/HomePage"),
+	() => import("@/pages/Users/Home/HomePage"),
 );
 
 export const preloadWorkspacePage = createRoutePreloader("workspace-page", loadWorkspacePage);
@@ -47,11 +47,11 @@ export const preloadGroupWorkspacePage = createRoutePreloader("group-workspace-p
 export const preloadHomePage = createRoutePreloader("home-page", loadHomePage);
 
 // Các route nhẹ khác (profile/plan/wallet) không cần namespace riêng → preload chỉ code chunk.
-export const loadProfilePage = () => import("@/Pages/Users/Profile/ProfilePage");
-export const loadPlanPage = () => import("@/Pages/Users/Plan/PlanPage");
-export const loadWalletPage = () => import("@/Pages/Users/Credit/WalletPage");
-export const loadPaymentPage = () => import("@/Pages/Payment/PaymentPage");
-export const loadFeedbackSystemLayout = () => import("@/Pages/Users/Feedback/FeedbackSystemLayout");
+export const loadProfilePage = () => import("@/pages/Users/Profile/ProfilePage");
+export const loadPlanPage = () => import("@/pages/Users/Plan/PlanPage");
+export const loadWalletPage = () => import("@/pages/Users/Credit/WalletPage");
+export const loadPaymentPage = () => import("@/pages/Payment/PaymentPage");
+export const loadFeedbackSystemLayout = () => import("@/pages/Users/Feedback/FeedbackSystemLayout");
 
 export const preloadProfilePage = createRoutePreloader("profile-page", loadProfilePage);
 export const preloadPlanPage = createRoutePreloader("plan-page", loadPlanPage);
@@ -62,9 +62,9 @@ export const preloadFeedbackSystemLayout = createRoutePreloader("feedback-system
 // Heavy dialog chunks mở ngay sau khi tạo workspace — preload cùng với trang để
 // khi Suspense fire thì chunk đã sẵn sàng (loại bỏ 1-3s wait).
 export const loadIndividualWorkspaceProfileConfigDialog = () =>
-  import("@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog");
+  import("@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog");
 export const loadGroupWorkspaceProfileConfigDialog = () =>
-  import("@/Pages/Users/Group/Components/GroupWorkspaceProfileConfigDialog");
+  import("@/pages/Users/Group/Components/GroupWorkspaceProfileConfigDialog");
 
 export const preloadIndividualWorkspaceProfileConfigDialog = createRoutePreloader(
   "individual-ws-profile-config-dialog",

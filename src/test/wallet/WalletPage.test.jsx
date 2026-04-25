@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import WalletPage from '@/Pages/Users/Credit/WalletPage';
+import WalletPage from '@/pages/Users/Credit/WalletPage';
 import { WALLET_QUERY_KEY } from '@/hooks/useWallet';
 import {
   getMyWallet,
@@ -92,12 +92,12 @@ vi.mock('@/api/Authentication', () => ({
   getCurrentUser: () => ({ userID: 1 }),
 }));
 
-vi.mock('@/Utils/userCache', () => ({
+vi.mock('@/utils/userCache', () => ({
   getCachedSubscription: vi.fn(() => null),
   setCachedSubscription: vi.fn(),
 }));
 
-vi.mock('@/Components/features/Users/UserProfilePopover', () => ({
+vi.mock('@/components/features/users/UserProfilePopover', () => ({
   default: () => <div data-testid="user-profile-popover" />,
 }));
 

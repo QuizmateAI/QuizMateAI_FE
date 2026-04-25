@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { hasAccessToken } from '@/Utils/tokenStorage';
+import { hasAccessToken } from '@/utils/tokenStorage';
 
 // Tạo Context để quản lý trạng thái Dark Mode
 const DarkModeContext = createContext();

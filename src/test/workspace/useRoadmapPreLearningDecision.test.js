@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useRoadmapPreLearningDecision } from '@/Pages/Users/Individual/Workspace/hooks/useRoadmapPreLearningDecision';
+import { useRoadmapPreLearningDecision } from '@/pages/Users/Individual/Workspace/hooks/useRoadmapPreLearningDecision';
 import {
   getCurrentRoadmapPhaseProgress,
   submitRoadmapPhaseSkipDecision,

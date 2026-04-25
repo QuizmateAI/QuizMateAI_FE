@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getWebSocketUrl } from "@/lib/websocketUrl";
-import { getAccessToken } from "@/Utils/tokenStorage";
+import { getAccessToken } from "@/utils/tokenStorage";
 
 const ACTIVE_WS_REGISTRY_KEY = "quizmate_active_websockets_v1";
 

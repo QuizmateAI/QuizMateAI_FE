@@ -2,7 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n, { i18nReady, preloadNamespaces } from '@/i18n';
-import IndividualWorkspaceProfileConfigDialog from '@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog';
+import IndividualWorkspaceProfileConfigDialog from '@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog';
 
 // Mock the StudyProfileAPI module
 vi.mock('@/api/StudyProfileAPI', () => ({

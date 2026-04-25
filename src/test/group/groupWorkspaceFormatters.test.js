@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatLearningScore,
   formatLearningPassRate,
-} from '@/Pages/Users/Group/utils/groupWorkspaceFormatters';
+} from '@/pages/Users/Group/utils/groupWorkspaceFormatters';
 
 describe('groupWorkspaceFormatters', () => {
   describe('formatLearningScore', () => {
