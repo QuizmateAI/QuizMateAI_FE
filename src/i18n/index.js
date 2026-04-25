@@ -1,5 +1,5 @@
 import i18n from 'i18next';
-import { hasAccessToken } from '@/Utils/tokenStorage';
+import { hasAccessToken } from '@/utils/tokenStorage';
 
 const DEFAULT_LANGUAGE = 'vi';
 const I18N_NAMESPACES = ['common', 'auth', 'home', 'workspace', 'group', 'admin'];

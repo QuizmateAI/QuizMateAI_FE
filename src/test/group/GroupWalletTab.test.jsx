@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import GroupWalletTab from '@/Pages/Users/Group/Group_leader/GroupWalletTab';
+import GroupWalletTab from '@/pages/Users/Group/group-leader/GroupWalletTab';
 import {
   getGroupWorkspaceWallet,
   getGroupWorkspaceWalletTransactions,

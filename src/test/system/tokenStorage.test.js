@@ -7,7 +7,7 @@ import {
   clearTokens,
   hasAccessToken,
   TOKEN_KEYS,
-} from '@/Utils/tokenStorage';
+} from '@/utils/tokenStorage';
 
 describe('tokenStorage', () => {
   beforeEach(() => {

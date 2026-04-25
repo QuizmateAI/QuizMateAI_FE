@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import LoadingSpinner from '@/Components/ui/LoadingSpinner';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const NavigationLoadingContext = createContext(null);
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AcceptInvitationPage from '@/Pages/Users/Group/AcceptInvitationPage';
+import AcceptInvitationPage from '@/pages/Users/Group/AcceptInvitationPage';
 import { acceptInvitation, previewInvitation } from '@/api/GroupAPI';
 
 vi.mock('react-i18next', () => ({

@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import PlanFormWizard from '@/Pages/Admin/components/PlanFormWizard';
+import PlanFormWizard from '@/pages/Admin/components/PlanFormWizard';
 
 function DummyIcon() {
   return <svg aria-hidden="true" />;

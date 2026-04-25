@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import api from '@/api/api';
-import { clearPlanPurchaseState } from '@/Utils/planPurchaseState';
-import { setCachedSubscription } from '@/Utils/userCache';
+import { clearPlanPurchaseState } from '@/utils/planPurchaseState';
+import { setCachedSubscription } from '@/utils/userCache';
 import {
   googleLogin,
   login,
@@ -17,21 +17,21 @@ vi.mock('@/api/api', () => ({
   },
 }));
 
-vi.mock('@/Utils/userCache', () => ({
+vi.mock('@/utils/userCache', () => ({
   clearUserCache: vi.fn(),
   setCachedProfile: vi.fn(),
   setCachedSubscription: vi.fn(),
 }));
 
-vi.mock('@/Utils/planPurchaseState', () => ({
+vi.mock('@/utils/planPurchaseState', () => ({
   clearPlanPurchaseState: vi.fn(),
 }));
 
-vi.mock('@/Utils/userProfile', () => ({
+vi.mock('@/utils/userProfile', () => ({
   normalizeUserProfile: vi.fn((profile) => profile),
 }));
 
-vi.mock('@/queryClient', () => ({
+vi.mock('@/lib/queryClient', () => ({
   queryClient: {
     clear: vi.fn(),
     setQueryData: vi.fn(),

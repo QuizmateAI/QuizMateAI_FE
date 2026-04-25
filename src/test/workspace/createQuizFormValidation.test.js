@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAiValidationState } from "@/Pages/Users/Individual/Workspace/Components/CreateQuizFormParts/createQuizForm.utils";
+import { buildAiValidationState } from "@/pages/Users/Individual/Workspace/Components/CreateQuizFormParts/createQuizForm.utils";
 
 function t(key, options) {
   if (typeof options === "string") {

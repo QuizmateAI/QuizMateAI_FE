@@ -2,7 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
-import GroupMembersTab from '@/Pages/Users/Group/Group_leader/GroupMembersTab';
+import GroupMembersTab from '@/pages/Users/Group/group-leader/GroupMembersTab';
 
 const translations = {
   'home.group.leader': 'Leader',

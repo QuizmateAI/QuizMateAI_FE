@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n, { preloadRouteNamespaces } from '@/i18n';
 import { buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
-import ChallengeDetailView from '@/Pages/Users/Group/Components/ChallengeDetailView';
+import ChallengeDetailView from '@/pages/Users/Group/Components/ChallengeDetailView';
 import {
   acceptQuizReviewInvitation,
   batchInviteQuizReviewers,
@@ -43,7 +43,7 @@ vi.mock('@/api/GroupAPI', () => ({
   getGroupMembers: vi.fn(),
 }));
 
-vi.mock('@/Components/users/UserDisplayName', () => ({
+vi.mock('@/components/features/users/UserDisplayName', () => ({
   default: ({ user, fallback }) => <span>{user?.fullName || user?.username || fallback}</span>,
 }));
 

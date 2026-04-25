@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import VnPayReturnRedirect from '@/Pages/Payment/VnPayReturnRedirect';
+import VnPayReturnRedirect from '@/pages/Payment/VnPayReturnRedirect';
 import { getApiOrigin } from '@/api/api';
 
 vi.mock('@/api/api', () => ({

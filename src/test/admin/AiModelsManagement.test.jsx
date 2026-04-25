@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AiModelsManagement from '@/Pages/SuperAdmin/AiModelsManagement';
+import AiModelsManagement from '@/pages/SuperAdmin/AiModelsManagement';
 import { getAiModels, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
 
 let mockPermissions = new Set();
@@ -44,7 +44,7 @@ vi.mock('@/context/ToastContext', () => ({
   }),
 }));
 
-vi.mock('@/Utils/getErrorMessage', () => ({
+vi.mock('@/utils/getErrorMessage', () => ({
   getErrorMessage: () => 'Unexpected error',
 }));
 

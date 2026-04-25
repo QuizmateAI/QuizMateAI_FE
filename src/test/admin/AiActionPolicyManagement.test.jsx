@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AiActionPolicyManagement from '@/Pages/Admin/AiActionPolicyManagement';
+import AiActionPolicyManagement from '@/pages/Admin/AiActionPolicyManagement';
 import { getAllAiActionPolicies, updateAiActionPolicy } from '@/api/ManagementSystemAPI';
 
 vi.mock('react-i18next', () => ({
@@ -71,7 +71,7 @@ vi.mock('@/context/ToastContext', () => ({
   }),
 }));
 
-vi.mock('@/Utils/getErrorMessage', () => ({
+vi.mock('@/utils/getErrorMessage', () => ({
   getErrorMessage: () => 'Unexpected error',
 }));
 

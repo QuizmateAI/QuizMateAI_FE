@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import FlashcardDetailView from '@/Pages/Users/Individual/Workspace/Components/FlashcardDetailView';
+import FlashcardDetailView from '@/pages/Users/Individual/Workspace/Components/FlashcardDetailView';
 import { getFlashcardDetail } from '@/api/FlashcardAPI';
 
 vi.mock('react-i18next', () => ({
@@ -24,7 +24,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/Components/feedback/DirectFeedbackButton', () => ({
+vi.mock('@/components/feedback/DirectFeedbackButton', () => ({
   default: ({ label }) => <button type="button">{label}</button>,
 }));
 
