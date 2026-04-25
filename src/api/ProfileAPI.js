@@ -3,9 +3,10 @@ import i18n from "@/i18n";
 import { getCachedProfile, setCachedProfile, clearUserCache } from "@/Utils/userCache";
 import { getCurrentUser } from "@/api/Authentication";
 import { normalizeUserProfile } from "@/Utils/userProfile";
+import { getAccessToken, hasAccessToken as hasPrimaryAccessToken } from "@/Utils/tokenStorage";
 
 function getStoredToken() {
-  return localStorage.getItem("accessToken") || localStorage.getItem("jwt_token") || "";
+  return getAccessToken();
 }
 
 /**
@@ -25,7 +26,7 @@ async function getUserProfile() {
     return cached;
   }
 
-  const hasAccessToken = !!localStorage.getItem("accessToken");
+  const hasAccessToken = hasPrimaryAccessToken();
 
   const response = hasAccessToken
     ? await api.get("/user/profile")

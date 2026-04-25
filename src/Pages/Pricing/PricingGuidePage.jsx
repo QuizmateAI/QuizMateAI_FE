@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import { hasAccessToken } from "@/Utils/tokenStorage";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -83,7 +84,7 @@ export default function PricingGuidePage() {
   const currentLang = isVietnamese ? "vi" : "en";
   const copy = useMemo(() => getPricingGuideCopy(t), [t]);
   const user = useMemo(() => getStoredUser(), []);
-  const isLoggedIn = !!user && !!window.localStorage.getItem("accessToken");
+  const isLoggedIn = !!user && hasAccessToken();
   const isEndUser = user?.role === "USER";
   const fontClass = isVietnamese ? "font-sans" : "font-poppins";
   const homeTarget = getHomeTarget(user);

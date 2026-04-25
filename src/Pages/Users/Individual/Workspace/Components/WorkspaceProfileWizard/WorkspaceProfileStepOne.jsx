@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Compass,
   Crown,
-  GraduationCap,
   Layers3,
   Loader2,
   RefreshCw,
@@ -92,14 +91,12 @@ function WorkspaceProfileStepOne({
   values,
   errors,
   analysisStatus,
-  knowledgeOptions,
   domainOptions,
   needsKnowledgeDescription,
   knowledgeAnalysis,
   disabled = false,
   onPurposeChange,
   onFieldChange,
-  onKnowledgeSelect,
   onDomainSelect,
   onRetryAnalysis,
   canCreateRoadmap = true,
@@ -115,7 +112,6 @@ function WorkspaceProfileStepOne({
       ? 'border-slate-700 bg-slate-950/60 text-white placeholder:text-slate-500 focus:border-cyan-400'
       : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500'
   );
-  const selectedKnowledgeOption = knowledgeOptions.find((option) => option.id === values.selectedKnowledgeOptionId) || null;
   const selectedDomainOption = domainOptions.find((option) => option.label === values.inferredDomain) || null;
   const selectedDomainTheme = selectedDomainOption
     ? DOMAIN_OPTION_THEMES[domainOptions.findIndex((option) => option.label === values.inferredDomain) % DOMAIN_OPTION_THEMES.length]
@@ -491,128 +487,6 @@ function WorkspaceProfileStepOne({
               <p className="mb-3 text-sm font-semibold">
                 {translateOrFallback(
                   t,
-                  'workspace.profileConfig.stepOne.knowledgeOptionTitle',
-                  'Suggested knowledge options'
-                )}
-                <RequiredAsterisk />
-              </p>
-              {knowledgeOptions.length > 0 ? (
-                <div className="space-y-3">
-                  {knowledgeOptions.map((option, index) => {
-                    const active = values.selectedKnowledgeOptionId === option.id;
-                    const theme = DOMAIN_OPTION_THEMES[index % DOMAIN_OPTION_THEMES.length];
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => onKnowledgeSelect(option.id)}
-                        className={cn(
-                          'flex w-full items-start gap-3 rounded-[20px] border px-4 py-3 text-left transition-all',
-                          active
-                            ? isDarkMode
-                              ? theme.darkActive
-                              : theme.lightActive
-                            : isDarkMode
-                              ? theme.darkInactive
-                              : theme.lightInactive
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-                            active
-                              ? isDarkMode
-                                ? theme.darkActiveIcon
-                                : theme.lightActiveIcon
-                              : isDarkMode
-                                ? theme.darkIcon
-                                : theme.lightIcon
-                          )}
-                        >
-                          {active ? <CheckCircle2 className="h-4 w-4" /> : <GraduationCap className="h-4 w-4" />}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold">{option.label}</p>
-                            <div className="flex flex-wrap items-center gap-2">
-                              {option.existingKnowledge ? (
-                                <span
-                                  className={cn(
-                                    'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                                    active
-                                      ? isDarkMode
-                                        ? theme.darkActiveTag
-                                        : theme.lightActiveTag
-                                      : isDarkMode
-                                        ? theme.darkTag
-                                        : theme.lightTag
-                                  )}
-                                >
-                                  {translateOrFallback(t, 'workspace.profileConfig.stepOne.catalogBadge', 'Catalog')}
-                                </span>
-                              ) : null}
-                              <span
-                                className={cn(
-                                  'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                                  active
-                                    ? isDarkMode
-                                      ? theme.darkActiveTag
-                                      : theme.lightActiveTag
-                                    : isDarkMode
-                                      ? theme.darkTag
-                                      : theme.lightTag
-                                )}
-                              >
-                                {active
-                                  ? translateOrFallback(t, 'workspace.profileConfig.stepOne.selectedKnowledgeTag', 'Selected')
-                                  : translateOrFallback(t, 'workspace.profileConfig.stepOne.selectKnowledgeTag', 'Choose')}
-                              </span>
-                            </div>
-                          </div>
-                          {option.description ? (
-                            <p
-                              className={cn(
-                                'mt-1.5 text-sm leading-6',
-                                active ? 'text-white/85' : isDarkMode ? theme.darkReason : theme.lightReason
-                              )}
-                            >
-                              {option.description}
-                            </p>
-                          ) : null}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    'rounded-[20px] border border-dashed px-4 py-3 text-sm leading-6',
-                    isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-white text-slate-600'
-                  )}
-                >
-                  {translateOrFallback(
-                    t,
-                    'workspace.profileConfig.stepOne.noKnowledgeOptionTitle',
-                    'Quizmate AI does not have enough knowledge options yet.'
-                  )}
-                </div>
-              )}
-              {errors.selectedKnowledgeOption ? <p className="mt-3 text-sm font-medium text-red-400">{errors.selectedKnowledgeOption}</p> : null}
-            </div>
-          ) : null}
-
-          {analysisStatus === 'success' ? (
-            <div
-              className={cn(
-                'rounded-[24px] border p-4',
-                isDarkMode ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
-              )}
-            >
-              <p className="mb-3 text-sm font-semibold">
-                {translateOrFallback(
-                  t,
                   'workspace.profileConfig.stepOne.domainSuggestionTitle',
                   'Suggested domains'
                 )}
@@ -747,40 +621,6 @@ function WorkspaceProfileStepOne({
                   <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
                     {t('workspace.profileConfig.stepOne.primaryDomainLockedHint')}
                   </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {selectedKnowledgeOption ? (
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">
-                  {translateOrFallback(t, 'workspace.profileConfig.fields.selectedKnowledgeOption', 'Selected knowledge')}
-                  <RequiredAsterisk />
-                </p>
-              </div>
-              <div
-                className={cn(
-                  'flex min-h-[72px] items-start gap-3 rounded-2xl border px-4 py-3',
-                  isDarkMode ? 'border-white/10 bg-white/[0.03] text-white' : 'border-slate-200 bg-white text-slate-900'
-                )}
-              >
-                <div
-                  className={cn(
-                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-                    isDarkMode ? 'bg-slate-800 text-cyan-300' : 'bg-cyan-50 text-cyan-600'
-                  )}
-                >
-                  <GraduationCap className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{selectedKnowledgeOption.label}</p>
-                  {selectedKnowledgeOption.description ? (
-                    <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                      {selectedKnowledgeOption.description}
-                    </p>
-                  ) : null}
                 </div>
               </div>
             </div>

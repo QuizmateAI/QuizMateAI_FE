@@ -87,6 +87,7 @@ import {
 import { getQuizzesByScope, deleteQuiz } from '@/api/QuizAPI';
 import { unwrapApiData, unwrapApiList } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
+import { logSwallowed } from '@/Utils/logSwallowed';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
 import {
@@ -111,6 +112,13 @@ import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 import { buildGroupMemberSeatSummary, normalizePendingInvitationSummary, resolveGroupMemberSeatLimit } from './utils/memberSeatLimit';
 import { resolveGroupQuizTitleMaxLength } from './utils/groupQuizTitleLimit';
+import {
+  formatDateTime,
+  formatLearningScore,
+  formatLearningPassRate,
+  formatRelativeTime,
+  getLogLabel,
+} from './utils/groupWorkspaceFormatters';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 const LEARNING_SNAPSHOT_PERIOD = 'DAILY';
@@ -700,70 +708,6 @@ function readCurrentUser() {
 
 function getWelcomeStorageKey(workspaceId) {
   return `${GROUP_WELCOME_STORAGE_PREFIX}:${workspaceId}`;
-}
-
-function formatDateTime(value, lang = 'vi') {
-  const t = i18nInstance.t.bind(i18nInstance);
-  const lng = lang === 'en' ? 'en' : 'vi';
-  if (!value) return t('groupWorkspacePage.time.noDate', 'No date', { lng });
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return t('groupWorkspacePage.time.noDate', 'No date', { lng });
-  return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
-
-function formatLearningScore(value) {
-  if (value == null || Number.isNaN(Number(value))) return '—';
-  return Math.round(Number(value) * 10) / 10;
-}
-
-function formatLearningPassRate(snapshot) {
-  const attempts = Number(snapshot?.totalQuizAttempts ?? 0);
-  const passed = Number(snapshot?.totalQuizPassed ?? 0);
-  if (attempts <= 0) return '—';
-  return `${Math.round((passed / attempts) * 1000) / 10}%`;
-}
-
-function formatRelativeTime(value, lang = 'vi') {
-  const t = i18nInstance.t.bind(i18nInstance);
-  const lng = lang === 'en' ? 'en' : 'vi';
-  if (!value) return t('groupWorkspacePage.time.noRecentActivity', 'No recent activity', { lng });
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return t('groupWorkspacePage.time.noRecentActivity', 'No recent activity', { lng });
-
-  const diffMs = Date.now() - date.getTime();
-  const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
-  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-
-  if (diffHours < 1) return t('groupWorkspacePage.time.justNow', 'Just now', { lng });
-  if (diffHours < 24) return t('groupWorkspacePage.time.hoursAgo', '{{count}} hour(s) ago', { count: diffHours, lng });
-  if (diffDays < 7) return t('groupWorkspacePage.time.daysAgo', '{{count}} day(s) ago', { count: diffDays, lng });
-  return formatDateTime(value, lang);
-}
-
-function getLogLabel(action, lang = 'vi') {
-  const t = i18nInstance.t.bind(i18nInstance);
-  const lng = lang === 'en' ? 'en' : 'vi';
-  const labels = {
-    GROUP_CREATED: t('groupWorkspacePage.log.groupCreated', 'Group created', { lng }),
-    GROUP_PROFILE_UPDATED: t('groupWorkspacePage.log.groupProfileUpdated', 'Profile updated', { lng }),
-    INVITATION_SENT: t('groupWorkspacePage.log.invitationSent', 'Invitation sent', { lng }),
-    INVITATION_ACCEPTED: t('groupWorkspacePage.log.invitationAccepted', 'Invitation accepted', { lng }),
-    MEMBER_JOINED: t('groupWorkspacePage.log.memberJoined', 'Member joined', { lng }),
-    MEMBER_REMOVED: t('groupWorkspacePage.log.memberRemoved', 'Member removed', { lng }),
-    MEMBER_ROLE_UPDATED: t('groupWorkspacePage.log.memberRoleUpdated', 'Role updated', { lng }),
-    QUIZ_CREATED_IN_GROUP: t('groupWorkspacePage.log.quizCreated', 'Quiz created', { lng }),
-    QUIZ_PUBLISHED_IN_GROUP: t('groupWorkspacePage.log.quizPublished', 'Quiz published', { lng }),
-    QUIZ_AUDIENCE_UPDATED_IN_GROUP: t('groupWorkspacePage.log.quizAudienceUpdated', 'Quiz assignment', { lng }),
-    QUIZ_SUBMITTED_IN_GROUP: t('groupWorkspacePage.log.quizSubmitted', 'Quiz submitted', { lng }),
-  };
-
-  return labels[action] || t('groupWorkspacePage.log.groupActivity', 'Group activity', { lng });
 }
 
 function GroupWorkspacePage() {
@@ -3464,7 +3408,7 @@ function GroupWorkspacePage() {
       setSources([]);
       setSelectedSourceIds([]);
 
-      await fetchWorkspaceDetail(workspaceId).catch(() => {});
+      await fetchWorkspaceDetail(workspaceId).catch(logSwallowed('GroupWorkspacePage.refresh'));
       await loadGroupProfile();
       bumpRoadmapReloadToken();
 
@@ -3740,7 +3684,7 @@ function GroupWorkspacePage() {
           console.warn('Lưu config roadmap thất bại:', configErr);
         }
       }
-      await fetchWorkspaceDetail(workspaceId).catch(() => {});
+      await fetchWorkspaceDetail(workspaceId).catch(logSwallowed('GroupWorkspacePage.refresh'));
       await loadGroupProfile();
       setActiveView('roadmap');
     } catch (err) {
@@ -4021,7 +3965,7 @@ function GroupWorkspacePage() {
       await resetCurrentRoadmapStructure();
     }
 
-    await fetchWorkspaceDetail(workspaceId).catch(() => {});
+    await fetchWorkspaceDetail(workspaceId).catch(logSwallowed('GroupWorkspacePage.refresh'));
     await loadGroupProfile();
     await loadGroupRoadmapConfig();
     bumpRoadmapReloadToken();

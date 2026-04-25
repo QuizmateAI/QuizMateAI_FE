@@ -35,6 +35,7 @@ vi.mock('@/queryClient', () => ({
   queryClient: {
     clear: vi.fn(),
     setQueryData: vi.fn(),
+    invalidateQueries: vi.fn(),
   },
 }));
 

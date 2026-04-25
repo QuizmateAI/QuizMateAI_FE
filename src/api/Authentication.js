@@ -3,6 +3,7 @@ import { setCachedProfile, setCachedSubscription, clearUserCache } from '@/Utils
 import { normalizeUserProfile } from '@/Utils/userProfile';
 import { queryClient } from '@/queryClient';
 import { clearPlanPurchaseState } from '@/Utils/planPurchaseState';
+import { setTokens, clearTokens, getAccessToken, hasAccessToken } from '@/Utils/tokenStorage';
 
 // ======================= AUTH API SERVICES =======================
 
@@ -60,8 +61,7 @@ function notifyAuthChanged(type) {
 }
 
 function clearAuthState() {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  clearTokens();
   localStorage.removeItem('user');
   clearUserCache();
   clearPlanPurchaseState();
@@ -83,8 +83,7 @@ export const login = async (credentials) => {
   // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
   if (response.statusCode === 200 || response.statusCode === 0) {
     const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    setTokens({ accessToken, refreshToken });
     localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
     // Cache profile + subscription từ BE (lần load sau chỉ verify token)
     saveLoginDataToCache(response.data);
@@ -127,8 +126,7 @@ export const googleLogin = async (idToken) => {
   // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
   if (response.statusCode === 200 || response.statusCode === 0) {
     const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    setTokens({ accessToken, refreshToken });
     localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
     saveLoginDataToCache(response.data);
     notifyAuthChanged('login');
@@ -242,7 +240,7 @@ export const resetPassword = async (email, newPassword) => {
  * Đăng xuất - Xóa token, thông tin user và cache khỏi localStorage
  */
 export const logout = () => {
-  const token = localStorage.getItem('accessToken');
+  const token = getAccessToken();
 
   // Dọn local state ngay để UI chuyển trạng thái tức thì.
   clearAuthState();
@@ -275,5 +273,5 @@ export const getCurrentUser = () => {
  * @returns {boolean} true nếu đã đăng nhập
  */
 export const isAuthenticated = () => {
-  return !!localStorage.getItem('accessToken');
+  return hasAccessToken();
 };

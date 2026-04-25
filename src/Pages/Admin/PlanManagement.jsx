@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { getAccessToken } from '@/Utils/tokenStorage';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -96,11 +97,7 @@ const PLAN_LOCKED_EDIT_FALLBACK = 'Goi level 1/2 da co nguoi mua hoac dang mua n
 
 function getAuthToken() {
   try {
-    return (
-      localStorage.getItem('accessToken')
-      || localStorage.getItem('token')
-      || localStorage.getItem('jwt_token')
-    );
+    return getAccessToken() || null;
   } catch (error) {
     console.error('Failed to get auth token for admin plan websocket:', error);
     return null;

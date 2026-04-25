@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { getAccessToken } from '@/Utils/tokenStorage';
 
 /**
  * Lấy thông tin user từ localStorage
@@ -14,7 +15,7 @@ const getUser = () => {
     }
 };
 
-const getToken = () => localStorage.getItem('accessToken');
+const getToken = () => getAccessToken();
 
 /**
  * Component bảo vệ route theo role
