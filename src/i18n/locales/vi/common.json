@@ -40,9 +40,9 @@
     "languageEnglish": "Tiếng Anh",
     "openActions": "Mở thao tác",
     "hourglassTimer": "Đồng hồ cát",
-    "edit": "Ch?nh s?a",
-    "save": "L?u",
-    "saving": "?ang l?u...",
+    "edit": "Chỉnh sửa",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
     "creditsUnit": "credit",
     "dialog": {
       "defaultTitle": "Hộp thoại",
@@ -541,7 +541,7 @@
       "source": "Nguồn",
       "status": "Trạng thái"
     },
-    "noPackage": "Kh?ng t?m th?y g?i credit."
+    "noPackage": "Không tìm thấy gói credit."
   },
   "upgradePlan": {
     "title": "Nâng cấp gói đăng ký",
