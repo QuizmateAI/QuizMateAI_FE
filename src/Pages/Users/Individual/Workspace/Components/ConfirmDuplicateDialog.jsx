@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Loader2, Copy, AlertTriangle } from "lucide-react";
+import i18n from "@/i18n";
 import { Button } from "@/Components/ui/button";
 import {
   Dialog,
@@ -11,10 +12,6 @@ import {
 } from "@/Components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-/**
- * Dialog reconfirm trước khi duplicate quiz để chỉnh sửa.
- * Hiển thị khi editRule === "REQUIRES_DUPLICATE".
- */
 function ConfirmDuplicateDialog({
   open,
   onClose,
@@ -24,9 +21,11 @@ function ConfirmDuplicateDialog({
   isDarkMode = false,
 }) {
   const [loading, setLoading] = useState(false);
-
+  const t = i18n.getFixedT(i18n.language?.startsWith("en") ? "en" : "vi");
   const isAiQuiz = String(quiz?.createVia || "").toUpperCase() === "AI";
-  const quizTitle = quiz?.title || "Quiz";
+  const quizTitle = quiz?.title || t("confirmDuplicateDialog.fallbackTitle", {
+    defaultValue: "Quiz",
+  });
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -54,21 +53,25 @@ function ConfirmDuplicateDialog({
               <Copy className="w-5 h-5 text-amber-500" />
             </div>
             <DialogTitle className={isDarkMode ? "text-slate-100" : "text-slate-900"}>
-              Tạo bản sao để chỉnh sửa
+              {t("confirmDuplicateDialog.title", {
+                defaultValue: "Create a copy to edit",
+              })}
             </DialogTitle>
           </div>
           <DialogDescription className={cn(
             "text-sm leading-relaxed mt-2",
             isDarkMode ? "text-slate-400" : "text-slate-600",
           )}>
-            Quiz{" "}
-            <span className={cn("font-semibold", isDarkMode ? "text-slate-200" : "text-slate-800")}>
-              &quot;{quizTitle}&quot;
-            </span>{" "}
             {completedAttemptCount > 0
-              ? `đã có ${completedAttemptCount} lần làm hoàn tất.`
-              : "đã có lượt làm hoàn tất."
-            }
+              ? t("confirmDuplicateDialog.descriptionWithCount", {
+                defaultValue: 'Quiz "{{title}}" already has {{count}} completed attempts.',
+                title: quizTitle,
+                count: completedAttemptCount,
+              })
+              : t("confirmDuplicateDialog.descriptionWithoutCount", {
+                defaultValue: 'Quiz "{{title}}" already has learner attempt history.',
+                title: quizTitle,
+              })}
           </DialogDescription>
         </DialogHeader>
 
@@ -77,9 +80,9 @@ function ConfirmDuplicateDialog({
           isDarkMode ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-50",
         )}>
           <p className={isDarkMode ? "text-slate-300" : "text-slate-700"}>
-            Để bảo toàn lịch sử kết quả, hệ thống sẽ tạo{" "}
-            <strong>1 bản sao mới</strong> và bạn sẽ chỉnh sửa trên bản sao đó.
-            Quiz gốc giữ nguyên.
+            {t("confirmDuplicateDialog.body", {
+              defaultValue: "To preserve the result history, the system will create a new copy and you will edit that copy instead. The original quiz stays unchanged.",
+            })}
           </p>
           {isAiQuiz && (
             <div className={cn(
@@ -90,8 +93,9 @@ function ConfirmDuplicateDialog({
             )}>
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
-                Vì gốc là quiz AI, bản sao sẽ là{" "}
-                <strong>quiz thủ công</strong> và không có đánh giá AI.
+                {t("confirmDuplicateDialog.aiWarning", {
+                  defaultValue: "Because the original is an AI quiz, the copied version will become a manual quiz and AI grading will no longer be available.",
+                })}
               </span>
             </div>
           )}
@@ -107,7 +111,9 @@ function ConfirmDuplicateDialog({
               isDarkMode && "border-slate-600 text-slate-200 hover:bg-slate-800",
             )}
           >
-            Hủy
+            {t("confirmDuplicateDialog.cancel", {
+              defaultValue: "Cancel",
+            })}
           </Button>
           <Button
             disabled={loading}
@@ -115,7 +121,13 @@ function ConfirmDuplicateDialog({
             className="rounded-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? "Đang tạo..." : "Tạo bản sao"}
+            {loading
+              ? t("confirmDuplicateDialog.creating", {
+                defaultValue: "Creating...",
+              })
+              : t("confirmDuplicateDialog.confirm", {
+                defaultValue: "Create copy",
+              })}
           </Button>
         </DialogFooter>
       </DialogContent>

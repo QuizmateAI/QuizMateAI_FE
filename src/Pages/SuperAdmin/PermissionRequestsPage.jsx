@@ -1,14 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, ShieldCheck, CircleSlash, Infinity as InfinityIcon, KeyRound } from 'lucide-react';
+import {
+  RefreshCw,
+  ShieldCheck,
+  CircleSlash,
+  Infinity as InfinityIcon,
+  KeyRound,
+} from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Badge } from '@/Components/ui/badge';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/Components/ui/table';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from '@/Components/ui/dialog';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -28,37 +44,56 @@ import {
   rejectPermissionRequest,
 } from '@/api/ManagementSystemAPI';
 
-const STATUS_TABS = [
-  { id: 'PENDING', label: 'Chờ duyệt' },
-  { id: 'APPROVED', label: 'Đã duyệt' },
-  { id: 'REJECTED', label: 'Từ chối' },
-  { id: 'CANCELLED', label: 'Đã huỷ' },
-  { id: 'ALL', label: 'Tất cả' },
-];
-
-const DURATION_PRESETS = [
-  { value: null, label: 'Vĩnh viễn' },
-  { value: 1, label: '1 ngày' },
-  { value: 7, label: '7 ngày' },
-  { value: 30, label: '30 ngày' },
-  { value: 90, label: '90 ngày' },
-];
-
 function statusClass(status) {
   switch (status) {
-    case 'PENDING': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-    case 'APPROVED': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
-    case 'REJECTED': return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300';
-    case 'CANCELLED': return 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
-    default: return 'bg-slate-100 text-slate-700';
+    case 'PENDING':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+    case 'APPROVED':
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+    case 'REJECTED':
+      return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300';
+    case 'CANCELLED':
+      return 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+    default:
+      return 'bg-slate-100 text-slate-700';
   }
 }
 
-function formatDate(d) {
-  if (!d) return '-';
-  const date = new Date(d);
+function getLocaleTag(language) {
+  return language === 'vi' ? 'vi-VN' : 'en-US';
+}
+
+function formatDate(value, locale) {
+  if (!value) return '-';
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+  return date.toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function buildDurationPresets(t) {
+  return [
+    { value: null, label: t('permissionDurationPresets.permanent', 'Permanent') },
+    { value: 1, label: t('permissionDurationPresets.oneDay', '1 day') },
+    { value: 7, label: t('permissionDurationPresets.sevenDays', '7 days') },
+    { value: 30, label: t('permissionDurationPresets.thirtyDays', '30 days') },
+    { value: 90, label: t('permissionDurationPresets.ninetyDays', '90 days') },
+  ];
+}
+
+function formatPermissionDuration(days, t) {
+  if (!days) return t('permissionDurationPresets.permanent', 'Permanent');
+  if (days === 1) return t('permissionDurationPresets.oneDay', '1 day');
+  if (days === 7) return t('permissionDurationPresets.sevenDays', '7 days');
+  if (days === 30) return t('permissionDurationPresets.thirtyDays', '30 days');
+  if (days === 90) return t('permissionDurationPresets.ninetyDays', '90 days');
+  return t('permissionDurationPresets.customDays', {
+    count: days,
+    defaultValue: `${days} days`,
+  });
+}
+
+function getPermissionRequestStatusLabel(t, status) {
+  return t(`permissionRequestStatus.${status}`, status);
 }
 
 export default function PermissionRequestsPage() {
@@ -69,49 +104,74 @@ export default function PermissionRequestsPage() {
   const [tab, setTab] = useState('PENDING');
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ page: 0, size: 20, totalPages: 0, totalElements: 0 });
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: 20,
+    totalPages: 0,
+    totalElements: 0,
+  });
 
   const [approving, setApproving] = useState(null);
   const [rejecting, setRejecting] = useState(null);
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const locale = getLocaleTag(i18n.language);
+  const statusTabs = useMemo(
+    () => [
+      { id: 'PENDING', label: t('permissionRequestsPage.tabs.PENDING', 'Pending') },
+      { id: 'APPROVED', label: t('permissionRequestsPage.tabs.APPROVED', 'Approved') },
+      { id: 'REJECTED', label: t('permissionRequestsPage.tabs.REJECTED', 'Rejected') },
+      { id: 'CANCELLED', label: t('permissionRequestsPage.tabs.CANCELLED', 'Cancelled') },
+      { id: 'ALL', label: t('permissionRequestsPage.tabs.ALL', 'All') },
+    ],
+    [t],
+  );
+
   const friendly = (err, fallback) => {
     const mapped = getErrorMessage(t, err);
     return mapped && mapped !== 'error.unknown' ? mapped : fallback;
   };
 
-  const fetchData = useCallback(async (page = 0, size = pagination.size) => {
-    setLoading(true);
-    try {
-      const res = await listPermissionRequests({
-        status: tab === 'ALL' ? undefined : tab,
-        page,
-        size,
-      });
-      const data = res?.data || {};
-      setRows(data.content || []);
-      setPagination({
-        page: data.page ?? 0,
-        size: data.size ?? size,
-        totalPages: data.totalPages ?? 0,
-        totalElements: data.totalElements ?? 0,
-      });
-    } catch (err) {
-      showError(friendly(err, 'Không thể tải danh sách yêu cầu'));
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [tab, pagination.size]);
+  const fetchData = useCallback(
+    async (page = 0, size = pagination.size) => {
+      setLoading(true);
+      try {
+        const response = await listPermissionRequests({
+          status: tab === 'ALL' ? undefined : tab,
+          page,
+          size,
+        });
+        const data = response?.data || {};
+        setRows(data.content || []);
+        setPagination({
+          page: data.page ?? 0,
+          size: data.size ?? size,
+          totalPages: data.totalPages ?? 0,
+          totalElements: data.totalElements ?? 0,
+        });
+      } catch (err) {
+        showError(friendly(err, t('permissionRequestsPage.loadError', 'Unable to load requests.')));
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pagination.size, showError, t, tab],
+  );
 
-  useEffect(() => { fetchData(0, pagination.size); }, [tab]);
+  useEffect(() => {
+    fetchData(0, pagination.size);
+  }, [fetchData, pagination.size, tab]);
 
   return (
     <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
-        eyebrow="Access Control"
-        title="Yêu cầu cấp quyền"
-        description="Duyệt hoặc từ chối yêu cầu xin quyền từ admin. Có thể cấp kèm thời hạn, hệ thống sẽ tự động thu hồi khi hết hạn."
+        eyebrow={t('permissionRequestsPage.eyebrow', 'Access control')}
+        title={t('permissionRequestsPage.title', 'Permission requests')}
+        description={t(
+          'permissionRequestsPage.description',
+          'Approve or reject admin access requests. You can grant temporary access and the system will revoke it automatically when it expires.',
+        )}
         actions={(
           <Button
             variant="outline"
@@ -120,109 +180,156 @@ export default function PermissionRequestsPage() {
             className="h-10 rounded-2xl"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Làm mới
+            {t('permissionRequestsPage.refresh', 'Refresh')}
           </Button>
         )}
       />
 
-      <SuperAdminTabs tabs={STATUS_TABS} active={tab} onChange={setTab} />
+      <SuperAdminTabs tabs={statusTabs} active={tab} onChange={setTab} />
 
       <SuperAdminPanel contentClassName="p-0">
         {loading ? (
-          <div className="p-6"><ListSpinner variant="table" /></div>
+          <div className="p-6">
+            <ListSpinner variant="table" />
+          </div>
         ) : rows.length === 0 ? (
-          <div className="p-6"><SuperAdminEmptyState title="Không có yêu cầu nào" /></div>
+          <div className="p-6">
+            <SuperAdminEmptyState
+              title={t('permissionRequestsPage.emptyTitle', 'No requests found')}
+            />
+          </div>
         ) : (
           <Table className="table-auto min-w-full text-left">
             <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
               <TableRow>
-                <TableHead className="font-bold text-slate-500 w-[220px]">Người yêu cầu</TableHead>
-                <TableHead className="font-bold text-slate-500 w-[160px]">Quyền</TableHead>
-                <TableHead className="font-bold text-slate-500">Lý do</TableHead>
-                <TableHead className="font-bold text-slate-500 w-[110px]">Thời hạn xin</TableHead>
-                <TableHead className="font-bold text-slate-500 w-[110px]">Trạng thái</TableHead>
-                <TableHead className="font-bold text-slate-500 w-[160px]">Tạo lúc</TableHead>
-                <TableHead className="font-bold text-slate-500 w-[220px] text-right">Hành động</TableHead>
+                <TableHead className="w-[220px] font-bold text-slate-500">
+                  {t('permissionRequestsPage.table.requester', 'Requester')}
+                </TableHead>
+                <TableHead className="w-[160px] font-bold text-slate-500">
+                  {t('permissionRequestsPage.table.permission', 'Permission')}
+                </TableHead>
+                <TableHead className="font-bold text-slate-500">
+                  {t('permissionRequestsPage.table.reason', 'Reason')}
+                </TableHead>
+                <TableHead className="w-[110px] font-bold text-slate-500">
+                  {t('permissionRequestsPage.table.requestedDuration', 'Requested duration')}
+                </TableHead>
+                <TableHead className="w-[110px] font-bold text-slate-500">
+                  {t('permissionRequestsPage.table.status', 'Status')}
+                </TableHead>
+                <TableHead className="w-[160px] font-bold text-slate-500">
+                  {t('permissionRequestsPage.table.createdAt', 'Created at')}
+                </TableHead>
+                <TableHead className="w-[220px] text-right font-bold text-slate-500">
+                  {t('permissionRequestsPage.table.actions', 'Actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.id} className={isDarkMode ? 'border-slate-800' : 'border-slate-100'}>
-                  <TableCell>
-                    <div className="font-semibold text-sm">{r.requesterEmail}</div>
-                    <div className="text-xs text-slate-400">@{r.requesterUsername}</div>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{r.permissionCode}</TableCell>
-                  <TableCell className="max-w-[380px]">
-                    <p className="line-clamp-3 text-sm">{r.reason}</p>
-                    {r.decisionNote && (
-                      <p className={`mt-1 text-xs italic ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Ghi chú: {r.decisionNote}
-                      </p>
-                    )}
-                    {r.status === 'APPROVED' && (
-                      <p className="mt-1 text-xs text-emerald-600">
-                        Hết hạn: {r.grantedExpiresAt ? formatDate(r.grantedExpiresAt) : 'Vĩnh viễn'}
-                      </p>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {r.requestedDurationDays ? `${r.requestedDurationDays} ngày` : 'Vĩnh viễn'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`rounded-lg px-2.5 py-0.5 border-none ${statusClass(r.status)}`}>
-                      {r.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{formatDate(r.createdAt)}</TableCell>
-                  <TableCell className="text-right">
-                    {r.status === 'PENDING' ? (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => setApproving(r)}
-                          className="rounded-lg h-8 bg-emerald-600 text-white hover:bg-emerald-700"
+              {rows.map((request) => {
+                const decidedMeta = [
+                  request.decidedByEmail
+                    ? t('permissionRequestsPage.decidedBy', {
+                      email: request.decidedByEmail,
+                      defaultValue: `By ${request.decidedByEmail}`,
+                    })
+                    : '',
+                  request.decidedAt ? formatDate(request.decidedAt, locale) : '',
+                ]
+                  .filter(Boolean)
+                  .join(' • ');
+
+                return (
+                  <TableRow
+                    key={request.id}
+                    className={isDarkMode ? 'border-slate-800' : 'border-slate-100'}
+                  >
+                    <TableCell>
+                      <div className="text-sm font-semibold">{request.requesterEmail}</div>
+                      <div className="text-xs text-slate-400">@{request.requesterUsername}</div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{request.permissionCode}</TableCell>
+                    <TableCell className="max-w-[380px]">
+                      <p className="line-clamp-3 text-sm">{request.reason}</p>
+                      {request.decisionNote ? (
+                        <p
+                          className={`mt-1 text-xs italic ${
+                            isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                          }`}
                         >
-                          <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Duyệt
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setRejecting(r)}
-                          className="rounded-lg h-8 border-rose-300 text-rose-600 hover:bg-rose-50"
-                        >
-                          <CircleSlash className="mr-1 h-3.5 w-3.5" /> Từ chối
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400">
-                        {r.decidedByEmail ? `Bởi ${r.decidedByEmail}` : ''} {r.decidedAt ? `• ${formatDate(r.decidedAt)}` : ''}
-                      </span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                          {t('permissionRequestsPage.table.note', 'Note')}: {request.decisionNote}
+                        </p>
+                      ) : null}
+                      {request.status === 'APPROVED' ? (
+                        <p className="mt-1 text-xs text-emerald-600">
+                          {t('permissionRequestsPage.table.expiresAt', 'Expires at')}: {' '}
+                          {request.grantedExpiresAt
+                            ? formatDate(request.grantedExpiresAt, locale)
+                            : t('permissionDurationPresets.permanent', 'Permanent')}
+                        </p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatPermissionDuration(request.requestedDurationDays, t)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`rounded-lg border-none px-2.5 py-0.5 ${statusClass(request.status)}`}>
+                        {getPermissionRequestStatusLabel(t, request.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">{formatDate(request.createdAt, locale)}</TableCell>
+                    <TableCell className="text-right">
+                      {request.status === 'PENDING' ? (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => setApproving(request)}
+                            className="h-8 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                          >
+                            <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+                            {t('permissionRequestsPage.approve', 'Approve')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setRejecting(request)}
+                            className="h-8 rounded-lg border-rose-300 text-rose-600 hover:bg-rose-50"
+                          >
+                            <CircleSlash className="mr-1 h-3.5 w-3.5" />
+                            {t('permissionRequestsPage.reject', 'Reject')}
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">{decidedMeta}</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
 
-        {rows.length > 0 && (
+        {rows.length > 0 ? (
           <AdminPagination
             currentPage={pagination.page}
             totalPages={pagination.totalPages}
             totalElements={pagination.totalElements}
             pageSize={pagination.size}
-            onPageChange={(p) => fetchData(p, pagination.size)}
-            onPageSizeChange={(s) => fetchData(0, s)}
+            onPageChange={(page) => fetchData(page, pagination.size)}
+            onPageSizeChange={(size) => fetchData(0, size)}
             isDarkMode={isDarkMode}
           />
-        )}
+        ) : null}
       </SuperAdminPanel>
 
       <ApproveDialog
         request={approving}
         onClose={() => setApproving(null)}
-        onDone={() => { setApproving(null); fetchData(pagination.page, pagination.size); }}
+        onDone={() => {
+          setApproving(null);
+          fetchData(pagination.page, pagination.size);
+        }}
         isDarkMode={isDarkMode}
         showError={showError}
         showSuccess={showSuccess}
@@ -232,7 +339,10 @@ export default function PermissionRequestsPage() {
       <RejectDialog
         request={rejecting}
         onClose={() => setRejecting(null)}
-        onDone={() => { setRejecting(null); fetchData(pagination.page, pagination.size); }}
+        onDone={() => {
+          setRejecting(null);
+          fetchData(pagination.page, pagination.size);
+        }}
         isDarkMode={isDarkMode}
         showError={showError}
         showSuccess={showSuccess}
@@ -243,10 +353,14 @@ export default function PermissionRequestsPage() {
 }
 
 function ApproveDialog({ request, onClose, onDone, isDarkMode, showError, showSuccess, friendly }) {
+  const { t, i18n } = useTranslation();
   const [durationDays, setDurationDays] = useState(null);
   const [customDateTime, setCustomDateTime] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const locale = getLocaleTag(i18n.language);
+  const durationPresets = useMemo(() => buildDurationPresets(t), [t]);
 
   useEffect(() => {
     if (request) {
@@ -258,120 +372,165 @@ function ApproveDialog({ request, onClose, onDone, isDarkMode, showError, showSu
 
   const useCustomDate = customDateTime.trim().length > 0;
   const expiresAtPreview = useMemo(() => {
-    if (useCustomDate) return customDateTime;
+    if (useCustomDate) return formatDate(customDateTime, locale);
     if (durationDays) {
-      const d = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
-      return d.toLocaleString('vi-VN');
+      const date = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+      return date.toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
     }
-    return 'Vĩnh viễn';
-  }, [useCustomDate, customDateTime, durationDays]);
+    return t('permissionDurationPresets.permanent', 'Permanent');
+  }, [customDateTime, durationDays, locale, t, useCustomDate]);
 
   const submit = async () => {
     if (!request) return;
+
     setSubmitting(true);
     try {
       const payload = useCustomDate
         ? { expiresAt: customDateTime, note: note.trim() || undefined }
         : { durationDays: durationDays ?? undefined, note: note.trim() || undefined };
       await approvePermissionRequest(request.id, payload);
-      showSuccess('Đã duyệt yêu cầu');
+      showSuccess(t('permissionRequestsPage.approveSuccess', 'Request approved.'));
       onDone();
     } catch (err) {
-      showError(friendly(err, 'Không thể duyệt yêu cầu'));
+      showError(friendly(err, t('permissionRequestsPage.approveError', 'Unable to approve the request.')));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={!!request} onOpenChange={(o) => { if (!submitting && !o) onClose(); }}>
-      <DialogContent className={`sm:max-w-[560px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : ''}`}>
+    <Dialog
+      open={!!request}
+      onOpenChange={(open) => {
+        if (!submitting && !open) onClose();
+      }}
+    >
+      <DialogContent
+        className={`sm:max-w-[560px] ${
+          isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-100' : ''
+        }`}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-600">
-            <ShieldCheck className="h-5 w-5" /> Duyệt yêu cầu
+            <ShieldCheck className="h-5 w-5" />
+            {t('permissionRequestsPage.approveDialogTitle', 'Approve request')}
           </DialogTitle>
           <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Cấp quyền cho admin. Có thể set thời hạn — khi hết hạn hệ thống sẽ tự động thu hồi.
+            {t(
+              'permissionRequestsPage.approveDialogDescription',
+              'Grant the permission to this admin. You can set an expiration and the system will revoke it automatically once it expires.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        {request && (
+        {request ? (
           <div className="space-y-4">
-            <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-slate-200 bg-slate-50'}`}>
-              <div><span className="font-semibold">Admin:</span> {request.requesterEmail}</div>
-              <div className="flex items-center gap-2 mt-1">
+            <div
+              className={`rounded-xl border p-3 text-sm ${
+                isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <div>
+                <span className="font-semibold">{t('permissionRequestsPage.adminLabel', 'Admin')}:</span>{' '}
+                {request.requesterEmail}
+              </div>
+              <div className="mt-1 flex items-center gap-2">
                 <KeyRound className="h-3.5 w-3.5 text-slate-400" />
                 <span className="font-mono text-xs">{request.permissionCode}</span>
               </div>
-              <div className="mt-2 text-xs text-slate-500 whitespace-pre-wrap">{request.reason}</div>
+              <div className="mt-2 whitespace-pre-wrap text-xs text-slate-500">{request.reason}</div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Thời hạn cấp</label>
+              <label className="text-sm font-semibold">
+                {t('permissionRequestsPage.grantDurationLabel', 'Granted duration')}
+              </label>
               <div className="flex flex-wrap gap-2">
-                {DURATION_PRESETS.map((p) => (
+                {durationPresets.map((preset) => (
                   <button
-                    key={String(p.value)}
+                    key={String(preset.value)}
                     type="button"
-                    onClick={() => { setDurationDays(p.value); setCustomDateTime(''); }}
+                    onClick={() => {
+                      setDurationDays(preset.value);
+                      setCustomDateTime('');
+                    }}
                     disabled={submitting}
                     className={`rounded-xl border px-3 py-1.5 text-sm font-medium transition ${
-                      !useCustomDate && durationDays === p.value
+                      !useCustomDate && durationDays === preset.value
                         ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                         : isDarkMode
                           ? 'border-slate-700 text-slate-300 hover:bg-slate-800'
                           : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    {p.value === null && <InfinityIcon className="inline h-3.5 w-3.5 mr-1" />}
-                    {p.label}
+                    {preset.value === null ? <InfinityIcon className="mr-1 inline h-3.5 w-3.5" /> : null}
+                    {preset.label}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Hoặc chọn thời điểm hết hạn tuỳ ý</label>
+              <label className="text-sm font-semibold">
+                {t('permissionRequestsPage.customExpiryLabel', 'Or set a custom expiration date')}
+              </label>
               <Input
                 type="datetime-local"
                 value={customDateTime}
-                onChange={(e) => setCustomDateTime(e.target.value)}
+                onChange={(event) => setCustomDateTime(event.target.value)}
                 disabled={submitting}
                 className="h-10 rounded-xl"
               />
               <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Nếu nhập, preset sẽ bị bỏ qua. Để trống để dùng preset.
+                {t(
+                  'permissionRequestsPage.customExpiryHint',
+                  'If you enter a date, it will override the preset. Leave it empty to use the selected preset.',
+                )}
               </p>
             </div>
 
             <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-              <span className="font-semibold">Sẽ hết hạn lúc:</span> {expiresAtPreview}
+              <span className="font-semibold">
+                {t('permissionRequestsPage.expiresAtPreviewLabel', 'Expires at')}:
+              </span>{' '}
+              {expiresAtPreview}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Ghi chú (tuỳ chọn)</label>
+              <label className="text-sm font-semibold">
+                {t('permissionRequestsPage.noteLabel', 'Note (optional)')}
+              </label>
               <textarea
                 rows={2}
                 maxLength={1000}
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={(event) => setNote(event.target.value)}
                 disabled={submitting}
                 className={`w-full rounded-xl border px-3 py-2 text-sm ${
-                  isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                  isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                 }`}
               />
             </div>
           </div>
-        )}
+        ) : null}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting} className="rounded-xl">Đóng</Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded-xl"
+          >
+            {t('permissionRequestsPage.close', 'Close')}
+          </Button>
           <Button
             onClick={submit}
             disabled={submitting}
             className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
           >
-            {submitting ? 'Đang duyệt…' : 'Duyệt & Cấp quyền'}
+            {submitting
+              ? t('permissionRequestsPage.approving', 'Approving...')
+              : t('permissionRequestsPage.approveSubmit', 'Approve and grant permission')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -380,6 +539,7 @@ function ApproveDialog({ request, onClose, onDone, isDarkMode, showError, showSu
 }
 
 function RejectDialog({ request, onClose, onDone, isDarkMode, showError, showSuccess, friendly }) {
+  const { t } = useTranslation();
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -391,63 +551,98 @@ function RejectDialog({ request, onClose, onDone, isDarkMode, showError, showSuc
 
   const submit = async () => {
     if (!request || !canSubmit) return;
+
     setSubmitting(true);
     try {
       await rejectPermissionRequest(request.id, { note: note.trim() });
-      showSuccess('Đã từ chối yêu cầu');
+      showSuccess(t('permissionRequestsPage.rejectSuccess', 'Request rejected.'));
       onDone();
     } catch (err) {
-      showError(friendly(err, 'Không thể từ chối yêu cầu'));
+      showError(friendly(err, t('permissionRequestsPage.rejectError', 'Unable to reject the request.')));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={!!request} onOpenChange={(o) => { if (!submitting && !o) onClose(); }}>
-      <DialogContent className={`sm:max-w-[500px] ${isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-100' : ''}`}>
+    <Dialog
+      open={!!request}
+      onOpenChange={(open) => {
+        if (!submitting && !open) onClose();
+      }}
+    >
+      <DialogContent
+        className={`sm:max-w-[500px] ${
+          isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-100' : ''
+        }`}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-rose-600">
-            <CircleSlash className="h-5 w-5" /> Từ chối yêu cầu
+            <CircleSlash className="h-5 w-5" />
+            {t('permissionRequestsPage.rejectDialogTitle', 'Reject request')}
           </DialogTitle>
           <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Ghi lý do để admin biết và điều chỉnh. Lý do sẽ được lưu vào audit log.
+            {t(
+              'permissionRequestsPage.rejectDialogDescription',
+              'Provide a reason so the admin understands what to adjust. The reason will be saved to the audit log.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        {request && (
+        {request ? (
           <div className="space-y-4">
-            <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-slate-200 bg-slate-50'}`}>
-              <div><span className="font-semibold">Admin:</span> {request.requesterEmail}</div>
-              <div className="font-mono text-xs mt-1">{request.permissionCode}</div>
+            <div
+              className={`rounded-xl border p-3 text-sm ${
+                isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <div>
+                <span className="font-semibold">{t('permissionRequestsPage.adminLabel', 'Admin')}:</span>{' '}
+                {request.requesterEmail}
+              </div>
+              <div className="mt-1 font-mono text-xs">{request.permissionCode}</div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Lý do từ chối (5–1000 ký tự)</label>
+              <label className="text-sm font-semibold">
+                {t('permissionRequestsPage.rejectReasonLabel', 'Rejection reason (5-1000 characters)')}
+              </label>
               <textarea
                 rows={4}
                 maxLength={1000}
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={(event) => setNote(event.target.value)}
                 disabled={submitting}
-                placeholder="Ví dụ: quyền này không phù hợp với scope công việc hiện tại…"
+                placeholder={t(
+                  'permissionRequestsPage.rejectReasonPlaceholder',
+                  'Example: this permission does not match the current scope of work.',
+                )}
                 className={`w-full rounded-xl border px-3 py-2 text-sm ${
-                  isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                  isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                 }`}
               />
-              <div className="text-xs text-slate-400 text-right">{note.trim().length}/1000</div>
+              <div className="text-right text-xs text-slate-400">{note.trim().length}/1000</div>
             </div>
           </div>
-        )}
+        ) : null}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting} className="rounded-xl">Đóng</Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded-xl"
+          >
+            {t('permissionRequestsPage.close', 'Close')}
+          </Button>
           <Button
             onClick={submit}
             disabled={!canSubmit || submitting}
             className="rounded-xl bg-rose-600 text-white hover:bg-rose-700"
           >
-            {submitting ? 'Đang gửi…' : 'Xác nhận từ chối'}
+            {submitting
+              ? t('permissionRequestsPage.rejecting', 'Submitting...')
+              : t('permissionRequestsPage.rejectSubmit', 'Confirm rejection')}
           </Button>
         </DialogFooter>
       </DialogContent>

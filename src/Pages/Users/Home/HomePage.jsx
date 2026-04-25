@@ -328,15 +328,15 @@ function HomePage() {
     setCreatingWorkspaceKind('group');
     try {
       preloadGroupWorkspaceCreateFlow();
-      showSuccess(t('home.group.creating') || 'Äang táº¡o group workspace...');
+      showSuccess(t('home.group.creating') || 'Đang tạo group workspace...');
       const newGroupWorkspace = await createGroupWorkspace({ title: null });
       if (!newGroupWorkspace?.workspaceId) {
-        throw new Error(t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
+        throw new Error(t('home.group.createError') || 'Không thể tạo group workspace');
       }
       navigate(buildGroupWorkspacePath(newGroupWorkspace.workspaceId), { state: { openProfileConfig: true } });
     } catch (err) {
       setCreatingWorkspaceKind(null);
-      showError(err?.message || t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
+      showError(err?.message || t('home.group.createError') || 'Không thể tạo group workspace');
     }
   };
 
@@ -580,7 +580,7 @@ function HomePage() {
         <div className="w-[130px] flex items-center justify-center" 
         // onClick={() => navigate('/')}
         >
-                   <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} />
+                   <img src={isDarkMode ? LogoDark : LogoLight} alt={t('common.brandLogoAlt', { brandName: 'QuizMate AI' })} className="w-full h-full object-contain" width={130} height={40} />
                  </div>
         
         <div className="flex items-center gap-2">
@@ -613,10 +613,10 @@ function HomePage() {
             <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
               isDarkMode ? 'bg-blue-500/10 ring-blue-400/25' : 'bg-blue-600/10 ring-blue-600/20'
             }`}>
-              <CreditIconImage alt="Quizmate Credit" className="h-6 w-6 rounded-full" />
+              <CreditIconImage alt={t('common.creditIconAlt', { brandName: 'QuizMate AI' })} className="h-6 w-6 rounded-full" />
             </span>
             <span className="text-sm font-semibold leading-none">
-              {loadingWallet ? '—' : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
+              {loadingWallet ? '-' : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
             </span>
           </Button>
           <div ref={settingsRef} className="relative">

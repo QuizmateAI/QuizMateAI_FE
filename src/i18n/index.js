@@ -10,6 +10,10 @@ const namespaceLoadPromises = new Map();
 
 const routeNamespaceRules = [
   {
+    matches: (pathname) => pathname === '/',
+    namespaces: ['common', 'home'],
+  },
+  {
     matches: (pathname) => pathname === '/login' || pathname === '/register' || pathname === '/forgot-password',
     namespaces: ['common', 'auth'],
   },

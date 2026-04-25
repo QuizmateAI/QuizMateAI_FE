@@ -42,39 +42,35 @@ const EMPTY_PENDING_INVITATIONS = Object.freeze({ count: 0, invitations: [] });
 const GROUP_PERMISSION_SECTIONS = [
   {
     id: 'content',
-    label: 'Content',
     items: [
-      { code: 'CREATE_QUIZ', label: 'Create quiz', description: 'Draft and edit group quizzes.' },
-      { code: 'PUBLISH_QUIZ', label: 'Publish quiz', description: 'Publish quiz drafts to members.' },
-      { code: 'ASSIGN_QUIZ_AUDIENCE', label: 'Assign audience', description: 'Choose which members can access a quiz.' },
-      { code: 'CREATE_FLASHCARD', label: 'Create flashcard', description: 'Create and update flashcard sets.' },
-      { code: 'CREATE_MOCK_TEST', label: 'Create mock test', description: 'Generate and manage mock tests.' },
-      { code: 'CREATE_ROADMAP', label: 'Create roadmap', description: 'Generate roadmap content and learning phases.' },
-      { code: 'CREATE_CHALLENGE', label: 'Create challenge', description: 'Create challenge events for the group.' },
-      { code: 'DELETE_CONTENT', label: 'Delete content', description: 'Remove group learning content.' },
+      { code: 'CREATE_QUIZ' },
+      { code: 'PUBLISH_QUIZ' },
+      { code: 'ASSIGN_QUIZ_AUDIENCE' },
+      { code: 'CREATE_FLASHCARD' },
+      { code: 'CREATE_MOCK_TEST' },
+      { code: 'CREATE_ROADMAP' },
+      { code: 'CREATE_CHALLENGE' },
+      { code: 'DELETE_CONTENT' },
     ],
   },
   {
     id: 'materials',
-    label: 'Materials',
     items: [
-      { code: 'UPLOAD_MATERIAL', label: 'Upload material', description: 'Upload and refresh learning materials.' },
-      { code: 'MODERATE_MATERIAL', label: 'Moderate material', description: 'Approve, reject, or review pending materials.' },
+      { code: 'UPLOAD_MATERIAL' },
+      { code: 'MODERATE_MATERIAL' },
     ],
   },
   {
     id: 'insights',
-    label: 'Insights',
     items: [
-      { code: 'VIEW_MEMBER_DASHBOARD', label: 'View member dashboard', description: 'Open member stats and analytics.' },
+      { code: 'VIEW_MEMBER_DASHBOARD' },
     ],
   },
   {
     id: 'admin',
-    label: 'Administration',
     items: [
-      { code: 'MANAGE_MEMBERS', label: 'Manage members', description: 'Invite, remove, and manage member permissions.' },
-      { code: 'MANAGE_SETTINGS', label: 'Manage settings', description: 'Update group settings and visibility.' },
+      { code: 'MANAGE_MEMBERS' },
+      { code: 'MANAGE_SETTINGS' },
     ],
   },
 ];
@@ -267,6 +263,17 @@ function GroupMembersTab({
   const permissionDraftSet = useMemo(() => new Set(permissionDraft), [permissionDraft]);
   const hasAllPermissions = ALL_GROUP_PERMISSION_CODES.length > 0
     && ALL_GROUP_PERMISSION_CODES.every((code) => permissionDraftSet.has(code));
+  const translatedPermissionSections = useMemo(() => (
+    GROUP_PERMISSION_SECTIONS.map((section) => ({
+      ...section,
+      label: t(`groupManage.members.permissionCatalog.sections.${section.id}`),
+      items: section.items.map((item) => ({
+        ...item,
+        label: t(`groupManage.members.permissionCatalog.items.${item.code}.label`),
+        description: t(`groupManage.members.permissionCatalog.items.${item.code}.description`),
+      })),
+    }))
+  ), [currentLang, t]);
 
   const updatePendingInvitationCache = useCallback((updater) => {
     queryClient.setQueryData(pendingInvitationsQueryKey, (current) => {
@@ -511,9 +518,9 @@ function GroupMembersTab({
 
   const getRoleLabel = (role) => {
     const normalizedRole = normalizeRole(role);
-    if (normalizedRole === 'LEADER') return t('home.group.leader', { defaultValue: 'Admin' });
-    if (normalizedRole === 'CONTRIBUTOR') return t('home.group.contributor', { defaultValue: 'Developer' });
-    return t('home.group.member', { defaultValue: 'Designer' });
+    if (normalizedRole === 'LEADER') return t('home.group.leader', { defaultValue: 'Leader' });
+    if (normalizedRole === 'CONTRIBUTOR') return t('home.group.contributor', { defaultValue: 'Contributor' });
+    return t('home.group.member', { defaultValue: 'Member' });
   };
 
   const getRoleBadgeClass = (role) => {
@@ -885,7 +892,12 @@ function GroupMembersTab({
                                   </div>
                                   <div className="min-w-0">
                                     <p className={`truncate text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-[#314044]'}`}>
-                                      <UserDisplayName user={member} fallback={currentLang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} showUsernameSuffix={false} />
+                                      <UserDisplayName
+                                        user={member}
+                                        fallback={t('groupManage.members.memberFallback')}
+                                        isDarkMode={isDarkMode}
+                                        showUsernameSuffix={false}
+                                      />
                                     </p>
                                     <p className={`mt-1 truncate text-xs ${mutedTextClass}`}>
                                       {member.email || '—'}
@@ -937,7 +949,7 @@ function GroupMembersTab({
                                       <button
                                         type="button"
                                         className={`inline-flex rounded-lg p-2 transition-all active:scale-95 ${isDarkMode ? 'text-emerald-50/65 hover:bg-white/[0.10]' : 'text-[#6e7d76] hover:bg-white/36'}`}
-                                        aria-label="Action"
+                                        aria-label={t('common.openActions')}
                                       >
                                         <MoreVertical className="h-4 w-4" />
                                       </button>
@@ -1005,10 +1017,10 @@ function GroupMembersTab({
       {confirmRemove ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm">
           <div className={`w-full max-w-md rounded-lg border p-6 shadow-2xl ${isDarkMode ? 'border-white/10 bg-[#09170f] text-white' : 'border-white bg-white text-slate-900'}`}>
-            <p className={`text-xs font-bold uppercase ${mutedTextClass}`}>Confirm action</p>
+            <p className={`text-xs font-bold uppercase ${mutedTextClass}`}>{t('groupManage.members.removeConfirmEyebrow')}</p>
             <h3 className="mt-3 text-xl font-bold">{t('home.group.removeMember', { defaultValue: 'Remove member' })}</h3>
             <p className={`mt-3 text-sm leading-6 ${bodyTextClass}`}>
-              {t('home.group.removeConfirm', { defaultValue: 'Remove' })} <strong>{getUserDisplayLabel(confirmRemove, currentLang === 'en' ? 'Member' : 'Thành viên')}</strong>?
+              {t('home.group.removeConfirm', { defaultValue: 'Remove' })} <strong>{getUserDisplayLabel(confirmRemove, t('groupManage.members.memberFallback'))}</strong>?
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -1036,7 +1048,7 @@ function GroupMembersTab({
             <p className={`text-xs font-bold uppercase ${mutedTextClass}`}>{t('groupManage.members.permissionsTitle', { defaultValue: 'Permissions' })}</p>
             <h3 className="mt-3 text-xl font-bold">
               {t('groupManage.members.permissionsFor', {
-                name: getUserDisplayLabel(permissionDialogMember, currentLang === 'en' ? 'Member' : 'Thành viên'),
+                name: getUserDisplayLabel(permissionDialogMember, t('groupManage.members.memberFallback')),
                 defaultValue: 'Permissions for {{name}}',
               })}
             </h3>
@@ -1048,10 +1060,10 @@ function GroupMembersTab({
             ) : (
               <>
                 <div className="mt-5 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => applyPermissionPreset('MEMBER')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Member</button>
-                  <button type="button" onClick={() => applyPermissionPreset('CONTRIBUTOR')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Contributor</button>
-                  <button type="button" onClick={() => applyPermissionPreset('ANALYST')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Analyst</button>
-                  <button type="button" onClick={() => applyPermissionPreset('CONTENT_MANAGER')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>Content manager</button>
+                  <button type="button" onClick={() => applyPermissionPreset('MEMBER')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>{t('groupManage.members.permissionPresets.member')}</button>
+                  <button type="button" onClick={() => applyPermissionPreset('CONTRIBUTOR')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>{t('groupManage.members.permissionPresets.contributor')}</button>
+                  <button type="button" onClick={() => applyPermissionPreset('ANALYST')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>{t('groupManage.members.permissionPresets.analyst')}</button>
+                  <button type="button" onClick={() => applyPermissionPreset('CONTENT_MANAGER')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-slate-100 text-slate-800'}`}>{t('groupManage.members.permissionPresets.contentManager')}</button>
                   <button
                     type="button"
                     onClick={applyAllPermissions}
@@ -1061,12 +1073,12 @@ function GroupMembersTab({
                   >
                     {t('groupManage.members.permissionsAllFull', { defaultValue: 'All full' })}
                   </button>
-                  <button type="button" onClick={resetPermissionsToRoleDefaults} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700'}`}>Reset to role defaults</button>
+                  <button type="button" onClick={resetPermissionsToRoleDefaults} className={`rounded-lg px-3 py-2 text-xs font-semibold ${isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700'}`}>{t('groupManage.members.permissionPresets.resetToRoleDefaults')}</button>
                 </div>
 
                 <div className="-mr-1 mt-5 flex-1 overflow-y-auto pr-1">
                   <div className="space-y-4 pb-1">
-                    {GROUP_PERMISSION_SECTIONS.map((section) => {
+                    {translatedPermissionSections.map((section) => {
                       const sectionCodes = GROUP_PERMISSION_SECTION_CODES[section.id] || [];
                       const hasAllSectionPermissions = sectionCodes.length > 0
                         && sectionCodes.every((code) => permissionDraftSet.has(code));

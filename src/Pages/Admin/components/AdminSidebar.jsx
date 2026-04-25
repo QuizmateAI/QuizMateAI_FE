@@ -118,6 +118,7 @@ function AdminSidebar({ collapsed, onToggle }) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { permissions, loading } = useAdminPermissions();
+  const brandName = 'QuizMateAI';
 
   const menuSections = useMemo(
     () => MENU_SECTIONS.map((section) => ({
@@ -167,7 +168,7 @@ function AdminSidebar({ collapsed, onToggle }) {
         >
           <img
             src={LogoDark}
-            alt="Logo"
+            alt={t('common.brandLogoAlt', { brandName })}
             className={cn(
               "transition-all duration-300",
               collapsed

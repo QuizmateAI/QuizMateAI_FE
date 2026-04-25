@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import i18n from '@/i18n';
 import {
   Dialog,
   DialogContent,
@@ -21,40 +22,53 @@ function WorkspaceOnboardingUpdateGuardDialogContent({
   deleting,
 }) {
   const [step, setStep] = useState('materials');
+  const t = useMemo(
+    () => i18n.getFixedT(currentLang === 'en' ? 'en' : 'vi'),
+    [currentLang],
+  );
 
-  const copy = useMemo(() => {
-    if (currentLang === 'en') {
-      return {
-        stepOneTitle: 'Cannot update onboarding — workspace has documents',
-        stepOneDescription: `You currently have ${materialCount} document${materialCount === 1 ? '' : 's'} in this workspace, so onboarding cannot be updated. To proceed, you must remove the documents from the workspace first.`,
-        stepOneHint: 'To update onboarding, click "Delete documents" below. The onboarding form will reopen automatically once all documents have been removed.',
-        stepOneNextRisk: 'Note: this workspace also has quiz or roadmap data that has not been completed. If you delete the documents, all current workspace data will also be lost.',
-        stepOneNextSafe: 'After deleting the documents, the onboarding form will reopen automatically so you can update it right away.',
-        stepTwoTitle: 'All current workspace data will be permanently deleted',
-        stepTwoDescription: 'If you delete, you will lose all current data in this workspace. Are you sure you want to continue?',
-        stepTwoHint: 'This action cannot be undone. All quizzes, roadmaps, and documents in this workspace will be permanently removed before the onboarding form reopens.',
-        cancel: 'Cancel',
-        back: 'Back',
-        deleteMaterials: 'Delete documents',
-        confirmDelete: 'Confirm delete',
-      };
-    }
-
-    return {
-      stepOneTitle: 'Không thể cập nhật onboarding — workspace đang có tài liệu',
-      stepOneDescription: `Hiện bạn đã có ${materialCount} tài liệu nên không thể cập nhật. Nếu muốn, bạn phải xóa tài liệu khỏi workspace trước.`,
-      stepOneHint: 'Để cập nhật onboarding, nhấn "Xóa tài liệu" bên dưới. Form onboarding sẽ tự mở lại sau khi toàn bộ tài liệu được xóa.',
-      stepOneNextRisk: 'Lưu ý: workspace này cũng đang có dữ liệu quiz hoặc roadmap chưa hoàn tất. Nếu xóa tài liệu, toàn bộ dữ liệu hiện tại trong workspace cũng sẽ bị mất.',
-      stepOneNextSafe: 'Sau khi xóa tài liệu, form onboarding sẽ tự mở lại để bạn cập nhật ngay.',
-      stepTwoTitle: 'Toàn bộ dữ liệu hiện tại trong workspace sẽ bị xóa vĩnh viễn',
-      stepTwoDescription: 'Nếu xóa, bạn sẽ mất toàn bộ dữ liệu hiện tại trong workspace. Bạn có chắc chắn muốn tiếp tục?',
-      stepTwoHint: 'Hành động này không thể hoàn tác. Toàn bộ quiz, roadmap và tài liệu trong workspace sẽ bị xóa vĩnh viễn trước khi form onboarding mở lại.',
-      cancel: 'Hủy',
-      back: 'Quay lại',
-      deleteMaterials: 'Xóa tài liệu',
-      confirmDelete: 'Xác nhận xóa',
-    };
-  }, [currentLang, materialCount]);
+  const copy = useMemo(() => ({
+    stepOneTitle: t('workspaceOnboardingUpdateGuard.stepOneTitle', {
+      defaultValue: 'Cannot update onboarding - workspace has documents',
+    }),
+    stepOneDescription: t('workspaceOnboardingUpdateGuard.stepOneDescription', {
+      defaultValue: 'This workspace currently has {{count}} uploaded materials, so the onboarding setup cannot be updated yet. To continue, remove those materials from the workspace first.',
+      count: materialCount,
+    }),
+    stepOneHint: t('workspaceOnboardingUpdateGuard.stepOneHint', {
+      defaultValue: 'To update onboarding, click "Delete documents" below. The onboarding form will reopen automatically once all materials have been removed.',
+    }),
+    stepOneNextRisk: t('workspaceOnboardingUpdateGuard.stepOneNextRisk', {
+      defaultValue: 'This workspace also has quiz or roadmap data that is still in progress. If you delete the materials, that current workspace data will also be removed.',
+    }),
+    stepOneNextSafe: t('workspaceOnboardingUpdateGuard.stepOneNextSafe', {
+      defaultValue: 'After the materials are deleted, the onboarding form will reopen automatically so you can update it right away.',
+    }),
+    stepTwoTitle: t('workspaceOnboardingUpdateGuard.stepTwoTitle', {
+      defaultValue: 'All current workspace data will be permanently deleted',
+    }),
+    stepTwoDescription: t('workspaceOnboardingUpdateGuard.stepTwoDescription', {
+      defaultValue: 'If you continue, all current data in this workspace will be deleted. Are you sure you want to proceed?',
+    }),
+    stepTwoHint: t('workspaceOnboardingUpdateGuard.stepTwoHint', {
+      defaultValue: 'This action cannot be undone. All quizzes, roadmaps, and documents in this workspace will be removed before the onboarding form opens again.',
+    }),
+    stepTwoRisk: t('workspaceOnboardingUpdateGuard.stepTwoRisk', {
+      defaultValue: 'This includes all current quiz progress, roadmap content, and uploaded materials in the workspace.',
+    }),
+    cancel: t('workspaceOnboardingUpdateGuard.cancel', {
+      defaultValue: 'Cancel',
+    }),
+    back: t('workspaceOnboardingUpdateGuard.back', {
+      defaultValue: 'Back',
+    }),
+    deleteMaterials: t('workspaceOnboardingUpdateGuard.deleteMaterials', {
+      defaultValue: 'Delete documents',
+    }),
+    confirmDelete: t('workspaceOnboardingUpdateGuard.confirmDelete', {
+      defaultValue: 'Confirm delete',
+    }),
+  }), [materialCount, t]);
 
   const handlePrimaryAction = async () => {
     if (deleting) return;
@@ -111,7 +125,7 @@ function WorkspaceOnboardingUpdateGuardDialogContent({
               : (isDarkMode ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700')
           )}
         >
-          {showRiskStep ? copy.stepTwoHint : (hasLearningData ? copy.stepOneNextRisk : copy.stepOneNextSafe)}
+          {showRiskStep ? copy.stepTwoRisk : (hasLearningData ? copy.stepOneNextRisk : copy.stepOneNextSafe)}
         </div>
       </div>
 

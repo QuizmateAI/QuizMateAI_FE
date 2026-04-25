@@ -293,10 +293,10 @@ export default function PaymentResultPage() {
         <button
           type="button"
           onClick={() => navigate('/home')}
-          aria-label="Go to home"
+          aria-label={t('common.goHome')}
           className="flex w-[130px] items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
         >
-          <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} />
+          <img src={isDarkMode ? LogoDark : LogoLight} alt={t('common.brandLogoAlt', { brandName: 'QuizMate AI' })} className="w-full h-full object-contain" width={130} height={40} />
         </button>
         <div className="flex items-center gap-2">
           <Button

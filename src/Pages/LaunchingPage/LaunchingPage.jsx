@@ -13,85 +13,36 @@ import {
   University,
   UserSquare2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/Components/ui/button';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import { getEarlyAccessHref, getLaunchDate, launchConfig } from '@/lib/launchConfig';
 
-const audiences = [
-  { label: 'Teachers', icon: UserSquare2 },
-  { label: 'High Schools', icon: GraduationCap },
-  { label: 'Universities', icon: University },
-  { label: 'Training Centers', icon: Building2 },
-  { label: 'Academic Teams', icon: FileText },
+const audienceConfigs = [
+  { key: 'teachers', icon: UserSquare2 },
+  { key: 'highSchools', icon: GraduationCap },
+  { key: 'universities', icon: University },
+  { key: 'trainingCenters', icon: Building2 },
+  { key: 'academicTeams', icon: FileText },
 ];
 
-const launchSignals = [
-  {
-    title: 'AI Quiz Studio',
-    description: 'Generate structured assessments from lessons, slides, and PDFs.',
-    icon: Sparkles,
-    tone: 'lime',
-    value: 'Ready',
-  },
-  {
-    title: 'Secure Exam Room',
-    description: 'Focused test experience with stricter control before public traffic.',
-    icon: ShieldCheck,
-    tone: 'blue',
-    value: 'Locked',
-  },
-  {
-    title: 'Learning Roadmaps',
-    description: 'Connect quizzes, study notes, and revision paths into one flow.',
-    icon: Map,
-    tone: 'white',
-    value: 'Mapped',
-  },
+const launchSignalConfigs = [
+  { key: 'quizStudio', icon: Sparkles, tone: 'lime' },
+  { key: 'secureExamRoom', icon: ShieldCheck, tone: 'blue' },
+  { key: 'learningRoadmaps', icon: Map, tone: 'white' },
 ];
 
-const privateLaunchReasons = [
-  {
-    title: 'Quality First',
-    description: 'The first cohort stays small so quiz generation, scoring logic, and study flows can be tuned with real educator feedback.',
-    icon: BrainCircuit,
-  },
-  {
-    title: 'Safer Rollout',
-    description: 'Access is restricted while exam security, navigation guardrails, and account flows are hardened before public release.',
-    icon: ShieldCheck,
-  },
-  {
-    title: 'Direct Feedback Loop',
-    description: 'Early users influence what ships first, from AI quiz outputs to revision notes and analytics priorities.',
-    icon: Mic,
-  },
+const privateLaunchReasonConfigs = [
+  { key: 'qualityFirst', icon: BrainCircuit },
+  { key: 'saferRollout', icon: ShieldCheck },
+  { key: 'directFeedbackLoop', icon: Mic },
 ];
 
-const releaseStack = [
-  {
-    title: 'Assessment Builder',
-    description: 'AI quiz creation, question banks, and multi-format source intake.',
-    icon: Sparkles,
-    size: 'large',
-  },
-  {
-    title: 'Exam Security',
-    description: 'Protected assessment mode for timed evaluation flows.',
-    icon: ShieldCheck,
-    size: 'small',
-  },
-  {
-    title: 'Progress Analytics',
-    description: 'Performance signals for teachers, learners, and teams.',
-    icon: BarChart3,
-    size: 'small',
-  },
-  {
-    title: 'Study Companion',
-    description: 'Roadmaps, notes, and smarter revision support around every quiz.',
-    icon: GraduationCap,
-    size: 'wide',
-  },
+const releaseStackConfigs = [
+  { key: 'assessmentBuilder', icon: Sparkles, size: 'large' },
+  { key: 'examSecurity', icon: ShieldCheck, size: 'small' },
+  { key: 'progressAnalytics', icon: BarChart3, size: 'small' },
+  { key: 'studyCompanion', icon: GraduationCap, size: 'wide' },
 ];
 
 const buildCountdown = (launchDate) => {
@@ -132,18 +83,59 @@ const signalToneClasses = {
 };
 
 function LaunchingPage() {
+  const { t, i18n } = useTranslation();
+  const language = i18n.language?.startsWith('en') ? 'en' : 'vi';
+  const dateLocale = language === 'en' ? 'en-US' : 'vi-VN';
+  const fontClass = language === 'en' ? 'font-poppins' : 'font-sans';
   const launchDate = useMemo(() => getLaunchDate(), []);
   const earlyAccessHref = useMemo(() => getEarlyAccessHref(), []);
   const [countdown, setCountdown] = useState(() => buildCountdown(launchDate));
 
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = `${launchConfig.brandName} | Private Launch`;
+  const audiences = useMemo(
+    () => audienceConfigs.map(({ key, icon }) => ({
+      key,
+      icon,
+      label: t(`launchingPage.audiences.${key}`),
+    })),
+    [t],
+  );
 
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
+  const launchSignals = useMemo(
+    () => launchSignalConfigs.map(({ key, icon, tone }) => ({
+      key,
+      icon,
+      tone,
+      title: t(`launchingPage.signals.${key}.title`),
+      description: t(`launchingPage.signals.${key}.description`),
+      value: t(`launchingPage.signals.${key}.value`),
+    })),
+    [t],
+  );
+
+  const privateLaunchReasons = useMemo(
+    () => privateLaunchReasonConfigs.map(({ key, icon }) => ({
+      key,
+      icon,
+      title: t(`launchingPage.reasons.${key}.title`),
+      description: t(`launchingPage.reasons.${key}.description`),
+    })),
+    [t],
+  );
+
+  const releaseStack = useMemo(
+    () => releaseStackConfigs.map(({ key, icon, size }) => ({
+      key,
+      icon,
+      size,
+      title: t(`launchingPage.releaseStack.${key}.title`),
+      description: t(`launchingPage.releaseStack.${key}.description`),
+    })),
+    [t],
+  );
+
+  useEffect(() => {
+    document.title = t('launchingPage.documentTitle', { brandName: launchConfig.brandName });
+  }, [t]);
 
   useEffect(() => {
     if (!launchDate) {
@@ -158,19 +150,19 @@ function LaunchingPage() {
   }, [launchDate]);
 
   const launchDateLabel = launchDate
-    ? launchDate.toLocaleDateString('en-US', {
+    ? launchDate.toLocaleDateString(dateLocale, {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
       })
-    : 'Launch date coming soon';
+    : t('launchingPage.header.launchDateSoon');
 
   const countdownItems = countdown
     ? [
-        { label: 'Days', value: countdown.days },
-        { label: 'Hours', value: countdown.hours },
-        { label: 'Minutes', value: countdown.minutes },
-        { label: 'Seconds', value: countdown.seconds },
+        { label: t('launchingPage.console.countdown.days'), value: countdown.days },
+        { label: t('launchingPage.console.countdown.hours'), value: countdown.hours },
+        { label: t('launchingPage.console.countdown.minutes'), value: countdown.minutes },
+        { label: t('launchingPage.console.countdown.seconds'), value: countdown.seconds },
       ]
     : [];
 
@@ -179,9 +171,8 @@ function LaunchingPage() {
 
   return (
     <div
-      className="min-h-screen overflow-hidden bg-[#f4f7fb] text-slate-950"
+      className={`min-h-screen overflow-hidden bg-[#f4f7fb] text-slate-950 ${fontClass}`}
       style={{
-        fontFamily: '"Be Vietnam Pro", sans-serif',
         backgroundImage:
           'radial-gradient(circle at 12% 12%, rgba(103, 212, 0, 0.18), transparent 24%), radial-gradient(circle at 88% 16%, rgba(37, 99, 235, 0.14), transparent 22%), linear-gradient(rgba(23, 48, 93, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(23, 48, 93, 0.05) 1px, transparent 1px)',
         backgroundSize: 'auto, auto, 54px 54px, 54px 54px',
@@ -194,16 +185,20 @@ function LaunchingPage() {
 
         <header className="relative flex flex-col gap-4 rounded-[30px] border border-white/70 bg-white/78 px-5 py-4 backdrop-blur-xl shadow-[0_20px_50px_rgba(15,23,42,0.08)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <a href="/" className="flex items-center gap-3">
-            <img src={LogoLight} alt={`${launchConfig.brandName} logo`} className="h-14 w-auto object-contain sm:h-16" />
+            <img
+              src={LogoLight}
+              alt={t('common.brandLogoAlt', { brandName: launchConfig.brandName })}
+              className="h-14 w-auto object-contain sm:h-16"
+            />
             <div>
               <p className="text-lg font-black tracking-tight text-[#17305d]">{launchConfig.brandName}</p>
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-500">Private launch sequence</p>
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-500">{t('launchingPage.header.sequence')}</p>
             </div>
           </a>
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-full border border-[#d6e0f0] bg-[#f6faff] px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.24em] text-[#17305d]">
-              Closed until {launchDateLabel}
+              {t('launchingPage.header.closedUntil', { date: launchDateLabel })}
             </div>
             <Button
               asChild
@@ -214,7 +209,7 @@ function LaunchingPage() {
                 target={openInNewTab ? '_blank' : undefined}
                 rel={openInNewTab ? 'noreferrer' : undefined}
               >
-                Request Early Access
+                {t('launchingPage.header.requestAccess')}
               </a>
             </Button>
           </div>
@@ -224,20 +219,20 @@ function LaunchingPage() {
           <section className="grid gap-8 xl:grid-cols-[1.05fr,0.95fr] xl:items-center">
             <div className="relative rounded-[36px] border border-white/75 bg-white/78 p-7 backdrop-blur-xl shadow-[0_22px_70px_rgba(15,23,42,0.08)] sm:p-9">
               <div className="inline-flex rounded-full border border-[#c8f88f] bg-[#efffd9] px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.3em] text-[#4d9a00]">
-                QuizMate AI launch mode
+                {t('launchingPage.hero.badge')}
               </div>
 
               <h1
                 className="mt-6 max-w-3xl text-4xl font-black leading-tight text-[#17305d] sm:text-5xl xl:text-6xl"
                 style={{ fontFamily: '"Merriweather", serif' }}
               >
-                A launch page built for <span className="text-[#67d400]">QuizMate AI</span>, not a generic template.
+                {t('launchingPage.hero.titlePrefix')}{' '}
+                <span className="text-[#67d400]">{launchConfig.brandName}</span>
+                {t('launchingPage.hero.titleSuffix')}
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-                The public app is intentionally locked while QuizMate AI prepares a controlled release for teachers,
-                schools, and academic teams. We are opening with a smaller first cohort to tune quiz generation,
-                secure assessment flows, and study support before wider traffic.
+                {t('launchingPage.hero.description')}
               </p>
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -250,37 +245,37 @@ function LaunchingPage() {
                     target={openInNewTab ? '_blank' : undefined}
                     rel={openInNewTab ? 'noreferrer' : undefined}
                   >
-                    Join The First Cohort
+                    {t('launchingPage.hero.joinCohort')}
                     <ArrowRight className="size-4" />
                   </a>
                 </Button>
 
                 <p className="text-sm font-semibold text-slate-500">
-                  Public login, home, workspace, and quiz routes stay blocked until {launchDateLabel}.
+                  {t('launchingPage.hero.blockedUntil', { date: launchDateLabel })}
                 </p>
               </div>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[26px] border border-[#dbe5f4] bg-[#f7fbff] p-5">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-500">Focus</p>
-                  <p className="mt-3 text-2xl font-black text-[#17305d]">AI Quiz</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">Source to assessment in a tighter, cleaner workflow.</p>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-500">{t('launchingPage.hero.cards.focus.label')}</p>
+                  <p className="mt-3 text-2xl font-black text-[#17305d]">{t('launchingPage.hero.cards.focus.title')}</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{t('launchingPage.hero.cards.focus.description')}</p>
                 </div>
                 <div className="rounded-[26px] border border-[#dbe5f4] bg-[#f7fbff] p-5">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-500">Security</p>
-                  <p className="mt-3 text-2xl font-black text-[#17305d]">Exam Flow</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">Restricted while protected assessment behavior is tuned.</p>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-500">{t('launchingPage.hero.cards.security.label')}</p>
+                  <p className="mt-3 text-2xl font-black text-[#17305d]">{t('launchingPage.hero.cards.security.title')}</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{t('launchingPage.hero.cards.security.description')}</p>
                 </div>
                 <div className="rounded-[26px] border border-[#dbe5f4] bg-[#f7fbff] p-5">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-500">Support</p>
-                  <p className="mt-3 text-2xl font-black text-[#17305d]">Notes + Roadmaps</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">Revision tools stay aligned with each generated quiz.</p>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-500">{t('launchingPage.hero.cards.support.label')}</p>
+                  <p className="mt-3 text-2xl font-black text-[#17305d]">{t('launchingPage.hero.cards.support.title')}</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{t('launchingPage.hero.cards.support.description')}</p>
                 </div>
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                {audiences.map(({ icon, label }) => (
-                  <AudienceChip key={label} icon={icon} label={label} />
+                {audiences.map(({ key, icon, label }) => (
+                  <AudienceChip key={key} icon={icon} label={label} />
                 ))}
               </div>
             </div>
@@ -306,11 +301,13 @@ function LaunchingPage() {
                 <div className="relative">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-[#8cc7ff]">Launch Console</p>
-                      <h2 className="mt-2 text-2xl font-black">QuizMate AI Command Center</h2>
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-[#8cc7ff]">{t('launchingPage.console.label')}</p>
+                      <h2 className="mt-2 text-2xl font-black">{t('launchingPage.console.title')}</h2>
                     </div>
                     <div className="inline-flex rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-200">
-                      {countdown?.isComplete ? 'Opening now' : `Opening ${launchDateLabel}`}
+                      {countdown?.isComplete
+                        ? t('launchingPage.console.openingNow')
+                        : t('launchingPage.console.openingDate', { date: launchDateLabel })}
                     </div>
                   </div>
 
@@ -323,9 +320,9 @@ function LaunchingPage() {
                   )}
 
                   <div className="mt-6 grid gap-4">
-                    {launchSignals.map(({ title, description, icon: Icon, tone, value }) => (
+                    {launchSignals.map(({ key, title, description, icon: Icon, tone, value }) => (
                       <div
-                        key={title}
+                        key={key}
                         className={`rounded-[28px] border px-5 py-5 backdrop-blur ${signalToneClasses[tone]}`}
                       >
                         <div className="flex items-start justify-between gap-4">
@@ -348,17 +345,17 @@ function LaunchingPage() {
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-[28px] border border-white/12 bg-white/8 p-5">
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-300">Current Mode</p>
-                      <p className="mt-3 text-2xl font-black text-[#7dff19]">Private Beta Lock</p>
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-300">{t('launchingPage.console.modeLabel')}</p>
+                      <p className="mt-3 text-2xl font-black text-[#7dff19]">{t('launchingPage.console.modeValue')}</p>
                       <p className="mt-2 text-sm leading-7 text-slate-300">
-                        Public-facing routes are intentionally redirected into launch mode.
+                        {t('launchingPage.console.modeDescription')}
                       </p>
                     </div>
                     <div className="rounded-[28px] border border-white/12 bg-white/8 p-5">
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-300">First Cohort</p>
-                      <p className="mt-3 text-2xl font-black text-white">Educators + Institutions</p>
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-slate-300">{t('launchingPage.console.cohortLabel')}</p>
+                      <p className="mt-3 text-2xl font-black text-white">{t('launchingPage.console.cohortValue')}</p>
                       <p className="mt-2 text-sm leading-7 text-slate-300">
-                        Early access goes to users who can validate assessment, revision, and analytics flows.
+                        {t('launchingPage.console.cohortDescription')}
                       </p>
                     </div>
                   </div>
@@ -371,19 +368,19 @@ function LaunchingPage() {
             <div className="rounded-[34px] border border-white/80 bg-white/82 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.07)] sm:p-7">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-[#4d9a00]">Why Access Stays Closed</p>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-[#4d9a00]">{t('launchingPage.reasonsSection.eyebrow')}</p>
                   <h2
                     className="mt-3 text-3xl font-black text-[#17305d]"
                     style={{ fontFamily: '"Merriweather", serif' }}
                   >
-                    Launch with control, not with noise
+                    {t('launchingPage.reasonsSection.title')}
                   </h2>
                 </div>
               </div>
 
               <div className="mt-6 space-y-4">
-                {privateLaunchReasons.map(({ title, description, icon: Icon }) => (
-                  <article key={title} className="rounded-[28px] border border-[#dbe5f4] bg-[#f8fbff] p-5">
+                {privateLaunchReasons.map(({ key, title, description, icon: Icon }) => (
+                  <article key={key} className="rounded-[28px] border border-[#dbe5f4] bg-[#f8fbff] p-5">
                     <div className="flex items-start gap-4">
                       <div className="rounded-2xl bg-[#eaf9d8] p-3 text-[#4d9a00]">
                         <Icon className="size-5" />
@@ -399,18 +396,18 @@ function LaunchingPage() {
             </div>
 
             <div className="rounded-[34px] bg-[#17305d] p-6 text-white shadow-[0_26px_70px_rgba(23,48,93,0.24)] sm:p-7">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-[#9fd6ff]">Day-One Release Stack</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-[#9fd6ff]">{t('launchingPage.releaseSection.eyebrow')}</p>
               <h2
                 className="mt-3 text-3xl font-black"
                 style={{ fontFamily: '"Merriweather", serif' }}
               >
-                What opens when QuizMate AI goes live
+                {t('launchingPage.releaseSection.title')}
               </h2>
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {releaseStack.map(({ title, description, icon: Icon, size }) => (
+                {releaseStack.map(({ key, title, description, icon: Icon, size }) => (
                   <article
-                    key={title}
+                    key={key}
                     className={`rounded-[28px] border border-white/12 bg-white/8 p-5 backdrop-blur ${
                       size === 'large' ? 'md:row-span-2' : ''
                     } ${size === 'wide' ? 'md:col-span-2' : ''}`}
@@ -429,16 +426,15 @@ function LaunchingPage() {
           <section id="early-access" className="rounded-[38px] border border-[#d8e3f4] bg-white/85 p-7 shadow-[0_22px_70px_rgba(15,23,42,0.08)] sm:p-9">
             <div className="grid gap-6 lg:grid-cols-[1fr,auto] lg:items-end">
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.3em] text-[#4d9a00]">Early Access</p>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.3em] text-[#4d9a00]">{t('launchingPage.earlyAccess.eyebrow')}</p>
                 <h2
                   className="mt-3 text-3xl font-black text-[#17305d] sm:text-4xl"
                   style={{ fontFamily: '"Merriweather", serif' }}
                 >
-                  Register before the public launch opens
+                  {t('launchingPage.earlyAccess.title')}
                 </h2>
                 <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600">
-                  Join the first rollout to test QuizMate AI earlier, share feedback on assessment quality, and help
-                  shape the release priorities for schools, universities, and teaching teams.
+                  {t('launchingPage.earlyAccess.description')}
                 </p>
               </div>
 
@@ -452,13 +448,13 @@ function LaunchingPage() {
                     target={openInNewTab ? '_blank' : undefined}
                     rel={openInNewTab ? 'noreferrer' : undefined}
                   >
-                    Register As Early Tester
+                    {t('launchingPage.earlyAccess.registerAction')}
                   </a>
                 </Button>
 
                 {contactHref && (
                   <a className="text-sm font-semibold text-[#17305d] underline decoration-[#17305d]/30 underline-offset-4" href={contactHref}>
-                    Contact {launchConfig.supportEmail}
+                    {t('launchingPage.earlyAccess.contact', { email: launchConfig.supportEmail })}
                   </a>
                 )}
               </div>
@@ -467,8 +463,8 @@ function LaunchingPage() {
         </main>
 
         <footer className="mt-8 flex flex-col gap-3 border-t border-slate-200/80 pt-5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 {launchConfig.brandName}. All rights reserved.</p>
-          <p>Launch mode is active. All application routes remain restricted.</p>
+          <p>{t('launchingPage.footer.rights', { year: 2026, brandName: launchConfig.brandName })}</p>
+          <p>{t('launchingPage.footer.restricted')}</p>
         </footer>
       </div>
     </div>
