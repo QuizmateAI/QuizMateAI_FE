@@ -399,7 +399,7 @@ export default function ExamQuizPage() {
         window.history.forward();
       }, 0);
       if (!examLockNotifiedRef.current) {
-        showError('Đang trong bài thi, không thể quay lại hoặc chuyển trang.');
+        showError(t('workspace.quiz.examActions.navigationLocked'));
         examLockNotifiedRef.current = true;
         setTimeout(() => {
           examLockNotifiedRef.current = false;
@@ -944,7 +944,7 @@ export default function ExamQuizPage() {
           )}
           <DialogFooter className="gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => setConfirmSubmitOpen(false)}>
-              {t('workspace.quiz.common.cancel', 'Cancel')}
+              {t('quiz.common.cancel', 'Cancel')}
             </Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleConfirmSubmit}>
               {t('workspace.quiz.examActions.submitButton', 'Submit Exam')}

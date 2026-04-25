@@ -473,7 +473,8 @@
       "description": "Toggle permissions for ADMIN accounts. SUPER_ADMIN keeps full default access.",
       "superAdminReadonly": "SUPER_ADMIN accounts always have full default access.",
       "clearAll": "Clear all",
-      "grantAll": "Grant all"
+      "grantAll": "Grant all",
+      "syncWarning": "Sync converts every currently granted permission into permanent access (expiresAt is removed). Use the Permission Requests tab to approve time-limited access."
     }
   },
   "adminPayments": {
@@ -1264,6 +1265,9 @@
   "superAdminLayout": {
     "brand": "Super Admin"
   },
+  "backofficeShell": {
+    "controlPlane": "QuizMate control plane"
+  },
   "aiAudit": {
     "title": "AI Audit",
     "description": "Track AI requests, token usage, models, statuses, and open detailed traces when needed.",
@@ -1446,7 +1450,8 @@
     "status": {
       "ACTIVE": "Active",
       "INACTIVE": "Inactive",
-      "BANNED": "Banned"
+      "BANNED": "Banned",
+      "DELETED": "Deleted"
     },
     "changeStatus": "Change Status",
     "viewDetail": "View Detail"
@@ -1836,5 +1841,143 @@
     "close": "Close",
     "saving": "Saving...",
     "saveUpdate": "Save update"
+  },
+  "superAdminSidebar": {
+    "roleLabel": "Super Admin"
+  },
+  "permissionRequestStatus": {
+    "PENDING": "Pending",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled"
+  },
+  "permissionDurationPresets": {
+    "permanent": "Permanent",
+    "oneDay": "1 day",
+    "sevenDays": "7 days",
+    "thirtyDays": "30 days",
+    "ninetyDays": "90 days",
+    "customDays": "{{count}} days"
+  },
+  "myPermissionsPage": {
+    "eyebrow": "Access",
+    "title": "My permissions",
+    "description": "Review your current permissions and request additional access from Super Admin.",
+    "refresh": "Refresh",
+    "newRequest": "Request access",
+    "loadPartialError": "Unable to load all data",
+    "submitSuccess": "Permission request submitted. Waiting for Super Admin approval.",
+    "submitError": "Unable to create the request.",
+    "cancelSuccess": "Permission request cancelled.",
+    "cancelError": "Unable to cancel the request.",
+    "cancelForbidden": "You cannot cancel this request right now. Please try again later.",
+    "requestForbidden": "You cannot submit a new permission request right now. Please try again later or contact Super Admin.",
+    "currentPermissionsTitle": "Current permissions",
+    "currentPermissionsDescription": "Permissions already granted. Time-limited access will be revoked automatically when it expires.",
+    "currentPermissionsUnavailableTitle": "Unable to load permission list",
+    "currentPermissionsUnavailableDescription": "Your current permissions are not available right now. Please try again later.",
+    "currentPermissionsEmptyTitle": "You do not have any permissions yet",
+    "currentPermissionsEmptyDescription": "Send a request to Super Admin to receive the permissions you need.",
+    "requestsTitle": "Permission requests",
+    "requestsDescription": "Track your requests and their current review status.",
+    "requestsUnavailableTitle": "Unable to load your requests",
+    "requestsUnavailableDescription": "Your request history is not available right now. Please try again later.",
+    "requestsEmptyTitle": "No permission requests yet",
+    "table": {
+      "permission": "Permission",
+      "reason": "Reason",
+      "requestedDuration": "Requested duration",
+      "status": "Status",
+      "expiresAt": "Expires at",
+      "createdAt": "Created at",
+      "actions": "Actions",
+      "note": "Note"
+    },
+    "cancelRequest": "Cancel",
+    "dialogTitle": "Request new permission",
+    "dialogDescription": "Super Admin will review the request and may grant it with an expiration date.",
+    "permissionLabel": "Permission code",
+    "permissionPlaceholder": "Example: user:read",
+    "permissionHintWithSuggestions": "You can type a code or pick one from the suggestions.",
+    "permissionHintManual": "You can type a permission code manually if there are no suggestions.",
+    "reasonLabel": "Reason (10-1000 characters)",
+    "reasonPlaceholder": "Explain why you need this permission",
+    "durationLabel": "Requested duration",
+    "customDurationPlaceholder": "Days",
+    "customDurationOptional": "days (optional)",
+    "pendingForPermission": "You already have a pending request for this permission.",
+    "close": "Close",
+    "submit": "Submit request",
+    "submitting": "Submitting..."
+  },
+  "permissionRequestsPage": {
+    "eyebrow": "Access control",
+    "title": "Permission requests",
+    "description": "Approve or reject admin access requests. You can grant temporary access and the system will revoke it automatically when it expires.",
+    "refresh": "Refresh",
+    "loadError": "Unable to load requests.",
+    "emptyTitle": "No requests found",
+    "tabs": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled",
+      "ALL": "All"
+    },
+    "table": {
+      "requester": "Requester",
+      "permission": "Permission",
+      "reason": "Reason",
+      "requestedDuration": "Requested duration",
+      "status": "Status",
+      "createdAt": "Created at",
+      "actions": "Actions",
+      "note": "Note",
+      "expiresAt": "Expires at"
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "decidedBy": "By {{email}}",
+    "approveSuccess": "Request approved.",
+    "approveError": "Unable to approve the request.",
+    "rejectSuccess": "Request rejected.",
+    "rejectError": "Unable to reject the request.",
+    "approveDialogTitle": "Approve request",
+    "approveDialogDescription": "Grant the permission to this admin. You can set an expiration and the system will revoke it automatically once it expires.",
+    "adminLabel": "Admin",
+    "grantDurationLabel": "Granted duration",
+    "customExpiryLabel": "Or set a custom expiration date",
+    "customExpiryHint": "If you enter a date, it will override the preset. Leave it empty to use the selected preset.",
+    "expiresAtPreviewLabel": "Expires at",
+    "noteLabel": "Note (optional)",
+    "close": "Close",
+    "approveSubmit": "Approve and grant permission",
+    "approving": "Approving...",
+    "rejectDialogTitle": "Reject request",
+    "rejectDialogDescription": "Provide a reason so the admin understands what to adjust. The reason will be saved to the audit log.",
+    "rejectReasonLabel": "Rejection reason (5-1000 characters)",
+    "rejectReasonPlaceholder": "Example: this permission does not match the current scope of work.",
+    "rejectSubmit": "Confirm rejection",
+    "rejecting": "Submitting..."
+  },
+  "userManagementPage": {
+    "fetchError": "Unable to load users.",
+    "updateStatusError": "Unable to update the user status.",
+    "updateStatusSuccess": "User status updated successfully.",
+    "deleteAction": "Delete account",
+    "deleteDialogTitle": "Delete user account",
+    "deleteDialogDescription": "This action is restricted to SUPER_ADMIN and will be recorded in the audit log. The account will be marked as DELETED and the email or username will be anonymized.",
+    "deleteUsernameLabel": "Username",
+    "deleteEmailLabel": "Email",
+    "deleteIdLabel": "ID",
+    "deleteConfirmPrefix": "Type exactly ",
+    "deleteConfirmSuffix": " to confirm",
+    "deleteReasonLabel": "Deletion reason (10-500 characters)",
+    "deleteReasonPlaceholder": "Describe the reason for the audit log",
+    "deleteCancel": "Cancel",
+    "deleteSubmit": "Delete permanently",
+    "deleting": "Deleting...",
+    "deleteSuccess": "User deleted.",
+    "deleteError": "Unable to delete the user."
   }
 }

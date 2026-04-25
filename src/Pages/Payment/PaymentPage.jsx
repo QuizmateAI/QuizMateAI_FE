@@ -188,7 +188,7 @@ export default function PaymentPage() {
            
             <img
               src={isDarkMode ? DarkLogo : LightLogo}
-              alt="QuizMateAI"
+              alt={t('common.brandLogoAlt', { brandName: 'QuizMate AI' })}
               className="h-[120px] w-[120px] object-contain hidden sm:block"
             />
             <button

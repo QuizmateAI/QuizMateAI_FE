@@ -443,7 +443,7 @@ export default function ChallengeDetailView({
         payload?.challengeQuizId,
       );
       if (!qid) {
-        throw new Error('Không nhận được đề của vòng đấu từ server.');
+        throw new Error(t('challengeDetailView.errors.missingRoundQuiz'));
       }
       navigate(buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
         challengeDraftQuizId: qid,

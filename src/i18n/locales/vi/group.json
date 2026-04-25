@@ -58,7 +58,9 @@
         "status": "Trạng thái",
         "lastActive": "Hoạt động",
         "uploadAccess": "Quyền tải lên",
-        "actions": "Thao tác"
+        "actions": "Thao tác",
+        "upload": "Upload",
+        "permissions": "Quy?n"
       },
       "status": {
         "active": "Đang hoạt động",
@@ -101,6 +103,86 @@
           "accepted": "Đã nhận",
           "expired": "Hết hạn",
           "cancelled": "Đã huỷ"
+        }
+      },
+      "memberSeatLimitReached": "Nh?m ?? h?t slot th?nh vi?n kh? d?ng.",
+      "memberSeatUsage": "?ang d?ng {{used}}/{{limit}} slot th?nh vi?n",
+      "permissionOn": "B?t",
+      "permissionOff": "T?t",
+      "managePermissions": "Qu?n l?",
+      "permissionsTitle": "Quy?n",
+      "permissionsFor": "Quy?n c?a {{name}}",
+      "permissionsAllFull": "To?n quy?n",
+      "permissionsAll": "T?t c?",
+      "savingPermissions": "?ang l?u...",
+      "savePermissions": "L?u quy?n",
+      "permissionPresets": {
+        "member": "Th?nh vi?n",
+        "contributor": "C?ng t?c vi?n",
+        "analyst": "Ph?n t?ch",
+        "contentManager": "Qu?n l? n?i dung",
+        "resetToRoleDefaults": "??t l?i theo vai tr?"
+      },
+      "permissionCatalog": {
+        "sections": {
+          "content": "N?i dung",
+          "materials": "T?i li?u",
+          "insights": "Ph?n t?ch",
+          "admin": "Qu?n tr?"
+        },
+        "items": {
+          "CREATE_QUIZ": {
+            "label": "T?o quiz",
+            "description": "So?n v? ch?nh s?a quiz c?a nh?m."
+          },
+          "PUBLISH_QUIZ": {
+            "label": "Xu?t b?n quiz",
+            "description": "Xu?t b?n b?n nh?p quiz cho th?nh vi?n."
+          },
+          "ASSIGN_QUIZ_AUDIENCE": {
+            "label": "Giao ??i t??ng l?m quiz",
+            "description": "Ch?n th?nh vi?n ???c ph?p truy c?p quiz."
+          },
+          "CREATE_FLASHCARD": {
+            "label": "T?o flashcard",
+            "description": "T?o v? c?p nh?t b? flashcard."
+          },
+          "CREATE_MOCK_TEST": {
+            "label": "T?o mock test",
+            "description": "T?o v? qu?n l? b?i thi th?."
+          },
+          "CREATE_ROADMAP": {
+            "label": "T?o roadmap",
+            "description": "T?o roadmap v? c?c phase h?c t?p."
+          },
+          "CREATE_CHALLENGE": {
+            "label": "T?o challenge",
+            "description": "T?o challenge cho nh?m."
+          },
+          "DELETE_CONTENT": {
+            "label": "X?a n?i dung",
+            "description": "X?a n?i dung h?c t?p c?a nh?m."
+          },
+          "UPLOAD_MATERIAL": {
+            "label": "T?i t?i li?u l?n",
+            "description": "T?i l?n v? l?m m?i t?i li?u h?c t?p."
+          },
+          "MODERATE_MATERIAL": {
+            "label": "Ki?m duy?t t?i li?u",
+            "description": "Duy?t, t? ch?i ho?c r? so?t t?i li?u ch? x? l?."
+          },
+          "VIEW_MEMBER_DASHBOARD": {
+            "label": "Xem dashboard th?nh vi?n",
+            "description": "M? th?ng k? v? ph?n t?ch c?a th?nh vi?n."
+          },
+          "MANAGE_MEMBERS": {
+            "label": "Qu?n l? th?nh vi?n",
+            "description": "M?i, x?a v? qu?n l? quy?n c?a th?nh vi?n."
+          },
+          "MANAGE_SETTINGS": {
+            "label": "Qu?n l? c?i ??t",
+            "description": "C?p nh?t c?i ??t v? ch? ?? hi?n th? c?a nh?m."
+          }
         }
       }
     },
@@ -266,7 +348,9 @@
         "memberStats": "Thống kê thành viên",
         "wallet": "Ví",
         "settings": "Cài đặt"
-      }
+      },
+      "expandSidebar": "M? r?ng sidebar",
+      "collapseSidebar": "Thu g?n sidebar"
     },
     "header": {
       "groupPlan": {
@@ -355,6 +439,32 @@
       "badge": "Challenge",
       "noItems": "Chưa có challenge nào.",
       "createChallenge": "Tạo Challenge",
+      "tabs": {
+        "scheduled": "Sắp diễn ra",
+        "live": "Đang diễn ra",
+        "finished": "Đã kết thúc"
+      },
+      "modes": {
+        "all": "Tất cả",
+        "freeForAll": "Đua cá nhân",
+        "teamBattle": "Đấu đội",
+        "soloBracket": "Đấu cúp 1v1"
+      },
+      "list": {
+        "inviteOnly": "Mời riêng",
+        "unpublished": "Chưa publish",
+        "participantCount": "{{count}} người tham gia",
+        "started": "Đã bắt đầu",
+        "startsIn": "Còn {{value}}",
+        "countdownWithDays": "{{days}} ngày {{hours}}h {{minutes}}m {{seconds}}s",
+        "countdownWithHours": "{{hours}}h {{minutes}}m {{seconds}}s",
+        "countdownWithMinutes": "{{minutes}}m {{seconds}}s",
+        "myStatus": {
+          "finished": "Đã hoàn thành",
+          "playing": "Đang làm",
+          "registered": "Đã đăng ký"
+        }
+      },
       "cancelDialogTitle": "Huỷ challenge?",
       "cancelDialogDescription": "Bạn có chắc muốn huỷ challenge này? Thành viên sẽ không còn tham gia và lịch challenge sẽ bị gỡ.",
       "cancelDialogBack": "Đóng",
@@ -1262,6 +1372,7 @@
   },
   "createChallengeWizard": {
     "steps": {
+      "mode": "Chế độ",
       "quiz": "Chọn đề",
       "schedule": "Lịch trình",
       "registration": "Đăng ký",
@@ -1275,6 +1386,18 @@
       "existingDesc": "Tạo bản sao từ nội dung đã có",
       "newLabel": "Đề mới",
       "newDesc": "Soạn đề sau trong chi tiết challenge"
+    },
+    "mode": {
+      "personalLabel": "Đua cá nhân",
+      "personalDesc": "Mọi người làm cùng một đề, xếp hạng theo điểm và thời gian.",
+      "teamLabel": "Đấu đội",
+      "teamDesc": "Chốt số người mỗi đội hoặc để hệ thống tự chia đều khi bắt đầu.",
+      "soloLabel": "Đấu cúp 1v1",
+      "soloDesc": "Chọn bracket 4/8/16/32 slot, số người phải khớp cấu hình.",
+      "teamAutoBalanceLabel": "Đăng ký trước, tự chia đều",
+      "teamAutoBalanceDesc": "Không giới hạn slot. Khi bắt đầu, hệ thống chia người đã đăng ký thành 2 đội cân bằng.",
+      "teamFixedSizeLabel": "Chốt số người mỗi đội",
+      "teamFixedSizeDesc": "Giới hạn đăng ký bằng 2 đội nhân với số người mỗi đội."
     },
     "quizList": {
       "sectionTitle": "Nội dung chia sẻ trong workspace",
@@ -1302,6 +1425,19 @@
       "titlePlaceholder": "VD: Kiểm tra kiến thức Chương 3",
       "descriptionLabel": "Mô tả",
       "descriptionPlaceholder": "Mô tả ngắn về challenge...",
+      "teamConfigTitle": "Cấu hình đấu đội",
+      "teamConfigHint": "Chọn cách chốt slot trước khi mở đăng ký. Hệ thống luôn chia thành {{count}} đội.",
+      "membersPerTeamLabel": "Số người mỗi đội",
+      "registrationSlotsLabel": "Số slot đăng ký",
+      "participantUnit": "người",
+      "personalConfigTitle": "Cấu hình đua cá nhân",
+      "personalCapacityLabel": "Giới hạn người tham gia",
+      "personalCapacityPlaceholder": "Không giới hạn",
+      "bracketConfigTitle": "Cấu hình đấu cúp 1v1",
+      "bracketConfigHint": "Chọn loại bracket trước. Nếu mời riêng, số người được mời phải đúng bằng số slot.",
+      "bracketSizeLabel": "Kích thước bracket",
+      "bracketSizeOption": "{{count}} người",
+      "bracketPublicHint": "Khi đăng ký công khai, hệ thống giới hạn tối đa {{count}} người.",
       "leaderParticipatesLabel": "Tôi tham gia thi cùng mọi người",
       "leaderParticipatesDesc": "Bạn giữ một suất thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi. Bản nháp vẫn soạn và kiểm tra được."
     },
@@ -1627,7 +1763,8 @@
     "errors": {
       "generic": "Có lỗi xảy ra",
       "cannotStartAttempt": "Không thể bắt đầu làm bài",
-      "cannotLoadDetail": "Không thể tải chi tiết challenge"
+      "cannotLoadDetail": "Không thể tải chi tiết challenge",
+      "missingRoundQuiz": "Không nhận được đề của vòng đấu từ server."
     },
     "cannotOpenTitle": "Không mở được challenge",
     "back": "Quay lại",
@@ -1642,7 +1779,8 @@
       "assistantConfirmedWaitingPrimary": "Reviewer phụ đã xác nhận. Còn chờ reviewer chính hoặc đổi người đã xác nhận thành chính.",
       "needReviewersConfirm": "Cần ít nhất 1 reviewer xác nhận đề ổn trước khi xuất bản.",
       "startTimePassed": "Challenge đã tới giờ bắt đầu nên không thể xuất bản.",
-      "afterPublishInfo": "Sau khi xuất bản, member mới thấy và đăng ký challenge."
+      "afterPublishInfo": "Sau khi xuất bản, member mới thấy và đăng ký challenge.",
+      "needReviewerWhenLeaderParticipates": "Leader ?ang tham gia challenge, n?n h?y m?i 1 ho?c 2 reviewer tr??c khi publish challenge."
     },
     "notPublishedBadge": "Chưa publish",
     "startLabel": "Bắt đầu",
@@ -1675,7 +1813,14 @@
       "noEligibleMembersHint": "Không còn thành viên phù hợp để mời.",
       "needTwoReviewersHint": "Chỉ cần reviewer chính để publish.",
       "setPrimary": "Đặt chính",
-      "inviteSentToast": "Đã gửi lời mời review. Hệ thống đã gửi email thông báo cho reviewer."
+      "inviteSentToast": "Đã gửi lời mời review. Hệ thống đã gửi email thông báo cho reviewer.",
+      "invitationPendingShort": "Ch?a ??ng ? nh?n review",
+      "invitationDeclinedShort": "?? t? ch?i l?i m?i review",
+      "participatingLeaderHint": "Leader s? tham gia challenge n?y, n?n h?y m?i 1 ho?c 2 reviewer t?i ??y. T?t c? reviewer c? c?ng vai tr?.",
+      "optionalHint": "B?n c? th? m?i t?i ?a 2 reviewer n?u mu?n c? th?m ng??i ki?m tra tr??c khi publish. T?t c? reviewer c? c?ng vai tr?.",
+      "reviewerBadge": "Reviewer",
+      "needReviewerWhenLeaderParticipates": "Leader ?ang tham gia, n?n c?n m?i ?t nh?t 1 reviewer. B?n c? th? m?i t?i ?a 2 reviewer.",
+      "optionalReviewersHint": "Reviewer l? tu? ch?n. N?u ???c m?i, h? c? th? gi?p ki?m tra v? d?n n?i dung tr??c khi b?n publish tr?n ??u."
     },
     "actions": {
       "publish": "Xuất bản challenge",
@@ -1697,6 +1842,12 @@
       "finished": "Hoàn thành",
       "playing": "Đang làm",
       "waiting": "Chờ"
+    },
+    "reviewInvitation": {
+      "title": "B?n ???c m?i review ?? challenge n?y",
+      "body": "Leader ?? ch?n b?n l?m reviewer. N?u ??ng ?, b?n s? ???c xem ?? tr??c ?? ki?m tra v? b?n s? kh?ng th? ??ng k? tham gia challenge n?y nh? th? sinh.",
+      "accept": "??ng ? review",
+      "decline": "T? ch?i"
     }
   },
   "challengeLeaderboard": {
@@ -2093,5 +2244,18 @@
     "irrelevantBadge": "Không liên quan",
     "uploadingBadge": "Đang tải lên...",
     "optionsAriaLabel": "Tùy chọn"
+  },
+  "challengeScheduleFields": {
+    "helper": "Chỉ chọn thời gian trong tương lai. Khoảng từ lúc bắt đầu đến khi kết thúc cần ít nhất {{minutes}} phút; đấu cúp sẽ cần window dài hơn theo số vòng.",
+    "startDate": "Bắt đầu - ngày *",
+    "startTime": "Bắt đầu - giờ *",
+    "endDate": "Kết thúc - ngày *",
+    "endTime": "Kết thúc - giờ *",
+    "errors": {
+      "endBeforeStart": "Thời gian kết thúc phải sau thời gian bắt đầu.",
+      "shortWindow": "Khoảng từ bắt đầu đến kết thúc phải ít nhất {{minutes}} phút.",
+      "pastDate": "Không chọn ngày giờ trong quá khứ.",
+      "invalid": "Thời gian không hợp lệ."
+    }
   }
 }

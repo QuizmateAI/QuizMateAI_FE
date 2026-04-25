@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronDown, ChevronUp, Download, Loader2, MessageSquare, Reply, SendHorizontal, Sparkles, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { getCommunityQuizDetail, submitCommunityQuizComment } from '@/api/QuizAPI';
@@ -73,7 +74,7 @@ function ReviewCard({ review, isDarkMode, t }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-              {review?.reviewerName || t('workspace.quiz.communityDetail.unknownUser', 'Learner')}
+              {review?.reviewerName || t('quiz.communityDetail.unknownUser', 'Learner')}
             </p>
             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
               isDarkMode ? 'bg-amber-950/40 text-amber-300' : 'bg-amber-100 text-amber-700'
@@ -88,7 +89,7 @@ function ReviewCard({ review, isDarkMode, t }) {
             ) : null}
           </div>
           <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-            {review?.comment || t('workspace.quiz.communityDetail.reviewNoComment', 'User left a rating without a comment.')}
+            {review?.comment || t('quiz.communityDetail.reviewNoComment', 'User left a rating without a comment.')}
           </p>
         </div>
       </div>
@@ -123,7 +124,7 @@ function CommentThread({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                {comment?.authorName || t('workspace.quiz.communityDetail.unknownUser', 'Learner')}
+                {comment?.authorName || t('quiz.communityDetail.unknownUser', 'Learner')}
               </p>
               {comment?.createdAt ? (
                 <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
@@ -144,7 +145,7 @@ function CommentThread({
                   }`}
                 >
                   <Reply className="h-3.5 w-3.5" />
-                  <span>{t('workspace.quiz.communityDetail.replyAction', 'Reply')}</span>
+                  <span>{t('quiz.communityDetail.replyAction', 'Reply')}</span>
                 </button>
               </div>
             ) : null}
@@ -155,7 +156,7 @@ function CommentThread({
                   value={replyDraft}
                   onChange={(event) => onChangeReplyDraft(comment?.commentId, event.target.value)}
                   rows={3}
-                  placeholder={t('workspace.quiz.communityDetail.replyPlaceholder', 'Write a reply')}
+                  placeholder={t('quiz.communityDetail.replyPlaceholder', 'Write a reply')}
                   className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-colors ${
                     isDarkMode
                       ? 'border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500'
@@ -164,7 +165,7 @@ function CommentThread({
                 />
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={onCloseReply}>
-                    {t('workspace.quiz.communityDetail.cancelReply', 'Cancel')}
+                    {t('quiz.communityDetail.cancelReply', 'Cancel')}
                   </Button>
                   <Button
                     type="button"
@@ -173,7 +174,7 @@ function CommentThread({
                     className="bg-blue-600 text-white hover:bg-blue-700"
                   >
                     {Number(submittingCommentId) === Number(comment?.commentId) ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
-                    <span>{t('workspace.quiz.communityDetail.sendReply', 'Send')}</span>
+                    <span>{t('quiz.communityDetail.sendReply', 'Send')}</span>
                   </Button>
                 </div>
               </div>
@@ -221,6 +222,7 @@ export default function CommunityQuizDetailDialog({
   cloneActionLabel,
   readOnly = false,
 }) {
+  const { t } = useTranslation();
   const { showError, showSuccess } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [detail, setDetail] = React.useState(null);
@@ -243,12 +245,12 @@ export default function CommunityQuizDetailDialog({
       const response = await getCommunityQuizDetail(normalizedQuizId);
       setDetail(extractApiData(response));
     } catch (loadError) {
-      setError(loadError?.message || 'Unable to load community quiz.');
+      setError(loadError?.message || t('workspace.quiz.communityDetail.loadError'));
       setDetail(null);
     } finally {
       setLoading(false);
     }
-  }, [quizId]);
+  }, [quizId, t]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -285,7 +287,7 @@ export default function CommunityQuizDetailDialog({
         parentCommentId,
         body: draftValue.trim(),
       });
-      showSuccess('Đã gửi comment community.');
+      showSuccess(t('workspace.quiz.communityDetail.commentSuccess'));
       if (parentCommentId == null) {
         setCommentDraft('');
       } else {
@@ -294,11 +296,11 @@ export default function CommunityQuizDetailDialog({
       }
       await loadDetail();
     } catch (submitError) {
-      showError(submitError?.message || 'Không thể gửi comment community.');
+      showError(submitError?.message || t('workspace.quiz.communityDetail.commentError'));
     } finally {
       setSubmittingCommentId(null);
     }
-  }, [commentDraft, loadDetail, quizId, replyDrafts, showError, showSuccess]);
+  }, [commentDraft, loadDetail, quizId, replyDrafts, showError, showSuccess, t]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -346,7 +348,7 @@ export default function CommunityQuizDetailDialog({
                 className="rounded-full bg-blue-600 px-5 text-white hover:bg-blue-700"
               >
                 {cloneLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                <span>{cloneActionLabel || 'Clone to workspace'}</span>
+                <span>{cloneActionLabel || t('workspace.quiz.communityDetail.cloneAction')}</span>
               </Button>
             ) : null}
           </div>
@@ -466,7 +468,7 @@ export default function CommunityQuizDetailDialog({
                     value={commentDraft}
                     onChange={(event) => setCommentDraft(event.target.value)}
                     rows={4}
-                    placeholder="Comment công khai để mọi người cùng thấy."
+                    placeholder={t('workspace.quiz.communityDetail.commentPlaceholder')}
                     className={`w-full rounded-3xl border px-4 py-3 text-sm outline-none transition-colors ${
                       isDarkMode
                         ? 'border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500'

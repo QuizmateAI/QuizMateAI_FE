@@ -238,6 +238,28 @@
       "viewDetails": "View details",
       "capacitySummary": "{{active}} active • {{pending}} pending invites • {{remaining}} left of {{limit}}"
     },
+    "welcomeBackModal": {
+      "greetings": {
+        "long": "We missed you a lot!",
+        "mid": "Welcome back!",
+        "short": "Good to see you again!"
+      },
+      "messages": {
+        "long": "It has been more than a month since we last saw you. We hope QuizMate AI still fits your study flow, even if life got busy for a while. Whenever you are ready, we are still here for you.",
+        "mid": "It has been a while since your last visit. Knowledge can fade if you leave it untouched for too long, but that is okay — we can reconnect your learning flow right now.",
+        "short": "It has been a little while. Your study path is still here waiting for you."
+      },
+      "userFallback": "there",
+      "inactiveLine": "{{name}}, it has been {{count}} days since your last visit.",
+      "resumeCardEyebrow": "Before your break, you were learning",
+      "resumeCardRoadmap": "inside the roadmap {{title}}",
+      "resumeCardHint": "We can suggest a short quiz to help you check what still feels familiar. Want to try?",
+      "emptyCardTitle": "Is QuizMate AI working well for you?",
+      "emptyCardBody": "Try creating a new study roadmap. We have personalized the experience much more since your last visit.",
+      "resumeAction": "Continue and review",
+      "dismissLater": "Later",
+      "dismissExplore": "Keep exploring the home page"
+    },
     "pagination": {
       "showing": "Showing {{start}} - {{end}} of {{total}}",
       "page": "page"
@@ -307,10 +329,14 @@
     "stats": {
       "topicsMastered": "Topics Mastered",
       "learningTime": "Learning Time",
+      "learningTimeValue": "128h",
       "dayStreak": "Day Streak",
       "avgScore": "Avg. Score"
     },
     "recentActivity": "Recent Activity",
+    "recentActivityItemTitle": "Completed \"React Advanced Patterns\"",
+    "recentActivityItemTimeAgo": "2 hours ago",
+    "recentActivityItemXp": "+50 XP",
     "subscription": {
       "currentPlan": "Current Plan",
       "currentPlanDesc": "Your active subscription plan",
@@ -394,15 +420,6 @@
     "upgrade": "Choose plan",
     "currentCta": "Currently using",
     "teamCta": "Start team plan",
-    "groupScopeTitle": "Choose a plan for {{groupName}}",
-    "groupFallbackName": "this group",
-    "groupScopeSubtitle": "This plan applies only to the current group workspace. Group subscriptions are managed separately from personal plans.",
-    "groupScopeNoticeTitle": "Group plan for this workspace",
-    "groupEntryTitle": "Group plans are managed inside each group",
-    "groupScopeLeaderDesc": "This purchase only applies to {{groupName}}. As the group leader, you can choose or change the plan for this workspace here.",
-    "groupScopeMemberDesc": "This purchase only applies to {{groupName}}. Only the group leader can choose or change the plan for this workspace.",
-    "groupEntryDesc": "Group subscriptions are purchased separately inside each group workspace. Open a group you lead to view its plans and complete checkout there.",
-    "groupLeaderManagedCta": "Leader manages plan",
     "thanhToan": "Payment",
     "defaultPlan": "Default plan",
     "descriptions": {
@@ -540,7 +557,18 @@
     },
     "paymentError": "Payment Error",
     "vnpayError": "Vnpay Error",
-    "stripeError": "Unable to create Stripe payment. Please try again."
+    "stripeError": "Unable to create Stripe payment. Please try again.",
+    "appliedGroup": "Applied group",
+    "appliedGroupLoading": "Loading group information...",
+    "extraSlots": {
+      "title": "Buy extra member slots",
+      "description": "Purchased slots are added permanently to the group member limit and paid together with the plan.",
+      "currentMax": "Current slots",
+      "unitPrice": "Price per slot",
+      "inputLabel": "Slots to buy",
+      "maxAvailable": "Max {{count}}",
+      "capReached": "This group has reached the maximum number of member slots allowed by system settings. You cannot buy more."
+    }
   },
   "paymentResult": {
     "successTitle": "Payment Successful!",

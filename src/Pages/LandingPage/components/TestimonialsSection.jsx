@@ -7,7 +7,9 @@ import LocalAvatar from '@/Components/ui/LocalAvatar';
 const TestimonialsSection = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = i18n.language?.startsWith('en') ? 'font-poppins' : 'font-sans';
+  const studentOneName = t('landingPage.testimonials.student1Name', 'Sarah Johnson');
+  const studentTwoName = t('landingPage.testimonials.student2Name', 'Mark Thompson');
 
   return (
     <section className={`py-32 text-white overflow-hidden relative transition-colors duration-300 ${fontClass} ${
@@ -40,7 +42,7 @@ const TestimonialsSection = () => {
                 isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-blue-300 border-white/30'
               }`}>
                 <LocalAvatar
-                  label="Sarah Johnson"
+                  label={studentOneName}
                   initials="SJ"
                   tone="rose"
                   className="h-full w-full rounded-[10px]"
@@ -48,7 +50,7 @@ const TestimonialsSection = () => {
                 />
               </div>
               <div>
-                <p className="font-black text-lg">Sarah Johnson</p>
+                <p className="font-black text-lg">{studentOneName}</p>
                 <p className={`font-bold text-sm uppercase tracking-wider ${
                   isDarkMode ? 'text-slate-400' : 'text-blue-200'
                 }`}>{t('landingPage.testimonials.student1Role')}</p>
@@ -70,7 +72,7 @@ const TestimonialsSection = () => {
                 isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-blue-300 border-white/30'
               }`}>
                 <LocalAvatar
-                  label="Mark Thompson"
+                  label={studentTwoName}
                   initials="MT"
                   tone="emerald"
                   className="h-full w-full rounded-[10px]"
@@ -78,7 +80,7 @@ const TestimonialsSection = () => {
                 />
               </div>
               <div>
-                <p className="font-black text-lg">Mark Thompson</p>
+                <p className="font-black text-lg">{studentTwoName}</p>
                 <p className={`font-bold text-sm uppercase tracking-wider ${
                   isDarkMode ? 'text-slate-400' : 'text-blue-200'
                 }`}>{t('landingPage.testimonials.student2Role')}</p>

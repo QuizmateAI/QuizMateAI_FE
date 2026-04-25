@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ const LABEL_CLS = (isDark) =>
  *  - isDarkMode
  */
 function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = false }) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [timerMode, setTimerMode] = useState(true);
@@ -52,11 +54,11 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
 
   const handleSave = async () => {
     if (!String(title).trim()) {
-      setError("Tên quiz không được để trống.");
+      setError(t("workspace.quiz.metadataEditModal.nameRequired"));
       return;
     }
     if (!durationMinutes || durationMinutes < 1) {
-      setError("Thời gian phải ≥ 1 phút.");
+      setError(t("workspace.quiz.metadataEditModal.durationMin"));
       return;
     }
 
@@ -75,7 +77,7 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
       onSaved?.({ title: payload.title, description: payload.description, timerMode, duration: payload.duration, ...updated });
       onClose?.();
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Có lỗi khi cập nhật.");
+      setError(err?.response?.data?.message || err?.message || t("workspace.quiz.metadataEditModal.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -91,14 +93,14 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
       >
         <DialogHeader>
           <DialogTitle className={isDarkMode ? "text-slate-100" : "text-slate-900"}>
-            Cập nhật thông tin quiz
+            {t("workspace.quiz.edit.title")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-1">
           <div>
             <label className={LABEL_CLS(isDarkMode)}>
-              Tên quiz <span className="text-red-500">*</span>
+              {t("workspace.quiz.metadataEditModal.nameLabel")} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -106,27 +108,27 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className={INPUT_CLS(isDarkMode, false)}
-              placeholder="Tên quiz..."
+              placeholder={t("workspace.quiz.metadataEditModal.namePlaceholder")}
             />
           </div>
 
           <div>
-            <label className={LABEL_CLS(isDarkMode)}>Mô tả (tùy chọn)</label>
+            <label className={LABEL_CLS(isDarkMode)}>{t("workspace.quiz.metadataEditModal.descriptionLabel")}</label>
             <textarea
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className={cn(INPUT_CLS(isDarkMode, false), "resize-none")}
-              placeholder="Mô tả nội dung..."
+              placeholder={t("workspace.quiz.metadataEditModal.descriptionPlaceholder")}
             />
           </div>
 
           <div>
-            <label className={LABEL_CLS(isDarkMode)}>Chế độ tính giờ</label>
+            <label className={LABEL_CLS(isDarkMode)}>{t("workspace.quiz.metadataEditModal.timerModeLabel")}</label>
             <div className="flex gap-2">
               {[
-                { value: true, label: "Toàn bài" },
-                { value: false, label: "Từng câu" },
+                { value: true, label: t("workspace.quiz.metadataEditModal.timerModeWholeQuiz") },
+                { value: false, label: t("workspace.quiz.metadataEditModal.timerModePerQuestion") },
               ].map(({ value, label }) => (
                 <button
                   key={String(value)}
@@ -149,7 +151,7 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
 
           <div>
             <label className={LABEL_CLS(isDarkMode)}>
-              Thời gian (phút) <span className="text-red-500">*</span>
+              {t("workspace.quiz.metadataEditModal.durationLabel")} <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -157,7 +159,7 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 0)}
               className={INPUT_CLS(isDarkMode, false)}
-              placeholder="30"
+              placeholder={t("workspace.quiz.metadataEditModal.durationPlaceholder")}
             />
           </div>
 
@@ -173,7 +175,7 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
             onClick={() => onClose?.()}
             className={cn("rounded-full", isDarkMode && "border-slate-600 text-slate-200 hover:bg-slate-800")}
           >
-            Hủy
+            {t("workspace.quiz.edit.cancel")}
           </Button>
           <Button
             disabled={saving}
@@ -181,7 +183,7 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
             className="rounded-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            {saving ? t("workspace.quiz.edit.saving") : t("workspace.quiz.edit.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

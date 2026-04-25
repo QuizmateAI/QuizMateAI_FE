@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2, MessageSquareText, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { submitCommunityQuizReview } from '@/api/QuizAPI';
@@ -26,13 +27,16 @@ export default function CommunityQuizFeedbackDialog({
   initialComment = '',
   onSubmitted,
   isDarkMode = false,
-  title = 'Feedback community quiz',
-  description = 'Đánh giá quiz community sau khi bạn hoàn thành bản clone này.',
+  title = null,
+  description = null,
 }) {
+  const { t } = useTranslation();
   const { showError, showSuccess } = useToast();
   const [rating, setRating] = React.useState(initialRating);
   const [comment, setComment] = React.useState(initialComment || '');
   const [submitting, setSubmitting] = React.useState(false);
+  const resolvedTitle = title || t('workspace.quiz.communityFeedback.title');
+  const resolvedDescription = description || t('workspace.quiz.communityFeedback.description');
 
   React.useEffect(() => {
     if (!open) return;
@@ -46,7 +50,7 @@ export default function CommunityQuizFeedbackDialog({
     if (!Number.isInteger(normalizedSourceQuizId) || normalizedSourceQuizId <= 0) return;
     if (!Number.isInteger(normalizedClonedQuizId) || normalizedClonedQuizId <= 0) return;
     if (!Number.isInteger(Number(rating)) || Number(rating) < 1 || Number(rating) > 5) {
-      showError('Vui lòng chọn số sao trước khi gửi feedback.');
+      showError(t('workspace.quiz.communityFeedback.ratingRequired'));
       return;
     }
 
@@ -57,7 +61,7 @@ export default function CommunityQuizFeedbackDialog({
         rating: Number(rating),
         comment: comment.trim() || null,
       });
-      showSuccess('Đã gửi feedback community.');
+      showSuccess(t('workspace.quiz.communityFeedback.success'));
       onOpenChange?.(false);
       if (typeof onSubmitted === 'function') {
         await onSubmitted({
@@ -66,11 +70,11 @@ export default function CommunityQuizFeedbackDialog({
         });
       }
     } catch (error) {
-      showError(error?.message || 'Không thể gửi feedback community.');
+      showError(error?.message || t('workspace.quiz.communityFeedback.error'));
     } finally {
       setSubmitting(false);
     }
-  }, [clonedQuizId, comment, onOpenChange, onSubmitted, rating, showError, showSuccess, sourceQuizId]);
+  }, [clonedQuizId, comment, onOpenChange, onSubmitted, rating, showError, showSuccess, sourceQuizId, t]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -78,9 +82,9 @@ export default function CommunityQuizFeedbackDialog({
         isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-100' : ''
       }`}>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{resolvedTitle}</DialogTitle>
           <DialogDescription className={isDarkMode ? 'text-slate-400' : ''}>
-            {description}
+            {resolvedDescription}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,7 +114,7 @@ export default function CommunityQuizFeedbackDialog({
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               rows={5}
-              placeholder="Comment này sẽ xuất hiện trên community quiz nếu bạn gửi."
+              placeholder={t('workspace.quiz.communityFeedback.commentPlaceholder')}
               className={`mt-3 w-full rounded-3xl border px-4 py-3 text-sm outline-none transition-colors ${
                 isDarkMode
                   ? 'border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-blue-500'
@@ -122,11 +126,11 @@ export default function CommunityQuizFeedbackDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange?.(false)} disabled={submitting}>
-            Đóng
+            {t('common.cancel')}
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={submitting} className="bg-blue-600 text-white hover:bg-blue-700">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            <span>Gửi feedback</span>
+            <span>{t('workspace.quiz.communityFeedback.submit')}</span>
           </Button>
         </DialogFooter>
       </DialogContent>
