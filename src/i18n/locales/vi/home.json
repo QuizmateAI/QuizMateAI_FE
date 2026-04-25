@@ -555,16 +555,16 @@
       "hasAiTextReadingAndSummarization": "AI đọc & tóm tắt văn bản",
       "hasAdvancedAiConfiguration": "Cấu hình quiz nâng cao"
     },
-    "appliedGroup": "Nh?m ?p d?ng",
-    "appliedGroupLoading": "?ang t?i th?ng tin nh?m...",
+    "appliedGroup": "Nhóm áp dụng",
+    "appliedGroupLoading": "Đang tải thông tin nhóm...",
     "extraSlots": {
-      "title": "Mua th?m slot th?nh vi?n",
-      "description": "Slot mua th?m ???c c?ng v?nh vi?n v?o gi?i h?n th?nh vi?n c?a nh?m v? ???c thanh to?n c?ng l?c v?i g?i.",
-      "currentMax": "Slot hi?n t?i",
-      "unitPrice": "Gi? 1 slot",
-      "inputLabel": "S? slot c?n mua",
-      "maxAvailable": "T?i ?a {{count}}",
-      "capReached": "Nh?m ?? ??t s? slot t?i ?a theo c?u h?nh h? th?ng, kh?ng th? mua th?m."
+      "title": "Mua thêm slot thành viên",
+      "description": "Slot mua thêm được cộng vĩnh viễn vào giới hạn thành viên của nhóm và được thanh toán cùng lúc với gói.",
+      "currentMax": "Slot hiện tại",
+      "unitPrice": "Giá 1 slot",
+      "inputLabel": "Số slot cần mua",
+      "maxAvailable": "Tối đa {{count}}",
+      "capReached": "Nhóm đã đạt số slot tối đa theo cấu hình hệ thống, không thể mua thêm."
     }
   },
   "paymentResult": {
