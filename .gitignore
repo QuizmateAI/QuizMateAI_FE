@@ -41,7 +41,8 @@ SKILL.md
 .agents
 .claude
 skills-lock.json
-REFACTOR_PLAN.md
+REFACTOR_PLAN.md\
+CLAUDE.md
 
 # Build / test / doc artifacts
 tmp/
