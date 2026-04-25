@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveGroupUiPermissions } from '@/Pages/Users/Group/utils/groupPermissionView';
+import { resolveGroupUiPermissions } from '@/pages/Users/Group/utils/groupPermissionView';
 
 describe('groupPermissionView', () => {
   it('uses myGroupPermissions to override fallback gating', () => {

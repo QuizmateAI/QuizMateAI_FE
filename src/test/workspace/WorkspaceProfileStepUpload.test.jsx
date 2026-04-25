@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import WorkspaceProfileStepUpload from '@/Pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/WorkspaceProfileStepUpload';
+import WorkspaceProfileStepUpload from '@/pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/WorkspaceProfileStepUpload';
 
 describe('WorkspaceProfileStepUpload', () => {
   it('TC-W03 (adapted): forwards selected files to the upload queue callback', () => {

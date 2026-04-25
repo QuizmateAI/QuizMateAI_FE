@@ -2,8 +2,8 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@/i18n';
-import ChatPanel from '@/Pages/Users/Group/Components/ChatPanel';
-import { ROADMAP_GUIDE_SEEN_STORAGE_KEY } from '@/Components/features/Workspace/RoadmapGuideButton';
+import ChatPanel from '@/pages/Users/Group/Components/ChatPanel';
+import { ROADMAP_GUIDE_SEEN_STORAGE_KEY } from '@/components/features/workspace/RoadmapGuideButton';
 
 const roadmapCanvasSpy = vi.fn();
 const quizListSpy = vi.fn();
@@ -22,11 +22,11 @@ function MockGroupRoadmapCanvasView(props) {
   return <div data-testid="group-roadmap-canvas-view">Roadmap canvas mock</div>;
 }
 
-vi.mock('@/Pages/Users/Group/Components/RoadmapCanvasView', () => ({
+vi.mock('@/pages/Users/Group/Components/RoadmapCanvasView', () => ({
   default: MockGroupRoadmapCanvasView,
 }));
 
-vi.mock('@/Pages/Users/Group/Components/QuizListView', () => ({
+vi.mock('@/pages/Users/Group/Components/QuizListView', () => ({
   default: (props) => {
     quizListSpy(props);
     return <div data-testid="group-quiz-list-view">Quiz list mock</div>;

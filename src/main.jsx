@@ -6,7 +6,7 @@ import './index.css'
 import App from './App.jsx'
 import { DarkModeProvider } from './hooks/useDarkMode'
 import { i18nReady, preloadLanguage } from './i18n'
-import { RuntimeRecoveryScreen } from '@/Components/system/RuntimeRecoveryBoundary'
+import { RuntimeRecoveryScreen } from '@/components/system/RuntimeRecoveryBoundary'
 import { installRuntimeRecoveryListeners, tryScheduleRuntimeRecovery } from '@/lib/runtimeRecovery'
 
 installRuntimeRecoveryListeners()

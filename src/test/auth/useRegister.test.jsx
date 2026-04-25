@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useRegister } from '@/Pages/Authentication/Register';
+import { useRegister } from '@/pages/Authentication/Register';
 import { checkEmail, checkUsername, sendOTP, verifyOTP, register } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { resetAuthAvailabilityBloom } from '@/lib/authAvailabilityBloom';

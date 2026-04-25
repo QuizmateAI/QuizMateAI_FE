@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, render, screen, waitFor, fireEvent } from "@testing-library/react";
-import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
-import PaymentResultPage from "@/Pages/Payment/PaymentResultPage";
+import UpgradePlanDialog from "@/pages/Payment/components/UpgradePlanDialog";
+import PaymentResultPage from "@/pages/Payment/PaymentResultPage";
 import { getPurchasablePlans } from "@/api/PaymentAPI";
 import { getPaymentByOrderId } from "@/api/ManagementSystemAPI";
 
@@ -35,20 +35,20 @@ vi.mock("@/hooks/useNavigateWithLoading", () => ({
   useNavigateWithLoading: () => mockNavigateWithLoading,
 }));
 
-vi.mock("@/Components/features/Users/UserProfilePopover", () => ({
+vi.mock("@/components/features/users/UserProfilePopover", () => ({
   default: () => <div data-testid="user-profile-popover" />,
 }));
 
-vi.mock("@/Components/ui/button", () => ({
+vi.mock("@/components/ui/button", () => ({
   Button: ({ children, ...props }) => <button {...props}>{children}</button>,
 }));
 
-vi.mock("@/Components/ui/dialog", () => ({
+vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ open, children }) => (open ? <div data-testid="dialog-root">{children}</div> : null),
   DialogContent: ({ children }) => <div>{children}</div>,
 }));
 
-vi.mock("@/Pages/Users/Profile/Components/PlanCard", () => ({
+vi.mock("@/pages/Users/Profile/Components/PlanCard", () => ({
   default: ({ plan, onUpgrade, disabled }) => (
     <button type="button" onClick={() => onUpgrade(plan)} disabled={disabled}>
       {plan.planName} - {plan.price}

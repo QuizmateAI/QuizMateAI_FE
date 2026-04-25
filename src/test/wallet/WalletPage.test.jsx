@@ -2,7 +2,7 @@ import React, { StrictMode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import WalletPage from '@/Pages/Users/Credit/WalletPage';
+import WalletPage from '@/pages/Users/Credit/WalletPage';
 import {
   getMyWallet,
   getMyWalletTransactions,
@@ -46,7 +46,7 @@ vi.mock('@/hooks/useWebSocket', () => ({
   useWebSocket: vi.fn(),
 }));
 
-vi.mock('@/Utils/userCache', () => ({
+vi.mock('@/utils/userCache', () => ({
   getCachedSubscription: () => ({
     entitlement: {
       canBuyCredit: true,
@@ -54,7 +54,7 @@ vi.mock('@/Utils/userCache', () => ({
   }),
 }));
 
-vi.mock('@/Components/features/Users/UserProfilePopover', () => ({
+vi.mock('@/components/features/users/UserProfilePopover', () => ({
   default: () => <div data-testid="user-profile-popover" />,
 }));
 

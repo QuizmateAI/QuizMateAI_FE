@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCurrentUser } from "@/api/Authentication";
 import { getCurrentUserPlan } from "@/api/ManagementSystemAPI";
-import { getCachedSubscription, setCachedSubscription } from "@/Utils/userCache";
-import { getRecentPlanPurchase } from "@/Utils/planPurchaseState";
+import { getCachedSubscription, setCachedSubscription } from "@/utils/userCache";
+import { getRecentPlanPurchase } from "@/utils/planPurchaseState";
 
 function resolvePlanType(planScope, fallbackType = "INDIVIDUAL") {
   const normalizedScope = String(planScope || "").toUpperCase();

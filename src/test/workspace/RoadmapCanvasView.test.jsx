@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import RoadmapCanvasView from '@/Pages/Users/Individual/Workspace/Components/RoadmapCanvasView';
+import RoadmapCanvasView from '@/pages/Users/Individual/Workspace/Components/RoadmapCanvasView';
 import { getRoadmapGraph } from '@/api/RoadmapAPI';
 
 vi.mock('react-i18next', () => ({

@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import Pagination from '@/Pages/Users/Home/Components/Pagination';
+import Pagination from '@/pages/Users/Home/Components/Pagination';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

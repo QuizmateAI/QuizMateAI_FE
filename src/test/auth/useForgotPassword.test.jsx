@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useForgotPassword, validateForgotPasswordForm } from '@/Pages/Authentication/ForgotPassword';
+import { useForgotPassword, validateForgotPasswordForm } from '@/pages/Authentication/ForgotPassword';
 import { checkEmail, sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 

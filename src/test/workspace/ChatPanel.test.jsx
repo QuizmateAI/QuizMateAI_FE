@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import ChatPanel from '@/Pages/Users/Individual/Workspace/Components/ChatPanel';
+import ChatPanel from '@/pages/Users/Individual/Workspace/Components/ChatPanel';
 
 const ROADMAP_GUIDE_SEEN_STORAGE_KEY = 'quizmate_roadmap_guide_seen_v1';
 
@@ -22,7 +22,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/WorkspaceOverviewView', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/WorkspaceOverviewView', () => ({
   default: (props) => {
     overviewSpy(props);
     return (
@@ -35,7 +35,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/WorkspaceOverviewView', (
   },
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/SourcesPanel', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/SourcesPanel', () => ({
   default: (props) => {
     sourcesSpy(props);
     return (
@@ -48,7 +48,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/SourcesPanel', () => ({
   },
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/CreateQuizForm', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/CreateQuizForm', () => ({
   default: () => <div data-testid="create-quiz-form" />,
 }));
 
@@ -68,11 +68,11 @@ function MockRoadmapCanvasView(props) {
   return <div data-testid="roadmap-canvas-view">Roadmap canvas mock</div>;
 }
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/RoadmapCanvasView', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/RoadmapCanvasView', () => ({
   default: MockRoadmapCanvasView,
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/PostLearningListView', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/PostLearningListView', () => ({
   default: (props) => {
     postLearningListSpy(props);
     return (
@@ -91,7 +91,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/PostLearningListView', ()
   },
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/CreatePostLearningForm', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/CreatePostLearningForm', () => ({
   default: (props) => {
     createPostLearningFormSpy(props);
     return (
