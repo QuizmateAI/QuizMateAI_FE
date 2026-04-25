@@ -27,7 +27,7 @@ import {
 } from '@/Components/ui/dropdown-menu';
 import { Switch } from '@/Components/ui/switch';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 import { normalizePendingInvitationSummary } from '../utils/memberSeatLimit';
 
 const normalizeRole = (role) => String(role || 'MEMBER').toUpperCase();

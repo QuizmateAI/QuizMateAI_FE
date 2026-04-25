@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@/i18n';
 import ChatPanel from '@/Pages/Users/Group/Components/ChatPanel';
-import { ROADMAP_GUIDE_SEEN_STORAGE_KEY } from '@/Components/workspace/RoadmapGuideButton';
+import { ROADMAP_GUIDE_SEEN_STORAGE_KEY } from '@/Components/features/Workspace/RoadmapGuideButton';
 
 const roadmapCanvasSpy = vi.fn();
 const quizListSpy = vi.fn();

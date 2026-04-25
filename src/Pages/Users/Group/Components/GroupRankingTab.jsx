@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { BookMarked, BookOpen, Medal, RefreshCw, Sparkles, Trophy } from "lucide-react";
 import { getGroupOverallRanking, getGroupRankingMemberDetail } from "@/api/GroupAPI";
-import UserDisplayName from "@/Components/users/UserDisplayName";
+import UserDisplayName from "@/Components/features/Users/UserDisplayName";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 

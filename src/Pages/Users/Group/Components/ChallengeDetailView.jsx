@@ -37,7 +37,7 @@ import {
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 import ChallengeLeaderboard from './ChallengeLeaderboard';
 import ChallengeTeamScoreboard from './ChallengeTeamScoreboard';
 import ChallengeBracketView from './ChallengeBracketView';

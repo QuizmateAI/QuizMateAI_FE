@@ -30,7 +30,7 @@ import {
   normalizeListResponse,
 } from "./createQuizForm.utils";
 
-/** Trùng với Constants/errorCodes.js — thiếu credit workspace (QMC). */
+/** Trùng với lib/errorCodes.js — thiếu credit workspace (QMC). */
 const INSUFFICIENT_CREDIT_BUSINESS_CODE = 1129;
 
 function detectInsufficientCreditError(submitError) {

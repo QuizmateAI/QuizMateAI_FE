@@ -31,7 +31,7 @@ vi.mock('@/Utils/userProfile', () => ({
   normalizeUserProfile: vi.fn((profile) => profile),
 }));
 
-vi.mock('@/queryClient', () => ({
+vi.mock('@/lib/queryClient', () => ({
   queryClient: {
     clear: vi.fn(),
     setQueryData: vi.fn(),

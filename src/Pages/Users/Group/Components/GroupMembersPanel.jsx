@@ -11,7 +11,7 @@ import {
   Crown,
   Users,
 } from 'lucide-react';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 
 // Panel hiển thị danh sách thành viên nhóm với quản lý role/upload
 function GroupMembersPanel({

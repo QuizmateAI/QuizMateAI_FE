@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getChallengeLeaderboard } from '../../../../api/ChallengeAPI';
 import { Trophy, Medal, Clock } from 'lucide-react';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 
 function formatTime(seconds) {
   if (seconds == null) return '-';

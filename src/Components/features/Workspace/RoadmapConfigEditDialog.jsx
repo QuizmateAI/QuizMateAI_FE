@@ -16,7 +16,7 @@ import {
   buildInitialRoadmapValues,
   syncRoadmapConfigFieldValues,
   validateRoadmapConfigValues,
-} from '@/Components/workspace/roadmapConfigUtils';
+} from '@/Components/features/Workspace/roadmapConfigUtils';
 
 function RoadmapConfigEditDialog({
   open,

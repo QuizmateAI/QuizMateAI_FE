@@ -30,7 +30,7 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog';
 import ListSpinner from '@/Components/ui/ListSpinner';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 import { cn } from '@/lib/utils';
 import { useGroup } from '@/hooks/useGroup';
 import { getQuizzesByScope, setGroupQuizAudience } from '@/api/QuizAPI';

@@ -10,7 +10,7 @@ import {
 import { Button } from '@/Components/ui/button';
 import { Clock3, Layers3, Route, TimerReset, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { extractRoadmapConfigValues } from '@/Components/workspace/roadmapConfigUtils';
+import { extractRoadmapConfigValues } from '@/Components/features/Workspace/roadmapConfigUtils';
 
 function SummaryCard({ icon: Icon, label, value, isDarkMode }) {
   return (

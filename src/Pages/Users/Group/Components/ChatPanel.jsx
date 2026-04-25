@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { getRoadmapReview } from "@/api/RoadmapAPI";
-import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
-import RoadmapGuideButton from "@/Components/workspace/RoadmapGuideButton";
+import RoadmapReviewPanel from "@/Components/features/Workspace/RoadmapReviewPanel";
+import RoadmapGuideButton from "@/Components/features/Workspace/RoadmapGuideButton";
 import RoadmapJourPanel from "./RoadmapJourPanel";
 import CreateQuizForm from "./CreateQuizForm";
 

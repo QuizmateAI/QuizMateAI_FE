@@ -249,11 +249,11 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfil
   ) : null),
 }));
 
-vi.mock('@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog', () => ({
+vi.mock('@/Components/features/Workspace/WorkspaceOnboardingUpdateGuardDialog', () => ({
   default: ({ open }) => (open ? <div data-testid="profile-update-guard-dialog">guard-open</div> : null),
 }));
 
-vi.mock('@/Components/workspace/RoadmapConfigEditDialog', () => ({
+vi.mock('@/Components/features/Workspace/RoadmapConfigEditDialog', () => ({
   default: () => null,
 }));
 

@@ -1,4 +1,4 @@
-import ERROR_CODES from '@/Constants/errorCodes';
+import ERROR_CODES from '@/lib/errorCodes';
 
 /**
  * Lookup map: numeric BE error code (HTTP trailer style) → category tiêu đề toast.

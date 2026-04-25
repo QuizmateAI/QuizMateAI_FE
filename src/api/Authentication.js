@@ -1,7 +1,7 @@
 import api from './api';
 import { setCachedProfile, setCachedSubscription, clearUserCache } from '@/Utils/userCache';
 import { normalizeUserProfile } from '@/Utils/userProfile';
-import { queryClient } from '@/queryClient';
+import { queryClient } from '@/lib/queryClient';
 import { clearPlanPurchaseState } from '@/Utils/planPurchaseState';
 
 // ======================= AUTH API SERVICES =======================

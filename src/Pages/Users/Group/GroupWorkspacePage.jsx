@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { Button } from '@/Components/ui/button';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import GroupWalletTab from './Group_leader/GroupWalletTab';
-import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
+import WorkspaceOnboardingUpdateGuardDialog from '@/Components/features/Workspace/WorkspaceOnboardingUpdateGuardDialog';
 import {
   Activity,
   CalendarDays,
@@ -30,7 +30,7 @@ import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
 import { getUserDisplayLabel } from '@/Utils/userProfile';
-import UserDisplayName from '@/Components/users/UserDisplayName';
+import UserDisplayName from '@/Components/features/Users/UserDisplayName';
 import {
   createRoadmap,
   setupGroupRoadmapConfig,
@@ -50,7 +50,7 @@ const loadGroupMemberStatsTab = () => import("./Group_leader/GroupMemberStatsTab
 const loadGroupSettingsTab = () => import("./Group_leader/GroupSettingsTab");
 const loadGroupChatPanel = () => import("./Components/ChatPanel");
 const loadChallengeTab = () => import("./Components/ChallengeTab");
-const loadWorkspaceOnboardingUpdateGuardDialog = () => import("@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog");
+const loadWorkspaceOnboardingUpdateGuardDialog = () => import("@/Components/features/Workspace/WorkspaceOnboardingUpdateGuardDialog");
 const loadPlanUpgradeModal = () => import("@/Components/plan/PlanUpgradeModal");
 
 const LazyUploadSourceDialog = React.lazy(loadUploadSourceDialog);
@@ -67,8 +67,8 @@ const LazyGroupRankingTab = React.lazy(() => import("./Components/GroupRankingTa
 React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
 React.lazy(loadPlanUpgradeModal);
 const LazyRoadmapPhaseGenerateDialog = React.lazy(() => import("./Components/RoadmapPhaseGenerateDialog"));
-const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
-const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigSummaryDialog"));
+const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/features/Workspace/RoadmapConfigEditDialog"));
+const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/features/Workspace/RoadmapConfigSummaryDialog"));
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
   deleteMaterial,
@@ -108,7 +108,7 @@ import {
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { resolveGroupUiPermissions } from './utils/groupPermissionView';
 import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
-import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
+import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/features/Workspace/roadmapConfigUtils';
 import { buildGroupMemberSeatSummary, normalizePendingInvitationSummary, resolveGroupMemberSeatLimit } from './utils/memberSeatLimit';
 import { resolveGroupQuizTitleMaxLength } from './utils/groupQuizTitleLimit';
 

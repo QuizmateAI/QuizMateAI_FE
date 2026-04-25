@@ -28,7 +28,7 @@ import { recordQuizReviewView } from "@/api/ChallengeAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
 import { getUserDisplayLabel } from "@/Utils/userProfile";
-import UserDisplayName from "@/Components/users/UserDisplayName";
+import UserDisplayName from "@/Components/features/Users/UserDisplayName";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
 import GroupDiscussionPanel from "@/Pages/Users/Group/Components/GroupDiscussionPanel";
 import QuestionDiscussionDialog from "@/Pages/Users/Group/Components/QuestionDiscussionDialog";

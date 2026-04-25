@@ -96,10 +96,10 @@ const LazyIndividualWorkspaceProfileOverviewDialog = React.lazy(
     ),
 );
 const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(
-  () => import("@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog"),
+  () => import("@/Components/features/Workspace/WorkspaceOnboardingUpdateGuardDialog"),
 );
 const LazyRoadmapConfigEditDialog = React.lazy(
-  () => import("@/Components/workspace/RoadmapConfigEditDialog"),
+  () => import("@/Components/features/Workspace/RoadmapConfigEditDialog"),
 );
 
 const {

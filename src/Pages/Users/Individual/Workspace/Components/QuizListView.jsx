@@ -15,7 +15,7 @@ import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
 import { useToast } from "@/context/ToastContext";
 import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
 import { cn } from "@/lib/utils";
-import UserDisplayName from "@/Components/users/UserDisplayName";
+import UserDisplayName from "@/Components/features/Users/UserDisplayName";
 import { getUserDisplayLabel } from "@/Utils/userProfile";
 import CommunityQuizSignals from "@/Pages/Users/Quiz/components/CommunityQuizSignals";
 import {

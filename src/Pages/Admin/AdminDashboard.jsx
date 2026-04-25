@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAdminOverviewStats } from '@/api/ManagementSystemAPI';
-import AdminStatCard from '@/Components/admin/AdminStatCard';
+import AdminStatCard from '@/Components/features/Admin/AdminStatCard';
 
 function AdminDashboard() {
   const { t, i18n } = useTranslation();
