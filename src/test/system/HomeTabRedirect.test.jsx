@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import HomeTabRedirect from '@/Pages/Route/HomeTabRedirect';
+import HomeTabRedirect from '@/pages/Route/HomeTabRedirect';
 
 function LocationProbe() {
   const location = useLocation();

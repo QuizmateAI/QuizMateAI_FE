@@ -41,3 +41,16 @@ SKILL.md
 .agents
 .claude
 skills-lock.json
+REFACTOR_PLAN.md\
+CLAUDE.md
+
+# Build / test / doc artifacts
+tmp/
+docs/
+test-results-full.json
+test-results*.json
+lighthouse-results*.json
+*.bak
+*.old
+*.backup
+*.deprecated

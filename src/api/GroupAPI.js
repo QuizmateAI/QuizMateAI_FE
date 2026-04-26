@@ -10,22 +10,6 @@ const buildUrl = (path, params = {}) => {
   return query ? `${path}?${query}` : path;
 };
 
-const requestWithFallback = async (handlers = []) => {
-  let lastError = null;
-  for (const handler of handlers) {
-    try {
-      return await handler();
-    } catch (error) {
-      lastError = error;
-      const statusCode = Number(error?.statusCode);
-      if (![404, 405].includes(statusCode)) {
-        throw error;
-      }
-    }
-  }
-  throw lastError;
-};
-
 // Lấy danh sách nhóm mà user đã tham gia
 export const getMyJoinedGroups = async () => {
   const response = await api.get('/group/me/joined');
@@ -86,35 +70,16 @@ export const getPendingInvitations = async (workspaceId) => {
 
 // Leader hủy lời mời đang chờ
 export const cancelInvitation = async (workspaceId, invitationId) => {
+  if (invitationId == null) throw new Error('Missing invitation id');
   const id = encodeURIComponent(String(invitationId));
-  return requestWithFallback([
-    () => api.delete(`/group/${workspaceId}/invitations/${id}`),
-    () => api.delete(`/group/${workspaceId}/invitation/${id}`),
-  ]);
+  return await api.delete(`/group/${workspaceId}/invitations/${id}`);
 };
 
 // Leader gửi lại lời mời đang chờ
-export const resendInvitation = async (workspaceId, invitationId, email) => {
-  const id = invitationId == null ? '' : encodeURIComponent(String(invitationId));
-  const normalizedEmail = String(email || '').trim();
-  const handlers = [];
-
-  if (id) {
-    handlers.push(
-      () => api.post(`/group/${workspaceId}/invitations/${id}/resend`),
-      () => api.post(`/group/${workspaceId}/invitation/${id}/resend`),
-    );
-  }
-
-  if (normalizedEmail) {
-    handlers.push(
-      () => api.post(`/group/${workspaceId}/invitations/resend`, { email: normalizedEmail }),
-      () => api.post(`/group/${workspaceId}/invitation/resend`, { email: normalizedEmail }),
-      () => api.post(`/group/${workspaceId}/invitation:resend`, { email: normalizedEmail }),
-    );
-  }
-
-  return requestWithFallback(handlers);
+export const resendInvitation = async (workspaceId, invitationId) => {
+  if (invitationId == null) throw new Error('Missing invitation id');
+  const id = encodeURIComponent(String(invitationId));
+  return await api.post(`/group/${workspaceId}/invitations/${id}/resend`);
 };
 
 // Lấy activity log của nhóm

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrapApiData } from '@/Utils/apiResponse';
+import { unwrapApiData } from '@/utils/apiResponse';
 import {
   getWorkspacesByUser,
   createWorkspace as createWorkspaceAPI,

@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n, { preloadRouteNamespaces } from '@/i18n';
 import { buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
-import ChallengeDetailView from '@/Pages/Users/Group/Components/ChallengeDetailView';
+import ChallengeDetailView from '@/pages/Users/Group/Components/ChallengeDetailView';
 import {
   acceptQuizReviewInvitation,
   batchInviteQuizReviewers,
@@ -34,7 +34,6 @@ vi.mock('@/api/ChallengeAPI', () => ({
   publishChallenge: vi.fn(),
   batchInviteQuizReviewers: vi.fn(),
   startChallenge: vi.fn(),
-  createChallengeRoundQuiz: vi.fn(),
   acceptQuizReviewInvitation: vi.fn(),
   declineQuizReviewInvitation: vi.fn(),
 }));
@@ -43,7 +42,7 @@ vi.mock('@/api/GroupAPI', () => ({
   getGroupMembers: vi.fn(),
 }));
 
-vi.mock('@/Components/users/UserDisplayName', () => ({
+vi.mock('@/components/features/users/UserDisplayName', () => ({
   default: ({ user, fallback }) => <span>{user?.fullName || user?.username || fallback}</span>,
 }));
 
@@ -232,6 +231,30 @@ describe('ChallengeDetailView', () => {
     expect(await screen.findByText('Draft quiz')).toBeInTheDocument();
     expect(screen.queryByText('Challenge match is being generated')).not.toBeInTheDocument();
     expect(screen.queryByText('55%')).not.toBeInTheDocument();
+  });
+
+  it('uses the snapshot quiz editor for bracket challenges instead of round quiz creation', async () => {
+    getChallengeDetail.mockResolvedValueOnce({
+      data: {
+        ...baseDetail,
+        matchMode: 'SOLO_BRACKET',
+        bracketSize: 8,
+      },
+    });
+
+    renderChallengeDetail();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Compose match' }));
+
+    expect(navigateSpy).toHaveBeenCalledWith(
+      buildGroupWorkspaceSectionPath(55, 'quiz', {
+        challengeDraftQuizId: 901,
+        challengeDraft: 1,
+        challengeEventId: 77,
+      }),
+      { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: 77 } } },
+    );
+    expect(screen.queryByRole('button', { name: 'Tạo đề vòng' })).not.toBeInTheDocument();
   });
 
   it('prefers active realtime quiz generation over a stale error status', async () => {

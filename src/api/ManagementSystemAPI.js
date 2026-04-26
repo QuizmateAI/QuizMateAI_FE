@@ -1,5 +1,7 @@
 import api from './api';
 
+const ADMIN_AI_CONFIG_TIMEOUT_MS = 30000;
+
 // Lấy quyền của user hiện tại (ADMIN/SUPER_ADMIN)
 export const getMyPermissions = async () => {
   const response = await api.get('/management/me/permissions');
@@ -253,6 +255,11 @@ export const getAiModels = async ({ provider, modelGroup, status } = {}) => {
   if (modelGroup) params.append('modelGroup', String(modelGroup));
   if (status) params.append('status', String(status));
   const response = await api.get(`/management/ai-models${params.toString() ? `?${params.toString()}` : ''}`);
+  return response;
+};
+
+export const getAiFeatureCatalog = async () => {
+  const response = await api.get('/management/ai-feature-catalog');
   return response;
 };
 
@@ -559,7 +566,9 @@ export const getGroupWorkspaceWalletTransactions = async (workspaceId, page = 0,
 
 // AI Action Policy APIs — maps to AiActionPolicyController (/api/ai-action-policies/...)
 export const getAllAiActionPolicies = async () => {
-  const response = await api.get('/ai-action-policies');
+  const response = await api.get('/ai-action-policies', {
+    timeout: ADMIN_AI_CONFIG_TIMEOUT_MS,
+  });
   return response;
 };
 
@@ -568,7 +577,45 @@ export const getAiActionPolicy = async (actionKey) => {
   return response;
 };
 
+// data accepts: displayName, description, isActive, costMode, baseCreditCost,
+// unitCreditCost, unitSize, defaultModelId (BE: nullable to fall back to no default)
 export const updateAiActionPolicy = async (actionKey, data) => {
-  const response = await api.put(`/ai-action-policies/${actionKey}`, data);
+  const response = await api.put(`/ai-action-policies/${actionKey}`, data, {
+    timeout: ADMIN_AI_CONFIG_TIMEOUT_MS,
+  });
+  return response;
+};
+
+// ===== Plan-level AI model overrides (SUPER_ADMIN) =====
+// Contract: /management/plans/{planId}/ai-model-overrides
+// Override key: (planId, actionKey, modelGroup)
+export const getPlanAiModelOverrides = async (planId) => {
+  const response = await api.get(`/management/plans/${planId}/ai-model-overrides`);
+  return response;
+};
+
+// Body shape: { actionKey, modelGroup, modelId }
+export const upsertPlanAiModelOverride = async (planId, body) => {
+  const response = await api.put(`/management/plans/${planId}/ai-model-overrides`, body, {
+    timeout: ADMIN_AI_CONFIG_TIMEOUT_MS,
+  });
+  return response;
+};
+
+export const deletePlanAiModelOverride = async (planId, actionKey, modelGroup) => {
+  const params = new URLSearchParams();
+  if (actionKey) params.append('actionKey', String(actionKey));
+  if (modelGroup) params.append('modelGroup', String(modelGroup));
+  const query = params.toString();
+  const response = await api.delete(
+    `/management/plans/${planId}/ai-model-overrides${query ? `?${query}` : ''}`,
+    { timeout: ADMIN_AI_CONFIG_TIMEOUT_MS },
+  );
+  return response;
+};
+
+// Lightweight plan list for the override page dropdown.
+export const getPlansLite = async () => {
+  const response = await api.get('/management/plans?fields=id,code,displayName');
   return response;
 };

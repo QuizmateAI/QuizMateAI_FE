@@ -3,7 +3,7 @@ import {
   buildGroupMemberSeatSummary,
   normalizePendingInvitationSummary,
   resolveGroupMemberSeatLimit,
-} from '@/Pages/Users/Group/utils/memberSeatLimit';
+} from '@/pages/Users/Group/utils/memberSeatLimit';
 
 describe('memberSeatLimit utilities', () => {
   it('resolves the member seat limit from override before plan data', () => {

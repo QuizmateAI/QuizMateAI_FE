@@ -1,4 +1,6 @@
 import i18n from 'i18next';
+import { updateUserPreferredLanguage } from '@/api/ProfilePreferencesAPI';
+import { hasAccessToken } from '@/utils/tokenStorage';
 
 const DEFAULT_LANGUAGE = 'vi';
 const I18N_NAMESPACES = ['common', 'auth', 'home', 'workspace', 'group', 'admin'];
@@ -9,6 +11,10 @@ const loadedLanguageNamespaces = new Map();
 const namespaceLoadPromises = new Map();
 
 const routeNamespaceRules = [
+  {
+    matches: (pathname) => pathname === '/',
+    namespaces: ['common', 'home'],
+  },
   {
     matches: (pathname) => pathname === '/login' || pathname === '/register' || pathname === '/forgot-password',
     namespaces: ['common', 'auth'],
@@ -256,16 +262,9 @@ export const i18nReady = (async () => {
 
     syncDocumentLanguage(normalizedLanguage);
 
-    // Persist lên BE nếu user đã đăng nhập. Lazy import để tránh vòng phụ thuộc
-    // (ProfileAPI import i18n, i18n không nên import ngược lại ở top-level).
-    if (typeof window !== 'undefined') {
-      const hasToken = !!(window.localStorage.getItem('accessToken')
-        || window.localStorage.getItem('jwt_token'));
-      if (hasToken) {
-        import('@/api/ProfileAPI')
-          .then(({ updateUserPreferredLanguage }) => updateUserPreferredLanguage(normalizedLanguage))
-          .catch(() => {});
-      }
+    // Persist lên BE nếu user đã đăng nhập.
+    if (typeof window !== 'undefined' && hasAccessToken()) {
+      void updateUserPreferredLanguage(normalizedLanguage);
     }
   });
 })();

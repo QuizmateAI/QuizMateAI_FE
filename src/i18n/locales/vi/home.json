@@ -237,6 +237,28 @@
       "viewDetails": "Xem chi tiết",
       "capacitySummary": "{{active}} đang học • {{pending}} lời mời còn hiệu lực • còn {{remaining}} trên {{limit}} slot"
     },
+    "welcomeBackModal": {
+      "greetings": {
+        "long": "Chúng tôi nhớ bạn rất nhiều!",
+        "mid": "Mừng bạn quay lại!",
+        "short": "Chào mừng bạn trở lại!"
+      },
+      "messages": {
+        "long": "Đã hơn một tháng rồi không gặp bạn. Không biết QuizMate AI có còn hợp với hành trình học của bạn không, hay dạo này bạn chỉ đang bận với việc khác. Dù sao đi nữa, chúng tôi vẫn ở đây chờ bạn quay lại.",
+        "mid": "Đã khá lâu rồi bạn chưa ghé thăm. Kiến thức có thể rơi rớt nếu để quá lâu không ôn lại, nhưng không sao — mình có thể nối lại mạch học ngay từ bây giờ.",
+        "short": "Bạn vắng mặt một chút rồi đó. Lộ trình học của bạn vẫn đang ở đây chờ bạn tiếp tục."
+      },
+      "userFallback": "bạn",
+      "inactiveLine": "{{name}}, đã {{count}} ngày bạn chưa ghé thăm.",
+      "resumeCardEyebrow": "Trước khi bạn nghỉ, bạn đang học",
+      "resumeCardRoadmap": "trong lộ trình {{title}}",
+      "resumeCardHint": "Chúng tôi có thể gợi ý một bài quiz ngắn để bạn kiểm tra xem mình còn nhớ được bao nhiêu. Bạn muốn thử không?",
+      "emptyCardTitle": "QuizMate AI có đang giúp bạn tốt không?",
+      "emptyCardBody": "Hãy thử tạo một lộ trình học mới — trải nghiệm giờ đã được cá nhân hóa tốt hơn nhiều so với lần trước bạn ghé lại.",
+      "resumeAction": "Tiếp tục và ôn lại",
+      "dismissLater": "Để sau",
+      "dismissExplore": "Tiếp tục khám phá trang chủ"
+    },
     "pagination": {
       "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",
       "page": "trang"
@@ -305,10 +327,14 @@
     "stats": {
       "topicsMastered": "Chủ đề đã thành thạo",
       "learningTime": "Thời gian học",
+      "learningTimeValue": "128 giờ",
       "dayStreak": "Ngày liên tiếp",
       "avgScore": "Điểm trung bình"
     },
     "recentActivity": "Hoạt động gần đây",
+    "recentActivityItemTitle": "Hoàn thành \"React Advanced Patterns\"",
+    "recentActivityItemTimeAgo": "2 giờ trước",
+    "recentActivityItemXp": "+50 XP",
     "subscription": {
       "currentPlan": "Gói hiện tại",
       "currentPlanDesc": "Gói đăng ký đang sử dụng",
@@ -360,14 +386,14 @@
     "back": "Quay lại",
     "groupScopeTitle": "Chọn gói cho {{groupName}}",
     "groupFallbackName": "nhóm này",
-    "groupScopeSubtitle": "Gói này chỉ áp dụng cho group hiện tại. Gói group được quản lý riêng, tách khỏi gói cá nhân.",
-    "groupScopeNoticeTitle": "Gói dành cho group hiện tại",
-    "groupEntryTitle": "Gói group được quản lý trong từng nhóm",
+    "groupScopeSubtitle": "Gói này chỉ áp dụng cho nhóm hiện tại. Gói nhóm được quản lý riêng, tách khỏi gói cá nhân.",
+    "groupScopeNoticeTitle": "Gói dành cho nhóm hiện tại",
+    "groupEntryTitle": "Gói nhóm được quản lý trong từng nhóm",
     "leaderOnlyBadge": "Leader thanh toán",
-    "groupScopeLeaderDesc": "Gói này chỉ áp dụng cho {{groupName}}. Bạn là leader nên có thể chọn hoặc đổi gói cho group này tại đây.",
-    "groupScopeMemberDesc": "Gói này chỉ áp dụng cho {{groupName}}. Chỉ leader mới có thể chọn hoặc đổi gói cho group này.",
-    "groupEntryDesc": "Mỗi group mua gói riêng trong workspace của chính group đó. Hãy mở group bạn làm leader để xem gói và thanh toán tại đó.",
-    "groupLeaderManagedCta": "Leader quản lý gói",
+    "groupScopeLeaderDesc": "Gói này chỉ áp dụng cho {{groupName}}. Bạn là trưởng nhóm nên có thể chọn hoặc đổi gói cho nhóm này tại đây.",
+    "groupScopeMemberDesc": "Gói này chỉ áp dụng cho {{groupName}}. Chỉ trưởng nhóm mới có thể chọn hoặc đổi gói cho nhóm này.",
+    "groupEntryDesc": "Mỗi nhóm mua gói riêng trong không gian học tập của chính nhóm đó. Hãy mở nhóm bạn làm trưởng nhóm để xem gói và thanh toán tại đó.",
+    "groupLeaderManagedCta": "Trưởng nhóm quản lý gói",
     "types": {
       "individual": "Cá nhân",
       "group": "Nhóm"
@@ -392,17 +418,14 @@
     "upgrade": "Chọn plan",
     "currentCta": "Đang sử dụng",
     "teamCta": "Bắt đầu cho nhóm",
-    "groupScopeTitle": "Chọn gói cho {{groupName}}",
-    "groupFallbackName": "nhóm này",
-    "groupScopeSubtitle": "Gói này chỉ áp dụng cho nhóm hiện tại. Gói nhóm được quản lý riêng, tách khỏi gói cá nhân.",
-    "groupScopeNoticeTitle": "Gói dành cho nhóm hiện tại",
-    "groupEntryTitle": "Gói nhóm được quản lý trong từng nhóm",
-    "groupScopeLeaderDesc": "Gói này chỉ áp dụng cho {{groupName}}. Bạn là trưởng nhóm nên có thể chọn hoặc đổi gói cho nhóm này tại đây.",
-    "groupScopeMemberDesc": "Gói này chỉ áp dụng cho {{groupName}}. Chỉ trưởng nhóm mới có thể chọn hoặc đổi gói cho nhóm này.",
-    "groupEntryDesc": "Mỗi nhóm mua gói riêng trong không gian học tập của chính nhóm đó. Hãy mở nhóm bạn làm trưởng nhóm để xem gói và thanh toán tại đó.",
-    "groupLeaderManagedCta": "Trưởng nhóm quản lý gói",
     "thanhToan": "Thanh toán",
     "defaultPlan": "Gói mặc định",
+    "aiQuality": {
+      "core": "Core AI",
+      "enhanced": "Enhanced AI",
+      "premium": "Premium AI",
+      "team": "Team AI"
+    },
     "descriptions": {
       "free": "Bắt đầu với các tính năng cốt lõi để tạo quiz và học thử.",
       "freeWithLimits": "Phù hợp để bắt đầu với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",
@@ -537,6 +560,17 @@
       "hasPersonalizedLearningAnalytic": "Phân tích học tập cá nhân",
       "hasAiTextReadingAndSummarization": "AI đọc & tóm tắt văn bản",
       "hasAdvancedAiConfiguration": "Cấu hình quiz nâng cao"
+    },
+    "appliedGroup": "Nh?m ?p d?ng",
+    "appliedGroupLoading": "?ang t?i th?ng tin nh?m...",
+    "extraSlots": {
+      "title": "Mua th?m slot th?nh vi?n",
+      "description": "Slot mua th?m ???c c?ng v?nh vi?n v?o gi?i h?n th?nh vi?n c?a nh?m v? ???c thanh to?n c?ng l?c v?i g?i.",
+      "currentMax": "Slot hi?n t?i",
+      "unitPrice": "Gi? 1 slot",
+      "inputLabel": "S? slot c?n mua",
+      "maxAvailable": "T?i ?a {{count}}",
+      "capReached": "Nh?m ?? ??t s? slot t?i ?a theo c?u h?nh h? th?ng, kh?ng th? mua th?m."
     }
   },
   "paymentResult": {

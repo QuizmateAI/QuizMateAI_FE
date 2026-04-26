@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AdminPaymentManagement from '@/Pages/Admin/AdminPaymentManagement';
+import AdminPaymentManagement from '@/pages/Admin/AdminPaymentManagement';
 import { getAdminPayments, getAdminPaymentByOrderId, expireOverduePayments } from '@/api/ManagementSystemAPI';
 
 vi.mock('react-i18next', () => ({

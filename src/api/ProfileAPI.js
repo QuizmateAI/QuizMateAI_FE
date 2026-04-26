@@ -1,12 +1,9 @@
 import api from "./api";
 import i18n from "@/i18n";
-import { getCachedProfile, setCachedProfile, clearUserCache } from "@/Utils/userCache";
+import { getStoredToken, updateUserPreferredLanguage, updateUserThemeMode } from "./ProfilePreferencesAPI";
+import { getCachedProfile, setCachedProfile, clearUserCache } from "@/utils/userCache";
 import { getCurrentUser } from "@/api/Authentication";
-import { normalizeUserProfile } from "@/Utils/userProfile";
-
-function getStoredToken() {
-  return localStorage.getItem("accessToken") || localStorage.getItem("jwt_token") || "";
-}
+import { normalizeUserProfile } from "@/utils/userProfile";
 
 /**
  * Lấy profile user - dùng cache trước, fetch khi hết hạn (5 phút)
@@ -67,48 +64,6 @@ async function updateUserProfile(profileData) {
 
   clearUserCache(); // Invalidate cache sau khi cập nhật
   return response?.data || response;
-}
-
-/**
- * Cập nhật ngôn ngữ ưa thích của người dùng (best-effort — không throw nếu lỗi).
- * Gọi sau khi i18n.changeLanguage() đã apply phía client.
- */
-async function updateUserPreferredLanguage(language) {
-  const token = getStoredToken();
-  if (!token) return null;
-
-  const normalized = typeof language === "string" ? language.trim().toLowerCase() : "";
-  if (!normalized) return null;
-
-  try {
-    await api.put("/user/profile", { preferredLanguage: normalized });
-    clearUserCache();
-    return normalized;
-  } catch (error) {
-    console.warn("[ProfileAPI] Failed to persist preferred language:", error);
-    return null;
-  }
-}
-
-/**
- * Cập nhật themeMode (light/dark) của người dùng (best-effort — không throw nếu lỗi).
- * Gọi sau khi dark mode đã toggle phía client.
- */
-async function updateUserThemeMode(themeMode) {
-  const token = getStoredToken();
-  if (!token) return null;
-
-  const normalized = typeof themeMode === "string" ? themeMode.trim().toLowerCase() : "";
-  if (!normalized) return null;
-
-  try {
-    await api.put("/user/profile", { themeMode: normalized });
-    clearUserCache();
-    return normalized;
-  } catch (error) {
-    console.warn("[ProfileAPI] Failed to persist theme mode:", error);
-    return null;
-  }
 }
 
 /**

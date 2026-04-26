@@ -1116,7 +1116,21 @@
         "cloneSummary": "Xem rating và discussion gốc của community quiz này, rồi gửi feedback sau khi làm xong bản clone của bạn.",
         "openCommunity": "Mở community detail",
         "leaveFeedback": "Gửi feedback community",
-        "updateFeedback": "Cập nhật feedback community"
+        "updateFeedback": "Cập nhật feedback community",
+        "loadError": "Không thể tải quiz community.",
+        "commentPlaceholder": "Bình luận công khai để mọi người cùng thấy.",
+        "commentSuccess": "Đã gửi bình luận community.",
+        "commentError": "Không thể gửi bình luận community.",
+        "cloneAction": "Clone vào workspace"
+      },
+      "communityFeedback": {
+        "title": "Đánh giá quiz community",
+        "description": "Đánh giá quiz community sau khi bạn hoàn thành bản clone này.",
+        "ratingRequired": "Vui lòng chọn số sao trước khi gửi feedback.",
+        "commentPlaceholder": "Bình luận này sẽ xuất hiện trên quiz community sau khi bạn gửi.",
+        "submit": "Gửi feedback",
+        "success": "Đã gửi feedback community.",
+        "error": "Không thể gửi feedback community."
       },
       "communityExplorer": {
         "backToQuiz": "Quay lại Quiz",
@@ -1373,6 +1387,20 @@
         "saveSuccess": "Cập nhật quiz thành công!",
         "saveFailed": "Lưu quiz thất bại. Vui lòng thử lại."
       },
+      "metadataEditModal": {
+        "nameLabel": "Tên quiz",
+        "descriptionLabel": "Mô tả (tùy chọn)",
+        "timerModeLabel": "Chế độ tính giờ",
+        "timerModeWholeQuiz": "Toàn bài",
+        "timerModePerQuestion": "Từng câu",
+        "durationLabel": "Thời gian (phút)",
+        "namePlaceholder": "Tên quiz...",
+        "descriptionPlaceholder": "Mô tả nội dung...",
+        "durationPlaceholder": "30",
+        "nameRequired": "Tên quiz không được để trống.",
+        "durationMin": "Thời gian phải ít nhất 1 phút.",
+        "saveFailed": "Có lỗi khi cập nhật quiz."
+      },
       "create": "Tạo Quiz",
       "createActive": "Tạo & Kích hoạt",
       "saveDraft": "Lưu bản nháp",
@@ -1455,6 +1483,7 @@
         "unansweredListLabel": "Câu chưa trả lời",
         "unansweredListMore": "và còn nữa...",
         "allQuestionsCompleted": "Tất cả câu hỏi đã hoàn thành.",
+        "navigationLocked": "Đang trong bài thi, không thể quay lại hoặc chuyển trang.",
         "starting": "Đang bắt đầu"
       },
       "practiceActions": {
@@ -1879,7 +1908,7 @@
         "quizzes": "bộ câu hỏi",
         "questions": "câu hỏi",
         "cards": "thẻ",
-        "postLearning": "Post-learning",
+        "postLearning": "Đánh giá sau học",
         "phase": "Giai đoạn",
         "movePhase": "Di chuyển giai đoạn",
         "moveKnowledge": "Di chuyển kiến thức",
@@ -1916,7 +1945,6 @@
         "quizProgress": "Tiến độ quiz",
         "completed": "đã hoàn thành",
         "knowledgeGateHint": "Hoàn thành tất cả {{total}} quiz để mở bài đánh giá sau học",
-        "postLearning": "Đánh giá sau học",
         "postLearningLocked": "Hoàn thành toàn bộ quiz kiến thức để mở bài đánh giá sau học",
         "postLearningProgress": "{{completed}} / {{total}} quiz kiến thức đã hoàn thành",
         "postLearningSubtitle": "Bài đánh giá cuối cho giai đoạn này",
@@ -2111,6 +2139,7 @@
       "editWorkspaceNamePlaceholder": "Nhập tên không gian học tập...",
       "editWorkspaceDescriptionLabel": "Mô tả",
       "editWorkspaceDescriptionPlaceholder": "Nhập mô tả ngắn cho không gian học tập...",
+      "profileShort": "Hồ sơ",
       "untitledMaterial": "Tài liệu chưa đặt tên",
       "selectedMaterialCountHint": "{{count}} nguồn đã chọn sẽ được dùng làm ngữ cảnh cho roadmap.",
       "noSelectedMaterialHint": "Chưa chọn nguồn nào. Bạn vẫn có thể tạo roadmap từ hồ sơ workspace.",
@@ -2558,10 +2587,10 @@
     "continuePracticeAction": "Tiếp tục luyện tập",
     "generateKnowledgeAction": "Tạo knowledge luyện tập",
     "reviewAnswers": "Xem lại câu trả lời",
-        "feedbackAction": "Phản hồi",
-        "communityFeedbackAction": "Gửi feedback community",
-        "communityFeedbackUpdate": "Cập nhật feedback community",
-        "reviewAnswersTitle": "Xem lại câu trả lời",
+    "feedbackAction": "Phản hồi",
+    "communityFeedbackAction": "Gửi feedback community",
+    "communityFeedbackUpdate": "Cập nhật feedback community",
+    "reviewAnswersTitle": "Xem lại câu trả lời",
     "paginationPrev": "Trang trước",
     "paginationPage": "Trang",
     "paginationNext": "Trang sau",
@@ -2963,5 +2992,71 @@
       "wrongSummary": "{{percent}}% sai ({{wrong}}/{{total}})",
       "cohortLoadFailed": "Không tải được thống kê lớp"
     }
+  },
+  "timeline": {
+    "phaseNext": "Ti?p theo"
+  },
+  "roadmap": {
+    "phaseUntitled": "Phase ch?a ??t t?n",
+    "knowledgeUntitled": "Ki?n th?c ch?a ??t t?n",
+    "canvas": {
+      "closePhaseDetail": "??ng chi ti?t phase",
+      "noKnowledgeInPhase": "Phase n?y ch?a c? m?c ki?n th?c n?o.",
+      "openInStage": "M? ? ch? ?? stage"
+    }
+  },
+  "quiz": {
+    "common": {
+      "cancel": "Hu?"
+    },
+    "manualWizard": {
+      "questionNavigator": {
+        "jumpTo": "?i t?i"
+      }
+    },
+    "communityDetail": {
+      "unknownUser": "Ng??i h?c",
+      "reviewNoComment": "Ng??i d?ng ?? ?? l?i ??nh gi? nh?ng kh?ng c? b?nh lu?n.",
+      "replyAction": "Tr? l?i",
+      "replyPlaceholder": "Vi?t ph?n h?i",
+      "cancelReply": "Hu?",
+      "sendReply": "G?i"
+    }
+  },
+  "editChoiceDialog": {
+    "fallbackTitle": "Quiz",
+    "title": "Chỉnh sửa quiz",
+    "description": "\"{{title}}\" đã có lượt làm hoàn tất. Chọn cách bạn muốn chỉnh sửa.",
+    "metadataTitle": "Cập nhật thông tin cơ bản",
+    "metadataDescription": "Chỉnh tên, mô tả, chế độ tính giờ và thời lượng. Lịch sử làm bài hiện có vẫn được giữ nguyên.",
+    "duplicateTitle": "Tạo bản sao để chỉnh sửa toàn bộ",
+    "duplicateDescription": "Tạo quiz mới từ quiz này để bạn chỉnh được cả câu hỏi. Quiz gốc và lịch sử hiện có vẫn được giữ nguyên.",
+    "cancel": "Hủy"
+  },
+  "confirmDuplicateDialog": {
+    "fallbackTitle": "Quiz",
+    "title": "Tạo bản sao để chỉnh sửa",
+    "descriptionWithCount": "Quiz \"{{title}}\" đã có {{count}} lượt làm hoàn tất.",
+    "descriptionWithoutCount": "Quiz \"{{title}}\" đã có lịch sử làm bài của người học.",
+    "body": "Để bảo toàn lịch sử kết quả, hệ thống sẽ tạo một bản sao mới và bạn sẽ chỉnh sửa trên bản sao đó. Quiz gốc vẫn được giữ nguyên.",
+    "aiWarning": "Vì quiz gốc được tạo bằng AI, bản sao sẽ trở thành quiz thủ công và không còn hỗ trợ chấm AI.",
+    "cancel": "Hủy",
+    "creating": "Đang tạo...",
+    "confirm": "Tạo bản sao"
+  },
+  "workspaceOnboardingUpdateGuard": {
+    "stepOneTitle": "Không thể cập nhật onboarding - workspace đang có tài liệu",
+    "stepOneDescription": "Workspace này hiện có {{count}} tài liệu đã tải lên nên chưa thể cập nhật onboarding. Để tiếp tục, bạn cần xóa các tài liệu đó khỏi workspace trước.",
+    "stepOneHint": "Để cập nhật onboarding, bấm \"Xóa tài liệu\" bên dưới. Form onboarding sẽ tự mở lại sau khi toàn bộ tài liệu được xóa.",
+    "stepOneNextRisk": "Workspace này cũng đang có dữ liệu quiz hoặc roadmap chưa hoàn tất. Nếu xóa tài liệu, phần dữ liệu hiện tại đó cũng sẽ bị xóa theo.",
+    "stepOneNextSafe": "Sau khi xóa tài liệu, form onboarding sẽ tự mở lại để bạn cập nhật ngay.",
+    "stepTwoTitle": "Toàn bộ dữ liệu hiện tại trong workspace sẽ bị xóa vĩnh viễn",
+    "stepTwoDescription": "Nếu tiếp tục, toàn bộ dữ liệu hiện tại trong workspace sẽ bị xóa. Bạn có chắc muốn tiếp tục không?",
+    "stepTwoHint": "Hành động này không thể hoàn tác. Toàn bộ quiz, roadmap và tài liệu trong workspace sẽ bị xóa trước khi form onboarding mở lại.",
+    "stepTwoRisk": "Điều này bao gồm toàn bộ tiến độ quiz, nội dung roadmap và tài liệu đã tải lên trong workspace.",
+    "cancel": "Hủy",
+    "back": "Quay lại",
+    "deleteMaterials": "Xóa tài liệu",
+    "confirmDelete": "Xác nhận xóa"
   }
 }

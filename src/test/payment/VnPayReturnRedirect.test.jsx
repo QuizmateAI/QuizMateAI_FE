@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import VnPayReturnRedirect from '@/Pages/Payment/VnPayReturnRedirect';
+import VnPayReturnRedirect from '@/pages/Payment/VnPayReturnRedirect';
 import { getApiOrigin } from '@/api/api';
 
 vi.mock('@/api/api', () => ({
@@ -38,7 +38,7 @@ describe('VnPayReturnRedirect', () => {
 
     const fallbackLink = screen.getByRole('link');
     expect(fallbackLink.getAttribute('href')).toBe(
-      '/payments/results?status=success&orderId=ORDER123&amount=150000&message=Thanh+toan+thanh+cong&resultCode=00'
+      '/payments/results?status=success&orderId=ORDER123&amount=150000&message=Thanh+to%C3%A1n+th%C3%A0nh+c%C3%B4ng&resultCode=00'
     );
   });
 });

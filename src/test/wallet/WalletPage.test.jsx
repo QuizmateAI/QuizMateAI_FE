@@ -1,16 +1,58 @@
 import React, { StrictMode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import WalletPage from '@/Pages/Users/Credit/WalletPage';
+import WalletPage from '@/pages/Users/Credit/WalletPage';
+import { WALLET_QUERY_KEY } from '@/hooks/useWallet';
 import {
   getMyWallet,
   getMyWalletTransactions,
   getPurchaseableCreditPackages,
+  getCurrentUserPlan,
 } from '@/api/ManagementSystemAPI';
 
 function interpolate(message, options = {}) {
   return String(message).replace(/\{\{(\w+)\}\}/g, (_, key) => String(options?.[key] ?? ''));
+}
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: Infinity,
+      },
+      mutations: {
+        retry: false,
+      },
+    },
+  });
+}
+
+function renderWalletPage({ queryClient = createTestQueryClient(), strict = true } = {}) {
+  const content = (
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <WalletPage />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+
+  render(strict ? <StrictMode>{content}</StrictMode> : content);
+
+  return queryClient;
+}
+
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
 }
 
 vi.mock('react-i18next', () => ({
@@ -46,15 +88,16 @@ vi.mock('@/hooks/useWebSocket', () => ({
   useWebSocket: vi.fn(),
 }));
 
-vi.mock('@/Utils/userCache', () => ({
-  getCachedSubscription: () => ({
-    entitlement: {
-      canBuyCredit: true,
-    },
-  }),
+vi.mock('@/api/Authentication', () => ({
+  getCurrentUser: () => ({ userID: 1 }),
 }));
 
-vi.mock('@/Components/features/Users/UserProfilePopover', () => ({
+vi.mock('@/utils/userCache', () => ({
+  getCachedSubscription: vi.fn(() => null),
+  setCachedSubscription: vi.fn(),
+}));
+
+vi.mock('@/components/features/users/UserProfilePopover', () => ({
   default: () => <div data-testid="user-profile-popover" />,
 }));
 
@@ -62,6 +105,7 @@ vi.mock('@/api/ManagementSystemAPI', () => ({
   getMyWallet: vi.fn(),
   getMyWalletTransactions: vi.fn(),
   getPurchaseableCreditPackages: vi.fn(),
+  getCurrentUserPlan: vi.fn(),
 }));
 
 describe('WalletPage', () => {
@@ -105,16 +149,20 @@ describe('WalletPage', () => {
         },
       ],
     });
+
+    getCurrentUserPlan.mockResolvedValue({
+      data: {
+        plan: {
+          entitlement: {
+            canBuyCredit: true,
+          },
+        },
+      },
+    });
   });
 
   it('resolves wallet, packages, and history when mounted inside StrictMode', async () => {
-    render(
-      <StrictMode>
-        <MemoryRouter>
-          <WalletPage />
-        </MemoryRouter>
-      </StrictMode>,
-    );
+    renderWalletPage();
 
     expect(await screen.findByText('Starter')).toBeInTheDocument();
     expect(await screen.findByText('Generated quiz: Chapter 1 review')).toBeInTheDocument();
@@ -122,5 +170,26 @@ describe('WalletPage', () => {
     await waitFor(() => {
       expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     });
+  });
+
+  it('shows cached wallet balance immediately while transaction history is pending', () => {
+    const txDeferred = createDeferred();
+    const queryClient = createTestQueryClient();
+
+    getMyWalletTransactions.mockReturnValue(txDeferred.promise);
+    getPurchaseableCreditPackages.mockReturnValue(createDeferred().promise);
+    getCurrentUserPlan.mockReturnValue(createDeferred().promise);
+    queryClient.setQueryData(WALLET_QUERY_KEY, {
+      totalAvailableCredits: 123,
+      regularCreditBalance: 120,
+      planCreditBalance: 3,
+      hasActivePlan: true,
+    });
+
+    renderWalletPage({ queryClient, strict: false });
+
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(getMyWalletTransactions).toHaveBeenCalled();
+    expect(screen.queryByText('Generated quiz: Chapter 1 review')).not.toBeInTheDocument();
   });
 });
