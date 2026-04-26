@@ -712,7 +712,7 @@ function RoadmapCanvasViewOverview({
             type="button"
             className={`absolute -left-4 sm:-left-5 top-1/2 z-20 flex h-8 w-8 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-600 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white/95 text-slate-600 hover:bg-white"}`}
             onClick={() => scrollByOffset(-layoutConfig.phaseGap)}
-            aria-label="Scroll left"
+            aria-label={t("common.scrollLeft")}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
@@ -720,7 +720,7 @@ function RoadmapCanvasViewOverview({
             type="button"
             className={`absolute -right-4 sm:-right-5 top-1/2 z-20 flex h-8 w-8 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-600 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white/95 text-slate-600 hover:bg-white"}`}
             onClick={() => scrollByOffset(layoutConfig.phaseGap)}
-            aria-label="Scroll right"
+            aria-label={t("common.scrollRight")}
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -873,7 +873,7 @@ function RoadmapCanvasViewOverview({
                                 : state === "current"
                                   ? t("workspace.shell.phaseCurrent", "Current")
                                   : state === "next"
-                                    ? t("workspace.timeline.phaseNext", "Next")
+                                    ? t("timeline.phaseNext", "Next")
                                     : t("workspace.shell.phaseLocked", "Locked")}
                             </span>
                           </div>
@@ -909,7 +909,7 @@ function RoadmapCanvasViewOverview({
             <>
               <button
                 type="button"
-                aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
+                aria-label={t("roadmap.canvas.closePhaseDetail", "Close phase detail")}
                 onClick={() => setSelectedPhaseId(null)}
                 className="fixed inset-0 z-[170] bg-slate-950/45 backdrop-blur-[1px] animate-[roadmapFadeIn_180ms_ease-out]"
               />
@@ -925,14 +925,14 @@ function RoadmapCanvasViewOverview({
                         {labels.phase}
                       </p>
                       <h3 className={`mt-1 text-lg font-bold leading-snug ${fontClass}`}>
-                        {selectedPhaseDetail?.title || t("workspace.roadmap.phaseUntitled", "Untitled phase")}
+                        {selectedPhaseDetail?.title || t("roadmap.phaseUntitled", "Untitled phase")}
                       </h3>
                     </div>
                     <button
                       type="button"
                       onClick={() => setSelectedPhaseId(null)}
                       className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"}`}
-                      aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
+                      aria-label={t("roadmap.canvas.closePhaseDetail", "Close phase detail")}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -954,7 +954,7 @@ function RoadmapCanvasViewOverview({
 
                     {selectedPhaseKnowledges.length === 0 ? (
                       <div className={`rounded-xl border px-4 py-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-900/80 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
-                        {t("workspace.roadmap.canvas.noKnowledgeInPhase", "This phase does not have knowledge items yet.")}
+                        {t("roadmap.canvas.noKnowledgeInPhase", "This phase does not have knowledge items yet.")}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -1003,7 +1003,7 @@ function RoadmapCanvasViewOverview({
                                     {t("workspace.roadmap.canvas.knowledge", "Knowledge")} {knowledgeIndex + 1}
                                   </p>
                                   <p className={`mt-1 text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
-                                    {knowledge?.title || t("workspace.roadmap.knowledgeUntitled", "Untitled knowledge")}
+                                    {knowledge?.title || t("roadmap.knowledgeUntitled", "Untitled knowledge")}
                                   </p>
                                 </div>
                                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${knowledgeBadgeClassName}`}>
@@ -1020,7 +1020,7 @@ function RoadmapCanvasViewOverview({
 
                               {/* <div className="mt-3 flex items-center justify-between rounded-xl border border-white/70 bg-white/70 px-2.5 py-2 text-xs text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
                                 <span className="font-semibold text-slate-600">
-                                  {t("workspace.roadmap.canvas.openInStage", "Open in stage view")}
+                                  {t("roadmap.canvas.openInStage", "Open in stage view")}
                                 </span>
                                 <ChevronRight className="h-4 w-4 text-slate-500" />
                               </div> */}
@@ -1040,7 +1040,7 @@ function RoadmapCanvasViewOverview({
               {[
                 { state: "done", label: t("workspace.shell.phaseCompleted", "Completed") },
                 { state: "current", label: t("workspace.shell.phaseCurrent", "Current") },
-                { state: "next", label: t("workspace.timeline.phaseNext", "Next") },
+                { state: "next", label: t("timeline.phaseNext", "Next") },
                 { state: "locked", label: t("workspace.shell.phaseLocked", "Locked") },
               ].map(({ state, label }) => (
                 <div key={state} className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-50 text-slate-600"}`}>

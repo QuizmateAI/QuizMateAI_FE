@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import i18n from '@/i18n';
 import { getApiOrigin } from '@/api/api';
 import { buildPaymentResultsPath } from '@/lib/routePaths';
 
@@ -18,16 +19,15 @@ function buildResultUrlFromParams(search) {
   });
 }
 
-/**
- * Stripe returns users to /api/stripe/return but the SPA handles that route —
- * forward the browser to the backend return handler so it can redirect to /payments/results.
- */
 export default function StripeReturnRedirect() {
   const [showFallback, setShowFallback] = useState(false);
   const search = typeof window !== 'undefined' ? window.location.search : '';
   const apiOrigin = getApiOrigin();
+  const t = i18n.getFixedT(i18n.language?.startsWith('en') ? 'en' : 'vi');
   const error = typeof window !== 'undefined' && apiOrigin === window.location.origin
-    ? 'Cấu hình proxy: /api phải trỏ về backend. Hoặc đặt VITE_API_BASE_URL trỏ sang domain API.'
+    ? t('common.paymentRedirect.proxyError', {
+      defaultValue: 'Proxy is misconfigured: /api must point to the backend. Or set VITE_API_BASE_URL to the API domain.',
+    })
     : null;
 
   useEffect(() => {
@@ -47,7 +47,9 @@ export default function StripeReturnRedirect() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-900 text-white p-4">
         <p className="text-sm text-red-400 text-center">{error}</p>
         <a href={buildResultUrlFromParams(search)} className="text-blue-400 hover:underline text-sm">
-          Về trang kết quả thanh toán
+          {t('common.paymentRedirect.backToResults', {
+            defaultValue: 'Go to payment results',
+          })}
         </a>
       </div>
     );
@@ -56,13 +58,19 @@ export default function StripeReturnRedirect() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-slate-900 text-white p-6">
       <div className="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-      <p className="text-base text-slate-200 font-medium">Đang chuyển đến trang kết quả thanh toán...</p>
+      <p className="text-base text-slate-200 font-medium">
+        {t('common.paymentRedirect.redirectingToResults', {
+          defaultValue: 'Redirecting to the payment result page...',
+        })}
+      </p>
       {showFallback && (
         <a
           href={buildResultUrlFromParams(search)}
           className="text-sm text-blue-400 hover:text-blue-300 underline"
         >
-          Nếu không tự chuyển, bấm vào đây
+          {t('common.paymentRedirect.fallbackLink', {
+            defaultValue: 'If the redirect does not start automatically, click here.',
+          })}
         </a>
       )}
     </div>

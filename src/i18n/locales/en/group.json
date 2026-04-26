@@ -58,7 +58,9 @@
         "status": "Status",
         "lastActive": "Last active",
         "uploadAccess": "Upload access",
-        "actions": "Actions"
+        "actions": "Actions",
+        "upload": "Upload",
+        "permissions": "Permissions"
       },
       "status": {
         "active": "Active",
@@ -101,6 +103,86 @@
           "accepted": "Accepted",
           "expired": "Expired",
           "cancelled": "Cancelled"
+        }
+      },
+      "memberSeatLimitReached": "This group has no member seats available.",
+      "memberSeatUsage": "Using {{used}}/{{limit}} member seats",
+      "permissionOn": "On",
+      "permissionOff": "Off",
+      "managePermissions": "Manage",
+      "permissionsTitle": "Permissions",
+      "permissionsFor": "Permissions for {{name}}",
+      "permissionsAllFull": "All full",
+      "permissionsAll": "All",
+      "savingPermissions": "Saving...",
+      "savePermissions": "Save permissions",
+      "permissionPresets": {
+        "member": "Member",
+        "contributor": "Contributor",
+        "analyst": "Analyst",
+        "contentManager": "Content manager",
+        "resetToRoleDefaults": "Reset to role defaults"
+      },
+      "permissionCatalog": {
+        "sections": {
+          "content": "Content",
+          "materials": "Materials",
+          "insights": "Insights",
+          "admin": "Administration"
+        },
+        "items": {
+          "CREATE_QUIZ": {
+            "label": "Create quiz",
+            "description": "Draft and edit group quizzes."
+          },
+          "PUBLISH_QUIZ": {
+            "label": "Publish quiz",
+            "description": "Publish quiz drafts to members."
+          },
+          "ASSIGN_QUIZ_AUDIENCE": {
+            "label": "Assign audience",
+            "description": "Choose which members can access a quiz."
+          },
+          "CREATE_FLASHCARD": {
+            "label": "Create flashcard",
+            "description": "Create and update flashcard sets."
+          },
+          "CREATE_MOCK_TEST": {
+            "label": "Create mock test",
+            "description": "Generate and manage mock tests."
+          },
+          "CREATE_ROADMAP": {
+            "label": "Create roadmap",
+            "description": "Generate roadmap content and learning phases."
+          },
+          "CREATE_CHALLENGE": {
+            "label": "Create challenge",
+            "description": "Create challenge events for the group."
+          },
+          "DELETE_CONTENT": {
+            "label": "Delete content",
+            "description": "Remove group learning content."
+          },
+          "UPLOAD_MATERIAL": {
+            "label": "Upload material",
+            "description": "Upload and refresh learning materials."
+          },
+          "MODERATE_MATERIAL": {
+            "label": "Moderate material",
+            "description": "Approve, reject, or review pending materials."
+          },
+          "VIEW_MEMBER_DASHBOARD": {
+            "label": "View member dashboard",
+            "description": "Open member stats and analytics."
+          },
+          "MANAGE_MEMBERS": {
+            "label": "Manage members",
+            "description": "Invite, remove, and manage member permissions."
+          },
+          "MANAGE_SETTINGS": {
+            "label": "Manage settings",
+            "description": "Update group settings and visibility."
+          }
         }
       }
     },
@@ -302,7 +384,9 @@
         "memberStats": "Member intelligence",
         "wallet": "Wallet",
         "settings": "Settings"
-      }
+      },
+      "expandSidebar": "Expand sidebar",
+      "collapseSidebar": "Collapse sidebar"
     },
     "studio": {
       "systemDashboard": "Overview",
@@ -381,6 +465,32 @@
       "badge": "Challenge",
       "noItems": "No challenges yet.",
       "createChallenge": "Create Challenge",
+      "tabs": {
+        "scheduled": "Upcoming",
+        "live": "Live",
+        "finished": "Finished"
+      },
+      "modes": {
+        "all": "All",
+        "freeForAll": "Free-for-all",
+        "teamBattle": "Team battle",
+        "soloBracket": "1v1 bracket"
+      },
+      "list": {
+        "inviteOnly": "Invite only",
+        "unpublished": "Not published",
+        "participantCount": "{{count}} participants",
+        "started": "Started",
+        "startsIn": "Starts in {{value}}",
+        "countdownWithDays": "{{days}}d {{hours}}h {{minutes}}m {{seconds}}s",
+        "countdownWithHours": "{{hours}}h {{minutes}}m {{seconds}}s",
+        "countdownWithMinutes": "{{minutes}}m {{seconds}}s",
+        "myStatus": {
+          "finished": "Finished",
+          "playing": "In progress",
+          "registered": "Registered"
+        }
+      },
       "cancelDialogTitle": "Cancel this challenge?",
       "cancelDialogDescription": "Are you sure you want to cancel this challenge? Members will no longer be able to join and the schedule will be removed.",
       "cancelDialogBack": "Close",
@@ -435,7 +545,7 @@
     },
     "ranking": {
       "title": "Group ranking",
-      "description": "This is the overall group ranking in a single table. Challenge leaderboards are shown inside each challenge.",
+      "description": "Current top 3 and the full RP board for the group.",
       "loading": "Aggregating data from all quizzes…",
       "error": "Unable to load ranking data.",
       "retry": "Try again",
@@ -445,7 +555,6 @@
       "meta": "Aggregated from {{quizCount}} active quizzes · {{memberCount}} participating members",
       "tableTitle": "Ranking points",
       "priority": "Ranked by RP",
-      "description": "Current top 3 and the full RP board for the group.",
       "podiumTitle": "Current top 3",
       "podiumSubtitle": "The leading three are setting the pace for the group.",
       "detail": {
@@ -1290,6 +1399,7 @@
   },
   "createChallengeWizard": {
     "steps": {
+      "mode": "Mode",
       "quiz": "Select content",
       "schedule": "Schedule",
       "registration": "Registration",
@@ -1303,6 +1413,18 @@
       "existingDesc": "Create a snapshot from an existing content set",
       "newLabel": "New match",
       "newDesc": "Compose the match later in the challenge detail"
+    },
+    "mode": {
+      "personalLabel": "Free-for-all",
+      "personalDesc": "Everyone takes the same match and the leaderboard is ranked by score and time.",
+      "teamLabel": "Team battle",
+      "teamDesc": "Set team size or let the system auto-balance teams when the match starts.",
+      "soloLabel": "1v1 bracket",
+      "soloDesc": "Pick a 4/8/16/32 slot bracket and keep the participant count aligned with the bracket.",
+      "teamAutoBalanceLabel": "Pre-enroll, auto-balance",
+      "teamAutoBalanceDesc": "Unlimited slots. When the match starts, registered members are split into 2 balanced teams.",
+      "teamFixedSizeLabel": "Fixed members per team",
+      "teamFixedSizeDesc": "Registration is limited to 2 teams multiplied by the number of members per team."
     },
     "quizList": {
       "sectionTitle": "Shared workspace content",
@@ -1330,6 +1452,19 @@
       "titlePlaceholder": "e.g. Chapter 3 knowledge check",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "A short description of the challenge...",
+      "teamConfigTitle": "Team battle configuration",
+      "teamConfigHint": "Choose how to lock slots before opening registration. The system always splits into {{count}} teams.",
+      "membersPerTeamLabel": "Members per team",
+      "registrationSlotsLabel": "Registration slots",
+      "participantUnit": "participants",
+      "personalConfigTitle": "Free-for-all configuration",
+      "personalCapacityLabel": "Participant limit",
+      "personalCapacityPlaceholder": "Unlimited",
+      "bracketConfigTitle": "1v1 bracket configuration",
+      "bracketConfigHint": "Choose the bracket type first. If registration is invite-only, the invited member count must match the bracket slots.",
+      "bracketSizeLabel": "Bracket size",
+      "bracketSizeOption": "{{count}} participants",
+      "bracketPublicHint": "With public registration, the system caps the bracket at {{count}} participants.",
       "leaderParticipatesLabel": "I will take the match with everyone",
       "leaderParticipatesDesc": "You get a slot in the participant list. After the match is published, you cannot preview questions (for fairness to members). While the match is still a draft (DRAFT), you can still author and test it."
     },
@@ -1655,7 +1790,8 @@
     "errors": {
       "generic": "Something went wrong",
       "cannotStartAttempt": "Cannot start the attempt",
-      "cannotLoadDetail": "Cannot load challenge detail"
+      "cannotLoadDetail": "Cannot load challenge detail",
+      "missingRoundQuiz": "Server did not return the match quiz."
     },
     "cannotOpenTitle": "Cannot open challenge",
     "back": "Back",
@@ -1670,7 +1806,8 @@
       "assistantConfirmedWaitingPrimary": "An assistant reviewer has confirmed the match. The leader still needs the primary reviewer, or can switch the confirmed reviewer to primary.",
       "needReviewersConfirm": "At least one reviewer must confirm the match is OK before the leader can publish the challenge.",
       "startTimePassed": "The challenge has reached its start time, so it can no longer be published.",
-      "afterPublishInfo": "After publishing, members will see the challenge and be able to register."
+      "afterPublishInfo": "After publishing, members will see the challenge and be able to register.",
+      "needReviewerWhenLeaderParticipates": "Leader is participating, so invite 1 or 2 reviewers before publishing the challenge."
     },
     "notPublishedBadge": "Not published",
     "startLabel": "Start",
@@ -1703,7 +1840,14 @@
       "noEligibleMembersHint": "No eligible members to invite.",
       "needTwoReviewersHint": "Only the primary reviewer is needed to publish.",
       "setPrimary": "Set primary",
-      "inviteSentToast": "Review invitation sent. The system has emailed the reviewer."
+      "inviteSentToast": "Review invitation sent. The system has emailed the reviewer.",
+      "invitationPendingShort": "Review invitation pending",
+      "invitationDeclinedShort": "Review invitation declined",
+      "participatingLeaderHint": "Leader is joining the challenge, so invite 1 or 2 reviewers here. All reviewers have the same role.",
+      "optionalHint": "Invite up to 2 reviewers if you want another pair of eyes before publishing. All reviewers have the same role.",
+      "reviewerBadge": "Reviewer",
+      "needReviewerWhenLeaderParticipates": "Leader is participating, so invite at least 1 reviewer. You can invite up to 2 reviewers.",
+      "optionalReviewersHint": "Reviewers are optional here. If invited, they can help check and clean up the match before you publish it."
     },
     "actions": {
       "publish": "Publish challenge",
@@ -1725,6 +1869,12 @@
       "finished": "Finished",
       "playing": "In progress",
       "waiting": "Waiting"
+    },
+    "reviewInvitation": {
+      "title": "You were invited to review this challenge",
+      "body": "The leader selected you as a reviewer. If you accept, you can inspect the match before it is published and you will not be able to register as a participant in this challenge.",
+      "accept": "Accept review",
+      "decline": "Decline"
     }
   },
   "challengeLeaderboard": {
@@ -2121,5 +2271,18 @@
     "irrelevantBadge": "Not relevant",
     "uploadingBadge": "Uploading...",
     "optionsAriaLabel": "Options"
+  },
+  "challengeScheduleFields": {
+    "helper": "Only choose future times. The window from start to end must be at least {{minutes}} minutes; bracket matches need a longer window depending on the number of rounds.",
+    "startDate": "Start - date *",
+    "startTime": "Start - time *",
+    "endDate": "End - date *",
+    "endTime": "End - time *",
+    "errors": {
+      "endBeforeStart": "End time must be after start time.",
+      "shortWindow": "The window from start to end must be at least {{minutes}} minutes.",
+      "pastDate": "Do not choose a date or time in the past.",
+      "invalid": "The selected time is invalid."
+    }
   }
 }

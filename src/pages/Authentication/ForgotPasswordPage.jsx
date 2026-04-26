@@ -19,9 +19,9 @@ const ForgotPasswordPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const currentLang = i18n.language;
+  const currentLang = i18n.language?.startsWith('en') ? 'en' : 'vi';
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
-  
+
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
   };
@@ -31,7 +31,6 @@ const ForgotPasswordPage = () => {
     setErrorMessage('');
     setSuccessMessage('');
 
-    // Xác thực dữ liệu
     const validation = validateForgotPasswordForm(email);
     setErrors(validation.errors);
 
@@ -41,13 +40,11 @@ const ForgotPasswordPage = () => {
 
     setIsLoading(true);
     try {
-      // Gọi API gửi yêu cầu đặt lại mật khẩu
       const response = await submitForgotPasswordRequest(email);
       setSuccessMessage(response.message);
       setEmail('');
       setErrors({});
-      
-      // Chuyển hướng sau 2 giây
+
       setTimeout(() => {
         navigate('/login');
       }, 2000);
@@ -58,7 +55,6 @@ const ForgotPasswordPage = () => {
     }
   };
 
-  // Xóa thông báo lỗi khi người dùng sửa email
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
@@ -70,31 +66,30 @@ const ForgotPasswordPage = () => {
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${fontClass} ${
       isDarkMode ? 'bg-slate-950' : 'bg-white'
-    }`}>
-      {/* Header: Logo & Language Toggle */}
+    }`}
+    >
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => navigate('/')}
-            aria-label="Go to landing page"
+            aria-label={t('common.goHome')}
             className="flex h-20 w-20 items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             <img
               src={isDarkMode ? LogoDark : LogoLight}
-              alt="QuizMate AI Logo"
+              alt={t('common.brandLogoAlt', { brandName: 'QuizMate AI' })}
               className="w-full h-full object-contain"
             />
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Nút đổi chế độ sáng/tối */}
           <button
             type="button"
             onClick={toggleDarkMode}
-            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={isDarkMode ? 'Chế độ sáng' : 'Chế độ tối'}
+            aria-label={isDarkMode ? t('common.lightMode') : t('common.darkMode')}
+            title={isDarkMode ? t('common.lightMode') : t('common.darkMode')}
             className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
               isDarkMode
                 ? 'border-slate-700 bg-slate-900 text-yellow-400 hover:bg-slate-800'
@@ -104,11 +99,10 @@ const ForgotPasswordPage = () => {
             {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
 
-          {/* Nút đổi ngôn ngữ */}
           <button
             type="button"
             onClick={toggleLanguage}
-            aria-label="Switch language"
+            aria-label={t('common.switchLanguage')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors text-sm font-medium ${
               isDarkMode
                 ? 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800'
@@ -121,13 +115,9 @@ const ForgotPasswordPage = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-12 items-center px-8 pb-12">
-        
-        {/* Left Side: Form Container */}
         <div className="max-w-md w-full mx-auto md:mx-0">
           <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-            {/* Back to Login Button */}
             <button
               onClick={() => navigate('/login')}
               className={`flex items-center gap-1 text-sm font-medium mb-8 transition-colors ${
@@ -142,16 +132,19 @@ const ForgotPasswordPage = () => {
             <div className="mb-10">
               <h1 className={`text-4xl font-semibold mb-4 ${
                 isDarkMode ? 'text-white' : 'text-[#313131]'
-              }`}>{t('forgotPasswordTitle')}</h1>
+              }`}
+              >
+                {t('forgotPasswordTitle')}
+              </h1>
               <p className={`leading-relaxed ${
                 isDarkMode ? 'text-slate-400' : 'text-gray-500'
-              }`}>
+              }`}
+              >
                 {t('forgotPasswordSubtitle')}
               </p>
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Success Message */}
               {successMessage && (
                 <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -161,7 +154,6 @@ const ForgotPasswordPage = () => {
                 </div>
               )}
 
-              {/* Error Message */}
               {errorMessage && (
                 <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -171,7 +163,6 @@ const ForgotPasswordPage = () => {
                 </div>
               )}
 
-              {/* Email Input - Floating Label */}
               <div>
                 <FloatingInput
                   id="email"
@@ -190,7 +181,6 @@ const ForgotPasswordPage = () => {
                 )}
               </div>
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -202,7 +192,6 @@ const ForgotPasswordPage = () => {
           </div>
         </div>
 
-        {/* Right Side: Decorative Image */}
         <div className="hidden md:flex justify-end relative">
           <div className="relative z-10 w-[550px] h-[750px] bg-gray-100 rounded-[30px] overflow-hidden shadow-xl flex items-center justify-center transition-all duration-500">
             <AuthIllustration alt="" imgClassName="w-full h-full object-cover" />

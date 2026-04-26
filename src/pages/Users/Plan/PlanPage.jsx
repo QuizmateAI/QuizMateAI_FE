@@ -745,11 +745,11 @@ export default function PlanPage() {
               type="button"
               onClick={() => navigate("/home")}
               className="flex w-[110px] cursor-pointer items-center md:w-[130px]"
-              aria-label="Go to Home"
+              aria-label={t("common.goHome")}
             >
               <img
                 src={isDarkMode ? LogoDark : LogoLight}
-                alt="QuizMate AI Logo"
+                alt={t("common.brandLogoAlt", { brandName: "QuizMate AI" })}
                 className="h-auto w-full object-contain"
               />
             </button>
@@ -768,11 +768,11 @@ export default function PlanPage() {
               <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
                 isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
               }`}>
-                <CreditIconImage alt="Quizmate Credit" className="h-6 w-6 rounded-full" />
+                <CreditIconImage alt={t("common.creditIconAlt", { brandName: "QuizMate AI" })} className="h-6 w-6 rounded-full" />
               </span>
               <span className="flex flex-col leading-none">
                 <span className="text-sm font-semibold">
-                  {loadingWallet ? "—" : formatNumber(walletSummary.totalAvailableCredits, locale)}
+                  {loadingWallet ? "-" : formatNumber(walletSummary.totalAvailableCredits, locale)}
                 </span>
                 <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
                   {t("wallet.creditsUnit", "Credit")}
