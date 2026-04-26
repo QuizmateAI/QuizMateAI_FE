@@ -1,0 +1,129 @@
+{
+  "launchingPage": {
+    "documentTitle": "{{brandName}} | Ra mắt giới hạn",
+    "header": {
+      "sequence": "Chuỗi ra mắt giới hạn",
+      "closedUntil": "Đóng công khai đến {{date}}",
+      "requestAccess": "Đăng ký truy cập sớm",
+      "launchDateSoon": "Ngày ra mắt sẽ sớm được công bố"
+    },
+    "hero": {
+      "badge": "Chế độ ra mắt của QuizMate AI",
+      "titlePrefix": "Trang chờ ra mắt được thiết kế cho",
+      "titleSuffix": ", không phải một mẫu dựng sẵn.",
+      "description": "Ứng dụng công khai đang được khóa có chủ đích trong khi QuizMate AI chuẩn bị một đợt mở quyền kiểm soát cho giáo viên, trường học và các nhóm học thuật. Chúng tôi bắt đầu với một nhóm đầu tiên nhỏ hơn để tinh chỉnh việc tạo quiz, luồng thi an toàn và công cụ hỗ trợ học tập trước khi mở rộng lưu lượng.",
+      "joinCohort": "Tham gia nhóm đầu tiên",
+      "blockedUntil": "Các route login, home, workspace và quiz công khai sẽ tiếp tục bị chặn đến {{date}}.",
+      "cards": {
+        "focus": {
+          "label": "Trọng tâm",
+          "title": "AI Quiz",
+          "description": "Biến nguồn học liệu thành bài đánh giá với luồng gọn và rõ hơn."
+        },
+        "security": {
+          "label": "Bảo mật",
+          "title": "Luồng thi",
+          "description": "Tạm khóa trong lúc tinh chỉnh hành vi bảo vệ bài thi."
+        },
+        "support": {
+          "label": "Hỗ trợ",
+          "title": "Ghi chú + Lộ trình",
+          "description": "Công cụ ôn tập được giữ đồng bộ với từng quiz được tạo."
+        }
+      }
+    },
+    "audiences": {
+      "teachers": "Giáo viên",
+      "highSchools": "Trường trung học",
+      "universities": "Trường đại học",
+      "trainingCenters": "Trung tâm đào tạo",
+      "academicTeams": "Nhóm học thuật"
+    },
+    "console": {
+      "label": "Bảng điều khiển ra mắt",
+      "title": "Trung tâm điều hành QuizMate AI",
+      "openingNow": "Đang mở truy cập",
+      "openingDate": "Mở vào {{date}}",
+      "countdown": {
+        "days": "Ngày",
+        "hours": "Giờ",
+        "minutes": "Phút",
+        "seconds": "Giây"
+      },
+      "modeLabel": "Chế độ hiện tại",
+      "modeValue": "Khóa beta riêng",
+      "modeDescription": "Các route công khai đang được chuyển hướng có chủ đích sang màn hình chờ ra mắt.",
+      "cohortLabel": "Nhóm đầu tiên",
+      "cohortValue": "Giáo viên + Tổ chức",
+      "cohortDescription": "Truy cập sớm được ưu tiên cho người dùng có thể kiểm chứng luồng đánh giá, ôn tập và phân tích."
+    },
+    "signals": {
+      "quizStudio": {
+        "title": "AI Quiz Studio",
+        "description": "Tạo bài đánh giá có cấu trúc từ bài học, slide và PDF.",
+        "value": "Sẵn sàng"
+      },
+      "secureExamRoom": {
+        "title": "Phòng thi an toàn",
+        "description": "Trải nghiệm làm bài tập trung với mức kiểm soát chặt hơn trước khi mở công khai.",
+        "value": "Đang khóa"
+      },
+      "learningRoadmaps": {
+        "title": "Lộ trình học",
+        "description": "Kết nối quiz, ghi chú học tập và tuyến ôn tập thành một luồng thống nhất.",
+        "value": "Đã định hình"
+      }
+    },
+    "reasonsSection": {
+      "eyebrow": "Vì sao vẫn đóng truy cập",
+      "title": "Ra mắt có kiểm soát, không ra mắt theo ồn ào"
+    },
+    "reasons": {
+      "qualityFirst": {
+        "title": "Ưu tiên chất lượng",
+        "description": "Nhóm đầu tiên được giữ nhỏ để luồng tạo quiz, chấm điểm và hỗ trợ học tập có thể được tinh chỉnh bằng phản hồi thực tế từ giáo viên."
+      },
+      "saferRollout": {
+        "title": "Mở dần an toàn hơn",
+        "description": "Quyền truy cập được giới hạn trong lúc bảo mật bài thi, điều hướng an toàn và các luồng tài khoản được gia cố trước khi công khai."
+      },
+      "directFeedbackLoop": {
+        "title": "Vòng phản hồi trực tiếp",
+        "description": "Người dùng đầu tiên ảnh hưởng trực tiếp đến thứ tự phát hành, từ đầu ra AI quiz đến ghi chú ôn tập và ưu tiên analytics."
+      }
+    },
+    "releaseSection": {
+      "eyebrow": "Bộ tính năng ngày đầu",
+      "title": "Những gì sẽ mở khi QuizMate AI đi vào hoạt động"
+    },
+    "releaseStack": {
+      "assessmentBuilder": {
+        "title": "Trình tạo đánh giá",
+        "description": "Tạo quiz bằng AI, ngân hàng câu hỏi và tiếp nhận nhiều định dạng học liệu."
+      },
+      "examSecurity": {
+        "title": "Bảo mật thi cử",
+        "description": "Chế độ đánh giá được bảo vệ cho các luồng thi có giới hạn thời gian."
+      },
+      "progressAnalytics": {
+        "title": "Phân tích tiến độ",
+        "description": "Tín hiệu hiệu suất dành cho giáo viên, người học và nhóm."
+      },
+      "studyCompanion": {
+        "title": "Trợ lý học tập",
+        "description": "Lộ trình, ghi chú và hỗ trợ ôn tập thông minh xoay quanh từng quiz."
+      }
+    },
+    "earlyAccess": {
+      "eyebrow": "Truy cập sớm",
+      "title": "Đăng ký trước khi mở truy cập công khai",
+      "description": "Tham gia đợt mở đầu tiên để trải nghiệm QuizMate AI sớm hơn, gửi phản hồi về chất lượng đánh giá và cùng định hình ưu tiên phát hành cho trường học, đại học và đội ngũ giảng dạy.",
+      "registerAction": "Đăng ký làm người thử nghiệm sớm",
+      "contact": "Liên hệ {{email}}"
+    },
+    "footer": {
+      "rights": "© {{year}} {{brandName}}. Đã đăng ký mọi quyền.",
+      "restricted": "Chế độ chờ ra mắt đang hoạt động. Mọi route ứng dụng vẫn đang bị giới hạn."
+    }
+  }
+}

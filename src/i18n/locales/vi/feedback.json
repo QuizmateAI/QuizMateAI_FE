@@ -1,0 +1,94 @@
+{
+  "feedbackCenterPage": {
+    "summary": {
+      "pendingSurveysTitle": "Survey đang chờ",
+      "pendingSurveysHelper": "Các yêu cầu phản hồi bạn chưa trả lời",
+      "productTicketsTitle": "Ticket product",
+      "productTicketsHelper": "Báo lỗi, yêu cầu hỗ trợ và các vấn đề chặn luồng dùng sản phẩm",
+      "systemTicketsTitle": "Ticket system",
+      "systemTicketsHelper": "Sự cố nền tảng và các vấn đề vận hành hệ thống",
+      "openTicketsTitle": "Ticket đang xử lý",
+      "openTicketsHelper": "Các ticket sản phẩm hoặc hệ thống đang mở hoặc đang xử lý"
+    },
+    "createSection": {
+      "title": "Tạo ticket mới",
+      "description": "Chọn đúng kênh để super admin xử lý ở đúng hàng đợi phản hồi.",
+      "productTitle": "Feedback sản phẩm",
+      "productDescription": "Lỗi sản phẩm, thiếu flow, cần hỗ trợ sử dụng hoặc bất kỳ vấn đề nào chặn thao tác bình thường.",
+      "sendProductTicket": "Gửi ticket product",
+      "openProductQueue": "Mở khu product",
+      "systemTitle": "Feedback hệ thống",
+      "systemDescription": "Sự cố nền tảng, lỗi hạ tầng, dịch vụ không ổn định hoặc các vấn đề vận hành hệ thống.",
+      "sendSystemTicket": "Gửi ticket system",
+      "openSystemQueue": "Mở khu system"
+    },
+    "recentTickets": {
+      "title": "Ticket gần đây",
+      "description": "Các ticket mới nhất đang được xử lý trong hai hàng đợi product và system.",
+      "loading": "Đang tải ticket...",
+      "emptyTitle": "Chưa có ticket nào",
+      "emptyDescription": "Tạo ticket product hoặc system để bắt đầu luồng feedback.",
+      "openQueues": "Mở các hàng đợi ticket"
+    },
+    "pendingSurveys": {
+      "title": "Survey đang chờ",
+      "description": "Các survey phản hồi theo lịch được tách riêng thành một hàng đợi riêng.",
+      "emptyTitle": "Hiện chưa có survey nào đang chờ",
+      "emptyDescription": "Khi hệ thống tạo survey theo lịch, nội dung sẽ xuất hiện ở đây.",
+      "openQueue": "Mở khu survey"
+    }
+  },
+  "feedbackChannelPages": {
+    "common": {
+      "totalTickets": "Tổng ticket",
+      "openInProgress": "Mới / Đang xử lý",
+      "resolvedClosed": "Đã giải quyết / Đã đóng"
+    },
+    "product": {
+      "heroTitle": "Khu feedback product",
+      "heroDescription": "Báo lỗi, yêu cầu hỗ trợ hoặc phản ánh các flow sản phẩm còn thiếu tại đây.",
+      "sendTicket": "Gửi ticket product",
+      "totalHelper": "Tất cả yêu cầu liên quan đến product từ tài khoản của bạn",
+      "openHelper": "Các vấn đề đang được super admin xử lý",
+      "resolvedHelper": "Các yêu cầu đã đi tới trạng thái cuối",
+      "listTitle": "Danh sách ticket product",
+      "listDescription": "Theo dõi phản hồi và tiến độ xử lý mà không bị trộn với ticket system hoặc survey.",
+      "loading": "Đang tải ticket product...",
+      "emptyTitle": "Bạn chưa gửi ticket product nào",
+      "emptyDescription": "Tạo ticket khi vấn đề sản phẩm đang chặn công việc hoặc trải nghiệm học tập của bạn."
+    },
+    "system": {
+      "heroTitle": "Khu feedback system",
+      "heroDescription": "Dùng khu này cho các sự cố outage, dịch vụ không ổn định, lỗi hạ tầng và các vấn đề vận hành nền tảng.",
+      "sendTicket": "Gửi ticket system",
+      "totalHelper": "Tất cả yêu cầu liên quan đến system từ tài khoản của bạn",
+      "openHelper": "Các sự cố vẫn đang trong quá trình xử lý",
+      "resolvedHelper": "Các sự cố đã có trạng thái cuối cùng",
+      "listTitle": "Danh sách ticket system",
+      "listDescription": "Tách riêng sự cố hạ tầng và dịch vụ khỏi các yêu cầu product để dễ theo dõi hơn.",
+      "loading": "Đang tải ticket system...",
+      "emptyTitle": "Bạn chưa gửi ticket system nào",
+      "emptyDescription": "Báo ở đây khi sự cố thuộc về nền tảng hoặc vận hành hệ thống, không chỉ là một flow sản phẩm đơn lẻ."
+    }
+  },
+  "feedbackSurveyPage": {
+    "header": {
+      "title": "Khu survey feedback",
+      "description": "Các form survey theo lịch được tách riêng khỏi ticket hỗ trợ để quản lý độc lập và rõ ràng hơn."
+    },
+    "summary": {
+      "pendingTitle": "Survey đang chờ",
+      "pendingHelper": "Những yêu cầu vẫn đang chờ bạn trả lời",
+      "flowTitle": "Luồng survey",
+      "flowValue": "Tách riêng",
+      "flowHelper": "Survey không còn bị trộn vào hàng đợi ticket product/system"
+    },
+    "list": {
+      "title": "Danh sách survey đang chờ",
+      "description": "Trả lời các form phản hồi có cấu trúc này ở một khu riêng, tách biệt với luồng support.",
+      "loading": "Đang tải survey...",
+      "emptyTitle": "Hiện chưa có survey nào đang chờ",
+      "emptyDescription": "Khi có survey mới dành cho bạn, nội dung sẽ xuất hiện trong khu riêng này."
+    }
+  }
+}

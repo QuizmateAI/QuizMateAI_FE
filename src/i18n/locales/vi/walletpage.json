@@ -1,0 +1,122 @@
+{
+  "walletPage": {
+    "logoAlt": "Logo QuizMate AI",
+    "goHome": "Về trang chủ",
+    "back": "Quay lại",
+    "summary": {
+      "title": "Ví Credit của bạn",
+      "subtitle": "Theo dõi số dư và quản lý credit dùng cho các tính năng AI",
+      "badge": "Ví cá nhân",
+      "totalAvailable": "Tổng credit khả dụng",
+      "creditsUnit": "credit",
+      "hint": "Credit được dùng để chạy các tác vụ AI như tạo quiz, flashcard, lộ trình học...",
+      "regularCredits": "Credit thường",
+      "planCredits": "Credit từ gói",
+      "expiresAt": "Hết hạn lúc",
+      "pricingGuide": "Xem bảng giá chi tiết"
+    },
+    "buy": {
+      "title": "Mua thêm credit",
+      "subtitle": "Chọn gói credit phù hợp để tiếp tục sử dụng AI",
+      "cannotBuyCredit": "Gói hiện tại của bạn không hỗ trợ mua thêm credit.",
+      "loading": "Đang tải...",
+      "packageFallback": "Gói credit {{id}}",
+      "baseCredits": "{{count}} credit gốc",
+      "bonusCredits": "+{{count}} bonus credit"
+    },
+    "history": {
+      "title": "Lịch sử giao dịch",
+      "subtitle": "20 giao dịch gần nhất trên ví của bạn",
+      "loading": "Đang tải...",
+      "noHistory": "Chưa có giao dịch nào.",
+      "emptyWorkspace": "—",
+      "table": {
+        "time": "Thời gian",
+        "activity": "Hoạt động",
+        "workspace": "Workspace",
+        "amount": "Số credit",
+        "source": "Nguồn"
+      }
+    },
+    "fallback": {
+      "other": "Khác",
+      "emDash": "—"
+    },
+    "transactionType": {
+      "WELCOME": "Credit chào mừng",
+      "TOPUP": "Nạp credit",
+      "CONSUME": "Dùng credit AI",
+      "RESERVE": "Tạm giữ credit",
+      "RESERVE_CANCELLED": "Hoàn tạm giữ",
+      "REFUND": "Hoàn credit",
+      "ADJUST": "Điều chỉnh credit",
+      "PLAN_BONUS": "Credit từ gói",
+      "PLAN_EXPIRE_RESET": "Reset credit gói"
+    },
+    "transactionSource": {
+      "SYSTEM": "Hệ thống",
+      "PAYMENT": "Thanh toán",
+      "AI_USAGE": "AI sử dụng",
+      "USER_PLAN": "Gói của bạn",
+      "WORKSPACE_PLAN": "Gói nhóm",
+      "ADMIN": "Quản trị viên"
+    },
+    "aiActivity": {
+      "default": "Bạn đã dùng một tính năng AI",
+      "PROCESS_PDF": "Bạn đã tải lên tài liệu PDF",
+      "PROCESS_IMAGE": "Bạn đã tải lên hình ảnh",
+      "PROCESS_TEXT": "Bạn đã gửi văn bản để AI xử lý",
+      "PROCESS_DOCX": "Bạn đã tải lên tài liệu Word",
+      "PROCESS_XLSX": "Bạn đã tải lên file Excel",
+      "PROCESS_PPTX": "Bạn đã tải lên slide PowerPoint",
+      "PROCESS_AUDIO": "Bạn đã tải lên tệp âm thanh",
+      "PROCESS_VIDEO": "Bạn đã tải lên video",
+      "GENERATE_QUIZ": "Bạn đã tạo bài quiz",
+      "PREVIEW_QUIZ_STRUCTURE": "Bạn đã xem trước cấu trúc quiz",
+      "GENERATE_FLASHCARDS": "Bạn đã tạo flashcard",
+      "GENERATE_MOCK_TEST": "Bạn đã tạo đề luyện tập",
+      "GENERATE_ROADMAP": "Bạn đã tạo lộ trình học",
+      "GENERATE_ROADMAP_PHASES": "Bạn đã tạo các giai đoạn học",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Bạn đã tạo nội dung học tập",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "Bạn đã tạo quiz kiến thức",
+      "SUGGEST_LEARNING_RESOURCES": "Bạn đã gợi ý tài liệu học",
+      "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "Bạn đã phân tích hồ sơ học tập",
+      "SUGGEST_STUDY_PROFILE_FIELDS": "Bạn đã gợi ý thông tin hồ sơ học tập",
+      "SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES": "Bạn đã gợi ý mẫu đề phù hợp",
+      "SUGGEST_WORKSPACE_NAME": "Bạn đã gợi ý tên không gian học tập",
+      "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Bạn đã kiểm tra hồ sơ học tập"
+    },
+    "uiActivity": {
+      "default": "Đã dùng AI cho: {{target}}",
+      "PROCESS_PDF": "Đã tải lên PDF: {{target}}",
+      "PROCESS_DOCX": "Đã tải lên file Word: {{target}}",
+      "PROCESS_PPTX": "Đã tải lên slide: {{target}}",
+      "PROCESS_XLSX": "Đã tải lên file Excel: {{target}}",
+      "PROCESS_IMAGE": "Đã tải lên ảnh: {{target}}",
+      "PROCESS_AUDIO": "Đã tải lên audio: {{target}}",
+      "PROCESS_VIDEO": "Đã tải lên video: {{target}}",
+      "PROCESS_TEXT": "Đã gửi văn bản: {{target}}",
+      "GENERATE_QUIZ": "Đã tạo quiz: {{target}}",
+      "GENERATE_FLASHCARDS": "Đã tạo flashcard từ: {{target}}",
+      "GENERATE_MOCK_TEST": "Đã tạo mock test: {{target}}",
+      "GENERATE_ROADMAP": "Đã tạo roadmap: {{target}}",
+      "GENERATE_ROADMAP_PHASES": "Đã tạo phase cho: {{target}}",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Đã tạo nội dung cho: {{target}}",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "Đã tạo quiz kiến thức: {{target}}"
+    },
+    "txActivity": {
+      "welcomeTitle": "Bạn đã nhận credit chào mừng",
+      "welcomeSubtitle": "Quà tặng dành cho tài khoản mới",
+      "planBonusTitle": "Bạn đã nhận credit từ gói",
+      "planBonusSubtitle": "Credit đi kèm gói đã được cộng vào ví",
+      "topupTitle": "Bạn đã nạp thêm credit",
+      "topupSubtitle": "Credit đã được cộng vào ví của bạn",
+      "refundTitle": "Bạn đã được hoàn lại credit",
+      "refundSubtitle": "Số credit chưa dùng đã được hoàn về ví",
+      "reserveCancelledTitle": "Một khoản tạm giữ đã được hoàn",
+      "reserveCancelledSubtitle": "Credit tạm giữ đã được trả lại vào ví",
+      "planExpireResetTitle": "Credit gói đã được làm mới",
+      "planExpireResetSubtitle": "Hệ thống đã reset credit theo chu kỳ gói"
+    }
+  }
+}
