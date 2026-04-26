@@ -1,0 +1,134 @@
+{
+  "plan": {
+    "title": "Chọn gói học phù hợp",
+    "subtitle": "Mở khóa đúng mức hỗ trợ AI bạn cần để học nhanh hơn, mà không phải đọc quá nhiều thông số kỹ thuật.",
+    "heroBadge": "Gói AI cho học tập",
+    "backToHome": "Về trang chủ",
+    "back": "Quay lại",
+    "groupScopeTitle": "Chọn gói cho {{groupName}}",
+    "groupFallbackName": "nhóm này",
+    "groupScopeSubtitle": "Gói này chỉ áp dụng cho nhóm hiện tại. Gói nhóm được quản lý riêng, tách khỏi gói cá nhân.",
+    "groupScopeNoticeTitle": "Gói dành cho nhóm hiện tại",
+    "groupEntryTitle": "Gói nhóm được quản lý trong từng nhóm",
+    "leaderOnlyBadge": "Leader thanh toán",
+    "groupScopeLeaderDesc": "Gói này chỉ áp dụng cho {{groupName}}. Bạn là trưởng nhóm nên có thể chọn hoặc đổi gói cho nhóm này tại đây.",
+    "groupScopeMemberDesc": "Gói này chỉ áp dụng cho {{groupName}}. Chỉ trưởng nhóm mới có thể chọn hoặc đổi gói cho nhóm này.",
+    "groupEntryDesc": "Mỗi nhóm mua gói riêng trong không gian học tập của chính nhóm đó. Hãy mở nhóm bạn làm trưởng nhóm để xem gói và thanh toán tại đó.",
+    "groupLeaderManagedCta": "Trưởng nhóm quản lý gói",
+    "types": {
+      "individual": "Cá nhân",
+      "group": "Nhóm"
+    },
+    "badges": {
+      "permanent": "Theo thời hạn gói",
+      "credits": "Tính theo Credit",
+      "transparent": "Minh bạch & rõ ràng"
+    },
+    "creditModel": {
+      "title": "Mô hình Credit cho AI",
+      "desc": "Bạn chọn gói phù hợp, sau đó nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
+      "cta": "Mở ví Credit",
+      "guide": "Xem cách tính Credit"
+    },
+    "noPlans": "Chưa có plan nào cho danh mục này.",
+    "loadError": "Không thể tải danh sách plan. Vui lòng thử lại.",
+    "mostPopular": "PHỔ BIẾN NHẤT",
+    "durationDays": "{{count}} ngày",
+    "durationForever": "Vĩnh viễn",
+    "durationForeverShort": "Vĩnh viễn",
+    "upgrade": "Chọn plan",
+    "currentCta": "Đang sử dụng",
+    "teamCta": "Bắt đầu cho nhóm",
+    "thanhToan": "Thanh toán",
+    "defaultPlan": "Gói mặc định",
+    "aiQuality": {
+      "core": "Core AI",
+      "enhanced": "Enhanced AI",
+      "premium": "Premium AI",
+      "team": "Team AI"
+    },
+    "descriptions": {
+      "free": "Bắt đầu với các tính năng cốt lõi để tạo quiz và học thử.",
+      "freeWithLimits": "Phù hợp để bắt đầu với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",
+      "standard": "Nâng cấp trải nghiệm học với nhiều công cụ AI hữu ích hơn mỗi ngày.",
+      "recommended": "Mở khóa quy trình học đầy đủ với AI hỗ trợ rõ ràng và thực tế hơn.",
+      "premium": "Phù hợp cho nhu cầu học chuyên sâu với nhiều hỗ trợ AI và góc nhìn phân tích hơn.",
+      "group": "Thiết kế cho nhóm học hoặc lớp nhỏ cần dùng AI chung trên cùng một không gian.",
+      "groupWithLimits": "Không gian học chung cho nhóm với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",
+      "includesPrevious": "Bao gồm toàn bộ {{previousPlan}}, thêm {{extras}}.",
+      "includesPreviousSimple": "Bao gồm toàn bộ {{previousPlan}} với trải nghiệm học đầy đủ hơn.",
+      "extraFormats": "hỗ trợ {{formats}}",
+      "higherLimits": "giới hạn học tập cao hơn"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "word": "Word",
+      "slide": "Slide",
+      "excel": "Excel",
+      "text": "Text",
+      "image": "Hình ảnh",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "bullets": {
+      "groupCollab": "Dùng chung cho học nhóm và cộng tác trên cùng tài liệu",
+      "includesPrevious": "Bao gồm mọi tính năng của {{planName}}",
+      "singleFormat": "Hỗ trợ nhập tài liệu từ {{format}}",
+      "multiFormat": "Hỗ trợ nhập {{formats}}",
+      "multiFormatMore": "Hỗ trợ nhập {{formats}} và thêm {{count}} định dạng khác",
+      "addedFormats": "Thêm hỗ trợ {{formats}}",
+      "coreAi": "Đủ cho các nhu cầu tạo quiz AI cơ bản",
+      "limitWithMaterials": "{{workspaces}} workspace và {{materials}} tài liệu mỗi workspace",
+      "limitWorkspacesOnly": "{{workspaces}} workspace để quản lý tài liệu học tập",
+      "limitMaterialsOnly": "{{materials}} tài liệu cho mỗi workspace",
+      "upgradedLimits": "Nâng lên {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace",
+      "roadmaps": "Tạo lộ trình học AI theo tài liệu và mục tiêu",
+      "companion": "Có AI đồng hành để hỏi đáp và luyện tập nhanh",
+      "summaries": "Tóm tắt và đọc hiểu tài liệu nhanh hơn với AI",
+      "analytics": "Theo dõi tiến độ và điểm yếu để học có trọng tâm hơn",
+      "advancedQuiz": "Mở khóa kiểu quiz nâng cao cho luyện tập sâu hơn",
+      "bonusCredits": "Tặng kèm {{count}} Credit khi mua"
+    },
+    "featureNames": {
+      "roadmaps": "lộ trình học AI",
+      "companion": "AI đồng hành",
+      "summaries": "tóm tắt tài liệu",
+      "analytics": "phân tích học tập",
+      "advancedQuiz": "quiz nâng cao",
+      "multiformatImport": "hỗ trợ tài liệu đa định dạng",
+      "bonusCredits": "Credit tặng kèm"
+    },
+    "studyFeatures": {
+      "title": "Công cụ học tập nổi bật",
+      "subtitle": "Các gói trả phí mở rộng thêm nhiều cách dùng AI hữu ích trong quá trình học.",
+      "roadmap": {
+        "title": "Lộ trình học AI",
+        "desc": "Chuyển tài liệu thành các bước học rõ ràng để bám theo dễ hơn."
+      },
+      "companion": {
+        "title": "AI đồng hành",
+        "desc": "Hỏi nhanh, ôn nhanh và tiếp tục mạch học mà không bị ngắt quãng."
+      },
+      "summary": {
+        "title": "Tóm tắt thông minh",
+        "desc": "Biến nội dung dài thành ý chính ngắn gọn để ôn lại nhanh hơn."
+      },
+      "analytics": {
+        "title": "Phân tích học tập",
+        "desc": "Nhìn rõ điểm mạnh, điểm yếu và tiến độ để điều chỉnh cách học."
+      },
+      "advancedQuiz": {
+        "title": "Quiz nâng cao",
+        "desc": "Mở thêm kiểu câu hỏi và cấu hình linh hoạt cho luyện tập chuyên sâu."
+      }
+    },
+    "notes": {
+      "permanentTitle": "Thời hạn gói rõ ràng",
+      "permanentDesc": "QuizMateAI không có gói mua vĩnh viễn. Mỗi plan có thời hạn và quyền lợi riêng để bạn chọn theo nhu cầu học.",
+      "creditsTitle": "AI dùng theo Credit",
+      "creditsDesc": "Các tính năng AI chỉ trừ Credit khi bạn thực sự dùng, nên dễ kiểm soát chi phí hơn.",
+      "refundTitle": "Thanh toán rõ ràng",
+      "refundDesc": "Thanh toán được bảo mật và lịch sử mua Credit luôn có thể xem lại trong ví."
+    }
+  }
+}

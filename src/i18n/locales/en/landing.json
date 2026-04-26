@@ -1,0 +1,104 @@
+{
+  "landingPage": {
+    "nav": {
+      "features": "Features",
+      "solutions": "Solutions",
+      "pricing": "Pricing",
+      "login": "Login",
+      "signup": "Sign up"
+    },
+    "hero": {
+      "badge": "✨ AI-Powered Learning Innovation",
+      "titlePart1": "Master Any Subject with",
+      "titlePart2": "QuizMate AI",
+      "subtitle": "Turn any material into a quiz in seconds. Upload learning materials (PDF, DOC, or Youtube URL) to let AI automatically generate interactive question sets customized to your learning style.",
+      "startLearning": "Start Learning Now",
+      "watchDemo": "Watch Demo",
+      "activeStudents": "Active Students",
+      "avatarLabels": {
+        "anh": "Active learner Anh",
+        "binh": "Active learner Binh",
+        "chi": "Active learner Chi",
+        "duc": "Active learner Duc"
+      }
+    },
+    "features": {
+      "title": "Revolutionize Your Learning Journey",
+      "new": {
+        "generation": {
+          "title": "Automated Generation",
+          "bullet1": "Diverse sources: Upload PDFs, Videos, Images, YouTube links...",
+          "bullet2": "AI extracts knowledge & generates highly relevant questions.",
+          "bullet3": "Saves hours of manual quiz creation (Solves main pain point)."
+        },
+        "customization": {
+          "title": "Deep Customization",
+          "bullet1": "Adjust: Question types, difficulty, Bloom's cognitive levels.",
+          "bullet2": "Select purpose: Quick review, knowledge testing, or mock exams.",
+          "bullet3": "AI evaluates results and suggests key topics for review."
+        },
+        "collaborative": {
+          "title": "Collaborative Learning",
+          "bullet1": "Share study materials and assign quizzes to the whole group.",
+          "bullet2": "Host real-time multiplayer challenges to boost engagement.",
+          "bullet3": "Leaders can manage and track individual member progress."
+        }
+      },
+      "roadmapTitle": "AI Roadmap",
+      "roadmapDesc": "Our AI analyzes your materials and generates a step-by-step learning path from basics to advanced.",
+      "quizTitle": "Smart Quizzes",
+      "quizDesc": "Generate multiple-choice or essay questions instantly from any PDF, YouTube video.",
+      "companionTitle": "AI Companion",
+      "companionDesc": "Interact with your AI tutor via voice to clear doubts and explain complex concepts in real-time."
+    },
+    "pricing": {
+      "titlePart1": "Choose",
+      "titlePart2": "Your Plan",
+      "subtitle": "Flexible pricing for every learner",
+      "free": "Free",
+      "pro": "Professional",
+      "elite": "Elite",
+      "billedMonthly": "Billed Monthly",
+      "mostPopular": "MOST POPULAR",
+      "getStarted": "Get Started",
+      "selectPro": "Select Pro Plan",
+      "features": {
+        "fiveRoadmaps": "5 AI Roadmaps / month",
+        "basicQuizzes": "Basic AI Quizzes",
+        "voiceTutor": "Voice AI Tutor",
+        "unlimitedRoadmaps": "Unlimited AI Roadmaps",
+        "advancedVoice": "Advanced Voice Companion",
+        "urlVideo": "URL & Video Processing",
+        "everythingPro": "Everything in Pro",
+        "studyGroup": "Study Group (5 Users)",
+        "apiAccess": "API Access for Devs"
+      }
+    },
+    "testimonials": {
+      "title": "What our students are saying 😍",
+      "student1Quote": "\"QuizMate AI completely changed how I prepare for my exams. Generating quizzes from lecture videos is a game changer!\"",
+      "student1Role": "Medical Student",
+      "student2Quote": "\"The AI Roadmap is incredible. It broke down my 200-page textbook into 10 logical learning phases. Highly recommend!\"",
+      "student2Role": "Computer Science Major",
+      "student1Name": "Sarah Johnson",
+      "student2Name": "Mark Thompson"
+    },
+    "footer": {
+      "brandDesc": "Empowering students worldwide with AI-driven study tools for a smarter future.",
+      "product": "Product",
+      "productLinks": {
+        "roadmap": "AI Roadmap",
+        "quizzes": "Smart Quizzes",
+        "groups": "Study Groups"
+      },
+      "company": "Company",
+      "companyLinks": {
+        "about": "About Our AI",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
+      },
+      "connect": "Connect",
+      "copyright": "© 2026 QuizMate AI. Built with intelligence for learners."
+    }
+  }
+}

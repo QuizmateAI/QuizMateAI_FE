@@ -1,0 +1,46 @@
+{
+  "wallet": {
+    "title": "Quizmate Credit",
+    "subtitle": "Xem số dư, nạp thêm Credit và theo dõi lịch sử giao dịch.",
+    "badge": "WALLET",
+    "back": "Quay lại",
+    "balance": "Số dư hiện tại",
+    "totalAvailable": "Tổng credit khả dụng",
+    "regularCredits": "Credit thường",
+    "planCredits": "Credit từ gói",
+    "expiresAt": "Hết hạn",
+    "creditsUnit": "Credit",
+    "hint": "Credit dùng để gọi các chức năng AI trong QuizMate.",
+    "buyTitle": "Mua thêm Credit",
+    "buySubtitle": "Chọn gói phù hợp để tiếp tục dùng AI.",
+    "cannotBuyCredit": "Gói hiện tại của bạn không hỗ trợ mua credit. Hãy nâng cấp gói để tiếp tục.",
+    "pricingGuide": "Xem bảng giá",
+    "bonus": "bonus",
+    "buyNow": "Mua ngay",
+    "packageHint": "Nạp nhanh — dùng được ngay",
+    "historyTitle": "Lịch sử giao dịch",
+    "historySubtitle": "Các lần nạp và sử dụng Credit gần đây.",
+    "noHistory": "Chưa có giao dịch nào.",
+    "toastAdded": "Đã cộng {{amount}} Credit vào ví (demo UI).",
+    "types": {
+      "TOPUP": "Nạp",
+      "USAGE": "Sử dụng"
+    },
+    "status": {
+      "SUCCESS": "Thành công",
+      "PENDING": "Đang xử lý",
+      "FAILED": "Thất bại"
+    },
+    "table": {
+      "id": "Mã",
+      "time": "Thời gian",
+      "activity": "Hoạt động",
+      "workspace": "Không gian",
+      "type": "Loại",
+      "amount": "Số lượng",
+      "source": "Nguồn",
+      "status": "Trạng thái"
+    },
+    "noPackage": "Kh?ng t?m th?y g?i credit."
+  }
+}

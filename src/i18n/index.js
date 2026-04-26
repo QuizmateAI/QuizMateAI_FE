@@ -3,7 +3,24 @@ import { updateUserPreferredLanguage } from '@/api/ProfilePreferencesAPI';
 import { hasAccessToken } from '@/utils/tokenStorage';
 
 const DEFAULT_LANGUAGE = 'vi';
-const I18N_NAMESPACES = ['common', 'auth', 'home', 'workspace', 'group', 'admin'];
+const I18N_NAMESPACES = [
+  'common',
+  'auth',
+  'home',
+  'landing',
+  'pricing',
+  'launching',
+  'plan',
+  'wallet',
+  'walletpage',
+  'profile',
+  'payment',
+  'feedback',
+  'workspace',
+  'group',
+  'grouphome',
+  'admin',
+];
 
 const localeNamespaceLoaders = import.meta.glob('./locales/*/*.json');
 const loadedTranslations = {};
@@ -13,20 +30,39 @@ const namespaceLoadPromises = new Map();
 const routeNamespaceRules = [
   {
     matches: (pathname) => pathname === '/',
-    namespaces: ['common', 'home'],
+    namespaces: ['common', 'landing', 'plan', 'wallet'],
   },
   {
     matches: (pathname) => pathname === '/login' || pathname === '/register' || pathname === '/forgot-password',
     namespaces: ['common', 'auth'],
   },
   {
-    matches: (pathname) => pathname === '/home'
-      || pathname.startsWith('/plans')
-      || pathname.startsWith('/wallets')
-      || pathname.startsWith('/profiles')
-      || pathname.startsWith('/payments')
-      || pathname.startsWith('/feedbacks'),
-    namespaces: ['common', 'home'],
+    matches: (pathname) => pathname.startsWith('/pricing'),
+    namespaces: ['common', 'pricing'],
+  },
+  {
+    matches: (pathname) => pathname === '/home',
+    namespaces: ['common', 'home', 'grouphome'],
+  },
+  {
+    matches: (pathname) => pathname.startsWith('/plans'),
+    namespaces: ['common', 'plan', 'wallet'],
+  },
+  {
+    matches: (pathname) => pathname.startsWith('/wallets'),
+    namespaces: ['common', 'walletpage'],
+  },
+  {
+    matches: (pathname) => pathname.startsWith('/profiles'),
+    namespaces: ['common', 'profile', 'plan', 'payment', 'wallet'],
+  },
+  {
+    matches: (pathname) => pathname.startsWith('/payments'),
+    namespaces: ['common', 'payment', 'plan', 'profile', 'wallet'],
+  },
+  {
+    matches: (pathname) => pathname.startsWith('/feedbacks'),
+    namespaces: ['common', 'feedback'],
   },
   {
     matches: (pathname) => pathname.startsWith('/workspaces') || pathname.startsWith('/quizzes'),
@@ -34,15 +70,15 @@ const routeNamespaceRules = [
   },
   {
     matches: (pathname) => pathname.startsWith('/group-workspaces'),
-    namespaces: ['common', 'home', 'workspace', 'group'],
+    namespaces: ['common', 'workspace', 'group', 'grouphome', 'wallet'],
   },
   {
     matches: (pathname) => pathname.startsWith('/groups'),
-    namespaces: ['common', 'home', 'group'],
+    namespaces: ['common', 'group', 'grouphome'],
   },
   {
     matches: (pathname) => pathname.startsWith('/admin') || pathname.startsWith('/super-admin'),
-    namespaces: ['common', 'admin'],
+    namespaces: ['common', 'admin', 'wallet'],
   },
 ];
 

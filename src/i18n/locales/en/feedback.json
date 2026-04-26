@@ -1,0 +1,94 @@
+{
+  "feedbackCenterPage": {
+    "summary": {
+      "pendingSurveysTitle": "Pending surveys",
+      "pendingSurveysHelper": "Requests that still need your answers",
+      "productTicketsTitle": "Product tickets",
+      "productTicketsHelper": "Bug reports, support requests, product blockers",
+      "systemTicketsTitle": "System tickets",
+      "systemTicketsHelper": "Platform incidents and infrastructure issues",
+      "openTicketsTitle": "Open tickets",
+      "openTicketsHelper": "Open or in-progress product/system tickets"
+    },
+    "createSection": {
+      "title": "Create a new ticket",
+      "description": "Choose the correct channel so super admin can pick up the issue in the right queue.",
+      "productTitle": "Product feedback",
+      "productDescription": "Bugs, missing flows, support requests, or anything blocking normal product usage.",
+      "sendProductTicket": "Send product ticket",
+      "openProductQueue": "Open product queue",
+      "systemTitle": "System feedback",
+      "systemDescription": "Platform incidents, unstable service, infrastructure errors, or operational issues.",
+      "sendSystemTicket": "Send system ticket",
+      "openSystemQueue": "Open system queue"
+    },
+    "recentTickets": {
+      "title": "Recent tickets",
+      "description": "The latest feedback handled inside the dedicated product and system queues.",
+      "loading": "Loading tickets...",
+      "emptyTitle": "No ticket yet",
+      "emptyDescription": "Create a product or system ticket to start the feedback flow.",
+      "openQueues": "Open ticket queues"
+    },
+    "pendingSurveys": {
+      "title": "Pending surveys",
+      "description": "Scheduled feedback requests are separated into their own survey queue.",
+      "emptyTitle": "No pending survey right now",
+      "emptyDescription": "When the system creates a scheduled survey, it will appear here.",
+      "openQueue": "Open survey queue"
+    }
+  },
+  "feedbackChannelPages": {
+    "common": {
+      "totalTickets": "Total tickets",
+      "openInProgress": "Open / In progress",
+      "resolvedClosed": "Resolved / Closed"
+    },
+    "product": {
+      "heroTitle": "Product queue",
+      "heroDescription": "Report bugs, ask for support, or request missing product flows here.",
+      "sendTicket": "Send product ticket",
+      "totalHelper": "All product-related requests from your account",
+      "openHelper": "Issues still being handled by super admin",
+      "resolvedHelper": "Requests that already reached a final state",
+      "listTitle": "Product tickets list",
+      "listDescription": "Track replies and handling progress without mixing in system incidents or surveys.",
+      "loading": "Loading product tickets...",
+      "emptyTitle": "No product ticket yet",
+      "emptyDescription": "Open a ticket when product issues block your work."
+    },
+    "system": {
+      "heroTitle": "System queue",
+      "heroDescription": "Use this queue for outages, service instability, infrastructure issues, and other platform incidents.",
+      "sendTicket": "Send system ticket",
+      "totalHelper": "All system-related requests from your account",
+      "openHelper": "Incidents still under handling",
+      "resolvedHelper": "Incidents that already have a final status",
+      "listTitle": "System tickets list",
+      "listDescription": "Keep infrastructure and service incidents in a separate list from product requests.",
+      "loading": "Loading system tickets...",
+      "emptyTitle": "No system ticket yet",
+      "emptyDescription": "Report platform incidents here when the issue is not limited to a single product flow."
+    }
+  },
+  "feedbackSurveyPage": {
+    "header": {
+      "title": "Survey queue",
+      "description": "Scheduled feedback forms are separated from support tickets so they can be managed independently."
+    },
+    "summary": {
+      "pendingTitle": "Pending surveys",
+      "pendingHelper": "Requests that still need your answers",
+      "flowTitle": "Survey flow",
+      "flowValue": "Separate",
+      "flowHelper": "Survey forms stay out of the product/system ticket queues"
+    },
+    "list": {
+      "title": "Pending survey requests",
+      "description": "Answer these structured forms separately from support conversations.",
+      "loading": "Loading surveys...",
+      "emptyTitle": "No pending survey right now",
+      "emptyDescription": "When a survey is created for you, it will appear in this dedicated queue."
+    }
+  }
+}
