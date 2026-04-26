@@ -1,0 +1,108 @@
+{
+  "profile": {
+    "title": "My Profile",
+    "description": "Manage your learning journey and personal settings.",
+    "personalInfo": "Personal Information",
+    "personalInfoDesc": "Update your basic information",
+    "email": "Email",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter your full name",
+    "birthday": "Birthday",
+    "security": "Security",
+    "securityDesc": "Manage your password and account security",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Enter your current password and new password to update",
+    "oldPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "edit": "Edit",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "signOut": "Sign Out",
+    "loadError": "Failed to load profile information",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "Failed to update profile",
+    "avatarSuccess": "Avatar updated successfully",
+    "avatarError": "Failed to update avatar",
+    "invalidFileType": "Please select an image file",
+    "fileTooLarge": "File size must not exceed 5MB",
+    "fullNameRequired": "Please enter your full name",
+    "passwordFieldsRequired": "Please fill in all password fields",
+    "passwordMismatch": "Password confirmation does not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordSuccess": "Password changed successfully",
+    "passwordError": "Failed to change password",
+    "xpProgress": "XP Progress",
+    "achievements": "Achievements",
+    "unlockedDaysAgo": "Unlocked {{days}} days ago",
+    "tabs": {
+      "overview": "Overview",
+      "settings": "Settings",
+      "subscription": "Subscription"
+    },
+    "badges": {
+      "quizMaster": "Quiz Master",
+      "streakKeeper": "Streak Keeper",
+      "speedster": "Speedster"
+    },
+    "skillMatrix": {
+      "title": "Skill Matrix",
+      "desc": "Your strengths & areas to improve"
+    },
+    "stats": {
+      "topicsMastered": "Topics Mastered",
+      "learningTime": "Learning Time",
+      "learningTimeValue": "128h",
+      "dayStreak": "Day Streak",
+      "avgScore": "Avg. Score"
+    },
+    "recentActivity": "Recent Activity",
+    "recentActivityItemTitle": "Completed \"React Advanced Patterns\"",
+    "recentActivityItemTimeAgo": "2 hours ago",
+    "recentActivityItemXp": "+50 XP",
+    "subscription": {
+      "currentPlan": "Current Plan",
+      "currentPlanDesc": "Your active subscription plan",
+      "freeDesc": "Basic features for getting started",
+      "activeStatus": "Active",
+      "currentLabel": "Current Plan",
+      "mostPopular": "MOST POPULAR",
+      "perMonth": "month",
+      "upgrade": "Upgrade Now",
+      "individual": "Individual",
+      "group": "Group",
+      "noPlans": "No plans available for this category.",
+      "loadError": "Unable to load plans. Please try again.",
+      "durationDays": "{{count}} days",
+      "durationForever": "Forever",
+      "guaranteeTitle": "30-Day Money-Back Guarantee",
+      "guaranteeDesc": "Try risk-free. If you're not satisfied, get a full refund within 30 days.",
+      "plans": {
+        "free": {
+          "name": "Free"
+        },
+        "pro": {
+          "name": "Professional"
+        },
+        "elite": {
+          "name": "Elite"
+        }
+      },
+      "features": {
+        "fiveRoadmaps": "5 AI Roadmaps / month",
+        "basicQuizzes": "Basic AI Quizzes",
+        "voiceTutor": "Voice AI Tutor",
+        "unlimitedRoadmaps": "Unlimited AI Roadmaps",
+        "advancedVoice": "Advanced Voice Companion",
+        "urlVideo": "URL & Video Processing",
+        "prioritySupport": "Priority Support",
+        "everythingPro": "Everything in Pro",
+        "studyGroup": "Study Group (5 Users)",
+        "apiAccess": "API Access for Devs",
+        "customBranding": "Custom Branding"
+      }
+    }
+  }
+}
