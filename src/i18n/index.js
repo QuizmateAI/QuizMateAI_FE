@@ -1,4 +1,5 @@
 import i18n from 'i18next';
+import { updateUserPreferredLanguage } from '@/api/ProfilePreferencesAPI';
 import { hasAccessToken } from '@/utils/tokenStorage';
 
 const DEFAULT_LANGUAGE = 'vi';
@@ -261,14 +262,9 @@ export const i18nReady = (async () => {
 
     syncDocumentLanguage(normalizedLanguage);
 
-    // Persist lên BE nếu user đã đăng nhập. Lazy import để tránh vòng phụ thuộc
-    // (ProfileAPI import i18n, i18n không nên import ngược lại ở top-level).
+    // Persist lên BE nếu user đã đăng nhập.
     if (typeof window !== 'undefined' && hasAccessToken()) {
-      import('@/api/ProfileAPI')
-        .then(({ updateUserPreferredLanguage }) => updateUserPreferredLanguage(normalizedLanguage))
-        .catch((err) => {
-          if (import.meta.env.DEV) console.warn('Failed to sync language to BE:', err);
-        });
+      void updateUserPreferredLanguage(normalizedLanguage);
     }
   });
 })();

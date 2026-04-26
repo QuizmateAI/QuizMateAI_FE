@@ -10,6 +10,8 @@ import {
   isAdvancedQuizQuestionType,
 } from "@/lib/quizQuestionTypes";
 
+const AI_MINIMUM_SECONDS_PER_QUESTION = 30;
+
 function AIQuizTab({
   t,
   isDarkMode,
@@ -301,6 +303,7 @@ function AIQuizTab({
                     defaultValue: `Mỗi câu cần tối thiểu 30 giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumDurationMinutes} phút.`,
                     count: Number(aiTotalQuestions) || 0,
                     minutes: minimumDurationMinutes,
+                    seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
                   })}
                 </p>
               ) : null}
@@ -317,6 +320,7 @@ function AIQuizTab({
                     {t("workspace.quiz.validation.minimumTimePerQuestionHint", {
                       defaultValue: `Tối thiểu ${minimumDurationMinutes} phút (30 giây/câu).`,
                       minutes: minimumDurationMinutes,
+                      seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
                     })}
                   </span>
                 </div>

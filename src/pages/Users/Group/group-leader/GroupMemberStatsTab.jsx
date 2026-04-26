@@ -189,7 +189,6 @@ function GroupMemberStatsTab({
   const [targetMember, setTargetMember] = useState(null);
   const [generatingMemberId, setGeneratingMemberId] = useState(null);
   const [detailRefreshNonce, setDetailRefreshNonce] = useState(0);
-  const [formulaDialogOpen, setFormulaDialogOpen] = useState(false);
   const normalizedForcedMemberId = useMemo(() => {
     const nextValue = Number(forcedMemberId);
     return Number.isInteger(nextValue) && nextValue > 0 ? nextValue : null;
@@ -340,10 +339,6 @@ function GroupMemberStatsTab({
 
       const toneDiff = (priority[leftIntelligence.healthTone] ?? 9) - (priority[rightIntelligence.healthTone] ?? 9);
       if (toneDiff !== 0) return toneDiff;
-
-      if (leftIntelligence.healthScore !== rightIntelligence.healthScore) {
-        return leftIntelligence.healthScore - rightIntelligence.healthScore;
-      }
 
       const leftAttemptCount = Number(left?.totalQuizAttempts ?? 0);
       const rightAttemptCount = Number(right?.totalQuizAttempts ?? 0);
@@ -515,6 +510,16 @@ function GroupMemberStatsTab({
         return tt('groupWorkspace.memberStats.reason.lowStudyTime', 'Thời lượng học còn ít', 'Study time is still light');
       case 'sporadic':
         return tt('groupWorkspace.memberStats.reason.sporadic', 'Nhịp học chưa đều', 'Study rhythm is inconsistent');
+      case 'roadmap_not_started':
+        return tt('groupWorkspace.memberStats.reason.roadmapNotStarted', 'Chưa bắt đầu học lộ trình', 'Roadmap has not started');
+      case 'roadmap_inactive':
+        return tt('groupWorkspace.memberStats.reason.roadmapInactive', 'Đã lâu chưa tiếp tục lộ trình', 'Roadmap activity is stale');
+      case 'roadmap_behind':
+        return tt('groupWorkspace.memberStats.reason.roadmapBehind', 'Đang chậm so với nhịp lộ trình', 'Behind roadmap pace');
+      case 'roadmap_remedial':
+        return tt('groupWorkspace.memberStats.reason.roadmapRemedial', 'Đang cần xử lý remedial', 'Needs remedial decision');
+      case 'roadmap_empty':
+        return tt('groupWorkspace.memberStats.reason.roadmapEmpty', 'Lộ trình chưa có nội dung học', 'Roadmap has no learning content');
       case 'improving':
         return tt('groupWorkspace.memberStats.reason.improving', 'Kết quả đang đi lên', 'Results are improving');
       default:
@@ -543,6 +548,12 @@ function GroupMemberStatsTab({
         return tt('groupWorkspace.memberStats.recommend.increaseTime', 'Tăng thêm thời gian ôn sau quiz, không chỉ tăng số lượng quiz.', 'Increase review time after each quiz instead of only increasing quiz count.');
       case 'unlock_harder_quiz':
         return tt('groupWorkspace.memberStats.recommend.harderQuiz', 'Có thể giao quiz khó hơn hoặc mở roadmap nâng cao.', 'You can assign a harder quiz or unlock a more advanced roadmap step.');
+      case 'start_roadmap':
+        return tt('groupWorkspace.memberStats.recommend.startRoadmap', 'Nhắc member mở lộ trình và hoàn thành bước học đầu tiên.', 'Ask the member to open the roadmap and finish the first learning step.');
+      case 'roadmap_checkpoint':
+        return tt('groupWorkspace.memberStats.recommend.roadmapCheckpoint', 'Kiểm tra lại tiến độ phase/knowledge trước khi giao thêm bài mới.', 'Check phase and knowledge progress before assigning more work.');
+      case 'remedial_support':
+        return tt('groupWorkspace.memberStats.recommend.remedialSupport', 'Ưu tiên hỗ trợ remedial trước khi đẩy sang phần tiếp theo.', 'Prioritize remedial support before moving to the next part.');
       default:
         return tt('groupWorkspace.memberStats.recommend.keepMomentum', 'Giữ nhịp hiện tại và kiểm tra lại sau snapshot tiếp theo.', 'Keep the current cadence and re-check on the next snapshot.');
     }
@@ -757,7 +768,6 @@ function GroupMemberStatsTab({
       formatPercent={formatPercent}
       formatRelativeDate={formatRelativeDate}
       formatScore={formatScore}
-      formulaDialogOpen={formulaDialogOpen}
       generatingMemberId={generatingMemberId}
       handleAssignQuiz={handleAssignQuiz}
       handleGenerateMemberSnapshot={handleGenerateMemberSnapshot}
@@ -787,7 +797,6 @@ function GroupMemberStatsTab({
       selectedSnapshot={selectedSnapshot}
       selectedWorkspaceMemberId={selectedWorkspaceMemberId}
       setAssignOpen={setAssignOpen}
-      setFormulaDialogOpen={setFormulaDialogOpen}
       setMemberPage={setMemberPage}
       setSelectedQuizId={setSelectedQuizId}
       shellClass={shellClass}
