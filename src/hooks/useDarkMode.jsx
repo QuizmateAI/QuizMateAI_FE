@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { updateUserThemeMode } from '@/api/ProfilePreferencesAPI';
 import { hasAccessToken } from '@/utils/tokenStorage';
 
 // Tạo Context để quản lý trạng thái Dark Mode
@@ -28,13 +29,9 @@ export function DarkModeProvider({ children }) {
       return;
     }
 
-    // Persist lên BE nếu đã đăng nhập. Lazy import tránh vòng phụ thuộc.
+    // Persist lên BE nếu đã đăng nhập.
     if (hasAccessToken()) {
-      import('@/api/ProfileAPI')
-        .then(({ updateUserThemeMode }) => updateUserThemeMode(isDarkMode ? 'dark' : 'light'))
-        .catch((err) => {
-          if (import.meta.env.DEV) console.warn('Failed to sync theme to BE:', err);
-        });
+      void updateUserThemeMode(isDarkMode ? 'dark' : 'light');
     }
   }, [isDarkMode]);
 

@@ -65,10 +65,6 @@ export const getChallengeBracket = async (workspaceId, eventId) => {
   return await api.get(`/group/${workspaceId}/challenges/${eventId}/bracket`);
 };
 
-export const createChallengeRoundQuiz = async (workspaceId, eventId, roundNumber) => {
-  return await api.post(`/group/${workspaceId}/challenges/${eventId}/rounds/${roundNumber}/quiz`);
-};
-
 /** Leader: người review đề snapshot — không được đăng ký challenge */
 export const listQuizReviewContributors = async (workspaceId, quizId) => {
   return await api.get(`/group/${workspaceId}/quiz-review-contributors/${quizId}`);
@@ -144,7 +140,7 @@ export const setQuizReviewCompleteOk = async (workspaceId, quizId, acknowledged 
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-complete-ok`, { acknowledged });
 };
 
-/** Leader: xóa câu hỏi khỏi snapshot quiz (chỉ leader mới có quyền, reviewer chỉ được flag) */
+/** Leader/reviewer đã nhận lời: xóa câu hỏi khỏi snapshot quiz trước publish */
 export const deleteQuestionFromSnapshot = async (workspaceId, quizId, questionId) => {
   return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/questions/${questionId}`);
 };

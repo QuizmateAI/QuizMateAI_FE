@@ -66,4 +66,44 @@ describe('memberStatsInsights', () => {
     expect(result.reasonCodes).toContain('improving');
     expect(result.recommendationCodes).toContain('unlock_harder_quiz');
   });
+
+  it('prioritizes roadmap support when the learner is behind', () => {
+    const result = buildMemberIntelligence({
+      totalQuizAttempts: 5,
+      totalQuizPassed: 4,
+      averageScore: 8.1,
+      totalMinutesSpent: 160,
+      roadmapProgress: {
+        hasRoadmap: true,
+        roadmapStarted: true,
+        roadmapProgressPercent: 25,
+        needsSupport: true,
+        supportReason: 'BEHIND_ROADMAP',
+        paceStatus: 'BEHIND',
+      },
+    });
+
+    expect(result.healthTone).toBe('risk');
+    expect(result.reasonCodes).toContain('roadmap_behind');
+    expect(result.recommendationCodes).toContain('roadmap_checkpoint');
+  });
+
+  it('asks leader to start roadmap when quiz baseline is also missing', () => {
+    const result = buildMemberIntelligence({
+      totalQuizAttempts: 0,
+      totalQuizPassed: 0,
+      averageScore: null,
+      roadmapProgress: {
+        hasRoadmap: true,
+        roadmapStarted: false,
+        needsSupport: true,
+        supportReason: 'ROADMAP_NOT_STARTED',
+        paceStatus: 'NOT_STARTED',
+      },
+    });
+
+    expect(result.healthTone).toBe('new');
+    expect(result.reasonCodes).toContain('roadmap_not_started');
+    expect(result.recommendationCodes).toContain('start_roadmap');
+  });
 });

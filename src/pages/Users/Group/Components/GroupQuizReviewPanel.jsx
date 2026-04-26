@@ -2,8 +2,9 @@ import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer, BadgeCheck, Trash2 } from "lucide-react";
-import { QUESTION_TYPE_ID_MAP, deleteQuestion } from "@/api/QuizAPI";
+import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
 import {
+  deleteQuestionFromSnapshot,
   getMyQuizReviewContributor,
   setQuizReviewCompleteOk,
 } from "@/api/ChallengeAPI";
@@ -90,10 +91,10 @@ function GroupQuizReviewPanel({
 
   const confirmDeleteQuestion = useCallback(async () => {
     const questionId = pendingDeleteQuestion?.questionId;
-    if (!questionId) return;
+    if (!questionId || !workspaceId || !quizId || !canDeleteQuestions) return;
     setDeleteLoadingQuestionId(questionId);
     try {
-      await deleteQuestion(questionId);
+      await deleteQuestionFromSnapshot(workspaceId, quizId, questionId);
       invalidateChallengeCaches();
       setPendingDeleteQuestion(null);
       await onQuestionDeleted?.();
@@ -102,7 +103,7 @@ function GroupQuizReviewPanel({
     } finally {
       setDeleteLoadingQuestionId(null);
     }
-  }, [pendingDeleteQuestion, invalidateChallengeCaches, onQuestionDeleted]);
+  }, [pendingDeleteQuestion, workspaceId, quizId, canDeleteQuestions, invalidateChallengeCaches, onQuestionDeleted]);
 
   const flatItems = useMemo(() => {
     const out = [];

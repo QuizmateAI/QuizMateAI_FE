@@ -24,7 +24,7 @@ import ListSpinner from '@/components/ui/ListSpinner';
 import UserDisplayName from '@/components/features/users/UserDisplayName';
 import { cn } from '@/lib/utils';
 import { buildMemberIntelligence } from './memberStatsInsights';
-import GroupMemberStatsFormulaDialog from './GroupMemberStatsFormulaDialog';
+import GroupMemberRoadmapProgressPanel from './GroupMemberRoadmapProgressPanel';
 
 function GroupMemberStatsContent({
   PAGE_SIZE,
@@ -42,7 +42,6 @@ function GroupMemberStatsContent({
   formatPercent,
   formatRelativeDate,
   formatScore,
-  formulaDialogOpen,
   generatingMemberId,
   handleAssignQuiz,
   handleGenerateMemberSnapshot,
@@ -72,7 +71,6 @@ function GroupMemberStatsContent({
   selectedSnapshot,
   selectedWorkspaceMemberId,
   setAssignOpen,
-  setFormulaDialogOpen,
   setMemberPage,
   setSelectedQuizId,
   shellClass,
@@ -91,7 +89,7 @@ function GroupMemberStatsContent({
         <section className={cn('rounded-[30px] border p-5 md:p-6', shellClass)}>
           <div className="min-w-0 max-w-3xl">
             <p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', eyebrowClass)}>
-              {tt('groupWorkspace.memberStats.eyebrow', 'Phân tích từng thành viên', 'Member intelligence')}
+              {tt('groupWorkspace.memberStats.eyebrow', 'Theo dõi học tập từng thành viên', 'Member learning stats')}
             </p>
             <h2 className={cn('mt-2 text-2xl font-black tracking-[-0.04em]', isDarkMode ? 'text-white' : 'text-slate-900')}>
               {tt('groupWorkspace.memberStats.titleV2', 'Thống kê thành viên', 'Member stats')}
@@ -106,10 +104,10 @@ function GroupMemberStatsContent({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', eyebrowClass)}>
-                {tt('groupWorkspace.memberStats.list.eyebrow', 'Danh sách ưu tiên', 'Priority list')}
+                {tt('groupWorkspace.memberStats.list.eyebrow', 'Danh sách thành viên', 'Member list')}
               </p>
               <h3 className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                {tt('groupWorkspace.memberStats.list.title', 'Member cần leader nhìn trước', 'Members to review first')}
+                {tt('groupWorkspace.memberStats.list.title', 'Tổng quan theo member', 'Member overview')}
               </h3>
             </div>
             <span className={cn('text-xs', mutedClass)}>
@@ -124,14 +122,14 @@ function GroupMemberStatsContent({
           <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
             {tt(
               'groupWorkspace.memberStats.list.subtitle',
-              'Hệ thống ưu tiên member có dấu hiệu giảm phong độ, thiếu dữ liệu hoặc cần hỗ trợ ở đầu danh sách.',
-              'The list prioritizes members with declining performance, thin data, or signs that they need support.',
+              'Xem kết quả quiz, thời gian học, tiến độ lộ trình và tín hiệu cần hỗ trợ của từng thành viên.',
+              'View quiz results, study time, roadmap progress, and support signals for each member.',
             )}
           </p>
 
           <div className={cn('mt-4 overflow-hidden rounded-[24px] border', isDarkMode ? 'border-white/10 bg-black/10' : 'border-slate-200 bg-white')}>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-sm">
+              <table className="w-full min-w-[1120px] text-sm">
                 <thead className={isDarkMode ? 'bg-white/[0.04]' : 'bg-slate-50/90'}>
                   <tr className={isDarkMode ? 'border-b border-white/10' : 'border-b border-slate-200'}>
                     <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
@@ -148,6 +146,9 @@ function GroupMemberStatsContent({
                     </th>
                     <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
                       {tt('groupWorkspace.memberStats.table.studyTime', 'Học', 'Study time')}
+                    </th>
+                    <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
+                      {tt('groupWorkspace.memberStats.table.roadmap', 'Lộ trình', 'Roadmap')}
                     </th>
 
                     <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
@@ -211,6 +212,32 @@ function GroupMemberStatsContent({
                         </td>
                         <td className={cn('px-4 py-4 align-top font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                           {formatMinutes(member.totalMinutesSpent)}
+                        </td>
+                        <td className="px-4 py-4 align-top">
+                          {(() => {
+                            const roadmap = member?.roadmapProgress || {};
+                            const percent = Math.max(0, Math.min(100, Math.round(Number(roadmap.roadmapProgressPercent ?? 0))));
+                            return (
+                              <div className="min-w-[130px]">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-200' : 'text-slate-700')}>
+                                    {roadmap.hasRoadmap ? `${percent}%` : tt('groupWorkspace.memberStats.roadmap.noneShort', 'Chưa có', 'None')}
+                                  </span>
+                                  {roadmap.needsSupport ? (
+                                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700')}>
+                                      {tt('groupWorkspace.memberStats.roadmap.needCheck', 'Cần kiểm tra', 'Check')}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <div className={cn('mt-2 h-1.5 overflow-hidden rounded-full', isDarkMode ? 'bg-white/10' : 'bg-blue-100')}>
+                                  <div className={cn('h-full rounded-full', roadmap.needsSupport ? 'bg-amber-500' : 'bg-blue-600')} style={{ width: `${percent}%` }} />
+                                </div>
+                                <p className={cn('mt-1.5 line-clamp-1 text-xs', mutedClass)}>
+                                  {roadmap.currentPhaseTitle || roadmap.currentKnowledgeTitle || tt('groupWorkspace.memberStats.roadmap.noCurrent', 'Chưa bắt đầu lộ trình', 'Roadmap not started')}
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </td>
 
                         <td className="px-4 py-4 align-top">
@@ -429,84 +456,6 @@ function GroupMemberStatsContent({
                 </div>
               </div>
 
-              {/* ── Health score card ── */}
-              <div className={cn('rounded-[22px] border p-4', panelClass)}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', eyebrowClass)}>
-                      {tt('groupWorkspace.memberStats.detail.healthScore', 'Điểm theo dõi', 'Follow-up score')}
-                    </p>
-                    <p className={cn('mt-2 text-3xl font-black tracking-[-0.05em]', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {selectedIntelligence.healthScore}
-                      <span className={cn('ml-1 text-sm font-semibold', mutedClass)}>/ 96</span>
-                    </p>
-                    <p className={cn('mt-2 text-xs leading-5', mutedClass)}>
-                      {selectedIntelligence.reasonCodes.slice(0, 2).map((code) => reasonLabel(code, selectedIntelligence)).join(' · ')}
-                    </p>
-
-                    {selectedIntelligence.attempts > 0 ? (() => {
-                      const sr = selectedIntelligence.scoreRatio ?? 0;
-                      const pr = selectedIntelligence.passRate ?? 0;
-                      const ar = selectedIntelligence.activityRatio ?? 0;
-                      const tb = selectedIntelligence.trendBoost ?? 0;
-                      const sc = Math.round(sr * 45 * 10) / 10;
-                      const pc = Math.round(pr * 35 * 10) / 10;
-                      const ac = Math.round(ar * 20 * 10) / 10;
-                      return (
-                        <div className={cn('mt-3 rounded-xl border px-3 py-2.5 space-y-1', isDarkMode ? 'border-white/10 bg-white/[0.02]' : 'border-slate-200 bg-slate-50/60')}>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={cn('font-mono text-[11px]', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')}>
-                              {tt('groupWorkspace.memberStats.detail.scoreBreak', 'Điểm TB', 'Avg score')} <span className={cn('font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{sc}</span>
-                            </span>
-                            <span className={cn('text-[10px]', mutedClass)}>+</span>
-                            <span className={cn('font-mono text-[11px]', isDarkMode ? 'text-emerald-200' : 'text-emerald-700')}>
-                              {tt('groupWorkspace.memberStats.detail.passBreak', 'Pass', 'Pass')} <span className={cn('font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{pc}</span>
-                            </span>
-                            <span className={cn('text-[10px]', mutedClass)}>+</span>
-                            <span className={cn('font-mono text-[11px]', isDarkMode ? 'text-violet-200' : 'text-violet-700')}>
-                              {tt('groupWorkspace.memberStats.detail.actBreak', 'Hoạt động', 'Activity')} <span className={cn('font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{ac}</span>
-                            </span>
-                            {tb !== 0 ? (
-                              <>
-                                <span className={cn('text-[10px]', mutedClass)}>{tb > 0 ? '+' : '−'}</span>
-                                <span className={cn('font-mono text-[11px] font-bold', tb > 0 ? (isDarkMode ? 'text-emerald-300' : 'text-emerald-600') : (isDarkMode ? 'text-rose-300' : 'text-rose-600'))}>
-                                  {tt('groupWorkspace.memberStats.detail.trendBreak', 'Xu hướng', 'Trend')} {Math.abs(tb)}
-                                </span>
-                              </>
-                            ) : null}
-                            <span className={cn('text-[10px]', mutedClass)}>=</span>
-                            <span className={cn('font-mono text-[11px] font-black', isDarkMode ? 'text-white' : 'text-slate-900')}>{selectedIntelligence.healthScore}</span>
-                          </div>
-                          <p className={cn('text-[10px] leading-relaxed', mutedClass)}>
-                            {tt('groupWorkspace.memberStats.detail.scoreExplain', 'Điểm từ 8 đến 96. Tổng hợp từ điểm quiz (×45), tỉ lệ pass (×35), mức hoạt động (×20) và xu hướng tiến bộ.', 'Score ranges from 8 to 96. Combines avg quiz score (×45), pass rate (×35), activity level (×20), and progress trend.')}
-                          </p>
-                        </div>
-                      );
-                    })() : (
-                      <p className={cn('mt-3 text-[10px] leading-relaxed', mutedClass)}>
-                        {tt('groupWorkspace.memberStats.detail.scoreExplainNew', 'Điểm mặc định 18/96 — chưa có dữ liệu quiz. Khi thành viên bắt đầu làm quiz, điểm sẽ được tính tự động.', 'Default score 18/96 — no quiz data yet. The score will be calculated automatically once the member starts taking quizzes.')}
-                      </p>
-                    )}
-                  </div>
-                  {selectedIntelligence.attempts > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => setFormulaDialogOpen(true)}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors',
-                        isDarkMode
-                          ? 'border-cyan-400/25 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
-                          : 'border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100',
-                      )}
-                    >
-                      <BookOpen className="h-3.5 w-3.5" />
-                      {tt('groupWorkspace.memberStats.formula.title', 'Cách tính điểm', 'How score works')}
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {[
                   {
@@ -546,6 +495,16 @@ function GroupMemberStatsContent({
                   </div>
                 ))}
               </div>
+
+              <GroupMemberRoadmapProgressPanel
+                formatDate={formatDate}
+                isDarkMode={isDarkMode}
+                locale={locale}
+                mutedClass={mutedClass}
+                panelClass={panelClass}
+                roadmapProgress={selectedSnapshot.roadmapProgress}
+                tt={tt}
+              />
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className={cn('rounded-[24px] border p-4', panelClass)}>
@@ -777,18 +736,6 @@ function GroupMemberStatsContent({
           </DialogContent>
         </Dialog>
       ) : null}
-      <GroupMemberStatsFormulaDialog
-        eyebrowClass={eyebrowClass}
-        formulaDialogOpen={formulaDialogOpen}
-        healthLabel={healthLabel}
-        healthToneClass={healthToneClass}
-        isDarkMode={isDarkMode}
-        mutedClass={mutedClass}
-        selectedIntelligence={selectedIntelligence}
-        selectedSnapshot={selectedSnapshot}
-        setFormulaDialogOpen={setFormulaDialogOpen}
-        tt={tt}
-      />
     </div>
   );
 }
