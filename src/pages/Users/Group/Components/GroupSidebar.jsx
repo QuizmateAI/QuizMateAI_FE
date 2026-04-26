@@ -273,17 +273,18 @@ function GroupSidebar({
                   ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
               )}
+              aria-label={t('common.switchLanguage')}
             >
               {currentLang === 'vi' ? (
                 <img
                   src={VietnamFlag}
-                  alt="Tiếng Việt"
+                  alt={t('common.languageVietnamese')}
                   className="h-4 w-4 rounded-sm object-cover"
                 />
               ) : (
                 <img
                   src={EnglishFlag}
-                  alt="English"
+                  alt={t('common.languageEnglish')}
                   className="h-4 w-4 rounded-sm object-cover"
                 />
               )}

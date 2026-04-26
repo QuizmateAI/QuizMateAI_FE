@@ -267,7 +267,7 @@ function PersonalWorkspaceSidebar({
 
               <img
                 src={isDarkMode ? LogoDark : LogoLight}
-                alt="QuizMate AI"
+                alt={t("common.brandLogoAlt", { brandName: "QuizMate AI" })}
                 className="h-[90px] w-auto object-contain"
               />
             </div>
@@ -300,8 +300,8 @@ function PersonalWorkspaceSidebar({
               >
                 {workspaceTitle
                   || (i18n.language === "vi"
-                    ? "Không gian học tập cá nhân"
-                    : "Personal workspace")}
+                    ? t("workspace.shell.sidebarLabel")
+                    : t("workspace.shell.sidebarLabel"))}
               </p>
             </div>
 
@@ -351,7 +351,7 @@ function PersonalWorkspaceSidebar({
                 isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50",
               )}>
                 <CreditIconImage
-                  alt="QuizMate Credits"
+                  alt={t("common.creditIconAlt", { brandName: "QuizMate AI" })}
                   className="h-4 w-4 rounded-full"
                 />
               </span>
@@ -372,7 +372,7 @@ function PersonalWorkspaceSidebar({
                       )}
                 </span>
                 <span className={cn("shrink-0 text-[8px] font-medium", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-                  credit
+                  {t("common.creditsUnit")}
                 </span>
               </span>
             </button>
@@ -391,7 +391,7 @@ function PersonalWorkspaceSidebar({
             >
               <UserCircle className="h-4 w-4" />
               <span className={cn("text-[10px] font-semibold leading-tight", fontClass)}>
-                {i18n.language === "vi" ? "Hồ sơ" : "Profile"}
+                {t("workspace.shell.profileShort")}
               </span>
             </button>
 
@@ -410,18 +410,18 @@ function PersonalWorkspaceSidebar({
                     ? "bg-slate-900 text-slate-100 hover:bg-slate-700"
                     : "bg-white text-slate-700 hover:bg-slate-100",
                 )}
-                aria-label={i18n.language === "vi" ? "Tiếng Việt" : "English"}
+                aria-label={t("common.switchLanguage")}
               >
                 {i18n.language === "vi" ? (
                   <img
                     src={VietnamFlag}
-                    alt="Tiếng Việt"
+                    alt={t("common.languageVietnamese")}
                     className="h-4 w-4 rounded-sm object-cover"
                   />
                 ) : (
                   <img
                     src={EnglishFlag}
-                    alt="English"
+                    alt={t("common.languageEnglish")}
                     className="h-4 w-4 rounded-sm object-cover"
                   />
                 )}

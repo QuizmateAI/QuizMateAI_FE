@@ -29,7 +29,40 @@
     "close": "Close",
     "home": "Home",
     "goHome": "Go to Home",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "brandLogoAlt": "{{brandName}} logo",
+    "creditIconAlt": "{{brandName}} credit icon",
+    "scrollToTop": "Scroll to top",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right",
+    "switchLanguage": "Switch language",
+    "languageVietnamese": "Vietnamese",
+    "languageEnglish": "English",
+    "openActions": "Open actions",
+    "hourglassTimer": "Hourglass timer",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving...",
+    "creditsUnit": "credits",
+    "dialog": {
+      "defaultTitle": "Dialog",
+      "defaultDescription": "Dialog content",
+      "close": "Close"
+    },
+    "toast": {
+      "closeAriaLabel": "Close toast"
+    },
+    "loadingSpinner": {
+      "brandLabel": "QuizMate AI"
+    },
+    "paymentRedirect": {
+      "proxyError": "Proxy is misconfigured: /api must point to the backend. Or set VITE_API_BASE_URL to the API domain.",
+      "backToResults": "Go to payment results",
+      "redirectingToResults": "Redirecting to the payment result page...",
+      "fallbackLink": "If the redirect does not start automatically, click here.",
+      "vnpaySuccessMessage": "Payment successful",
+      "vnpayFailedMessage": "Payment failed (code: {{code}})"
+    }
   },
   "validation": {
     "fullnameRequired": "Full name is required",
@@ -168,7 +201,13 @@
       "subtitle": "Turn any material into a quiz in seconds. Upload learning materials (PDF, DOC, or Youtube URL) to let AI automatically generate interactive question sets customized to your learning style.",
       "startLearning": "Start Learning Now",
       "watchDemo": "Watch Demo",
-      "activeStudents": "Active Students"
+      "activeStudents": "Active Students",
+      "avatarLabels": {
+        "anh": "Active learner Anh",
+        "binh": "Active learner Binh",
+        "chi": "Active learner Chi",
+        "duc": "Active learner Duc"
+      }
     },
     "features": {
       "title": "Revolutionize Your Learning Journey",
@@ -227,7 +266,9 @@
       "student1Quote": "\"QuizMate AI completely changed how I prepare for my exams. Generating quizzes from lecture videos is a game changer!\"",
       "student1Role": "Medical Student",
       "student2Quote": "\"The AI Roadmap is incredible. It broke down my 200-page textbook into 10 logical learning phases. Highly recommend!\"",
-      "student2Role": "Computer Science Major"
+      "student2Role": "Computer Science Major",
+      "student1Name": "Sarah Johnson",
+      "student2Name": "Mark Thompson"
     },
     "footer": {
       "brandDesc": "Empowering students worldwide with AI-driven study tools for a smarter future.",
@@ -456,7 +497,9 @@
         ]
       }
     ],
-    "examplesNote": "These numbers are simple estimates to help users understand the cost before running a feature."
+    "examplesNote": "These numbers are simple estimates to help users understand the cost before running a feature.",
+    "creditCardTitle": "QuizMate Credit",
+    "creditUnitLabel": "VND / credit"
   },
   "header": {
     "systemTitle": "QuizMate AI System",
@@ -503,7 +546,8 @@
       "amount": "Amount",
       "source": "Source",
       "status": "Status"
-    }
+    },
+    "noPackage": "Credit package not found."
   },
   "upgradePlan": {
     "title": "Upgrade Subscription",
@@ -544,5 +588,136 @@
       "titleAndContentRequired": "Please enter both title and content."
     },
     "successSent": "Feedback ticket sent."
+  },
+  "notFoundPage": {
+    "title": "Page not found",
+    "description": "The page you are looking for may have been removed, renamed, or is temporarily unavailable."
+  },
+  "launchingPage": {
+    "documentTitle": "{{brandName}} | Private Launch",
+    "header": {
+      "sequence": "Private launch sequence",
+      "closedUntil": "Closed until {{date}}",
+      "requestAccess": "Request Early Access",
+      "launchDateSoon": "Launch date coming soon"
+    },
+    "hero": {
+      "badge": "QuizMate AI launch mode",
+      "titlePrefix": "A launch page built for",
+      "titleSuffix": ", not a generic template.",
+      "description": "The public app is intentionally locked while QuizMate AI prepares a controlled release for teachers, schools, and academic teams. We are opening with a smaller first cohort to tune quiz generation, secure assessment flows, and study support before wider traffic.",
+      "joinCohort": "Join The First Cohort",
+      "blockedUntil": "Public login, home, workspace, and quiz routes stay blocked until {{date}}.",
+      "cards": {
+        "focus": {
+          "label": "Focus",
+          "title": "AI Quiz",
+          "description": "Source to assessment in a tighter, cleaner workflow."
+        },
+        "security": {
+          "label": "Security",
+          "title": "Exam Flow",
+          "description": "Restricted while protected assessment behavior is tuned."
+        },
+        "support": {
+          "label": "Support",
+          "title": "Notes + Roadmaps",
+          "description": "Revision tools stay aligned with each generated quiz."
+        }
+      }
+    },
+    "audiences": {
+      "teachers": "Teachers",
+      "highSchools": "High Schools",
+      "universities": "Universities",
+      "trainingCenters": "Training Centers",
+      "academicTeams": "Academic Teams"
+    },
+    "console": {
+      "label": "Launch Console",
+      "title": "QuizMate AI Command Center",
+      "openingNow": "Opening now",
+      "openingDate": "Opening {{date}}",
+      "countdown": {
+        "days": "Days",
+        "hours": "Hours",
+        "minutes": "Minutes",
+        "seconds": "Seconds"
+      },
+      "modeLabel": "Current Mode",
+      "modeValue": "Private Beta Lock",
+      "modeDescription": "Public-facing routes are intentionally redirected into launch mode.",
+      "cohortLabel": "First Cohort",
+      "cohortValue": "Educators + Institutions",
+      "cohortDescription": "Early access goes to users who can validate assessment, revision, and analytics flows."
+    },
+    "signals": {
+      "quizStudio": {
+        "title": "AI Quiz Studio",
+        "description": "Generate structured assessments from lessons, slides, and PDFs.",
+        "value": "Ready"
+      },
+      "secureExamRoom": {
+        "title": "Secure Exam Room",
+        "description": "Focused test experience with stricter control before public traffic.",
+        "value": "Locked"
+      },
+      "learningRoadmaps": {
+        "title": "Learning Roadmaps",
+        "description": "Connect quizzes, study notes, and revision paths into one flow.",
+        "value": "Mapped"
+      }
+    },
+    "reasonsSection": {
+      "eyebrow": "Why Access Stays Closed",
+      "title": "Launch with control, not with noise"
+    },
+    "reasons": {
+      "qualityFirst": {
+        "title": "Quality First",
+        "description": "The first cohort stays small so quiz generation, scoring logic, and study flows can be tuned with real educator feedback."
+      },
+      "saferRollout": {
+        "title": "Safer Rollout",
+        "description": "Access is restricted while exam security, navigation guardrails, and account flows are hardened before public release."
+      },
+      "directFeedbackLoop": {
+        "title": "Direct Feedback Loop",
+        "description": "Early users influence what ships first, from AI quiz outputs to revision notes and analytics priorities."
+      }
+    },
+    "releaseSection": {
+      "eyebrow": "Day-One Release Stack",
+      "title": "What opens when QuizMate AI goes live"
+    },
+    "releaseStack": {
+      "assessmentBuilder": {
+        "title": "Assessment Builder",
+        "description": "AI quiz creation, question banks, and multi-format source intake."
+      },
+      "examSecurity": {
+        "title": "Exam Security",
+        "description": "Protected assessment mode for timed evaluation flows."
+      },
+      "progressAnalytics": {
+        "title": "Progress Analytics",
+        "description": "Performance signals for teachers, learners, and teams."
+      },
+      "studyCompanion": {
+        "title": "Study Companion",
+        "description": "Roadmaps, notes, and smarter revision support around every quiz."
+      }
+    },
+    "earlyAccess": {
+      "eyebrow": "Early Access",
+      "title": "Register before the public launch opens",
+      "description": "Join the first rollout to test QuizMate AI earlier, share feedback on assessment quality, and help shape the release priorities for schools, universities, and teaching teams.",
+      "registerAction": "Register As Early Tester",
+      "contact": "Contact {{email}}"
+    },
+    "footer": {
+      "rights": "© {{year}} {{brandName}}. All rights reserved.",
+      "restricted": "Launch mode is active. All application routes remain restricted."
+    }
   }
 }

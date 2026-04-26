@@ -130,8 +130,9 @@ const PricingSection = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const navigate = useNavigate();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
-  const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
+  const isEnglish = i18n.language?.startsWith('en');
+  const fontClass = isEnglish ? 'font-poppins' : 'font-sans';
+  const locale = isEnglish ? 'en-US' : 'vi-VN';
   const [plans, setPlans] = useState([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
 
@@ -226,7 +227,7 @@ const PricingSection = () => {
             }`}
             onClick={() => navigate('/pricing')}
           >
-            Pricing Guide
+            {t('wallet.pricingGuide', 'Pricing guide')}
           </Button>
         </div>
       </div>
