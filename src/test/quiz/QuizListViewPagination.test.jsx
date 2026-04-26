@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import QuizListView from '@/Pages/Users/Individual/Workspace/Components/QuizListView';
+import QuizListView from '@/pages/Users/Individual/Workspace/Components/QuizListView';
 import { getQuizzesByScope } from '@/api/QuizAPI';
 
 vi.mock('@/api/QuizAPI', () => ({

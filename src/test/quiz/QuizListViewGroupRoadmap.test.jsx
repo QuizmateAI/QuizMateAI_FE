@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import QuizListView from '@/Pages/Users/Group/Components/QuizListView';
+import QuizListView from '@/pages/Users/Group/Components/QuizListView';
 import { getQuizzesByScope } from '@/api/QuizAPI';
 import { getGroupMembers } from '@/api/GroupAPI';
 

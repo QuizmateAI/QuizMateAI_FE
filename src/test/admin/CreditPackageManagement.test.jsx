@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import CreditPackageManagement from '@/Pages/Admin/CreditPackageManagement';
+import CreditPackageManagement from '@/pages/Admin/CreditPackageManagement';
 import {
   createCreditPackage,
   deleteCreditPackage,

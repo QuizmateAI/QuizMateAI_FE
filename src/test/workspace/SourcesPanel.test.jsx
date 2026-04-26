@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SourcesPanel from '@/Pages/Users/Individual/Workspace/Components/SourcesPanel';
+import SourcesPanel from '@/pages/Users/Individual/Workspace/Components/SourcesPanel';
 import { renameMaterial } from '@/api/MaterialAPI';
 
 const toastSpy = {
@@ -28,7 +28,7 @@ vi.mock('@/context/ToastContext', () => ({
   useToast: () => toastSpy,
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/SourceDetailView', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/SourceDetailView', () => ({
   default: () => <div data-testid="source-detail-view">detail-preview</div>,
 }));
 

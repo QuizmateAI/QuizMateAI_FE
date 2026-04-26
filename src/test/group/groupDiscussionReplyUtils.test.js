@@ -5,7 +5,7 @@ import {
   matchesDiscussionRealtimeThread,
   removeDiscussionMessage,
   upsertDiscussionMessage,
-} from "@/Pages/Users/Group/Components/groupDiscussionReplyUtils";
+} from "@/pages/Users/Group/Components/groupDiscussionReplyUtils";
 
 describe("getDiscussionReplyDepth", () => {
   it("keeps direct replies on the second visual tier", () => {

@@ -3,7 +3,7 @@ import {
   VIEW_TO_PATH,
   buildWorkspacePathForView,
   resolveWorkspaceViewFromSubPath,
-} from '@/Pages/Users/Individual/Workspace/utils/viewRouting';
+} from '@/pages/Users/Individual/Workspace/utils/viewRouting';
 
 describe('workspace viewRouting', () => {
   it('resolves the bare workspace route to overview', () => {

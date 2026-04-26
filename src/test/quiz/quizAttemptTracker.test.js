@@ -4,7 +4,7 @@ import {
   hasQuizCompleted,
   markQuizAttempted,
   markQuizCompleted,
-} from '@/Utils/quizAttemptTracker';
+} from '@/utils/quizAttemptTracker';
 
 describe('quizAttemptTracker', () => {
   beforeEach(() => {

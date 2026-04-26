@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import WorkspacePage from '@/Pages/Users/Individual/Workspace/WorkspacePage';
+import WorkspacePage from '@/pages/Users/Individual/Workspace/WorkspacePage';
 import {
   deleteIndividualWorkspace,
   getIndividualWorkspaceProfile,
@@ -169,7 +169,7 @@ vi.mock('@/api/FlashcardAPI', () => ({
   getFlashcardsByScope: vi.fn().mockResolvedValue({ data: [] }),
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/hooks/useWorkspaceMockTestGeneration', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/hooks/useWorkspaceMockTestGeneration', () => ({
   useWorkspaceMockTestGeneration: () => ({
     mockTestGenerationState: 'idle',
     mockTestGenerationProgress: 0,
@@ -185,7 +185,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/hooks/useWorkspaceMockTestGeneration
   }),
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager', () => ({
   useWorkspaceRoadmapManager: () => ({
     wsConnected: false,
     roadmapReloadToken: 0,
@@ -208,7 +208,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager', (
   }),
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/PersonalWorkspaceSidebar', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/PersonalWorkspaceSidebar', () => ({
   default: (props) => {
     sidebarSpy(props);
     return (
@@ -222,7 +222,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/PersonalWorkspaceSidebar'
   },
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/ChatPanel', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/ChatPanel', () => ({
   default: (props) => {
     chatPanelSpy(props);
     return (
@@ -233,7 +233,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/ChatPanel', () => ({
   },
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog', () => ({
   default: ({ open, onEditProfile }) => (open ? (
     <div data-testid="profile-overview-dialog">
       <button type="button" onClick={onEditProfile}>open-profile-update</button>
@@ -241,7 +241,7 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfil
   ) : null),
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog', () => ({
+vi.mock('@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog', () => ({
   default: ({ open, onOpenChange }) => (open ? (
     <div data-testid="profile-config-dialog">
       <button type="button" onClick={() => onOpenChange(false)}>close-profile-config</button>
@@ -249,19 +249,19 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfil
   ) : null),
 }));
 
-vi.mock('@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog', () => ({
+vi.mock('@/components/features/workspace/WorkspaceOnboardingUpdateGuardDialog', () => ({
   default: ({ open }) => (open ? <div data-testid="profile-update-guard-dialog">guard-open</div> : null),
 }));
 
-vi.mock('@/Components/workspace/RoadmapConfigEditDialog', () => ({
+vi.mock('@/components/features/workspace/RoadmapConfigEditDialog', () => ({
   default: () => null,
 }));
 
-vi.mock('@/Components/plan/PlanUpgradeModal', () => ({
+vi.mock('@/components/plan/PlanUpgradeModal', () => ({
   default: () => null,
 }));
 
-vi.mock('@/Components/ui/ListSpinner', () => ({
+vi.mock('@/components/ui/ListSpinner', () => ({
   default: () => <div data-testid="list-spinner" />,
 }));
 

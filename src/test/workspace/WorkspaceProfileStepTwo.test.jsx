@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n, { i18nReady, preloadNamespaces } from '@/i18n';
-import WorkspaceProfileStepTwo from '@/Pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/WorkspaceProfileStepTwo';
+import WorkspaceProfileStepTwo from '@/pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/WorkspaceProfileStepTwo';
 
 const templateStructure = {
   overview: 'Mau de theo sat JLPT N4',

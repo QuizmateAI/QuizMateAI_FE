@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { updateUserThemeMode } from '@/api/ProfilePreferencesAPI';
+import { hasAccessToken } from '@/utils/tokenStorage';
 
 // Tạo Context để quản lý trạng thái Dark Mode
 const DarkModeContext = createContext();
@@ -27,12 +29,9 @@ export function DarkModeProvider({ children }) {
       return;
     }
 
-    // Persist lên BE nếu đã đăng nhập. Lazy import tránh vòng phụ thuộc.
-    const hasToken = !!(localStorage.getItem('accessToken') || localStorage.getItem('jwt_token'));
-    if (hasToken) {
-      import('@/api/ProfileAPI')
-        .then(({ updateUserThemeMode }) => updateUserThemeMode(isDarkMode ? 'dark' : 'light'))
-        .catch(() => {});
+    // Persist lên BE nếu đã đăng nhập.
+    if (hasAccessToken()) {
+      void updateUserThemeMode(isDarkMode ? 'dark' : 'light');
     }
   }, [isDarkMode]);
 

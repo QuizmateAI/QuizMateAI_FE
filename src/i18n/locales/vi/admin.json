@@ -19,6 +19,7 @@
     "payments": "Thanh toán",
     "systemSettings": "Cấu hình hệ thống",
     "aiActionPolicies": "Chính sách AI",
+    "aiPlanOverrides": "Model theo gói",
     "feedback": "Phản hồi",
     "myPermissions": "Quyền của tôi",
     "communityQuizzes": "Quiz cộng đồng"
@@ -26,7 +27,8 @@
   "sidebarSections": {
     "overview": "Tổng quan",
     "workspace": "Người dùng & nhóm",
-    "commerce": "Gói & thanh toán",
+    "commerce": "Thanh toán",
+    "planOperations": "Quản trị gói",
     "system": "Hệ thống nội bộ",
     "access": "Truy cập",
     "accessControl": "Quản trị truy cập",
@@ -111,8 +113,13 @@
     "colCategory": "Nhóm",
     "colCostMode": "Cách tính",
     "colFormula": "Công thức",
+    "colDefaultModel": "Model mặc định",
     "colStatus": "Trạng thái",
     "colActions": "Thao tác",
+    "defaultModel": "Model mặc định",
+    "defaultModelHint": "Model dùng cho chức năng này khi gói không có override riêng.",
+    "defaultModelUnset": "Chưa đặt",
+    "defaultModelUnsetOption": "— Không đặt model mặc định —",
     "formulaCommon": "Công thức chung",
     "appliedMetric": "Chỉ số đang áp dụng",
     "tableExplanation": "Giải thích",
@@ -128,6 +135,10 @@
     "edit": "Chỉnh sửa",
     "editTitle": "Chỉnh sửa chính sách AI",
     "editDescription": "Cập nhật tên hiển thị, mô tả, trạng thái và công thức tính credit cho chức năng này.",
+    "editSectionIdentity": "Thông tin",
+    "editSectionPricing": "Công thức phí",
+    "editSectionRouting": "Điều phối model",
+    "editSectionPreview": "Xem trước",
     "actionKey": "Mã chức năng",
     "displayName": "Tên hiển thị",
     "description": "Mô tả",
@@ -189,6 +200,28 @@
         "unitSize": "Số câu / đơn vị",
         "metric": "Tổng số câu hỏi trong đề"
       },
+      "generateRoadmap": {
+        "title": "Tạo roadmap",
+        "description": "Tính phí cho mỗi lần AI tạo roadmap học tập.",
+        "baseCost": "Phí mỗi roadmap",
+        "metric": "Mỗi lần tạo roadmap"
+      },
+      "generateRoadmapPhases": {
+        "title": "Tạo giai đoạn roadmap",
+        "description": "Tính phí khi AI tạo các giai đoạn trong roadmap.",
+        "baseCost": "Phí cơ bản",
+        "unitCost": "Phí mỗi giai đoạn",
+        "unitSize": "Số giai đoạn / đơn vị",
+        "metric": "Tổng số giai đoạn roadmap"
+      },
+      "generateRoadmapPhaseContent": {
+        "title": "Tạo nội dung roadmap",
+        "description": "Tính phí khi AI tạo nội dung chi tiết cho các giai đoạn roadmap.",
+        "baseCost": "Phí cơ bản",
+        "unitCost": "Phí mỗi mục nội dung",
+        "unitSize": "Số mục / đơn vị",
+        "metric": "Tổng số mục nội dung roadmap"
+      },
       "previewQuizStructure": {
         "title": "Xem trước cấu trúc quiz",
         "description": "Tính phí cho mỗi lần AI dựng cấu trúc phân bổ câu hỏi dự kiến trước khi tạo quiz.",
@@ -196,12 +229,18 @@
         "metric": "Mỗi lần xem trước cấu trúc quiz"
       },
       "generateRoadmapQuiz": {
-        "title": "Generate quiz in roadmap",
+        "title": "Tạo quiz trong roadmap",
         "description": "Tính phí khi tạo bài kiểm tra kiến thức lộ trình, dựa trên tổng số câu hỏi.",
         "baseCost": "Phí khởi tạo",
         "unitCost": "Phí mỗi câu hỏi",
         "unitSize": "Số câu / đơn vị",
         "metric": "Tổng số câu hỏi của quiz lộ trình"
+      },
+      "suggestLearningResources": {
+        "title": "Gợi ý tài nguyên học",
+        "description": "Tính phí cho mỗi lần AI gợi ý tài nguyên học phù hợp.",
+        "baseCost": "Phí mỗi lần gợi ý",
+        "metric": "Mỗi lần gợi ý tài nguyên học"
       },
       "analyzeStudyProfileKnowledge": {
         "title": "Phân tích nội dung kiến thức",
@@ -221,11 +260,39 @@
         "baseCost": "Phí mỗi lần gợi ý",
         "metric": "Mỗi lần gợi ý mẫu đề thi"
       },
+      "suggestWorkspaceName": {
+        "title": "Gợi ý tên workspace",
+        "description": "Tính phí cho mỗi lần AI gợi ý tên workspace.",
+        "baseCost": "Phí mỗi lần gợi ý",
+        "metric": "Mỗi lần gợi ý tên workspace"
+      },
       "validateStudyProfileConsistency": {
         "title": "Kiểm tra độ nhất quán hồ sơ",
         "description": "Tính phí cho mỗi lần AI kiểm tra độ nhất quán của hồ sơ học tập.",
         "baseCost": "Phí mỗi lần kiểm tra",
         "metric": "Mỗi lần kiểm tra độ nhất quán"
+      },
+      "companionInterpret": {
+        "title": "AI companion trả lời",
+        "description": "Tính phí cho mỗi lần AI companion diễn giải hoặc trả lời người học.",
+        "baseCost": "Phí mỗi lần trả lời",
+        "metric": "Mỗi lượt companion trả lời"
+      },
+      "companionTranscribe": {
+        "title": "Companion speech-to-text",
+        "description": "Tính phí khi companion chuyển giọng nói thành văn bản.",
+        "baseCost": "Phí cơ bản",
+        "unitCost": "Phí mỗi phút",
+        "unitSize": "Số giây / đơn vị",
+        "metric": "Tổng thời lượng âm thanh companion theo giây"
+      },
+      "companionTts": {
+        "title": "Companion text-to-speech",
+        "description": "Tính phí khi companion chuyển văn bản thành giọng nói.",
+        "baseCost": "Phí cơ bản",
+        "unitCost": "Phí mỗi 1.000 từ",
+        "unitSize": "Số từ / đơn vị",
+        "metric": "Tổng số từ cần đọc"
       },
       "processPdf": {
         "title": "Xử lý PDF",
@@ -290,6 +357,51 @@
         "metric": "Tổng thời lượng video theo giây"
       }
     }
+  },
+  "aiPlanOverride": {
+    "title": "Model AI theo gói",
+    "subtitle": "Chỉ định model AI riêng cho từng (chức năng × nhóm model) trên một gói cụ thể. Khi không có override, hệ thống dùng model mặc định của chức năng.",
+    "readOnlyNotice": "Cấu hình model AI đã chuyển vào wizard tạo/sửa gói. Màn này chỉ còn dùng để xem override cũ.",
+    "selectPlan": "Gói thuê bao",
+    "noPlans": "Chưa có gói nào",
+    "noPlanSelected": "Chọn một gói để xem các override.",
+    "tableTitle": "Override đang áp dụng",
+    "tableSubtitle": "{{plan}} — override sẽ ưu tiên hơn model mặc định của chức năng.",
+    "addOverride": "Thêm override",
+    "refresh": "Làm mới",
+    "empty": "Gói này dùng model mặc định cho mọi chức năng.",
+    "colSource": "Loại",
+    "colAction": "Chức năng",
+    "colModelGroup": "Nhóm model",
+    "colModel": "Model override",
+    "colDefaultFallback": "Model mặc định",
+    "colActions": "Thao tác",
+    "sourceAction": "Theo chức năng",
+    "sourceGroup": "Theo nhóm",
+    "actionAll": "Mọi chức năng trong nhóm",
+    "modelMissing": "Model #{{id}} (không tồn tại)",
+    "noFallback": "Chưa có model mặc định",
+    "reset": "Bỏ override",
+    "addDialogTitle": "Thêm override cho gói",
+    "addDialogDescription": "Chọn phạm vi override và model sẽ chạy cho {{plan}}.",
+    "formOverrideType": "Phạm vi override",
+    "formOverrideTypeAction": "Theo chức năng",
+    "formOverrideTypeActionHint": "Override 1 chức năng — ưu tiên hơn fallback theo nhóm.",
+    "formOverrideTypeGroup": "Theo nhóm",
+    "formOverrideTypeGroupHint": "Model mặc định cho mọi chức năng trong nhóm này.",
+    "formAction": "Chức năng",
+    "formActionPlaceholder": "Chọn một chức năng",
+    "formModelGroup": "Nhóm model",
+    "formModelGroupPlaceholder": "Chọn nhóm model",
+    "formModel": "Model",
+    "formModelPlaceholder": "Chọn một model",
+    "formModelEmpty": "Không có model nào đang hoạt động cho nhóm này",
+    "duplicate": "Đã tồn tại override cho phạm vi này.",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "addSuccess": "Đã lưu override",
+    "resetSuccess": "Đã xóa override — quay về model mặc định"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -474,7 +586,8 @@
       "description": "Bật hoặc tắt quyền cho tài khoản ADMIN. SUPER_ADMIN giữ toàn bộ quyền mặc định.",
       "superAdminReadonly": "Tài khoản SUPER_ADMIN luôn có toàn bộ quyền mặc định.",
       "clearAll": "Bỏ tất cả",
-      "grantAll": "Cấp tất cả"
+      "grantAll": "Cấp tất cả",
+      "syncWarning": "??ng b? s? bi?n m?i quy?n ?ang ???c c?p th?nh quy?n v?nh vi?n (m?t expiresAt). D?ng tab Y?u c?u c?p quy?n ?? duy?t quy?n c? th?i h?n."
     }
   },
   "adminPayments": {
@@ -930,8 +1043,8 @@
       "workspaceScope": "Phạm vi workspace nhóm"
     },
     "aiModels": {
-      "title": "Mô hình AI theo capability",
-      "groupHint": "Chọn model mặc định cho capability này theo gói.",
+      "title": "Mô hình AI theo nhóm tác vụ",
+      "groupHint": "Chọn model mặc định cho nhóm tác vụ này theo gói.",
       "noAssignment": "Chưa gán model"
     },
     "actions": {
@@ -972,7 +1085,8 @@
     },
     "validation": {
       "codeRequired": "Vui lòng nhập code gói.",
-      "displayNameRequired": "Vui lòng nhập tên gói."
+      "displayNameRequired": "Vui lòng nhập tên gói.",
+      "aiCoverageRequired": "Gói trả phí phải gán model ACTIVE tương thích cho mọi Core AI và Advanced AI đang bật."
     },
     "wizard": {
       "empty": "Chưa nhập",
@@ -990,11 +1104,19 @@
         },
         "entitlement": {
           "title": "Quyền lợi",
-          "description": "Thiết lập giới hạn và các capability bật tắt."
+          "description": "Thiết lập giới hạn và các tính năng bật tắt."
+        },
+        "functions": {
+          "title": "Chức năng",
+          "description": "Core AI luôn bật; Advanced AI bật tắt theo quyền lợi của từng gói."
         },
         "models": {
           "title": "Mô hình AI",
-          "description": "Gán model mặc định cho từng nhóm capability."
+          "description": "Gán model theo từng action AI và dùng bulk apply theo nhóm khi cần."
+        },
+        "policy": {
+          "title": "Chi phí và policy",
+          "description": "Rà soát policy, chi phí model và cảnh báo thiếu cấu hình AI."
         },
         "review": {
           "title": "Rà soát",
@@ -1026,24 +1148,58 @@
       },
       "entitlement": {
         "title": "Quyền lợi và giới hạn",
-        "description": "Giữ phần này thật gọn: trước là giới hạn định lượng, sau là các capability bật hoặc tắt.",
+        "description": "Giữ phần này thật gọn: trước là giới hạn định lượng, sau là các tính năng bật hoặc tắt.",
         "maxIndividualWorkspaceHint": "Số workspace cá nhân tối đa mà plan cho phép.",
         "maxMaterialInWorkspaceHint": "Giới hạn tài liệu trong mỗi workspace.",
         "planIncludedCreditsHint": "Số credit được nạp sẵn trong gói.",
         "featureToggle": "Bật tắt tính năng",
         "enabledCount": "Đang bật {{count}} quyền lợi.",
-        "noneEnabled": "Chưa bật capability nào cho plan này.",
+        "noneEnabled": "Chưa bật tính năng nào cho plan này.",
         "enableAll": "Bật hết",
         "disableAll": "Tắt hết",
         "enabledState": "Đang mở cho plan này.",
         "disabledState": "Đang tắt."
       },
+      "features": {
+        "title": "Chức năng",
+        "coreTitle": "Core AI",
+        "advancedTitle": "Advanced AI",
+        "materialTitle": "Material",
+        "systemTitle": "Chức năng hệ thống",
+        "lockedOn": "Luôn bật",
+        "inherited": "Kế thừa",
+        "descriptions": {
+          "createRoadmap": "Create roadmap"
+        }
+      },
       "models": {
-        "title": "Model mặc định theo capability",
-        "description": "Mỗi nhóm năng lực nên có model mặc định riêng để giảm công chỉnh tay ở bước cuối.",
+        "title": "Model AI theo action",
+        "description": "Gán model tương thích cho từng AI action đang bật. Group default dùng để bulk apply, action assignment là payload chính của plan.",
         "inactiveHint": "Model có trạng thái khác ACTIVE vẫn hiển thị để xem lại cấu hình cũ, nhưng không thể chọn mới.",
         "groupCount": "{{count}} model",
-        "noAssignmentHint": "Chưa gán model riêng. Hệ thống sẽ dùng cách resolve mặc định tương ứng."
+        "noAssignmentHint": "Chưa gán model riêng. Hệ thống sẽ dùng cách resolve mặc định tương ứng.",
+        "actionsCovered": "action đủ model",
+        "bulkApply": "Áp dụng cho action",
+        "entitlementKey": "Quyền lợi: {{key}}",
+        "coreAlwaysOn": "Core action, luôn bật.",
+        "useGroupDefault": "Dùng group default",
+        "missing": "Thiếu"
+      },
+      "policy": {
+        "title": "Chi phí và policy",
+        "description": "Rà soát action policy, coverage model và cấu hình còn thiếu trước khi publish gói trả phí.",
+        "coverage": "AI coverage",
+        "missing": "Thiếu model",
+        "activePolicies": "Policy active",
+        "missingHint": "Gói trả phí chưa thể publish hoặc active nếu Core AI hoặc Advanced AI đang bật còn thiếu model ACTIVE tương thích.",
+        "coveredHint": "Tất cả AI action đang bật đã có model active tương thích.",
+        "action": "Action",
+        "group": "Nhóm",
+        "cost": "Chi phí",
+        "status": "Trạng thái",
+        "ready": "Sẵn sàng",
+        "noPolicy": "Chưa cấu hình policy",
+        "legacyOverride": "Override cũ"
       },
       "review": {
         "title": "Kiểm tra trước khi lưu",
@@ -1055,7 +1211,7 @@
         "modelGroupsAssigned": "Nhóm đã gán model",
         "overrideActions": "Action override",
         "aiOverrides": "Override hàm AI",
-        "aiOverridesHint": "Để trống để dùng model mặc định theo capability.",
+        "aiOverridesHint": "Để trống để dùng model mặc định theo nhóm tác vụ.",
         "aiOverridesGroupHint": "Chỉ override khi plan này thật sự cần hành vi khác với model mặc định của nhóm.",
         "providerAvailable": "Provider khả dụng: {{provider}}.",
         "useDefaultHint": "Để trống nếu muốn dùng mặc định của {{group}}.",
@@ -1066,7 +1222,7 @@
   },
   "aiModels": {
     "title": "Quản lý mô hình AI",
-    "subtitle": "Quản lý danh mục model, trạng thái hoạt động và bảng giá theo từng capability.",
+    "subtitle": "Quản lý danh mục model, trạng thái hoạt động và bảng giá theo từng nhóm tác vụ AI.",
     "refresh": "Làm mới",
     "add": "Thêm model",
     "cancel": "Hủy",
@@ -1093,7 +1249,7 @@
       "searchPlaceholder": "Tên hiển thị, mã model, provider...",
       "provider": "Provider",
       "allProviders": "Tất cả provider",
-      "group": "Nhóm capability",
+        "group": "Nhóm tác vụ AI",
       "allGroups": "Tất cả nhóm",
       "status": "Trạng thái",
       "allStatuses": "Tất cả trạng thái"
@@ -1105,7 +1261,7 @@
     },
     "table": {
       "model": "Model",
-      "group": "Capability",
+        "group": "Nhóm tác vụ",
       "pricing": "Bảng giá hiện hành",
       "input": "Input",
       "output": "Output",
@@ -1162,17 +1318,18 @@
     },
     "dialogs": {
       "createTitle": "Thêm mô hình AI",
-      "createDescription": "Tạo model mới để hệ thống có thể gán theo capability hoặc theo gói.",
+      "createDescription": "Tạo model mới để hệ thống có thể gán theo nhóm tác vụ AI hoặc theo gói.",
       "editTitle": "Chỉnh sửa mô hình AI",
-      "editDescription": "Cập nhật thông tin hiển thị và capability của model.",
+      "editDescription": "Cập nhật thông tin hiển thị và nhóm tác vụ AI của model.",
       "pricingTitle": "Bảng giá model",
       "pricingDescription": "Quản lý bảng giá input / output của model và đồng bộ từ nguồn chính thức khi cần.",
       "deleteTitle": "Xóa mô hình AI",
       "deleteDescription": "Bạn có chắc muốn xóa model \"{{name}}\"? Nếu model đã có lịch sử sử dụng, hệ thống sẽ chuyển sang archived thay vì xóa cứng."
     },
-    "form": {
-      "provider": "Provider",
-      "group": "Nhóm capability",
+      "form": {
+        "provider": "Provider",
+        "group": "Nhóm tác vụ AI",
+        "groupHint": "Nhóm này cho biết model xử lý loại tác vụ nào. Hệ thống dùng để lọc đúng model khi cấu hình gói.",
       "modelCode": "Mã model",
       "displayName": "Tên hiển thị",
       "description": "Mô tả",
@@ -1219,8 +1376,8 @@
       "allPlans": "Tất cả gói",
       "provider": "Provider",
       "allProviders": "Tất cả provider",
-      "group": "Capability",
-      "allGroups": "Tất cả capability",
+      "group": "Nhóm tác vụ AI",
+      "allGroups": "Tất cả nhóm tác vụ AI",
       "action": "Chức năng",
       "allActions": "Tất cả chức năng",
       "status": "Trạng thái",
@@ -1278,7 +1435,7 @@
       "action": "Chức năng",
       "plan": "Gói",
       "model": "Model",
-      "group": "Capability",
+      "group": "Nhóm tác vụ AI",
       "status": "Trạng thái",
       "createdAt": "Thời gian tạo",
       "formula": "Thu - chi quy đổi",
@@ -1293,7 +1450,28 @@
     "brand": "Admin QuizMate"
   },
   "superAdminLayout": {
-    "brand": "Super Admin"
+    "brand": "Super Admin",
+    "changePassword": {
+      "trigger": "Đổi mật khẩu",
+      "title": "Đổi mật khẩu",
+      "description": "Nhập mật khẩu hiện tại và mật khẩu mới để cập nhật.",
+      "oldPassword": "Mật khẩu hiện tại",
+      "newPassword": "Mật khẩu mới",
+      "confirmNewPassword": "Xác nhận mật khẩu mới",
+      "placeholder": "••••••••",
+      "cancel": "Hủy",
+      "submit": "Xác nhận",
+      "saving": "Đang lưu...",
+      "fieldsRequired": "Vui lòng điền đầy đủ các trường mật khẩu.",
+      "mismatch": "Mật khẩu xác nhận không khớp.",
+      "tooShort": "Mật khẩu mới phải có ít nhất 6 ký tự.",
+      "sameAsOld": "Mật khẩu mới không được trùng mật khẩu cũ.",
+      "success": "Đổi mật khẩu thành công.",
+      "error": "Không thể đổi mật khẩu. Vui lòng thử lại."
+    }
+  },
+  "backofficeShell": {
+    "controlPlane": "QuizMate control plane"
   },
   "aiAudit": {
     "title": "AI Audit",
@@ -1406,7 +1584,7 @@
     },
     "table": {
       "modelCode": "Mã mô hình",
-      "modelGroup": "Năng lực",
+      "modelGroup": "Nhóm tác vụ AI",
       "systemDefault": "Mặc định hệ thống",
       "status": "Trạng thái"
     },
@@ -1474,7 +1652,8 @@
     "status": {
       "ACTIVE": "Hoạt động",
       "INACTIVE": "Không hoạt động",
-      "BANNED": "Bị cấm"
+      "BANNED": "Bị cấm",
+      "DELETED": "?? xo?"
     },
     "changeStatus": "Đổi trạng thái",
     "viewDetail": "Xem chi tiết"
@@ -1487,14 +1666,51 @@
       "logs": "Nhật ký",
       "subscription": "Gói"
     },
-    "workspacesCount": "Số Không gian học tập",
-    "groupsCount": "Số nhóm",
+    "workspacesCount": "Không gian học tập",
+    "activeWorkspaceCount": "Workspace đang hoạt động",
+    "inspectedWorkspaceCount": "Snapshot đã kiểm tra",
+    "groupsCount": "Nhóm",
     "subscription": "Gói hiện tại",
     "noPlan": "Chưa có gói",
     "createdAt": "Ngày tạo",
+    "updatedAt": "Cập nhật lúc",
     "noWorkspaces": "Chưa có Không gian học tập nào.",
-    "roadmaps": "Lộ trình Học tập",
+    "workspaceExplorerTitle": "Khám phá workspace",
+    "workspaceExplorerHeading": "Kiểm tra toàn bộ dữ liệu trong các workspace của người dùng",
+    "workspaceExplorerDesc": "Mở từng workspace để xem tài liệu, lộ trình, quiz và snapshot thiết lập trong một giao diện.",
+    "inspectHint": "Mở workspace này để kiểm tra tài liệu, mục lộ trình, quiz và snapshot thiết lập hiện tại.",
+    "workspaceId": "Mã workspace",
+    "workspaceKind": "Workspace",
+    "roadmaps": "Lộ trình học tập",
+    "roadmapsDesc": "Rà soát các bộ lộ trình hiện gắn với workspace này.",
     "noRoadmaps": "Chưa có lộ trình.",
+    "documents": "Tài liệu",
+    "documentsDesc": "Tài liệu học tập hiện lưu trong workspace này.",
+    "emptyDocuments": "Workspace này chưa có tài liệu.",
+    "quizzes": "Quiz",
+    "quizzesDesc": "Các bài quiz và đánh giá được tạo thuộc workspace này.",
+    "emptyQuizzes": "Workspace này chưa có quiz.",
+    "profile": "Hồ sơ",
+    "profileDesc": "Thiết lập học tập, mục tiêu và nhịp độ hiện tại.",
+    "emptyProfile": "Chưa có hồ sơ workspace.",
+    "purpose": "Mục đích",
+    "domain": "Lĩnh vực",
+    "knowledge": "Kiến thức",
+    "currentLevel": "Trình độ hiện tại",
+    "learningGoal": "Mục tiêu học tập",
+    "adaptationMode": "Chế độ thích ứng",
+    "roadmapSpeedMode": "Tốc độ lộ trình",
+    "setupProgress": "Tiến độ thiết lập",
+    "setupStatus": "Trạng thái thiết lập",
+    "mockExamName": "Bài thi mô phỏng",
+    "completed": "Hoàn tất",
+    "inProgress": "Đang thực hiện",
+    "notStarted": "Chưa bắt đầu",
+    "loadingSnapshot": "Đang tải snapshot workspace...",
+    "workspaceSnapshotLoadError": "Không thể tải snapshot của workspace này.",
+    "retryLoad": "Thử lại",
+    "moreItems": "+{{count}} mục nữa",
+    "questionCount": "câu hỏi",
     "noGroups": "Chưa tham gia nhóm nào.",
     "members": "thành viên",
     "noLogs": "Chưa có nhật ký.",
@@ -1778,5 +1994,143 @@
     "close": "Đóng",
     "saving": "Đang lưu...",
     "saveUpdate": "Lưu cập nhật"
+  },
+  "superAdminSidebar": {
+    "roleLabel": "Super Admin"
+  },
+  "permissionRequestStatus": {
+    "PENDING": "Ch? duy?t",
+    "APPROVED": "?? duy?t",
+    "REJECTED": "T? ch?i",
+    "CANCELLED": "?? hu?"
+  },
+  "permissionDurationPresets": {
+    "permanent": "V?nh vi?n",
+    "oneDay": "1 ng?y",
+    "sevenDays": "7 ng?y",
+    "thirtyDays": "30 ng?y",
+    "ninetyDays": "90 ng?y",
+    "customDays": "{{count}} ng?y"
+  },
+  "myPermissionsPage": {
+    "eyebrow": "Truy c?p",
+    "title": "Quy?n c?a t?i",
+    "description": "Xem c?c quy?n b?n ?ang c? v? g?i y?u c?u xin th?m quy?n t?i Super Admin.",
+    "refresh": "L?m m?i",
+    "newRequest": "Y?u c?u quy?n m?i",
+    "loadPartialError": "Kh?ng th? t?i ??y ?? d? li?u",
+    "submitSuccess": "?? g?i y?u c?u, ch? Super Admin duy?t.",
+    "submitError": "Kh?ng th? t?o y?u c?u.",
+    "cancelSuccess": "?? hu? y?u c?u.",
+    "cancelError": "Kh?ng th? hu? y?u c?u.",
+    "cancelForbidden": "Hi?n t?i b?n ch?a th? hu? y?u c?u n?y. Vui l?ng th? l?i sau.",
+    "requestForbidden": "Hi?n t?i b?n ch?a th? g?i y?u c?u quy?n m?i. Vui l?ng th? l?i sau ho?c li?n h? Super Admin.",
+    "currentPermissionsTitle": "Quy?n hi?n c?",
+    "currentPermissionsDescription": "C?c quy?n ?? ???c c?p. Quy?n c? th?i h?n s? t? ??ng b? thu h?i khi h?t h?n.",
+    "currentPermissionsUnavailableTitle": "Ch?a th? t?i danh s?ch quy?n",
+    "currentPermissionsUnavailableDescription": "Th?ng tin quy?n hi?n c? ch?a s?n s?ng l?c n?y. Vui l?ng th? l?i sau.",
+    "currentPermissionsEmptyTitle": "B?n ch?a c? quy?n n?o",
+    "currentPermissionsEmptyDescription": "H?y g?i y?u c?u t?i Super Admin ?? ???c c?p quy?n c?n thi?t.",
+    "requestsTitle": "Y?u c?u c?p quy?n",
+    "requestsDescription": "Theo d?i c?c y?u c?u c?a b?n v? tr?ng th?i x? l?.",
+    "requestsUnavailableTitle": "Ch?a th? t?i y?u c?u c?p quy?n",
+    "requestsUnavailableDescription": "Danh s?ch y?u c?u c?a b?n ch?a s?n s?ng l?c n?y. Vui l?ng th? l?i sau.",
+    "requestsEmptyTitle": "Ch?a c? y?u c?u n?o",
+    "table": {
+      "permission": "Quy?n",
+      "reason": "L? do",
+      "requestedDuration": "Th?i h?n xin",
+      "status": "Tr?ng th?i",
+      "expiresAt": "H?t h?n",
+      "createdAt": "T?o l?c",
+      "actions": "H?nh ??ng",
+      "note": "Ghi ch?"
+    },
+    "cancelRequest": "Hu?",
+    "dialogTitle": "Y?u c?u quy?n m?i",
+    "dialogDescription": "Super Admin s? duy?t y?u c?u v? c? th? c?p k?m th?i h?n.",
+    "permissionLabel": "Quy?n mu?n xin",
+    "permissionPlaceholder": "V? d?: user:read",
+    "permissionHintWithSuggestions": "B?n c? th? nh?p ho?c ch?n nhanh t? danh s?ch g?i ?.",
+    "permissionHintManual": "B?n c? th? nh?p m? quy?n th? c?ng n?u ch?a c? danh s?ch g?i ?.",
+    "reasonLabel": "L? do (10-1000 k? t?)",
+    "reasonPlaceholder": "Gi?i th?ch v? sao b?n c?n quy?n n?y",
+    "durationLabel": "Th?i h?n mong mu?n",
+    "customDurationPlaceholder": "S? ng?y",
+    "customDurationOptional": "ng?y (tu? ch?n)",
+    "pendingForPermission": "B?n ?? c? m?t y?u c?u ch? duy?t cho quy?n n?y.",
+    "close": "??ng",
+    "submit": "G?i y?u c?u",
+    "submitting": "?ang g?i..."
+  },
+  "permissionRequestsPage": {
+    "eyebrow": "Qu?n tr? truy c?p",
+    "title": "Y?u c?u c?p quy?n",
+    "description": "Duy?t ho?c t? ch?i y?u c?u xin quy?n t? admin. C? th? c?p k?m th?i h?n v? h? th?ng s? t? ??ng thu h?i khi h?t h?n.",
+    "refresh": "L?m m?i",
+    "loadError": "Kh?ng th? t?i danh s?ch y?u c?u.",
+    "emptyTitle": "Kh?ng c? y?u c?u n?o",
+    "tabs": {
+      "PENDING": "Ch? duy?t",
+      "APPROVED": "?? duy?t",
+      "REJECTED": "T? ch?i",
+      "CANCELLED": "?? hu?",
+      "ALL": "T?t c?"
+    },
+    "table": {
+      "requester": "Ng??i y?u c?u",
+      "permission": "Quy?n",
+      "reason": "L? do",
+      "requestedDuration": "Th?i h?n xin",
+      "status": "Tr?ng th?i",
+      "createdAt": "T?o l?c",
+      "actions": "H?nh ??ng",
+      "note": "Ghi ch?",
+      "expiresAt": "H?t h?n"
+    },
+    "approve": "Duy?t",
+    "reject": "T? ch?i",
+    "decidedBy": "B?i {{email}}",
+    "approveSuccess": "?? duy?t y?u c?u.",
+    "approveError": "Kh?ng th? duy?t y?u c?u.",
+    "rejectSuccess": "?? t? ch?i y?u c?u.",
+    "rejectError": "Kh?ng th? t? ch?i y?u c?u.",
+    "approveDialogTitle": "Duy?t y?u c?u",
+    "approveDialogDescription": "C?p quy?n cho admin. C? th? ??t th?i h?n v? h? th?ng s? t? ??ng thu h?i khi h?t h?n.",
+    "adminLabel": "Admin",
+    "grantDurationLabel": "Th?i h?n c?p",
+    "customExpiryLabel": "Ho?c ch?n th?i ?i?m h?t h?n tu? ?",
+    "customExpiryHint": "N?u nh?p ng?y gi?, preset s? b? b? qua. ?? tr?ng ?? d?ng preset.",
+    "expiresAtPreviewLabel": "S? h?t h?n l?c",
+    "noteLabel": "Ghi ch? (tu? ch?n)",
+    "close": "??ng",
+    "approveSubmit": "Duy?t v? c?p quy?n",
+    "approving": "?ang duy?t...",
+    "rejectDialogTitle": "T? ch?i y?u c?u",
+    "rejectDialogDescription": "Ghi l? do ?? admin bi?t v? ?i?u ch?nh. L? do s? ???c l?u v?o audit log.",
+    "rejectReasonLabel": "L? do t? ch?i (5-1000 k? t?)",
+    "rejectReasonPlaceholder": "V? d?: quy?n n?y kh?ng ph? h?p v?i ph?m vi c?ng vi?c hi?n t?i.",
+    "rejectSubmit": "X?c nh?n t? ch?i",
+    "rejecting": "?ang g?i..."
+  },
+  "userManagementPage": {
+    "fetchError": "Kh?ng th? t?i danh s?ch ng??i d?ng.",
+    "updateStatusError": "Kh?ng th? c?p nh?t tr?ng th?i ng??i d?ng.",
+    "updateStatusSuccess": "C?p nh?t tr?ng th?i ng??i d?ng th?nh c?ng.",
+    "deleteAction": "Xo? t?i kho?n",
+    "deleteDialogTitle": "Xo? t?i kho?n ng??i d?ng",
+    "deleteDialogDescription": "H?nh ??ng n?y ch? d?nh cho SUPER_ADMIN v? ???c ghi v?o audit log. T?i kho?n s? b? ??nh d?u DELETED v? email ho?c username s? b? ?n danh.",
+    "deleteUsernameLabel": "Username",
+    "deleteEmailLabel": "Email",
+    "deleteIdLabel": "ID",
+    "deleteConfirmPrefix": "G? ch?nh x?c ",
+    "deleteConfirmSuffix": " ?? x?c nh?n",
+    "deleteReasonLabel": "L? do xo? (10-500 k? t?)",
+    "deleteReasonPlaceholder": "Ghi r? l? do ?? l?u v?o audit log",
+    "deleteCancel": "Hu?",
+    "deleteSubmit": "Xo? v?nh vi?n",
+    "deleting": "?ang xo?...",
+    "deleteSuccess": "?? xo? ng??i d?ng.",
+    "deleteError": "Kh?ng th? xo? ng??i d?ng."
   }
 }

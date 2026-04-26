@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AiAuditManagement from '@/Pages/SuperAdmin/AiAuditManagement';
+import AiAuditManagement from '@/pages/SuperAdmin/AiAuditManagement';
 import { getAiAuditLogs } from '@/api/ManagementSystemAPI';
 
 vi.mock('react-i18next', () => ({

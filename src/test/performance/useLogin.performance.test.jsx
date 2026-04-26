@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useLogin } from '@/Pages/Authentication/Login';
+import { useLogin } from '@/pages/Authentication/Login';
 import { login } from '@/api/Authentication';
 import { preloadGroupWorkspacePage, preloadHomePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 
