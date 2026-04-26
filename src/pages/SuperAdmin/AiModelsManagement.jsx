@@ -4,7 +4,6 @@ import {
   Archive,
   Bot,
   Coins,
-  DollarSign,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -67,6 +66,7 @@ import {
   SuperAdminPage,
   SuperAdminPageHeader,
 } from './Components/SuperAdminSurface';
+import AiModelsFilterPanel from './Components/AiModelsFilterPanel';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 
@@ -494,74 +494,32 @@ function AiModelsManagement() {
         <MetricCard label={t('aiModels.stats.archived')} value={archivedCount} icon={Archive} tone="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" isDarkMode={isDarkMode} subtext={t('aiModels.stats.archivedHint')} />
       </div>
 
-      <div className={`flex flex-col gap-3 rounded-2xl border p-5 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
-        <div className="flex items-start gap-3">
-          <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-emerald-500/10' : 'bg-emerald-50'}`}>
-            <DollarSign className={`h-5 w-5 ${isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}`} />
-          </div>
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.exchangeRate.title')}</p>
-            <p className={`mt-1 text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatExchangeRate(exchangeRate?.rate)}</p>
-            <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {(exchangeRate?.source || t('aiModels.exchangeRate.unknown'))}
-              {exchangeRate?.fetchedAt ? ` • ${formatDateTime(exchangeRate.fetchedAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}` : ''}
-            </p>
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => fetchExchangeRate()}
-          disabled={exchangeRateLoading}
-          className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
-          aria-label={t('aiModels.exchangeRate.refresh')}
-          title={t('aiModels.exchangeRate.refresh')}
-        >
-          <RefreshCw className={`h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
-
-      <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
-        <div className="grid gap-3 lg:grid-cols-4">
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiModels.filters.search')}</Label>
-            <Input value={filters.search} onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))} placeholder={t('aiModels.filters.searchPlaceholder')} className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`} />
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiModels.filters.provider')}</Label>
-            <select value={filters.provider} onChange={(event) => setFilters((prev) => ({ ...prev, provider: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiModels.filters.allProviders')}</option>
-              {PROVIDER_OPTIONS.filter(Boolean).map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiModels.filters.group')}</Label>
-            <select value={filters.modelGroup} onChange={(event) => setFilters((prev) => ({ ...prev, modelGroup: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiModels.filters.allGroups')}</option>
-              {AI_MODEL_GROUP_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiModels.filters.status')}</Label>
-            <select value={filters.status} onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="">{t('aiModels.filters.allStatuses')}</option>
-              {AI_MODEL_STATUS_OPTIONS.map((option) => <option key={option} value={option}>{t(`aiModels.status.${option}`)}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
+      <AiModelsFilterPanel
+        filters={filters}
+        setFilters={setFilters}
+        providerOptions={PROVIDER_OPTIONS}
+        groupOptions={AI_MODEL_GROUP_OPTIONS}
+        statusOptions={AI_MODEL_STATUS_OPTIONS}
+        exchangeRate={exchangeRate}
+        exchangeRateLoading={exchangeRateLoading}
+        onRefreshExchangeRate={() => fetchExchangeRate()}
+        formatExchangeRate={formatExchangeRate}
+        formatDateTime={formatDateTime}
+        locale={locale}
+        isDarkMode={isDarkMode}
+        t={t}
+      />
 
       <div className={`overflow-hidden rounded-2xl border ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
-        <Table className="table-fixed min-w-[1180px]">
+        <Table className="table-fixed min-w-[1040px] xl:min-w-full">
           <colgroup>
-            <col className="w-[26%]" />
-            <col className="w-[18%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
-            <col className="w-[15%]" />
-            <col className="w-[9%]" />
-            {canWrite ? <col className="w-[6%]" /> : null}
+            <col className={canWrite ? 'w-[24%]' : 'w-[30%]'} />
+            <col className={canWrite ? 'w-[15%]' : 'w-[18%]'} />
+            <col className={canWrite ? 'w-[12%]' : 'w-[13%]'} />
+            <col className={canWrite ? 'w-[12%]' : 'w-[13%]'} />
+            <col className={canWrite ? 'w-[17%]' : 'w-[16%]'} />
+            <col className={canWrite ? 'w-[11%]' : 'w-[10%]'} />
+            {canWrite ? <col className="w-[9%]" /> : null}
           </colgroup>
           <TableHeader>
             <TableRow className={cn(
@@ -575,7 +533,7 @@ function AiModelsManagement() {
               <TableHead className="text-left align-middle font-semibold">{t('aiModels.table.output', 'Output')}</TableHead>
               <TableHead className="text-left align-middle font-semibold">{t('aiModels.table.assignedPlans')}</TableHead>
               <TableHead className="text-left align-middle font-semibold">{t('aiModels.table.status')}</TableHead>
-              {canWrite ? <TableHead className="text-left align-middle font-semibold">{t('aiModels.table.actions')}</TableHead> : null}
+              {canWrite ? <TableHead className="text-center align-middle font-semibold">{t('aiModels.table.actions')}</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -597,30 +555,30 @@ function AiModelsManagement() {
                       '[&>td+td]:border-l',
                     )}
                   >
-                    <TableCell className="py-5 align-middle text-left">
-                      <div className="flex items-start gap-3 text-left">
-                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${groupMeta.softTone}`}>
-                          <GroupIcon className="h-5 w-5" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{model.displayName}</p>
-                            {model.systemDefault ? <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${isDarkMode ? 'bg-sky-500/10 text-sky-300' : 'bg-sky-50 text-sky-700'}`}>{t('aiModels.systemDefault')}</span> : null}
-                          </div>
-                          <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{model.provider} / {model.modelCode}</p>
-                          <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{model.description || t('aiModels.noDescription')}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-5 align-middle text-left">
-                      <div className="flex items-start gap-2 text-left">
-                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${groupMeta.softTone}`}>
+                    <TableCell className="py-4 align-middle text-left">
+                      <div className="flex min-w-0 items-start gap-3 text-left">
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${groupMeta.softTone}`}>
                           <GroupIcon className="h-4 w-4" />
                         </div>
-                        <p className={`text-sm font-semibold leading-6 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{getAiModelGroupLabel(model.modelGroup, t)}</p>
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`} title={model.displayName}>{model.displayName}</p>
+                            {model.systemDefault ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${isDarkMode ? 'bg-sky-500/10 text-sky-300' : 'bg-sky-50 text-sky-700'}`}>{t('aiModels.systemDefault')}</span> : null}
+                          </div>
+                          <p className={`truncate font-mono text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} title={`${model.provider} / ${model.modelCode}`}>{model.provider} / {model.modelCode}</p>
+                          <p className={`truncate text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} title={model.description || t('aiModels.noDescription')}>{model.description || t('aiModels.noDescription')}</p>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell className="py-5 align-middle text-left">
+                    <TableCell className="py-4 align-middle text-left">
+                      <div className="flex min-w-0 items-center gap-2 text-left">
+                        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl ${groupMeta.softTone}`}>
+                          <GroupIcon className="h-3.5 w-3.5" />
+                        </div>
+                        <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`} title={getAiModelGroupLabel(model.modelGroup, t)}>{getAiModelGroupLabel(model.modelGroup, t)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 align-middle text-left">
                       {activePriceVersion ? (
                         <div className="space-y-1 text-left">
                           <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatUsd(activePriceVersion.inputPriceUsdPer1M)}</p>
@@ -628,7 +586,7 @@ function AiModelsManagement() {
                         </div>
                       ) : <span className={`text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.none')}</span>}
                     </TableCell>
-                    <TableCell className="py-5 align-middle text-left">
+                    <TableCell className="py-4 align-middle text-left">
                       {activePriceVersion ? (
                         <div className="space-y-1 text-left">
                           <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatUsd(activePriceVersion.outputPriceUsdPer1M)}</p>
@@ -636,26 +594,26 @@ function AiModelsManagement() {
                         </div>
                       ) : <span className={`text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.none')}</span>}
                     </TableCell>
-                    <TableCell className="py-5 align-middle text-left">
+                    <TableCell className="py-4 align-middle text-left">
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(model.assignedPlanCodes) && model.assignedPlanCodes.length > 0 ? (
                           model.assignedPlanCodes.map((planLabel) => <span key={planLabel} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>{planLabel}</span>)
-                        ) : <span className={`text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.unassigned')}</span>}
+                        ) : <span className={`text-sm leading-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.unassigned')}</span>}
                       </div>
                     </TableCell>
-                    <TableCell className="py-5 align-middle text-left">
+                    <TableCell className="py-4 align-middle text-left">
                       <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(model.status, isDarkMode)}`}>{t(`aiModels.status.${model.status}`, model.status)}</span>
                     </TableCell>
                     {canWrite ? (
-                      <TableCell className="py-5 align-middle text-left">
-                        <div className="flex justify-start">
+                      <TableCell className="py-4 align-middle text-center">
+                        <div className="flex justify-center">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className={isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}
+                                className={`h-9 w-9 ${isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
                                 aria-label={t('aiModels.actions.menu', 'Open action menu')}
                                 title={t('aiModels.actions.menu', 'Open action menu')}
                               >

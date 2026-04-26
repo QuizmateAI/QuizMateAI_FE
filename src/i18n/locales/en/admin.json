@@ -16,7 +16,7 @@
     "aiAudit": "AI Audit",
     "subscriptions": "Subscriptions",
     "creditPackages": "Credit Packs",
-    "payments": "Payments",
+    "payments": "Transaction history",
     "systemSettings": "System Settings",
     "aiActionPolicies": "AI Policies",
     "aiPlanOverrides": "Plan Model Overrides",
@@ -662,7 +662,7 @@
       "chargedUser": "Charged User #{{id}}"
     },
     "detail": {
-      "action": "Details",
+      "action": "Detail",
       "title": "Payment Details {{orderId}}",
       "desc": "Review the full transaction details and billed target information.",
       "fields": {
