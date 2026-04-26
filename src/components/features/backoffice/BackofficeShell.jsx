@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Clock3, Globe, Moon, Sun } from 'lucide-react';
+import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
 
 function isPathActive(item, pathname) {
@@ -44,6 +45,7 @@ function BackofficeShell({
 }) {
   const [, setClockTick] = useState(0);
   const clockLabel = formatClockLabel(currentLang);
+  const t = i18n.getFixedT(currentLang === 'en' ? 'en' : 'vi');
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -80,7 +82,9 @@ function BackofficeShell({
                     {roleLabel}
                   </span>
                   <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em]', theme.control)}>
-                    QuizMate control plane
+                    {t('backofficeShell.controlPlane', {
+                      defaultValue: 'QuizMate control plane',
+                    })}
                   </span>
                 </div>
 
@@ -107,7 +111,9 @@ function BackofficeShell({
                   type="button"
                   onClick={onToggleDarkMode}
                   className={cn('inline-flex h-11 w-11 items-center justify-center rounded-2xl transition-all', theme.control)}
-                  title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                  title={isDarkMode
+                    ? t('common.lightMode', { defaultValue: 'Light mode' })
+                    : t('common.darkMode', { defaultValue: 'Dark mode' })}
                 >
                   {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </button>
@@ -116,6 +122,7 @@ function BackofficeShell({
                   type="button"
                   onClick={onToggleLanguage}
                   className={cn('inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-medium transition-all', theme.control)}
+                  title={t('common.switchLanguage', { defaultValue: 'Switch language' })}
                 >
                   <Globe className="h-4 w-4" />
                   <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>

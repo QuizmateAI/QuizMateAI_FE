@@ -1126,7 +1126,21 @@
         "cloneSummary": "Check the original community rating and discussion, then leave feedback after finishing your cloned copy.",
         "openCommunity": "Open community detail",
         "leaveFeedback": "Leave community feedback",
-        "updateFeedback": "Update community feedback"
+        "updateFeedback": "Update community feedback",
+        "loadError": "Unable to load community quiz.",
+        "commentPlaceholder": "Public comment visible to everyone.",
+        "commentSuccess": "Community comment sent.",
+        "commentError": "Unable to send community comment.",
+        "cloneAction": "Clone to workspace"
+      },
+      "communityFeedback": {
+        "title": "Community quiz feedback",
+        "description": "Rate the community quiz after finishing your cloned copy.",
+        "ratingRequired": "Please choose a star rating before submitting feedback.",
+        "commentPlaceholder": "This comment will appear on the community quiz after you submit.",
+        "submit": "Send feedback",
+        "success": "Community feedback sent.",
+        "error": "Unable to send community feedback."
       },
       "validation": {
         "nameRequired": "Please enter a quiz name.",
@@ -1373,6 +1387,20 @@
         "questionOption": "Question Option",
         "selectQuestion": "Select Question"
       },
+      "metadataEditModal": {
+        "nameLabel": "Quiz name",
+        "descriptionLabel": "Description (optional)",
+        "timerModeLabel": "Timer mode",
+        "timerModeWholeQuiz": "Whole quiz",
+        "timerModePerQuestion": "Per question",
+        "durationLabel": "Time (minutes)",
+        "namePlaceholder": "Quiz name...",
+        "descriptionPlaceholder": "Describe the content...",
+        "durationPlaceholder": "30",
+        "nameRequired": "Quiz name is required.",
+        "durationMin": "Time must be at least 1 minute.",
+        "saveFailed": "Something went wrong while updating the quiz."
+      },
       "create": "Create Quiz",
       "createActive": "Create & Activate",
       "saveDraft": "Save Draft",
@@ -1457,6 +1485,7 @@
         "unansweredListLabel": "Unanswered questions",
         "unansweredListMore": "and more...",
         "allQuestionsCompleted": "All questions are completed.",
+        "navigationLocked": "You are in an active exam, so going back or changing pages is disabled.",
         "starting": "Starting"
       },
       "practiceActions": {
@@ -2002,8 +2031,7 @@
       "postLearningLocked": "Please complete all knowledge items in this phase to unlock post-learning.",
       "postLearningUnlockProgress": "Knowledge progress to unlock: {{completed}}/{{total}}",
       "postLearningProgress": "Post Learning Progress",
-      "preLearningHelper": "Pre Learning Helper",
-      "title": "Roadmap"
+      "preLearningHelper": "Pre Learning Helper"
     },
     "mockTest": {
       "title": "Mock Test",
@@ -2168,6 +2196,7 @@
       "editWorkspaceNamePlaceholder": "Enter workspace name...",
       "editWorkspaceDescriptionLabel": "Description",
       "editWorkspaceDescriptionPlaceholder": "Enter a short workspace description...",
+      "profileShort": "Profile",
       "untitledMaterial": "Untitled material",
       "selectedMaterialCountHint": "{{count}} selected sources will be used for roadmap context.",
       "noSelectedMaterialHint": "No sources selected yet. The roadmap can still be created from your workspace profile.",
@@ -3040,5 +3069,71 @@
       "wrongSummary": "{{percent}}% wrong ({{wrong}}/{{total}})",
       "cohortLoadFailed": "Could not load class statistics"
     }
+  },
+  "timeline": {
+    "phaseNext": "Next"
+  },
+  "roadmap": {
+    "phaseUntitled": "Untitled phase",
+    "knowledgeUntitled": "Untitled knowledge",
+    "canvas": {
+      "closePhaseDetail": "Close phase detail",
+      "noKnowledgeInPhase": "This phase does not have knowledge items yet.",
+      "openInStage": "Open in stage view"
+    }
+  },
+  "quiz": {
+    "common": {
+      "cancel": "Cancel"
+    },
+    "manualWizard": {
+      "questionNavigator": {
+        "jumpTo": "Jump to"
+      }
+    },
+    "communityDetail": {
+      "unknownUser": "Learner",
+      "reviewNoComment": "User left a rating without a comment.",
+      "replyAction": "Reply",
+      "replyPlaceholder": "Write a reply",
+      "cancelReply": "Cancel",
+      "sendReply": "Send"
+    }
+  },
+  "editChoiceDialog": {
+    "fallbackTitle": "Quiz",
+    "title": "Edit quiz",
+    "description": "\"{{title}}\" already has completed attempts. Choose how you want to edit it.",
+    "metadataTitle": "Update basic information",
+    "metadataDescription": "Edit the title, description, timer mode, and duration. Existing attempt history stays unchanged.",
+    "duplicateTitle": "Create a copy for full editing",
+    "duplicateDescription": "Create a new quiz from this one so you can edit the questions. The original quiz and its history stay unchanged.",
+    "cancel": "Cancel"
+  },
+  "confirmDuplicateDialog": {
+    "fallbackTitle": "Quiz",
+    "title": "Create a copy to edit",
+    "descriptionWithCount": "Quiz \"{{title}}\" already has {{count}} completed attempts.",
+    "descriptionWithoutCount": "Quiz \"{{title}}\" already has learner attempt history.",
+    "body": "To preserve the result history, the system will create a new copy and you will edit that copy instead. The original quiz stays unchanged.",
+    "aiWarning": "Because the original is an AI quiz, the copied version will become a manual quiz and AI grading will no longer be available.",
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "confirm": "Create copy"
+  },
+  "workspaceOnboardingUpdateGuard": {
+    "stepOneTitle": "Cannot update onboarding - workspace has documents",
+    "stepOneDescription": "This workspace currently has {{count}} uploaded materials, so the onboarding setup cannot be updated yet. To continue, remove those materials from the workspace first.",
+    "stepOneHint": "To update onboarding, click \"Delete documents\" below. The onboarding form will reopen automatically once all materials have been removed.",
+    "stepOneNextRisk": "This workspace also has quiz or roadmap data that is still in progress. If you delete the materials, that current workspace data will also be removed.",
+    "stepOneNextSafe": "After the materials are deleted, the onboarding form will reopen automatically so you can update it right away.",
+    "stepTwoTitle": "All current workspace data will be permanently deleted",
+    "stepTwoDescription": "If you continue, all current data in this workspace will be deleted. Are you sure you want to proceed?",
+    "stepTwoHint": "This action cannot be undone. All quizzes, roadmaps, and documents in this workspace will be removed before the onboarding form opens again.",
+    "stepTwoRisk": "This includes all current quiz progress, roadmap content, and uploaded materials in the workspace.",
+    "cancel": "Cancel",
+    "back": "Back",
+    "deleteMaterials": "Delete documents",
+    "confirmDelete": "Confirm delete"
   }
 }

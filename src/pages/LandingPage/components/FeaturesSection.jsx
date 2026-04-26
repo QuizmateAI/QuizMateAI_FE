@@ -7,37 +7,37 @@ import { Card } from "@/components/ui/card";
 const FeaturesSection = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = i18n.language?.startsWith('en') ? 'font-poppins' : 'font-sans';
 
   const features = [
     {
       id: 'generation',
       icon: <Sparkles className="text-rose-500" />,
-      title: t('landingPage.features.new.generation.title', { defaultValue: 'Automated Generation' }),
+      title: t('landingPage.features.new.generation.title'),
       bullets: [
-        t('landingPage.features.new.generation.bullet1', { defaultValue: 'Diverse sources: Upload PDFs, Videos, Images, YouTube links...' }),
-        t('landingPage.features.new.generation.bullet2', { defaultValue: 'AI extracts knowledge & generates highly relevant questions.' }),
-        t('landingPage.features.new.generation.bullet3', { defaultValue: 'Saves hours of manual quiz creation (Solves main pain point).' })
+        t('landingPage.features.new.generation.bullet1'),
+        t('landingPage.features.new.generation.bullet2'),
+        t('landingPage.features.new.generation.bullet3')
       ]
     },
     {
       id: 'customization',
       icon: <MonitorSmartphone className="text-blue-500" />,
-      title: t('landingPage.features.new.customization.title', { defaultValue: 'Deep Customization' }),
+      title: t('landingPage.features.new.customization.title'),
       bullets: [
-        t('landingPage.features.new.customization.bullet1', { defaultValue: "Adjust: Question types, difficulty, Bloom's cognitive levels." }),
-        t('landingPage.features.new.customization.bullet2', { defaultValue: 'Select purpose: Quick review, knowledge testing, or mock exams.' }),
-        t('landingPage.features.new.customization.bullet3', { defaultValue: 'AI evaluates results and suggests key topics for review.' })
+        t('landingPage.features.new.customization.bullet1'),
+        t('landingPage.features.new.customization.bullet2'),
+        t('landingPage.features.new.customization.bullet3')
       ]
     },
     {
       id: 'collaborative',
       icon: <Users className="text-emerald-500" />,
-      title: t('landingPage.features.new.collaborative.title', { defaultValue: 'Collaborative Learning' }),
+      title: t('landingPage.features.new.collaborative.title'),
       bullets: [
-        t('landingPage.features.new.collaborative.bullet1', { defaultValue: 'Share study materials and assign quizzes to the whole group.' }),
-        t('landingPage.features.new.collaborative.bullet2', { defaultValue: 'Host real-time multiplayer challenges to boost engagement.' }),
-        t('landingPage.features.new.collaborative.bullet3', { defaultValue: 'Leaders can manage and track individual member progress.' })
+        t('landingPage.features.new.collaborative.bullet1'),
+        t('landingPage.features.new.collaborative.bullet2'),
+        t('landingPage.features.new.collaborative.bullet3')
       ]
     }
   ];
@@ -50,7 +50,7 @@ const FeaturesSection = () => {
         <h2 className={`text-4xl font-black tracking-tight ${
           isDarkMode ? 'text-white' : ''
         }`}>
-          {t('landingPage.features.title', { defaultValue: 'Cách mạng hóa hành trình học tập' })}
+          {t('landingPage.features.title')}
         </h2>
       </div>
       

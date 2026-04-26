@@ -667,7 +667,7 @@ export default function WalletPage() {
                         ? "bg-blue-500/10 ring-blue-400/25 shadow-[0_0_0_6px_rgba(99,102,241,0.10)]"
                         : "bg-slate-100 ring-slate-200"
                     }`}>
-                      <CreditIconImage alt="Quizmate Credit" className="w-9 h-9 rounded-2xl animate-floaty" />
+                      <CreditIconImage alt={t("common.creditIconAlt", { brandName: "QuizMate AI" })} className="w-9 h-9 rounded-2xl animate-floaty" />
                     </span>
                     {t("walletPage.summary.title", "Your Credit Wallet")}
                   </CardTitle>

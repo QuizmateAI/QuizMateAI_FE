@@ -1,14 +1,16 @@
 import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import './HourglassLoader.css';
 
 export default function HourglassLoader({ size = '5em', hue = 210 }) {
+  const { t } = useTranslation();
   const uid = useId();
   const topId = `${uid}-sand-top`;
   const bottomId = `${uid}-sand-bottom`;
 
   return (
     <svg
-      aria-label="Hourglass timer"
+      aria-label={t('common.hourglassTimer')}
       role="img"
       height="56px"
       width="56px"

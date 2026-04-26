@@ -8,17 +8,17 @@ import { BrainCircuit } from 'lucide-react';
 import LocalAvatar from '@/components/ui/LocalAvatar';
 
 const HERO_AVATARS = [
-  { initials: 'AN', label: 'Active learner Anh', tone: 'blue' },
-  { initials: 'BM', label: 'Active learner Binh', tone: 'emerald' },
-  { initials: 'CL', label: 'Active learner Chi', tone: 'violet' },
-  { initials: 'DN', label: 'Active learner Duc', tone: 'amber' },
+  { initials: 'AN', labelKey: 'landingPage.hero.avatarLabels.anh', tone: 'blue' },
+  { initials: 'BM', labelKey: 'landingPage.hero.avatarLabels.binh', tone: 'emerald' },
+  { initials: 'CL', labelKey: 'landingPage.hero.avatarLabels.chi', tone: 'violet' },
+  { initials: 'DN', labelKey: 'landingPage.hero.avatarLabels.duc', tone: 'amber' },
 ];
 
 const HeroSection = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const navigate = useNavigate();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = i18n.language?.startsWith('en') ? 'font-poppins' : 'font-sans';
 
   return (
     <section className={`container mx-auto flex flex-col md:flex-row items-center lg:py-2 gap-8 ${fontClass}`}>
@@ -63,8 +63,8 @@ const HeroSection = () => {
           <div className="flex -space-x-4">
             {HERO_AVATARS.map((avatar) => (
               <LocalAvatar
-                key={avatar.label}
-                label={avatar.label}
+                key={avatar.labelKey}
+                label={t(avatar.labelKey)}
                 initials={avatar.initials}
                 tone={avatar.tone}
                 className={`w-12 h-12 border-4 ${

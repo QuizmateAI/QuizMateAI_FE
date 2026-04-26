@@ -8,7 +8,7 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 const Footer = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = i18n.language?.startsWith('en') ? 'font-poppins' : 'font-sans';
   const linkClass = `transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`;
 
   return (
@@ -22,7 +22,7 @@ const Footer = () => {
         <div className="flex flex-col items-start space-y-1 mr-6">
           <img 
             src={isDarkMode ? LogoDark : LogoLight} 
-            alt="QuizMate Logo" 
+            alt={t('common.brandLogoAlt', { brandName: 'QuizMate AI' })} 
             className="h-[120px] w-auto object-contain" 
           />
           <p className={`font-medium text-sm leading-relaxed text-left max-w-xs ${

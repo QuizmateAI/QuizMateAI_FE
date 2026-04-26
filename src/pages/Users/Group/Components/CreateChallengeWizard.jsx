@@ -47,20 +47,26 @@ const STEPS = [
 const MATCH_MODE_OPTIONS = [
   {
     key: 'FREE_FOR_ALL',
-    label: 'Đua cá nhân',
-    desc: 'Mọi người làm cùng một đề, ranking theo điểm và thời gian.',
+    labelKey: 'createChallengeWizard.mode.personalLabel',
+    labelFallback: 'Free-for-all',
+    descKey: 'createChallengeWizard.mode.personalDesc',
+    descFallback: 'Everyone takes the same match and the leaderboard is ranked by score and time.',
     icon: Swords,
   },
   {
     key: 'TEAM_BATTLE',
-    label: 'Đấu đội',
-    desc: 'Chốt số người mỗi đội hoặc cho hệ thống tự chia đều khi bắt đầu.',
+    labelKey: 'createChallengeWizard.mode.teamLabel',
+    labelFallback: 'Team battle',
+    descKey: 'createChallengeWizard.mode.teamDesc',
+    descFallback: 'Set team size or let the system auto-balance teams when the match starts.',
     icon: Users,
   },
   {
     key: 'SOLO_BRACKET',
-    label: 'Đấu cúp 1v1',
-    desc: 'Chọn bracket 4/8/16/32 slot, số người phải khớp cấu hình.',
+    labelKey: 'createChallengeWizard.mode.soloLabel',
+    labelFallback: '1v1 bracket',
+    descKey: 'createChallengeWizard.mode.soloDesc',
+    descFallback: 'Pick a 4/8/16/32 slot bracket and keep the participant count aligned with the bracket.',
     icon: Trophy,
   },
 ];
@@ -74,13 +80,17 @@ const AVAILABLE_MATCH_MODE_OPTIONS = MATCH_MODE_OPTIONS.filter(
 const TEAM_CONFIG_MODES = [
   {
     key: 'AUTO_BALANCE',
-    label: 'Enroll trước, tự chia đều',
-    desc: 'Không giới hạn slot. Khi bắt đầu, hệ thống chia người đã đăng ký thành 2 đội cân bằng.',
+    labelKey: 'createChallengeWizard.mode.teamAutoBalanceLabel',
+    labelFallback: 'Pre-enroll, auto-balance',
+    descKey: 'createChallengeWizard.mode.teamAutoBalanceDesc',
+    descFallback: 'Unlimited slots. When the match starts, registered members are split into 2 balanced teams.',
   },
   {
     key: 'FIXED_TEAM_SIZE',
-    label: 'Chốt số người mỗi đội',
-    desc: 'Giới hạn đăng ký bằng 2 đội nhân với số người mỗi đội.',
+    labelKey: 'createChallengeWizard.mode.teamFixedSizeLabel',
+    labelFallback: 'Fixed members per team',
+    descKey: 'createChallengeWizard.mode.teamFixedSizeDesc',
+    descFallback: 'Registration is limited to 2 teams multiplied by the number of members per team.',
   },
 ];
 
@@ -369,10 +379,10 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       return (
         <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
           <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            Cấu hình đấu đội
+            {t('createChallengeWizard.schedule.teamConfigTitle', 'Team battle configuration')}
           </div>
           <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            Chọn cách chốt slot trước khi mở đăng ký. Hệ thống luôn chia thành {TEAM_COUNT} đội.
+            {t('createChallengeWizard.schedule.teamConfigHint', 'Choose how to lock slots before opening registration. The system always splits into {{count}} teams.', { count: TEAM_COUNT })}
           </p>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -389,9 +399,9 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                       : (isDarkMode ? 'border-slate-700 bg-slate-900/30 text-slate-300 hover:border-slate-600' : 'border-gray-200 bg-white text-slate-700 hover:border-gray-300')
                   }`}
                 >
-                  <span className="block text-sm font-semibold">{opt.label}</span>
+                  <span className="block text-sm font-semibold">{t(opt.labelKey, opt.labelFallback)}</span>
                   <span className={`mt-1 block text-xs leading-relaxed ${active ? '' : (isDarkMode ? 'text-slate-400' : 'text-gray-500')}`}>
-                    {opt.desc}
+                    {t(opt.descKey, opt.descFallback)}
                   </span>
                 </button>
               );
@@ -401,7 +411,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
           {teamConfigMode === 'FIXED_TEAM_SIZE' ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Số người mỗi đội</span>
+                <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t('createChallengeWizard.schedule.membersPerTeamLabel', 'Members per team')}</span>
                 <input
                   type="number"
                   min={1}
@@ -412,9 +422,9 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                 />
               </label>
               <div className={`rounded-xl border px-4 py-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-900/40 text-slate-300' : 'border-gray-200 bg-white text-slate-700'}`}>
-                <span className="block text-xs opacity-70">Số slot đăng ký</span>
+                <span className="block text-xs opacity-70">{t('createChallengeWizard.schedule.registrationSlotsLabel', 'Registration slots')}</span>
                 <span className="mt-1 block font-semibold">
-                  {fixedTeamCapacity || '-'} người
+                  {fixedTeamCapacity || '-'} {t('createChallengeWizard.schedule.participantUnit', 'participants')}
                 </span>
               </div>
             </div>
@@ -431,25 +441,25 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       return (
         <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
           <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            Cấu hình đấu cúp 1v1
+            {t('createChallengeWizard.schedule.bracketConfigTitle', '1v1 bracket configuration')}
           </div>
           <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            Chọn loại bracket trước. Nếu mời riêng, số người được mời phải đúng bằng số slot.
+            {t('createChallengeWizard.schedule.bracketConfigHint', 'Choose the bracket type first. If registration is invite-only, the invited member count must match the bracket slots.')}
           </p>
           <label className="mt-3 flex flex-col gap-1 md:max-w-xs">
-            <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Kích thước bracket</span>
+            <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t('createChallengeWizard.schedule.bracketSizeLabel', 'Bracket size')}</span>
             <select
               value={bracketSize}
               onChange={(e) => setBracketSize(Number(e.target.value))}
               className={inputCls}
             >
               {BRACKET_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>{size} người</option>
+                <option key={size} value={size}>{t('createChallengeWizard.schedule.bracketSizeOption', '{{count}} participants', { count: size })}</option>
               ))}
             </select>
           </label>
           <p className={`mt-3 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            Khi đăng ký công khai, hệ thống giới hạn tối đa {selectedBracketSize} người.
+            {t('createChallengeWizard.schedule.bracketPublicHint', 'With public registration, the system caps the bracket at {{count}} participants.', { count: selectedBracketSize })}
           </p>
         </div>
       );
@@ -458,16 +468,16 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     return (
       <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
         <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          Cấu hình đua cá nhân
+          {t('createChallengeWizard.schedule.personalConfigTitle', 'Free-for-all configuration')}
         </div>
         <label className="mt-3 flex flex-col gap-1 md:max-w-xs">
-          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Giới hạn người tham gia</span>
+          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t('createChallengeWizard.schedule.personalCapacityLabel', 'Participant limit')}</span>
           <input
             type="number"
             min={1}
             value={capacityLimit}
             onChange={(e) => setCapacityLimit(e.target.value)}
-            placeholder="Không giới hạn"
+            placeholder={t('createChallengeWizard.schedule.personalCapacityPlaceholder', 'Unlimited')}
             className={inputCls}
           />
         </label>
@@ -506,8 +516,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                       <Icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{opt.label}</div>
-                      <div className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{opt.desc}</div>
+                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t(opt.labelKey, opt.labelFallback)}</div>
+                      <div className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t(opt.descKey, opt.descFallback)}</div>
                     </div>
                   </button>
                 );

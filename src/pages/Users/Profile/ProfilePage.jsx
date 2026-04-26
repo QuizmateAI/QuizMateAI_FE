@@ -460,9 +460,9 @@ function ProfilePage() {
             type="button"
             className="flex w-[100px] items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:w-[130px] dark:focus-visible:ring-offset-slate-950"
             onClick={() => navigate("/home")}
-            aria-label="Go to home"
+            aria-label={t("common.goHome")}
           >
-            <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-auto object-contain" />
+            <img src={isDarkMode ? LogoDark : LogoLight} alt={t("common.brandLogoAlt", { brandName: "QuizMate AI" })} className="w-full h-auto object-contain" />
           </button>
 
           <div className="flex items-center gap-2">
@@ -490,7 +490,7 @@ function ProfilePage() {
               <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
                 isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
               }`}>
-                <CreditIconImage alt="Quizmate Credit" className="w-6 h-6 rounded-full" />
+                <CreditIconImage alt={t("common.creditIconAlt", { brandName: "QuizMate AI" })} className="w-6 h-6 rounded-full" />
               </span>
               <span className="text-sm hidden sm:inline">{t("common.wallet")}</span>
             </Button>
@@ -583,7 +583,7 @@ function ProfilePage() {
                               : "bg-blue-600/10 ring-blue-600/20"
                           }`}
                         >
-                          <CreditIconImage alt="Quizmate Credit" className="w-8 h-8 rounded-2xl" />
+                          <CreditIconImage alt={t("common.creditIconAlt", { brandName: "QuizMate AI" })} className="w-8 h-8 rounded-2xl" />
                         </span>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide">
@@ -726,7 +726,7 @@ function ProfilePage() {
                       </Card>
                       <Card className={`flex flex-col justify-center p-4 text-center shadow-lg ${isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white/70 border-white/60"}`}>
                         <Clock className="mx-auto mb-2 h-6 w-6 text-green-500" />
-                        <span className="text-2xl font-bold">128h</span>
+                        <span className="text-2xl font-bold">{t("profile.stats.learningTimeValue")}</span>
                         <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{t("profile.stats.learningTime")}</span>
                       </Card>
                       <Card className={`flex flex-col justify-center p-4 text-center shadow-lg ${isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white/70 border-white/60"}`}>
@@ -751,11 +751,11 @@ function ProfilePage() {
                           <div className="flex items-center gap-3">
                             <div className="h-2 w-2 rounded-full bg-blue-500" />
                             <div>
-                              <p className="text-sm font-medium">Completed "React Advanced Patterns"</p>
-                              <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>2 hours ago</p>
+                              <p className="text-sm font-medium">{t("profile.recentActivityItemTitle")}</p>
+                              <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("profile.recentActivityItemTimeAgo")}</p>
                             </div>
                           </div>
-                          <Badge variant="secondary" className="text-xs">+50 XP</Badge>
+                          <Badge variant="secondary" className="text-xs">{t("profile.recentActivityItemXp")}</Badge>
                         </div>
                       ))}
                     </div>
