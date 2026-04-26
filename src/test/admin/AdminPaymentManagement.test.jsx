@@ -54,8 +54,10 @@ describe('AdminPaymentManagement', () => {
         paymentId: 1,
         orderId: 'VNPAY-001',
         userId: 77,
+        payerUserName: 'Nguyen Van A',
         workspaceId: 99,
         chargedUserId: 77,
+        chargedUserName: 'Nguyen Van A',
         paymentTargetType: 'USER_PLAN',
         amount: 150000,
         paymentMethod: 'VNPAY',
@@ -75,8 +77,10 @@ describe('AdminPaymentManagement', () => {
             paymentId: 1,
             orderId: 'VNPAY-001',
             userId: 77,
+            payerUserName: 'Nguyen Van A',
             workspaceId: 99,
             chargedUserId: 77,
+            chargedUserName: 'Nguyen Van A',
             paymentTargetType: 'USER_PLAN',
             amount: 150000,
             paymentMethod: 'VNPAY',
@@ -112,6 +116,8 @@ describe('AdminPaymentManagement', () => {
 
     expect(orderCell).toBeInTheDocument();
     expect(paymentRow).not.toBeNull();
+    expect(within(paymentRow).getByText('Nguyen Van A')).toBeInTheDocument();
+    expect(within(paymentRow).queryByText('#77')).not.toBeInTheDocument();
     expect(within(paymentRow).getByText('150,000')).toBeInTheDocument();
     expect(within(paymentRow).getByText('COMPLETED')).toBeInTheDocument();
     expect(within(paymentRow).getByText('VNPAY')).toBeInTheDocument();
@@ -127,5 +133,7 @@ describe('AdminPaymentManagement', () => {
     expect(screen.getByText('150,000 VND')).toBeInTheDocument();
     expect(screen.getByText('VND')).toBeInTheDocument();
     expect(screen.getByText('adminPayments.detail.fields.gatewayVerifiedAt')).toBeInTheDocument();
+    expect(screen.queryByText('#-')).not.toBeInTheDocument();
+    expect(screen.queryByText('adminPayments.detail.fields.userSubscription')).not.toBeInTheDocument();
   });
 });
