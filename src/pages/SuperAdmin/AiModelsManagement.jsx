@@ -723,6 +723,7 @@ function AiModelsManagement() {
                 <select value={formData.modelGroup} onChange={(event) => setFormData((prev) => ({ ...prev, modelGroup: event.target.value }))} className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
                   {AI_MODEL_GROUP_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>)}
                 </select>
+                <p className={`mt-1.5 text-xs leading-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.form.groupHint')}</p>
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">

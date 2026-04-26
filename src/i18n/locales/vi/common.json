@@ -261,8 +261,8 @@
         "desc": "Mốc khởi động đề xuất hiện tại là 100 VND / credit."
       },
       {
-        "title": "Capability bundle",
-        "desc": "Tính theo nhóm năng lực AI như OCR, source understanding, quiz generation, review."
+        "title": "Gói tác vụ AI",
+        "desc": "Tính theo nhóm tác vụ AI như OCR, hiểu tài liệu, tạo quiz và review."
       },
       {
         "title": "Không tính hai lần",

@@ -1,11 +1,74 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import PlanFormWizard from '@/pages/Admin/components/PlanFormWizard';
+
+vi.mock('@/api/ManagementSystemAPI', () => ({
+  getAiFeatureCatalog: vi.fn().mockResolvedValue({ data: { data: [] } }),
+  getAllAiActionPolicies: vi.fn().mockResolvedValue({ data: { data: [] } }),
+}));
 
 function DummyIcon() {
   return <svg aria-hidden="true" />;
 }
+
+const DEFAULT_ENTITLEMENT_TOGGLES = {
+  canProcessPdf: {
+    labelKey: 'subscription.entitlements.canProcessPdf',
+    defaultLabel: 'PDF',
+    icon: DummyIcon,
+  },
+  canProcessText: {
+    labelKey: 'subscription.entitlements.canProcessText',
+    defaultLabel: 'Text',
+    icon: DummyIcon,
+  },
+  canProcessWord: {
+    labelKey: 'subscription.entitlements.canProcessWord',
+    defaultLabel: 'Word',
+    icon: DummyIcon,
+  },
+  canProcessSlide: {
+    labelKey: 'subscription.entitlements.canProcessSlide',
+    defaultLabel: 'Slide',
+    icon: DummyIcon,
+  },
+  canProcessExcel: {
+    labelKey: 'subscription.entitlements.canProcessExcel',
+    defaultLabel: 'Excel',
+    icon: DummyIcon,
+  },
+  canProcessImage: {
+    labelKey: 'subscription.entitlements.canProcessImage',
+    defaultLabel: 'Image',
+    icon: DummyIcon,
+  },
+  canProcessAudio: {
+    labelKey: 'subscription.entitlements.canProcessAudio',
+    defaultLabel: 'Audio',
+    icon: DummyIcon,
+  },
+  canProcessVideo: {
+    labelKey: 'subscription.entitlements.canProcessVideo',
+    defaultLabel: 'Video',
+    icon: DummyIcon,
+  },
+  hasAdvanceQuizConfig: {
+    labelKey: 'subscription.entitlements.hasAdvanceQuizConfig',
+    defaultLabel: 'Advanced quiz configuration',
+    icon: DummyIcon,
+  },
+  canCreateRoadMap: {
+    labelKey: 'subscription.entitlements.canCreateRoadMap',
+    defaultLabel: 'Create roadmap',
+    icon: DummyIcon,
+  },
+  hasAiCompanionMode: {
+    labelKey: 'subscription.entitlements.hasAiCompanionMode',
+    defaultLabel: 'AI companion',
+    icon: DummyIcon,
+  },
+};
 
 function createTranslator() {
   return (key, fallbackOrOptions) => {
@@ -48,13 +111,7 @@ function renderWizard(overrides = {}) {
         canProcessPdf: true,
       }}
       setEntitlement={vi.fn()}
-      entitlementToggles={{
-        canProcessPdf: {
-          labelKey: 'subscription.entitlements.canProcessPdf',
-          defaultLabel: 'PDF',
-          icon: DummyIcon,
-        },
-      }}
+      entitlementToggles={DEFAULT_ENTITLEMENT_TOGGLES}
       aiModelAssignments={{}}
       setAiModelAssignments={vi.fn()}
       functionAssignmentMap={{}}
@@ -103,13 +160,7 @@ function renderStatefulWizard(overrides = {}) {
         setFormData={setFormData}
         entitlement={entitlement}
         setEntitlement={setEntitlement}
-        entitlementToggles={{
-          canProcessPdf: {
-            labelKey: 'subscription.entitlements.canProcessPdf',
-            defaultLabel: 'PDF',
-            icon: DummyIcon,
-          },
-        }}
+        entitlementToggles={DEFAULT_ENTITLEMENT_TOGGLES}
         aiModelAssignments={{}}
         setAiModelAssignments={vi.fn()}
         functionAssignmentMap={{}}
@@ -128,9 +179,16 @@ function renderStatefulWizard(overrides = {}) {
   };
 }
 
+async function flushCatalogLoad() {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
 describe('PlanFormWizard', () => {
-  it('shows level selection for workspace plans without requiring user-only entitlement limits', () => {
+  it('shows level selection for workspace plans without requiring user-only entitlement limits', async () => {
     renderWizard();
+    await flushCatalogLoad();
 
     expect(screen.getByText('Level')).toBeInTheDocument();
 
@@ -141,8 +199,23 @@ describe('PlanFormWizard', () => {
     expect(screen.queryByText(/Max material \/ workspace/i)).not.toBeInTheDocument();
   });
 
-  it('defaults included credits to 0 for level 0 plans and allows moving past entitlement validation', () => {
+  it('separates material features and renders action names without enum keys', async () => {
+    renderStatefulWizard();
+    await flushCatalogLoad();
+
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    expect(screen.getByText('Advanced AI')).toBeInTheDocument();
+    expect(screen.getByText('Material')).toBeInTheDocument();
+    expect(screen.getAllByText('Create roadmap').length).toBeGreaterThan(0);
+    expect(screen.getByText('Suggest Learning Resources')).toBeInTheDocument();
+    expect(screen.queryByText('SUGGEST_LEARNING_RESOURCES')).not.toBeInTheDocument();
+    expect(screen.queryByText(/GENERATE_ROADMAP_PHASES/)).not.toBeInTheDocument();
+  });
+
+  it('defaults included credits to 0 for level 0 plans and allows moving past entitlement validation', async () => {
     const { onValidationError } = renderStatefulWizard();
+    await flushCatalogLoad();
 
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
@@ -154,10 +227,10 @@ describe('PlanFormWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
     expect(onValidationError).not.toHaveBeenCalled();
-    expect(screen.getByText('Default models by capability')).toBeInTheDocument();
+    expect(screen.getByText('AI models by action')).toBeInTheDocument();
   });
 
-  it('does not apply inherited group entitlements for level 0 workspace plans', () => {
+  it('does not apply inherited group entitlements for level 0 workspace plans', async () => {
     renderStatefulWizard({
       formData: {
         planScope: 'WORKSPACE',
@@ -170,6 +243,7 @@ describe('PlanFormWizard', () => {
         canProcessPdf: true,
       },
     });
+    await flushCatalogLoad();
 
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
@@ -179,7 +253,7 @@ describe('PlanFormWizard', () => {
     expect(pdfSwitch).not.toBeDisabled();
   });
 
-  it('keeps inherited group entitlements locked for workspace plans above level 0', () => {
+  it('keeps inherited group entitlements locked for workspace plans above level 0', async () => {
     renderStatefulWizard({
       formData: {
         planScope: 'WORKSPACE',
@@ -192,6 +266,7 @@ describe('PlanFormWizard', () => {
         canProcessPdf: true,
       },
     });
+    await flushCatalogLoad();
 
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 

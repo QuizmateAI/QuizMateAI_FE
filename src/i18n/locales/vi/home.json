@@ -403,6 +403,12 @@
     "groupLeaderManagedCta": "Trưởng nhóm quản lý gói",
     "thanhToan": "Thanh toán",
     "defaultPlan": "Gói mặc định",
+    "aiQuality": {
+      "core": "Core AI",
+      "enhanced": "Enhanced AI",
+      "premium": "Premium AI",
+      "team": "Team AI"
+    },
     "descriptions": {
       "free": "Bắt đầu với các tính năng cốt lõi để tạo quiz và học thử.",
       "freeWithLimits": "Phù hợp để bắt đầu với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",

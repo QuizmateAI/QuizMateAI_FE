@@ -4,6 +4,7 @@ import {
   Eye,
   Globe2,
   MessageSquareText,
+  MoreHorizontal,
   RefreshCw,
   Search,
   ShieldX,
@@ -12,7 +13,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import ListSpinner from '@/components/ui/ListSpinner';
 import {
@@ -33,6 +40,7 @@ import {
 } from '@/components/ui/table';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
+import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { unwrapApiData } from '@/utils/apiResponse';
 import {
@@ -70,6 +78,51 @@ function formatDateTime(value) {
 function formatRating(value) {
   const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue.toFixed(2) : '0.00';
+}
+
+function QuizMetaChip({ children, isDarkMode }) {
+  if (!children) return null;
+
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-lg border px-2 py-1 text-[11px] font-medium leading-none',
+        isDarkMode
+          ? 'border-slate-700 bg-slate-900 text-slate-300'
+          : 'border-slate-200 bg-slate-50 text-slate-600',
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function SignalPill({ label, value, isDarkMode }) {
+  return (
+    <div
+      className={cn(
+        'min-w-0 rounded-xl border px-3 py-2',
+        isDarkMode ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50/80',
+      )}
+    >
+      <p className="truncate text-[11px] font-semibold uppercase leading-none text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1.5 truncate text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function QuizSignals({ quiz, isDarkMode, className = '' }) {
+  return (
+    <div className={cn('grid grid-cols-3 gap-2', className)}>
+      <SignalPill label="Clone" value={quiz?.communityCloneCount || 0} isDarkMode={isDarkMode} />
+      <SignalPill label="Rate" value={formatRating(quiz?.communityAverageRating)} isDarkMode={isDarkMode} />
+      <SignalPill label="Talk" value={quiz?.communityCommentCount || 0} isDarkMode={isDarkMode} />
+    </div>
+  );
 }
 
 export default function CommunityQuizManagement() {
@@ -258,8 +311,8 @@ export default function CommunityQuizManagement() {
         />
       </div>
 
-      <SuperAdminToolbar>
-        <div className="relative min-w-[280px] flex-1">
+      <SuperAdminToolbar className="lg:flex-nowrap">
+        <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             value={searchTerm}
@@ -275,7 +328,7 @@ export default function CommunityQuizManagement() {
         <select
           value={statusFilter}
           onChange={handleStatusChange}
-          className={`h-11 rounded-2xl border px-4 text-sm outline-none transition-colors ${
+          className={`h-11 w-full rounded-2xl border px-4 text-sm outline-none transition-colors sm:w-[210px] ${
             isDarkMode
               ? 'border-slate-700 bg-slate-900 text-slate-200'
               : 'border-slate-200 bg-white text-slate-700'
@@ -315,50 +368,50 @@ export default function CommunityQuizManagement() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <Table>
+            <div>
+              <Table className="min-w-[1080px] table-fixed">
                 <TableHeader>
                   <TableRow className={isDarkMode ? 'border-slate-800' : ''}>
-                    <TableHead>{t('communityQuizManagement.table.quiz', 'Quiz')}</TableHead>
-                    <TableHead>{t('communityQuizManagement.table.creator', 'Người tạo')}</TableHead>
-                    <TableHead>{t('communityQuizManagement.table.status', 'Trạng thái')}</TableHead>
-                    <TableHead>{t('communityQuizManagement.table.signals', 'Tín hiệu')}</TableHead>
-                    <TableHead>{t('communityQuizManagement.table.createdAt', 'Ngày tạo')}</TableHead>
-                    <TableHead className="text-right">{t('communityQuizManagement.table.actions', 'Thao tác')}</TableHead>
+                    <TableHead className="w-[25%]">{t('communityQuizManagement.table.quiz', 'Quiz')}</TableHead>
+                    <TableHead className="w-[21%]">{t('communityQuizManagement.table.creator', 'Người tạo')}</TableHead>
+                    <TableHead className="w-[13%]">{t('communityQuizManagement.table.status', 'Trạng thái')}</TableHead>
+                    <TableHead className="w-[20%]">{t('communityQuizManagement.table.signals', 'Tín hiệu')}</TableHead>
+                    <TableHead className="w-[12%]">{t('communityQuizManagement.table.createdAt', 'Ngày tạo')}</TableHead>
+                    <TableHead className="w-[9%] text-right">{t('communityQuizManagement.table.actions', 'Thao tác')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {quizzes.map((quiz) => (
-                    <TableRow key={quiz.quizId} className={isDarkMode ? 'border-slate-800' : ''}>
-                      <TableCell>
-                        <div className="min-w-[240px]">
-                          <p className={`font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                    <TableRow key={quiz.quizId} className={cn('align-top', isDarkMode ? 'border-slate-800' : '')}>
+                      <TableCell className="py-4">
+                        <div className="min-w-0">
+                          <p className={`line-clamp-2 font-semibold leading-5 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                             {quiz.title || t('communityQuizManagement.table.untitled', 'Quiz chưa đặt tên')}
                           </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                            {quiz.quizIntent ? <span>{quiz.quizIntent}</span> : null}
-                            {quiz.overallDifficulty ? <span>{quiz.overallDifficulty}</span> : null}
-                            <span>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <QuizMetaChip isDarkMode={isDarkMode}>{quiz.quizIntent}</QuizMetaChip>
+                            <QuizMetaChip isDarkMode={isDarkMode}>{quiz.overallDifficulty}</QuizMetaChip>
+                            <QuizMetaChip isDarkMode={isDarkMode}>
                               {t('communityQuizManagement.table.questionCount', {
                                 count: Number(quiz.totalQuestion || 0),
                                 defaultValue: '{{count}} câu',
                               })}
-                            </span>
+                            </QuizMetaChip>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="min-w-[200px]">
-                          <p className={`font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                      <TableCell className="py-4">
+                        <div className="min-w-0">
+                          <p className={`truncate font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
                             {quiz.creatorName || '-'}
                           </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                          <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
                             {quiz.creatorEmail || '-'}
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-2">
+                      <TableCell className="py-4">
+                        <div className="flex flex-wrap gap-2">
                           <Badge
                             variant="outline"
                             className={getSuperAdminStatusBadgeClass(quiz.status, isDarkMode)}
@@ -381,62 +434,58 @@ export default function CommunityQuizManagement() {
                           </Badge>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="grid min-w-[180px] grid-cols-3 gap-2 text-center">
-                          <Card className={isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}>
-                            <CardContent className="px-3 py-3">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Clone</p>
-                              <p className="mt-1 font-semibold">{quiz.communityCloneCount || 0}</p>
-                            </CardContent>
-                          </Card>
-                          <Card className={isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}>
-                            <CardContent className="px-3 py-3">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Rate</p>
-                              <p className="mt-1 font-semibold">{formatRating(quiz.communityAverageRating)}</p>
-                            </CardContent>
-                          </Card>
-                          <Card className={isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}>
-                            <CardContent className="px-3 py-3">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Talk</p>
-                              <p className="mt-1 font-semibold">{quiz.communityCommentCount || 0}</p>
-                            </CardContent>
-                          </Card>
-                        </div>
+                      <TableCell className="py-4">
+                        <QuizSignals quiz={quiz} isDarkMode={isDarkMode} />
                       </TableCell>
-                      <TableCell className="text-sm text-slate-500 dark:text-slate-400">
+                      <TableCell className="py-4 text-sm leading-5 text-slate-500 dark:text-slate-400">
                         {formatDateTime(quiz.createdAt)}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setPreviewQuiz(quiz)}
-                            disabled={!quiz.previewAvailable}
-                            title={
-                              quiz.previewAvailable
-                                ? t('communityQuizManagement.actions.preview', 'Xem preview')
-                                : t(
-                                  'communityQuizManagement.actions.previewUnavailable',
-                                  'Chỉ preview được quiz community đang ACTIVE',
-                                )
-                            }
-                            className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}
-                          >
-                            <Eye className="mr-1 h-4 w-4" />
-                            {t('communityQuizManagement.actions.preview', 'Preview')}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setActionTarget(quiz)}
-                            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/10"
-                          >
-                            <ShieldX className="mr-1 h-4 w-4" />
-                            {t('communityQuizManagement.actions.remove', 'Gỡ khỏi community')}
-                          </Button>
+                      <TableCell className="py-4">
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                title={t('communityQuizManagement.table.actions', 'Thao tác')}
+                                className={cn(
+                                  'h-9 rounded-xl px-3',
+                                  isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : '',
+                                )}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">
+                                  {t('communityQuizManagement.table.actions', 'Thao tác')}
+                                </span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className={cn(
+                                'w-52 rounded-xl',
+                                isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100' : '',
+                              )}
+                            >
+                              <DropdownMenuItem
+                                disabled={!quiz.previewAvailable}
+                                onSelect={() => {
+                                  if (quiz.previewAvailable) setPreviewQuiz(quiz);
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                                {t('communityQuizManagement.actions.preview', 'Preview')}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onSelect={() => setActionTarget(quiz)}
+                                className="text-rose-600 focus:bg-rose-50 focus:text-rose-700 dark:text-rose-300 dark:focus:bg-rose-500/10 dark:focus:text-rose-200"
+                              >
+                                <ShieldX className="h-4 w-4" />
+                                {t('communityQuizManagement.actions.remove', 'Gỡ khỏi community')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -498,20 +547,7 @@ export default function CommunityQuizManagement() {
               <p className="mt-1 text-slate-500 dark:text-slate-400">
                 {t('communityQuizManagement.removeDialog.creatorLabel', 'Người tạo')}: {actionTarget.creatorName || '-'}
               </p>
-              <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Clone</p>
-                  <p className="mt-1 font-semibold">{actionTarget.communityCloneCount || 0}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Rate</p>
-                  <p className="mt-1 font-semibold">{formatRating(actionTarget.communityAverageRating)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Talk</p>
-                  <p className="mt-1 font-semibold">{actionTarget.communityCommentCount || 0}</p>
-                </div>
-              </div>
+              <QuizSignals quiz={actionTarget} isDarkMode={isDarkMode} className="mt-3 text-center" />
             </div>
           ) : null}
 

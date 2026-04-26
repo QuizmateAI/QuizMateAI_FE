@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AiActionPolicyManagement from '@/pages/Admin/AiActionPolicyManagement';
-import { getAllAiActionPolicies, updateAiActionPolicy } from '@/api/ManagementSystemAPI';
+import { getAiModels, getAllAiActionPolicies, updateAiActionPolicy } from '@/api/ManagementSystemAPI';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -17,6 +17,9 @@ vi.mock('react-i18next', () => ({
         'aiActionPolicy.actionKey': 'Action key',
         'aiActionPolicy.active': 'Active',
         'aiActionPolicy.unitField': 'Unit',
+        'aiActionPolicy.defaultModel': 'Default model',
+        'aiActionPolicy.defaultModelUnsetOption': 'No default model',
+        'aiActionPolicy.defaultModelHint': 'Used when a plan has no override.',
         'aiActionPolicy.save': 'Save',
         'aiActionPolicy.saving': 'Saving...',
         'aiActionPolicy.cancel': 'Cancel',
@@ -27,6 +30,7 @@ vi.mock('react-i18next', () => ({
         'aiActionPolicy.colAction': 'Action',
         'aiActionPolicy.colCostMode': 'Cost mode',
         'aiActionPolicy.colFormula': 'Formula',
+        'aiActionPolicy.colDefaultModel': 'Default model',
         'aiActionPolicy.colStatus': 'Status',
         'aiActionPolicy.colActions': 'Actions',
         'aiActionPolicy.statusActive': 'Active',
@@ -78,6 +82,7 @@ vi.mock('@/utils/getErrorMessage', () => ({
 vi.mock('@/api/ManagementSystemAPI', () => ({
   getAllAiActionPolicies: vi.fn(),
   updateAiActionPolicy: vi.fn(),
+  getAiModels: vi.fn(),
 }));
 
 describe('AiActionPolicyManagement', () => {
@@ -105,6 +110,7 @@ describe('AiActionPolicyManagement', () => {
         unitSize: 1000,
       },
     });
+    getAiModels.mockResolvedValue({ data: [] });
   });
 
   it('keeps raw numeric typing stable and normalizes whole numbers before saving', async () => {
@@ -130,5 +136,84 @@ describe('AiActionPolicyManagement', () => {
         unitSize: 1000,
       }));
     });
+  });
+
+  it('uses aiModelId from API models for default model options and payload', async () => {
+    getAllAiActionPolicies.mockResolvedValue({
+      data: [
+        {
+          actionKey: 'GENERATE_FLASHCARDS',
+          displayName: 'Generate Flashcards',
+          costMode: 'PER_ITEM',
+          baseCreditCost: 5,
+          unitCreditCost: 1,
+          unitSize: 1,
+          isActive: true,
+          description: 'Flashcard pricing',
+          defaultModelId: 100,
+        },
+      ],
+    });
+    getAiModels.mockResolvedValue({
+      data: [
+        {
+          aiModelId: 100,
+          provider: 'OPENAI',
+          modelGroup: 'TEXT_GENERATION',
+          displayName: 'GPT-4o',
+          modelCode: 'gpt-4o',
+        },
+      ],
+    });
+
+    render(<AiActionPolicyManagement />);
+
+    expect(await screen.findByText('GPT-4o')).toBeInTheDocument();
+    fireEvent.click(await screen.findByTitle('Edit'));
+
+    const defaultModelLabel = screen.getAllByText('Default model')
+      .find((node) => node.tagName.toLowerCase() === 'label');
+    const defaultModelSelect = defaultModelLabel.parentElement.querySelector('select');
+    expect(defaultModelSelect).toHaveValue('100');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(updateAiActionPolicy).toHaveBeenCalledWith('GENERATE_FLASHCARDS', expect.objectContaining({
+        defaultModelId: 100,
+      }));
+    });
+  });
+
+  it('renders restored roadmap and companion policy actions', async () => {
+    getAllAiActionPolicies.mockResolvedValue({
+      data: [
+        {
+          actionKey: 'GENERATE_ROADMAP',
+          displayName: 'Create Roadmap',
+          costMode: 'FIXED',
+          baseCreditCost: 2,
+          unitCreditCost: 0,
+          unitSize: 1,
+          isActive: true,
+          description: 'Roadmap pricing',
+        },
+        {
+          actionKey: 'COMPANION_INTERPRET',
+          displayName: 'Companion Answer',
+          costMode: 'FIXED',
+          baseCreditCost: 1,
+          unitCreditCost: 0,
+          unitSize: 1,
+          isActive: true,
+          description: 'Companion pricing',
+        },
+      ],
+    });
+
+    render(<AiActionPolicyManagement />);
+
+    expect(await screen.findByText('Create Roadmap')).toBeInTheDocument();
+    expect(screen.getByText('Companion Answer')).toBeInTheDocument();
   });
 });
