@@ -27,8 +27,9 @@ function GroupWorkspaceHeader({
             type="button"
             className="flex w-[130px] items-center justify-center"
             onClick={() => navigate("/home")}
+            aria-label={t("common.goHome")}
           >
-            <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="h-full w-full object-contain" />
+            <img src={isDarkMode ? LogoDark : LogoLight} alt={t("common.brandLogoAlt", { brandName: "QuizMate AI" })} className="h-full w-full object-contain" />
           </button>
 
           <div className="min-w-0">

@@ -51,7 +51,9 @@ function getPricingGuideCopy(t) {
     examplesDesc: t("pricingGuide.examplesDesc"),
     examples: t("pricingGuide.examples", { returnObjects: true }),
     examplesNote: t("pricingGuide.examplesNote"),
+    creditCardTitle: t("pricingGuide.creditCardTitle"),
     creditCardDescription: t("pricingGuide.creditCardDescription"),
+    creditUnitLabel: t("pricingGuide.creditUnitLabel"),
     startingPointLabel: t("pricingGuide.startingPointLabel"),
     lightRequestHint: t("pricingGuide.lightRequestHint"),
     examplePrefix: t("pricingGuide.examplePrefix"),
@@ -156,7 +158,7 @@ export default function PricingGuidePage() {
           >
             <img
               src={isDarkMode ? LogoDark : LogoLight}
-              alt="QuizMate AI Logo"
+              alt={t("common.brandLogoAlt", { brandName: "QuizMate AI" })}
               className="h-auto w-full object-contain"
             />
           </button>
@@ -254,9 +256,9 @@ export default function PricingGuidePage() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-lg">
                   <span className={`inline-flex rounded-2xl p-2 ${isDarkMode ? "bg-blue-500/10 ring-1 ring-blue-400/20" : "bg-blue-50 ring-1 ring-blue-100"}`}>
-                    <CreditIconImage alt="Quizmate Credit" className="h-10 w-10 rounded-xl" />
+                    <CreditIconImage alt={copy.creditCardTitle} className="h-10 w-10 rounded-xl" />
                   </span>
-                  <span>Quizmate Credit</span>
+                  <span>{copy.creditCardTitle}</span>
                 </CardTitle>
                 <CardDescription className={isDarkMode ? "text-slate-400" : "text-slate-600"}>
                   {copy.creditCardDescription}
@@ -267,11 +269,11 @@ export default function PricingGuidePage() {
                   <div className={`text-xs font-semibold uppercase tracking-[0.24em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
                     {copy.startingPointLabel}
                   </div>
-                  <div className="mt-2 flex items-end gap-2">
-                    <span className="text-4xl font-black">100</span>
-                    <span className={`pb-1 text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>VND / credit</span>
-                  </div>
+                <div className="mt-2 flex items-end gap-2">
+                  <span className="text-4xl font-black">100</span>
+                  <span className={`pb-1 text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{copy.creditUnitLabel}</span>
                 </div>
+              </div>
                 <div className={`rounded-2xl p-4 ${isDarkMode ? "bg-slate-950/60" : "bg-slate-50"}`}>
                   <div className="flex items-start gap-3">
                     <Calculator className={`mt-0.5 h-4 w-4 ${isDarkMode ? "text-blue-300" : "text-blue-600"}`} />

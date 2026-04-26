@@ -210,7 +210,7 @@ describe('Toast behavior execution', () => {
       screen.getByRole('button', { name: 'Show Success' }).click();
     });
 
-    const closeBtn = screen.getByRole('button', { name: 'Close toast' });
+    const closeBtn = screen.getByRole('button', { name: /close toast|đóng thông báo/i });
     act(() => {
       closeBtn.click();
     });

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import i18n from '@/i18n';
 
 function getNow() {
   if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
@@ -141,6 +142,7 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
 
   const selectedStyle = styleByType[type] || styleByType.info;
   const bgClass = 'bg-white dark:bg-white border-slate-200 dark:border-slate-300 shadow-xl';
+  const closeAriaLabel = i18n.t('common.toast.closeAriaLabel', { defaultValue: 'Close toast' });
   const isStructuredMessage = message && typeof message === 'object' && !Array.isArray(message);
   const structuredTitle = isStructuredMessage ? String(message.title || '').trim() : '';
   const structuredDescription = isStructuredMessage ? String(message.description || '').trim() : '';
@@ -229,7 +231,7 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
         </div>
         <button
           type="button"
-          aria-label="Close toast"
+          aria-label={closeAriaLabel}
           onClick={handleClose}
           className={`transition-colors ${selectedStyle.textClass} ${selectedStyle.closeHoverClass}`}
         >

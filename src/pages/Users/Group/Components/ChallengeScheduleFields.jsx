@@ -1,12 +1,10 @@
 import { Calendar, Clock } from 'lucide-react';
+import i18n from '@/i18n';
 import {
   CHALLENGE_MIN_DURATION_MINUTES,
   minDateStringPlusDays,
 } from '@/lib/challengeSchedule';
 
-/**
- * UI chọn ngày + giờ tách bạt (thay cho datetime-local).
- */
 export default function ChallengeScheduleFields({
   isDarkMode,
   startDate,
@@ -19,6 +17,7 @@ export default function ChallengeScheduleFields({
   onEndTimeChange,
   validationIssues = [],
 }) {
+  const t = i18n.getFixedT(i18n.language?.startsWith('en') ? 'en' : 'vi');
   const inputCls = `w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${
     isDarkMode
       ? 'border-slate-600 bg-slate-700 text-white [color-scheme:dark] focus:border-orange-500'
@@ -30,14 +29,19 @@ export default function ChallengeScheduleFields({
   return (
     <div className="flex flex-col gap-4">
       <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-        Chỉ chọn thời gian trong tương lai. Khoảng từ lúc bắt đầu đến khi kết thúc cần ít nhất {CHALLENGE_MIN_DURATION_MINUTES} phút; đấu cúp sẽ cần window dài hơn theo số vòng.
+        {t('challengeScheduleFields.helper', {
+          defaultValue: 'Only choose future times. The window from start to end must be at least {{minutes}} minutes; bracket matches need a longer window depending on the number of rounds.',
+          minutes: CHALLENGE_MIN_DURATION_MINUTES,
+        })}
       </p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <span className={`flex items-center gap-1.5 text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
             <Calendar className="h-3.5 w-3.5 shrink-0 opacity-80" />
-            Bắt đầu — ngày *
+            {t('challengeScheduleFields.startDate', {
+              defaultValue: 'Start - date *',
+            })}
           </span>
           <input
             type="date"
@@ -50,7 +54,9 @@ export default function ChallengeScheduleFields({
         <div className="space-y-2">
           <span className={`flex items-center gap-1.5 text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
             <Clock className="h-3.5 w-3.5 shrink-0 opacity-80" />
-            Bắt đầu — giờ *
+            {t('challengeScheduleFields.startTime', {
+              defaultValue: 'Start - time *',
+            })}
           </span>
           <input
             type="time"
@@ -65,7 +71,9 @@ export default function ChallengeScheduleFields({
         <div className="space-y-2">
           <span className={`flex items-center gap-1.5 text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
             <Calendar className="h-3.5 w-3.5 shrink-0 opacity-80" />
-            Kết thúc — ngày *
+            {t('challengeScheduleFields.endDate', {
+              defaultValue: 'End - date *',
+            })}
           </span>
           <input
             type="date"
@@ -78,7 +86,9 @@ export default function ChallengeScheduleFields({
         <div className="space-y-2">
           <span className={`flex items-center gap-1.5 text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
             <Clock className="h-3.5 w-3.5 shrink-0 opacity-80" />
-            Kết thúc — giờ *
+            {t('challengeScheduleFields.endTime', {
+              defaultValue: 'End - time *',
+            })}
           </span>
           <input
             type="time"
@@ -90,18 +100,33 @@ export default function ChallengeScheduleFields({
       </div>
 
       {validationIssues.includes('endBeforeStart') && (
-        <p className="text-xs text-red-500">Thời gian kết thúc phải sau thời gian bắt đầu</p>
+        <p className="text-xs text-red-500">
+          {t('challengeScheduleFields.errors.endBeforeStart', {
+            defaultValue: 'End time must be after start time.',
+          })}
+        </p>
       )}
       {validationIssues.includes('shortWindow') && (
         <p className="text-xs text-red-500">
-          Khoảng từ bắt đầu đến kết thúc phải ít nhất {CHALLENGE_MIN_DURATION_MINUTES} phút
+          {t('challengeScheduleFields.errors.shortWindow', {
+            defaultValue: 'The window from start to end must be at least {{minutes}} minutes.',
+            minutes: CHALLENGE_MIN_DURATION_MINUTES,
+          })}
         </p>
       )}
       {(validationIssues.includes('pastStart') || validationIssues.includes('pastEnd')) && (
-        <p className="text-xs text-red-500">Không chọn ngày giờ trong quá khứ</p>
+        <p className="text-xs text-red-500">
+          {t('challengeScheduleFields.errors.pastDate', {
+            defaultValue: 'Do not choose a date or time in the past.',
+          })}
+        </p>
       )}
       {validationIssues.includes('invalid') && (
-        <p className="text-xs text-red-500">Thời gian không hợp lệ</p>
+        <p className="text-xs text-red-500">
+          {t('challengeScheduleFields.errors.invalid', {
+            defaultValue: 'The selected time is invalid.',
+          })}
+        </p>
       )}
     </div>
   );

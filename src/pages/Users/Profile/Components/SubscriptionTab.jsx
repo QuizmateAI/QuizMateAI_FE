@@ -109,7 +109,7 @@ export default function SubscriptionTab() {
         <CardContent>
           <div className={`flex items-center justify-between p-4 rounded-xl border ${isDarkMode ? "bg-slate-800/50 border-slate-700" : "bg-blue-50 border-blue-200"}`}>
             <div className="flex items-center gap-3">
-              <Badge className="text-sm px-3 py-1 bg-blue-600 text-white">Free</Badge>
+              <Badge className="text-sm px-3 py-1 bg-blue-600 text-white">{t("profile.subscription.plans.free.name")}</Badge>
               <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>{t("profile.subscription.freeDesc")}</span>
             </div>
             <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("profile.subscription.activeStatus")}</span>

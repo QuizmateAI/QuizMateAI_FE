@@ -24,9 +24,96 @@ const roundDistributionValue = (value, unitByCount) => (
   unitByCount ? Math.round(value) : Math.round(value * 100) / 100
 );
 
+const PERCENT_SCALE = 100;
+const PERCENT_TARGET_BASIS = 100 * PERCENT_SCALE;
+
 const normalizeDistributionValue = (value, unitByCount) => {
   const raw = Math.max(0, Number(value) || 0);
   return roundDistributionValue(raw, unitByCount);
+};
+
+const normalizePercentDistribution = (values, preferredKeys = []) => {
+  const keys = DISTRIBUTION_FIELDS.map((field) => field.key);
+  const basisValues = keys.reduce((acc, key) => {
+    const normalized = normalizeDistributionValue(values?.[key], false);
+    acc[key] = Math.round(normalized * PERCENT_SCALE);
+    return acc;
+  }, {});
+
+  let delta = PERCENT_TARGET_BASIS - keys.reduce((sum, key) => sum + basisValues[key], 0);
+  if (delta !== 0) {
+    const candidates = createUniqueKeyOrder(preferredKeys, [...keys].reverse(), keys);
+    for (const key of candidates) {
+      if (!(key in basisValues)) continue;
+
+      if (delta > 0) {
+        basisValues[key] += delta;
+        delta = 0;
+        break;
+      }
+
+      const removable = basisValues[key];
+      if (removable <= 0) continue;
+
+      const appliedDelta = Math.max(delta, -removable);
+      basisValues[key] += appliedDelta;
+      delta -= appliedDelta;
+      if (delta === 0) break;
+    }
+  }
+
+  return keys.reduce((acc, key) => {
+    acc[key] = Number((basisValues[key] / PERCENT_SCALE).toFixed(2));
+    return acc;
+  }, {});
+};
+
+const toIntegerPercentDistribution = (values, preferredKeys = []) => {
+  const keys = DISTRIBUTION_FIELDS.map((field) => field.key);
+  const normalized = normalizePercentDistribution(values, preferredKeys);
+  const integerValues = {};
+  const fractions = [];
+
+  keys.forEach((key, index) => {
+    const raw = Math.max(0, Number(normalized[key]) || 0);
+    const floored = Math.floor(raw);
+    integerValues[key] = floored;
+    fractions.push({ key, fraction: raw - floored, index });
+  });
+
+  let delta = 100 - keys.reduce((sum, key) => sum + integerValues[key], 0);
+  if (delta > 0) {
+    const preferredIndex = new Map(
+      createUniqueKeyOrder(preferredKeys, keys).map((key, index) => [key, index])
+    );
+    const sortedByFraction = [...fractions].sort((a, b) => (
+      b.fraction - a.fraction
+      || (preferredIndex.get(a.key) ?? Number.MAX_SAFE_INTEGER) - (preferredIndex.get(b.key) ?? Number.MAX_SAFE_INTEGER)
+      || a.index - b.index
+    ));
+
+    for (let i = 0; i < delta; i += 1) {
+      const targetKey = sortedByFraction[i % sortedByFraction.length]?.key;
+      if (!targetKey) break;
+      integerValues[targetKey] += 1;
+    }
+  } else if (delta < 0) {
+    const removableOrder = createUniqueKeyOrder(preferredKeys, [...keys].reverse(), keys);
+    let remaining = -delta;
+
+    for (const key of removableOrder) {
+      if (remaining <= 0) break;
+      const removable = Math.min(integerValues[key] || 0, remaining);
+      if (removable <= 0) continue;
+      integerValues[key] -= removable;
+      remaining -= removable;
+    }
+  }
+
+  return keys.reduce((acc, key) => {
+    acc[key] = Math.max(0, Math.round(Number(integerValues[key]) || 0));
+    return acc;
+  }, {});
 };
 
 const createUniqueKeyOrder = (...groups) => [...new Set(groups.flat().filter(Boolean))];
@@ -250,9 +337,20 @@ function CreateFlashcardForm({
       return;
     }
 
-    clearSelectedSources();
+    selectedSourceItems
+      .filter((item) => item.id !== normalizedSourceId)
+      .forEach((item) => toggleSourceSelection(item.id, false));
     toggleSourceSelection(normalizedSourceId, true);
   };
+
+  useEffect(() => {
+    if (!canSelectMaterialsInForm || selectedSourceItems.length <= 1) return;
+
+    const [keepItem, ...itemsToRemove] = selectedSourceItems;
+    if (!keepItem) return;
+
+    itemsToRemove.forEach((item) => toggleSourceSelection(item.id, false));
+  }, [canSelectMaterialsInForm, selectedSourceItems, toggleSourceSelection]);
 
   const distributionTarget = useMemo(
     () => getDistributionTarget(aiTotalCards, distributionUnitByCount),
@@ -264,7 +362,17 @@ function CreateFlashcardForm({
     [distribution]
   );
 
-  const isDistributionValid = Math.abs(distributionSum - distributionTarget) <= 0.01;
+  const distributionBasisSum = useMemo(
+    () => DISTRIBUTION_FIELDS.reduce((sum, field) => {
+      const value = normalizeDistributionValue(distribution[field.key], false);
+      return sum + Math.round(value * PERCENT_SCALE);
+    }, 0),
+    [distribution]
+  );
+
+  const isDistributionValid = distributionUnitByCount
+    ? distributionSum === distributionTarget
+    : distributionBasisSum === PERCENT_TARGET_BASIS;
 
   const canSubmit = Number(defaultContextId) > 0
     && selectedMaterialIds.length > 0
@@ -323,12 +431,11 @@ function CreateFlashcardForm({
     setSubmitting(true);
     try {
       const payloadDistribution = distributionUnitByCount
-        ? balanceDistributionValues(
+        ? toIntegerPercentDistribution(
             convertDistributionValuesByUnit(distribution, true, false, aiTotalCards),
-            100,
-            false,
+            [DISTRIBUTION_FIELDS[DISTRIBUTION_FIELDS.length - 1].key],
           )
-        : balanceDistributionValues(distribution, 100, false);
+        : toIntegerPercentDistribution(distribution, [DISTRIBUTION_FIELDS[DISTRIBUTION_FIELDS.length - 1].key]);
 
       const payload = {
         materialId: Number(selectedMaterialIds[0]),

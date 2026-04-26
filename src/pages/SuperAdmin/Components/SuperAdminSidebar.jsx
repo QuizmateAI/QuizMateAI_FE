@@ -13,6 +13,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const brandName = 'QuizMateAI';
 
   const handleLogout = () => {
     logout();
@@ -34,15 +35,19 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
           )}
         >
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0455BF] shadow-[0_20px_30px_-18px_rgba(4,85,191,0.75)]">
-            <img src={LogoDark} alt="QuizMate" className="h-8 w-8 object-contain" />
+            <img
+              src={LogoDark}
+              alt={t('common.brandLogoAlt', { brandName })}
+              className="h-8 w-8 object-contain"
+            />
           </div>
           {!collapsed ? (
             <div className="min-w-0">
               <p className="truncate text-[13px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                QuizMate
+                {brandName}
               </p>
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                Super Admin
+                {t('superAdminSidebar.roleLabel', 'Super Admin')}
               </p>
             </div>
           ) : null}

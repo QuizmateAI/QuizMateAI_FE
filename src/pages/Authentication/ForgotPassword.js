@@ -145,6 +145,25 @@ export const useForgotPassword = (setView, t) => {
     }
   };
 
+  const handleResendOTP = async () => {
+    setError('');
+    setSuccessMessage('');
+    setFieldErrors({});
+    setIsLoading(true);
+
+    try {
+      await requestOtpWithSocket(
+        forgotPasswordData.email.trim(),
+        'auth.otpSent',
+        'OTP code has been resent to your email'
+      );
+    } catch (err) {
+      setError(err.message || t('auth.sendOTPFailed') || 'Failed to send OTP, please try again');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setError('');
@@ -220,6 +239,7 @@ export const useForgotPassword = (setView, t) => {
     handleForgotPasswordEmailBlur,
     handleSendOTP,
     handleVerifyOTP,
+    handleResendOTP,
     handleResetPassword,
     resetState
   };

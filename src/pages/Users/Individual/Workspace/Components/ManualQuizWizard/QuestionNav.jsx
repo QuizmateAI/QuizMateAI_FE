@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChevronUp, Plus, Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getCardStatus } from "./QuestionCard";
 
@@ -21,6 +22,7 @@ function QuestionNav({
   maxQuestions = 100,
   isDarkMode = false,
 }) {
+  const { t } = useTranslation();
   const [filterMode, setFilterMode] = useState("all"); // all | incomplete | error
   const [jumpInput, setJumpInput] = useState("");
 
@@ -139,7 +141,7 @@ function QuestionNav({
           max={questions.length}
           value={jumpInput}
           onChange={(e) => setJumpInput(e.target.value)}
-          placeholder="Câu số..."
+          placeholder={t("quiz.manualWizard.questionNavigator.jumpTo")}
           className={cn(
             "flex-1 rounded-lg border px-2.5 py-1.5 text-xs outline-none transition-all",
             isDarkMode

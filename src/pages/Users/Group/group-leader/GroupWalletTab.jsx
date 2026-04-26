@@ -568,7 +568,7 @@ export default function GroupWalletTab({
           >
             <div className="flex items-start gap-3">
               <span className={`inline-flex items-center justify-center rounded-2xl ring-1 ring-inset ${isDarkMode ? 'bg-cyan-400/10 ring-cyan-300/20' : 'bg-cyan-50 ring-cyan-200'}`}>
-                <CreditIconImage alt="QuizMate Credit" className="h-11 w-11 rounded-2xl" />
+                <CreditIconImage alt={t('common.creditIconAlt', { brandName: 'QuizMate AI' })} className="h-11 w-11 rounded-2xl" />
               </span>
               <div className="min-w-0">
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>

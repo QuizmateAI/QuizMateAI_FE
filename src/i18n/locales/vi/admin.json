@@ -586,7 +586,8 @@
       "description": "Bật hoặc tắt quyền cho tài khoản ADMIN. SUPER_ADMIN giữ toàn bộ quyền mặc định.",
       "superAdminReadonly": "Tài khoản SUPER_ADMIN luôn có toàn bộ quyền mặc định.",
       "clearAll": "Bỏ tất cả",
-      "grantAll": "Cấp tất cả"
+      "grantAll": "Cấp tất cả",
+      "syncWarning": "??ng b? s? bi?n m?i quy?n ?ang ???c c?p th?nh quy?n v?nh vi?n (m?t expiresAt). D?ng tab Y?u c?u c?p quy?n ?? duy?t quy?n c? th?i h?n."
     }
   },
   "adminPayments": {
@@ -1469,6 +1470,9 @@
       "error": "Không thể đổi mật khẩu. Vui lòng thử lại."
     }
   },
+  "backofficeShell": {
+    "controlPlane": "QuizMate control plane"
+  },
   "aiAudit": {
     "title": "AI Audit",
     "description": "Theo dõi AI request, token tiêu hao, model, trạng thái và mở chi tiết khi cần.",
@@ -1648,7 +1652,8 @@
     "status": {
       "ACTIVE": "Hoạt động",
       "INACTIVE": "Không hoạt động",
-      "BANNED": "Bị cấm"
+      "BANNED": "Bị cấm",
+      "DELETED": "?? xo?"
     },
     "changeStatus": "Đổi trạng thái",
     "viewDetail": "Xem chi tiết"
@@ -1952,5 +1957,143 @@
     "close": "Đóng",
     "saving": "Đang lưu...",
     "saveUpdate": "Lưu cập nhật"
+  },
+  "superAdminSidebar": {
+    "roleLabel": "Super Admin"
+  },
+  "permissionRequestStatus": {
+    "PENDING": "Ch? duy?t",
+    "APPROVED": "?? duy?t",
+    "REJECTED": "T? ch?i",
+    "CANCELLED": "?? hu?"
+  },
+  "permissionDurationPresets": {
+    "permanent": "V?nh vi?n",
+    "oneDay": "1 ng?y",
+    "sevenDays": "7 ng?y",
+    "thirtyDays": "30 ng?y",
+    "ninetyDays": "90 ng?y",
+    "customDays": "{{count}} ng?y"
+  },
+  "myPermissionsPage": {
+    "eyebrow": "Truy c?p",
+    "title": "Quy?n c?a t?i",
+    "description": "Xem c?c quy?n b?n ?ang c? v? g?i y?u c?u xin th?m quy?n t?i Super Admin.",
+    "refresh": "L?m m?i",
+    "newRequest": "Y?u c?u quy?n m?i",
+    "loadPartialError": "Kh?ng th? t?i ??y ?? d? li?u",
+    "submitSuccess": "?? g?i y?u c?u, ch? Super Admin duy?t.",
+    "submitError": "Kh?ng th? t?o y?u c?u.",
+    "cancelSuccess": "?? hu? y?u c?u.",
+    "cancelError": "Kh?ng th? hu? y?u c?u.",
+    "cancelForbidden": "Hi?n t?i b?n ch?a th? hu? y?u c?u n?y. Vui l?ng th? l?i sau.",
+    "requestForbidden": "Hi?n t?i b?n ch?a th? g?i y?u c?u quy?n m?i. Vui l?ng th? l?i sau ho?c li?n h? Super Admin.",
+    "currentPermissionsTitle": "Quy?n hi?n c?",
+    "currentPermissionsDescription": "C?c quy?n ?? ???c c?p. Quy?n c? th?i h?n s? t? ??ng b? thu h?i khi h?t h?n.",
+    "currentPermissionsUnavailableTitle": "Ch?a th? t?i danh s?ch quy?n",
+    "currentPermissionsUnavailableDescription": "Th?ng tin quy?n hi?n c? ch?a s?n s?ng l?c n?y. Vui l?ng th? l?i sau.",
+    "currentPermissionsEmptyTitle": "B?n ch?a c? quy?n n?o",
+    "currentPermissionsEmptyDescription": "H?y g?i y?u c?u t?i Super Admin ?? ???c c?p quy?n c?n thi?t.",
+    "requestsTitle": "Y?u c?u c?p quy?n",
+    "requestsDescription": "Theo d?i c?c y?u c?u c?a b?n v? tr?ng th?i x? l?.",
+    "requestsUnavailableTitle": "Ch?a th? t?i y?u c?u c?p quy?n",
+    "requestsUnavailableDescription": "Danh s?ch y?u c?u c?a b?n ch?a s?n s?ng l?c n?y. Vui l?ng th? l?i sau.",
+    "requestsEmptyTitle": "Ch?a c? y?u c?u n?o",
+    "table": {
+      "permission": "Quy?n",
+      "reason": "L? do",
+      "requestedDuration": "Th?i h?n xin",
+      "status": "Tr?ng th?i",
+      "expiresAt": "H?t h?n",
+      "createdAt": "T?o l?c",
+      "actions": "H?nh ??ng",
+      "note": "Ghi ch?"
+    },
+    "cancelRequest": "Hu?",
+    "dialogTitle": "Y?u c?u quy?n m?i",
+    "dialogDescription": "Super Admin s? duy?t y?u c?u v? c? th? c?p k?m th?i h?n.",
+    "permissionLabel": "Quy?n mu?n xin",
+    "permissionPlaceholder": "V? d?: user:read",
+    "permissionHintWithSuggestions": "B?n c? th? nh?p ho?c ch?n nhanh t? danh s?ch g?i ?.",
+    "permissionHintManual": "B?n c? th? nh?p m? quy?n th? c?ng n?u ch?a c? danh s?ch g?i ?.",
+    "reasonLabel": "L? do (10-1000 k? t?)",
+    "reasonPlaceholder": "Gi?i th?ch v? sao b?n c?n quy?n n?y",
+    "durationLabel": "Th?i h?n mong mu?n",
+    "customDurationPlaceholder": "S? ng?y",
+    "customDurationOptional": "ng?y (tu? ch?n)",
+    "pendingForPermission": "B?n ?? c? m?t y?u c?u ch? duy?t cho quy?n n?y.",
+    "close": "??ng",
+    "submit": "G?i y?u c?u",
+    "submitting": "?ang g?i..."
+  },
+  "permissionRequestsPage": {
+    "eyebrow": "Qu?n tr? truy c?p",
+    "title": "Y?u c?u c?p quy?n",
+    "description": "Duy?t ho?c t? ch?i y?u c?u xin quy?n t? admin. C? th? c?p k?m th?i h?n v? h? th?ng s? t? ??ng thu h?i khi h?t h?n.",
+    "refresh": "L?m m?i",
+    "loadError": "Kh?ng th? t?i danh s?ch y?u c?u.",
+    "emptyTitle": "Kh?ng c? y?u c?u n?o",
+    "tabs": {
+      "PENDING": "Ch? duy?t",
+      "APPROVED": "?? duy?t",
+      "REJECTED": "T? ch?i",
+      "CANCELLED": "?? hu?",
+      "ALL": "T?t c?"
+    },
+    "table": {
+      "requester": "Ng??i y?u c?u",
+      "permission": "Quy?n",
+      "reason": "L? do",
+      "requestedDuration": "Th?i h?n xin",
+      "status": "Tr?ng th?i",
+      "createdAt": "T?o l?c",
+      "actions": "H?nh ??ng",
+      "note": "Ghi ch?",
+      "expiresAt": "H?t h?n"
+    },
+    "approve": "Duy?t",
+    "reject": "T? ch?i",
+    "decidedBy": "B?i {{email}}",
+    "approveSuccess": "?? duy?t y?u c?u.",
+    "approveError": "Kh?ng th? duy?t y?u c?u.",
+    "rejectSuccess": "?? t? ch?i y?u c?u.",
+    "rejectError": "Kh?ng th? t? ch?i y?u c?u.",
+    "approveDialogTitle": "Duy?t y?u c?u",
+    "approveDialogDescription": "C?p quy?n cho admin. C? th? ??t th?i h?n v? h? th?ng s? t? ??ng thu h?i khi h?t h?n.",
+    "adminLabel": "Admin",
+    "grantDurationLabel": "Th?i h?n c?p",
+    "customExpiryLabel": "Ho?c ch?n th?i ?i?m h?t h?n tu? ?",
+    "customExpiryHint": "N?u nh?p ng?y gi?, preset s? b? b? qua. ?? tr?ng ?? d?ng preset.",
+    "expiresAtPreviewLabel": "S? h?t h?n l?c",
+    "noteLabel": "Ghi ch? (tu? ch?n)",
+    "close": "??ng",
+    "approveSubmit": "Duy?t v? c?p quy?n",
+    "approving": "?ang duy?t...",
+    "rejectDialogTitle": "T? ch?i y?u c?u",
+    "rejectDialogDescription": "Ghi l? do ?? admin bi?t v? ?i?u ch?nh. L? do s? ???c l?u v?o audit log.",
+    "rejectReasonLabel": "L? do t? ch?i (5-1000 k? t?)",
+    "rejectReasonPlaceholder": "V? d?: quy?n n?y kh?ng ph? h?p v?i ph?m vi c?ng vi?c hi?n t?i.",
+    "rejectSubmit": "X?c nh?n t? ch?i",
+    "rejecting": "?ang g?i..."
+  },
+  "userManagementPage": {
+    "fetchError": "Kh?ng th? t?i danh s?ch ng??i d?ng.",
+    "updateStatusError": "Kh?ng th? c?p nh?t tr?ng th?i ng??i d?ng.",
+    "updateStatusSuccess": "C?p nh?t tr?ng th?i ng??i d?ng th?nh c?ng.",
+    "deleteAction": "Xo? t?i kho?n",
+    "deleteDialogTitle": "Xo? t?i kho?n ng??i d?ng",
+    "deleteDialogDescription": "H?nh ??ng n?y ch? d?nh cho SUPER_ADMIN v? ???c ghi v?o audit log. T?i kho?n s? b? ??nh d?u DELETED v? email ho?c username s? b? ?n danh.",
+    "deleteUsernameLabel": "Username",
+    "deleteEmailLabel": "Email",
+    "deleteIdLabel": "ID",
+    "deleteConfirmPrefix": "G? ch?nh x?c ",
+    "deleteConfirmSuffix": " ?? x?c nh?n",
+    "deleteReasonLabel": "L? do xo? (10-500 k? t?)",
+    "deleteReasonPlaceholder": "Ghi r? l? do ?? l?u v?o audit log",
+    "deleteCancel": "Hu?",
+    "deleteSubmit": "Xo? v?nh vi?n",
+    "deleting": "?ang xo?...",
+    "deleteSuccess": "?? xo? ng??i d?ng.",
+    "deleteError": "Kh?ng th? xo? ng??i d?ng."
   }
 }

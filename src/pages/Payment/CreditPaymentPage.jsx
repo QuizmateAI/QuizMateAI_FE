@@ -137,7 +137,7 @@ export default function CreditPaymentPage() {
           <div className="flex items-center gap-4">
             <img
               src={isDarkMode ? LogoDark : LogoLight}
-              alt="QuizMateAI"
+              alt={t('common.brandLogoAlt', { brandName: 'QuizMate AI' })}
               className="hidden h-[120px] w-[120px] object-contain sm:block"
             />
             <button
@@ -260,7 +260,7 @@ export default function CreditPaymentPage() {
                             ? 'bg-emerald-500/10 ring-emerald-400/25'
                             : 'bg-emerald-600/10 ring-emerald-600/20'
                         }`}>
-                          <CreditIconImage alt="Quizmate Credit" className="w-10 h-10 rounded-2xl" />
+                          <CreditIconImage alt={t('common.creditIconAlt', { brandName: 'QuizMate AI' })} className="w-10 h-10 rounded-2xl" />
                         </span>
                         <span>{t('wallet.buyTitle')}</span>
                       </CardTitle>
