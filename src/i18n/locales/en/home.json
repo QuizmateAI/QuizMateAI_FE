@@ -405,6 +405,12 @@
     "groupLeaderManagedCta": "Leader manages plan",
     "thanhToan": "Payment",
     "defaultPlan": "Default plan",
+    "aiQuality": {
+      "core": "Core AI",
+      "enhanced": "Enhanced AI",
+      "premium": "Premium AI",
+      "team": "Team AI"
+    },
     "descriptions": {
       "free": "Start with the essentials for quiz creation and lightweight study sessions.",
       "freeWithLimits": "A solid starting point with {{workspaces}} workspaces and {{materials}} materials in each workspace.",

@@ -24,6 +24,7 @@ import ListSpinner from '@/components/ui/ListSpinner';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import PlanAiCoverageBadge from '@/pages/Admin/components/PlanAiCoverageBadge';
 import PlanFormWizard from '@/pages/Admin/components/PlanFormWizard';
 import {
   getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus, getAiModels, getPlanById,
@@ -550,13 +551,14 @@ function PlanManagement() {
                 <TableHead className="w-[90px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.scope', 'Scope')}</TableHead>
                 <TableHead className="w-[80px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.level', 'Level')}</TableHead>
                 <TableHead className="w-[130px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.price')}</TableHead>
+                <TableHead className="w-[120px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">AI coverage</TableHead>
                 <TableHead className="w-[90px] text-center font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.status')}</TableHead>
                 <TableHead className="w-[130px] text-right font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-4">
+                <TableRow><TableCell colSpan={7} className="text-center py-4">
                   <ListSpinner variant="table" />
                 </TableCell></TableRow>
               ) : filteredPlans.length > 0 ? filteredPlans.map((plan) => (
@@ -596,6 +598,14 @@ function PlanManagement() {
                       {formatCurrency(plan.price, t, locale)}
                     </span>
                   </TableCell>
+                  <TableCell>
+                    <PlanAiCoverageBadge
+                      plan={plan}
+                      availableAiModels={availableAiModels}
+                      isDarkMode={dk}
+                      t={t}
+                    />
+                  </TableCell>
                   <TableCell className="text-center">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold ${
                       isActive(plan.status)
@@ -624,7 +634,7 @@ function PlanManagement() {
                   </TableCell>
                 </TableRow>
               )) : (
-                <TableRow><TableCell colSpan={6} className={`text-center py-20 text-sm italic font-medium ${dk ? 'text-slate-500' : 'text-slate-500'}`}>{t('subscription.noPlans')}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className={`text-center py-20 text-sm italic font-medium ${dk ? 'text-slate-500' : 'text-slate-500'}`}>{t('subscription.noPlans')}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

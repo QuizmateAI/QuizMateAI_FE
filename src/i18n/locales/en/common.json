@@ -267,12 +267,12 @@
         "desc": "Current starting recommendation is 100 VND per credit."
       },
       {
-        "title": "Capability bundle",
-        "desc": "Price by AI capability groups such as OCR, source understanding, quiz generation, and review."
+        "title": "AI task bundle",
+        "desc": "Price by AI task groups such as OCR, source understanding, quiz generation, and review."
       },
       {
         "title": "No double charge",
-        "desc": "If a higher-level package already includes lower-level processing, the UI should not bill that capability twice."
+        "desc": "If a higher-level package already includes lower-level processing, the UI should not bill that task twice."
       },
       {
         "title": "Estimate",

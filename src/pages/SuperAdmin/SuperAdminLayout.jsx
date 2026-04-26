@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Bell, ChevronRight, Globe, Moon, Sun } from 'lucide-react';
+import { Bell, ChevronRight, Globe, KeyRound, Moon, Sun } from 'lucide-react';
 import SuperAdminSidebar from './Components/SuperAdminSidebar';
+import SuperAdminChangePasswordDialog from './Components/SuperAdminChangePasswordDialog';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 import { getSuperAdminPageMeta } from './Components/superAdminNavigation';
@@ -15,6 +16,7 @@ function SuperAdminLayoutContent() {
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const meta = getSuperAdminPageMeta(location.pathname, t);
 
@@ -99,6 +101,16 @@ function SuperAdminLayoutContent() {
                 {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-500" />}
               </button>
 
+              <button
+                type="button"
+                onClick={() => setChangePasswordOpen(true)}
+                className="sa-pill h-10 w-10 justify-center p-0 transition-colors hover:border-slate-300 hover:text-slate-900 dark:hover:border-slate-600 dark:hover:text-white"
+                title={t('superAdminLayout.changePassword.trigger')}
+                aria-label={t('superAdminLayout.changePassword.trigger')}
+              >
+                <KeyRound className="h-4 w-4" />
+              </button>
+
               <div className="hidden h-6 w-px bg-slate-200 md:block dark:bg-slate-800" />
 
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0455BF] text-xs font-bold text-white shadow-[0_12px_24px_-16px_rgba(4,85,191,0.72)]">
@@ -112,6 +124,11 @@ function SuperAdminLayoutContent() {
           <Outlet />
         </main>
       </div>
+
+      <SuperAdminChangePasswordDialog
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+      />
     </div>
   );
 }

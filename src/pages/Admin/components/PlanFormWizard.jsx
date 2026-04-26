@@ -20,9 +20,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { getAiFeatureCatalog, getAllAiActionPolicies } from '@/api/ManagementSystemAPI';
 import PlanFormWizardStepContent from './PlanFormWizardStepContent';
 import {
   AI_MODEL_GROUP_OPTIONS,
+  DEFAULT_AI_FEATURE_CATALOG,
+  getPlanAiCoverage,
+  normalizeAiFeatureCatalog,
 } from '@/lib/aiModelCatalog';
 
 const WIZARD_STEPS = [
@@ -35,9 +39,11 @@ const WIZARD_STEPS = [
     accent: 'from-cyan-500 to-blue-600',
   },
   {
-    id: 'entitlement',
-    titleKey: 'subscription.wizard.steps.entitlement.title',
-    descriptionKey: 'subscription.wizard.steps.entitlement.description',
+    id: 'functions',
+    titleKey: 'subscription.wizard.steps.functions.title',
+    titleFallback: 'Features',
+    descriptionKey: 'subscription.wizard.steps.functions.description',
+    descriptionFallback: 'Choose basic limits, keep Core AI locked on, and enable Advanced AI by plan.',
     icon: ShieldCheck,
     accent: 'from-emerald-500 to-teal-600',
   },
@@ -49,6 +55,15 @@ const WIZARD_STEPS = [
     accent: 'from-violet-500 to-fuchsia-600',
   },
   {
+    id: 'policy',
+    titleKey: 'subscription.wizard.steps.policy.title',
+    titleFallback: 'Cost and policy',
+    descriptionKey: 'subscription.wizard.steps.policy.description',
+    descriptionFallback: 'Review action policy, model cost, and AI coverage warnings.',
+    icon: Coins,
+    accent: 'from-amber-500 to-orange-600',
+  },
+  {
     id: 'review',
     titleKey: 'subscription.wizard.steps.review.title',
     descriptionKey: 'subscription.wizard.steps.review.description',
@@ -58,6 +73,7 @@ const WIZARD_STEPS = [
 ];
 
 const PLAN_LEVEL_OPTIONS = ['0', '1', '2'];
+const extractApiData = (response) => response?.data?.data ?? response?.data ?? response ?? null;
 
 const DARK_SELECT_STYLE = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
@@ -96,6 +112,7 @@ function PlanFormWizard({
   aiModelAssignments,
   setAiModelAssignments,
   functionAssignmentMap,
+  setFunctionAssignmentMap = () => {},
   availableAiModels,
   creditUnitPrice = 200,
   highestActiveUserPlanEntitlement,
@@ -105,6 +122,8 @@ function PlanFormWizard({
   onValidationError,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [aiFeatureCatalog, setAiFeatureCatalog] = useState(() => normalizeAiFeatureCatalog(DEFAULT_AI_FEATURE_CATALOG));
+  const [aiActionPolicies, setAiActionPolicies] = useState([]);
   const isWorkspace = formData.planScope === 'WORKSPACE';
   const showPlanLevel = true;
   const requireIndividualPlanLimits = formData.planScope !== 'WORKSPACE';
@@ -169,11 +188,57 @@ function PlanFormWizard({
     [functionAssignmentMap]
   );
 
+  const includedCredits = Number(entitlement.planIncludedCredits) || 0;
+  const minPrice = includedCredits * creditUnitPrice;
+  const currentPrice = Number(formData.price) || 0;
+  const effectivePrice = Math.max(currentPrice, minPrice);
+  const hasCustomPrice = currentPrice > minPrice;
+  const willAutoRaisePrice = currentPrice > 0 && currentPrice < minPrice;
+
   const resolvedPlanLevel = PLAN_LEVEL_OPTIONS.includes(String(formData.planLevel ?? ''))
     ? String(formData.planLevel ?? '')
     : (PLAN_LEVEL_OPTIONS[0] ?? '');
   const isDefaultPlanLevel = resolvedPlanLevel === (PLAN_LEVEL_OPTIONS[0] ?? '0');
   const hasGroupInheritance = isWorkspace && !isDefaultPlanLevel && Boolean(highestActiveUserPlanEntitlement);
+  const requiresAiCoverage = !isDefaultPlanLevel && effectivePrice > 0;
+  const aiCoverage = useMemo(
+    () => getPlanAiCoverage({
+      featureCatalog: aiFeatureCatalog,
+      entitlement,
+      availableAiModels,
+      functionAssignmentMap,
+      aiModelAssignments,
+    }),
+    [aiFeatureCatalog, entitlement, availableAiModels, functionAssignmentMap, aiModelAssignments]
+  );
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let active = true;
+
+    const fetchAiCatalogs = async () => {
+      try {
+        const [featureRes, policyRes] = await Promise.all([
+          getAiFeatureCatalog(),
+          getAllAiActionPolicies().catch(() => null),
+        ]);
+        if (!active) return;
+        const featureData = extractApiData(featureRes);
+        const policyData = extractApiData(policyRes);
+        setAiFeatureCatalog(normalizeAiFeatureCatalog(Array.isArray(featureData) ? featureData : DEFAULT_AI_FEATURE_CATALOG));
+        setAiActionPolicies(Array.isArray(policyData) ? policyData : []);
+      } catch {
+        if (!active) return;
+        setAiFeatureCatalog(normalizeAiFeatureCatalog(DEFAULT_AI_FEATURE_CATALOG));
+        setAiActionPolicies([]);
+      }
+    };
+
+    fetchAiCatalogs();
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (editingPlan) return;
@@ -194,13 +259,6 @@ function PlanFormWizard({
       return { ...prev, price: '0' };
     });
   }, [isDefaultPlanLevel, setEntitlement, setFormData]);
-
-  const includedCredits = Number(entitlement.planIncludedCredits) || 0;
-  const minPrice = includedCredits * creditUnitPrice;
-  const currentPrice = Number(formData.price) || 0;
-  const effectivePrice = Math.max(currentPrice, minPrice);
-  const hasCustomPrice = currentPrice > minPrice;
-  const willAutoRaisePrice = currentPrice > 0 && currentPrice < minPrice;
 
   useEffect(() => {
     if (!hasGroupInheritance || editingPlan) return;
@@ -300,6 +358,16 @@ function PlanFormWizard({
       const leveledPlanFieldError = getIndividualPlanLimitError();
       if (leveledPlanFieldError) return leveledPlanFieldError;
     }
+    if (
+      requiresAiCoverage
+      && !aiCoverage.isComplete
+      && (forSubmit || ['models', 'policy', 'review'].includes(activeStep?.id))
+    ) {
+      return t(
+        'subscription.wizard.validation.aiCoverageRequired',
+        'Paid plans must assign an ACTIVE compatible model for every enabled Core and Advanced AI action.'
+      );
+    }
     return null;
   };
 
@@ -346,8 +414,10 @@ function PlanFormWizard({
   const renderCurrentStep = () => (
     <PlanFormWizardStepContent
       activeStepId={activeStep.id}
-      AI_MODEL_GROUP_OPTIONS={AI_MODEL_GROUP_OPTIONS}
       PLAN_LEVEL_OPTIONS={PLAN_LEVEL_OPTIONS}
+      aiActionPolicies={aiActionPolicies}
+      aiCoverage={aiCoverage}
+      aiFeatureCatalog={aiFeatureCatalog}
       assignedModels={assignedModels}
       assignedOverrideCount={assignedOverrideCount}
       availableAiModels={availableAiModels}
@@ -383,12 +453,15 @@ function PlanFormWizard({
       setAiModelAssignments={setAiModelAssignments}
       setEntitlement={setEntitlement}
       setFormData={setFormData}
+      setFunctionAssignmentMap={setFunctionAssignmentMap}
       showPlanLevel={showPlanLevel}
       t={t}
       textareaCls={textareaCls}
       willAutoRaisePrice={willAutoRaisePrice}
     />
   );
+
+  const publishBlockedByAiCoverage = isLastStep && requiresAiCoverage && !aiCoverage.isComplete;
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
@@ -564,6 +637,22 @@ function PlanFormWizard({
                     );
                   })}
                 </div>
+
+                <div className={cn('mt-4 rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/10 bg-slate-950/50' : 'border-slate-200 bg-white')}>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>
+                      {t('subscription.wizard.policy.coverage', 'AI coverage')}
+                    </span>
+                    <span className={cn('text-sm font-semibold', aiCoverage.isComplete ? (isDarkMode ? 'text-emerald-200' : 'text-emerald-700') : 'text-rose-500')}>
+                      {aiCoverage.covered}/{aiCoverage.total}
+                    </span>
+                  </div>
+                  {requiresAiCoverage && !aiCoverage.isComplete ? (
+                    <p className="mt-2 text-xs leading-5 text-rose-500">
+                      {t('subscription.wizard.policy.missingHint', 'Paid plans need complete AI model coverage.')}
+                    </p>
+                  ) : null}
+                </div>
               </div>
 
             </aside>
@@ -591,7 +680,7 @@ function PlanFormWizard({
                   disabled={isSubmitting}
                   className={cn('rounded-full cursor-pointer', isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/5' : '')}
                 >
-                  {t('auth.cancel')}
+                  {t('auth.cancel', 'Hủy')}
                 </Button>
 
                 {currentStep > 0 ? (
@@ -610,7 +699,7 @@ function PlanFormWizard({
                 <Button
                   type="button"
                   onClick={isLastStep ? submitWizard : handleNext}
-                  disabled={isSubmitting || editLocked}
+                  disabled={isSubmitting || editLocked || publishBlockedByAiCoverage}
                   className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700 cursor-pointer"
                 >
                   {isLastStep ? (

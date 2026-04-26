@@ -72,6 +72,7 @@ const RbacManagement = lazy(() => import('./pages/SuperAdmin/RbacManagement'));
 const AiAuditManagement = lazy(() => import('./pages/SuperAdmin/AiAuditManagement'));
 const AiProvidersOverview = lazy(() => import('./pages/SuperAdmin/AiProvidersOverview'));
 const AiModelsManagement = lazy(() => import('./pages/SuperAdmin/AiModelsManagement'));
+const AiModelPlanOverrides = lazy(() => import('./pages/SuperAdmin/AiModelPlanOverrides'));
 const AiCostManagement = lazy(() => import('./pages/SuperAdmin/AiCostManagement'));
 const UserDetailPage = lazy(() => import('./pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./pages/SuperAdmin/GroupDetailPage'));
@@ -158,6 +159,7 @@ function MainRoutes() {
                     <Route path="payments" element={<AdminPaymentManagement />} />
                     <Route path="system-settings" element={<SystemSettingManagement />} />
                     <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
+                    <Route path="ai-plan-overrides" element={<AiModelPlanOverrides />} />
                     <Route path="feedbacks" element={<FeedbackManagementLayout />}>
                         <Route index element={<Navigate to="forms" replace />} />
                         <Route path="forms" element={<FeedbackManagement />} />

@@ -1,5 +1,4 @@
 import {
-  Bot,
   CheckCircle2,
   ChevronRight,
   Layers3,
@@ -9,16 +8,19 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import PlanAiModelAssignmentsStep from './PlanAiModelAssignmentsStep';
+import PlanAiPolicyStep from './PlanAiPolicyStep';
+import PlanFeatureSelectionPanel from './PlanFeatureSelectionPanel';
 
 function PlanFormWizardStepContent({
   activeStepId,
-  AI_MODEL_GROUP_OPTIONS,
   PLAN_LEVEL_OPTIONS,
+  aiActionPolicies,
+  aiCoverage,
+  aiFeatureCatalog,
   assignedModels,
   assignedOverrideCount,
   availableAiModels,
@@ -30,7 +32,6 @@ function PlanFormWizardStepContent({
   entitlementToggles,
   editingPlan,
   formData,
-  getModelById,
   getScopeLabel,
   formatCurrency,
   handleIncludedCreditsChange,
@@ -54,6 +55,7 @@ function PlanFormWizardStepContent({
   setAiModelAssignments,
   setEntitlement,
   setFormData,
+  setFunctionAssignmentMap,
   showPlanLevel,
   t,
   textareaCls,
@@ -359,232 +361,47 @@ function PlanFormWizardStepContent({
           ) : null}
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {t('subscription.wizard.entitlement.featureToggle', 'Feature toggle')}
-            </p>
-            <p className={cn('mt-1 text-xs leading-5', mutedCls)}>
-              {enabledFeatures.length > 0
-                ? t('subscription.wizard.entitlement.enabledCount', {
-                  count: enabledFeatures.length,
-                  defaultValue: '{{count}} features enabled.',
-                })
-                : t('subscription.wizard.entitlement.noneEnabled', 'No capabilities enabled for this plan yet.')}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const nextEntitlement = { ...entitlement };
-                Object.keys(entitlementToggles).forEach((key) => {
-                  nextEntitlement[key] = true;
-                });
-                setEntitlement(nextEntitlement);
-              }}
-              className={cn(
-                'rounded-full cursor-pointer',
-                isDarkMode ? 'border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/10' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-              )}
-            >
-              {t('subscription.wizard.entitlement.enableAll', 'Enable all')}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const nextEntitlement = { ...entitlement };
-                Object.keys(entitlementToggles).forEach((key) => {
-                  nextEntitlement[key] = false;
-                });
-                setEntitlement(nextEntitlement);
-              }}
-              className={cn(
-                'rounded-full cursor-pointer',
-                isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/[0.05]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              )}
-            >
-              {t('subscription.wizard.entitlement.disableAll', 'Disable all')}
-            </Button>
-          </div>
-        </div>
-
-        {hasGroupInheritance ? (
-          <div
-            className={cn(
-              'mt-4 rounded-[22px] border px-4 py-3 text-sm',
-              isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
-            )}
-          >
-            Gói group tự động kế thừa toàn bộ quyền lợi từ gói cá nhân cao nhất đang active. Các feature kế thừa không thể tắt.
-          </div>
-        ) : null}
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {Object.entries(entitlementToggles).map(([key, meta]) => {
-            const checked = Boolean(entitlement[key]);
-            const Icon = meta.icon;
-            const inheritedFromUser = hasGroupInheritance && highestActiveUserPlanEntitlement[key] === true;
-
-            return (
-              <label
-                key={key}
-                className={cn(
-                  'flex items-center gap-3 rounded-[22px] border px-4 py-3 transition-all',
-                  inheritedFromUser ? 'cursor-not-allowed' : 'cursor-pointer',
-                  checked
-                    ? isDarkMode
-                      ? 'border-blue-400/20 bg-blue-500/10 shadow-[0_18px_40px_-28px_rgba(59,130,246,0.7)]'
-                      : 'border-blue-200 bg-blue-50/80 shadow-[0_18px_40px_-30px_rgba(59,130,246,0.25)]'
-                    : isDarkMode
-                      ? 'border-white/10 bg-white/[0.03] hover:bg-white/[0.05]'
-                      : 'border-slate-200 bg-slate-50 hover:bg-white'
-                )}
-              >
-                <Switch
-                  checked={checked}
-                  disabled={inheritedFromUser}
-                  onCheckedChange={(value) => setEntitlement((prev) => ({ ...prev, [key]: value }))}
-                />
-                <div
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-2xl',
-                    checked
-                      ? isDarkMode
-                        ? 'bg-blue-500/20 text-blue-300'
-                        : 'bg-blue-100 text-blue-600'
-                      : isDarkMode
-                        ? 'bg-slate-900/70 text-slate-500'
-                        : 'bg-white text-slate-400'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className={cn('text-sm font-semibold', checked ? (isDarkMode ? 'text-white' : 'text-slate-900') : mutedCls)}>
-                    {t(meta.labelKey, meta.defaultLabel)}
-                  </p>
-                  <p className={cn('mt-1 text-xs', checked ? (isDarkMode ? 'text-blue-100/80' : 'text-blue-700/80') : mutedCls)}>
-                    {checked ? 'Đang mở cho plan này.' : 'Đang tắt.'}
-                  </p>
-                </div>
-              </label>
-            );
-          })}
-        </div>
+        <PlanFeatureSelectionPanel
+          aiFeatureCatalog={aiFeatureCatalog}
+          enabledFeatures={enabledFeatures}
+          entitlement={entitlement}
+          entitlementToggles={entitlementToggles}
+          hasGroupInheritance={hasGroupInheritance}
+          highestActiveUserPlanEntitlement={highestActiveUserPlanEntitlement}
+          isDarkMode={isDarkMode}
+          mutedCls={mutedCls}
+          setEntitlement={setEntitlement}
+          t={t}
+        />
       </section>
     </div>
   );
 
   const renderModelsStep = () => (
-    <div className="space-y-6">
-      <section className={sectionCls}>
-        {renderStepHeader(
-          Bot,
-          t('subscription.wizard.models.title', 'Default models by capability'),
-          t(
-            'subscription.wizard.models.description',
-            'Each capability group should have a default model to reduce manual tuning at the end.'
-          ),
-          'from-violet-500 to-fuchsia-600'
-        )}
+    <PlanAiModelAssignmentsStep
+      aiCoverage={aiCoverage}
+      aiModelAssignments={aiModelAssignments}
+      availableAiModels={availableAiModels}
+      isDarkMode={isDarkMode}
+      mutedCls={mutedCls}
+      sectionCls={sectionCls}
+      selectCls={selectCls}
+      selectStyle={selectStyle}
+      setAiModelAssignments={setAiModelAssignments}
+      setFunctionAssignmentMap={setFunctionAssignmentMap}
+      t={t}
+    />
+  );
 
-        <div
-          className={cn(
-            'mt-5 rounded-[22px] border px-4 py-3 text-sm',
-            isDarkMode ? 'border-violet-400/20 bg-violet-500/10 text-violet-100' : 'border-violet-200 bg-violet-50 text-violet-800'
-          )}
-        >
-          {t(
-            'subscription.wizard.models.inactiveHint',
-            'Models outside the ACTIVE state still appear for historical review, but cannot be newly selected.'
-          )}
-        </div>
-
-        <div className="mt-6 grid gap-4 xl:grid-cols-2">
-          {AI_MODEL_GROUP_OPTIONS.map((group) => {
-            const groupModels = availableAiModels.filter((model) => model.modelGroup === group.value);
-            const selectedModelId = aiModelAssignments[group.value] ?? '';
-            const selectedModel = getModelById(availableAiModels, selectedModelId);
-
-            return (
-              <div
-                key={group.value}
-                className={cn(
-                  'rounded-[24px] border p-4',
-                  isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {t(group.labelKey)}
-                    </p>
-                    <p className={cn('mt-1 text-xs leading-5', mutedCls)}>
-                      {t('subscription.aiModels.groupHint')}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      'rounded-full px-3 py-1 text-[11px] font-semibold',
-                      isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-white text-slate-700'
-                    )}
-                  >
-                    {t('subscription.wizard.models.groupCount', {
-                      count: groupModels.length,
-                      defaultValue: '{{count}} model',
-                    })}
-                  </span>
-                </div>
-
-                <select
-                  value={selectedModelId}
-                  onChange={(event) => setAiModelAssignments((prev) => ({ ...prev, [group.value]: event.target.value }))}
-                  className={selectCls}
-                  style={selectStyle}
-                >
-                  <option value="">{t('subscription.aiModels.noAssignment')}</option>
-                  {groupModels.map((model) => (
-                    <option
-                      key={model.aiModelId}
-                      value={model.aiModelId}
-                      disabled={model.status !== 'ACTIVE' && String(model.aiModelId) !== String(selectedModelId)}
-                    >
-                      {model.displayName} ({model.provider} / {model.modelCode}){model.status !== 'ACTIVE' ? ` • ${model.status}` : ''}
-                    </option>
-                  ))}
-                </select>
-
-                {selectedModel ? (
-                  <div
-                    className={cn(
-                      'mt-3 rounded-[20px] border px-4 py-3 text-sm',
-                      isDarkMode ? 'border-violet-400/15 bg-violet-500/10 text-violet-100' : 'border-violet-200 bg-violet-50 text-violet-900'
-                    )}
-                  >
-                    <p className="font-semibold">{selectedModel.displayName}</p>
-                    <p className="mt-1 text-xs">
-                      {selectedModel.provider} / {selectedModel.modelCode}
-                    </p>
-                  </div>
-                ) : (
-                  <p className={cn('mt-3 text-xs leading-5', mutedCls)}>
-                    {t(
-                      'subscription.wizard.models.noAssignmentHint',
-                      'No dedicated model assigned. The system will use the matching default resolution instead.'
-                    )}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    </div>
+  const renderPolicyStep = () => (
+    <PlanAiPolicyStep
+      aiActionPolicies={aiActionPolicies}
+      aiCoverage={aiCoverage}
+      isDarkMode={isDarkMode}
+      mutedCls={mutedCls}
+      sectionCls={sectionCls}
+      t={t}
+    />
   );
 
   const renderReviewStep = () => (
@@ -697,6 +514,12 @@ function PlanFormWizardStepContent({
                 <span className={mutedCls}>{t('subscription.wizard.review.overrideActions', 'Override actions')}</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{assignedOverrideCount}</span>
               </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className={mutedCls}>{t('subscription.wizard.policy.coverage', 'AI coverage')}</span>
+                <span className={cn('font-semibold', aiCoverage?.isComplete ? (isDarkMode ? 'text-emerald-200' : 'text-emerald-700') : 'text-rose-500')}>
+                  {aiCoverage?.covered ?? 0}/{aiCoverage?.total ?? 0}
+                </span>
+              </div>
               <div className="flex flex-wrap gap-2 pt-1">
                 {assignedModels.filter((item) => item.model).slice(0, 4).map((item) => (
                   <span
@@ -722,10 +545,13 @@ function PlanFormWizardStepContent({
     switch (activeStepId) {
       case 'basic':
         return renderBasicStep();
+      case 'functions':
       case 'entitlement':
         return renderEntitlementStep();
       case 'models':
         return renderModelsStep();
+      case 'policy':
+        return renderPolicyStep();
       case 'review':
         return renderReviewStep();
       default:

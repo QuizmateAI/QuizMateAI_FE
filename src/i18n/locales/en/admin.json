@@ -19,6 +19,7 @@
     "payments": "Payments",
     "systemSettings": "System Settings",
     "aiActionPolicies": "AI Policies",
+    "aiPlanOverrides": "Plan Model Overrides",
     "feedback": "Feedback",
     "myPermissions": "My permissions",
     "communityQuizzes": "Community Quizzes"
@@ -26,7 +27,8 @@
   "sidebarSections": {
     "overview": "Overview",
     "workspace": "Users & groups",
-    "commerce": "Plans & payments",
+    "commerce": "Billing",
+    "planOperations": "Plan operations",
     "system": "Internal systems",
     "access": "Access",
     "accessControl": "Access control",
@@ -111,8 +113,13 @@
     "colCategory": "Category",
     "colCostMode": "Cost mode",
     "colFormula": "Formula",
+    "colDefaultModel": "Default model",
     "colStatus": "Status",
     "colActions": "Actions",
+    "defaultModel": "Default model",
+    "defaultModelHint": "When no plan-level override applies, this model handles the action.",
+    "defaultModelUnset": "Not set",
+    "defaultModelUnsetOption": "— No default model —",
     "formulaCommon": "Common formula",
     "appliedMetric": "Applied metric",
     "tableExplanation": "Explanation",
@@ -128,6 +135,10 @@
     "edit": "Edit",
     "editTitle": "Edit AI Policy",
     "editDescription": "Update display name, description, status, and the credit formula for this action.",
+    "editSectionIdentity": "Identity",
+    "editSectionPricing": "Pricing formula",
+    "editSectionRouting": "Model routing",
+    "editSectionPreview": "Live preview",
     "actionKey": "Action key",
     "displayName": "Display name",
     "description": "Description",
@@ -188,6 +199,28 @@
         "unitSize": "Questions per unit",
         "metric": "Total question count in the mock test"
       },
+      "generateRoadmap": {
+        "title": "Create Roadmap",
+        "description": "Credit charged each time AI creates a learning roadmap.",
+        "baseCost": "Cost per roadmap",
+        "metric": "Each roadmap generation request"
+      },
+      "generateRoadmapPhases": {
+        "title": "Generate Roadmap Phases",
+        "description": "Credit charged when AI creates roadmap phases.",
+        "baseCost": "Base fee",
+        "unitCost": "Cost per phase",
+        "unitSize": "Phases per unit",
+        "metric": "Total roadmap phase count"
+      },
+      "generateRoadmapPhaseContent": {
+        "title": "Generate Roadmap Content",
+        "description": "Credit charged when AI creates detailed content for roadmap phases.",
+        "baseCost": "Base fee",
+        "unitCost": "Cost per content item",
+        "unitSize": "Items per unit",
+        "metric": "Total roadmap content item count"
+      },
       "previewQuizStructure": {
         "title": "Preview Quiz Structure",
         "description": "Credit charged each time AI drafts a quiz structure preview before quiz generation.",
@@ -201,6 +234,12 @@
         "unitCost": "Cost per question",
         "unitSize": "Questions per unit",
         "metric": "Total roadmap quiz question count"
+      },
+      "suggestLearningResources": {
+        "title": "Suggest Learning Resources",
+        "description": "Credit charged each time AI suggests relevant learning resources.",
+        "baseCost": "Cost per suggestion",
+        "metric": "Each learning resource suggestion request"
       },
       "analyzeStudyProfileKnowledge": {
         "title": "Analyze Study Profile Knowledge",
@@ -220,11 +259,39 @@
         "baseCost": "Cost per suggestion",
         "metric": "Each exam template suggestion request"
       },
+      "suggestWorkspaceName": {
+        "title": "Suggest Workspace Name",
+        "description": "Credit charged each time AI suggests workspace names.",
+        "baseCost": "Cost per suggestion",
+        "metric": "Each workspace name suggestion request"
+      },
       "validateStudyProfileConsistency": {
         "title": "Validate Study Profile Consistency",
         "description": "Credit charged each time AI validates study profile consistency.",
         "baseCost": "Cost per validation",
         "metric": "Each consistency validation request"
+      },
+      "companionInterpret": {
+        "title": "AI Companion Answer",
+        "description": "Credit charged each time AI companion interprets or answers a learner.",
+        "baseCost": "Cost per answer",
+        "metric": "Each companion answer"
+      },
+      "companionTranscribe": {
+        "title": "Companion Speech to Text",
+        "description": "Credit charged when companion transcribes spoken input.",
+        "baseCost": "Base fee",
+        "unitCost": "Cost per minute",
+        "unitSize": "Seconds per unit",
+        "metric": "Total companion audio duration in seconds"
+      },
+      "companionTts": {
+        "title": "Companion Text to Speech",
+        "description": "Credit charged when companion turns text into speech.",
+        "baseCost": "Base fee",
+        "unitCost": "Cost per 1,000 words",
+        "unitSize": "Words per unit",
+        "metric": "Total words to speak"
       },
       "processPdf": {
         "title": "Process PDF",
@@ -289,6 +356,51 @@
         "metric": "Total video duration in seconds"
       }
     }
+  },
+  "aiPlanOverride": {
+    "title": "Plan Model Overrides",
+    "subtitle": "Override which AI model is used for each (action, model group) on a specific plan. Falls back to the action's default model when nothing is set.",
+    "readOnlyNotice": "AI model configuration has moved into the plan create/edit wizard. This screen is read-only for legacy override review.",
+    "selectPlan": "Subscription plan",
+    "noPlans": "No plans available",
+    "noPlanSelected": "Select a plan to see its overrides.",
+    "tableTitle": "Active overrides",
+    "tableSubtitle": "{{plan}} — overrides win over the action's default model.",
+    "addOverride": "Add override",
+    "refresh": "Refresh",
+    "empty": "This plan uses the default model for every action.",
+    "colSource": "Type",
+    "colAction": "Action",
+    "colModelGroup": "Model group",
+    "colModel": "Override model",
+    "colDefaultFallback": "Default fallback",
+    "colActions": "Actions",
+    "sourceAction": "Per action",
+    "sourceGroup": "Per group",
+    "actionAll": "All actions in group",
+    "modelMissing": "Model #{{id}} (missing)",
+    "noFallback": "No default model",
+    "reset": "Reset",
+    "addDialogTitle": "Add plan override",
+    "addDialogDescription": "Choose an override scope and the model that should run for {{plan}}.",
+    "formOverrideType": "Override scope",
+    "formOverrideTypeAction": "Per action",
+    "formOverrideTypeActionHint": "Override one action only — wins over group fallback.",
+    "formOverrideTypeGroup": "Per group",
+    "formOverrideTypeGroupHint": "Default model for every action in this group.",
+    "formAction": "Action",
+    "formActionPlaceholder": "Choose an action",
+    "formModelGroup": "Model group",
+    "formModelGroupPlaceholder": "Choose a model group",
+    "formModel": "Model",
+    "formModelPlaceholder": "Choose a model",
+    "formModelEmpty": "No active model matches this group",
+    "duplicate": "An override already exists for this scope.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "addSuccess": "Override saved",
+    "resetSuccess": "Override removed — falling back to the default model"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -899,8 +1011,8 @@
       "workspaceScope": "Group workspace scope"
     },
     "aiModels": {
-      "title": "AI Models by capability",
-      "groupHint": "Choose the default model for this capability in the selected plan.",
+      "title": "AI Models by task group",
+      "groupHint": "Choose the default model for this AI task group in the selected plan.",
       "noAssignment": "No model assigned"
     },
     "actions": {
@@ -941,7 +1053,8 @@
     },
     "validation": {
       "codeRequired": "Please enter a plan code.",
-      "displayNameRequired": "Please enter a plan name."
+      "displayNameRequired": "Please enter a plan name.",
+      "aiCoverageRequired": "Paid plans must assign an ACTIVE compatible model for every enabled Core AI and Advanced AI action."
     },
     "wizard": {
       "empty": "Not entered",
@@ -959,11 +1072,19 @@
         },
         "entitlement": {
           "title": "Entitlements",
-          "description": "Set limits and capability toggles."
+          "description": "Set limits and feature toggles."
+        },
+        "functions": {
+          "title": "Features",
+          "description": "Core AI stays locked on; Advanced AI is enabled by plan entitlement."
         },
         "models": {
           "title": "AI models",
-          "description": "Assign default models for each capability group."
+          "description": "Assign models per AI action and bulk apply by model group when needed."
+        },
+        "policy": {
+          "title": "Cost and policy",
+          "description": "Review policy, model cost, and missing AI configuration warnings."
         },
         "review": {
           "title": "Review",
@@ -995,24 +1116,58 @@
       },
       "entitlement": {
         "title": "Entitlements and limits",
-        "description": "Keep this part compact: quantities first, then the capability toggles.",
+        "description": "Keep this part compact: quantities first, then the feature toggles.",
         "maxIndividualWorkspaceHint": "Maximum number of individual workspaces allowed by this plan.",
         "maxMaterialInWorkspaceHint": "Material limit inside each workspace.",
         "planIncludedCreditsHint": "Credits preloaded in the plan.",
         "featureToggle": "Feature toggle",
         "enabledCount": "{{count}} features enabled.",
-        "noneEnabled": "No capabilities enabled for this plan yet.",
+        "noneEnabled": "No features enabled for this plan yet.",
         "enableAll": "Enable all",
         "disableAll": "Disable all",
         "enabledState": "Enabled for this plan.",
         "disabledState": "Disabled."
       },
+      "features": {
+        "title": "Features",
+        "coreTitle": "Core AI",
+        "advancedTitle": "Advanced AI",
+        "materialTitle": "Material",
+        "systemTitle": "System features",
+        "lockedOn": "Locked on",
+        "inherited": "Inherited",
+        "descriptions": {
+          "createRoadmap": "Create roadmap"
+        }
+      },
       "models": {
-        "title": "Default models by capability",
-        "description": "Each capability group should have a default model to reduce manual tuning at the end.",
+        "title": "AI models by action",
+        "description": "Assign a compatible model to each enabled AI action. Group defaults can be bulk-applied, but action assignments are the primary plan payload.",
         "inactiveHint": "Models outside the ACTIVE state still appear for historical review, but cannot be newly selected.",
         "groupCount": "{{count}} model",
-        "noAssignmentHint": "No dedicated model assigned. The system will use the matching default resolution instead."
+        "noAssignmentHint": "No dedicated model assigned. The system will use the matching default resolution instead.",
+        "actionsCovered": "actions covered",
+        "bulkApply": "Apply to actions",
+        "entitlementKey": "Entitlement: {{key}}",
+        "coreAlwaysOn": "Core action, always enabled.",
+        "useGroupDefault": "Use group default",
+        "missing": "Missing"
+      },
+      "policy": {
+        "title": "Cost and policy",
+        "description": "Review AI action policy, model coverage, and missing configuration before publishing a paid plan.",
+        "coverage": "AI coverage",
+        "missing": "Missing models",
+        "activePolicies": "Active policies",
+        "missingHint": "Paid plans cannot be published or activated until every enabled Core and Advanced AI action has an ACTIVE compatible model.",
+        "coveredHint": "All enabled AI actions have a compatible active model.",
+        "action": "Action",
+        "group": "Group",
+        "cost": "Cost",
+        "status": "Status",
+        "ready": "Ready",
+        "noPolicy": "No policy configured",
+        "legacyOverride": "Legacy override"
       },
       "review": {
         "title": "Review before saving",
@@ -1024,7 +1179,7 @@
         "modelGroupsAssigned": "Groups with assigned models",
         "overrideActions": "Override actions",
         "aiOverrides": "AI function overrides",
-        "aiOverridesHint": "Leave empty to use the default capability model.",
+        "aiOverridesHint": "Leave empty to use the default AI task group model.",
         "aiOverridesGroupHint": "Only override when this plan truly needs behavior different from the group default model.",
         "providerAvailable": "Available provider: {{provider}}.",
         "useDefaultHint": "Leave empty to use the default for {{group}}.",
@@ -1035,7 +1190,7 @@
   },
   "aiModels": {
     "title": "AI Model Catalog",
-    "subtitle": "Manage the system model catalog, activation state, and pricing versions per capability.",
+    "subtitle": "Manage the system model catalog, activation state, and pricing versions per AI task group.",
     "refresh": "Refresh",
     "add": "Add model",
     "cancel": "Cancel",
@@ -1062,7 +1217,7 @@
       "searchPlaceholder": "Display name, model code, provider...",
       "provider": "Provider",
       "allProviders": "All providers",
-      "group": "Capability group",
+        "group": "AI task group",
       "allGroups": "All groups",
       "status": "Status",
       "allStatuses": "All statuses"
@@ -1074,7 +1229,7 @@
     },
     "table": {
       "model": "Model",
-      "group": "Capability",
+        "group": "Task group",
       "pricing": "Active pricing",
       "input": "Input",
       "output": "Output",
@@ -1131,9 +1286,9 @@
     },
     "dialogs": {
       "createTitle": "Create AI model",
-      "createDescription": "Add a new model so the system can assign it by capability and plan.",
+      "createDescription": "Add a new model so the system can assign it by AI task group and plan.",
       "editTitle": "Edit AI model",
-      "editDescription": "Update the display metadata and capability group for this model.",
+      "editDescription": "Update the display metadata and AI task group for this model.",
       "pricingTitle": "Model pricing",
       "pricingDescription": "Manage model input/output pricing and sync it from official sources when needed.",
       "deleteTitle": "Delete AI model",
@@ -1141,7 +1296,8 @@
     },
     "form": {
       "provider": "Provider",
-      "group": "Capability group",
+        "group": "AI task group",
+        "groupHint": "This group defines which kind of AI task the model handles. The system uses it to filter compatible models while configuring plans.",
       "modelCode": "Model code",
       "displayName": "Display name",
       "description": "Description",
@@ -1188,8 +1344,8 @@
       "allPlans": "All plans",
       "provider": "Provider",
       "allProviders": "All providers",
-      "group": "Capability",
-      "allGroups": "All capabilities",
+      "group": "AI task group",
+      "allGroups": "All AI task groups",
       "action": "Action",
       "allActions": "All actions",
       "status": "Status",
@@ -1247,7 +1403,7 @@
       "action": "Action",
       "plan": "Plan",
       "model": "Model",
-      "group": "Capability",
+      "group": "AI task group",
       "status": "Status",
       "createdAt": "Created at",
       "formula": "Converted revenue & spend",
@@ -1262,7 +1418,25 @@
     "brand": "Admin QuizMate"
   },
   "superAdminLayout": {
-    "brand": "Super Admin"
+    "brand": "Super Admin",
+    "changePassword": {
+      "trigger": "Change password",
+      "title": "Change password",
+      "description": "Enter your current password and new password to update.",
+      "oldPassword": "Current password",
+      "newPassword": "New password",
+      "confirmNewPassword": "Confirm new password",
+      "placeholder": "••••••••",
+      "cancel": "Cancel",
+      "submit": "Confirm",
+      "saving": "Saving...",
+      "fieldsRequired": "Please fill in all password fields.",
+      "mismatch": "Password confirmation does not match.",
+      "tooShort": "New password must be at least 6 characters.",
+      "sameAsOld": "New password must differ from the current password.",
+      "success": "Password changed successfully.",
+      "error": "Could not change password. Please try again."
+    }
   },
   "aiAudit": {
     "title": "AI Audit",
@@ -1375,7 +1549,7 @@
     },
     "table": {
       "modelCode": "Model code",
-      "modelGroup": "Capability",
+      "modelGroup": "AI task group",
       "systemDefault": "System default",
       "status": "Status"
     },
