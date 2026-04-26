@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Eye, Banknote, Clock, X } from 'lucide-react';
+import { Search, RefreshCw, Eye, Banknote, Clock, X, ReceiptText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -27,6 +27,8 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { getAdminPayments, getAdminPaymentByOrderId, expireOverduePayments } from '@/api/ManagementSystemAPI';
+import AdminPaymentDetailFields from './components/AdminPaymentDetailFields';
+import AdminPagination from './components/AdminPagination';
 import {
   SuperAdminPage,
   SuperAdminPageHeader,
@@ -42,10 +44,17 @@ const INITIAL_FILTERS = {
 const STATUS_OPTIONS = ['', 'PENDING', 'COMPLETED', 'FAILED', 'CANCELLED'];
 
 const STATUS_META = {
-  PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  FAILED: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-  CANCELLED: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+  PENDING: 'bg-amber-100 text-amber-700 ring-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800 dark:hover:bg-amber-900/30',
+  COMPLETED: 'bg-emerald-100 text-emerald-700 ring-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800 dark:hover:bg-emerald-900/30',
+  FAILED: 'bg-rose-100 text-rose-700 ring-rose-200 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30',
+  CANCELLED: 'bg-orange-50 text-orange-700 ring-orange-200 hover:bg-orange-50 dark:bg-orange-950/40 dark:text-orange-300 dark:ring-orange-800 dark:hover:bg-orange-950/40',
+};
+
+const PAYMENT_METHOD_META = {
+  STRIPE: 'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-800',
+  MOMO: 'bg-pink-50 text-pink-700 ring-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:ring-pink-800',
+  VNPAY: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-800',
+  DEFAULT: 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
 };
 
 const TARGET_TYPE_LABELS = {
@@ -121,11 +130,38 @@ function AdminPaymentManagement() {
     return `${formatMoney(payment.gatewayAmount)}${currency}`;
   };
 
+  const formatDateParts = (value) => {
+    if (!value) return { time: '-', date: '' };
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return { time: '-', date: '' };
+    return {
+      time: date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      date: date.toLocaleDateString(locale),
+    };
+  };
+
   const formatTargetType = (paymentTargetType) => {
     const key = TARGET_TYPE_LABELS[paymentTargetType];
     if (!key) return paymentTargetType || '-';
     return t(key);
   };
+
+  const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
+
+  const getPayerUserName = (payment) => normalizeText(
+    payment?.payerUserName
+      || payment?.userFullName
+      || payment?.userName
+      || payment?.username
+      || payment?.payerUsername
+  ) || '-';
+
+  const getChargedUserName = (payment) => normalizeText(
+    payment?.chargedUserName
+      || payment?.chargedUserFullName
+      || payment?.chargedUserUsername
+      || payment?.chargedUsername
+  ) || '-';
 
   const normalizeNumericFilter = (value, label) => {
     const trimmed = String(value || '').trim();
@@ -136,7 +172,7 @@ function AdminPaymentManagement() {
     return Number(trimmed);
   };
 
-  const loadPayments = async (nextPage = 0, overrideFilters = filters) => {
+  const loadPayments = async (nextPage = 0, overrideFilters = filters, overrideSize = pageInfo.size) => {
     setIsLoading(true);
     setError('');
     try {
@@ -147,7 +183,7 @@ function AdminPaymentManagement() {
         setPayments(detailData ? [detailData] : []);
         setPageInfo({
           page: 0,
-          size: 1,
+          size: overrideSize,
           totalElements: detailData ? 1 : 0,
           totalPages: detailData ? 1 : 0,
           first: true,
@@ -160,7 +196,7 @@ function AdminPaymentManagement() {
       const workspaceId = normalizeNumericFilter(overrideFilters.workspaceId, t('adminPayments.fields.workspaceId'));
       const res = await getAdminPayments({
         page: nextPage,
-        size: pageInfo.size,
+        size: overrideSize,
         userId,
         workspaceId,
         status: overrideFilters.status || undefined,
@@ -170,7 +206,7 @@ function AdminPaymentManagement() {
       setPayments(content);
       setPageInfo({
         page: Number(data?.page || 0),
-        size: Number(data?.size || pageInfo.size || 10),
+        size: Number(data?.size || overrideSize || 10),
         totalElements: Number(data?.totalElements || 0),
         totalPages: Number(data?.totalPages || 0),
         first: Boolean(data?.first),
@@ -181,7 +217,7 @@ function AdminPaymentManagement() {
       setPayments([]);
       setPageInfo({
         page: 0,
-        size: pageInfo.size,
+        size: overrideSize,
         totalElements: 0,
         totalPages: 0,
         first: true,
@@ -214,6 +250,16 @@ function AdminPaymentManagement() {
   const handleReset = async () => {
     setFilters(INITIAL_FILTERS);
     await loadPayments(0, INITIAL_FILTERS);
+  };
+
+  const handlePageChange = (nextPage) => {
+    if (nextPage < 0 || nextPage >= pageInfo.totalPages || nextPage === pageInfo.page) return;
+    loadPayments(nextPage, filters);
+  };
+
+  const handlePageSizeChange = (nextSize) => {
+    setPageInfo((current) => ({ ...current, size: nextSize }));
+    loadPayments(0, filters, nextSize);
   };
 
   const handleOpenDetail = async (payment) => {
@@ -254,36 +300,57 @@ function AdminPaymentManagement() {
   };
 
   const renderStatusBadge = (status) => (
-    <Badge className={STATUS_META[status] || STATUS_META.CANCELLED}>
+    <Badge variant="outline" className={`inline-flex min-w-[82px] justify-center whitespace-nowrap rounded-lg border-0 px-2.5 py-1 text-xs font-semibold ring-1 ${STATUS_META[status] || STATUS_META.CANCELLED}`}>
       {status ? t(`adminPayments.status.${status}`, { defaultValue: status }) : '-'}
     </Badge>
   );
 
-  const renderTargetSummary = (payment) => {
-    const targetSubject = payment.workspaceId != null
-      ? `${t('adminPayments.detail.fields.workspace')} #${payment.workspaceId}`
-      : payment.chargedUserId != null
-        ? `${t('adminPayments.detail.fields.chargedUser')} #${payment.chargedUserId}`
-        : payment.groupSubscriptionId != null
-          ? `${t('adminPayments.detail.fields.groupSubscription')} #${payment.groupSubscriptionId}`
-          : payment.userSubscriptionId != null
-            ? `${t('adminPayments.detail.fields.userSubscription')} #${payment.userSubscriptionId}`
-            : null;
-
+  const renderPaymentMethodBadge = (method) => {
+    const normalizedMethod = String(method || '').toUpperCase();
+    const metaClass = PAYMENT_METHOD_META[normalizedMethod] || PAYMENT_METHOD_META.DEFAULT;
     return (
-      <div className="min-w-[220px] space-y-1">
-        <div className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+      <span className={`inline-flex min-w-[74px] justify-center whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-semibold tracking-wide ring-1 ${metaClass}`}>
+        {normalizedMethod || '-'}
+      </span>
+    );
+  };
+
+  const renderOrderId = (orderId) => (
+    <span
+      title={orderId || '-'}
+      className="block max-w-[145px] truncate font-mono text-[13px] font-medium text-blue-600 dark:text-blue-400"
+    >
+      {orderId || '-'}
+    </span>
+  );
+
+  const renderUserName = (payment) => {
+    const name = getPayerUserName(payment);
+    return (
+      <div className="min-w-0 max-w-[130px]">
+        <div title={name} className={`block truncate whitespace-nowrap text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+          {name}
+        </div>
+      </div>
+    );
+  };
+
+  const renderPaymentTime = (payment) => {
+    const parts = formatDateParts(payment.paidAt || payment.createdAt || payment.expiresAt);
+    return (
+      <div className="min-w-[108px] text-sm tabular-nums">
+        <div className={isDarkMode ? 'text-slate-200' : 'text-slate-700'}>{parts.time}</div>
+        {parts.date && <div className={isDarkMode ? 'text-slate-500' : 'text-slate-500'}>{parts.date}</div>}
+      </div>
+    );
+  };
+
+  const renderTargetSummary = (payment) => {
+    return (
+      <div className="min-w-[130px] max-w-[150px]">
+        <div className={`truncate text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
           {formatTargetType(payment.paymentTargetType)}
         </div>
-        {targetSubject && (
-          <div
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-              isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {targetSubject}
-          </div>
-        )}
       </div>
     );
   };
@@ -312,34 +379,40 @@ function AdminPaymentManagement() {
         </div>
       )}
 
-      <Card className={`border shadow-sm rounded-[24px] ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-        <CardHeader className="p-6 border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className={`text-xl flex items-center gap-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            <Banknote className="w-5 h-5 text-emerald-500" />
-            {t('adminPayments.filterTitle')}
+      <Card className={`rounded-xl border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
+          <CardTitle className={`flex items-center gap-2 text-lg ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+            <Banknote className="w-5 h-5 text-[#0455BF]" />
+            <span>{t('adminPayments.filterTitle')}</span>
           </CardTitle>
+          <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            {t('adminPayments.desc')}
+          </p>
         </CardHeader>
-        <CardContent className="p-6">
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+        <CardContent className="p-5">
+          <form onSubmit={handleSearch} className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.2fr)_minmax(140px,0.8fr)_minmax(150px,0.8fr)_minmax(150px,0.8fr)_auto]">
             <Input
               value={filters.orderId}
               onChange={(event) => handleFilterChange('orderId', event.target.value)}
               placeholder={t('adminPayments.placeholders.orderId')}
+              className="h-10 rounded-lg"
             />
             <Input
               value={filters.userId}
               onChange={(event) => handleFilterChange('userId', event.target.value)}
               placeholder={t('adminPayments.placeholders.userId')}
+              className="h-10 rounded-lg"
             />
             <Input
               value={filters.workspaceId}
               onChange={(event) => handleFilterChange('workspaceId', event.target.value)}
               placeholder={t('adminPayments.placeholders.workspaceId')}
+              className="h-10 rounded-lg"
             />
             <select
               value={filters.status}
               onChange={(event) => handleFilterChange('status', event.target.value)}
-              className={`h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm ${
+              className={`h-10 w-full rounded-lg border px-3 py-1 text-sm shadow-sm outline-none focus:ring-1 focus:ring-[#0455BF] ${
                 isDarkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-input text-slate-900'
               }`}
             >
@@ -350,11 +423,11 @@ function AdminPaymentManagement() {
               ))}
             </select>
             <div className="flex gap-2">
-              <Button type="submit" className="rounded-xl flex-1">
+              <Button type="submit" className="h-10 flex-1 rounded-lg">
                 <Search className="w-4 h-4 mr-2" />
                 {t('adminPayments.search')}
               </Button>
-              <Button type="button" variant="outline" onClick={handleReset} className="rounded-xl">
+              <Button type="button" variant="outline" onClick={handleReset} className="h-10 rounded-lg px-3">
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
@@ -362,41 +435,42 @@ function AdminPaymentManagement() {
         </CardContent>
       </Card>
 
-      <Card className={`border shadow-sm overflow-hidden rounded-[24px] ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-        <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className={`text-xl ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            {t('adminPayments.listTitle')}
+      <Card className={`overflow-hidden rounded-xl border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <CardHeader className="flex flex-col gap-3 p-5 border-b border-slate-100 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
+          <CardTitle className={`flex items-center gap-2 text-lg ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+            <ReceiptText className="h-5 w-5 text-[#0455BF]" />
+            <span>{t('adminPayments.listTitle')}</span>
           </CardTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {canWrite && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={openExpireDialog}
-                className={`rounded-xl gap-2 ${isDarkMode ? 'border-amber-700 text-amber-400 hover:bg-amber-500/10' : 'border-amber-300 text-amber-700 hover:bg-amber-50'}`}
+                className={`rounded-lg gap-2 ${isDarkMode ? 'border-amber-700 text-amber-400 hover:bg-amber-500/10' : 'border-amber-300 text-amber-700 hover:bg-amber-50'}`}
               >
                 <Clock className="w-4 h-4" />
                 {t('adminPayments.expireOverdue')}
               </Button>
             )}
-            <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span className={`rounded-lg px-3 py-1.5 text-sm font-semibold tabular-nums ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
               {t('adminPayments.summary', { count: new Intl.NumberFormat(locale).format(pageInfo.totalElements) })}
             </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-[1040px] table-fixed">
               <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                 <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                  <TableHead className="font-bold text-slate-500">{t('adminPayments.table.orderId')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('adminPayments.table.user')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('adminPayments.table.target')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('adminPayments.table.amount')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('adminPayments.table.method')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('adminPayments.table.status')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('adminPayments.table.time')}</TableHead>
-                  <TableHead className="text-right font-bold text-slate-500">{t('adminPayments.table.actions')}</TableHead>
+                  <TableHead className="w-[175px] font-bold text-slate-500">{t('adminPayments.table.orderId')}</TableHead>
+                  <TableHead className="w-[145px] font-bold text-slate-500">{t('adminPayments.table.user')}</TableHead>
+                  <TableHead className="w-[160px] font-bold text-slate-500">{t('adminPayments.table.target')}</TableHead>
+                  <TableHead className="w-[115px] text-right font-bold text-slate-500">{t('adminPayments.table.amount')}</TableHead>
+                  <TableHead className="w-[105px] font-bold text-slate-500">{t('adminPayments.table.method')}</TableHead>
+                  <TableHead className="w-[120px] font-bold text-slate-500">{t('adminPayments.table.status')}</TableHead>
+                  <TableHead className="w-[125px] font-bold text-slate-500">{t('adminPayments.table.time')}</TableHead>
+                  <TableHead className="w-[95px] text-right font-bold text-slate-500">{t('adminPayments.detail.action')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -418,26 +492,23 @@ function AdminPaymentManagement() {
                       key={payment.paymentId ?? payment.orderId}
                       className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
                     >
-                      <TableCell className="font-mono text-sm text-blue-600 dark:text-blue-400">
-                        {payment.orderId}
-                      </TableCell>
-                      <TableCell>#{payment.userId ?? '-'}</TableCell>
+                      <TableCell className="align-middle">{renderOrderId(payment.orderId)}</TableCell>
+                      <TableCell className="align-middle">{renderUserName(payment)}</TableCell>
                       <TableCell>{renderTargetSummary(payment)}</TableCell>
-                      <TableCell>{formatMoney(payment.amount)}</TableCell>
-                      <TableCell>{payment.paymentMethod || '-'}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">{formatMoney(payment.amount)}</TableCell>
+                      <TableCell>{renderPaymentMethodBadge(payment.paymentMethod)}</TableCell>
                       <TableCell>{renderStatusBadge(payment.paymentStatus)}</TableCell>
-                      <TableCell className="text-sm text-slate-500">
-                        {formatDate(payment.paidAt || payment.createdAt || payment.expiresAt)}
-                      </TableCell>
+                      <TableCell>{renderPaymentTime(payment)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="rounded-lg"
+                          size="icon"
+                          aria-label={t('adminPayments.detail.action')}
+                          title={t('adminPayments.detail.action')}
+                          className="h-9 w-9 rounded-lg"
                           onClick={() => handleOpenDetail(payment)}
                         >
-                          <Eye className="w-4 h-4 mr-2" />
-                          {t('adminPayments.detail.action')}
+                          <Eye className="w-4 h-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -448,34 +519,16 @@ function AdminPaymentManagement() {
           </div>
 
           {!filters.orderId.trim() && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800">
-              <div className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                {t('adminPayments.pagination.page', {
-                  current: pageInfo.totalPages === 0 ? 0 : pageInfo.page + 1,
-                  total: pageInfo.totalPages || 0,
-                })}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isLoading || pageInfo.first}
-                  onClick={() => loadPayments(Math.max(pageInfo.page - 1, 0))}
-                  className="rounded-lg"
-                >
-                  {t('adminPayments.pagination.previous')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isLoading || pageInfo.last || pageInfo.totalPages === 0}
-                  onClick={() => loadPayments(pageInfo.page + 1)}
-                  className="rounded-lg"
-                >
-                  {t('adminPayments.pagination.next')}
-                </Button>
-              </div>
-            </div>
+            <AdminPagination
+              currentPage={pageInfo.page}
+              totalPages={pageInfo.totalPages}
+              totalElements={pageInfo.totalElements}
+              pageSize={pageInfo.size}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              isDarkMode={isDarkMode}
+              isLoading={isLoading}
+            />
           )}
         </CardContent>
       </Card>
@@ -594,95 +647,19 @@ function AdminPaymentManagement() {
               <ListSpinner variant="inline" />
             </div>
           ) : selectedPayment ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.paymentId')}</div>
-                <div className="font-medium">{selectedPayment.paymentId ?? '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.orderId')}</div>
-                <div className="font-mono text-sm">{selectedPayment.orderId || '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.payerUser')}</div>
-                <div className="font-medium">#{selectedPayment.userId ?? '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.chargedUser')}</div>
-                <div className="font-medium">#{selectedPayment.chargedUserId ?? '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.workspace')}</div>
-                <div className="font-medium">#{selectedPayment.workspaceId ?? '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.targetType')}</div>
-                <div className="font-medium">{formatTargetType(selectedPayment.paymentTargetType)}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.userSubscription')}</div>
-                <div className="font-medium">#{selectedPayment.userSubscriptionId ?? '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.groupSubscription')}</div>
-                <div className="font-medium">#{selectedPayment.groupSubscriptionId ?? '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.amount')}</div>
-                <div className="font-medium">{formatMoney(selectedPayment.amount)}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.method')}</div>
-                <div className="font-medium">{selectedPayment.paymentMethod || '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.status')}</div>
-                <div>{renderStatusBadge(selectedPayment.paymentStatus)}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayTransactionId')}</div>
-                <div className="font-mono text-sm break-all">{selectedPayment.gatewayTransactionId || '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayAmount')}</div>
-                <div className="font-medium">{formatGatewayAmount(selectedPayment)}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayCurrency')}</div>
-                <div className="font-medium">{selectedPayment.gatewayCurrency || '-'}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.gatewayVerifiedAt')}</div>
-                <div className="font-medium">{formatDate(selectedPayment.gatewayVerifiedAt)}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.createdAt')}</div>
-                <div className="font-medium">{formatDate(selectedPayment.createdAt)}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.paidAt')}</div>
-                <div className="font-medium">{formatDate(selectedPayment.paidAt)}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.expiresAt')}</div>
-                <div className="font-medium">{formatDate(selectedPayment.expiresAt)}</div>
-              </div>
-              <div className="space-y-1 md:col-span-2">
-                <div className="text-xs uppercase tracking-wide text-slate-400">{t('adminPayments.detail.fields.payUrl')}</div>
-                {selectedPayment.payUrl ? (
-                  <a
-                    href={selectedPayment.payUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 dark:text-blue-400 break-all underline"
-                  >
-                    {selectedPayment.payUrl}
-                  </a>
-                ) : (
-                  <div className="font-medium">-</div>
-                )}
-              </div>
-            </div>
+            <AdminPaymentDetailFields
+              payment={selectedPayment}
+              isDarkMode={isDarkMode}
+              t={t}
+              formatMoney={formatMoney}
+              formatDate={formatDate}
+              formatGatewayAmount={formatGatewayAmount}
+              formatTargetType={formatTargetType}
+              renderStatusBadge={renderStatusBadge}
+              renderPaymentMethodBadge={renderPaymentMethodBadge}
+              getPayerUserName={getPayerUserName}
+              getChargedUserName={getChargedUserName}
+            />
           ) : null}
 
           <DialogFooter>

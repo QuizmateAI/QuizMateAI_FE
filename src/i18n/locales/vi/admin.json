@@ -16,7 +16,7 @@
     "aiModels": "Mô hình AI",
     "aiCosts": "Chi phí AI",
     "aiAudit": "AI Audit",
-    "payments": "Thanh toán",
+    "payments": "Lịch sử giao dịch",
     "systemSettings": "Cấu hình hệ thống",
     "aiActionPolicies": "Chính sách AI",
     "aiPlanOverrides": "Model theo gói",
@@ -608,7 +608,7 @@
     "summary": "{{count}} giao dịch",
     "table": {
       "orderId": "Order ID",
-      "user": "User",
+      "user": "Người dùng",
       "target": "Mục tiêu",
       "amount": "Số tiền",
       "method": "Phương thức",
