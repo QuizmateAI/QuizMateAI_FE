@@ -976,6 +976,10 @@
         "PENDING": "Pending",
         "INACTIVE": "Inactive",
         "PROCESSING": "Processing",
+        "REJECT": "Not relevant",
+        "REJECTED": "Not relevant",
+        "WARN": "Warning",
+        "WARNED": "Warning",
         "ERROR": "Error",
         "PENDING_LEADER": "Awaiting leader attempt"
       },
@@ -2152,6 +2156,7 @@
       "unselectSource": "Unselect source",
       "previewSource": "Details",
       "warningSource": "Warning",
+      "uploadTimeLabel": "Time",
       "renameHint": "Update the source name shown across the workspace.",
       "renamePlaceholder": "New source name",
       "deleteSourceTitle": "Delete source",

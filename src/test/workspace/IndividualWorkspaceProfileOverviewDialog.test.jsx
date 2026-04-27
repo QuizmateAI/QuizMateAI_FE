@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import i18n, { i18nReady, preloadNamespaces } from '@/i18n';
-import IndividualWorkspaceProfileOverviewDialog from '@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog';
+import IndividualWorkspaceProfileOverviewDialog from '@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog';
 
 describe('IndividualWorkspaceProfileOverviewDialog', () => {
   beforeEach(async () => {

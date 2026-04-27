@@ -966,6 +966,10 @@
         "PENDING": "Đang chờ",
         "INACTIVE": "Không hoạt động",
         "PROCESSING": "Đang xử lý",
+        "REJECT": "Không liên quan",
+        "REJECTED": "Không liên quan",
+        "WARN": "Cảnh báo",
+        "WARNED": "Cảnh báo",
         "ERROR": "Lỗi",
         "PENDING_LEADER": "Chờ leader làm bài"
       },
@@ -2095,6 +2099,7 @@
       "unselectSource": "Bỏ chọn nguồn",
       "previewSource": "Chi tiết",
       "warningSource": "Cảnh báo",
+      "uploadTimeLabel": "Thời gian",
       "renameHint": "Đổi tên nguồn hiển thị trong workspace.",
       "renamePlaceholder": "Tên nguồn mới",
       "deleteSourceTitle": "Xóa nguồn",
@@ -2999,33 +3004,33 @@
     }
   },
   "timeline": {
-    "phaseNext": "Ti?p theo"
+    "phaseNext": "Tiếp theo"
   },
   "roadmap": {
-    "phaseUntitled": "Phase ch?a ??t t?n",
-    "knowledgeUntitled": "Ki?n th?c ch?a ??t t?n",
+    "phaseUntitled": "Phase chưa đặt tên",
+    "knowledgeUntitled": "Kiến thức chưa đặt tên",
     "canvas": {
-      "closePhaseDetail": "??ng chi ti?t phase",
-      "noKnowledgeInPhase": "Phase n?y ch?a c? m?c ki?n th?c n?o.",
-      "openInStage": "M? ? ch? ?? stage"
+      "closePhaseDetail": "Đóng chi tiết phase",
+      "noKnowledgeInPhase": "Phase này chưa có mục kiến thức nào.",
+      "openInStage": "Mở ở chế độ stage"
     }
   },
   "quiz": {
     "common": {
-      "cancel": "Hu?"
+      "cancel": "Hủy"
     },
     "manualWizard": {
       "questionNavigator": {
-        "jumpTo": "?i t?i"
+        "jumpTo": "Đi tới"
       }
     },
     "communityDetail": {
-      "unknownUser": "Ng??i h?c",
-      "reviewNoComment": "Ng??i d?ng ?? ?? l?i ??nh gi? nh?ng kh?ng c? b?nh lu?n.",
-      "replyAction": "Tr? l?i",
-      "replyPlaceholder": "Vi?t ph?n h?i",
-      "cancelReply": "Hu?",
-      "sendReply": "G?i"
+      "unknownUser": "Người học",
+      "reviewNoComment": "Người dùng đã để lại đánh giá nhưng không có bình luận.",
+      "replyAction": "Trả lời",
+      "replyPlaceholder": "Viết phản hồi",
+      "cancelReply": "Hủy",
+      "sendReply": "Gửi"
     }
   },
   "editChoiceDialog": {
