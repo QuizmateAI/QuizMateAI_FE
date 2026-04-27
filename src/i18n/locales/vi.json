@@ -148,28 +148,6 @@
         "unitSize": "Số câu / đơn vị",
         "metric": "Tổng số câu hỏi trong đề"
       },
-      "generateRoadmap": {
-        "title": "Tạo roadmap",
-        "description": "Tính phí cho mỗi lần AI tạo roadmap học tập.",
-        "baseCost": "Phí mỗi roadmap",
-        "metric": "Mỗi lần tạo roadmap"
-      },
-      "generateRoadmapPhases": {
-        "title": "Tạo giai đoạn roadmap",
-        "description": "Tính phí khi AI tạo các giai đoạn trong roadmap.",
-        "baseCost": "Phí cơ bản",
-        "unitCost": "Phí mỗi giai đoạn",
-        "unitSize": "Số giai đoạn / đơn vị",
-        "metric": "Tổng số giai đoạn roadmap"
-      },
-      "generateRoadmapPhaseContent": {
-        "title": "Tạo nội dung roadmap",
-        "description": "Tính phí khi AI tạo nội dung chi tiết cho các giai đoạn roadmap.",
-        "baseCost": "Phí cơ bản",
-        "unitCost": "Phí mỗi mục nội dung",
-        "unitSize": "Số mục / đơn vị",
-        "metric": "Tổng số mục nội dung roadmap"
-      },
       "previewQuizStructure": {
         "title": "Xem trước cấu trúc quiz",
         "description": "Tính phí cho mỗi lần AI dựng cấu trúc phân bổ câu hỏi dự kiến trước khi tạo quiz.",
@@ -177,18 +155,12 @@
         "metric": "Mỗi lần xem trước cấu trúc quiz"
       },
       "generateRoadmapQuiz": {
-        "title": "Tạo quiz trong roadmap",
+        "title": "Generate quiz in roadmap",
         "description": "Tính phí khi tạo bài kiểm tra kiến thức lộ trình, dựa trên tổng số câu hỏi.",
         "baseCost": "Phí khởi tạo",
         "unitCost": "Phí mỗi câu hỏi",
         "unitSize": "Số câu / đơn vị",
         "metric": "Tổng số câu hỏi của quiz lộ trình"
-      },
-      "suggestLearningResources": {
-        "title": "Gợi ý tài nguyên học",
-        "description": "Tính phí cho mỗi lần AI gợi ý tài nguyên học phù hợp.",
-        "baseCost": "Phí mỗi lần gợi ý",
-        "metric": "Mỗi lần gợi ý tài nguyên học"
       },
       "analyzeStudyProfileKnowledge": {
         "title": "Phân tích nội dung kiến thức",
@@ -208,39 +180,11 @@
         "baseCost": "Phí mỗi lần gợi ý",
         "metric": "Mỗi lần gợi ý mẫu đề thi"
       },
-      "suggestWorkspaceName": {
-        "title": "Gợi ý tên workspace",
-        "description": "Tính phí cho mỗi lần AI gợi ý tên workspace.",
-        "baseCost": "Phí mỗi lần gợi ý",
-        "metric": "Mỗi lần gợi ý tên workspace"
-      },
       "validateStudyProfileConsistency": {
         "title": "Kiểm tra độ nhất quán hồ sơ",
         "description": "Tính phí cho mỗi lần AI kiểm tra độ nhất quán của hồ sơ học tập.",
         "baseCost": "Phí mỗi lần kiểm tra",
         "metric": "Mỗi lần kiểm tra độ nhất quán"
-      },
-      "companionInterpret": {
-        "title": "AI companion trả lời",
-        "description": "Tính phí cho mỗi lần AI companion diễn giải hoặc trả lời người học.",
-        "baseCost": "Phí mỗi lần trả lời",
-        "metric": "Mỗi lượt companion trả lời"
-      },
-      "companionTranscribe": {
-        "title": "Companion speech-to-text",
-        "description": "Tính phí khi companion chuyển giọng nói thành văn bản.",
-        "baseCost": "Phí cơ bản",
-        "unitCost": "Phí mỗi phút",
-        "unitSize": "Số giây / đơn vị",
-        "metric": "Tổng thời lượng âm thanh companion theo giây"
-      },
-      "companionTts": {
-        "title": "Companion text-to-speech",
-        "description": "Tính phí khi companion chuyển văn bản thành giọng nói.",
-        "baseCost": "Phí cơ bản",
-        "unitCost": "Phí mỗi 1.000 từ",
-        "unitSize": "Số từ / đơn vị",
-        "metric": "Tổng số từ cần đọc"
       },
       "processPdf": {
         "title": "Xử lý PDF",
@@ -1130,8 +1074,8 @@
       "workspaceScope": "Phạm vi workspace nhóm"
     },
     "aiModels": {
-      "title": "Mô hình AI theo nhóm tác vụ",
-      "groupHint": "Chọn model mặc định cho nhóm tác vụ này theo gói.",
+      "title": "Mô hình AI theo capability",
+      "groupHint": "Chọn model mặc định cho capability này theo gói.",
       "noAssignment": "Chưa gán model"
     },
     "actions": {
@@ -1190,11 +1134,11 @@
         },
         "entitlement": {
           "title": "Quyền lợi",
-          "description": "Thiết lập giới hạn và các tính năng bật tắt."
+          "description": "Thiết lập giới hạn và các capability bật tắt."
         },
         "models": {
           "title": "Mô hình AI",
-          "description": "Gán model mặc định cho từng nhóm tác vụ AI."
+          "description": "Gán model mặc định cho từng nhóm capability."
         },
         "review": {
           "title": "Rà soát",
@@ -1226,21 +1170,21 @@
       },
       "entitlement": {
         "title": "Quyền lợi và giới hạn",
-        "description": "Giữ phần này thật gọn: trước là giới hạn định lượng, sau là các tính năng bật hoặc tắt.",
+        "description": "Giữ phần này thật gọn: trước là giới hạn định lượng, sau là các capability bật hoặc tắt.",
         "maxIndividualWorkspaceHint": "Số workspace cá nhân tối đa mà plan cho phép.",
         "maxMaterialInWorkspaceHint": "Giới hạn tài liệu trong mỗi workspace.",
         "planIncludedCreditsHint": "Số credit được nạp sẵn trong gói.",
         "featureToggle": "Bật tắt tính năng",
         "enabledCount": "Đang bật {{count}} quyền lợi.",
-        "noneEnabled": "Chưa bật tính năng nào cho plan này.",
+        "noneEnabled": "Chưa bật capability nào cho plan này.",
         "enableAll": "Bật hết",
         "disableAll": "Tắt hết",
         "enabledState": "Đang mở cho plan này.",
         "disabledState": "Đang tắt."
       },
       "models": {
-        "title": "Model mặc định theo nhóm tác vụ",
-        "description": "Mỗi nhóm tác vụ AI nên có model mặc định riêng để giảm công chỉnh tay ở bước cuối.",
+        "title": "Model mặc định theo capability",
+        "description": "Mỗi nhóm năng lực nên có model mặc định riêng để giảm công chỉnh tay ở bước cuối.",
         "inactiveHint": "Model có trạng thái khác ACTIVE vẫn hiển thị để xem lại cấu hình cũ, nhưng không thể chọn mới.",
         "groupCount": "{{count}} model",
         "noAssignmentHint": "Chưa gán model riêng. Hệ thống sẽ dùng cách resolve mặc định tương ứng."
@@ -1255,7 +1199,7 @@
         "modelGroupsAssigned": "Nhóm đã gán model",
         "overrideActions": "Action override",
         "aiOverrides": "Override hàm AI",
-        "aiOverridesHint": "Để trống để dùng model mặc định theo nhóm tác vụ.",
+        "aiOverridesHint": "Để trống để dùng model mặc định theo capability.",
         "aiOverridesGroupHint": "Chỉ override khi plan này thật sự cần hành vi khác với model mặc định của nhóm.",
         "providerAvailable": "Provider khả dụng: {{provider}}.",
         "useDefaultHint": "Để trống nếu muốn dùng mặc định của {{group}}.",
@@ -1266,7 +1210,7 @@
   },
   "aiModels": {
     "title": "Quản lý mô hình AI",
-    "subtitle": "Quản lý danh mục model, trạng thái hoạt động và bảng giá theo từng nhóm tác vụ AI.",
+    "subtitle": "Quản lý danh mục model, trạng thái hoạt động và bảng giá theo từng capability.",
     "refresh": "Làm mới",
     "add": "Thêm model",
     "cancel": "Hủy",
@@ -1293,7 +1237,7 @@
       "searchPlaceholder": "Tên hiển thị, mã model, provider...",
       "provider": "Provider",
       "allProviders": "Tất cả provider",
-      "group": "Nhóm tác vụ AI",
+      "group": "Nhóm capability",
       "allGroups": "Tất cả nhóm",
       "status": "Trạng thái",
       "allStatuses": "Tất cả trạng thái"
@@ -1305,7 +1249,7 @@
     },
     "table": {
       "model": "Model",
-      "group": "Nhóm tác vụ",
+      "group": "Capability",
       "pricing": "Bảng giá hiện hành",
       "input": "Input",
       "output": "Output",
@@ -1362,9 +1306,9 @@
     },
     "dialogs": {
       "createTitle": "Thêm mô hình AI",
-      "createDescription": "Tạo model mới để hệ thống có thể gán theo nhóm tác vụ AI hoặc theo gói.",
+      "createDescription": "Tạo model mới để hệ thống có thể gán theo capability hoặc theo gói.",
       "editTitle": "Chỉnh sửa mô hình AI",
-      "editDescription": "Cập nhật thông tin hiển thị và nhóm tác vụ AI của model.",
+      "editDescription": "Cập nhật thông tin hiển thị và capability của model.",
       "pricingTitle": "Bảng giá model",
       "pricingDescription": "Quản lý bảng giá input / output của model và đồng bộ từ nguồn chính thức khi cần.",
       "deleteTitle": "Xóa mô hình AI",
@@ -1372,8 +1316,7 @@
     },
     "form": {
       "provider": "Provider",
-      "group": "Nhóm tác vụ AI",
-      "groupHint": "Nhóm này cho biết model xử lý loại tác vụ nào. Hệ thống dùng để lọc đúng model khi cấu hình gói.",
+      "group": "Nhóm capability",
       "modelCode": "Mã model",
       "displayName": "Tên hiển thị",
       "description": "Mô tả",
@@ -1417,8 +1360,8 @@
       "allPlans": "Tất cả gói",
       "provider": "Provider",
       "allProviders": "Tất cả provider",
-      "group": "Nhóm tác vụ AI",
-      "allGroups": "Tất cả nhóm tác vụ AI",
+      "group": "Capability",
+      "allGroups": "Tất cả capability",
       "action": "Chức năng",
       "allActions": "Tất cả chức năng",
       "status": "Trạng thái",
@@ -1476,7 +1419,7 @@
       "action": "Chức năng",
       "plan": "Gói",
       "model": "Model",
-      "group": "Nhóm tác vụ AI",
+      "group": "Capability",
       "status": "Trạng thái",
       "createdAt": "Thời gian tạo",
       "formula": "Thu - chi quy đổi",
@@ -4198,8 +4141,8 @@
         "desc": "Mốc khởi động đề xuất hiện tại là 100 VND / credit."
       },
       {
-        "title": "Gói tác vụ AI",
-        "desc": "Tính theo nhóm tác vụ AI như OCR, hiểu tài liệu, tạo quiz và review."
+        "title": "Capability bundle",
+        "desc": "Tính theo nhóm năng lực AI như OCR, source understanding, quiz generation, review."
       },
       {
         "title": "Không tính hai lần",
@@ -4666,7 +4609,7 @@
     },
     "table": {
       "modelCode": "Mã mô hình",
-      "modelGroup": "Nhóm tác vụ AI",
+      "modelGroup": "Năng lực",
       "systemDefault": "Mặc định hệ thống",
       "status": "Trạng thái"
     },
