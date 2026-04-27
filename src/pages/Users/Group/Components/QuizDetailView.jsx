@@ -36,6 +36,7 @@ import QuestionDiscussionDialog from "@/pages/Users/Group/Components/QuestionDis
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/components/math/MixedMathText";
 import { hasQuizCompleted } from "@/utils/quizAttemptTracker";
+import { getQuestionDisplayText, getQuestionImageList } from "@/lib/questionContentMedia";
 import {
   buildQuizAttemptPath,
   buildQuizResultPath,
@@ -1284,6 +1285,8 @@ function QuizDetailView({
                         const textAnswersToDisplay = correctTextAnswers.length > 0
                           ? correctTextAnswers
                           : fallbackTextAnswers;
+                        const questionImages = getQuestionImageList(question);
+                        const questionDisplayText = getQuestionDisplayText(question.content);
                         const isQExpanded = expandedQuestions[question.questionId];
                         const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
 
@@ -1295,9 +1298,23 @@ function QuizDetailView({
                                 {qIdx + 1}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
+                                {questionImages.length > 0 && (
+                                  <div className="mt-2 space-y-2">
+                                    {questionImages.map((image, index) => (
+                                      <img
+                                        key={`${image.url}-${index}`}
+                                        src={image.url}
+                                        alt={image.alt || t("workspace.quiz.questionImageAlt", "Question illustration")}
+                                        loading="lazy"
+                                        className={`w-full max-h-[24rem] rounded-xl border object-contain ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50"}`}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+
+                                <div className="mt-2 flex items-start justify-between gap-2">
                                   <p className={`text-sm font-medium whitespace-pre-wrap ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                                    <MixedMathText>{question.content}</MixedMathText>
+                                    <MixedMathText>{questionDisplayText}</MixedMathText>
                                   </p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
