@@ -1252,6 +1252,10 @@
         "workspaceMaterialsEmpty": "No documents in this workspace yet. Add materials from the Sources panel.",
         "materialSelectedBadge": "Selected",
         "materialsSelectedSummary": "{{selected}} of {{total}} selected",
+        "subTopicLabel": "Suggested topics (optional)",
+        "subTopicLoading": "Loading topics...",
+        "subTopicLoadError": "Failed to load topics.",
+        "subTopicEmpty": "These materials have no uggested topics yet.",
         "difficultyLevel": "Difficulty Level",
         "difficultyPreviewTitle": "Difficulty distribution",
         "customSelfConfig": "Custom (Self-config)",
@@ -1432,6 +1436,7 @@
         "structureTitle": "Quiz structure",
         "goal": "Goal",
         "difficulty": "Difficulty",
+        "topic": "Topic",
         "type": "Type",
         "bloom": "Skill",
         "quantity": "Count"
