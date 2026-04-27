@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   RefreshCw,
+  Save,
+  X,
   Cpu,
   FileText,
   Image,
@@ -13,11 +15,14 @@ import {
   BrainCircuit,
   Layers,
   ClipboardCheck,
-  Map as MapIcon,
+  Map,
   Edit2,
   Settings2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -26,39 +31,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import ListSpinner from '@/components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
-import { getAiModels, getAllAiActionPolicies, updateAiActionPolicy } from '@/api/ManagementSystemAPI';
-import { filterAiModelsForAction, filterSupportedAiModels } from '@/lib/aiModelCatalog';
+import { getAllAiActionPolicies, updateAiActionPolicy } from '@/api/ManagementSystemAPI';
 import {
   SuperAdminPage,
   SuperAdminPageHeader,
 } from '@/pages/SuperAdmin/Components/SuperAdminSurface';
-import AiActionPolicyEditDialog, {
-  FormulaPreview,
-} from './components/AiActionPolicyEditDialog';
 
 const ACTION_META = {
   GENERATE_QUIZ: { icon: ClipboardCheck, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-950/40', category: 'generate', i18nKey: 'generateQuiz' },
   PREVIEW_QUIZ_STRUCTURE: { icon: Settings2, color: 'text-sky-500', bg: 'bg-sky-100 dark:bg-sky-950/40', category: 'generate', i18nKey: 'previewQuizStructure' },
   GENERATE_FLASHCARDS: { icon: Layers, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-950/40', category: 'generate', i18nKey: 'generateFlashcards' },
   GENERATE_MOCK_TEST: { icon: BrainCircuit, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-950/40', category: 'generate', i18nKey: 'generateMockTest' },
-  GENERATE_ROADMAP: { icon: MapIcon, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-950/40', category: 'generate', i18nKey: 'generateRoadmap' },
-  GENERATE_ROADMAP_PHASES: { icon: Layers, color: 'text-teal-500', bg: 'bg-teal-100 dark:bg-teal-950/40', category: 'generate', i18nKey: 'generateRoadmapPhases' },
-  GENERATE_ROADMAP_PHASE_CONTENT: { icon: FileText, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-950/40', category: 'generate', i18nKey: 'generateRoadmapPhaseContent' },
-  GENERATE_ROADMAP_KNOWLEDGE_QUIZ: { icon: MapIcon, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-950/40', category: 'generate', i18nKey: 'generateRoadmapQuiz' },
-  SUGGEST_LEARNING_RESOURCES: { icon: FileText, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-950/40', category: 'analysis', i18nKey: 'suggestLearningResources' },
+  GENERATE_ROADMAP_KNOWLEDGE_QUIZ: { icon: Map, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-950/40', category: 'generate', i18nKey: 'generateRoadmapQuiz' },
   ANALYZE_STUDY_PROFILE_KNOWLEDGE: { icon: BrainCircuit, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-950/40', category: 'analysis', i18nKey: 'analyzeStudyProfileKnowledge' },
   SUGGEST_STUDY_PROFILE_FIELDS: { icon: Cpu, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-950/40', category: 'analysis', i18nKey: 'suggestStudyProfileFields' },
   SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES: { icon: FileText, color: 'text-fuchsia-500', bg: 'bg-fuchsia-100 dark:bg-fuchsia-950/40', category: 'analysis', i18nKey: 'suggestStudyProfileExamTemplates' },
-  SUGGEST_WORKSPACE_NAME: { icon: Cpu, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-950/40', category: 'analysis', i18nKey: 'suggestWorkspaceName' },
   VALIDATE_STUDY_PROFILE_CONSISTENCY: { icon: ClipboardCheck, color: 'text-teal-500', bg: 'bg-teal-100 dark:bg-teal-950/40', category: 'analysis', i18nKey: 'validateStudyProfileConsistency' },
-  COMPANION_INTERPRET: { icon: BrainCircuit, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-950/40', category: 'generate', i18nKey: 'companionInterpret' },
-  COMPANION_TRANSCRIBE: { icon: Headphones, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-950/40', category: 'generate', i18nKey: 'companionTranscribe' },
-  COMPANION_TTS: { icon: Headphones, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-950/40', category: 'generate', i18nKey: 'companionTts' },
   PROCESS_PDF: { icon: FileText, color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-950/40', category: 'process', i18nKey: 'processPdf' },
   PROCESS_IMAGE: { icon: Image, color: 'text-pink-500', bg: 'bg-pink-100 dark:bg-pink-950/40', category: 'process', i18nKey: 'processImage' },
   PROCESS_TEXT: { icon: Type, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', category: 'process', i18nKey: 'processText' },
@@ -74,11 +75,6 @@ const DIGIT_ONLY_PATTERN = /\D+/g;
 
 function extractData(res) {
   return res?.data?.data ?? res?.data ?? res ?? null;
-}
-
-function normalizeAiModel(model) {
-  const id = model?.id ?? model?.aiModelId;
-  return id == null ? model : { ...model, id };
 }
 
 function sanitizeWholeNumberInput(value) {
@@ -168,45 +164,63 @@ function CostModeBadge({ costMode, isDarkMode, t }) {
   );
 }
 
-function DefaultModelCell({ policy, modelsById, isDarkMode, t }) {
-  const modelId = policy?.defaultModelId;
-  const model = modelId != null ? modelsById?.get(String(modelId)) : null;
+function FormulaPreview({ policy, isDarkMode, t, compact = false }) {
+  const isFixed = policy.costMode === 'FIXED';
+  const unitLabel = t(`aiActionPolicy.costModeUnit.${policy.costMode}`, policy.costMode);
+  const formulaLine = isFixed
+    ? `${policy.baseCreditCost ?? 0} QMC`
+    : `${policy.baseCreditCost ?? 0} + ${policy.unitCreditCost ?? 0} x ceil(${unitLabel} / ${policy.unitSize ?? 1}) QMC`;
 
-  if (!model) {
+  const summary = isFixed
+    ? t('aiActionPolicy.formulaFixedNote')
+    : t('aiActionPolicy.formulaSummary', {
+      base: policy.baseCreditCost ?? 0,
+      unit: policy.unitCreditCost ?? 0,
+      size: policy.unitSize ?? 1,
+      mode: unitLabel,
+    });
+
+  if (compact) {
     return (
-      <span className={`text-xs italic ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-        {t('aiActionPolicy.defaultModelUnset')}
-      </span>
+      <div className="min-w-[320px] space-y-1">
+        <p className={`text-xs font-semibold ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>
+          {formulaLine}
+        </p>
+        <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+          {summary}
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="min-w-0 space-y-0.5">
-      <p className={`truncate text-sm font-medium ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
-        {model.displayName || model.modelCode}
+    <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-gray-200 bg-gray-50'}`}>
+      <p className={`mb-2 text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+        {t('aiActionPolicy.formula')}
       </p>
-      <p className={`truncate text-[11px] uppercase tracking-wide ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-        {model.provider}
+      <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        {formulaLine}
+      </p>
+      <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+        {summary}
       </p>
     </div>
   );
 }
 
-function PolicyTableSection({ title, policies, isDarkMode, canWrite, onEdit, t, modelsById }) {
+function PolicyTableSection({ title, policies, isDarkMode, canWrite, onEdit, t }) {
   const columnWidths = canWrite
     ? {
-      action: '20%',
-      costMode: '11%',
-      formula: '34%',
-      defaultModel: '15%',
+      action: '24%',
+      costMode: '12%',
+      formula: '44%',
       status: '10%',
       actions: '10%',
     }
     : {
-      action: '22%',
-      costMode: '11%',
-      formula: '42%',
-      defaultModel: '15%',
+      action: '26%',
+      costMode: '12%',
+      formula: '52%',
       status: '10%',
     };
 
@@ -224,7 +238,6 @@ function PolicyTableSection({ title, policies, isDarkMode, canWrite, onEdit, t, 
             <col style={{ width: columnWidths.action }} />
             <col style={{ width: columnWidths.costMode }} />
             <col style={{ width: columnWidths.formula }} />
-            <col style={{ width: columnWidths.defaultModel }} />
             <col style={{ width: columnWidths.status }} />
             {canWrite && <col style={{ width: columnWidths.actions }} />}
           </colgroup>
@@ -238,9 +251,6 @@ function PolicyTableSection({ title, policies, isDarkMode, canWrite, onEdit, t, 
               </TableHead>
               <TableHead className={`font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                 {t('aiActionPolicy.colFormula')}
-              </TableHead>
-              <TableHead className={`font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                {t('aiActionPolicy.colDefaultModel')}
               </TableHead>
               <TableHead className={`font-semibold ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                 {t('aiActionPolicy.colStatus')}
@@ -285,9 +295,6 @@ function PolicyTableSection({ title, policies, isDarkMode, canWrite, onEdit, t, 
                   </TableCell>
                   <TableCell className="py-4">
                     <FormulaPreview policy={policy} isDarkMode={isDarkMode} t={t} compact />
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <DefaultModelCell policy={policy} modelsById={modelsById} isDarkMode={isDarkMode} t={t} />
                   </TableCell>
                   <TableCell className="py-4">
                     <span
@@ -335,7 +342,6 @@ export default function AiActionPolicyManagement() {
   const canWrite = !permLoading && permissions.has('system-settings:write');
 
   const [policies, setPolicies] = useState([]);
-  const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editOpen, setEditOpen] = useState(false);
@@ -347,13 +353,8 @@ export default function AiActionPolicyManagement() {
     setLoading(true);
     setError('');
     try {
-      const [policiesRes, modelsRes] = await Promise.all([
-        getAllAiActionPolicies(),
-        getAiModels({ status: 'ACTIVE' }).catch(() => null),
-      ]);
-      setPolicies(extractData(policiesRes) || []);
-      const modelList = (extractData(modelsRes) || []).map(normalizeAiModel);
-      setModels(filterSupportedAiModels(modelList));
+      const res = await getAllAiActionPolicies();
+      setPolicies(extractData(res) || []);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -364,9 +365,6 @@ export default function AiActionPolicyManagement() {
   useEffect(() => {
     fetchPolicies();
   }, []);
-
-  const modelsById = new Map(models.map((m) => [String(m.id), m]));
-  const editableModels = editPolicy ? filterAiModelsForAction(editPolicy.actionKey, models) : [];
 
   const sortPolicies = (list) => [...list].sort((left, right) => {
     const categoryPriority = { generate: 0, analysis: 1, process: 2 };
@@ -398,7 +396,6 @@ export default function AiActionPolicyManagement() {
       unitSize: String(policy.unitSize ?? 1),
       isActive: policy.isActive ?? true,
       description: policy.description || '',
-      defaultModelId: policy.defaultModelId != null ? String(policy.defaultModelId) : '',
     });
     setEditOpen(true);
   };
@@ -416,10 +413,7 @@ export default function AiActionPolicyManagement() {
 
     setSaving(true);
     try {
-      const normalizedForm = {
-        ...normalizeCostForm(form),
-        defaultModelId: form.defaultModelId ? Number(form.defaultModelId) : null,
-      };
+      const normalizedForm = normalizeCostForm(form);
       const res = await updateAiActionPolicy(editPolicy.actionKey, normalizedForm);
       const updated = extractData(res);
 
@@ -492,7 +486,6 @@ export default function AiActionPolicyManagement() {
               canWrite={canWrite}
               onEdit={openEdit}
               t={t}
-              modelsById={modelsById}
             />
           )}
 
@@ -504,7 +497,6 @@ export default function AiActionPolicyManagement() {
               canWrite={canWrite}
               onEdit={openEdit}
               t={t}
-              modelsById={modelsById}
             />
           )}
 
@@ -516,28 +508,152 @@ export default function AiActionPolicyManagement() {
               canWrite={canWrite}
               onEdit={openEdit}
               t={t}
-              modelsById={modelsById}
             />
           )}
         </div>
       )}
 
-      <AiActionPolicyEditDialog
-        open={editOpen}
-        onOpenChange={closeEdit}
-        editPolicy={editPolicy}
-        form={form}
-        setForm={setForm}
-        editLabels={editLabels}
-        previewPolicy={previewPolicy}
-        editableModels={editableModels}
-        saving={saving}
-        onSave={handleSave}
-        onWholeNumberChange={handleWholeNumberChange}
-        costModeOptions={COST_MODE_OPTIONS}
-        isDarkMode={dk}
-        t={t}
-      />
+      <Dialog open={editOpen} onOpenChange={closeEdit}>
+        <DialogContent className={dk ? 'border-slate-800 bg-slate-900 text-white sm:max-w-3xl' : 'sm:max-w-3xl'}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="h-5 w-5" />
+              {t('aiActionPolicy.editTitle')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('aiActionPolicy.editDescription')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {editPolicy && (
+            <div className="space-y-5 py-2">
+              <div className="grid gap-4 md:grid-cols-[1.3fr_1fr]">
+                <div className="space-y-1.5">
+                  <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.actionKey')}</Label>
+                  <code className={`block rounded-lg px-3 py-2 text-sm ${dk ? 'bg-slate-800 text-cyan-300' : 'bg-gray-100 text-cyan-700'}`}>
+                    {editPolicy.actionKey}
+                  </code>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.active')}</Label>
+                  <div className={`flex h-10 items-center justify-between rounded-lg border px-3 ${dk ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+                    <span className={`text-sm ${dk ? 'text-slate-300' : 'text-gray-700'}`}>
+                      {form.isActive ? t('aiActionPolicy.statusActive') : t('aiActionPolicy.statusInactive')}
+                    </span>
+                    <Switch
+                      checked={Boolean(form.isActive)}
+                      onCheckedChange={(value) => setForm((prev) => ({ ...prev, isActive: value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.displayName')}</Label>
+                <Input
+                  value={form.displayName ?? ''}
+                  onChange={(event) => setForm((prev) => ({ ...prev, displayName: event.target.value }))}
+                  className={dk ? 'border-slate-700 bg-slate-800 text-white' : ''}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.description')}</Label>
+                <textarea
+                  value={form.description ?? ''}
+                  onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                  rows={3}
+                  className={`w-full resize-none rounded-lg border px-3 py-2 text-sm ${
+                    dk ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-gray-200 bg-white text-gray-700'
+                  }`}
+                  placeholder={t('aiActionPolicy.descriptionPlaceholder')}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
+                <div className="space-y-1.5">
+                  <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.costMode.label')}</Label>
+                  <select
+                    value={form.costMode ?? 'FIXED'}
+                    onChange={(event) => setForm((prev) => ({ ...prev, costMode: event.target.value }))}
+                    className={`h-10 w-full rounded-lg border px-3 text-sm ${
+                      dk ? 'border-slate-700 bg-slate-800 text-white' : 'border-gray-200 bg-white text-gray-900'
+                    }`}
+                  >
+                    {COST_MODE_OPTIONS.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {t(`aiActionPolicy.costMode.${mode}`, mode)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className={dk ? 'text-slate-300' : ''}>{editLabels?.baseCostLabel || t('aiActionPolicy.baseCost')}</Label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    value={form.baseCreditCost ?? ''}
+                    onChange={handleWholeNumberChange('baseCreditCost')}
+                    className={dk ? 'border-slate-700 bg-slate-800 text-white' : ''}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.unitField')}</Label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    value={form.unitCreditCost ?? ''}
+                    onChange={handleWholeNumberChange('unitCreditCost')}
+                    disabled={form.costMode === 'FIXED'}
+                    className={dk ? 'border-slate-700 bg-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-500' : ''}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className={dk ? 'text-slate-300' : ''}>{editLabels?.unitSizeLabel || t('aiActionPolicy.unitSize')}</Label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    value={form.unitSize ?? ''}
+                    onChange={handleWholeNumberChange('unitSize')}
+                    disabled={form.costMode === 'FIXED'}
+                    className={dk ? 'border-slate-700 bg-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-500' : ''}
+                  />
+                </div>
+              </div>
+
+              {previewPolicy && (
+                <FormulaPreview policy={previewPolicy} isDarkMode={dk} t={t} />
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => closeEdit(false)}
+              disabled={saving}
+              className={dk ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+            >
+              <X className="mr-1 h-4 w-4" />
+              {t('aiActionPolicy.cancel')}
+            </Button>
+            <Button onClick={handleSave} disabled={saving || !editPolicy}>
+              <Save className="mr-1 h-4 w-4" />
+              {saving ? t('aiActionPolicy.saving') : t('aiActionPolicy.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SuperAdminPage>
   );
 }
