@@ -1254,6 +1254,10 @@
         "workspaceMaterialsEmpty": "Chưa có tài liệu trong không gian này. Hãy thêm từ panel Sources.",
         "materialSelectedBadge": "Đã chọn",
         "materialsSelectedSummary": "Đã chọn {{selected}}/{{total}}",
+        "subTopicLabel": "Chủ đề gợi ý (tuỳ chọn)",
+        "subTopicLoading": "Đang tải chủ đề...",
+        "subTopicLoadError": "Không tải được chủ đề.",
+        "subTopicEmpty": "Các tài liệu này chưa có chủ đề gợi ý.",
         "difficultyLevel": "Mức độ khó",
         "difficultyPreviewTitle": "Phân bổ độ khó",
         "customSelfConfig": "Tùy chỉnh (Tự cấu hình)",
@@ -1432,6 +1436,7 @@
         "structureTitle": "Cấu trúc bài quiz",
         "goal": "Mục tiêu",
         "difficulty": "Độ khó",
+        "topic": "Chủ đề",
         "type": "Loại câu",
         "bloom": "Kỹ năng",
         "quantity": "Số câu"
