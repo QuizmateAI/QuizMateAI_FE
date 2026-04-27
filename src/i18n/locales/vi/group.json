@@ -60,7 +60,7 @@
         "uploadAccess": "Quyền tải lên",
         "actions": "Thao tác",
         "upload": "Upload",
-        "permissions": "Quy?n"
+        "permissions": "Quyền"
       },
       "status": {
         "active": "Đang hoạt động",
@@ -105,83 +105,83 @@
           "cancelled": "Đã huỷ"
         }
       },
-      "memberSeatLimitReached": "Nh?m ?? h?t slot th?nh vi?n kh? d?ng.",
-      "memberSeatUsage": "?ang d?ng {{used}}/{{limit}} slot th?nh vi?n",
-      "permissionOn": "B?t",
-      "permissionOff": "T?t",
-      "managePermissions": "Qu?n l?",
-      "permissionsTitle": "Quy?n",
-      "permissionsFor": "Quy?n c?a {{name}}",
-      "permissionsAllFull": "To?n quy?n",
-      "permissionsAll": "T?t c?",
-      "savingPermissions": "?ang l?u...",
-      "savePermissions": "L?u quy?n",
+      "memberSeatLimitReached": "Nhóm đã hết slot thành viên khả dụng.",
+      "memberSeatUsage": "Đang dùng {{used}}/{{limit}} slot thành viên",
+      "permissionOn": "Bật",
+      "permissionOff": "Tắt",
+      "managePermissions": "Quản lý",
+      "permissionsTitle": "Quyền",
+      "permissionsFor": "Quyền của {{name}}",
+      "permissionsAllFull": "Toàn quyền",
+      "permissionsAll": "Tất cả",
+      "savingPermissions": "Đang lưu...",
+      "savePermissions": "Lưu quyền",
       "permissionPresets": {
-        "member": "Th?nh vi?n",
-        "contributor": "C?ng t?c vi?n",
-        "analyst": "Ph?n t?ch",
-        "contentManager": "Qu?n l? n?i dung",
-        "resetToRoleDefaults": "??t l?i theo vai tr?"
+        "member": "Thành viên",
+        "contributor": "Cộng tác viên",
+        "analyst": "Phân tích",
+        "contentManager": "Quản lý nội dung",
+        "resetToRoleDefaults": "Đặt lại theo vai trò"
       },
       "permissionCatalog": {
         "sections": {
-          "content": "N?i dung",
-          "materials": "T?i li?u",
-          "insights": "Ph?n t?ch",
-          "admin": "Qu?n tr?"
+          "content": "Nội dung",
+          "materials": "Tài liệu",
+          "insights": "Phân tích",
+          "admin": "Quản trị"
         },
         "items": {
           "CREATE_QUIZ": {
-            "label": "T?o quiz",
-            "description": "So?n v? ch?nh s?a quiz c?a nh?m."
+            "label": "Tạo quiz",
+            "description": "Soạn và chỉnh sửa quiz của nhóm."
           },
           "PUBLISH_QUIZ": {
-            "label": "Xu?t b?n quiz",
-            "description": "Xu?t b?n b?n nh?p quiz cho th?nh vi?n."
+            "label": "Xuất bản quiz",
+            "description": "Xuất bản bản nháp quiz cho thành viên."
           },
           "ASSIGN_QUIZ_AUDIENCE": {
-            "label": "Giao ??i t??ng l?m quiz",
-            "description": "Ch?n th?nh vi?n ???c ph?p truy c?p quiz."
+            "label": "Giao đối tượng làm quiz",
+            "description": "Chọn thành viên được phép truy cập quiz."
           },
           "CREATE_FLASHCARD": {
-            "label": "T?o flashcard",
-            "description": "T?o v? c?p nh?t b? flashcard."
+            "label": "Tạo flashcard",
+            "description": "Tạo và cập nhật bộ flashcard."
           },
           "CREATE_MOCK_TEST": {
-            "label": "T?o mock test",
-            "description": "T?o v? qu?n l? b?i thi th?."
+            "label": "Tạo mock test",
+            "description": "Tạo và quản lý bài thi thử."
           },
           "CREATE_ROADMAP": {
-            "label": "T?o roadmap",
-            "description": "T?o roadmap v? c?c phase h?c t?p."
+            "label": "Tạo roadmap",
+            "description": "Tạo roadmap và các phase học tập."
           },
           "CREATE_CHALLENGE": {
-            "label": "T?o challenge",
-            "description": "T?o challenge cho nh?m."
+            "label": "Tạo challenge",
+            "description": "Tạo challenge cho nhóm."
           },
           "DELETE_CONTENT": {
-            "label": "X?a n?i dung",
-            "description": "X?a n?i dung h?c t?p c?a nh?m."
+            "label": "Xóa nội dung",
+            "description": "Xóa nội dung học tập của nhóm."
           },
           "UPLOAD_MATERIAL": {
-            "label": "T?i t?i li?u l?n",
-            "description": "T?i l?n v? l?m m?i t?i li?u h?c t?p."
+            "label": "Tải tài liệu lên",
+            "description": "Tải lên và làm mới tài liệu học tập."
           },
           "MODERATE_MATERIAL": {
-            "label": "Ki?m duy?t t?i li?u",
-            "description": "Duy?t, t? ch?i ho?c r? so?t t?i li?u ch? x? l?."
+            "label": "Kiểm duyệt tài liệu",
+            "description": "Duyệt, từ chối hoặc rà soát tài liệu chờ xử lý."
           },
           "VIEW_MEMBER_DASHBOARD": {
-            "label": "Xem dashboard th?nh vi?n",
-            "description": "M? th?ng k? v? ph?n t?ch c?a th?nh vi?n."
+            "label": "Xem dashboard thành viên",
+            "description": "Mở thống kê và phân tích của thành viên."
           },
           "MANAGE_MEMBERS": {
-            "label": "Qu?n l? th?nh vi?n",
-            "description": "M?i, x?a v? qu?n l? quy?n c?a th?nh vi?n."
+            "label": "Quản lý thành viên",
+            "description": "Mời, xóa và quản lý quyền của thành viên."
           },
           "MANAGE_SETTINGS": {
-            "label": "Qu?n l? c?i ??t",
-            "description": "C?p nh?t c?i ??t v? ch? ?? hi?n th? c?a nh?m."
+            "label": "Quản lý cài đặt",
+            "description": "Cập nhật cài đặt và chế độ hiển thị của nhóm."
           }
         }
       }
@@ -349,8 +349,8 @@
         "wallet": "Ví",
         "settings": "Cài đặt"
       },
-      "expandSidebar": "M? r?ng sidebar",
-      "collapseSidebar": "Thu g?n sidebar"
+      "expandSidebar": "Mở rộng sidebar",
+      "collapseSidebar": "Thu gọn sidebar"
     },
     "header": {
       "groupPlan": {
@@ -1780,7 +1780,7 @@
       "needReviewersConfirm": "Cần ít nhất 1 reviewer xác nhận đề ổn trước khi xuất bản.",
       "startTimePassed": "Challenge đã tới giờ bắt đầu nên không thể xuất bản.",
       "afterPublishInfo": "Sau khi xuất bản, member mới thấy và đăng ký challenge.",
-      "needReviewerWhenLeaderParticipates": "Leader ?ang tham gia challenge, n?n h?y m?i 1 ho?c 2 reviewer tr??c khi publish challenge."
+      "needReviewerWhenLeaderParticipates": "Leader đang tham gia challenge, nên hãy mời 1 hoặc 2 reviewer trước khi publish challenge."
     },
     "notPublishedBadge": "Chưa publish",
     "startLabel": "Bắt đầu",
@@ -1814,13 +1814,13 @@
       "needTwoReviewersHint": "Chỉ cần reviewer chính để publish.",
       "setPrimary": "Đặt chính",
       "inviteSentToast": "Đã gửi lời mời review. Hệ thống đã gửi email thông báo cho reviewer.",
-      "invitationPendingShort": "Ch?a ??ng ? nh?n review",
-      "invitationDeclinedShort": "?? t? ch?i l?i m?i review",
-      "participatingLeaderHint": "Leader s? tham gia challenge n?y, n?n h?y m?i 1 ho?c 2 reviewer t?i ??y. T?t c? reviewer c? c?ng vai tr?.",
-      "optionalHint": "B?n c? th? m?i t?i ?a 2 reviewer n?u mu?n c? th?m ng??i ki?m tra tr??c khi publish. T?t c? reviewer c? c?ng vai tr?.",
+      "invitationPendingShort": "Chờ đồng ý nhận review",
+      "invitationDeclinedShort": "Đã từ chối lời mời review",
+      "participatingLeaderHint": "Leader sẽ tham gia challenge này, nên hãy mời 1 hoặc 2 reviewer tại đây. Tất cả reviewer có cùng vai trò.",
+      "optionalHint": "Bạn có thể mời tối đa 2 reviewer nếu muốn có thêm người kiểm tra trước khi publish. Tất cả reviewer có cùng vai trò.",
       "reviewerBadge": "Reviewer",
-      "needReviewerWhenLeaderParticipates": "Leader ?ang tham gia, n?n c?n m?i ?t nh?t 1 reviewer. B?n c? th? m?i t?i ?a 2 reviewer.",
-      "optionalReviewersHint": "Reviewer l? tu? ch?n. N?u ???c m?i, h? c? th? gi?p ki?m tra v? d?n n?i dung tr??c khi b?n publish tr?n ??u."
+      "needReviewerWhenLeaderParticipates": "Leader đang tham gia, nên cần mời ít nhất 1 reviewer. Bạn có thể mời tối đa 2 reviewer.",
+      "optionalReviewersHint": "Reviewer là tùy chọn. Nếu được mời, họ có thể giúp kiểm tra và dọn nội dung trước khi bạn publish đề challenge."
     },
     "actions": {
       "publish": "Xuất bản challenge",
@@ -1844,10 +1844,10 @@
       "waiting": "Chờ"
     },
     "reviewInvitation": {
-      "title": "B?n ???c m?i review ?? challenge n?y",
-      "body": "Leader ?? ch?n b?n l?m reviewer. N?u ??ng ?, b?n s? ???c xem ?? tr??c ?? ki?m tra v? b?n s? kh?ng th? ??ng k? tham gia challenge n?y nh? th? sinh.",
-      "accept": "??ng ? review",
-      "decline": "T? ch?i"
+      "title": "Bạn được mời review đề challenge này",
+      "body": "Leader đã chọn bạn làm reviewer. Nếu đồng ý, bạn sẽ được xem đề trước để kiểm tra và bạn sẽ không thể đăng ký tham gia challenge này như thí sinh.",
+      "accept": "Đồng ý review",
+      "decline": "Từ chối"
     }
   },
   "challengeLeaderboard": {

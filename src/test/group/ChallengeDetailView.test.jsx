@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n, { preloadRouteNamespaces } from '@/i18n';
 import { buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
-import ChallengeDetailView from '@/pages/Users/Group/Components/ChallengeDetailView';
+import ChallengeDetailView from '@/Pages/Users/Group/Components/ChallengeDetailView';
 import {
   acceptQuizReviewInvitation,
   batchInviteQuizReviewers,
@@ -204,10 +204,10 @@ describe('ChallengeDetailView', () => {
 
     renderChallengeDetail({ isLeader: false, currentUserId: 202 });
 
-    expect(await screen.findByText('Bạn được mời review đề challenge này')).toBeInTheDocument();
+    expect(await screen.findByText('You were invited to review this challenge')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open match' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Đồng ý review' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Accept review' }));
 
     await waitFor(() => {
       expect(acceptQuizReviewInvitation).toHaveBeenCalledWith(55, 901);

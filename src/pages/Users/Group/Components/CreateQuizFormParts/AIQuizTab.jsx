@@ -720,21 +720,23 @@ function AIQuizTab({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onPreviewStructure}
-              disabled={structurePreviewLoading}
-              className={`inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
-                isDarkMode
-                  ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-                  : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-70"
-              }`}
-            >
-              {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-              {structurePreviewLoading
-                ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Generating structure...")
-                : t("workspace.quiz.aiConfig.structurePreviewAction", "Detailed configuration")}
-            </button>
+            {!(Array.isArray(structurePreview?.items) && structurePreview.items.length > 0) && (
+              <button
+                type="button"
+                onClick={onPreviewStructure}
+                disabled={structurePreviewLoading}
+                className={`inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                  isDarkMode
+                    ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                    : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-70"
+                }`}
+              >
+                {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                {structurePreviewLoading
+                  ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Generating structure...")
+                  : t("workspace.quiz.aiConfig.structurePreviewAction", "Detailed configuration")}
+              </button>
+            )}
           </div>
         </div>
 
