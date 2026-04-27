@@ -1,5 +1,4 @@
 import api from './api';
-import i18n from '@/i18n';
 
 const buildUrl = (path, params = {}) => {
   const search = new URLSearchParams();
@@ -10,11 +9,6 @@ const buildUrl = (path, params = {}) => {
   const query = search.toString();
   return query ? `${path}?${query}` : path;
 };
-
-const QUESTION_TYPE_SINGLE_CHOICE_ID = 1;
-const MOCK_TEST_DIFFICULTY = 'MEDIUM';
-const MOCK_TEST_POLL_ATTEMPTS = 30;
-const MOCK_TEST_POLL_INTERVAL_MS = 1500;
 
 function trimToNull(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -115,67 +109,6 @@ function mapRoadmapSpeedMode(value) {
   return null;
 }
 
-function resolveOutputLanguage() {
-  if (typeof window !== 'undefined') {
-    const appLanguage = window.localStorage?.getItem('app_language');
-    if (appLanguage === 'en') return 'English';
-  }
-
-  return 'Vietnamese';
-}
-
-function splitQuestionsAcrossSections(totalQuestions, sectionCount) {
-  const safeTotal = Math.max(1, Number(totalQuestions) || 1);
-  const safeSectionCount = Math.max(1, sectionCount);
-  const baseCount = Math.floor(safeTotal / safeSectionCount);
-  const remainder = safeTotal % safeSectionCount;
-
-  return Array.from({ length: safeSectionCount }, (_, index) => baseCount + (index < remainder ? 1 : 0))
-    .filter((count) => count > 0);
-}
-
-function extractLeadingNumber(value) {
-  const matched = `${value || ''}`.match(/\d+/);
-  return matched ? Number(matched[0]) : 0;
-}
-
-function buildSectionConfigs(payload, examName) {
-  const defaultQuestionCount =
-    Number(payload.templateQuestionCount)
-    || 60;
-
-
-
-  const totalQuestions = Math.max(1, defaultQuestionCount);
-  const focusLabel = trimToNull(payload.inferredDomain) || trimToNull(payload.knowledgeInput) || examName || 'Mock Test';
-  const format = payload.templateFormat || 'FULL_EXAM';
-
-  const sectionTemplates = {
-    FULL_EXAM: ['Full Exam'],
-    SECTION_BASED: ['Section 1', 'Section 2', 'Section 3'],
-    PRACTICE_SET: ['Core Practice', 'Mixed Review'],
-  };
-
-  const sectionNames = sectionTemplates[format] || sectionTemplates.FULL_EXAM;
-  const questionCounts = splitQuestionsAcrossSections(totalQuestions, sectionNames.length);
-
-  return questionCounts.map((numQuestions, index) => ({
-    name: sectionNames[index] || `Section ${index + 1}`,
-    description: `Tap trung vao ${focusLabel}.`,
-    numQuestions,
-    questionTypes: [
-      {
-        questionTypeId: QUESTION_TYPE_SINGLE_CHOICE_ID,
-      },
-    ],
-  }));
-}
-
-function buildMockTestPrompt(payload) {
-  const parts = [trimToNull(payload.templatePrompt), trimToNull(payload.templateNotes)].filter(Boolean);
-  return parts.length > 0 ? parts.join('\n\n') : null;
-}
-
 function buildBasicStepRequest(payload) {
   const learningMode = payload.workspacePurpose || payload.learningMode;
 
@@ -200,37 +133,6 @@ function buildPersonalInfoStepRequest(payload) {
   };
 }
 
-function buildMockTestPersonalInfoRequest(payload) {
-  const examName = trimToNull(payload.mockExamName) || trimToNull(payload.examName);
-
-  return {
-    currentLevel: trimToNull(payload.currentLevel) || trimToNull(payload.customCurrentLevel),
-    learningGoal: trimToNull(payload.learningGoal),
-    examName,
-    weakAreas: normalizeListField(payload.weakAreas),
-    strongAreas: normalizeListField(payload.strongAreas),
-    mockTestRequest: {
-      title: `${examName || trimToNull(payload.inferredDomain) || 'Mock Test'} Template`,
-      materialIds: [],
-      overallDifficulty: MOCK_TEST_DIFFICULTY,
-      durationInMinute: Math.max(
-        1,
-        Number(payload.templateDurationMinutes)
-        || 90
-      ),
-      durationInSecond: 0,
-      totalQuestion: Math.max(
-        1,
-        Number(payload.templateQuestionCount)
-        || 60
-      ),
-      prompt: buildMockTestPrompt(payload),
-      outputLanguage: resolveOutputLanguage(),
-      sectionConfigs: buildSectionConfigs(payload, examName),
-    },
-  };
-}
-
 function buildRoadmapConfigStepRequest(payload) {
   const roadmapEnabled = payload.workspacePurpose === 'STUDY_NEW' ? true : Boolean(payload.enableRoadmap ?? payload.roadmapEnabled);
 
@@ -250,27 +152,6 @@ function buildRoadmapConfigStepRequest(payload) {
     estimatedTotalDays: Number(payload.estimatedTotalDays) || null,
     estimatedMinutesPerDay: Number(payload.recommendedMinutesPerDay) || Number(payload.estimatedMinutesPerDay) || null,
   };
-}
-
-function delay(ms) {
-  return new Promise((resolve) => {
-    globalThis.setTimeout(resolve, ms);
-  });
-}
-
-async function waitForMockTestPersonalInfoDone(workspaceId) {
-  for (let attempt = 0; attempt < MOCK_TEST_POLL_ATTEMPTS; attempt += 1) {
-    const response = await getIndividualWorkspaceProfile(workspaceId);
-    const profile = normalizeIndividualWorkspaceProfile(extractApiData(response));
-
-    if (profile?.currentStep >= 3 || ['PROFILE_DONE', 'DONE'].includes(profile?.workspaceSetupStatus)) {
-      return response;
-    }
-
-    await delay(MOCK_TEST_POLL_INTERVAL_MS);
-  }
-
-  throw new Error(i18n.t('workspace.mockTest.onboardingIncomplete', 'Mock test onboarding is not complete at step 2. Please try again in a few minutes.'));
 }
 
 // Lấy danh sách workspace theo user đang đăng nhập (có hỗ trợ phân trang + sort)
@@ -432,14 +313,6 @@ export const saveIndividualWorkspacePersonalInfoStep = async (workspaceId, data)
   return response;
 };
 
-export const startIndividualWorkspaceMockTestPersonalInfoStep = async (workspaceId, data) => {
-  const response = await api.post(
-    `/workspace-profile/individual/${workspaceId}/steps/personal-info/mock-test`,
-    buildMockTestPersonalInfoRequest(data)
-  );
-  return response;
-};
-
 export const saveIndividualWorkspaceRoadmapConfigStep = async (workspaceId, data) => {
   const response = await api.put(
     `/workspace-profile/individual/${workspaceId}/steps/roadmap-config`,
@@ -461,14 +334,7 @@ export const suggestIndividualRoadmapConfig = async (workspaceId) => {
 // Cấu hình Individual Workspace Profile theo flow 3 bước mới
 export const configureIndividualWorkspaceProfile = async (workspaceId, data) => {
   await saveIndividualWorkspaceBasicStep(workspaceId, data);
-
-  if ((data.workspacePurpose || data.learningMode) === 'MOCK_TEST') {
-    await startIndividualWorkspaceMockTestPersonalInfoStep(workspaceId, data);
-    await waitForMockTestPersonalInfoDone(workspaceId);
-  } else {
-    await saveIndividualWorkspacePersonalInfoStep(workspaceId, data);
-  }
-
+  await saveIndividualWorkspacePersonalInfoStep(workspaceId, data);
   return await saveIndividualWorkspaceRoadmapConfigStep(workspaceId, data);
 };
 
@@ -530,7 +396,6 @@ export const saveGroupConfigStep = async (workspaceId, data) => {
     roadmapEnabled: Boolean(data.roadmapEnabled),
     groupLearningGoal: trimToNullSafe(data.groupLearningGoal),
     examName: trimToNullSafe(data.examName),
-    preLearningRequired: Boolean(data.preLearningRequired),
   };
   const response = await api.put(`/workspace-profile/group/${workspaceId}/steps/config`, payload);
   return response;
@@ -544,7 +409,6 @@ export const updateGroupConfigStep = async (workspaceId, data) => {
     roadmapEnabled: Boolean(data.roadmapEnabled),
     groupLearningGoal: trimToNullSafe(data.groupLearningGoal),
     examName: trimToNullSafe(data.examName),
-    preLearningRequired: Boolean(data.preLearningRequired),
   };
   const response = await api.put(`/workspace-profile/group/${workspaceId}/config`, payload);
   return response;

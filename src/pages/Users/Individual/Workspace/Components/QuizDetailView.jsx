@@ -43,7 +43,6 @@ import {
   buildQuizResultPath,
   isWorkspaceRoadmapsPath,
 } from "@/lib/routePaths";
-import CommunityQuizSignals from "@/pages/Users/Quiz/components/CommunityQuizSignals";
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
 const quizDetailCache = new Map();
@@ -1236,7 +1235,7 @@ function QuizDetailView({
                   isDarkMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-blue-50/60"
                 }`}>
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
+                    <div className="min-w-0">
                       <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
                         {t("workspace.quiz.communityDetail.summaryTitle", "Community signals")}
                       </p>
@@ -1246,31 +1245,22 @@ function QuizDetailView({
                           : t("workspace.quiz.communityDetail.cloneSummary", "Xem rating và discussion gốc của community quiz này, rồi gửi feedback sau khi làm xong bản clone của bạn.")}
                       </p>
                     </div>
-                    <CommunityQuizSignals
-                      cloneCount={effectiveQuiz?.communityCloneCount}
-                      averageRating={effectiveQuiz?.communityAverageRating}
-                      ratingCount={effectiveQuiz?.communityRatingCount}
-                      commentCount={effectiveQuiz?.communityCommentCount}
-                      isDarkMode={isDarkMode}
-                      t={t}
-                    />
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" onClick={() => setCommunityDetailOpen(true)}>
-                      <MessageSquare className="h-4 w-4" />
-                      <span>{t("workspace.quiz.communityDetail.openCommunity", "Open community detail")}</span>
-                    </Button>
-                    {isCommunityClone && hasCurrentUserCompletedQuiz ? (
-                      <Button type="button" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => setCommunityFeedbackOpen(true)}>
-                        <Star className="h-4 w-4" />
-                        <span>
-                          {effectiveQuiz?.communityFeedbackSubmitted
-                            ? t("workspace.quiz.communityDetail.updateFeedback", "Update community feedback")
-                            : t("workspace.quiz.communityDetail.leaveFeedback", "Leave community feedback")}
-                        </span>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button type="button" variant="outline" onClick={() => setCommunityDetailOpen(true)}>
+                        <MessageSquare className="h-4 w-4" />
+                        <span>{t("workspace.quiz.communityDetail.openCommunity", "Open community detail")}</span>
                       </Button>
-                    ) : null}
+                      {isCommunityClone && hasCurrentUserCompletedQuiz ? (
+                        <Button type="button" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => setCommunityFeedbackOpen(true)}>
+                          <Star className="h-4 w-4" />
+                          <span>
+                            {effectiveQuiz?.communityFeedbackSubmitted
+                              ? t("workspace.quiz.communityDetail.updateFeedback", "Update community feedback")
+                              : t("workspace.quiz.communityDetail.leaveFeedback", "Leave community feedback")}
+                          </span>
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ) : null}

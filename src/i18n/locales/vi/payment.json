@@ -60,6 +60,16 @@
       "inputLabel": "S? slot c?n mua",
       "maxAvailable": "T?i ?a {{count}}",
       "capReached": "Nh?m ?? ??t s? slot t?i ?a theo c?u h?nh h? th?ng, kh?ng th? mua th?m."
+    },
+    "orderConfirm": {
+      "title": "Xác nhận đơn hàng",
+      "description": "Kiểm tra lại thông tin trước khi thanh toán.",
+      "orderLabel": "Xác nhận đơn hàng",
+      "planType": "Gói",
+      "creditType": "Credit",
+      "method": "Phương thức",
+      "grandTotal": "Tổng cộng",
+      "continue": "Tiếp tục"
     }
   },
   "paymentResult": {
@@ -82,6 +92,15 @@
     "currentPlan": "Gói hiện tại",
     "planReadyHint": "Gói đã sẵn sàng để bạn tiếp tục học tập.",
     "planExpiresAt": "Hiệu lực đến {{date}}",
-    "backendRejected": "Thanh toán chưa được backend xác thực, nên hệ thống chưa kích hoạt gói hoặc cộng credit."
+    "backendRejected": "Thanh toán chưa được backend xác thực, nên hệ thống chưa kích hoạt gói hoặc cộng credit.",
+    "creditPurchaseLabel": "Gói Credit",
+    "planPurchaseLabel": "Gói đã mua",
+    "creditBadge": "Credit",
+    "retry": "Thử lại",
+    "processingSteps": {
+      "verify": "Xác thực giao dịch",
+      "bank": "Liên hệ ngân hàng",
+      "finish": "Hoàn tất giao dịch"
+    }
   }
 }

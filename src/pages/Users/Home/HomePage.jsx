@@ -22,7 +22,14 @@ import { useWallet } from '@/hooks/useWallet';
 import CreditIconImage from "@/components/ui/CreditIconImage";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
-import { deleteIndividualWorkspace, saveIndividualWorkspaceBasicStep } from '@/api/WorkspaceAPI';
+import {
+  confirmIndividualWorkspaceProfile,
+  deleteIndividualWorkspace,
+  saveIndividualWorkspaceBasicStep,
+  saveIndividualWorkspacePersonalInfoStep,
+  saveIndividualWorkspaceRoadmapConfigStep,
+  suggestIndividualRoadmapConfig,
+} from '@/api/WorkspaceAPI';
 import { useQueryClient } from '@tanstack/react-query';
 
 const LazyUserGroup = lazy(() => import("@/pages/Users/Home/Components/UserGroup"));
@@ -194,7 +201,7 @@ function HomePage() {
   const [joiningPublicGroupId, setJoiningPublicGroupId] = useState(null);
   const [creatingWorkspaceKind, setCreatingWorkspaceKind] = useState(null); // 'individual' | 'group' | null
   // Quick-create flow: mở dialog step-1 ngay <100ms trên HomePage, BE createWorkspace
-  // chạy song song; khi user bấm Next ở step 1, chờ BE xong rồi save step 1 và navigate.
+  // chạy song song. Các bước onboarding tiếp theo chạy trong cùng dialog; chỉ navigate sau confirm.
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const quickCreatePromiseRef = useRef(null);
   const quickCreateCompletedRef = useRef(false);
@@ -256,8 +263,7 @@ function HomePage() {
   };
 
   // Mở dialog step-1 tức thì trên HomePage, BE create chạy song song trong nền.
-  // Khi user bấm Next ở step 1 → chờ BE resolve → save step 1 → navigate tới WorkspacePage
-  // mở dialog ở step 2. Nếu user cancel: đợi BE resolve rồi DELETE fire-and-forget.
+  // Nếu user cancel trước khi lưu step 1: đợi BE resolve rồi DELETE fire-and-forget.
   const handleOpenCreate = () => {
     if (quickCreateOpen) return;
     preloadIndividualWorkspaceCreateFlow();
@@ -270,28 +276,48 @@ function HomePage() {
     setQuickCreateOpen(true);
   };
 
-  // Save step 1 xong → navigate tới WorkspacePage để tiếp tục step 2.
-  // Dialog nhận được savedProfile để Wizard biết step 1 đã xong và mở step 2.
-  const handleQuickSaveStep = async (step, payload) => {
+  const getQuickCreatedWorkspaceId = async () => {
     const created = await quickCreatePromiseRef.current;
     const createdId = created?.workspaceId;
     if (!createdId) {
       throw new Error(t('home.workspace.createError') || 'Không thể tạo workspace');
     }
-    if (step !== 1) {
-      // Quick flow chỉ xử lý step 1; các step sau sẽ chạy sau khi đã navigate.
-      throw new Error('Quick create only handles step 1');
+    return createdId;
+  };
+
+  const handleQuickSaveStep = async (step, payload) => {
+    const createdId = await getQuickCreatedWorkspaceId();
+
+    if (step === 1) {
+      const saved = await saveIndividualWorkspaceBasicStep(createdId, payload);
+      quickCreateCompletedRef.current = true;
+      return saved;
     }
-    const saved = await saveIndividualWorkspaceBasicStep(createdId, payload);
+
+    if (step === 2) {
+      return saveIndividualWorkspacePersonalInfoStep(createdId, payload);
+    }
+
+    if (step === 3) {
+      return saveIndividualWorkspaceRoadmapConfigStep(createdId, payload);
+    }
+
+    throw new Error(`Unsupported quick create step: ${step}`);
+  };
+
+  const handleQuickConfirmProfile = async () => {
+    const createdId = await getQuickCreatedWorkspaceId();
+    await confirmIndividualWorkspaceProfile(createdId);
     quickCreateCompletedRef.current = true;
-    // Chuyển qua WorkspacePage với state để dialog mở tiếp step 2 với dữ liệu step 1 đã save.
-    navigate(buildWorkspacePath(createdId), {
-      state: {
-        openProfileConfig: true,
-        continueProfileSetup: true,
-      },
-    });
-    return saved;
+    quickCreatePromiseRef.current = null;
+    void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+    navigate(buildWorkspacePath(createdId));
+  };
+
+  const handleQuickSuggestRoadmapConfig = async () => {
+    const createdId = await getQuickCreatedWorkspaceId();
+    const response = await suggestIndividualRoadmapConfig(createdId);
+    return response?.data?.data ?? response?.data ?? response ?? null;
   };
 
   // Dialog đóng: nếu user chưa hoàn thành step 1 → cleanup workspace nền.
@@ -301,7 +327,7 @@ function HomePage() {
       return;
     }
     setQuickCreateOpen(false);
-    if (quickCreateCompletedRef.current) return; // đã save step 1 + navigate, khỏi xóa.
+    if (quickCreateCompletedRef.current) return; // đã lưu draft đủ để giữ lại, khỏi xóa.
     const promise = quickCreatePromiseRef.current;
     quickCreatePromiseRef.current = null;
     if (!promise) return;
@@ -560,17 +586,14 @@ function HomePage() {
             open={quickCreateOpen}
             onOpenChange={handleQuickCreateDialogChange}
             onSave={handleQuickSaveStep}
-            onConfirm={() => {}}
-            onSuggestRoadmapConfig={() => Promise.resolve(null)}
+            onConfirm={handleQuickConfirmProfile}
+            onSuggestRoadmapConfig={handleQuickSuggestRoadmapConfig}
             onUploadFiles={() => Promise.resolve([])}
             isDarkMode={isDarkMode}
             canCreateRoadmap={true}
             uploadedMaterials={[]}
             workspaceId={null}
             forceStartAtStepOne={true}
-            mockTestGenerationState="idle"
-            mockTestGenerationMessage=""
-            mockTestGenerationProgress={0}
           />
         </Suspense>
       ) : null}

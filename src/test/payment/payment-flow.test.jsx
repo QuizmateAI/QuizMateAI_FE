@@ -145,12 +145,11 @@ describe("Payment test cases execution", () => {
 
     render(<PaymentResultPage />);
 
-    expect(await screen.findByText("Payment Successful")).toBeInTheDocument();
-    expect(screen.getByText("ORD123")).toBeInTheDocument();
+    expect(await screen.findByText("Mở khóa thành công")).toBeInTheDocument();
+    expect(screen.getAllByText("ORD123").length).toBeGreaterThan(0);
     expect(screen.getByText("TX999")).toBeInTheDocument();
     expect(screen.getByText("100.000₫")).toBeInTheDocument();
-    expect(screen.getByText("VND")).toBeInTheDocument();
-    expect(screen.getByText("QR Code")).toBeInTheDocument();
+    expect(screen.getByText("VNPay QR")).toBeInTheDocument();
   });
 
   it("TC_PAY_03 (cancel/fail path): shows failed status when gateway returns non-success code", async () => {
@@ -159,7 +158,7 @@ describe("Payment test cases execution", () => {
     render(<PaymentResultPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Payment Failed")).toBeInTheDocument();
+      expect(screen.getByText("Đừng lo, chưa bị trừ tiền")).toBeInTheDocument();
     });
   });
 
@@ -181,14 +180,14 @@ describe("Payment test cases execution", () => {
       await Promise.resolve();
     });
     expect(getPaymentByOrderId).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByText("Processing").length).toBeGreaterThan(0);
+    expect(screen.getByText("Đang xử lý thanh toán...")).toBeInTheDocument();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1500);
     });
 
     expect(getPaymentByOrderId).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("Payment Successful")).toBeInTheDocument();
+    expect(screen.getByText("Mở khóa thành công")).toBeInTheDocument();
   });
 
   it("TC_PAY_05: shows failed result when backend rejects a gateway success callback", async () => {
@@ -203,7 +202,7 @@ describe("Payment test cases execution", () => {
 
     render(<PaymentResultPage />);
 
-    expect(await screen.findByText("Payment Failed")).toBeInTheDocument();
-    expect(screen.queryByText("Payment Successful")).not.toBeInTheDocument();
+    expect(await screen.findByText("Đừng lo, chưa bị trừ tiền")).toBeInTheDocument();
+    expect(screen.queryByText("Mở khóa thành công")).not.toBeInTheDocument();
   });
 });
