@@ -29,7 +29,6 @@ import {
   saveIndividualWorkspacePersonalInfoStep,
   saveIndividualWorkspaceRoadmapConfigStep,
   suggestIndividualRoadmapConfig,
-  startIndividualWorkspaceMockTestPersonalInfoStep,
   confirmIndividualWorkspaceProfile,
 } from "@/api/WorkspaceAPI";
 
@@ -66,7 +65,6 @@ import {
   buildWorkspacePathForView,
   resolveWorkspaceViewFromSubPath,
 } from "@/pages/Users/Individual/Workspace/utils/viewRouting";
-import { useWorkspaceMockTestGeneration } from "@/pages/Users/Individual/Workspace/hooks/useWorkspaceMockTestGeneration";
 import { useWorkspaceRoadmapManager } from "@/pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager";
 import {
   getMockTestRealtimeMessage,
@@ -228,6 +226,9 @@ function WorkspacePage() {
   // Useful effect phía dưới vẫn có thể đóng lại nếu profile thật sự đã configured.
   const [profileConfigOpen, setProfileConfigOpen] = useState(
     () => Boolean(location.state?.openProfileConfig || location.state?.continueProfileSetup),
+  );
+  const [profileConfigInitialLoading, setProfileConfigInitialLoading] = useState(
+    () => Boolean(location.state?.continueProfileSetup),
   );
   const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
@@ -975,50 +976,6 @@ function WorkspacePage() {
     workspaceProfile,
   ]);
 
-  const {
-    mockTestGenerationState,
-
-    mockTestGenerationProgress,
-
-    mockTestGenerationDisplayMessage,
-
-    mockTestGenerationDisplayLabel,
-
-    isMockTestAwaitingBackend,
-
-    isMockTestTakingLongerThanExpected,
-
-    resetMockTestGenerationStatus,
-
-    readStoredMockTestGeneration,
-
-    syncMockTestGenerationFromProfile,
-
-    beginMockTestGeneration,
-
-    checkMockTestGenerationStatusNow,
-  } = useWorkspaceMockTestGeneration({
-    workspaceId,
-
-    t,
-
-    fetchWorkspaceDetail,
-
-    showSuccess,
-
-    loadProfileData: loadWorkspaceProfileData,
-
-    confirmProfileData: confirmWorkspaceProfileData,
-
-    persistRoadmapConfig: persistWorkspaceRoadmapConfig,
-
-    onProfileResolved: applyResolvedWorkspaceProfile,
-
-    closeProfileDialogs,
-
-    navigateToWorkspaceRoot,
-  });
-
   useEffect(() => {
     setRoadmapAiRoadmapId(extractRoadmapIdFromProfile(workspaceProfile));
   }, [workspaceProfile]);
@@ -1321,6 +1278,7 @@ function WorkspacePage() {
     if (!workspaceId) return;
 
     let isMounted = true;
+    setProfileConfigInitialLoading(Boolean(continueProfileSetup));
 
     fetchWorkspaceDetail(workspaceId).catch(logSwallowed('WorkspacePage.initialFetch'));
 
@@ -1340,34 +1298,12 @@ function WorkspacePage() {
 
         const profileData = extractProfileData(profileRes);
 
-        const storedMockTestGeneration = readStoredMockTestGeneration();
-
         const resolvedProfileData = applyResolvedWorkspaceProfile(profileData);
+        setProfileConfigInitialLoading(false);
 
         const isConfigured = isProfileOnboardingDone(resolvedProfileData);
 
-        const mockTestSyncState = await syncMockTestGenerationFromProfile(
-          resolvedProfileData,
-
-          storedMockTestGeneration,
-        );
-
         if (!isMounted) return;
-
-        if (mockTestSyncState === "finalized") {
-          return;
-        }
-
-        if (
-          mockTestSyncState === "pending" &&
-          Boolean(storedMockTestGeneration?.shouldCloseAfterStart)
-        ) {
-          closeProfileDialogs();
-
-          setUploadDialogOpen(false);
-
-          return;
-        }
 
         if (isConfigured) {
           setProfileConfigOpen(false);
@@ -1394,6 +1330,9 @@ function WorkspacePage() {
 
         setProfileConfigOpen(true);
       } catch (error) {
+        if (isMounted) {
+          setProfileConfigInitialLoading(false);
+        }
         console.error("Failed to load initial workspace data", error);
       }
     };
@@ -1414,11 +1353,9 @@ function WorkspacePage() {
 
     fetchWorkspaceDetail,
 
+    continueProfileSetup,
+
     openProfileConfig,
-
-    readStoredMockTestGeneration,
-
-    syncMockTestGenerationFromProfile,
   ]);
 
   // Handle profile config dialog open/close
@@ -1431,16 +1368,6 @@ function WorkspacePage() {
         // Refetch the profile on open so the dialog uses the latest data.
 
         loadWorkspaceProfileData()
-          .then(async (profileData) => {
-            if (!profileData) return;
-
-            await syncMockTestGenerationFromProfile(
-              profileData,
-
-              readStoredMockTestGeneration(),
-            );
-          })
-
           .catch(logSwallowed('WorkspacePage.profileConfig'));
       } else {
         setIsProfileUpdateMode(false);
@@ -1466,10 +1393,7 @@ function WorkspacePage() {
 
       navigateToWorkspaceRoot,
 
-      readStoredMockTestGeneration,
-
       shouldReturnHomeOnIncompleteProfile,
-      syncMockTestGenerationFromProfile,
       workspaceProfile,
     ],
   );
@@ -1751,10 +1675,6 @@ function WorkspacePage() {
         let savedProfile = null;
 
         if (currentStep === 1) {
-          if (data.workspacePurpose !== "MOCK_TEST") {
-            resetMockTestGenerationStatus();
-          }
-
           savedProfile = applyResolvedWorkspaceProfile(
             extractProfileData(
               await saveIndividualWorkspaceBasicStep(workspaceId, data),
@@ -1765,43 +1685,17 @@ function WorkspacePage() {
         }
 
         if (currentStep === 2) {
-          if (data.workspacePurpose === "MOCK_TEST") {
-            await startIndividualWorkspaceMockTestPersonalInfoStep(
-              workspaceId,
-              data,
-            );
-
-            const shouldCloseAfterStart = !data.enableRoadmap;
-
-            beginMockTestGeneration({
-              shouldCloseAfterStart,
-
-              autoFinalizePayload: shouldCloseAfterStart ? data : null,
-
-              initialProgress: 12,
-            });
-
-            return {
-              deferred: true,
-              advanceToStep: shouldCloseAfterStart ? null : 3,
-            };
-          } else {
-            resetMockTestGenerationStatus();
-
-            savedProfile = applyResolvedWorkspaceProfile(
-              extractProfileData(
-                await saveIndividualWorkspacePersonalInfoStep(
-                  workspaceId,
-                  data,
-                ),
+          savedProfile = applyResolvedWorkspaceProfile(
+            extractProfileData(
+              await saveIndividualWorkspacePersonalInfoStep(
+                workspaceId,
+                data,
               ),
-            );
-          }
+            ),
+          );
 
           return savedProfile;
         }
-
-        resetMockTestGenerationStatus();
 
         savedProfile = applyResolvedWorkspaceProfile(
           extractProfileData(
@@ -1830,11 +1724,7 @@ function WorkspacePage() {
     [
       applyResolvedWorkspaceProfile,
 
-      beginMockTestGeneration,
-
       workspaceId,
-
-      resetMockTestGenerationStatus,
 
       showSuccess,
 
@@ -2761,107 +2651,6 @@ function WorkspacePage() {
         />
 
         <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-200">
-          {mockTestGenerationState !== "idle" ? (
-            <div className="px-4 pt-4 sm:px-5 lg:px-6">
-              <div
-                className={cn(
-                  "mx-auto max-w-[1740px] rounded-[24px] border px-4 py-3 transition-colors duration-200",
-                  mockTestGenerationState === "ready"
-                    ? (personalWorkspaceIsDark
-                      ? "border-emerald-700/60 bg-emerald-950/35 text-emerald-200"
-                      : "border-emerald-200 bg-emerald-50 text-emerald-800")
-                    : isMockTestTakingLongerThanExpected
-                      ? (personalWorkspaceIsDark
-                        ? "border-amber-700/60 bg-amber-950/35 text-amber-200"
-                        : "border-amber-200 bg-amber-50 text-amber-800")
-                      : mockTestGenerationState === "error"
-                        ? (personalWorkspaceIsDark
-                          ? "border-rose-700/60 bg-rose-950/35 text-rose-200"
-                          : "border-rose-200 bg-rose-50 text-rose-800")
-                        : (personalWorkspaceIsDark
-                          ? "border-cyan-700/60 bg-cyan-950/35 text-cyan-200"
-                          : "border-cyan-200 bg-cyan-50 text-cyan-800"),
-                )}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-sm font-semibold ${fontClass}`}>
-                      {mockTestGenerationDisplayMessage}
-                    </p>
-
-                    <div className={cn(
-                      "mt-2 h-2 overflow-hidden rounded-full transition-colors duration-200",
-                      personalWorkspaceIsDark ? "bg-slate-800/90" : "bg-white/80",
-                    )}>
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          mockTestGenerationState === "ready"
-                            ? "bg-emerald-500"
-                            : isMockTestAwaitingBackend
-                              ? "bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#22d3ee)] bg-[length:200%_100%] animate-pulse"
-                              : mockTestGenerationState === "error"
-                                ? "bg-rose-500"
-                                : "bg-cyan-500"
-                        }`}
-                        style={{
-                          width: `${Math.max(
-                            0,
-                            Math.min(
-                              100,
-                              Number(mockTestGenerationProgress) || 0,
-                            ),
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-semibold ${fontClass}`}>
-                      {mockTestGenerationDisplayLabel}
-                    </span>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        if (mockTestGenerationState === "ready") {
-                          resetMockTestGenerationStatus();
-
-                          handleStudioAction("mockTest");
-
-                          return;
-                        }
-
-                        if (mockTestGenerationState === "pending") {
-                          checkMockTestGenerationStatusNow();
-
-                          return;
-                        }
-
-                        setProfileConfigOpen(true);
-
-                        setProfileOverviewOpen(false);
-                      }}
-                      className={cn(
-                        "rounded-full transition-colors duration-200",
-                        personalWorkspaceIsDark
-                          ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
-                          : "border-white bg-white text-slate-700 hover:bg-slate-100",
-                      )}
-                    >
-                      {mockTestGenerationState === "ready"
-                        ? "Mở Mock test"
-                        : mockTestGenerationState === "pending"
-                          ? "Kiểm tra lại ngay"
-                          : "Xem trạng thái"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
           {isMobileViewport ? (
             <div className="px-4 pt-4 sm:px-5 lg:px-6">
               <div className="mx-auto flex max-w-[1740px] items-center gap-2">
@@ -2935,11 +2724,13 @@ function WorkspacePage() {
             uploadedMaterials={sources}
             workspaceId={workspaceId}
             forceStartAtStepOne={
-              isProfileUpdateMode || (openProfileConfig && !isProfileConfigured && !continueProfileSetup)
+              isProfileUpdateMode
+              || (openProfileConfig
+                && !isProfileConfigured
+                && !continueProfileSetup
+                && !hasSavedBasicProfileStep(workspaceProfile))
             }
-            mockTestGenerationState={mockTestGenerationState}
-            mockTestGenerationMessage={mockTestGenerationDisplayMessage}
-            mockTestGenerationProgress={mockTestGenerationProgress}
+            initialProfileLoading={profileConfigOpen && continueProfileSetup && profileConfigInitialLoading}
           />
         </DeferredWorkspaceDialog>
       ) : null}

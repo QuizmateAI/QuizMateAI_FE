@@ -50,7 +50,7 @@ const routeNamespaceRules = [
   },
   {
     matches: (pathname) => pathname.startsWith('/wallets'),
-    namespaces: ['common', 'walletpage'],
+    namespaces: ['common', 'walletpage', 'plan'],
   },
   {
     matches: (pathname) => pathname.startsWith('/profiles'),

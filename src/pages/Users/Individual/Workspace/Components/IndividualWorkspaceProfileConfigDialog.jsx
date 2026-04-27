@@ -217,11 +217,6 @@ function createConfirmationSummary(t, values, options = {}) {
             label: t('individualWorkspaceProfileConfigDialog.fields.knowledgeInput', 'Knowledge you want to learn'),
             value: normalizeDisplayValue(values.knowledgeInput) || emptyValueLabel,
           },
-          {
-            id: 'primaryDomain',
-            label: t('individualWorkspaceProfileConfigDialog.fields.primaryDomain', 'Primary domain'),
-            value: normalizeDisplayValue(values.inferredDomain) || emptyValueLabel,
-          },
         ],
       },
       {
@@ -330,10 +325,10 @@ function createStepCopy(t) {
 
 function createActionCopy(t) {
   return {
-    generatingTemplate: translateOrFallback(
+    loadingProfile: translateOrFallback(
       t,
-      'workspace.profileConfig.actions.generatingTemplate',
-      'Generating template...'
+      'workspace.profileConfig.actions.loadingProfile',
+      'Đang tải hồ sơ workspace...'
     ),
     overallReviewLoading: translateOrFallback(
       t,
@@ -362,9 +357,7 @@ function IndividualWorkspaceProfileConfigDialog({
   isReadOnly = false,
   forceStartAtStepOne = false,
   onSuggestRoadmapConfig,
-  mockTestGenerationState = 'idle',
-  mockTestGenerationMessage = '',
-  mockTestGenerationProgress = 0,
+  initialProfileLoading = false,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -375,39 +368,20 @@ function IndividualWorkspaceProfileConfigDialog({
     storageKey: workspaceId ? `workspace-profile-wizard-${workspaceId}` : undefined,
     canCreateRoadmap,
     forceStartAtStepOne,
-    mockTestGenerationState,
-    mockTestGenerationMessage,
-    mockTestGenerationProgress,
     t,
     isReadOnly,
   });
   const stepCopy = createStepCopy(t);
   const actionCopy = createActionCopy(t);
   const stepIds = Array.from({ length: wizard.totalSteps }, (_, index) => index + 1);
+  const isInitialProfileLoading = Boolean(initialProfileLoading);
 
   const shellClass = isDarkMode ? 'border-slate-800 bg-[#020817] text-white' : 'border-slate-200 bg-[#f8fbff] text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
   const confirmMutedClass = isDarkMode ? 'text-slate-300' : 'text-slate-700';
   const confirmLabelClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
-  const showMockTestProgress = wizard.values.workspacePurpose === 'MOCK_TEST' && mockTestGenerationState !== 'idle' && mockTestGenerationMessage;
-  const progressValue = Math.max(0, Math.min(100, Number(mockTestGenerationProgress) || 0));
-  const isAwaitingBackendConfirmation = mockTestGenerationState === 'pending' && progressValue >= 92;
-  const progressLabel = isAwaitingBackendConfirmation
-    ? translateOrFallback(t, 'workspace.profileConfig.messages.mockTemplateAwaitingBackendShort', 'Confirming')
-    : `${progressValue}%`;
-  const progressToneClass = mockTestGenerationState === 'ready'
-    ? isDarkMode
-      ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100'
-      : 'border-emerald-200 bg-emerald-50 text-emerald-800'
-    : mockTestGenerationState === 'error'
-      ? isDarkMode
-        ? 'border-rose-400/20 bg-rose-500/10 text-rose-100'
-        : 'border-rose-200 bg-rose-50 text-rose-800'
-      : isDarkMode
-        ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100'
-        : 'border-cyan-200 bg-cyan-50 text-cyan-800';
-  const isNavigationBusy = wizard.submitting || wizard.isMockTestGenerationPending;
-  const isPrimaryActionBusy = isNavigationBusy || wizard.isWaitingForOverallReview;
+  const isNavigationBusy = wizard.submitting;
+  const isPrimaryActionBusy = isInitialProfileLoading || isNavigationBusy || wizard.isWaitingForOverallReview;
   const progressFraction = stepIds.length > 1 ? (wizard.step - 1) / (stepIds.length - 1) : 0;
   const stepTransitionClass = 'animate-in fade-in-50 slide-in-from-bottom-3 zoom-in-95 duration-500';
   const [isProfileConfirmView, setIsProfileConfirmView] = React.useState(false);
@@ -425,6 +399,12 @@ function IndividualWorkspaceProfileConfigDialog({
     () => createConfirmationSummary(t, wizard.values, { canCreateRoadmap }),
     [t, wizard.values, canCreateRoadmap]
   );
+  const progressLabel = isInitialProfileLoading
+    ? actionCopy.loadingProfile
+    : t('workspace.profileConfig.footerHint', {
+      current: wizard.step,
+      total: wizard.totalSteps,
+    });
 
   React.useEffect(() => {
     if (!open) {
@@ -486,6 +466,32 @@ function IndividualWorkspaceProfileConfigDialog({
   }
 
   function renderStep() {
+    if (isInitialProfileLoading) {
+      return (
+        <div className="flex min-h-[320px] items-center justify-center">
+          <div
+            role="status"
+            className={cn(
+              'flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border px-6 py-8 text-center',
+              isDarkMode ? 'border-slate-800 bg-slate-950/50 text-slate-200' : 'border-slate-200 bg-white/80 text-slate-700'
+            )}
+          >
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">{actionCopy.loadingProfile}</p>
+              <p className={cn('text-xs leading-5', mutedClass)}>
+                {translateOrFallback(
+                  t,
+                  'workspace.profileConfig.actions.loadingProfileDescription',
+                  'QuizMate AI đang đồng bộ bước đã lưu trước khi tiếp tục.'
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (wizard.step === 1) {
       return (
         <WorkspaceProfileStepOne
@@ -520,17 +526,12 @@ function IndividualWorkspaceProfileConfigDialog({
           templatePreview={wizard.templatePreview}
           fieldSuggestions={wizard.fieldSuggestions}
           fieldSuggestionStatus={wizard.fieldSuggestionStatus}
-          examTemplateSuggestions={wizard.examTemplateSuggestions}
-          examTemplateSuggestionStatus={wizard.examTemplateSuggestionStatus}
           consistencyResult={wizard.consistencyResult}
           consistencyStatus={wizard.consistencyStatus}
           disabled={isReadOnly}
           onFieldChange={wizard.updateField}
           onGenerateTemplate={wizard.generateTemplatePreviewAsync}
           onApplySuggestion={wizard.applySuggestion}
-          mockTestGenerationMessage={mockTestGenerationMessage}
-          mockTestGenerationState={mockTestGenerationState}
-          progressValue={progressValue}
         />
       );
     }
@@ -601,10 +602,7 @@ function IndividualWorkspaceProfileConfigDialog({
                   isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200' : 'border-slate-200 bg-white text-slate-600'
                 )}
               >
-                {t('workspace.profileConfig.footerHint', {
-                  current: wizard.step,
-                  total: wizard.totalSteps,
-                })}
+                {progressLabel}
               </div>
 
               <button
@@ -623,7 +621,15 @@ function IndividualWorkspaceProfileConfigDialog({
 
           <div className="mt-6 flex items-center justify-center">
             <div className="relative flex w-full max-w-[920px] flex-col items-center px-4 sm:px-10">
-                <div className="relative flex w-full items-center justify-between py-2">
+              {isInitialProfileLoading ? (
+                <div className="flex w-full items-center justify-center py-4">
+                  <div className={cn('flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-semibold', isDarkMode ? 'border-slate-800 bg-slate-950/70 text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
+                    <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
+                    {actionCopy.loadingProfile}
+                  </div>
+                </div>
+              ) : (
+              <div className="relative flex w-full items-center justify-between py-2">
                 <div
                   className={cn(
                     'pointer-events-none absolute inset-x-[6%] top-1/2 h-[3px] -translate-y-1/2 rounded-full',
@@ -738,40 +744,10 @@ function IndividualWorkspaceProfileConfigDialog({
                   );
                 })}
               </div>
+              )}
             </div>
           </div>
         </DialogHeader>
-
-        {showMockTestProgress ? (
-          <div
-            className={cn(
-              'border-b px-5 py-3 sm:px-7',
-              isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-white/80'
-            )}
-          >
-            <div className={cn('rounded-[22px] border px-4 py-3', progressToneClass)}>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0 flex-1 text-sm font-medium leading-6">{mockTestGenerationMessage}</div>
-                <div className="shrink-0 text-xs font-semibold">{progressLabel}</div>
-              </div>
-              <div className={cn('mt-3 h-2 overflow-hidden rounded-full', isDarkMode ? 'bg-slate-900/70' : 'bg-white/80')}>
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all duration-500',
-                    mockTestGenerationState === 'ready'
-                      ? 'bg-emerald-500'
-                      : isAwaitingBackendConfirmation
-                        ? 'bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#22d3ee)] bg-[length:200%_100%] animate-pulse'
-                        : mockTestGenerationState === 'error'
-                          ? 'bg-rose-500'
-                          : 'bg-cyan-500'
-                  )}
-                  style={{ width: `${progressValue}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        ) : null}
 
         <div className="overflow-y-auto px-5 py-5 sm:px-7">
           <div key={wizard.step} className={stepTransitionClass}>
@@ -787,10 +763,7 @@ function IndividualWorkspaceProfileConfigDialog({
         >
           <div className="space-y-1">
             <div className={cn('text-xs leading-5', mutedClass)}>
-              {t('workspace.profileConfig.footerHint', {
-                current: wizard.step,
-                total: wizard.totalSteps,
-              })}
+              {progressLabel}
             </div>
             {wizard.saveError ? <p className="text-xs font-medium text-red-400">{wizard.saveError}</p> : null}
             {!wizard.saveError && wizard.statusNotice ? (
@@ -812,7 +785,7 @@ function IndividualWorkspaceProfileConfigDialog({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {wizard.step > 1 ? (
+            {!isInitialProfileLoading && wizard.step > 1 ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -828,7 +801,7 @@ function IndividualWorkspaceProfileConfigDialog({
               </Button>
             ) : null}
 
-            {!isReadOnly && wizard.step < wizard.totalSteps ? (
+            {!isInitialProfileLoading && !isReadOnly && wizard.step < wizard.totalSteps ? (
               <Button
                 type="button"
                 disabled={isPrimaryActionBusy}
@@ -836,10 +809,8 @@ function IndividualWorkspaceProfileConfigDialog({
                 className="rounded-full bg-cyan-600 px-6 text-white transition-all hover:bg-cyan-700"
               >
                 {isPrimaryActionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {wizard.isMockTestGenerationPending
-                  ? actionCopy.generatingTemplate
-                  : wizard.isWaitingForOverallReview
-                    ? actionCopy.overallReviewLoading
+                {wizard.isWaitingForOverallReview
+                  ? actionCopy.overallReviewLoading
                   : wizard.submitting
                     ? t('workspace.profileConfig.actions.saving')
                     : t('workspace.profileConfig.actions.next')}
@@ -847,7 +818,7 @@ function IndividualWorkspaceProfileConfigDialog({
               </Button>
             ) : null}
 
-            {!isReadOnly && wizard.step === wizard.totalSteps ? (
+            {!isInitialProfileLoading && !isReadOnly && wizard.step === wizard.totalSteps ? (
               <Button
                 type="button"
                 disabled={isPrimaryActionBusy}
@@ -861,10 +832,8 @@ function IndividualWorkspaceProfileConfigDialog({
                 className="rounded-full bg-emerald-600 px-6 text-white hover:bg-emerald-700"
               >
                 {isPrimaryActionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {wizard.isMockTestGenerationPending
-                  ? actionCopy.generatingTemplate
-                  : wizard.isWaitingForOverallReview
-                    ? actionCopy.overallReviewLoading
+                {wizard.isWaitingForOverallReview
+                  ? actionCopy.overallReviewLoading
                   : wizard.submitting
                     ? t('workspace.profileConfig.actions.saving')
                     : actionCopy.confirm}
@@ -1105,7 +1074,7 @@ function IndividualWorkspaceProfileConfigDialog({
           <Button
             type="button"
             onClick={handleConfirmedProfileUse}
-            disabled={wizard.submitting || wizard.isMockTestGenerationPending || wizard.isWaitingForOverallReview || isApplyingConfirmedProfile}
+            disabled={wizard.submitting || wizard.isWaitingForOverallReview || isApplyingConfirmedProfile}
             className="rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700"
           >
             {wizard.submitting || isApplyingConfirmedProfile ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}

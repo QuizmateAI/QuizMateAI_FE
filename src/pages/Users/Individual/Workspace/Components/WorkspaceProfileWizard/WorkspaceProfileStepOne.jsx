@@ -112,10 +112,6 @@ function WorkspaceProfileStepOne({
       ? 'border-slate-700 bg-slate-950/60 text-white placeholder:text-slate-500 focus:border-cyan-400'
       : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500'
   );
-  const selectedDomainOption = domainOptions.find((option) => option.label === values.inferredDomain) || null;
-  const selectedDomainTheme = selectedDomainOption
-    ? DOMAIN_OPTION_THEMES[domainOptions.findIndex((option) => option.label === values.inferredDomain) % DOMAIN_OPTION_THEMES.length]
-    : DOMAIN_OPTION_THEMES[0];
   const analysisHighlights = Array.isArray(knowledgeAnalysis?.validationHighlights)
     ? knowledgeAnalysis.validationHighlights.filter(Boolean)
     : [];
@@ -585,44 +581,6 @@ function WorkspaceProfileStepOne({
               )}
 
               {errors.inferredDomain ? <p className="mt-3 text-sm font-medium text-red-400">{errors.inferredDomain}</p> : null}
-            </div>
-          ) : null}
-
-          {values.inferredDomain ? (
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">
-                  {t('workspace.profileConfig.fields.primaryDomain')}
-                  <RequiredAsterisk />
-                </p>
-                <span className={cn('text-xs font-medium', mutedClass)}>
-                  {t('workspace.profileConfig.stepOne.primaryDomainLockedHint')}
-                </span>
-              </div>
-              <div
-                aria-label={t('workspace.profileConfig.fields.primaryDomain')}
-                className={cn(
-                  'flex min-h-[72px] items-start gap-3 rounded-2xl border px-4 py-3',
-                  isDarkMode
-                    ? selectedDomainTheme.darkInactive
-                    : selectedDomainTheme.lightInactive
-                )}
-              >
-                <div
-                  className={cn(
-                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-                    isDarkMode ? selectedDomainTheme.darkIcon : selectedDomainTheme.lightIcon
-                  )}
-                >
-                  <Compass className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{values.inferredDomain}</p>
-                  <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                    {t('workspace.profileConfig.stepOne.primaryDomainLockedHint')}
-                  </p>
-                </div>
-              </div>
             </div>
           ) : null}
 

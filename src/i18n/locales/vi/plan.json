@@ -30,6 +30,55 @@
       "cta": "Mở ví Credit",
       "guide": "Xem cách tính Credit"
     },
+    "manage": {
+      "eyebrow": "Gói của bạn",
+      "title": "Quản lý gói",
+      "groupTitle": "Quản lý gói nhóm",
+      "changePlan": "Đổi gói",
+      "currentBadge": "Đang dùng",
+      "freePlan": "Gói miễn phí",
+      "statusLabel": "Trạng thái",
+      "validUntil": "Hiệu lực đến",
+      "noExpiry": "Theo cấu hình gói",
+      "scope": "Phạm vi",
+      "creditWallet": "Ví Credit",
+      "regularCredits": "Credit thường",
+      "planCredits": "Credit từ gói",
+      "topUpCredits": "Nạp credit",
+      "subscriptionStatus": {
+        "ACTIVE": "Đang hoạt động",
+        "EXPIRED": "Đã hết hạn",
+        "CANCELLED": "Đã huỷ",
+        "PENDING": "Đang xử lý"
+      },
+      "target": {
+        "userPlan": "Gói cá nhân",
+        "workspacePlan": "Gói nhóm",
+        "userCredit": "Credit cá nhân",
+        "workspaceCredit": "Credit nhóm",
+        "workspaceSlot": "Slot thành viên",
+        "payment": "Thanh toán"
+      },
+      "status": {
+        "pending": "Đang xử lý",
+        "completed": "Đã thanh toán",
+        "failed": "Thất bại",
+        "cancelled": "Đã huỷ"
+      },
+      "history": {
+        "title": "Lịch sử thanh toán",
+        "groupTitle": "Lịch sử thanh toán nhóm",
+        "subtitle": "5 giao dịch gần nhất",
+        "refresh": "Tải lại lịch sử thanh toán",
+        "date": "Ngày",
+        "package": "Gói / Nội dung",
+        "amount": "Số tiền",
+        "status": "Trạng thái",
+        "loading": "Đang tải lịch sử...",
+        "empty": "Chưa có giao dịch thanh toán.",
+        "loadError": "Không thể tải lịch sử thanh toán."
+      }
+    },
     "noPlans": "Chưa có plan nào cho danh mục này.",
     "loadError": "Không thể tải danh sách plan. Vui lòng thử lại.",
     "mostPopular": "PHỔ BIẾN NHẤT",

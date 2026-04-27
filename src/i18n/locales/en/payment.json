@@ -61,6 +61,16 @@
       "inputLabel": "Slots to buy",
       "maxAvailable": "Max {{count}}",
       "capReached": "This group has reached the maximum number of member slots allowed by system settings. You cannot buy more."
+    },
+    "orderConfirm": {
+      "title": "Confirm order",
+      "description": "Review the order details before payment.",
+      "orderLabel": "Order confirmation",
+      "planType": "Plan",
+      "creditType": "Credit",
+      "method": "Method",
+      "grandTotal": "Grand total",
+      "continue": "Continue"
     }
   },
   "paymentResult": {
@@ -83,6 +93,15 @@
     "currentPlan": "Current plan",
     "planReadyHint": "Your plan is ready - you can continue learning.",
     "planExpiresAt": "Valid until {{date}}",
-    "backendRejected": "The payment was not verified by the server, so no credits or plan were activated."
+    "backendRejected": "The payment was not verified by the server, so no credits or plan were activated.",
+    "creditPurchaseLabel": "Credit package",
+    "planPurchaseLabel": "Purchased plan",
+    "creditBadge": "Credit",
+    "retry": "Try again",
+    "processingSteps": {
+      "verify": "Verify transaction",
+      "bank": "Contact payment provider",
+      "finish": "Complete transaction"
+    }
   }
 }
