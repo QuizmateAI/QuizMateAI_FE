@@ -59,6 +59,12 @@
       "avgScore": "Điểm trung bình"
     },
     "recentActivity": "Hoạt động gần đây",
+    "recentActivityAccuracy": "{{value}}% đúng",
+    "recentActivityScore": "{{value}} điểm",
+    "recentActivityPractice": "Luyện tập",
+    "recentActivityQuiz": "Quiz",
+    "recentQuizCompleted": "Hoàn thành quiz",
+    "recentActivityEmpty": "Chưa có hoạt động học tập gần đây.",
     "recentActivityItemTitle": "Hoàn thành \"React Advanced Patterns\"",
     "recentActivityItemTimeAgo": "2 giờ trước",
     "recentActivityItemXp": "+50 XP",

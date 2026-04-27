@@ -188,11 +188,6 @@ export function generateImprovementRecommendations(values, selectedExam) {
     suggestions.push('Tăng tần suất nhắc lại chủ đề trọng tâm');
   }
 
-  if (values.workspacePurpose === 'MOCK_TEST') {
-    suggestions.push('Làm quen áp lực thời gian');
-    suggestions.push('Chuẩn hóa chiến lược phân bổ thời gian');
-  }
-
   if (selectedExam?.name) {
     suggestions.push(`Luyện đúng format ${selectedExam.name}`);
   }

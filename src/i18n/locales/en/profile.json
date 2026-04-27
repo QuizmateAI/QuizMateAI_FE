@@ -59,6 +59,12 @@
       "avgScore": "Avg. Score"
     },
     "recentActivity": "Recent Activity",
+    "recentActivityAccuracy": "{{value}}% correct",
+    "recentActivityScore": "{{value}} pts",
+    "recentActivityPractice": "Practice",
+    "recentActivityQuiz": "Quiz",
+    "recentQuizCompleted": "Completed quiz",
+    "recentActivityEmpty": "No recent learning activity yet.",
     "recentActivityItemTitle": "Completed \"React Advanced Patterns\"",
     "recentActivityItemTimeAgo": "2 hours ago",
     "recentActivityItemXp": "+50 XP",

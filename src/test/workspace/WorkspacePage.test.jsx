@@ -136,7 +136,6 @@ vi.mock('@/api/WorkspaceAPI', () => ({
   saveIndividualWorkspaceBasicStep: vi.fn(),
   saveIndividualWorkspacePersonalInfoStep: vi.fn(),
   saveIndividualWorkspaceRoadmapConfigStep: vi.fn(),
-  startIndividualWorkspaceMockTestPersonalInfoStep: vi.fn(),
   confirmIndividualWorkspaceProfile: vi.fn(),
   deleteIndividualWorkspace: vi.fn().mockResolvedValue(undefined),
 }));
@@ -167,22 +166,6 @@ vi.mock('@/api/QuizAPI', () => ({
 vi.mock('@/api/FlashcardAPI', () => ({
   deleteFlashcardSet: vi.fn(),
   getFlashcardsByScope: vi.fn().mockResolvedValue({ data: [] }),
-}));
-
-vi.mock('@/pages/Users/Individual/Workspace/hooks/useWorkspaceMockTestGeneration', () => ({
-  useWorkspaceMockTestGeneration: () => ({
-    mockTestGenerationState: 'idle',
-    mockTestGenerationProgress: 0,
-    mockTestGenerationDisplayMessage: '',
-    mockTestGenerationDisplayLabel: '0%',
-    isMockTestAwaitingBackend: false,
-    isMockTestTakingLongerThanExpected: false,
-    resetMockTestGenerationStatus: vi.fn(),
-    readStoredMockTestGeneration: vi.fn().mockReturnValue(null),
-    syncMockTestGenerationFromProfile: vi.fn().mockResolvedValue('idle'),
-    beginMockTestGeneration: vi.fn(),
-    checkMockTestGenerationStatusNow: vi.fn(),
-  }),
 }));
 
 vi.mock('@/pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager', () => ({
@@ -242,8 +225,8 @@ vi.mock('@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfil
 }));
 
 vi.mock('@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog', () => ({
-  default: ({ open, onOpenChange }) => (open ? (
-    <div data-testid="profile-config-dialog">
+  default: ({ open, onOpenChange, initialProfileLoading }) => (open ? (
+    <div data-testid="profile-config-dialog" data-initial-profile-loading={String(initialProfileLoading)}>
       <button type="button" onClick={() => onOpenChange(false)}>close-profile-config</button>
     </div>
   ) : null),
@@ -522,5 +505,25 @@ describe('WorkspacePage', () => {
     });
 
     expect(deleteIndividualWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('keeps the profile dialog in loading mode while continue setup waits for profile data', async () => {
+    vi.mocked(getIndividualWorkspaceProfile).mockReturnValueOnce(
+      new Promise(() => {}),
+    );
+    hoisted.setLocation({
+      pathname: '/workspaces/42',
+      search: '',
+      state: {
+        openProfileConfig: true,
+        continueProfileSetup: true,
+      },
+    });
+
+    render(<WorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-config-dialog')).toHaveAttribute('data-initial-profile-loading', 'true');
+    });
   });
 });
