@@ -68,7 +68,6 @@ function ChallengeDetailContent({
   handleAcceptInvite,
   handleAcceptReviewInvitation,
   handleCancelConfirm,
-  handleCreateRoundQuiz,
   handleDeclineReviewInvitation,
   handleFinishConfirm,
   handleInviteReviewer,
@@ -217,10 +216,10 @@ function ChallengeDetailContent({
                     Xem đề
                   </button>
                 )}
-                {canManageRoundQuiz && (
+                {canManageRoundQuiz && round.quizId && (
                   <button
                     type="button"
-                    onClick={() => (round.quizId ? handleOpenRoundQuizEditor(round) : handleCreateRoundQuiz(round))}
+                    onClick={() => handleOpenRoundQuizEditor(round)}
                     disabled={actionLoading === loadingKey}
                     className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 sm:flex-none ${
                       isDarkMode
@@ -229,7 +228,7 @@ function ChallengeDetailContent({
                     }`}
                   >
                     {actionLoading === loadingKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}
-                    {round.quizId ? 'Soạn đề vòng' : 'Tạo đề vòng'}
+                    Soạn đề vòng
                   </button>
                 )}
               </div>
@@ -354,7 +353,7 @@ function ChallengeDetailContent({
           </div>
         </div>
 
-        {isBracketChallenge && renderBracketRoundQuizPanel()}
+        {isBracketChallenge && bracketRoundQuizPlan.length > 0 && renderBracketRoundQuizPanel()}
 
         {showChallengeQuizCard && (
           <div className={`mt-4 rounded-xl border px-4 py-3 ${
@@ -599,7 +598,7 @@ function ChallengeDetailContent({
           </div>
         )}
 
-        {!isBracketChallenge && myPendingReviewInvitation && !isLeader && detail.status === 'SCHEDULED' && Number(detail.snapshotQuizId) > 0 && (
+        {myPendingReviewInvitation && !isLeader && detail.status === 'SCHEDULED' && Number(detail.snapshotQuizId) > 0 && (
           <div
             className={`mt-3 rounded-xl border px-4 py-4 ${
               isDarkMode ? 'border-orange-500/30 bg-orange-500/10 text-orange-100' : 'border-orange-200 bg-orange-50 text-orange-950'
@@ -639,7 +638,7 @@ function ChallengeDetailContent({
           </div>
         )}
 
-        {!isBracketChallenge && myAcceptedReviewContributor && !isLeader && detail.status === 'SCHEDULED' && Number(detail.snapshotQuizId) > 0 && (
+        {myAcceptedReviewContributor && !isLeader && detail.status === 'SCHEDULED' && Number(detail.snapshotQuizId) > 0 && (
           <div
             className={`mt-3 rounded-xl border px-4 py-3 ${
               isDarkMode ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-950'
@@ -661,7 +660,7 @@ function ChallengeDetailContent({
           </div>
         )}
 
-        {!isBracketChallenge && myAcceptedReviewContributor && !isLeader && detail.status === 'SCHEDULED' && !detail.myParticipantStatus && (
+        {myAcceptedReviewContributor && !isLeader && detail.status === 'SCHEDULED' && !detail.myParticipantStatus && (
           <p className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
             isDarkMode ? 'border-amber-500/30 bg-amber-500/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-900'
           }`}

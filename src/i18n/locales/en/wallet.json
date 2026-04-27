@@ -1,0 +1,46 @@
+{
+  "wallet": {
+    "title": "Quizmate Credits",
+    "subtitle": "Check balance, buy more Credits, and view your transaction history.",
+    "badge": "WALLET",
+    "back": "Back",
+    "balance": "Current balance",
+    "totalAvailable": "Total available credits",
+    "regularCredits": "Regular credits",
+    "planCredits": "Plan credits",
+    "expiresAt": "Expires at",
+    "creditsUnit": "Credits",
+    "hint": "Credits are used for AI-powered features in QuizMate.",
+    "buyTitle": "Buy more Credits",
+    "buySubtitle": "Pick a package to keep using AI features.",
+    "cannotBuyCredit": "Your current plan does not support buying credits. Please upgrade your plan to continue.",
+    "pricingGuide": "Pricing guide",
+    "bonus": "bonus",
+    "buyNow": "Buy now",
+    "packageHint": "Instant top-up — ready to use",
+    "historyTitle": "Transaction history",
+    "historySubtitle": "Recent top-ups and credit usage.",
+    "noHistory": "No transactions yet.",
+    "toastAdded": "{{amount}} Credits added to wallet (UI demo).",
+    "types": {
+      "TOPUP": "Top-up",
+      "USAGE": "Usage"
+    },
+    "status": {
+      "SUCCESS": "Success",
+      "PENDING": "Pending",
+      "FAILED": "Failed"
+    },
+    "table": {
+      "id": "ID",
+      "time": "Time",
+      "activity": "Activity",
+      "workspace": "Workspace",
+      "type": "Type",
+      "amount": "Amount",
+      "source": "Source",
+      "status": "Status"
+    },
+    "noPackage": "Credit package not found."
+  }
+}

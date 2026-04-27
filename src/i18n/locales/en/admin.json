@@ -16,7 +16,7 @@
     "aiAudit": "AI Audit",
     "subscriptions": "Subscriptions",
     "creditPackages": "Credit Packs",
-    "payments": "Payments",
+    "payments": "Transaction history",
     "systemSettings": "System Settings",
     "aiActionPolicies": "AI Policies",
     "feedback": "Feedback",
@@ -550,7 +550,7 @@
       "chargedUser": "Charged User #{{id}}"
     },
     "detail": {
-      "action": "Details",
+      "action": "Detail",
       "title": "Payment Details {{orderId}}",
       "desc": "Review the full transaction details and billed target information.",
       "fields": {
@@ -1263,7 +1263,25 @@
     "brand": "Admin QuizMate"
   },
   "superAdminLayout": {
-    "brand": "Super Admin"
+    "brand": "Super Admin",
+    "changePassword": {
+      "trigger": "Change password",
+      "title": "Change password",
+      "description": "Enter your current password and new password to update.",
+      "oldPassword": "Current password",
+      "newPassword": "New password",
+      "confirmNewPassword": "Confirm new password",
+      "placeholder": "••••••••",
+      "cancel": "Cancel",
+      "submit": "Confirm",
+      "saving": "Saving...",
+      "fieldsRequired": "Please fill in all password fields.",
+      "mismatch": "Password confirmation does not match.",
+      "tooShort": "New password must be at least 6 characters.",
+      "sameAsOld": "New password must differ from the current password.",
+      "success": "Password changed successfully.",
+      "error": "Could not change password. Please try again."
+    }
   },
   "backofficeShell": {
     "controlPlane": "QuizMate control plane"
