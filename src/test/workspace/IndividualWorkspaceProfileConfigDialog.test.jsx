@@ -185,32 +185,9 @@ function clickButtonByText(text, options) {
   return target;
 }
 
-function clickMockTestStepTwoTab(tab) {
-  const labelCandidates = tab === 'mocktest'
-    ? ['Cấu hình Đề thi', 'Cáº¥u hÃ¬nh Äá» thi', 'CÃ¡ÂºÂ¥u hÃƒÂ¬nh Ã„ÂÃ¡Â»Â thi']
-    : ['Hồ sơ Năng lực', 'Há»“ sÆ¡ NÄƒng lá»±c', 'HÃ¡Â»â€œ sÃ†Â¡ NÃ„Æ’ng lÃ¡Â»Â±c'];
 
-  let target = screen.getAllByRole('button').find((button) => {
-    const actual = normalizeText(button.textContent || '');
-    return labelCandidates.some((label) => actual.includes(normalizeText(label)));
-  });
-
-  if (!target) {
-    const tabs = screen.getAllByRole('button').filter((button) => {
-      const className = typeof button.className === 'string' ? button.className : '';
-      return className.includes('px-7') && className.includes('py-2.5') && className.includes('rounded-xl');
-    });
-
-    target = tab === 'mocktest' ? tabs[1] : tabs[0];
-  }
-
-  expect(target).toBeTruthy();
-  fireEvent.click(target);
-  return target;
-}
-
-function getPrimaryDomainDisplay() {
-  return screen.getByLabelText(i18n.t('workspace.profileConfig.fields.primaryDomain'));
+function queryPrimaryDomainDisplay() {
+  return screen.queryByLabelText(i18n.t('workspace.profileConfig.fields.primaryDomain'));
 }
 
 function getLearningGoalPlaceholder(purpose) {
@@ -250,7 +227,7 @@ async function moveToStepTwo({
 
   if (expectedDomainText) {
     clickButtonByText(expectedDomainText);
-    expect(getPrimaryDomainDisplay()).toHaveTextContent(expectedDomainText);
+    expect(queryPrimaryDomainDisplay()).not.toBeInTheDocument();
   }
 
   if (roadmapChoiceText) {
@@ -733,7 +710,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     clickButtonByText(i18n.t('workspace.profileConfig.purpose.REVIEW.title'));
     await finishKnowledgeAnalysis('English', 'English');
     clickButtonByText('English');
-    expect(getPrimaryDomainDisplay()).toHaveTextContent('English');
+    expect(queryPrimaryDomainDisplay()).not.toBeInTheDocument();
 
     expect(
       screen.getByText((content) =>
@@ -970,7 +947,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.roadmapConfig'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.purpose.REVIEW.title'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText('xac suat thong ke co ban')).toBeInTheDocument();
-    expect(within(confirmDialog).getByText('Probability & Statistics')).toBeInTheDocument();
+    expect(within(confirmDialog).queryByText('Probability & Statistics')).not.toBeInTheDocument();
     expect(within(confirmDialog).getByText('Da hoc xac suat co ban')).toBeInTheDocument();
     expect(within(confirmDialog).getByText('Cong thuc co ban')).toBeInTheDocument();
     expect(within(confirmDialog).getByText('Bai toan xac suat tong hop')).toBeInTheDocument();
@@ -1427,8 +1404,6 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
         knowledge: 'JLPT N2',
         domain: 'JLPT N2',
       },
-      mockTestGenerationState: 'pending',
-      mockTestGenerationMessage: i18n.t('workspace.profileConfig.messages.mockTemplateGenerating'),
     });
 
     await act(async () => {
@@ -1441,7 +1416,6 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       await Promise.resolve();
     });
 
-    expect(screen.queryByText(i18n.t('workspace.profileConfig.messages.mockTemplateGenerating'))).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW'))).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /cấu hình đề thi|exam configuration/i })).not.toBeInTheDocument();
     expect(getFooterPrimaryButton()).not.toBeDisabled();
@@ -1780,7 +1754,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     fireEvent.click(getStepCardButton(1));
 
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput'))).toHaveValue('React hooks nang cao');
-    expect(getPrimaryDomainDisplay()).toHaveTextContent('React');
+    expect(queryPrimaryDomainDisplay()).not.toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(getFooterPrimaryButton());

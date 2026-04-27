@@ -3,20 +3,13 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft,
-  CheckCircle2,
   CreditCard,
   Globe,
-  Home,
-  Loader2,
   Moon,
-  ReceiptText,
   Settings,
   Sun,
-  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
 import UserProfilePopover from '@/components/features/users/UserProfilePopover';
@@ -30,7 +23,16 @@ import {
   markPendingPlanPurchaseSucceeded,
 } from '@/utils/planPurchaseState';
 import { setCachedSubscription } from '@/utils/userCache';
-import { buildGroupWorkspacePath, buildPlansPath, buildWalletsPath } from '@/lib/routePaths';
+import {
+  buildFeedbacksPath,
+  buildGroupWorkspacePath,
+  buildPaymentCreditsPath,
+  buildPaymentsPath,
+  buildPlansPath,
+  buildWalletsPath,
+  withQueryParams,
+} from '@/lib/routePaths';
+import { FailureScreen, ProcessingScreen, SuccessScreen } from './components/PaymentResultStates';
 
 const PAYMENT_POLL_DELAY_MS = 1500;
 const PAYMENT_POLL_MAX_ATTEMPTS = 6;
@@ -204,16 +206,6 @@ export default function PaymentResultPage() {
     return date.toLocaleString(currentLang === 'vi' ? 'vi-VN' : 'en-US');
   }, [details.responseTime, currentLang]);
 
-  const infoRows = useMemo(() => [
-    { label: t('paymentResult.orderId'), value: details.orderId },
-    { label: t('paymentResult.transId'), value: details.transId },
-    { label: t('paymentResult.amount'), value: `${formattedAmount}₫` },
-    { label: t('paymentResult.gatewayCurrency'), value: details.gatewayCurrency },
-    { label: t('paymentResult.orderInfo'), value: details.orderInfo },
-    { label: t('paymentResult.payType'), value: details.payType === 'qr' ? 'QR Code' : details.payType },
-    { label: t('paymentResult.time'), value: formattedTime },
-  ], [details, formattedAmount, formattedTime, t]);
-
   const fallbackPlanSummary = useMemo(() => {
     if (!isSuccess || isCreditPurchase) return null;
     return createPlanSummaryFromPurchase(pendingPurchase);
@@ -234,16 +226,6 @@ export default function PaymentResultPage() {
     }
   }, [activePlanSummary?.endDate, currentLang]);
 
-  const planTypeLabel = activePlanSummary?.planType === 'GROUP'
-    ? t('plan.types.group')
-    : t('plan.types.individual');
-
-  const resultTitle = isSuccess
-    ? t('paymentResult.successTitle')
-    : isProcessing
-      ? t('payment.processing')
-      : t('paymentResult.failTitle');
-
   /** Do not show gateway `message` on success (often duplicate / unaccented). */
   const backendRejectedSuccessUrl = Boolean(effectiveOrderId && urlIndicatesSuccess && resultVariant === 'failed');
   const resultDescription = isSuccess
@@ -256,6 +238,10 @@ export default function PaymentResultPage() {
           : t('paymentResult.failDesc')
       );
 
+  const purchaseLabel = isCreditPurchase
+    ? t('paymentResult.creditPurchaseLabel')
+    : activePlanSummary?.planName || pendingPurchase?.planName || t('paymentResult.planPurchaseLabel');
+
   const isGroupPlanPurchase =
     isSuccess
     && !isCreditPurchase
@@ -266,6 +252,118 @@ export default function PaymentResultPage() {
     && isCreditPurchase
     && String(pendingPurchase?.planType || '').toUpperCase() === 'GROUP'
     && Boolean(pendingPurchase?.workspaceId);
+
+  const resultLang = currentLang === 'en' ? 'en' : 'vi';
+  const paymentMethodLabel = useMemo(() => {
+    const rawMethod = activePaymentRecord?.paymentMethod
+      || activePaymentRecord?.gateway
+      || activePaymentRecord?.paymentGateway
+      || searchParams.get('method')
+      || details.payType
+      || '';
+    const normalizedMethod = String(rawMethod).trim();
+
+    if (normalizedMethod.toLowerCase() === 'qr') return 'VNPay QR';
+    if (normalizedMethod) return normalizedMethod;
+    if (searchParams.get('session_id')) return 'Stripe';
+    return 'VNPay';
+  }, [
+    activePaymentRecord?.gateway,
+    activePaymentRecord?.paymentGateway,
+    activePaymentRecord?.paymentMethod,
+    details.payType,
+    searchParams,
+  ]);
+
+  const resultTransaction = useMemo(() => ({
+    orderId: details.orderId,
+    transactionId: details.transId,
+    amountLabel: `${formattedAmount}₫`,
+    method: paymentMethodLabel,
+    planId: pendingPurchase?.planId || '',
+    planName: purchaseLabel,
+    time: formattedTime,
+    statusLabel: backendPaymentStatus === 'FAILED'
+      ? t('paymentResult.failTitle')
+      : undefined,
+  }), [
+    backendPaymentStatus,
+    details.orderId,
+    details.transId,
+    formattedAmount,
+    formattedTime,
+    paymentMethodLabel,
+    pendingPurchase?.planId,
+    purchaseLabel,
+    t,
+  ]);
+
+  const purchaseSelectionPath = isCreditPurchase ? buildWalletsPath() : buildPlansPath();
+  const retryPaymentPath = useMemo(() => {
+    const workspaceId = pendingPurchase?.workspaceId || '';
+
+    if (isCreditPurchase) {
+      return withQueryParams(buildPaymentCreditsPath(), {
+        creditPackageId: pendingPurchase?.creditPackageId,
+        workspaceId,
+      });
+    }
+
+    if (pendingPurchase?.planId) {
+      return withQueryParams(buildPaymentsPath(), {
+        planId: pendingPurchase.planId,
+        workspaceId,
+      });
+    }
+
+    return buildPlansPath();
+  }, [
+    isCreditPurchase,
+    pendingPurchase?.creditPackageId,
+    pendingPurchase?.planId,
+    pendingPurchase?.workspaceId,
+  ]);
+
+  const handleResultAction = (action) => {
+    if (action === 'downloadInvoice') {
+      if (typeof window !== 'undefined' && typeof window.print === 'function') {
+        window.print();
+      }
+      return;
+    }
+
+    if (action === 'viewReceipt') {
+      document.getElementById('payment-receipt')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    if (action === 'startLearning') {
+      if (isGroupPlanPurchase || isGroupCreditPurchase) {
+        navigate(buildGroupWorkspacePath(pendingPurchase.workspaceId));
+        return;
+      }
+
+      if (isCreditPurchase) {
+        navigate(buildWalletsPath());
+        return;
+      }
+
+      navigate('/home');
+      return;
+    }
+
+    if (action === 'retry') {
+      navigate(retryPaymentPath);
+      return;
+    }
+
+    if (action === 'support') {
+      navigate(buildFeedbacksPath());
+      return;
+    }
+
+    navigate(purchaseSelectionPath);
+  };
 
   useEffect(() => {
     if (resultVariant === 'success') {
@@ -341,166 +439,34 @@ export default function PaymentResultPage() {
         </div>
       </header>
 
-      <div className="flex items-center justify-center min-h-screen pt-14 p-4 sm:p-6">
-        <div className={`w-full max-w-lg rounded-3xl overflow-hidden transition-colors ${
-          isDarkMode
-            ? 'bg-slate-900 ring-1 ring-slate-700/50 shadow-2xl shadow-blue-900/20'
-            : 'bg-white ring-1 ring-slate-200 shadow-2xl shadow-slate-300/40'
-        }`}>
-          <div className={`h-1.5 ${
-            isSuccess
-              ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
-              : isProcessing
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
-                : 'bg-gradient-to-r from-red-400 to-rose-500'
-          }`} />
-
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${
-                isSuccess
-                  ? isDarkMode ? 'bg-emerald-500/15' : 'bg-emerald-50'
-                  : isProcessing
-                    ? isDarkMode ? 'bg-blue-500/15' : 'bg-blue-50'
-                    : isDarkMode ? 'bg-red-500/15' : 'bg-red-50'
-              }`}>
-                {isSuccess ? (
-                  <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                ) : isProcessing ? (
-                  <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                ) : (
-                  <XCircle className="w-10 h-10 text-red-500" />
-                )}
-              </div>
-              <h1 className={`text-2xl font-bold tracking-tight ${
-                resultDescription ? 'mb-1' : 'mb-0'
-              } ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
-                {resultTitle}
-              </h1>
-              {resultDescription ? (
-                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {resultDescription}
-                </p>
-              ) : null}
-            </div>
-
-            <div className={`rounded-2xl p-4 mb-6 ${
-              isDarkMode ? 'bg-slate-800/60' : 'bg-slate-50 ring-1 ring-slate-100'
-            }`}>
-              <div className={`flex items-center gap-2 mb-4 text-xs font-bold uppercase tracking-widest ${
-                isDarkMode ? 'text-slate-500' : 'text-slate-400'
-              }`}>
-                <ReceiptText className="w-3.5 h-3.5" />
-                {t('paymentResult.details')}
-              </div>
-              <dl className="space-y-3">
-                {infoRows.map(({ label, value }) => (
-                  value && (
-                    <div key={label} className="flex items-start justify-between gap-4 text-sm">
-                      <dt className={`shrink-0 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {label}
-                      </dt>
-                      <dd className={`text-right font-medium break-all ${
-                        isDarkMode ? 'text-slate-200' : 'text-slate-800'
-                      }`}>
-                        {value}
-                      </dd>
-                    </div>
-                  )
-                ))}
-              </dl>
-            </div>
-
-            {isSuccess && activePlanSummary ? (
-              <div className={`rounded-2xl p-4 mb-6 ring-1 ring-inset ${
-                isDarkMode ? 'bg-blue-500/10 ring-blue-400/20' : 'bg-blue-50 ring-blue-200'
-              }`}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className={`text-xs font-bold uppercase tracking-widest ${
-                        isDarkMode ? 'text-blue-200/80' : 'text-blue-700'
-                      }`}>
-                        {t('paymentResult.currentPlan')}
-                      </p>
-                    </div>
-                    <p className={`mt-2 text-lg font-bold truncate ${
-                      isDarkMode ? 'text-slate-50' : 'text-slate-900'
-                    }`}>
-                      {activePlanSummary.planName}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge
-                        variant="outline"
-                        className={isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-blue-200 bg-white text-slate-700'}
-                      >
-                        {planTypeLabel}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={isDarkMode ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}
-                      >
-                        {t('profile.subscription.activeStatus')}
-                      </Badge>
-                    </div>
-                    <p className={`mt-3 text-sm ${
-                      isDarkMode ? 'text-slate-300' : 'text-slate-600'
-                    }`}>
-                      {formattedPlanEndDate
-                        ? t('paymentResult.planExpiresAt', {
-                          date: formattedPlanEndDate,
-                          defaultValue: `Hiệu lực đến ${formattedPlanEndDate}`,
-                        })
-                        : t('paymentResult.planReadyHint')}
-                    </p>
-                  </div>
-                  <CreditCard className={`w-5 h-5 flex-shrink-0 ${
-                    isDarkMode ? 'text-blue-300' : 'text-blue-600'
-                  }`} />
-                </div>
-              </div>
-            ) : null}
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (isGroupPlanPurchase || isGroupCreditPurchase) {
-                  navigate(buildGroupWorkspacePath(pendingPurchase.workspaceId));
-                  return;
-                }
-                if (isCreditPurchase) {
-                  navigate(buildWalletsPath());
-                  return;
-                }
-                navigate(buildPlansPath());
-              }}
-              className={`flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-colors cursor-pointer ${
-                isDarkMode
-                  ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {isGroupPlanPurchase || isGroupCreditPurchase
-                ? t('paymentResult.backToGroup')
-                : isCreditPurchase
-                  ? t('paymentResult.backToWallet')
-                  : t('paymentResult.backToPlans')}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/home')}
-              className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 cursor-pointer shadow-lg shadow-blue-500/25"
-            >
-              <Home className="w-4 h-4" />
-              {t('paymentResult.goHome')}
-            </button>
-          </div>
-        </div>
-      </div>
-      </div>
+      <main className="pt-14">
+        {isProcessing ? (
+          <ProcessingScreen
+            lang={resultLang}
+            planId={pendingPurchase?.planId || 'pro'}
+            transaction={resultTransaction}
+            isDarkMode={isDarkMode}
+            onAction={handleResultAction}
+          />
+        ) : isSuccess ? (
+          <SuccessScreen
+            lang={resultLang}
+            planId={pendingPurchase?.planId || 'pro'}
+            transaction={resultTransaction}
+            validUntil={formattedPlanEndDate}
+            isDarkMode={isDarkMode}
+            onAction={handleResultAction}
+          />
+        ) : (
+          <FailureScreen
+            lang={resultLang}
+            transaction={resultTransaction}
+            message={resultDescription}
+            isDarkMode={isDarkMode}
+            onAction={handleResultAction}
+          />
+        )}
+      </main>
     </div>
   );
 }

@@ -114,4 +114,24 @@ async function uploadAvatar(file) {
   return response?.data || response;
 }
 
-export { getUserProfile, getStoredToken, updateUserProfile, updateUserPreferredLanguage, updateUserThemeMode, changePassword, uploadAvatar };
+async function getProfileLearningSummary() {
+  const token = getStoredToken();
+
+  if (!token) {
+    throw new Error(i18n.t("error.missingAuthToken"));
+  }
+
+  const response = await api.get("/user/profile/learning-summary");
+  return response?.data?.data ?? response?.data ?? response ?? {};
+}
+
+export {
+  getUserProfile,
+  getStoredToken,
+  updateUserProfile,
+  updateUserPreferredLanguage,
+  updateUserThemeMode,
+  changePassword,
+  uploadAvatar,
+  getProfileLearningSummary,
+};

@@ -723,7 +723,6 @@ function GroupWorkspaceProfileConfigMirror({
         roadmapEnabled: true,
         groupLearningGoal,
         examName: null,
-        preLearningRequired: false,
       };
 
       if (isPostOnboardingEdit) {

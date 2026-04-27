@@ -30,6 +30,55 @@
       "cta": "Open Credit Wallet",
       "guide": "See credit pricing"
     },
+    "manage": {
+      "eyebrow": "Your plan",
+      "title": "Manage plan",
+      "groupTitle": "Manage group plan",
+      "changePlan": "Change plan",
+      "currentBadge": "Current",
+      "freePlan": "Free plan",
+      "statusLabel": "Status",
+      "validUntil": "Valid until",
+      "noExpiry": "Based on plan settings",
+      "scope": "Scope",
+      "creditWallet": "Credit wallet",
+      "regularCredits": "Regular credits",
+      "planCredits": "Plan credits",
+      "topUpCredits": "Top up credits",
+      "subscriptionStatus": {
+        "ACTIVE": "Active",
+        "EXPIRED": "Expired",
+        "CANCELLED": "Cancelled",
+        "PENDING": "Processing"
+      },
+      "target": {
+        "userPlan": "Personal plan",
+        "workspacePlan": "Group plan",
+        "userCredit": "Personal credits",
+        "workspaceCredit": "Group credits",
+        "workspaceSlot": "Member slots",
+        "payment": "Payment"
+      },
+      "status": {
+        "pending": "Processing",
+        "completed": "Paid",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      },
+      "history": {
+        "title": "Payment history",
+        "groupTitle": "Group payment history",
+        "subtitle": "The 5 latest transactions",
+        "refresh": "Refresh payment history",
+        "date": "Date",
+        "package": "Plan / item",
+        "amount": "Amount",
+        "status": "Status",
+        "loading": "Loading history...",
+        "empty": "No payment transactions yet.",
+        "loadError": "Unable to load payment history."
+      }
+    },
     "noPlans": "No plans available for this category.",
     "loadError": "Unable to load plans. Please try again.",
     "mostPopular": "MOST POPULAR",

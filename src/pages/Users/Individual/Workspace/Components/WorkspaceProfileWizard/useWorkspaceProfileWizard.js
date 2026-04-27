@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { logSwallowed } from '@/utils/logSwallowed';
 import { generateTemplateSuggestion, getRecommendedRoadmapDays, getRecommendedRoadmapMinutesPerDay } from './mockProfileWizardData';
 import { analyzeKnowledge, suggestProfileFields, suggestExamTemplates, validateProfileConsistency } from '@/api/StudyProfileAPI';
-import { ROADMAP_FLOW_TOTAL_STEPS, NO_ROADMAP_FLOW_TOTAL_STEPS, ANALYSIS_DEBOUNCE_MS, FIELD_SUGGESTION_DEBOUNCE_MS, EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS, CONSISTENCY_DEBOUNCE_MS, ensureString, normalizeWorkspacePurpose, getReadyLiveFieldValue, createInitialValues, getInitialStep, getTotalStepsForValues, syncRoadmapConfigFields, translateOrFallback, extractDomainSuggestionDetails, buildDomainOptionsFromApi, buildKnowledgeOptionsFromApi, localizeDomainOptions, getSelectedKnowledgeForAi, getSelectedDomainForAi, buildFieldSuggestionPayload, buildExamTemplateSuggestionPayload, buildConsistencyPayload, shouldRunLiveConsistency, buildConsistencyFingerprint, buildPayload, buildRequestFingerprint, buildStepSnapshot, areStepSnapshotsEqual, createSavedStepSnapshots, buildLiveValidationErrors, canFetchFieldSuggestions, canFetchExamTemplateSuggestions, getStudyProfileAnalysisErrorType, validateWorkspaceProfileStep, buildWizardStatus } from './workspaceProfileWizardUtils';
+import { NO_ROADMAP_FLOW_TOTAL_STEPS, ANALYSIS_DEBOUNCE_MS, FIELD_SUGGESTION_DEBOUNCE_MS, CONSISTENCY_DEBOUNCE_MS, ensureString, normalizeWorkspacePurpose, getReadyLiveFieldValue, createInitialValues, getInitialStep, getTotalStepsForValues, syncRoadmapConfigFields, translateOrFallback, extractDomainSuggestionDetails, buildDomainOptionsFromApi, buildKnowledgeOptionsFromApi, localizeDomainOptions, getSelectedKnowledgeForAi, getSelectedDomainForAi, buildFieldSuggestionPayload, buildConsistencyPayload, shouldRunLiveConsistency, buildConsistencyFingerprint, buildPayload, buildRequestFingerprint, buildStepSnapshot, areStepSnapshotsEqual, createSavedStepSnapshots, buildLiveValidationErrors, canFetchFieldSuggestions, getStudyProfileAnalysisErrorType, validateWorkspaceProfileStep, buildWizardStatus, hasCompleteBasicStepData } from './workspaceProfileWizardUtils';
 export function useWorkspaceProfileWizard({
   open,
   initialData,
@@ -10,9 +9,6 @@ export function useWorkspaceProfileWizard({
   storageKey,
   canCreateRoadmap = true,
   forceStartAtStepOne = false,
-  mockTestGenerationState = 'idle',
-  mockTestGenerationMessage = '',
-  mockTestGenerationProgress = 0,
   t,
   isReadOnly = false,
 }) {
@@ -60,11 +56,12 @@ export function useWorkspaceProfileWizard({
   const prevStepRef = useRef(null);
   const savedStepSnapshotsRef = useRef({});
   const basicStepChangeResetGuardRef = useRef(false);
+  const initializedWithProfileDataRef = useRef(false);
+  const userEditedSinceOpenRef = useRef(false);
   const needsKnowledgeDescription =
     analysisStatus === 'success' && knowledgeAnalysis?.tooBroad === true;
   const canRequestKnowledgeAnalysis = Boolean(getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput));
   const canRequestFieldSuggestion = canFetchFieldSuggestions(values);
-  const canRequestExamTemplateSuggestion = canFetchExamTemplateSuggestions(values);
   const shouldAwaitOverallReview = step === 2 && shouldRunLiveConsistency(values);
   const currentConsistencyFingerprint = shouldAwaitOverallReview
     ? buildConsistencyFingerprint(values)
@@ -94,11 +91,23 @@ export function useWorkspaceProfileWizard({
     if (!open) {
       wasOpenRef.current = false;
       prevStepRef.current = null;
+      initializedWithProfileDataRef.current = false;
+      userEditedSinceOpenRef.current = false;
       return;
     }
-    if (wasOpenRef.current) return;
+    const hasCompleteInitialBasicStep = hasCompleteBasicStepData(initialData);
+    const shouldHydrateLoadedProfile =
+      wasOpenRef.current
+      && !forceStartAtStepOne
+      && !initializedWithProfileDataRef.current
+      && !userEditedSinceOpenRef.current
+      && hasCompleteInitialBasicStep;
+    if (wasOpenRef.current && !shouldHydrateLoadedProfile) return;
     wasOpenRef.current = true;
     if (forceStartAtStepOne && storageKey && typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(storageKey);
+    }
+    if (shouldHydrateLoadedProfile && storageKey && typeof window !== 'undefined') {
       window.sessionStorage.removeItem(storageKey);
     }
     const nextValues = createInitialValues(initialData, { canCreateRoadmap });
@@ -115,6 +124,8 @@ export function useWorkspaceProfileWizard({
         initialTotalSteps,
         { canCreateRoadmap },
       );
+    initializedWithProfileDataRef.current = hasCompleteInitialBasicStep;
+    userEditedSinceOpenRef.current = false;
     prevStepRef.current = null;
     setStep(initialStepValue);
     setMaxUnlockedStep(Math.max(1, initialStepValue));
@@ -136,14 +147,13 @@ export function useWorkspaceProfileWizard({
     setConsistencyResult(null);
     setConsistencyStatus('idle');
     setAnalysisStatus(getReadyLiveFieldValue('knowledgeInput', nextValues.knowledgeInput) ? 'loading' : 'idle');
-    const canPrimeMockTemplate = nextValues.workspacePurpose === 'MOCK_TEST' && nextValues.mockExamName;
-    setTemplateStatus(nextValues.templatePrompt || canPrimeMockTemplate ? 'success' : 'idle');
+    setTemplateStatus(nextValues.templatePrompt ? 'success' : 'idle');
     setTemplatePreview(
-      nextValues.templatePrompt || canPrimeMockTemplate
+      nextValues.templatePrompt
         ? generateTemplateSuggestion(nextValues)
         : null
     );
-    setExamSearch(canPrimeMockTemplate ? nextValues.mockExamName || '' : '');
+    setExamSearch('');
   }, [open, initialData, isReadOnly, storageKey, forceStartAtStepOne, canCreateRoadmap]);
   useEffect(() => {
     if (!open || canCreateRoadmap !== false) {
@@ -170,16 +180,6 @@ export function useWorkspaceProfileWizard({
     if (!open || !storageKey || typeof window === 'undefined') return;
     window.sessionStorage.setItem(storageKey, String(step));
   }, [open, step, storageKey]);
-  // Advance to step 3 when mock test generation completes
-  useEffect(() => {
-    if (!open || isReadOnly) return;
-    if (totalSteps < ROADMAP_FLOW_TOTAL_STEPS) return;
-    if (step !== 2 || values.workspacePurpose !== 'MOCK_TEST') return;
-    if (mockTestGenerationState !== 'ready') return;
-    setSaveError('');
-    setMaxUnlockedStep((current) => Math.max(current, 3));
-    setStep(3);
-  }, [open, isReadOnly, step, totalSteps, values.workspacePurpose, mockTestGenerationState]);
   // ─── Real AI Knowledge Analysis (debounced) ───
   useEffect(() => {
     if (!open) return;
@@ -344,17 +344,6 @@ export function useWorkspaceProfileWizard({
     },
     []
   );
-  const prefetchMockTestStepTwoAiSignals = useCallback(() => {
-    if (!canFetchFieldSuggestions(values) || !canFetchExamTemplateSuggestions(values)) {
-      return;
-    }
-    const fieldPayload = buildFieldSuggestionPayload(values);
-    const templatePayload = buildExamTemplateSuggestionPayload(values);
-    Promise.allSettled([
-      fetchFieldSuggestions(fieldPayload),
-      fetchExamTemplateSuggestions(templatePayload),
-    ]).catch(logSwallowed('useWorkspaceProfileWizard.suggestions'));
-  }, [fetchExamTemplateSuggestions, fetchFieldSuggestions, values]);
   useEffect(() => {
     if (!open || isReadOnly) return;
     prevStepRef.current = step;
@@ -380,17 +369,9 @@ export function useWorkspaceProfileWizard({
       }
       setFieldSuggestionStatus('idle');
     }
-    if (values.workspacePurpose === 'MOCK_TEST' && canRequestExamTemplateSuggestion) {
-      const knowledge = getSelectedKnowledgeForAi(values);
-      const domain = getSelectedDomainForAi(values);
-      examTemplateSuggestionTimerRef.current = setTimeout(() => {
-        fetchExamTemplateSuggestions({ knowledge, domain });
-      }, EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS);
-    } else {
-      examTemplateSuggestionFingerprintRef.current = '';
-      setExamTemplateSuggestions([]);
-      setExamTemplateSuggestionStatus('idle');
-    }
+    examTemplateSuggestionFingerprintRef.current = '';
+    setExamTemplateSuggestions([]);
+    setExamTemplateSuggestionStatus('idle');
     return () => {
       clearTimeout(fieldSuggestionTimerRef.current);
       clearTimeout(examTemplateSuggestionTimerRef.current);
@@ -400,7 +381,6 @@ export function useWorkspaceProfileWizard({
     step,
     isReadOnly,
     fetchFieldSuggestions,
-    fetchExamTemplateSuggestions,
     values.workspacePurpose,
     values.knowledgeInput,
     values.selectedKnowledgeOption,
@@ -411,7 +391,6 @@ export function useWorkspaceProfileWizard({
     values.strongAreas,
     values.weakAreas,
     canRequestFieldSuggestion,
-    canRequestExamTemplateSuggestion,
   ]);
   const runConsistencyValidation = useCallback(
     async (payload, { signal } = {}) => {
@@ -475,11 +454,11 @@ export function useWorkspaceProfileWizard({
     values.learningGoal,
     values.strongAreas,
     values.weakAreas,
-    values.mockExamName,
     consistencyResult,
     consistencyStatus,
   ]);
   function updateField(field, value) {
+    userEditedSinceOpenRef.current = true;
     setValues((current) => {
       const roadmapConfigPatch = syncRoadmapConfigFields(current, field, value);
       const normalizedPurposeValue =
@@ -575,10 +554,8 @@ export function useWorkspaceProfileWizard({
     setSaveError('');
     updateField('workspacePurpose', purpose);
   }
-  function setMockExamMode(mode) {
-    // Removed because there's only one custom mode now
-  }
   function selectInferredDomain(domain) {
+    userEditedSinceOpenRef.current = true;
     const selectedOption = domainOptions.find((option) => option.label === domain);
     setValues((current) => ({
       ...current,
@@ -593,6 +570,7 @@ export function useWorkspaceProfileWizard({
     });
   }
   function selectKnowledgeOption(optionId) {
+    userEditedSinceOpenRef.current = true;
     const selectedOption = knowledgeOptions.find((option) => option.id === optionId);
     if (!selectedOption) return;
     setValues((current) => {
@@ -747,9 +725,6 @@ export function useWorkspaceProfileWizard({
       setStep((current) => Math.min(totalSteps, current + 1));
       return;
     }
-    if (step === 2 && values.workspacePurpose === 'MOCK_TEST' && mockTestGenerationState === 'pending') {
-      return;
-    }
     if (step === 2 && isWaitingForOverallReview) {
       return;
     }
@@ -757,25 +732,12 @@ export function useWorkspaceProfileWizard({
       setSaveError('');
       setMaxUnlockedStep((current) => Math.max(current, Math.min(totalSteps, step + 1)));
       setStep((current) => Math.min(totalSteps, current + 1));
-      if (step === 1 && values.workspacePurpose === 'MOCK_TEST') {
-        prefetchMockTestStepTwoAiSignals();
-      }
       return;
     }
     const saveState = await persistStep(step);
     if (saveState.ok) {
-      if (step === 2 && values.workspacePurpose === 'MOCK_TEST' && saveState.result?.deferred) {
-        if (saveState.result?.advanceToStep) {
-          setMaxUnlockedStep((current) => Math.max(current, saveState.result.advanceToStep));
-          setStep(saveState.result.advanceToStep);
-        }
-        return;
-      }
       setMaxUnlockedStep((current) => Math.max(current, Math.min(totalSteps, step + 1)));
       setStep((current) => Math.min(totalSteps, current + 1));
-      if (step === 1 && values.workspacePurpose === 'MOCK_TEST') {
-        prefetchMockTestStepTwoAiSignals();
-      }
     }
   }
   function previousStep() {
@@ -820,14 +782,9 @@ export function useWorkspaceProfileWizard({
     if (!saveState.ok) {
       return saveState;
     }
-    const shouldConfirmAfterSubmit = !(
-      finalStep === 2
-      && values.workspacePurpose === 'MOCK_TEST'
-      && saveState.result?.deferred
-    );
     return {
       ...saveState,
-      shouldConfirm: shouldConfirmAfterSubmit,
+      shouldConfirm: true,
     };
   }
   function applySuggestion(field, value) {
@@ -849,9 +806,6 @@ export function useWorkspaceProfileWizard({
   const wizardStatus = buildWizardStatus({
     isWaitingForOverallReview,
     t,
-    values,
-    mockTestGenerationMessage,
-    mockTestGenerationState,
   });
   return {
     getSuggestedPublicExams: () => [],
@@ -863,8 +817,6 @@ export function useWorkspaceProfileWizard({
     saveError,
     statusNotice: wizardStatus.statusNotice,
     statusTone: wizardStatus.statusTone,
-    mockTestGenerationProgress,
-    isMockTestGenerationPending: step === 2 && values.workspacePurpose === 'MOCK_TEST' && mockTestGenerationState === 'pending',
     isWaitingForOverallReview,
     submitting,
     analysisStatus,
@@ -886,7 +838,6 @@ export function useWorkspaceProfileWizard({
     // Actions
     updateField,
     setPurpose,
-    setMockExamMode,
     selectKnowledgeOption,
     selectInferredDomain,
     selectPublicExam,

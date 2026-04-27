@@ -464,7 +464,6 @@ export function buildConsistencyPayload(values) {
   const readyDomain = getSelectedDomainForAi(values);
   const readyCurrentLevel = getReadyLiveFieldValue('currentLevel', values.currentLevel);
   const readyLearningGoal = getReadyLiveFieldValue('learningGoal', values.learningGoal);
-  const readyMockExamName = getReadyLiveFieldValue('mockExamName', values.mockExamName);
   const readyStrongAreas = getReadyLiveFieldValue('strongAreas', values.strongAreas);
   const readyWeakAreas = getReadyLiveFieldValue('weakAreas', values.weakAreas);
   return {
@@ -473,7 +472,7 @@ export function buildConsistencyPayload(values) {
     learningMode: mapLearningModeForApi(values.workspacePurpose),
     currentLevel: readyCurrentLevel || null,
     learningGoal: readyLearningGoal || null,
-    examName: readyMockExamName || null,
+    examName: null,
     strongAreas: splitProfileFieldValues(readyStrongAreas),
     weakAreas: splitProfileFieldValues(readyWeakAreas),
   };
@@ -486,16 +485,12 @@ export function shouldRunLiveConsistency(values) {
   const hasReadyLearningGoal = Boolean(getReadyLiveFieldValue('learningGoal', values.learningGoal));
   const hasReadyStrongAreas = Boolean(getReadyLiveFieldValue('strongAreas', values.strongAreas));
   const hasReadyWeakAreas = Boolean(getReadyLiveFieldValue('weakAreas', values.weakAreas));
-  const hasReadyMockExamName =
-    values.workspacePurpose !== 'MOCK_TEST'
-    || Boolean(getReadyLiveFieldValue('mockExamName', values.mockExamName));
   return Boolean(
     hasReadyKnowledge
     && hasReadyDomain
     && values.workspacePurpose
     && hasReadyCurrentLevel
     && hasReadyLearningGoal
-    && hasReadyMockExamName
     && (
       beginnerMode
       || (hasReadyStrongAreas && hasReadyWeakAreas)
@@ -530,35 +525,8 @@ export function buildPayload(values, options = {}) {
     recommendedMinutesPerDay: shouldPersistRoadmapFields ? Number(values.recommendedMinutesPerDay) || null : null,
     improvementFocus: [],
   };
-  const mockTestPayload =
-    values.workspacePurpose === 'MOCK_TEST'
-      ? {
-          mockExamName: values.mockExamName?.trim() || null,
-          templatePrompt: values.templatePrompt.trim() || null,
-          templateFormat: values.templateFormat || null,
-          templateDurationMinutes: Number(values.templateDurationMinutes) || null,
-          templateQuestionCount: Number(values.templateQuestionCount) || null,
-          templateNotes: values.templateNotes.trim() || null,
-          templateTotalSectionPoints: Number(values.templateTotalSectionPoints) || null,
-          targetScore: null,
-          targetScoreScale: null,
-          expectedExamDate: null,
-        }
-      : {
-          mockExamName: null,
-          templatePrompt: null,
-          templateFormat: null,
-          templateDurationMinutes: null,
-          templateQuestionCount: null,
-          templateNotes: null,
-          templateTotalSectionPoints: null,
-          targetScore: null,
-          targetScoreScale: null,
-          expectedExamDate: null,
-        };
   return {
     ...sharedPayload,
-    ...mockTestPayload,
     customDomain: values.inferredDomain || null,
     customKnowledge: values.knowledgeInput.trim() || null,
     customCurrentLevel: values.currentLevel.trim() || null,
@@ -649,19 +617,6 @@ export function buildStepSnapshot(stepNumber, values, options = {}) {
       learningGoal: normalizeSnapshotText(values.learningGoal),
       strongAreas: normalizeSnapshotList(values.strongAreas),
       weakAreas: normalizeSnapshotList(values.weakAreas),
-      mockExamName:
-        values.workspacePurpose === 'MOCK_TEST'
-          ? normalizeSnapshotText(values.mockExamName)
-          : '',
-      templatePrompt: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templatePrompt) : '',
-      templateFormat: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templateFormat) : '',
-      templateDurationMinutes:
-        values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotNumber(values.templateDurationMinutes) : null,
-      templateQuestionCount:
-        values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotNumber(values.templateQuestionCount) : null,
-      templateNotes: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templateNotes) : '',
-      templateTotalSectionPoints:
-        values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotNumber(values.templateTotalSectionPoints) : null,
     };
   }
   if (stepNumber === 3) {
@@ -784,7 +739,6 @@ export function validateWorkspaceProfileStep({
     const learningGoalError = getLiveFieldErrorMessage('learningGoal', values.learningGoal, t);
     const strongAreasError = getLiveFieldErrorMessage('strongAreas', values.strongAreas, t);
     const weakAreasError = getLiveFieldErrorMessage('weakAreas', values.weakAreas, t);
-    const mockExamNameError = getLiveFieldErrorMessage('mockExamName', values.mockExamName, t);
     if (!values.currentLevel.trim()) {
       nextErrors.currentLevel = t('workspace.profileConfig.validation.currentLevelRequired');
     } else if (currentLevelError) {
@@ -805,13 +759,6 @@ export function validateWorkspaceProfileStep({
     } else if (values.weakAreas.trim() && weakAreasError) {
       nextErrors.weakAreas = weakAreasError;
     }
-    if (values.workspacePurpose === 'MOCK_TEST') {
-      if (!values.mockExamName?.trim()) {
-        nextErrors.mockExamName = t('workspace.profileConfig.validation.privateExamRequired');
-      } else if (mockExamNameError) {
-        nextErrors.mockExamName = mockExamNameError;
-      }
-    }
   }
   if (targetStep === 3 && shouldShowRoadmapFields(values, { canCreateRoadmap })) {
     if (!values.knowledgeLoad) nextErrors.knowledgeLoad = t('workspace.profileConfig.validation.knowledgeLoadRequired');
@@ -829,9 +776,6 @@ export function validateWorkspaceProfileStep({
 export function buildWizardStatus({
   isWaitingForOverallReview,
   t,
-  values,
-  mockTestGenerationMessage,
-  mockTestGenerationState,
 }) {
   const statusNotice = isWaitingForOverallReview
     ? translateOrFallback(
@@ -842,20 +786,8 @@ export function buildWizardStatus({
         'QuizMate AI is performing an overall review'
       )
     )
-    : values.workspacePurpose === 'MOCK_TEST'
-      ? mockTestGenerationMessage
-      : '';
-  const statusTone = isWaitingForOverallReview
-    ? 'info'
-    : values.workspacePurpose === 'MOCK_TEST'
-      ? mockTestGenerationState === 'ready'
-        ? 'success'
-        : mockTestGenerationState === 'error'
-          ? 'error'
-          : mockTestGenerationState === 'pending'
-            ? 'info'
-            : null
-      : null;
+    : '';
+  const statusTone = isWaitingForOverallReview ? 'info' : null;
   return { statusNotice, statusTone };
 }
 export function canFetchFieldSuggestions(values) {

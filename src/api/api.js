@@ -76,25 +76,120 @@ api.interceptors.request.use(
   }
 );
 
+// ===== Refresh-token: gọi /auth/refresh khi access token hết hạn =====
+// Single-flight: nếu nhiều request fail cùng lúc, chỉ 1 lần gọi /auth/refresh,
+// các request còn lại cùng share promise. Sau khi có token mới, retry request gốc.
+let refreshPromise = null;
+
+function refreshAccessToken() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    return Promise.reject(new Error('NO_REFRESH_TOKEN'));
+  }
+
+  // Dùng axios "trần" (không qua instance `api`) để tránh interceptor lồng nhau.
+  return axios
+    .post(
+      `${baseURL}/auth/refresh`,
+      { refreshToken },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(isNgrokUrl ? { 'ngrok-skip-browser-warning': 'true' } : {}),
+        },
+        timeout: 30000,
+      },
+    )
+    .then((response) => {
+      const payload = response?.data?.data;
+      const newAccessToken = payload?.accessToken;
+      if (!newAccessToken) {
+        throw new Error('INVALID_REFRESH_RESPONSE');
+      }
+      localStorage.setItem('accessToken', newAccessToken);
+      if (payload.refreshToken) {
+        localStorage.setItem('refreshToken', payload.refreshToken);
+      }
+      return newAccessToken;
+    });
+}
+
+function getOrStartRefresh() {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+function extractErrorCode(data) {
+  // BE trả 2 loại code: top-level numeric (business) và nested string (auth filter).
+  return data?.code ?? data?.data?.code;
+}
+
+function shouldAttemptRefresh(error, originalRequest) {
+  if (!originalRequest || originalRequest._retry) return false;
+  if (originalRequest.skipAuthRedirect) return false;
+
+  const url = String(originalRequest.url || '');
+  // Tránh loop: chính request /auth/refresh không được trigger refresh.
+  if (url.includes('/auth/refresh')) return false;
+
+  if (!localStorage.getItem('refreshToken')) return false;
+
+  const status = error?.response?.status;
+  if (status !== 401 && status !== 403) return false;
+
+  const code = extractErrorCode(error?.response?.data);
+  // Permission denial thật sự — refresh vô nghĩa.
+  if (code === 'FORBIDDEN') return false;
+  // Token bị thu hồi/không hợp lệ — refresh không cứu được.
+  if (code === 'TOKEN_INVALID') return false;
+
+  return true;
+}
+
+function clearAuthAndRedirect() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  clearUserCache();
+  clearPlanPurchaseState();
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
 // Interceptor cho response - xử lý lỗi chung
 api.interceptors.response.use(
   (response) => {
     return response.data;
   },
-  (error) => {
-    // Xử lý lỗi 401 - Unauthorized (token hết hạn)
-    if (error.response?.status === 401) {
-      const skipAuthRedirect = Boolean(error.config?.skipAuthRedirect);
-      if (!skipAuthRedirect) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        clearUserCache();
-        clearPlanPurchaseState();
-        window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+    const status = error.response?.status;
+    const skipAuthRedirect = Boolean(originalRequest?.skipAuthRedirect);
+
+    if (shouldAttemptRefresh(error, originalRequest)) {
+      originalRequest._retry = true;
+      try {
+        await getOrStartRefresh();
+        // Request interceptor sẽ gắn access token mới từ localStorage.
+        return await api(originalRequest);
+      } catch (refreshError) {
+        // Refresh thất bại — chỉ clear+redirect khi original là 401 (giữ behavior cũ).
+        if (status === 401 && !skipAuthRedirect) {
+          clearAuthAndRedirect();
+        }
+        // Tiếp tục format-and-reject lỗi gốc bên dưới.
       }
+    } else if (status === 401 && !skipAuthRedirect) {
+      // Không refresh được (không có refresh token, hoặc đã retry) — kick về login.
+      clearAuthAndRedirect();
     }
-    
+
     const isTimeoutError = error?.code === 'ECONNABORTED' || /timeout/i.test(String(error?.message || ''));
 
     if (isTimeoutError) {
@@ -123,7 +218,7 @@ api.interceptors.response.use(
 
     return Promise.reject({
       statusCode: error.response?.status,
-      code: data?.code,
+      code: extractErrorCode(data),
       message: errorMessage,
       data: data
     });

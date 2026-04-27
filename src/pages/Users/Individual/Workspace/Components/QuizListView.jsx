@@ -17,7 +17,6 @@ import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
 import { cn } from "@/lib/utils";
 import UserDisplayName from "@/components/features/users/UserDisplayName";
 import { getUserDisplayLabel } from "@/utils/userProfile";
-import CommunityQuizSignals from "@/pages/Users/Quiz/components/CommunityQuizSignals";
 import {
   buildQuizAttemptPath,
   buildWorkspaceRoadmapsPath,
@@ -1695,17 +1694,6 @@ function QuizListView({
                         ) : null}
                       </div>
 
-                      {isCommunityShared ? (
-                        <CommunityQuizSignals
-                          cloneCount={quiz?.communityCloneCount}
-                          averageRating={quiz?.communityAverageRating}
-                          ratingCount={quiz?.communityRatingCount}
-                          commentCount={quiz?.communityCommentCount}
-                          isDarkMode={isDarkMode}
-                          t={t}
-                          className="mt-4"
-                        />
-                      ) : null}
                     </div>
 
                     <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
