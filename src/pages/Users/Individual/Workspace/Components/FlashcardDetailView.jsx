@@ -587,6 +587,8 @@ function FlashcardDetailView({
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {items.map((item, index) => {
                 const isEditing = editingItemId === item.flashcardItemId;
+                const frontPreviewImages = getContentImageList(item.frontContent || "");
+                const backPreviewImages = getContentImageList(item.backContent || "");
                 return (
                   <div key={item.flashcardItemId} className="py-4" style={{ contentVisibility: "auto" }}>
                     <div className="flex items-center justify-between gap-3">
@@ -628,6 +630,19 @@ function FlashcardDetailView({
                           <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                             <MixedMathText>{getContentDisplayText(item.frontContent || "") || "—"}</MixedMathText>
                           </p>
+                          {frontPreviewImages.length > 0 ? (
+                            <div className="mt-2 space-y-2">
+                              {frontPreviewImages.map((image, imageIndex) => (
+                                <img
+                                  key={`front-${item.flashcardItemId}-${image.url}-${imageIndex}`}
+                                  src={image.url}
+                                  alt={image.alt || 'Flashcard image'}
+                                  loading="lazy"
+                                  className="max-h-40 w-full rounded-lg border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-900"
+                                />
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                         <div>
                           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
@@ -636,6 +651,19 @@ function FlashcardDetailView({
                           <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                             <MixedMathText>{getContentDisplayText(item.backContent || "") || "—"}</MixedMathText>
                           </p>
+                          {backPreviewImages.length > 0 ? (
+                            <div className="mt-2 space-y-2">
+                              {backPreviewImages.map((image, imageIndex) => (
+                                <img
+                                  key={`back-${item.flashcardItemId}-${image.url}-${imageIndex}`}
+                                  src={image.url}
+                                  alt={image.alt || 'Flashcard image'}
+                                  loading="lazy"
+                                  className="max-h-40 w-full rounded-lg border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-900"
+                                />
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     )}
