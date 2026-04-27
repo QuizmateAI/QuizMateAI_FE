@@ -1,6 +1,7 @@
-import React from "react";
-import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2, Tags } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
+import SubTopicAPI from "@/api/SubTopicAPI";
 import PlanGatedFeature from "@/components/plan/PlanGatedFeature";
 import {
   QUESTION_TYPE_LABEL_FALLBACKS,
@@ -9,6 +10,8 @@ import {
   getQuizQuestionTypeLabel,
   isAdvancedQuizQuestionType,
 } from "@/lib/quizQuestionTypes";
+
+const AI_MINIMUM_SECONDS_PER_QUESTION = 30;
 
 function AIQuizTab({
   t,
@@ -73,8 +76,52 @@ function AIQuizTab({
   structurePreviewError,
   onPreviewStructure,
   hasAdvanceQuizConfig = false,
+  // Optional topic focus picker. Selected IDs are prompt focus only.
+  workspaceId,
+  selectedSubTopicIds = [],
+  onSelectedSubTopicIdsChange,
 }) {
   const requiredMark = <span className="ml-1 text-red-500">*</span>;
+
+  // === Topic focus picker state ===
+  const [subTopics, setSubTopics] = useState([]);
+  const [loadingSubTopics, setLoadingSubTopics] = useState(false);
+  const [subTopicError, setSubTopicError] = useState(null);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!selectedMaterialIds || selectedMaterialIds.length === 0 || !workspaceId) {
+      setSubTopics([]);
+      setSubTopicError(null);
+      return undefined;
+    }
+    setLoadingSubTopics(true);
+    setSubTopicError(null);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const resp = await SubTopicAPI.getByMaterials(selectedMaterialIds, workspaceId);
+        const data = resp?.data ?? resp ?? [];
+        setSubTopics(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setSubTopicError(err?.message || "Khong tai duoc chu de con.");
+        setSubTopics([]);
+      } finally {
+        setLoadingSubTopics(false);
+      }
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [selectedMaterialIds, workspaceId]);
+
+  const toggleSubTopic = (id) => {
+    if (typeof onSelectedSubTopicIdsChange !== "function") return;
+    const cur = Array.isArray(selectedSubTopicIds) ? selectedSubTopicIds : [];
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    onSelectedSubTopicIdsChange(next);
+  };
+
   const getQuestionTypeLabel = React.useCallback((questionType) => {
     const normalizedType = String(questionType || "").toUpperCase();
     const fallbackLabel = QUESTION_TYPE_LABEL_FALLBACKS[normalizedType] || questionType || "-";
@@ -244,6 +291,52 @@ function AIQuizTab({
         )}
       </div>
 
+        {/* Topic focus picker. Chi hien khi co material da chon. */}
+      {selectedMaterialIds && selectedMaterialIds.length > 0 && typeof onSelectedSubTopicIdsChange === "function" && (
+        <div className={getSectionClassName()}>
+          <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+            <Tags className="h-4 w-4 text-purple-500" />
+            {t("workspace.quiz.aiConfig.subTopicLabel")}
+          </h3>
+          {loadingSubTopics ? (
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {t("workspace.quiz.aiConfig.subTopicLoading")}
+            </div>
+          ) : subTopicError ? (
+            <p className="text-xs italic text-red-500">{subTopicError}</p>
+          ) : subTopics.length === 0 ? (
+            <p className="text-xs italic text-slate-500">
+              {t("workspace.quiz.aiConfig.subTopicEmpty")}
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {subTopics.map((st) => {
+                  const id = st.subTopicId || st.id;
+                  const isSel = (selectedSubTopicIds || []).includes(id);
+                  return (
+                    <button
+                      type="button"
+                      key={id}
+                      onClick={() => toggleSubTopic(id)}
+                      className={`rounded-full border px-3 py-1 text-xs transition-all ${
+                        isSel
+                          ? (isDarkMode ? "border-purple-400 bg-purple-900/30 text-purple-200" : "border-purple-500 bg-purple-50 text-purple-700")
+                          : (isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-600 hover:bg-gray-50")
+                      }`}
+                      title={st.description || ""}
+                    >
+                      {st.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       <div ref={sectionRefs?.settings} className={getSectionClassName(["aiTotalQuestions", "aiDuration", "aiDurations"])}>
         <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <Sliders className="h-4 w-4 text-gray-500" />
@@ -301,6 +394,7 @@ function AIQuizTab({
                     defaultValue: `Mỗi câu cần tối thiểu 30 giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumDurationMinutes} phút.`,
                     count: Number(aiTotalQuestions) || 0,
                     minutes: minimumDurationMinutes,
+                    seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
                   })}
                 </p>
               ) : null}
@@ -317,6 +411,7 @@ function AIQuizTab({
                     {t("workspace.quiz.validation.minimumTimePerQuestionHint", {
                       defaultValue: `Tối thiểu ${minimumDurationMinutes} phút (30 giây/câu).`,
                       minutes: minimumDurationMinutes,
+                      seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
                     })}
                   </span>
                 </div>

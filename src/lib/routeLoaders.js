@@ -46,12 +46,26 @@ export const preloadWorkspacePage = createRoutePreloader("workspace-page", loadW
 export const preloadGroupWorkspacePage = createRoutePreloader("group-workspace-page", loadGroupWorkspacePage);
 export const preloadHomePage = createRoutePreloader("home-page", loadHomePage);
 
-// Các route nhẹ khác (profile/plan/wallet) không cần namespace riêng → preload chỉ code chunk.
-export const loadProfilePage = () => import("@/pages/Users/Profile/ProfilePage");
-export const loadPlanPage = () => import("@/pages/Users/Plan/PlanPage");
-export const loadWalletPage = () => import("@/pages/Users/Credit/WalletPage");
-export const loadPaymentPage = () => import("@/pages/Payment/PaymentPage");
-export const loadFeedbackSystemLayout = () => import("@/pages/Users/Feedback/FeedbackSystemLayout");
+export const loadProfilePage = createNamespacedRouteLoader(
+  "/profiles",
+  () => import("@/pages/Users/Profile/ProfilePage"),
+);
+export const loadPlanPage = createNamespacedRouteLoader(
+  "/plans",
+  () => import("@/pages/Users/Plan/PlanPage"),
+);
+export const loadWalletPage = createNamespacedRouteLoader(
+  "/wallets",
+  () => import("@/pages/Users/Credit/WalletPage"),
+);
+export const loadPaymentPage = createNamespacedRouteLoader(
+  "/payments",
+  () => import("@/pages/Payment/PaymentPage"),
+);
+export const loadFeedbackSystemLayout = createNamespacedRouteLoader(
+  "/feedbacks",
+  () => import("@/pages/Users/Feedback/FeedbackSystemLayout"),
+);
 
 export const preloadProfilePage = createRoutePreloader("profile-page", loadProfilePage);
 export const preloadPlanPage = createRoutePreloader("plan-page", loadPlanPage);

@@ -73,6 +73,7 @@ describe('CreateQuizForm personalization preset', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLocationState = null;
+    localStorage.clear();
 
     getRoadmapsByWorkspace.mockResolvedValue({ data: [] });
     getPendingRecommendations.mockResolvedValue({ data: [] });
@@ -167,6 +168,43 @@ describe('CreateQuizForm personalization preset', () => {
       expect(screen.queryByText('workspace.quiz.aiRecommendations.inlineTitle')).not.toBeInTheDocument();
       expect(screen.queryByText('workspace.quiz.aiRecommendations.empty')).not.toBeInTheDocument();
     });
+  });
+
+  it('renders AI recommendation focus topics and structure detail', async () => {
+    getPendingRecommendations.mockResolvedValue({
+      data: [
+        {
+          assessmentId: 91,
+          displayTitle: 'Review multiplication',
+          displayReason: 'Practice the weak topic again.',
+          questionCount: 8,
+          focusTopics: ['Multiplication facts'],
+          structure: [
+            {
+              difficulty: 'MEDIUM',
+              questionType: 'SINGLE_CHOICE',
+              bloomSkill: 'APPLY',
+              quantity: 4,
+            },
+          ],
+          canGenerateQuiz: true,
+        },
+      ],
+    });
+
+    render(
+      <CreateQuizForm
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onBack={vi.fn()}
+        contextId={42}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Review multiplication' }));
+
+    expect(await screen.findByText('Multiplication facts')).toBeInTheDocument();
+    expect(await screen.findByText('workspace.quiz.aiRecommendations.type')).toBeInTheDocument();
   });
 
   it('locks quiz structure preview when the current plan lacks advanced quiz config', async () => {

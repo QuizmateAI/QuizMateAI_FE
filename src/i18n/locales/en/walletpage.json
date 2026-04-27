@@ -1,0 +1,122 @@
+{
+  "walletPage": {
+    "logoAlt": "QuizMate AI Logo",
+    "goHome": "Go to Home",
+    "back": "Back",
+    "summary": {
+      "title": "Your Credit Wallet",
+      "subtitle": "Track your balance and manage credits used for AI features",
+      "badge": "Personal wallet",
+      "totalAvailable": "Total available credits",
+      "creditsUnit": "credits",
+      "hint": "Credits are used to run AI tasks like quiz generation, flashcards, study roadmaps...",
+      "regularCredits": "Regular credits",
+      "planCredits": "Plan credits",
+      "expiresAt": "Expires at",
+      "pricingGuide": "View detailed pricing"
+    },
+    "buy": {
+      "title": "Buy more credits",
+      "subtitle": "Pick a credit package to keep using AI features",
+      "cannotBuyCredit": "Your current plan does not support buying extra credits.",
+      "loading": "Loading...",
+      "packageFallback": "Credit package {{id}}",
+      "baseCredits": "{{count}} base credits",
+      "bonusCredits": "+{{count}} bonus credits"
+    },
+    "history": {
+      "title": "Transaction history",
+      "subtitle": "The 20 most recent transactions on your wallet",
+      "loading": "Loading...",
+      "noHistory": "No transactions yet.",
+      "emptyWorkspace": "—",
+      "table": {
+        "time": "Time",
+        "activity": "Activity",
+        "workspace": "Workspace",
+        "amount": "Credits",
+        "source": "Source"
+      }
+    },
+    "fallback": {
+      "other": "Other",
+      "emDash": "—"
+    },
+    "transactionType": {
+      "WELCOME": "Welcome credits",
+      "TOPUP": "Credit top-up",
+      "CONSUME": "AI credit usage",
+      "RESERVE": "Credit reserved",
+      "RESERVE_CANCELLED": "Reserve released",
+      "REFUND": "Credit refund",
+      "ADJUST": "Credit adjustment",
+      "PLAN_BONUS": "Plan credits",
+      "PLAN_EXPIRE_RESET": "Plan reset"
+    },
+    "transactionSource": {
+      "SYSTEM": "System",
+      "PAYMENT": "Payment",
+      "AI_USAGE": "AI usage",
+      "USER_PLAN": "Your plan",
+      "WORKSPACE_PLAN": "Group plan",
+      "ADMIN": "Admin"
+    },
+    "aiActivity": {
+      "default": "You used an AI feature",
+      "PROCESS_PDF": "You uploaded a PDF",
+      "PROCESS_IMAGE": "You uploaded an image",
+      "PROCESS_TEXT": "You sent text for AI processing",
+      "PROCESS_DOCX": "You uploaded a Word document",
+      "PROCESS_XLSX": "You uploaded an Excel file",
+      "PROCESS_PPTX": "You uploaded a PowerPoint deck",
+      "PROCESS_AUDIO": "You uploaded an audio file",
+      "PROCESS_VIDEO": "You uploaded a video",
+      "GENERATE_QUIZ": "You generated a quiz",
+      "PREVIEW_QUIZ_STRUCTURE": "You previewed a quiz structure",
+      "GENERATE_FLASHCARDS": "You generated flashcards",
+      "GENERATE_MOCK_TEST": "You generated a mock test",
+      "GENERATE_ROADMAP": "You generated a study roadmap",
+      "GENERATE_ROADMAP_PHASES": "You generated roadmap phases",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "You generated study content",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "You generated a knowledge quiz",
+      "SUGGEST_LEARNING_RESOURCES": "You requested learning resources",
+      "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "You analyzed a study profile",
+      "SUGGEST_STUDY_PROFILE_FIELDS": "You requested study profile suggestions",
+      "SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES": "You requested exam template suggestions",
+      "SUGGEST_WORKSPACE_NAME": "You requested a workspace name",
+      "VALIDATE_STUDY_PROFILE_CONSISTENCY": "You validated a study profile"
+    },
+    "uiActivity": {
+      "default": "Used AI for: {{target}}",
+      "PROCESS_PDF": "Uploaded PDF: {{target}}",
+      "PROCESS_DOCX": "Uploaded Word file: {{target}}",
+      "PROCESS_PPTX": "Uploaded slides: {{target}}",
+      "PROCESS_XLSX": "Uploaded Excel file: {{target}}",
+      "PROCESS_IMAGE": "Uploaded image: {{target}}",
+      "PROCESS_AUDIO": "Uploaded audio: {{target}}",
+      "PROCESS_VIDEO": "Uploaded video: {{target}}",
+      "PROCESS_TEXT": "Processed text: {{target}}",
+      "GENERATE_QUIZ": "Generated quiz: {{target}}",
+      "GENERATE_FLASHCARDS": "Generated flashcards from: {{target}}",
+      "GENERATE_MOCK_TEST": "Generated mock test: {{target}}",
+      "GENERATE_ROADMAP": "Generated roadmap: {{target}}",
+      "GENERATE_ROADMAP_PHASES": "Generated phases for: {{target}}",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Generated content for: {{target}}",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "Generated knowledge quiz: {{target}}"
+    },
+    "txActivity": {
+      "welcomeTitle": "You received welcome credits",
+      "welcomeSubtitle": "A welcome bonus for your new account",
+      "planBonusTitle": "You received plan credits",
+      "planBonusSubtitle": "Included plan credits were added to your wallet",
+      "topupTitle": "You topped up credits",
+      "topupSubtitle": "Credits were added to your wallet",
+      "refundTitle": "You received a credit refund",
+      "refundSubtitle": "Unused credits were returned to your wallet",
+      "reserveCancelledTitle": "A reserved amount was released",
+      "reserveCancelledSubtitle": "Reserved credits were returned to your wallet",
+      "planExpireResetTitle": "Plan credits were reset",
+      "planExpireResetSubtitle": "The system reset your plan credits for the next cycle"
+    }
+  }
+}

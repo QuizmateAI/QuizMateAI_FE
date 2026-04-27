@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AiModelsManagement from '@/pages/SuperAdmin/AiModelsManagement';
 import { getAiModels, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
@@ -13,7 +13,10 @@ vi.mock('react-i18next', () => ({
         'aiModels.add': 'Add model',
         'aiModels.empty': 'No models',
         'aiModels.refresh': 'Refresh',
+        'aiModels.exchangeRate.title': 'Current USD/VND rate',
         'aiModels.exchangeRate.refresh': 'Refresh exchange rate',
+        'aiModels.filters.open': 'Filters',
+        'aiModels.filters.searchPlaceholder': 'Display name, model code, provider...',
       };
       if (key in translations) return translations[key];
       if (typeof fallbackOrOptions === 'string') return fallbackOrOptions;
@@ -83,5 +86,22 @@ describe('AiModelsManagement permissions', () => {
 
     await waitFor(() => expect(getAiModels).toHaveBeenCalled());
     expect(screen.queryByRole('button', { name: /add model/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the exchange rate visible and opens filters in a popup form', async () => {
+    render(<AiModelsManagement />);
+
+    await waitFor(() => expect(getAiModels).toHaveBeenCalled());
+    expect(screen.getByText(/current usd\/vnd rate/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/display name, model code, provider/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+
+    expect(screen.getByRole('dialog', { name: /filter ai models/i })).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText(/display name, model code, provider/i);
+    fireEvent.change(searchInput, { target: { value: 'nano' } });
+    fireEvent.click(screen.getByRole('button', { name: /search/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /filter ai models/i })).not.toBeInTheDocument());
   });
 });

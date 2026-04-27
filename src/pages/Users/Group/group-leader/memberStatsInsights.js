@@ -78,6 +78,31 @@ export function normalizeScoreRatio(value) {
   return Math.max(0, Math.min(1, numeric / 100));
 }
 
+export function normalizeRoadmapProgress(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  return {
+    ...source,
+    hasRoadmap: Boolean(source.hasRoadmap),
+    roadmapStarted: Boolean(source.roadmapStarted),
+    totalPhases: pickNumber(source.totalPhases) ?? 0,
+    completedPhases: pickNumber(source.completedPhases) ?? 0,
+    totalKnowledges: pickNumber(source.totalKnowledges) ?? 0,
+    completedKnowledges: pickNumber(source.completedKnowledges) ?? 0,
+    roadmapProgressPercent: pickNumber(source.roadmapProgressPercent, source.progressPercent) ?? 0,
+    currentPhaseIndex: pickNumber(source.currentPhaseIndex),
+    currentPhaseTitle: pickFirst(source.currentPhaseTitle, source.phaseTitle),
+    currentPhaseStatus: pickFirst(source.currentPhaseStatus, source.phaseStatus),
+    currentKnowledgeTitle: pickFirst(source.currentKnowledgeTitle, source.knowledgeTitle),
+    currentKnowledgeStatus: pickFirst(source.currentKnowledgeStatus, source.knowledgeStatus),
+    lastLearningAt: pickFirst(source.lastLearningAt, source.lastRoadmapActivityAt),
+    daysInactive: pickNumber(source.daysInactive),
+    paceStatus: pickFirst(source.paceStatus, source.status),
+    needsSupport: Boolean(source.needsSupport),
+    supportReason: pickFirst(source.supportReason, source.reason),
+    needsRemedialDecision: Boolean(source.needsRemedialDecision),
+  };
+}
+
 export function normalizeLearningSnapshotRow(base = {}, detail = null) {
   const source = detail && typeof detail === 'object'
     ? { ...base, ...detail }
@@ -167,6 +192,7 @@ export function normalizeLearningSnapshotRow(base = {}, detail = null) {
     ),
     joinedAt: pickFirst(source.joinedAt, source.memberJoinedAt),
     latestActivityAt: pickFirst(source.latestActivityAt, source.lastActiveAt, source.lastActivityAt),
+    roadmapProgress: normalizeRoadmapProgress(source.roadmapProgress),
   };
 }
 
@@ -182,6 +208,23 @@ const mergeFocus = (memberSnapshot, detailSnapshot, memberKey, detailKey) => uni
   ...toStringList(memberSnapshot?.[memberKey]),
   ...toStringList(detailSnapshot?.[detailKey]),
 ]);
+
+const roadmapReasonCode = (supportReason) => {
+  switch (String(supportReason || '').toUpperCase()) {
+    case 'ROADMAP_NOT_STARTED':
+      return 'roadmap_not_started';
+    case 'INACTIVE':
+      return 'roadmap_inactive';
+    case 'BEHIND_ROADMAP':
+      return 'roadmap_behind';
+    case 'REMEDIAL_REQUIRED':
+      return 'roadmap_remedial';
+    case 'ROADMAP_EMPTY':
+      return 'roadmap_empty';
+    default:
+      return null;
+  }
+};
 
 export function buildTrendMeta(trendSource) {
   const rawPoints = Array.isArray(trendSource?.points)
@@ -239,6 +282,8 @@ export function buildMemberIntelligence(member = {}, detail = null, trendSource 
   const trend = buildTrendMeta(trendSource);
   const weakFocus = mergeFocus(snapshot, detail, 'weakTopics', 'weakAreas');
   const strongFocus = mergeFocus(snapshot, detail, 'strongTopics', 'strongAreas');
+  const roadmapProgress = snapshot.roadmapProgress ?? normalizeRoadmapProgress();
+  const roadmapSupportReason = roadmapProgress.needsSupport ? roadmapReasonCode(roadmapProgress.supportReason) : null;
   const attempts = Number(snapshot?.totalQuizAttempts ?? 0);
   const totalMinutesSpent = Number(snapshot?.totalMinutesSpent ?? 0);
   const scoreRatio = normalizeScoreRatio(snapshot?.averageScore);
@@ -247,25 +292,34 @@ export function buildMemberIntelligence(member = {}, detail = null, trendSource 
     ? totalMinutesSpent / attempts
     : null);
 
-  const activityRatio = attempts > 0
-    ? Math.min(1, ((Math.min(1, attempts / 6) * 0.45) + (Math.min(1, (trend.activeDays || 0) / 4) * 0.55)))
-    : 0;
-  const baseHealth = ((scoreRatio ?? 0.35) * 45) + ((passRate ?? 0.35) * 35) + (activityRatio * 20);
-  const trendBoost = trend.direction === 'up' ? 8 : trend.direction === 'down' ? -10 : 0;
-
-  let healthScore = Math.round(Math.max(8, Math.min(96, baseHealth + trendBoost)));
   let healthTone = 'stable';
   if (attempts <= 0) {
     healthTone = 'new';
-    healthScore = 18;
-  } else if (healthScore >= 80) {
-    healthTone = 'strong';
-  } else if (healthScore >= 60) {
-    healthTone = 'stable';
-  } else if (healthScore >= 40) {
-    healthTone = 'watch';
   } else {
-    healthTone = 'risk';
+    const lowResult = (scoreRatio != null && scoreRatio < 0.55) || (passRate != null && passRate < 0.55);
+    const veryLowResult = (scoreRatio != null && scoreRatio < 0.45) || (passRate != null && passRate < 0.45);
+    const lightStudy = totalMinutesSpent > 0 && totalMinutesSpent < 60;
+    const sporadicStudy = (trend.activeDays || 0) <= 1 && attempts > 1;
+
+    if ((trend.direction === 'down' && lowResult) || veryLowResult) {
+      healthTone = 'risk';
+    } else if (lowResult || trend.direction === 'down' || lightStudy || sporadicStudy) {
+      healthTone = 'watch';
+    } else if (
+      (scoreRatio == null || scoreRatio >= 0.8)
+      && (passRate == null || passRate >= 0.75)
+      && (trend.direction === 'up' || (trend.activeDays || 0) >= 4 || totalMinutesSpent >= 120)
+    ) {
+      healthTone = 'strong';
+    }
+  }
+
+  if (roadmapProgress.needsSupport) {
+    if (['roadmap_remedial', 'roadmap_inactive', 'roadmap_behind'].includes(roadmapSupportReason)) {
+      healthTone = 'risk';
+    } else if (roadmapSupportReason === 'roadmap_not_started' && attempts > 0) {
+      healthTone = 'watch';
+    }
   }
 
   let cadenceCode = 'balanced';
@@ -284,12 +338,14 @@ export function buildMemberIntelligence(member = {}, detail = null, trendSource 
   if (avgTimePerQuiz != null && avgTimePerQuiz < 4 && (scoreRatio ?? 1) < 0.65) reasonCodes.push('rushed_attempts');
   if (attempts > 0 && totalMinutesSpent > 0 && totalMinutesSpent < 60) reasonCodes.push('low_study_time');
   if ((trend.activeDays || 0) <= 1 && attempts > 1) reasonCodes.push('sporadic');
+  if (roadmapSupportReason) reasonCodes.push(roadmapSupportReason);
   if (reasonCodes.length === 0 && trend.direction === 'up') reasonCodes.push('improving');
   if (reasonCodes.length === 0) reasonCodes.push('steady_progress');
 
   const recommendationCodes = [];
   if (attempts <= 0) {
     recommendationCodes.push('assign_baseline', 'refresh_snapshot');
+    if (roadmapSupportReason === 'roadmap_not_started') recommendationCodes.push('start_roadmap');
   } else {
     if (healthTone === 'risk' || trend.direction === 'down') recommendationCodes.push('schedule_followup');
     if (weakFocus.length > 0) recommendationCodes.push('focus_weak_topics');
@@ -298,6 +354,8 @@ export function buildMemberIntelligence(member = {}, detail = null, trendSource 
     if (avgTimePerQuiz != null && avgTimePerQuiz < 4 && (scoreRatio ?? 1) < 0.65) recommendationCodes.push('slow_down_review');
     if (totalMinutesSpent < 60 || cadenceCode === 'sporadic') recommendationCodes.push('increase_study_time');
     if (trend.direction === 'up' && ['stable', 'strong'].includes(healthTone)) recommendationCodes.push('unlock_harder_quiz');
+    if (roadmapSupportReason === 'roadmap_remedial') recommendationCodes.push('remedial_support');
+    if (['roadmap_inactive', 'roadmap_behind', 'roadmap_not_started'].includes(roadmapSupportReason)) recommendationCodes.push('roadmap_checkpoint');
     if (recommendationCodes.length === 0) recommendationCodes.push('keep_momentum');
   }
 
@@ -307,15 +365,12 @@ export function buildMemberIntelligence(member = {}, detail = null, trendSource 
     avgTimePerQuiz,
     scoreRatio,
     passRate,
-    activityRatio,
-    baseHealth: Math.round(baseHealth * 100) / 100,
-    trendBoost,
     weakFocus,
     strongFocus,
+    roadmapProgress,
     trend,
     cadenceCode,
     healthTone,
-    healthScore,
     reasonCodes: uniqueStrings(reasonCodes),
     recommendationCodes: uniqueStrings(recommendationCodes).slice(0, 3),
   };

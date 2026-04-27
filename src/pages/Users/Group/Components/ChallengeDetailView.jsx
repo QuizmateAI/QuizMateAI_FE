@@ -17,7 +17,6 @@ import {
   startChallengeAttempt, cancelChallenge, updateChallenge, finishChallenge,
   removeQuizReviewContributor, publishChallenge,
   batchInviteQuizReviewers, startChallenge,
-  createChallengeRoundQuiz,
   acceptQuizReviewInvitation,
   declineQuizReviewInvitation,
 } from '../../../../api/ChallengeAPI';
@@ -406,32 +405,6 @@ export default function ChallengeDetailView({
     );
   }, [navigate, workspaceId, eventId]);
 
-  const handleCreateRoundQuiz = useCallback((round) => {
-    const roundNumber = Number(round?.roundNumber);
-    if (!Number.isInteger(roundNumber) || roundNumber <= 0) return;
-
-    handleAction(async () => {
-      const res = await createChallengeRoundQuiz(workspaceId, eventId, roundNumber);
-      const payload = res?.data?.data ?? res?.data ?? {};
-      const qid = readPositiveNumber(
-        payload,
-        payload?.quizId,
-        payload?.roundQuizId,
-        payload?.snapshotQuizId,
-        payload?.challengeQuizId,
-      );
-      if (!qid) {
-        throw new Error('Không nhận được đề của vòng đấu từ server.');
-      }
-      navigate(buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
-        challengeDraftQuizId: qid,
-        challengeDraft: 1,
-        challengeEventId: eventId,
-        challengeRound: roundNumber,
-      }));
-    }, `roundQuiz-${roundNumber}`);
-  }, [handleAction, navigate, workspaceId, eventId]);
-
   const handleViewSnapshotQuiz = useCallback(() => {
     const qid = detail?.snapshotQuizId;
     if (!qid) return;
@@ -532,8 +505,7 @@ export default function ChallengeDetailView({
   const snapshotStatusOverridesRealtime = snapshotStatusKeyRaw === 'ACTIVE'
     || (snapshotStatusKeyRaw === 'ERROR' && !hasRealtimeChallengeQuizActivity);
   const hasRealtimeChallengeQuizProcessing = !snapshotStatusOverridesRealtime && hasRealtimeChallengeQuizActivity;
-  const showChallengeQuizCard = !isBracketChallenge
-    && (hasSnapshotQuiz || detail?.sourceMode === 'NEW_CHALLENGE_QUIZ');
+  const showChallengeQuizCard = hasSnapshotQuiz || detail?.sourceMode === 'NEW_CHALLENGE_QUIZ';
   const showChallengeQuizProcessingState = showChallengeQuizCard
     && (snapshotStatusKeyRaw === 'PROCESSING' || hasRealtimeChallengeQuizProcessing);
 
@@ -648,11 +620,13 @@ export default function ChallengeDetailView({
 
   const canCancel = isLeader && detail.status === 'SCHEDULED';
   const minParticipantCount = detail.matchMode === 'FREE_FOR_ALL' ? 1 : 2;
-  const bracketRoundQuizPlan = isBracketChallenge ? buildBracketRoundQuizPlan(detail) : [];
+  const hasBackendRoundQuizPlan = isBracketChallenge && getRawBracketRoundRows(detail).length > 0;
+  const bracketRoundQuizPlan = hasBackendRoundQuizPlan ? buildBracketRoundQuizPlan(detail) : [];
   const bracketRoundReadyCount = bracketRoundQuizPlan.filter((round) => round.isReady).length;
   const bracketRoundQuizReady =
     !isBracketChallenge
-    || (bracketRoundQuizPlan.length > 0 && bracketRoundReadyCount === bracketRoundQuizPlan.length);
+    || !hasBackendRoundQuizPlan
+    || (bracketRoundReadyCount === bracketRoundQuizPlan.length);
 
   const challengePublishReady = typeof detail.challengePublishReady === 'boolean'
     ? detail.challengePublishReady
@@ -682,7 +656,7 @@ export default function ChallengeDetailView({
 
   const snapshotDisplayStatusKeyRaw = hasRealtimeChallengeQuizProcessing ? 'PROCESSING' : snapshotStatusKeyRaw;
   const hasSnapshotQuizContent = Number(detail.snapshotQuizTotalQuestion) > 0;
-  const effectiveChallengePublishReady = isBracketChallenge ? bracketRoundQuizReady : challengePublishReady;
+  const effectiveChallengePublishReady = hasBackendRoundQuizPlan ? bracketRoundQuizReady : challengePublishReady;
   /** Sau khi xuất bản (ACTIVE), chỉ leader có tham gia thi mới bị chặn xem trước đề — reviewer vẫn xem được để góp ý */
   const leaderFairPlayBlind = Boolean(detail.leaderParticipates)
     && snapshotStatusKeyRaw === 'ACTIVE'
@@ -692,7 +666,6 @@ export default function ChallengeDetailView({
     && isLeader;
 
   const showDraftQuizCta = isLeader
-    && !isBracketChallenge
     && detail.status === 'SCHEDULED'
     && detail.sourceMode === 'NEW_CHALLENGE_QUIZ'
     && Number(detail.snapshotQuizId) > 0
@@ -715,7 +688,7 @@ export default function ChallengeDetailView({
   const showLeaderboard = detail.status === 'LIVE' || detail.status === 'FINISHED';
 
   const showReviewContributorPanel =
-    !isBracketChallenge && isLeader && detail.status === 'SCHEDULED' && Number(detail.snapshotQuizId) > 0;
+    isLeader && detail.status === 'SCHEDULED' && Number(detail.snapshotQuizId) > 0;
 
   const canEditChallengeSchedule =
     isLeader && detail.status === 'SCHEDULED'
@@ -724,14 +697,12 @@ export default function ChallengeDetailView({
     isLeader && detail.status === 'SCHEDULED' && !isPublished && (isBracketChallenge || hasSnapshotQuiz);
   const canPublishChallenge =
     showPublishChallengeAction
-    && (isBracketChallenge || snapshotStatusKeyRaw === 'ACTIVE')
+    && snapshotStatusKeyRaw === 'ACTIVE'
     && effectiveChallengePublishReady
     && new Date(detail.startTime).getTime() > Date.now();
   const publishRequirementHint = !showPublishChallengeAction
     ? ''
-    : isBracketChallenge && bracketRoundQuizPlan.length === 0
-      ? 'Đấu cúp cần cấu hình đề cho từng vòng trước khi publish challenge.'
-      : isBracketChallenge && !bracketRoundQuizReady
+    : hasBackendRoundQuizPlan && !bracketRoundQuizReady
         ? `Đấu cúp cần đủ đề chính thức cho từng vòng. Hiện đã sẵn sàng ${bracketRoundReadyCount}/${bracketRoundQuizPlan.length} vòng.`
             : !hasSnapshotQuizContent
               ? t('challengeDetailView.publishHints.needDraftQuizContent', 'The leader must compose the match content first.')
@@ -835,7 +806,6 @@ export default function ChallengeDetailView({
       handleAcceptInvite={handleAcceptInvite}
       handleAcceptReviewInvitation={handleAcceptReviewInvitation}
       handleCancelConfirm={handleCancelConfirm}
-      handleCreateRoundQuiz={handleCreateRoundQuiz}
       handleDeclineReviewInvitation={handleDeclineReviewInvitation}
       handleFinishConfirm={handleFinishConfirm}
       handleInviteReviewer={handleInviteReviewer}

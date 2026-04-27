@@ -17,6 +17,7 @@ import {
   SuperAdminPanel,
   SuperAdminSelectButton,
 } from './Components/SuperAdminSurface';
+import SuperAdminRecentPayments from './Components/SuperAdminRecentPayments';
 import {
   getAdminPayments,
   getAllCreditPackages,
@@ -271,70 +272,6 @@ function buildTrailingRevenueSeries(payments, locale, view) {
   };
 }
 
-function getInitials(value) {
-  const normalized = normalizeText(value);
-  if (!normalized) return 'QM';
-
-  const parts = normalized.split(/\s+/).filter(Boolean);
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-
-  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
-}
-
-function resolvePaymentDisplayName(payment, t) {
-  const candidates = [
-    payment?.payerName,
-    payment?.payerFullName,
-    payment?.fullName,
-    payment?.customerName,
-    payment?.displayName,
-    payment?.userName,
-    payment?.username,
-  ];
-
-  const match = candidates.map(normalizeText).find(Boolean);
-  if (match) return match;
-
-  if (payment?.userId != null) {
-    return t('dashboard.paymentUserLabel', {
-      id: payment.userId,
-      defaultValue: `User #${payment.userId}`,
-    });
-  }
-
-  const orderId = normalizeText(payment?.orderId);
-  if (orderId) return orderId;
-
-  return t('dashboard.unknownPayer', { defaultValue: 'Unknown payer' });
-}
-
-function resolvePaymentSubtitle(payment, t) {
-  const parts = [];
-  const orderId = normalizeText(payment?.orderId);
-
-  if (orderId) {
-    parts.push(orderId);
-  } else if (payment?.paymentId != null) {
-    parts.push(`#${payment.paymentId}`);
-  }
-
-  const targetType = t(`adminPayments.targetTypes.${payment?.paymentTargetType}`, {
-    defaultValue: formatEnumLabel(payment?.paymentTargetType),
-  });
-  if (normalizeText(targetType) && targetType !== '-') {
-    parts.push(targetType);
-  }
-
-  const method = formatEnumLabel(payment?.paymentMethod);
-  if (method !== '-') {
-    parts.push(method);
-  }
-
-  return parts.join(' · ');
-}
-
 function SurfaceCard({ title, description, action, className, contentClassName, children }) {
   return (
     <SuperAdminPanel
@@ -445,53 +382,6 @@ function QuickActionButton({ icon: Icon, title, description, onClick, darkMode }
 
       <ArrowRight className={cn('h-4 w-4 transition-transform group-hover:translate-x-0.5', darkMode ? 'text-slate-500' : 'text-slate-400')} />
     </button>
-  );
-}
-
-function RecentPaymentRow({ payment, statusMeta, locale, darkMode, t }) {
-  const displayName = resolvePaymentDisplayName(payment, t);
-  const subtitle = resolvePaymentSubtitle(payment, t);
-
-  return (
-    <div className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex min-w-0 items-center gap-3">
-        <div
-          className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xs font-bold',
-            darkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600',
-          )}
-        >
-          {getInitials(displayName)}
-        </div>
-
-        <div className="min-w-0">
-          <p className={cn('truncate text-sm font-semibold', darkMode ? 'text-white' : 'text-slate-900')}>
-            {displayName}
-          </p>
-          <p className={cn('mt-1 truncate text-xs', darkMode ? 'text-slate-400' : 'text-slate-500')}>
-            {subtitle || t('dashboard.noPaymentMeta', { defaultValue: 'No payment metadata' })}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-4 md:justify-end">
-        <div className="text-right">
-          <p className={cn('text-sm font-semibold', darkMode ? 'text-white' : 'text-slate-900')}>
-            {formatCurrency(payment?.amount, locale)}
-          </p>
-          <p className={cn('mt-1 text-xs', darkMode ? 'text-slate-500' : 'text-slate-500')}>
-            {formatDateTime(getPaymentTimestamp(payment), locale)}
-          </p>
-        </div>
-
-        <div className="min-w-[110px] text-right">
-          <span className={cn('inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em]', statusMeta.textClass)}>
-            <span className={cn('h-2 w-2 rounded-full', statusMeta.dotClass)} />
-            {statusMeta.label}
-          </span>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -898,40 +788,15 @@ function SuperAdminDashboard() {
               {t('common.viewAll', { defaultValue: 'View all' })}
             </Button>
           )}
-          contentClassName="px-5 py-2"
+          contentClassName="px-5 py-4"
         >
-          {recentTransactions.length > 0 ? (
-            <div className={cn('divide-y', isDarkMode ? 'divide-slate-800' : 'divide-slate-100')}>
-              {recentTransactions.map((payment) => {
-                const status = getPaymentStatus(payment);
-                const meta = statusMeta[status] || {
-                  label: formatEnumLabel(status),
-                  dotClass: isDarkMode ? 'bg-slate-500' : 'bg-slate-400',
-                  textClass: isDarkMode ? 'text-slate-300' : 'text-slate-600',
-                };
-
-                return (
-                  <RecentPaymentRow
-                    key={payment?.paymentId ?? payment?.orderId}
-                    payment={payment}
-                    statusMeta={meta}
-                    locale={locale}
-                    darkMode={isDarkMode}
-                    t={t}
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            <div
-              className={cn(
-                'rounded-[22px] border border-dashed px-4 py-12 text-center text-sm',
-                isDarkMode ? 'border-slate-800 bg-slate-900/60 text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-500',
-              )}
-            >
-              {t('dashboard.noPayments', { defaultValue: 'No payments yet.' })}
-            </div>
-          )}
+          <SuperAdminRecentPayments
+            payments={recentTransactions}
+            statusMeta={statusMeta}
+            locale={locale}
+            darkMode={isDarkMode}
+            t={t}
+          />
         </SurfaceCard>
       </div>
     </SuperAdminPage>
