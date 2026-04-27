@@ -40,22 +40,6 @@ const MATERIAL_FORMATS = [
   { key: "processAudio", labelKey: "audio" },
 ];
 
-const ADVANCED_AI_ENTITLEMENTS = [
-  "canCreateRoadMap",
-  "hasAiCompanionMode",
-  "hasAiSummaryAndTextReading",
-  "hasWorkspaceAnalytics",
-  "hasAdvanceQuizConfig",
-  "canProcessText",
-  "canProcessPdf",
-  "canProcessWord",
-  "canProcessSlide",
-  "canProcessExcel",
-  "canProcessImage",
-  "canProcessAudio",
-  "canProcessVideo",
-];
-
 const formatVnd = (amount, locale) =>
   new Intl.NumberFormat(locale, {
     style: "currency",
@@ -157,18 +141,6 @@ function getPlanTierKey({ plan, index, totalPlans }) {
   if (Number(plan.price) === 0 || index === 0) return "FREE";
   if (index === totalPlans - 1) return "TITANIUM";
   return "PRO";
-}
-
-function getAiQualityKey(plan, tierKey) {
-  if (tierKey === "GROUP") return "team";
-  if (tierKey === "FREE" || Number(plan.price) === 0) return "core";
-
-  const advancedCount = ADVANCED_AI_ENTITLEMENTS.filter(
-    (key) => plan.entitlement?.[key] === true,
-  ).length;
-
-  if (tierKey === "TITANIUM" || advancedCount >= 5) return "premium";
-  return "enhanced";
 }
 
 function getPlanFeatureCatalog(plan, t, locale) {
@@ -332,7 +304,6 @@ function PlanTierCard({
   const isDefaultPlan = Number(plan.price) === 0;
   const description = getPlanDescription({ plan, index, plans, t, locale });
   const highlights = buildPlanHighlights(plan, previousPlan, tierKey, t, locale);
-  const aiQualityKey = getAiQualityKey(plan, tierKey);
 
   const surfaceClass = isRecommended
     ? isDarkMode
@@ -389,20 +360,6 @@ function PlanTierCard({
             <p className={`text-base font-semibold ${isDarkMode ? "text-white" : "text-slate-950"}`}>
               {plan.planName}
             </p>
-            <span
-              className={`mt-3 inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${
-                isRecommended
-                  ? isDarkMode
-                    ? "bg-indigo-400/16 text-indigo-100 ring-1 ring-indigo-300/20"
-                    : "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100"
-                  : isDarkMode
-                    ? "bg-white/6 text-slate-200 ring-1 ring-white/10"
-                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200"
-              }`}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              {t(`plan.aiQuality.${aiQualityKey}`)}
-            </span>
             <p className={`mt-2 max-w-[24ch] min-h-[4.5rem] text-sm leading-6 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
               {description}
             </p>

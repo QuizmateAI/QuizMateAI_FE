@@ -67,11 +67,7 @@ export const AI_ACTION_LABEL_KEYS = {
   ANALYZE_STUDY_PROFILE_KNOWLEDGE: 'aiActionPolicy.actions.analyzeStudyProfileKnowledge.title',
   SUGGEST_STUDY_PROFILE_FIELDS: 'aiActionPolicy.actions.suggestStudyProfileFields.title',
   SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES: 'aiActionPolicy.actions.suggestStudyProfileExamTemplates.title',
-  SUGGEST_WORKSPACE_NAME: 'aiActionPolicy.actions.suggestWorkspaceName.title',
   VALIDATE_STUDY_PROFILE_CONSISTENCY: 'aiActionPolicy.actions.validateStudyProfileConsistency.title',
-  COMPANION_INTERPRET: 'aiAudit.features.COMPANION_INTERPRET',
-  COMPANION_TRANSCRIBE: 'aiAudit.features.COMPANION_TRANSCRIBE',
-  COMPANION_TTS: 'aiAudit.features.COMPANION_TTS',
   PROCESS_PDF: 'aiActionPolicy.actions.processPdf.title',
   PROCESS_IMAGE: 'aiActionPolicy.actions.processImage.title',
   PROCESS_TEXT: 'aiActionPolicy.actions.processText.title',
@@ -95,11 +91,7 @@ export const AI_ACTION_GROUP_MAP = {
   ANALYZE_STUDY_PROFILE_KNOWLEDGE: 'TEXT_GENERATION',
   SUGGEST_STUDY_PROFILE_FIELDS: 'TEXT_GENERATION',
   SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES: 'TEXT_GENERATION',
-  SUGGEST_WORKSPACE_NAME: 'TEXT_GENERATION',
   VALIDATE_STUDY_PROFILE_CONSISTENCY: 'TEXT_GENERATION',
-  COMPANION_INTERPRET: 'TEXT_GENERATION',
-  COMPANION_TRANSCRIBE: 'TRANSCRIPTION',
-  COMPANION_TTS: 'TEXT_TO_SPEECH',
   PROCESS_PDF: 'DOCUMENT_PROCESSING',
   PROCESS_IMAGE: 'DOCUMENT_PROCESSING',
   PROCESS_TEXT: 'DOCUMENT_PROCESSING',
@@ -117,117 +109,29 @@ export const AI_ACTION_PROVIDER_ALLOWLIST = {
   ANALYZE_STUDY_PROFILE_KNOWLEDGE: ['OPENAI'],
   SUGGEST_STUDY_PROFILE_FIELDS: ['OPENAI'],
   SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES: ['OPENAI'],
-  SUGGEST_WORKSPACE_NAME: ['OPENAI'],
   VALIDATE_STUDY_PROFILE_CONSISTENCY: ['OPENAI'],
-  COMPANION_INTERPRET: ['OPENAI'],
-  COMPANION_TRANSCRIBE: ['OPENAI'],
-  COMPANION_TTS: ['OPENAI'],
 };
-
-const coreFeature = (actionKey, displayOrder) => ({
-  actionKey,
-  category: 'CORE',
-  entitlementKey: null,
-  modelGroup: AI_ACTION_GROUP_MAP[actionKey],
-  allowedProviders: AI_ACTION_PROVIDER_ALLOWLIST[actionKey] ?? AI_PROVIDER_OPTIONS,
-  displayOrder,
-});
-
-const advancedFeature = (actionKey, entitlementKey, displayOrder) => ({
-  actionKey,
-  category: 'ADVANCED',
-  entitlementKey,
-  modelGroup: AI_ACTION_GROUP_MAP[actionKey],
-  allowedProviders: AI_ACTION_PROVIDER_ALLOWLIST[actionKey] ?? AI_PROVIDER_OPTIONS,
-  displayOrder,
-});
-
-export const DEFAULT_AI_FEATURE_CATALOG = [
-  coreFeature('GENERATE_QUIZ', 10),
-  coreFeature('GENERATE_FLASHCARDS', 20),
-  coreFeature('GENERATE_MOCK_TEST', 30),
-  coreFeature('SUGGEST_LEARNING_RESOURCES', 40),
-  coreFeature('ANALYZE_STUDY_PROFILE_KNOWLEDGE', 50),
-  coreFeature('SUGGEST_STUDY_PROFILE_FIELDS', 60),
-  coreFeature('SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES', 70),
-  coreFeature('VALIDATE_STUDY_PROFILE_CONSISTENCY', 80),
-  coreFeature('SUGGEST_WORKSPACE_NAME', 90),
-  advancedFeature('PREVIEW_QUIZ_STRUCTURE', 'hasAdvanceQuizConfig', 110),
-  advancedFeature('GENERATE_ROADMAP', 'canCreateRoadMap', 120),
-  advancedFeature('GENERATE_ROADMAP_PHASES', 'canCreateRoadMap', 130),
-  advancedFeature('GENERATE_ROADMAP_PHASE_CONTENT', 'canCreateRoadMap', 140),
-  advancedFeature('GENERATE_ROADMAP_KNOWLEDGE_QUIZ', 'canCreateRoadMap', 150),
-  advancedFeature('COMPANION_INTERPRET', 'hasAiCompanionMode', 160),
-  advancedFeature('COMPANION_TRANSCRIBE', 'hasAiCompanionMode', 170),
-  advancedFeature('COMPANION_TTS', 'hasAiCompanionMode', 180),
-  advancedFeature('PROCESS_TEXT', 'canProcessText', 210),
-  advancedFeature('PROCESS_PDF', 'canProcessPdf', 220),
-  advancedFeature('PROCESS_DOCX', 'canProcessWord', 230),
-  advancedFeature('PROCESS_PPTX', 'canProcessSlide', 240),
-  advancedFeature('PROCESS_XLSX', 'canProcessExcel', 250),
-  advancedFeature('PROCESS_IMAGE', 'canProcessImage', 260),
-  advancedFeature('PROCESS_AUDIO', 'canProcessAudio', 270),
-  advancedFeature('PROCESS_VIDEO', 'canProcessVideo', 280),
-];
-
-export function normalizeAiFeatureCatalog(items = DEFAULT_AI_FEATURE_CATALOG) {
-  const source = Array.isArray(items) && items.length > 0 ? items : DEFAULT_AI_FEATURE_CATALOG;
-  return source
-    .map((item, index) => {
-      const actionKey = item?.actionKey;
-      const allowedProviders = Array.isArray(item?.allowedProviders) && item.allowedProviders.length > 0
-        ? item.allowedProviders
-        : getAiActionAllowedProviders(actionKey);
-      return {
-        actionKey,
-        category: item?.category === 'ADVANCED' ? 'ADVANCED' : 'CORE',
-        entitlementKey: item?.entitlementKey ?? null,
-        modelGroup: item?.modelGroup ?? getAiActionGroup(actionKey),
-        allowedProviders: allowedProviders.map((provider) => normalizeAiProvider(provider)),
-        displayOrder: Number.isFinite(Number(item?.displayOrder)) ? Number(item.displayOrder) : index + 1,
-      };
-    })
-    .filter((item) => item.actionKey && item.modelGroup)
-    .sort((left, right) => left.displayOrder - right.displayOrder || left.actionKey.localeCompare(right.actionKey));
-}
-
-export function isAiFeatureEnabled(item, entitlement = {}) {
-  if (!item) return false;
-  if (item.category === 'CORE') return true;
-  if (!item.entitlementKey) return true;
-  return Boolean(entitlement[item.entitlementKey]);
-}
-
-export function getEnabledAiFeatureItems(featureCatalog, entitlement = {}) {
-  return normalizeAiFeatureCatalog(featureCatalog).filter((item) => isAiFeatureEnabled(item, entitlement));
-}
 
 export function getAiModelGroupMeta(modelGroup) {
   return AI_MODEL_GROUP_OPTIONS.find((item) => item.value === modelGroup) ?? null;
 }
 
-function humanizeAiKey(value) {
-  return String(value || '')
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
 export function getAiModelGroupLabel(modelGroup, t) {
   if (!modelGroup) return '-';
   const meta = getAiModelGroupMeta(modelGroup);
-  const fallback = humanizeAiKey(modelGroup);
-  const translated = meta && typeof t === 'function' ? t(meta.labelKey, fallback) : fallback;
-  if (translated && translated !== meta?.labelKey && translated !== modelGroup) return translated;
-  return fallback;
+  return meta ? t(meta.labelKey, modelGroup) : modelGroup;
 }
 
 export function getAiActionLabel(actionKey, t) {
   const labelKey = AI_ACTION_LABEL_KEYS[actionKey];
-  const translated = labelKey && typeof t === 'function' ? t(labelKey, '') : '';
-  if (translated && translated !== labelKey && translated !== actionKey) return translated;
-  return humanizeAiKey(actionKey);
+  if (!labelKey) return actionKey;
+  const translated = t(labelKey, actionKey);
+  if (translated && translated !== labelKey) return translated;
+  return String(actionKey || '')
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 export function getAiActionGroup(actionKey) {
@@ -248,84 +152,6 @@ export function filterAiModelsForAction(actionKey, models = []) {
     const modelGroup = model?.modelGroup ?? null;
     const provider = String(model?.provider || '').toUpperCase();
     return (!expectedGroup || modelGroup === expectedGroup) && allowedProviders.has(provider);
-  });
-}
-
-export function filterAiModelsForFeature(feature, models = []) {
-  const allowedProviders = new Set(
-    (feature?.allowedProviders ?? getAiActionAllowedProviders(feature?.actionKey))
-      .map((provider) => normalizeAiProvider(provider)),
-  );
-  const expectedGroup = feature?.modelGroup ?? getAiActionGroup(feature?.actionKey);
-
-  return models.filter((model) => {
-    if (expectedGroup && model?.modelGroup !== expectedGroup) return false;
-    return allowedProviders.has(normalizeAiProvider(model?.provider));
-  });
-}
-
-export function getPlanAiCoverage({
-  featureCatalog,
-  entitlement,
-  availableAiModels = [],
-  functionAssignmentMap = {},
-  aiModelAssignments = {},
-} = {}) {
-  const enabledFeatures = getEnabledAiFeatureItems(featureCatalog, entitlement);
-  const rows = enabledFeatures.map((feature) => {
-    const compatibleModels = filterAiModelsForFeature(feature, availableAiModels);
-    const selectedActionModelId = functionAssignmentMap[feature.actionKey] ?? '';
-    const selectedGroupModelId = aiModelAssignments[feature.modelGroup] ?? '';
-    const hasActionAssignment = String(selectedActionModelId || '').trim() !== '';
-    const hasGroupAssignment = String(selectedGroupModelId || '').trim() !== '';
-    const assignedActionModel = availableAiModels.find((model) => String(model.aiModelId) === String(selectedActionModelId)) ?? null;
-    const assignedGroupModel = availableAiModels.find((model) => String(model.aiModelId) === String(selectedGroupModelId)) ?? null;
-    const selectedModel = hasActionAssignment ? assignedActionModel : hasGroupAssignment ? assignedGroupModel : null;
-    const source = hasActionAssignment ? 'ACTION' : hasGroupAssignment ? 'GROUP' : null;
-    const selectedModelCompatible = Boolean(
-      selectedModel && compatibleModels.some((model) => String(model.aiModelId) === String(selectedModel.aiModelId))
-    );
-    const isActive = selectedModel?.status === 'ACTIVE';
-
-    return {
-      ...feature,
-      selectedModel,
-      selectedModelId: selectedModel?.aiModelId != null ? String(selectedModel.aiModelId) : '',
-      source,
-      compatibleModelCount: compatibleModels.length,
-      covered: Boolean(selectedModel) && selectedModelCompatible && isActive,
-      inactiveSelection: Boolean(selectedModel) && !isActive,
-      incompatibleSelection: Boolean(selectedModel) && !selectedModelCompatible,
-    };
-  });
-
-  const missing = rows.filter((row) => !row.covered);
-  return {
-    rows,
-    missing,
-    total: rows.length,
-    covered: rows.length - missing.length,
-    isComplete: missing.length === 0,
-  };
-}
-
-// Returns the model groups that an action depends on. The matrix override page
-// iterates groups so future actions that span multiple groups Just Work.
-export function getModelGroupsForAction(actionKey) {
-  const primary = AI_ACTION_GROUP_MAP[actionKey];
-  return primary ? [primary] : [];
-}
-
-// Same shape as filterAiModelsForAction, but accepts an explicit modelGroup so
-// the caller can filter rows in the (Action × ModelGroup) matrix.
-export function filterModelsForAction(models = [], actionKey, modelGroup) {
-  const allowedProviders = new Set(
-    getAiActionAllowedProviders(actionKey).map((provider) => String(provider || '').toUpperCase()),
-  );
-
-  return models.filter((model) => {
-    if (modelGroup && model?.modelGroup !== modelGroup) return false;
-    return allowedProviders.has(String(model?.provider || '').toUpperCase());
   });
 }
 
