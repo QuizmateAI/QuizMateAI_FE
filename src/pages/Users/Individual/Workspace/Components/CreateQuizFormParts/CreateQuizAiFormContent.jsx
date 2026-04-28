@@ -1,4 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Tags } from "lucide-react";
+import SubTopicAPI from "@/api/SubTopicAPI";
 import {
   BrainCircuit,
   CheckCircle2,
@@ -70,6 +72,7 @@ function CreateQuizAiFormContent({
     onClearSelectedMaterials,
     onSelectAllMaterials,
     onToggleMaterialSelection,
+    onSelectedSubTopicIdsChange,
     readOnly = false,
     workspaceMaterialsEmptyMessage,
   } = ui;
@@ -106,6 +109,8 @@ function CreateQuizAiFormContent({
     selectedBloomSkills,
     selectedDifficultyId,
     selectedMaterialIds,
+    selectedSubTopicIds = [],
+    workspaceId,
     selectedQTypes,
     workspaceMaterialsError,
     workspaceMaterialsLoading,
@@ -162,6 +167,46 @@ function CreateQuizAiFormContent({
   const [showStructureCancelConfirm, setShowStructureCancelConfirm] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState(-1);
   const [dropTargetIndex, setDropTargetIndex] = useState(-1);
+
+  // Topic focus picker state. Selected IDs are prompt focus only.
+  const [subTopics, setSubTopics] = useState([]);
+  const [loadingSubTopics, setLoadingSubTopics] = useState(false);
+  const [subTopicError, setSubTopicError] = useState(null);
+  const subTopicDebounceRef = useRef(null);
+  useEffect(() => {
+    if (subTopicDebounceRef.current) clearTimeout(subTopicDebounceRef.current);
+    if (!selectedMaterialIds || selectedMaterialIds.length === 0 || !workspaceId
+        || typeof onSelectedSubTopicIdsChange !== "function") {
+      setSubTopics([]);
+      setSubTopicError(null);
+      return undefined;
+    }
+    setLoadingSubTopics(true);
+    setSubTopicError(null);
+    subTopicDebounceRef.current = setTimeout(async () => {
+      try {
+        const resp = await SubTopicAPI.getByMaterials(selectedMaterialIds, workspaceId);
+        const data = resp?.data ?? resp ?? [];
+        setSubTopics(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setSubTopicError(err?.message || t("workspace.quiz.aiConfig.subTopicLoadError"));
+        setSubTopics([]);
+      } finally {
+        setLoadingSubTopics(false);
+      }
+    }, 300);
+    return () => {
+      if (subTopicDebounceRef.current) clearTimeout(subTopicDebounceRef.current);
+    };
+  }, [selectedMaterialIds.join(","), workspaceId, onSelectedSubTopicIdsChange]);
+
+  const toggleSubTopic = (id) => {
+    if (typeof onSelectedSubTopicIdsChange !== "function") return;
+    const cur = Array.isArray(selectedSubTopicIds) ? selectedSubTopicIds : [];
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    onSelectedSubTopicIdsChange(next);
+  };
+
   const structureItemsForDisplay = isStructureEditing ? editableStructureItems : structurePreview?.items;
   const structureCurrentCount = (Array.isArray(structureItemsForDisplay) ? structureItemsForDisplay : [])
     .reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
@@ -538,6 +583,51 @@ function CreateQuizAiFormContent({
           )}
         </div>
       </div>
+
+          {/* Topic focus picker. Hien khi co material da chon va co callback. */}
+      {selectedMaterialIds.length > 0 && typeof onSelectedSubTopicIdsChange === "function" && (
+        <div className={getAiSectionCardClass([])}>
+          <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+            <Tags className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
+            {t("workspace.quiz.aiConfig.subTopicLabel")}
+          </h3>
+          {loadingSubTopics ? (
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {t("workspace.quiz.aiConfig.subTopicLoading")}
+            </div>
+          ) : subTopicError ? (
+            <p className="text-xs italic text-red-500">{subTopicError}</p>
+          ) : subTopics.length === 0 ? (
+            <p className="text-xs italic text-slate-500">
+              {t("workspace.quiz.aiConfig.subTopicEmpty")}
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {subTopics.map((st) => {
+                const id = st.subTopicId || st.id;
+                const isSel = (selectedSubTopicIds || []).includes(id);
+                return (
+                  <button
+                    type="button"
+                    key={id}
+                    onClick={() => toggleSubTopic(id)}
+                    disabled={readOnly}
+                    className={`rounded-full border px-3 py-1 text-xs transition-all ${
+                      isSel
+                        ? (isDarkMode ? "border-purple-400 bg-purple-900/30 text-purple-200" : "border-purple-500 bg-purple-50 text-purple-700")
+                        : (isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-600 hover:bg-gray-50")
+                    } ${readOnly ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    title={st.description || ""}
+                  >
+                    {st.title}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div ref={aiSettingsSectionRef} className={getAiSectionCardClass(["aiTotalQuestions", "aiDuration", "aiDurations"])}>
         <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
@@ -1182,21 +1272,6 @@ function CreateQuizAiFormContent({
             <div className="flex flex-wrap items-center gap-2">
               {(Array.isArray(structurePreview?.items) && structurePreview.items.length > 0) && !isStructureEditing && (
                 <>
-                  <button
-                    type="button"
-                    onClick={handlePreviewStructure}
-                    disabled={structurePreviewLoading || !canFetchStructurePreview}
-                    className={`inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
-                      isDarkMode
-                        ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-50"
-                        : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    }`}
-                  >
-                    {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                    {structurePreviewLoading
-                      ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Generating structure...")
-                      : t("workspace.quiz.aiConfig.structurePreviewAction", "Detailed configuration")}
-                  </button>
                   <button
                     type="button"
                     onClick={() => setShowStructureEditConfirm(true)}

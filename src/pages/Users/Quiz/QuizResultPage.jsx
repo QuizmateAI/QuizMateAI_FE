@@ -224,6 +224,7 @@ export default function QuizResultPage() {
   const pendingResultPollingRef = useRef(null);
   const lastAttemptRefreshAtRef = useRef(0);
   const initialPendingJumpDoneRef = useRef(false);
+  const postGradingAssessmentRefreshRef = useRef({ attemptId: null, timeoutId: null });
 
   const isIncompleteAttemptError = useCallback((error) => {
     const statusCode = getRequestStatusCode(error);
@@ -514,6 +515,35 @@ export default function QuizResultPage() {
       setAssessmentLoading(false);
     }
   }, [applyAssessmentPayload, attemptId]);
+
+  useEffect(() => {
+    postGradingAssessmentRefreshRef.current.attemptId = null;
+    if (postGradingAssessmentRefreshRef.current.timeoutId) {
+      globalThis.clearTimeout(postGradingAssessmentRefreshRef.current.timeoutId);
+      postGradingAssessmentRefreshRef.current.timeoutId = null;
+    }
+
+    return () => {
+      if (postGradingAssessmentRefreshRef.current.timeoutId) {
+        globalThis.clearTimeout(postGradingAssessmentRefreshRef.current.timeoutId);
+        postGradingAssessmentRefreshRef.current.timeoutId = null;
+      }
+    };
+  }, [attemptId]);
+
+  const refreshAssessmentAfterGradingComplete = useCallback(() => {
+    const normalizedAttemptId = normalizePositiveInteger(attemptId);
+    if (!normalizedAttemptId) return;
+    if (postGradingAssessmentRefreshRef.current.attemptId === normalizedAttemptId) return;
+
+    postGradingAssessmentRefreshRef.current.attemptId = normalizedAttemptId;
+    void fetchAssessment();
+
+    postGradingAssessmentRefreshRef.current.timeoutId = globalThis.setTimeout(() => {
+      postGradingAssessmentRefreshRef.current.timeoutId = null;
+      void fetchAssessment();
+    }, 1500);
+  }, [attemptId, fetchAssessment]);
 
   const handleRefreshAssessment = useCallback(async () => {
     if (!attemptId) return;
@@ -825,9 +855,9 @@ export default function QuizResultPage() {
       globalThis.setTimeout(() => {
         void refreshAttemptResult();
       }, 1500);
-      void fetchAssessment();
+      refreshAssessmentAfterGradingComplete();
     }
-  }, [attemptId, fetchAssessment, jumpToQuestion, refreshAttemptResult, reviewMode]);
+  }, [attemptId, jumpToQuestion, refreshAssessmentAfterGradingComplete, refreshAttemptResult, reviewMode]);
 
   const wsWorkspaceId = Number.isInteger(normalizedWorkspaceId) && normalizedWorkspaceId > 0
     ? normalizedWorkspaceId
@@ -1067,9 +1097,17 @@ handleBack,
         const latestResult = await refreshAttemptResult();
         if (cancelled) return;
         const latestPending = Number(latestResult?.pendingGradingQuestionCount);
-        if (Number.isInteger(latestPending) && latestPending <= 0 && pendingResultPollingRef.current) {
-          globalThis.clearInterval(pendingResultPollingRef.current);
-          pendingResultPollingRef.current = null;
+        const latestPendingFromQuestions = Array.isArray(latestResult?.questions)
+          ? latestResult.questions.filter(isPendingQuestionGrading).length
+          : null;
+        const isLatestGradingDone = (Number.isInteger(latestPending) && latestPending <= 0)
+          || latestPendingFromQuestions === 0;
+        if (isLatestGradingDone) {
+          if (pendingResultPollingRef.current) {
+            globalThis.clearInterval(pendingResultPollingRef.current);
+            pendingResultPollingRef.current = null;
+          }
+          refreshAssessmentAfterGradingComplete();
         }
       } catch (error) {
         if (!cancelled) {
@@ -1085,7 +1123,7 @@ handleBack,
         pendingResultPollingRef.current = null;
       }
     };
-  }, [attemptId, pendingGradingCount, result, refreshAttemptResult, isQuizGradingSocketConnected]);
+  }, [attemptId, pendingGradingCount, result, refreshAssessmentAfterGradingComplete, refreshAttemptResult, isQuizGradingSocketConnected]);
 
   useEffect(() => {
     if (!reviewMode || !isGradingPending || reviewQuestions.length === 0 || initialPendingJumpDoneRef.current) {

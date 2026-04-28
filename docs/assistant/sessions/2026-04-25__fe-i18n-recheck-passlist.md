@@ -735,3 +735,24 @@ This list is the authoritative folder-structured inventory for the full-runtime 
 - Locale parse check was rerun on: `en/vi common.json`, `home.json`, `workspace.json`, `group.json`, and `admin.json`.
 - Font-sensitive recheck in this pass covered the newly touched locale-switching surfaces: `WelcomeBackModal.jsx`, `EditChoiceDialog.jsx`, and the earlier shared/admin surfaces already fixed in the same session.
 - Browser click-through QA is still not included in this report. This report is based on source scan, locale parse, and production build verification.
+
+## 2026-04-25 Vietnamese locale cleanup before remaining FE scan
+
+- Updated Vietnamese locale files to remove broken strings such as `Ch? duy?t`, `Quy?n`, `?ang`, `Hu?`, and similar question-mark corruption in admin/group/home/workspace/common surfaces.
+- Files updated in this cleanup step:
+  - `src/i18n/locales/vi/admin.json`
+  - `src/i18n/locales/vi/common.json`
+  - `src/i18n/locales/vi/group.json`
+  - `src/i18n/locales/vi/home.json`
+  - `src/i18n/locales/vi/workspace.json`
+- Fixed areas included:
+  - admin permission request flows and user deletion labels
+  - group member permission catalog and challenge reviewer invitation copy
+  - payment extra-slot copy in home locale
+  - roadmap/community detail labels in workspace locale
+  - shared common save/edit wallet strings
+- Verification for this cleanup step:
+  - `JSON.parse` passed for all files under `src/i18n/locales/vi`
+  - raw `?` grep on touched locale files only left legitimate question prompts or route/query-string documentation, not broken Vietnamese words
+  - `npm run build` passed after the locale fixes
+  - existing Vite warning about `src/api/ProfileAPI.js` dynamic + static import remains unchanged from earlier passes

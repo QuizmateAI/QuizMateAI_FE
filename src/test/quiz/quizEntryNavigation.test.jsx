@@ -2,8 +2,8 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import QuizListView from '@/pages/Users/Individual/Workspace/Components/QuizListView';
-import QuizDetailView from '@/pages/Users/Individual/Workspace/Components/QuizDetailView';
+import QuizListView from '@/Pages/Users/Individual/Workspace/Components/QuizListView';
+import QuizDetailView from '@/Pages/Users/Individual/Workspace/Components/QuizDetailView';
 import {
   getAnswersByQuestion,
   getQuestionsBySection,
@@ -18,9 +18,7 @@ import {
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();
 const mockShowSuccess = vi.fn();
-const examButtonName = /^(Exam|Thi|Kiểm tra)$/i;
-const practiceButtonName = /^(Practice|Luyện tập)$/i;
-const deleteButtonName = /^(Delete|Xóa)$/i;
+const cardButtonName = /Algebra challenge/i;
 
 vi.mock('@/api/QuizAPI', () => ({
   getQuizzesByScope: vi.fn(),
@@ -104,37 +102,35 @@ describe('Quiz entry navigation', () => {
     updateQuiz.mockResolvedValue({ data: { status: 'ACTIVE' } });
   });
 
-  it('opens the exam popup from the workspace quiz list before navigating into the exam', async () => {
+  it('opens quiz detail from the workspace quiz list through onViewQuiz callback', async () => {
+    const onViewQuiz = vi.fn();
+
     renderWithQueryClient(
       <QuizListView
         isDarkMode={false}
         onCreateQuiz={vi.fn()}
-        onViewQuiz={vi.fn()}
+        onViewQuiz={onViewQuiz}
         contextId={42}
       />
     );
 
     expect(await screen.findByText('Algebra challenge')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: examButtonName }));
+    fireEvent.click(screen.getByRole('button', { name: cardButtonName }));
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(mockNavigate).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/quizzes/exams/123',
+    expect(onViewQuiz).toHaveBeenCalledTimes(1);
+    expect(onViewQuiz).toHaveBeenCalledWith(
       expect.objectContaining({
-        state: expect.objectContaining({
-          returnToQuizPath: '/workspaces/42?phaseId=7',
-          autoStart: true,
-        }),
+        quizId: 123,
+        title: 'Algebra challenge',
       })
     );
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('falls back to legacy id when opening exam from the workspace quiz list', async () => {
+  it('passes legacy id quiz payload when opening from the workspace quiz list', async () => {
+    const onViewQuiz = vi.fn();
+
     getQuizzesByScope.mockResolvedValueOnce({
       data: [
         {
@@ -156,28 +152,25 @@ describe('Quiz entry navigation', () => {
       <QuizListView
         isDarkMode={false}
         onCreateQuiz={vi.fn()}
-        onViewQuiz={vi.fn()}
+        onViewQuiz={onViewQuiz}
         contextId={42}
       />
     );
 
     expect(await screen.findByText('Legacy algebra challenge')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: examButtonName }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: /Legacy algebra challenge/i }));
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/quizzes/exams/321',
+    expect(onViewQuiz).toHaveBeenCalledWith(
       expect.objectContaining({
-        state: expect.objectContaining({
-          returnToQuizPath: '/workspaces/42?phaseId=7',
-          autoStart: true,
-        }),
+        id: 321,
+        title: 'Legacy algebra challenge',
       })
     );
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('navigates straight into practice mode from the workspace quiz list with auto start enabled', async () => {
+  it('does not render direct exam/practice launch buttons on list cards', async () => {
     renderWithQueryClient(
       <QuizListView
         isDarkMode={false}
@@ -189,17 +182,9 @@ describe('Quiz entry navigation', () => {
 
     expect(await screen.findByText('Algebra challenge')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: practiceButtonName }));
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/quizzes/practice/123',
-      expect.objectContaining({
-        state: expect.objectContaining({
-          returnToQuizPath: '/workspaces/42?phaseId=7',
-          autoStart: true,
-        }),
-      })
-    );
+    expect(screen.queryByRole('button', { name: /^(Practice|Luyện tập|Practice mode)$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^(Exam|Thi|Kiểm tra|Exam mode)$/i })).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('opens the exam popup from the quiz detail view before navigating into the exam', async () => {
@@ -239,6 +224,10 @@ describe('Quiz entry navigation', () => {
   });
 
   it('navigates straight into practice mode from the quiz detail view with auto start enabled', async () => {
+    getQuizHistory.mockResolvedValueOnce({
+      data: [{ attemptId: 98, isPracticeMode: false, completedAt: '2026-03-25T09:00:00' }],
+    });
+
     renderWithQueryClient(
       <QuizDetailView
         isDarkMode={false}
@@ -252,7 +241,7 @@ describe('Quiz entry navigation', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Practice mode' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Practice' }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
       '/quizzes/practice/456',
@@ -266,10 +255,10 @@ describe('Quiz entry navigation', () => {
   });
 
   it('still shows questions in quiz detail even when one answer request fails', async () => {
-    getSectionsByQuiz.mockResolvedValueOnce({
+    getSectionsByQuiz.mockResolvedValue({
       data: [{ sectionId: 11 }],
     });
-    getQuestionsBySection.mockResolvedValueOnce({
+    getQuestionsBySection.mockResolvedValue({
       data: [
         {
           questionId: 99,
@@ -280,7 +269,7 @@ describe('Quiz entry navigation', () => {
         },
       ],
     });
-    getAnswersByQuestion.mockRejectedValueOnce({
+    getAnswersByQuestion.mockRejectedValue({
       statusCode: 409,
       message: 'Matching answer content phai la JSON hop le',
     });
@@ -289,7 +278,7 @@ describe('Quiz entry navigation', () => {
       <QuizDetailView
         isDarkMode={false}
         quiz={{
-          quizId: 456,
+          quizId: 999,
           title: 'Geometry mock',
           status: 'DRAFT',
         }}
