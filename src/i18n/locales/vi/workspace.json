@@ -50,7 +50,7 @@
         "generatingTemplate": "Template đang được tạo...",
         "generateTemplate": "Tạo xem trước bản mẫu thi thử",
         "customTargetScore": "Tự nhập điểm",
-        "confirmProfileUse": "Xác nhận sử dụng hồ sơ này"
+        "confirmProfileUse": "Sử dụng hồ sơ này"
       },
       "confirmProfileDialog": {
         "title": "Xác nhận sử dụng hồ sơ này",
@@ -2701,12 +2701,14 @@
     },
     "confirmProfile": {
       "title": "Xác nhận sử dụng hồ sơ này",
-      "description": "Bạn đã chắc chắn sử dụng hồ sơ này chưa? Sau khi xác nhận, hệ thống sẽ lưu cấu hình hiện tại cho không gian học tập.",
+      "description": "Bạn có chắc muốn dùng hồ sơ này? Sau khi xác nhận, hệ thống sẽ lưu cấu hình hiện tại cho không gian học tập.",
       "badge": "XÁC NHẬN HỒ SƠ",
-      "finalReviewTitle": "Rà soát lần cuối trước khi áp dụng hồ sơ này",
-      "finalReviewDescription": "Kiểm tra nhanh bản tóm tắt bên dưới. Sau khi xác nhận, cấu hình này sẽ trở thành hồ sơ đang áp dụng cho workspace.",
+      "finalReviewTitle": "Bạn có chắc muốn dùng hồ sơ này?",
+      "finalReviewDescription": "Kiểm tra tóm tắt bên dưới. Sau khi xác nhận, cấu hình này sẽ trở thành hồ sơ học hiện hành của workspace.",
       "summaryHelper": "Toàn bộ nội dung bên dưới sẽ được lưu thành cấu hình học tập hiện tại của workspace này.",
-      "footerHelper": "Bạn vẫn có thể quay lại wizard để chỉnh sửa thêm trước khi áp dụng."
+      "footerHelper": "Bạn vẫn có thể quay lại chỉnh sửa trước khi áp dụng.",
+      "backToEdit": "Quay lại chỉnh sửa",
+      "applying": "Đang áp dụng..."
     },
     "mockProfileWizardData": {
       "template": {

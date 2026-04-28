@@ -27,8 +27,10 @@ function StickyQuestionBar({
   onDistributeEvenly,
   barRef,
   isDarkMode = false,
+  surface = "quiz",
 }) {
   const { t } = useTranslation();
+  const isChallengeSurface = surface === "challenge";
   const bubblesRef = useRef(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
@@ -94,9 +96,13 @@ function StickyQuestionBar({
   const addActionCls = cn(
     actionPillBase,
     "border",
-    isDarkMode
-      ? "border-blue-400/30 bg-blue-500/15 text-blue-200 hover:bg-blue-500/25"
-      : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100",
+    isChallengeSurface
+      ? isDarkMode
+        ? "border-orange-400/30 bg-orange-500/15 text-orange-200 hover:bg-orange-500/25"
+        : "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+      : isDarkMode
+        ? "border-blue-400/30 bg-blue-500/15 text-blue-200 hover:bg-blue-500/25"
+        : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100",
   );
   const importActionCls = cn(
     actionPillBase,
@@ -136,7 +142,9 @@ function StickyQuestionBar({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 min-w-0">
             <span className={cn("text-sm font-semibold truncate", isDarkMode ? "text-slate-100" : "text-gray-800")}>
-              {config.title || t("workspace.quiz.manualWizard.stickyBar.untitledQuiz", "Quiz thủ công")}
+              {config.title || (isChallengeSurface
+                ? t("challengeManualMatchEditor.wizard.stickyBar.untitledMatch", "Đề challenge thủ công")
+                : t("workspace.quiz.manualWizard.stickyBar.untitledQuiz", "Quiz thủ công"))}
             </span>
             <span className={summaryChip}>
               {t("workspace.quiz.manualWizard.stickyBar.questionsCount", {
@@ -202,7 +210,10 @@ function StickyQuestionBar({
             onClick={onSubmit}
             disabled={submitting}
             size="sm"
-            className="rounded-full bg-blue-600 hover:bg-blue-700 text-white gap-1.5 px-4 h-8 text-xs"
+            className={cn(
+              "rounded-full text-white gap-1.5 px-4 h-8 text-xs",
+              isChallengeSurface ? "bg-orange-500 hover:bg-orange-600" : "bg-blue-600 hover:bg-blue-700",
+            )}
           >
             {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
             {submitting ? submittingLabel : submitLabel}
@@ -284,7 +295,9 @@ function StickyQuestionBar({
             className={cn(
               "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors",
               filterMode !== "all"
-                ? "bg-blue-500/10 text-blue-500"
+                ? isChallengeSurface
+                  ? "bg-orange-500/10 text-orange-500"
+                  : "bg-blue-500/10 text-blue-500"
                 : isDarkMode
                   ? "text-slate-400 hover:bg-slate-800"
                   : "text-gray-500 hover:bg-gray-100",
@@ -314,7 +327,9 @@ function StickyQuestionBar({
                   className={cn(
                     "w-full text-left px-3 py-1.5 text-xs transition-colors",
                     filterMode === key
-                      ? isDarkMode ? "text-blue-400 bg-blue-500/10" : "text-blue-600 bg-blue-50"
+                      ? isChallengeSurface
+                        ? isDarkMode ? "text-orange-300 bg-orange-500/10" : "text-orange-600 bg-orange-50"
+                        : isDarkMode ? "text-blue-400 bg-blue-500/10" : "text-blue-600 bg-blue-50"
                       : isDarkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50",
                   )}
                 >

@@ -20,6 +20,7 @@ function Step2Questions({
   submittingLabel = "Đang tạo...",
   submitting = false,
   isDarkMode = false,
+  surface = "quiz",
 }) {
   const importEnabled = contextType !== "GROUP";
   const { t } = useTranslation();
@@ -200,6 +201,7 @@ function Step2Questions({
           onJumpTo={handleJumpTo}
           onDistributeEvenly={handleDistributeEvenly}
           isDarkMode={isDarkMode}
+          surface={surface}
         />
 
         <div className="px-4 py-4 space-y-4">
@@ -227,8 +229,12 @@ function Step2Questions({
               className={cn(
                 "flex items-center gap-2 rounded-xl border-2 border-dashed px-6 py-3 text-sm font-medium transition-colors disabled:opacity-40",
                 isDarkMode
-                  ? "border-slate-700 text-slate-500 hover:border-blue-500 hover:text-blue-400"
-                  : "border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-500",
+                  ? surface === "challenge"
+                    ? "border-slate-700 text-slate-500 hover:border-orange-500 hover:text-orange-300"
+                    : "border-slate-700 text-slate-500 hover:border-blue-500 hover:text-blue-400"
+                  : surface === "challenge"
+                    ? "border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500"
+                    : "border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-500",
               )}
             >
               + {t("workspace.quiz.manualWizard.step2.addQuestion", "Thêm câu hỏi")}
