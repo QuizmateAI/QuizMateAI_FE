@@ -14,6 +14,25 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
+function makeBaseProps(overrides = {}) {
+  return {
+    isDarkMode: false,
+    workspaceTitle: 'Workspace test',
+    activeView: 'sources',
+    onNavigate: vi.fn(),
+    onOpenProfile: vi.fn(),
+    onToggleLanguage: vi.fn(),
+    onToggleDarkMode: vi.fn(),
+    onEditWorkspace: vi.fn(),
+    disabledMap: {},
+    badgeMap: {},
+    mobileOpen: false,
+    onCloseMobile: vi.fn(),
+    isMobile: false,
+    ...overrides,
+  };
+}
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, fallback) => fallback || key,
@@ -39,6 +58,7 @@ vi.mock('@/api/ManagementSystemAPI', () => ({
 describe('PersonalWorkspaceSidebar wallet badge', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getMyWallet.mockResolvedValue({ data: { totalAvailableCredits: 0 } });
   });
 
   it('clears loading when the initial wallet request is superseded by a silent refresh', async () => {
@@ -49,21 +69,7 @@ describe('PersonalWorkspaceSidebar wallet badge', () => {
       .mockImplementationOnce(() => firstRequest.promise)
       .mockImplementationOnce(() => secondRequest.promise);
 
-    const baseProps = {
-      isDarkMode: false,
-      workspaceTitle: 'Workspace test',
-      activeView: 'sources',
-      onNavigate: vi.fn(),
-      onOpenProfile: vi.fn(),
-      onToggleLanguage: vi.fn(),
-      onToggleDarkMode: vi.fn(),
-      onEditWorkspace: vi.fn(),
-      disabledMap: {},
-      badgeMap: {},
-      mobileOpen: false,
-      onCloseMobile: vi.fn(),
-      isMobile: false,
-    };
+    const baseProps = makeBaseProps();
 
     const { rerender } = render(
       <PersonalWorkspaceSidebar
@@ -89,5 +95,24 @@ describe('PersonalWorkspaceSidebar wallet badge', () => {
     await waitFor(() => {
       expect(screen.getByText('42')).toBeInTheDocument();
     });
+  });
+
+  it('shows only the three primary navigation items on mobile', async () => {
+    render(
+      <PersonalWorkspaceSidebar
+        {...makeBaseProps({ isMobile: true, mobileOpen: true })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('0')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('sources')).toBeInTheDocument();
+    expect(screen.getByText('roadmap')).toBeInTheDocument();
+    expect(screen.getByText('quiz')).toBeInTheDocument();
+    expect(screen.queryByText('flashcard')).not.toBeInTheDocument();
+    expect(screen.queryByText('mockTest')).not.toBeInTheDocument();
+    expect(screen.queryByText('questionStats')).not.toBeInTheDocument();
   });
 });

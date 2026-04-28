@@ -1,21 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { ShieldCheck, AlertTriangle, Loader2, CreditCard } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import CreditIconImage from '@/components/ui/CreditIconImage';
-
-const PAYMENT_METHOD_LABELS = {
-  momo: 'MoMo',
-  vnpay: 'VNPay',
-  stripe: 'Stripe',
-};
+import { ShieldCheck, AlertTriangle, Loader2 } from 'lucide-react';
 
 function formatNumber(value, locale) {
   return new Intl.NumberFormat(locale).format(Number(value) || 0);
@@ -34,7 +20,6 @@ export default function PaymentSidebar({
 }) {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
   const isCreditPayment = Boolean(creditPackage);
   const item = creditPackage ?? plan;
@@ -74,20 +59,7 @@ export default function PaymentSidebar({
         ? `${formatNumber(durationDays, locale)} ${t('payment.days')}`
         : '—';
 
-  const methodLabel = PAYMENT_METHOD_LABELS[selectedMethod] || selectedMethod || '—';
-  const orderTypeLabel = isCreditPayment
-    ? t('payment.orderConfirm.creditType')
-    : t('payment.orderConfirm.planType');
-
-  const confirmPayment = async () => {
-    const paid = await onPay?.();
-    if (paid === false) {
-      setIsConfirmOpen(false);
-    }
-  };
-
   return (
-    <>
     <div className={`relative overflow-hidden rounded-[30px] border transition-colors ${
       isDarkMode
         ? 'border-slate-700/70 bg-slate-900/95 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.9)]'
@@ -198,7 +170,7 @@ export default function PaymentSidebar({
         <button
           type="button"
           disabled={needGroupSelect || !selectedMethod || isPaying}
-          onClick={() => setIsConfirmOpen(true)}
+          onClick={() => onPay?.()}
           className={`w-full rounded-[22px] py-4 text-lg font-bold transition-all ${
             needGroupSelect || !selectedMethod || isPaying
               ? isDarkMode
@@ -244,128 +216,5 @@ export default function PaymentSidebar({
         </div>
       </div>
     </div>
-    <Dialog
-      open={isConfirmOpen}
-      onOpenChange={(open) => {
-        if (!isPaying) setIsConfirmOpen(open);
-      }}
-    >
-      <DialogContent
-        hideClose={isPaying}
-        className={`${isDarkMode ? 'border-slate-700 bg-slate-950 text-slate-50' : 'border-slate-200 bg-white text-slate-950'} max-w-[430px] overflow-hidden rounded-[28px] p-0 shadow-2xl`}
-      >
-        <DialogHeader className={`border-b px-6 py-5 text-left ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-          <DialogTitle className="text-xl font-black">
-            {t('payment.orderConfirm.title')}
-          </DialogTitle>
-          <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-            {t('payment.orderConfirm.description')}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="px-6 py-6">
-          <div className={`rounded-2xl border p-4 ${
-            isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
-          }`}>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <p className={`text-xs font-black uppercase tracking-[0.18em] ${
-                isDarkMode ? 'text-slate-500' : 'text-slate-500'
-              }`}>
-                {t('payment.orderConfirm.orderLabel')}
-              </p>
-              <span className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${
-                isDarkMode ? 'bg-blue-500/15 text-blue-200' : 'bg-blue-50 text-blue-700'
-              }`}>
-                {orderTypeLabel}
-              </span>
-            </div>
-
-            <div className={`mb-4 flex items-center gap-3 rounded-xl border px-3 py-3 ${
-              isDarkMode ? 'border-slate-700 bg-slate-950' : 'border-blue-100 bg-blue-50/80'
-            }`}>
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                isDarkMode ? 'bg-slate-800 text-blue-200' : 'bg-white text-blue-700'
-              }`}>
-                {isCreditPayment ? (
-                  <CreditIconImage
-                    alt={t('common.creditIconAlt', { brandName: 'QuizMate AI' })}
-                    className="h-8 w-8 rounded-xl"
-                  />
-                ) : (
-                  <CreditCard className="h-5 w-5" />
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className={`truncate text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                  {primaryLabel}
-                </p>
-                <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {secondaryValue}
-                </p>
-              </div>
-              <p className={`text-sm font-bold tabular-nums ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                {formattedBasePrice}₫
-              </p>
-            </div>
-
-            <dl className={`flex flex-col gap-3 border-b pb-4 text-sm ${
-              isDarkMode ? 'border-slate-800' : 'border-slate-100'
-            }`}>
-              {normalizedExtraSlots > 0 ? (
-                <div className="flex items-center justify-between gap-4">
-                  <dt className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-                    {t('payment.extraSlotLine', '{{count}} slot bổ sung', { count: normalizedExtraSlots })}
-                  </dt>
-                  <dd className="font-semibold tabular-nums">{formattedSlotSubtotal}₫</dd>
-                </div>
-              ) : null}
-              <div className="flex items-center justify-between gap-4">
-                <dt className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-                  {t('payment.orderConfirm.method')}
-                </dt>
-                <dd className="font-semibold">{methodLabel}</dd>
-              </div>
-            </dl>
-
-            <div className="mt-4 flex items-end justify-between gap-4">
-              <span className="text-sm font-bold">{t('payment.orderConfirm.grandTotal')}</span>
-              <span className="text-2xl font-black tabular-nums">{formattedGrandTotal}₫</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={confirmPayment}
-            disabled={isPaying}
-            className={`mt-5 flex h-12 w-full items-center justify-center rounded-2xl text-sm font-bold transition-colors ${
-              isPaying
-                ? isDarkMode
-                  ? 'cursor-not-allowed bg-slate-800 text-slate-500'
-                  : 'cursor-not-allowed bg-slate-200 text-slate-400'
-                : isDarkMode
-                  ? 'cursor-pointer bg-sky-300 text-slate-950 hover:bg-sky-200'
-                  : 'cursor-pointer bg-blue-600 text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700'
-            }`}
-          >
-            {isPaying ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t('payment.processing')}
-              </span>
-            ) : (
-              t('payment.orderConfirm.continue')
-            )}
-          </button>
-
-          <div className={`mt-5 flex items-center justify-center gap-2 text-xs ${
-            isDarkMode ? 'text-slate-400' : 'text-slate-500'
-          }`}>
-            <ShieldCheck className="h-4 w-4" />
-            {t('payment.secureNote')}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-    </>
   );
 }

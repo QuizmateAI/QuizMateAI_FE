@@ -44,6 +44,9 @@ const NAV_ITEMS = [
   { key: "questionStats", icon: BarChart3 },
 ];
 
+const MOBILE_NAV_ITEM_KEYS = new Set(["sources", "roadmap", "quiz"]);
+const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((item) => MOBILE_NAV_ITEM_KEYS.has(item.key));
+
 const EMPTY_WALLET_SUMMARY = {
   totalAvailableCredits: 0,
 };
@@ -164,6 +167,8 @@ function PersonalWorkspaceSidebar({
     setEditDescription("");
     setEditOpen(true);
   };
+
+  const visibleNavItems = isMobile ? MOBILE_NAV_ITEMS : NAV_ITEMS;
 
   const handleSave = async () => {
     if (!onEditWorkspace) return;
@@ -326,7 +331,7 @@ function PersonalWorkspaceSidebar({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3">
           <div className="space-y-1">
-            {NAV_ITEMS.map(renderNavItem)}
+            {visibleNavItems.map(renderNavItem)}
           </div>
         </div>
 
