@@ -65,6 +65,13 @@ const api = axios.create({
 // Interceptor cho request - thêm token vào header nếu có
 api.interceptors.request.use(
   (config) => {
+    if (config.skipAuthHeader) {
+      if (config.headers) {
+        delete config.headers.Authorization;
+      }
+      return config;
+    }
+
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -143,6 +150,10 @@ function shouldAttemptRefresh(error, originalRequest) {
   if (status !== 401 && status !== 403) return false;
 
   const code = extractErrorCode(error?.response?.data);
+  if (status === 403) {
+    return code === 'TOKEN_EXPIRED';
+  }
+
   // Permission denial thật sự — refresh vô nghĩa.
   if (code === 'FORBIDDEN') return false;
   // Token bị thu hồi/không hợp lệ — refresh không cứu được.

@@ -26,51 +26,51 @@ beforeEach(async () => {
   mock = new MockAdapter(api, { onNoMatch: 'throwException' });
 });
 
-describe('api interceptor — 403 expired-token handling', () => {
-  it('refreshes token on 403 then retries the original request successfully', async () => {
+describe('api interceptor — auth refresh handling', () => {
+  it('does not refresh or clear tokens on a plain 403 permission response', async () => {
     window.localStorage.setItem('accessToken', 'old');
     window.localStorage.setItem('refreshToken', 'r1');
 
-    let callCount = 0;
     mock.onGet('/user/profile').reply((config) => {
-      callCount += 1;
-      if (callCount === 1) {
-        // First call uses old token → BE returns 403 (Spring quirk for expired JWT)
-        expect(config.headers.Authorization).toBe('Bearer old');
-        return [403, { message: 'Forbidden' }];
-      }
-      // Retry uses new token → succeeds
-      expect(config.headers.Authorization).toBe('Bearer new-access');
-      return [200, { statusCode: 200, data: { name: 'tester' } }];
+      expect(config.headers.Authorization).toBe('Bearer old');
+      return [403, { message: 'Forbidden' }];
     });
 
-    // Refresh endpoint succeeds; api.js posts via raw axios using full baseURL
     const axios = (await import('axios')).default;
-    const refreshSpy = vi
-      .spyOn(axios, 'post')
-      .mockResolvedValueOnce({
-        data: {
-          statusCode: 200,
-          data: { accessToken: 'new-access', refreshToken: 'r2' },
-        },
-      });
+    const refreshSpy = vi.spyOn(axios, 'post');
 
-    const result = await api.get('/user/profile');
+    await expect(api.get('/user/profile')).rejects.toMatchObject({
+      statusCode: 403,
+    });
 
-    expect(result).toEqual({ statusCode: 200, data: { name: 'tester' } });
-    expect(callCount).toBe(2);
-    expect(window.localStorage.getItem('accessToken')).toBe('new-access');
-    expect(window.localStorage.getItem('refreshToken')).toBe('r2');
-    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(refreshSpy).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('accessToken')).toBe('old');
+    expect(window.localStorage.getItem('refreshToken')).toBe('r1');
 
     refreshSpy.mockRestore();
   });
 
-  it('surfaces 403 (without redirect) when retry after refresh still returns 403', async () => {
+  it('refreshes on 403 only when BE explicitly returned TOKEN_EXPIRED', async () => {
     window.localStorage.setItem('accessToken', 'a');
     window.localStorage.setItem('refreshToken', 'r1');
 
-    mock.onGet('/admin/secret').reply(403, { message: 'Real permission denial' });
+    let callCount = 0;
+    mock.onGet('/admin/secret').reply((config) => {
+      callCount += 1;
+      if (callCount === 1) {
+        expect(config.headers.Authorization).toBe('Bearer a');
+        return [
+          403,
+          {
+            statusCode: 401,
+            message: 'Phiên hết hạn',
+            data: { code: 'TOKEN_EXPIRED' },
+          },
+        ];
+      }
+      expect(config.headers.Authorization).toBe('Bearer new');
+      return [403, { statusCode: 1048, message: 'Real permission denial' }];
+    });
 
     const axios = (await import('axios')).default;
     const refreshSpy = vi
@@ -86,9 +86,25 @@ describe('api interceptor — 403 expired-token handling', () => {
       statusCode: 403,
     });
 
-    // Token was rotated (refresh did succeed) but user remains logged in
+    expect(callCount).toBe(2);
     expect(window.localStorage.getItem('accessToken')).toBe('new');
     refreshSpy.mockRestore();
+  });
+
+  it('omits Authorization when a request opts out of auth headers', async () => {
+    window.localStorage.setItem('accessToken', 'stale-token');
+
+    mock.onGet('/group/invitation/preview?token=invite').reply((config) => {
+      expect(config.headers.Authorization).toBeUndefined();
+      return [200, { statusCode: 200, data: { workspaceId: 77 } }];
+    });
+
+    const result = await api.get('/group/invitation/preview?token=invite', {
+      skipAuthHeader: true,
+      skipAuthRedirect: true,
+    });
+
+    expect(result).toEqual({ statusCode: 200, data: { workspaceId: 77 } });
   });
 
   it('does not attempt refresh on 403 when no refresh token is present', async () => {
