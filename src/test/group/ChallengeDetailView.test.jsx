@@ -273,4 +273,18 @@ describe('ChallengeDetailView', () => {
     expect(await screen.findByText('Challenge match is being generated')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Compose match' })).not.toBeInTheDocument();
   });
+
+  it('does not show the cannot-open error when the initial detail request times out', async () => {
+    getChallengeDetail.mockRejectedValueOnce({
+      statusCode: 408,
+      code: 'REQUEST_TIMEOUT',
+      message: 'The request is taking longer than expected.',
+    });
+
+    renderChallengeDetail();
+
+    expect(await screen.findByText('Opening challenge')).toBeInTheDocument();
+    expect(screen.queryByText('Cannot open challenge')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+  });
 });
