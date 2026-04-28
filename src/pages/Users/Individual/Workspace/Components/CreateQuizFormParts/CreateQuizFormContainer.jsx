@@ -58,6 +58,7 @@ function CreateQuizForm({
   /** Ghi AI vào quiz snapshot challenge (BE existingQuizId). */
   existingQuizId = null,
   seedQuizTitle = '',
+  initialMode = null,
   workspaceMaterialsEmptyMessage: workspaceMaterialsEmptyMessageProp,
   quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
   planUpgradeScope = "INDIVIDUAL",
@@ -73,9 +74,17 @@ function CreateQuizForm({
   const insufficientCreditBannerRef = useRef(null);
   const prevSubmittingRef = useRef(false);
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const normalizedExistingQuizId = Number(existingQuizId);
+  const hasExistingQuizTarget = Number.isInteger(normalizedExistingQuizId) && normalizedExistingQuizId > 0;
+  const normalizedInitialModeValue = String(initialMode || "").toLowerCase();
+  const normalizedInitialMode = normalizedInitialModeValue === "ai" || normalizedInitialModeValue === "manual"
+    ? normalizedInitialModeValue
+    : null;
 
   // Tab: "ai" | "manual" — nhớ lựa chọn qua localStorage
   const [mode, setMode] = useState(() => {
+    if (normalizedInitialMode) return normalizedInitialMode;
+    if (hasExistingQuizTarget) return "manual";
     try { return localStorage.getItem("createQuizMode") || "ai"; } catch { return "ai"; }
   });
 
@@ -341,7 +350,9 @@ function CreateQuizForm({
           <ManualQuizWizard
             workspaceId={defaultContextId}
             contextType={contextType}
+            editingQuizId={hasExistingQuizTarget ? normalizedExistingQuizId : undefined}
             onCreateQuiz={onCreateQuiz}
+            onSaveQuiz={onCreateQuiz}
             onBack={onBack}
             isDarkMode={isDarkMode}
           />
