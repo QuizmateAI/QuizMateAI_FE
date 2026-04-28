@@ -8,6 +8,7 @@ const translations = {
   'home.group.leader': 'Leader',
   'home.group.contributor': 'Contributor',
   'home.group.member': 'Member',
+  'groupManage.members.permissionCatalog.items.CREATE_FLASHCARD.label': 'Create flashcard',
 };
 
 vi.mock('react-i18next', () => ({
@@ -23,15 +24,18 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('GroupMembersTab', () => {
-  const renderWithQueryClient = (ui) => {
-    const queryClient = new QueryClient({
+  const createQueryClient = (queryOptions = {}) => (
+    new QueryClient({
       defaultOptions: {
         queries: {
           retry: false,
+          ...queryOptions,
         },
       },
-    });
+    })
+  );
 
+  const renderWithQueryClient = (ui, queryClient = createQueryClient()) => {
     return render(
       <QueryClientProvider client={queryClient}>
         {ui}
@@ -98,6 +102,44 @@ describe('GroupMembersTab', () => {
     fireEvent.click(screen.getByText('Pending invitations').closest('button'));
 
     expect(await screen.findByText('loc@example.com')).toBeInTheDocument();
+  });
+
+  it('uses the numeric workspace id for the shared pending invitation cache', () => {
+    const queryClient = createQueryClient({ staleTime: Infinity });
+    queryClient.setQueryData(['group-pending-invitations', 9], {
+      count: 1,
+      invitations: [
+        {
+          invitationId: 92,
+          invitedEmail: 'cached@example.com',
+          status: 'PENDING',
+        },
+      ],
+    });
+    const fetchPendingInvitations = vi.fn().mockResolvedValue({ count: 0, invitations: [] });
+
+    renderWithQueryClient(
+      <GroupMembersTab
+        isDarkMode={false}
+        workspaceId="9"
+        membersLoading={false}
+        isLeader
+        members={[]}
+        fetchPendingInvitations={fetchPendingInvitations}
+        onReload={vi.fn()}
+        onGrantUpload={vi.fn()}
+        onRevokeUpload={vi.fn()}
+        onUpdateRole={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onOpenInvite={vi.fn()}
+      />,
+      queryClient,
+    );
+
+    fireEvent.click(screen.getByText('Pending invitations').closest('button'));
+
+    expect(screen.getByText('cached@example.com')).toBeInTheDocument();
+    expect(fetchPendingInvitations).not.toHaveBeenCalled();
   });
 
   it('disables the invite action when the group has no remaining member seats', () => {
