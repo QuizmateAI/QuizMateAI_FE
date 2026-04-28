@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CreateChallengeWizard from '@/pages/Users/Group/Components/CreateChallengeWizard';
@@ -65,8 +65,20 @@ describe('CreateChallengeWizard', () => {
   it('temporarily hides the solo bracket mode from the mode step', () => {
     renderWizard();
 
-    expect(screen.getByRole('button', { name: /Đua cá nhân/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Đấu đội/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Đấu cúp 1v1/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Free-for-all/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Team battle/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /1v1 bracket/i })).not.toBeInTheDocument();
+  });
+
+  it('offers existing, manual, and AI challenge content paths', () => {
+    renderWizard();
+
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    expect(screen.getByRole('button', { name: /Existing content/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Manual challenge/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /AI challenge/i })).toBeInTheDocument();
+    expect(screen.getByText(/manual editor/i)).toBeInTheDocument();
+    expect(screen.getByText(/QuizMate AI/i)).toBeInTheDocument();
   });
 });

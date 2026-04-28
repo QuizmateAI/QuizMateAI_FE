@@ -33,8 +33,10 @@ vi.mock('react-i18next', () => ({
         'aiActionPolicy.statusInactive': 'Inactive',
         'aiActionPolicy.costMode.FIXED': 'Fixed',
         'aiActionPolicy.costMode.PER_ITEM': 'Per item',
+        'aiActionPolicy.costModeUnit.PER_ITEM': 'items',
         'aiActionPolicy.actions.generateFlashcards.title': 'Generate Flashcards',
         'aiActionPolicy.actions.generateFlashcards.baseCost': 'Flashcard set fee',
+        'aiActionPolicy.actions.generateFlashcards.unitCost': 'Cost per card',
         'aiActionPolicy.actions.generateFlashcards.unitSize': 'Cards per unit',
       };
 
@@ -112,8 +114,8 @@ describe('AiActionPolicyManagement', () => {
 
     fireEvent.click(await screen.findByTitle('Edit'));
 
-    const unitInput = screen.getByText('Unit').parentElement.querySelector('input');
-    const unitSizeInput = screen.getByText('Cards per unit').parentElement.querySelector('input');
+    const unitInput = screen.getByLabelText('Cost per card');
+    const unitSizeInput = screen.getByLabelText('Cards per unit');
 
     fireEvent.change(unitInput, { target: { value: '001' } });
     fireEvent.change(unitSizeInput, { target: { value: '1000' } });

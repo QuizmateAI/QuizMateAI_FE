@@ -7,6 +7,7 @@ import { listChallenges } from '../../../../api/ChallengeAPI';
 import ChallengeListView from './ChallengeListView';
 import ChallengeDetailView from './ChallengeDetailView';
 import CreateChallengeWizard from './CreateChallengeWizard';
+import { writeChallengeDraftEditorMode } from './createChallengeWizardHelpers';
 
 const SUB_TABS = [
   { key: 'SCHEDULED', labelKey: 'groupWorkspace.challenge.tabs.scheduled', fallback: 'Upcoming' },
@@ -75,9 +76,18 @@ export default function ChallengeTab({
     queryClient.invalidateQueries({ queryKey: ['challenges', workspaceId] });
   }, [challengeEventIdFromUrl, queryClient, searchParams, setSearchParams, workspaceId]);
 
-  const handleChallengeCreated = useCallback(() => {
+  const handleChallengeCreated = useCallback((createdChallenge, options = {}) => {
     setShowCreateWizard(false);
     queryClient.invalidateQueries({ queryKey: ['challenges', workspaceId] });
+    const createdEventId = Number(createdChallenge?.challengeEventId);
+    if (
+      Number.isInteger(createdEventId)
+      && createdEventId > 0
+      && String(createdChallenge?.sourceMode || '').toUpperCase() === 'NEW_CHALLENGE_QUIZ'
+    ) {
+      writeChallengeDraftEditorMode(workspaceId, createdEventId, options?.draftEditorMode);
+      setSelectedEventId(createdEventId);
+    }
   }, [queryClient, workspaceId]);
 
   if (activeEventId) {

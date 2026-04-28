@@ -164,12 +164,58 @@ function CostModeBadge({ costMode, isDarkMode, t }) {
   );
 }
 
-function FormulaPreview({ policy, isDarkMode, t, compact = false }) {
+function PricingNumberField({
+  label,
+  value,
+  onChange,
+  disabled = false,
+  suffix,
+  isDarkMode,
+}) {
+  return (
+    <div className={`space-y-2 ${disabled ? 'opacity-60' : ''}`}>
+      <div className="flex items-center justify-between gap-3">
+        <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
+          {label}
+        </Label>
+      </div>
+      <div className="relative">
+        <Input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          aria-label={label}
+          value={value ?? ''}
+          onChange={onChange}
+          disabled={disabled}
+          className={`h-12 pr-16 text-lg font-semibold ${
+            isDarkMode
+              ? 'border-slate-700 bg-slate-950 text-white disabled:bg-slate-950 disabled:text-slate-500'
+              : 'border-gray-200 bg-white text-gray-950'
+          }`}
+        />
+        {suffix && (
+          <span className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold ${
+            isDarkMode ? 'text-slate-500' : 'text-gray-400'
+          }`}>
+            {suffix}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FormulaPreview({ policy, isDarkMode, t, compact = false, labels = null }) {
   const isFixed = policy.costMode === 'FIXED';
   const unitLabel = t(`aiActionPolicy.costModeUnit.${policy.costMode}`, policy.costMode);
   const formulaLine = isFixed
     ? `${policy.baseCreditCost ?? 0} QMC`
     : `${policy.baseCreditCost ?? 0} + ${policy.unitCreditCost ?? 0} x ceil(${unitLabel} / ${policy.unitSize ?? 1}) QMC`;
+  const baseLabel = labels?.baseCostLabel || t('aiActionPolicy.baseCost');
+  const unitCostLabel = labels?.unitCostLabel || t('aiActionPolicy.unitCost');
+  const unitSizeLabel = labels?.unitSizeLabel || t('aiActionPolicy.unitSize');
 
   const summary = isFixed
     ? t('aiActionPolicy.formulaFixedNote')
@@ -194,11 +240,28 @@ function FormulaPreview({ policy, isDarkMode, t, compact = false }) {
   }
 
   return (
-    <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-gray-200 bg-gray-50'}`}>
-      <p className={`mb-2 text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+    <div className={`border-t px-4 py-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-gray-200 bg-slate-50/80'}`}>
+      <p className={`mb-3 text-xs font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
         {t('aiActionPolicy.formula')}
       </p>
-      <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className={`rounded-lg px-3 py-2 font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'}`}>
+          {baseLabel}: {policy.baseCreditCost ?? 0} QMC
+        </span>
+        {!isFixed && (
+          <>
+            <span className={isDarkMode ? 'text-slate-500' : 'text-gray-400'}>+</span>
+            <span className={`rounded-lg px-3 py-2 font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'}`}>
+              {unitCostLabel}: {policy.unitCreditCost ?? 0} QMC
+            </span>
+            <span className={isDarkMode ? 'text-slate-500' : 'text-gray-400'}>/</span>
+            <span className={`rounded-lg px-3 py-2 font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'}`}>
+              {unitSizeLabel}: {policy.unitSize ?? 1} {unitLabel}
+            </span>
+          </>
+        )}
+      </div>
+      <p className={`mt-3 text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
         {formulaLine}
       </p>
       <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -439,6 +502,9 @@ export default function AiActionPolicyManagement() {
 
   const previewPolicy = editPolicy ? { ...editPolicy, ...normalizeCostForm(form) } : null;
   const editLabels = editPolicy ? getActionLabels(editPolicy.actionKey, t) : null;
+  const editUnitLabel = form.costMode
+    ? t(`aiActionPolicy.costModeUnit.${form.costMode}`, '')
+    : '';
 
   return (
     <SuperAdminPage className={`${fontClass} ${dk ? 'text-white' : 'text-gray-900'}`}>
@@ -571,14 +637,25 @@ export default function AiActionPolicyManagement() {
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
-                <div className="space-y-1.5">
-                  <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.costMode.label')}</Label>
+              <div className={`overflow-hidden rounded-lg border ${
+                dk ? 'border-slate-800 bg-slate-900/70' : 'border-gray-200 bg-white'
+              }`}>
+                <div className={`flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-end sm:justify-between ${
+                  dk ? 'bg-slate-900' : 'bg-slate-50/70'
+                }`}>
+                  <div className="space-y-1">
+                    <Label className={dk ? 'text-slate-300' : 'text-slate-700'}>
+                      {t('aiActionPolicy.costMode.label')}
+                    </Label>
+                    <p className={`text-xs ${dk ? 'text-slate-500' : 'text-gray-500'}`}>
+                      {editLabels?.metricLabel || getPolicyTitle(editPolicy, t)}
+                    </p>
+                  </div>
                   <select
                     value={form.costMode ?? 'FIXED'}
                     onChange={(event) => setForm((prev) => ({ ...prev, costMode: event.target.value }))}
-                    className={`h-10 w-full rounded-lg border px-3 text-sm ${
-                      dk ? 'border-slate-700 bg-slate-800 text-white' : 'border-gray-200 bg-white text-gray-900'
+                    className={`h-11 w-full rounded-lg border px-3 text-sm font-medium sm:w-56 ${
+                      dk ? 'border-slate-700 bg-slate-950 text-white' : 'border-gray-200 bg-white text-gray-900 shadow-sm'
                     }`}
                   >
                     {COST_MODE_OPTIONS.map((mode) => (
@@ -589,51 +666,41 @@ export default function AiActionPolicyManagement() {
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className={dk ? 'text-slate-300' : ''}>{editLabels?.baseCostLabel || t('aiActionPolicy.baseCost')}</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="off"
-                    value={form.baseCreditCost ?? ''}
+                <div className="grid gap-4 px-4 py-4 md:grid-cols-3">
+                  <PricingNumberField
+                    label={editLabels?.baseCostLabel || t('aiActionPolicy.baseCost')}
+                    value={form.baseCreditCost}
                     onChange={handleWholeNumberChange('baseCreditCost')}
-                    className={dk ? 'border-slate-700 bg-slate-800 text-white' : ''}
+                    suffix="QMC"
+                    isDarkMode={dk}
                   />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.unitField')}</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="off"
-                    value={form.unitCreditCost ?? ''}
+                  <PricingNumberField
+                    label={editLabels?.unitCostLabel || t('aiActionPolicy.unitCost')}
+                    value={form.unitCreditCost}
                     onChange={handleWholeNumberChange('unitCreditCost')}
                     disabled={form.costMode === 'FIXED'}
-                    className={dk ? 'border-slate-700 bg-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-500' : ''}
+                    suffix="QMC"
+                    isDarkMode={dk}
                   />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className={dk ? 'text-slate-300' : ''}>{editLabels?.unitSizeLabel || t('aiActionPolicy.unitSize')}</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="off"
-                    value={form.unitSize ?? ''}
+                  <PricingNumberField
+                    label={editLabels?.unitSizeLabel || t('aiActionPolicy.unitSize')}
+                    value={form.unitSize}
                     onChange={handleWholeNumberChange('unitSize')}
                     disabled={form.costMode === 'FIXED'}
-                    className={dk ? 'border-slate-700 bg-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-500' : ''}
+                    suffix={editUnitLabel}
+                    isDarkMode={dk}
                   />
                 </div>
-              </div>
 
-              {previewPolicy && (
-                <FormulaPreview policy={previewPolicy} isDarkMode={dk} t={t} />
-              )}
+                {previewPolicy && (
+                  <FormulaPreview
+                    policy={previewPolicy}
+                    isDarkMode={dk}
+                    t={t}
+                    labels={editLabels}
+                  />
+                )}
+              </div>
             </div>
           )}
 

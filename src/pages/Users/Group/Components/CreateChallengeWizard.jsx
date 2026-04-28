@@ -4,12 +4,11 @@ import { useTranslation } from 'react-i18next';
 import {
   X, ChevronRight, ChevronLeft, Check, Clock, Users,
   FileText, Loader2, Search, Shield,
-  ListChecks, Swords, Trophy,
+  ListChecks,
 } from 'lucide-react';
 import { getQuizzesByScope } from '../../../../api/QuizAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { createChallenge } from '../../../../api/ChallengeAPI';
-import { getDurationInMinutes } from '@/lib/quizDurationDisplay';
 import {
   combineToBackendPayload,
   defaultEndPartsFromStart,
@@ -18,119 +17,23 @@ import {
 } from '@/lib/challengeSchedule';
 import UserDisplayName from '@/components/features/users/UserDisplayName';
 import ChallengeScheduleFields from './ChallengeScheduleFields';
-
-function getQuizSummaryLine(q) {
-  const questionCount = Number(q?.totalQuestion ?? q?.totalQuestions ?? q?.questionCount ?? 0) || 0;
-  const durationMinutes = getDurationInMinutes(q) || Number(q?.totalTime ?? 0) || 0;
-  return { questionCount, durationMinutes };
-}
-
-/** Challenge chỉ dùng quiz chung — loại quiz giao riêng (SELECTED_MEMBERS / có assignee). */
-function isQuizEligibleForChallengeSource(quiz) {
-  const status = String(quiz?.status || '').toUpperCase();
-  if (status && status !== 'ACTIVE') return false;
-  const mode = String(quiz?.groupAudienceMode ?? '').toUpperCase();
-  if (mode === 'SELECTED_MEMBERS') return false;
-  const assignees = quiz?.assignedUserIds;
-  if (Array.isArray(assignees) && assignees.length > 0) return false;
-  return true;
-}
-
-const STEPS = [
-  { key: 'mode', labelKey: 'createChallengeWizard.steps.mode', labelFallback: 'Mode' },
-  { key: 'quiz', labelKey: 'createChallengeWizard.steps.quiz', labelFallback: 'Select content' },
-  { key: 'schedule', labelKey: 'createChallengeWizard.steps.schedule', labelFallback: 'Schedule' },
-  { key: 'registration', labelKey: 'createChallengeWizard.steps.registration', labelFallback: 'Registration' },
-  { key: 'review', labelKey: 'createChallengeWizard.steps.review', labelFallback: 'Review' },
-];
-
-const MATCH_MODE_OPTIONS = [
-  {
-    key: 'FREE_FOR_ALL',
-    labelKey: 'createChallengeWizard.mode.personalLabel',
-    labelFallback: 'Free-for-all',
-    descKey: 'createChallengeWizard.mode.personalDesc',
-    descFallback: 'Everyone takes the same match and the leaderboard is ranked by score and time.',
-    icon: Swords,
-  },
-  {
-    key: 'TEAM_BATTLE',
-    labelKey: 'createChallengeWizard.mode.teamLabel',
-    labelFallback: 'Team battle',
-    descKey: 'createChallengeWizard.mode.teamDesc',
-    descFallback: 'Set team size or let the system auto-balance teams when the match starts.',
-    icon: Users,
-  },
-  {
-    key: 'SOLO_BRACKET',
-    labelKey: 'createChallengeWizard.mode.soloLabel',
-    labelFallback: '1v1 bracket',
-    descKey: 'createChallengeWizard.mode.soloDesc',
-    descFallback: 'Pick a 4/8/16/32 slot bracket and keep the participant count aligned with the bracket.',
-    icon: Trophy,
-  },
-];
-
-const TEAM_COUNT = 2;
-const BRACKET_SIZE_OPTIONS = [4, 8, 16, 32];
-const ENABLE_SOLO_BRACKET_MODE = false;
-const AVAILABLE_MATCH_MODE_OPTIONS = MATCH_MODE_OPTIONS.filter(
-  (option) => ENABLE_SOLO_BRACKET_MODE || option.key !== 'SOLO_BRACKET',
-);
-const TEAM_CONFIG_MODES = [
-  {
-    key: 'AUTO_BALANCE',
-    labelKey: 'createChallengeWizard.mode.teamAutoBalanceLabel',
-    labelFallback: 'Pre-enroll, auto-balance',
-    descKey: 'createChallengeWizard.mode.teamAutoBalanceDesc',
-    descFallback: 'Unlimited slots. When the match starts, registered members are split into 2 balanced teams.',
-  },
-  {
-    key: 'FIXED_TEAM_SIZE',
-    labelKey: 'createChallengeWizard.mode.teamFixedSizeLabel',
-    labelFallback: 'Fixed members per team',
-    descKey: 'createChallengeWizard.mode.teamFixedSizeDesc',
-    descFallback: 'Registration is limited to 2 teams multiplied by the number of members per team.',
-  },
-];
-
-function StepIndicator({ currentStep, isDarkMode, t }) {
-  return (
-    <div className="flex items-center gap-2">
-      {STEPS.map((step, idx) => (
-        <div key={step.key} className="flex items-center gap-2">
-          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-            idx < currentStep
-              ? 'bg-green-500 text-white'
-              : idx === currentStep
-                ? 'bg-orange-500 text-white'
-                : (isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-200 text-gray-500')
-          }`}>
-            {idx < currentStep ? <Check className="h-4 w-4" /> : idx + 1}
-          </div>
-          <span className={`hidden text-sm font-medium sm:inline ${
-            idx === currentStep
-              ? (isDarkMode ? 'text-white' : 'text-slate-900')
-              : (isDarkMode ? 'text-slate-500' : 'text-gray-400')
-          }`}>
-            {t(step.labelKey, step.labelFallback)}
-          </span>
-          {idx < STEPS.length - 1 && (
-            <div className={`h-px w-6 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function formatDateTime(dt, language) {
-  if (!dt) return '-';
-  const d = new Date(dt);
-  const locale = language === 'vi' ? 'vi-VN' : 'en-US';
-  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
-    + ' ' + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-}
+import {
+  AVAILABLE_MATCH_MODE_OPTIONS,
+  BRACKET_SIZE_OPTIONS,
+  CHALLENGE_SOURCE_MODES,
+  CHALLENGE_SOURCE_OPTIONS,
+  MATCH_MODE_OPTIONS,
+  STEPS,
+  StepIndicator,
+  TEAM_CONFIG_MODES,
+  TEAM_COUNT,
+  formatDateTime,
+  getChallengeCreateSourceMode,
+  getChallengeDraftEditorMode,
+  getQuizSummaryLine,
+  isNewChallengeQuizSourceMode,
+  isQuizEligibleForChallengeSource,
+} from './createChallengeWizardHelpers';
 
 export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose, onCreated, currentUserId }) {
   const { t, i18n } = useTranslation();
@@ -146,7 +49,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const [bracketSize, setBracketSize] = useState(8);
 
   // Step 2: Quiz selection
-  const [sourceMode, setSourceMode] = useState('EXISTING_SNAPSHOT');
+  const [sourceMode, setSourceMode] = useState(CHALLENGE_SOURCE_MODES.EXISTING_SNAPSHOT);
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [quizSearch, setQuizSearch] = useState('');
 
@@ -305,6 +208,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   );
 
   const selectedQuiz = challengeEligibleQuizzes.find((q) => q.quizId === validSelectedQuizId);
+  const isExistingSourceMode = sourceMode === CHALLENGE_SOURCE_MODES.EXISTING_SNAPSHOT;
+  const isAiSourceMode = sourceMode === CHALLENGE_SOURCE_MODES.AI_CHALLENGE_QUIZ;
 
   const toggleMember = useCallback((userId) => {
     setSelectedUserIds((prev) =>
@@ -315,7 +220,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const canNext = () => {
     switch (step) {
       case 0: return Boolean(matchMode) && !modeConfigIssue;
-      case 1: return sourceMode === 'NEW_CHALLENGE_QUIZ' || validSelectedQuizId != null;
+      case 1: return isNewChallengeQuizSourceMode(sourceMode) || validSelectedQuizId != null;
       case 2: {
         if (!title.trim() || !startDate || !startTime || !endDate || !endTime) return false;
         return getScheduleValidationIssues(startDate, startTime, endDate, endTime).length === 0;
@@ -339,14 +244,15 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       return;
     }
     try {
-      await createChallenge(workspaceId, {
+      const createSourceMode = getChallengeCreateSourceMode(sourceMode);
+      const response = await createChallenge(workspaceId, {
         title: title.trim(),
         description: description.trim() || null,
         registrationMode,
-        sourceMode,
+        sourceMode: createSourceMode,
         startTime: combineToBackendPayload(startDate, startTime),
         endTime: combineToBackendPayload(endDate, endTime),
-        sourceQuizId: sourceMode === 'EXISTING_SNAPSHOT' ? validSelectedQuizId : null,
+        sourceQuizId: createSourceMode === CHALLENGE_SOURCE_MODES.EXISTING_SNAPSHOT ? validSelectedQuizId : null,
         invitedUserIds: registrationMode === 'INVITE_ONLY' ? sanitizedSelectedUserIds : [],
         leaderParticipates,
         matchMode,
@@ -360,7 +266,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         bracketSize: matchMode === 'SOLO_BRACKET' ? selectedBracketSize : null,
         blitzSource: matchMode === 'SOLO_BRACKET' ? 'QUIZ_SUBSET' : null,
       });
-      onCreated();
+      onCreated(response?.data, { draftEditorMode: getChallengeDraftEditorMode(sourceMode) });
     } catch (err) {
       setError(err?.message || t('createChallengeWizard.errors.createFailed', 'Unable to create challenge'));
       setSubmitting(false);
@@ -531,11 +437,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         return (
           <div className="flex flex-col gap-4">
             {/* Source mode selection */}
-            <div className="grid gap-3 md:grid-cols-2">
-              {[
-                { key: 'EXISTING_SNAPSHOT', label: t('createChallengeWizard.sourceMode.existingLabel', 'Existing content'), desc: t('createChallengeWizard.sourceMode.existingDesc', 'Create a snapshot from an existing content set') },
-                { key: 'NEW_CHALLENGE_QUIZ', label: t('createChallengeWizard.sourceMode.newLabel', 'New match'), desc: t('createChallengeWizard.sourceMode.newDesc', 'Compose the match later in the challenge detail') },
-              ].map((opt) => (
+            <div className="grid gap-3 md:grid-cols-3">
+              {CHALLENGE_SOURCE_OPTIONS.map((opt) => (
                 <button
                   key={opt.key}
                   onClick={() => { setSourceMode(opt.key); setSelectedQuizId(null); }}
@@ -545,13 +448,17 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                       : (isDarkMode ? 'border-slate-700 bg-slate-800/60 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300')
                   }`}
                 >
-                  <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{opt.label}</div>
-                  <div className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{opt.desc}</div>
+                  <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {t(opt.labelKey, opt.labelFallback)}
+                  </div>
+                  <div className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {t(opt.descKey, opt.descFallback)}
+                  </div>
                 </button>
               ))}
             </div>
 
-            {sourceMode === 'EXISTING_SNAPSHOT' && (
+            {isExistingSourceMode && (
               <>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
@@ -604,7 +511,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                       </p>
                       <p className="max-w-xs text-xs opacity-90">
                         {quizzes.length === 0
-                          ? t('createChallengeWizard.quizList.emptyNoQuizzesHint', 'Create a content set in the workspace first, or choose "New match" above.')
+                          ? t('createChallengeWizard.quizList.emptyNoQuizzesHint', 'Create a content set in the workspace first, or choose "Manual challenge" or "AI challenge" above.')
                           : challengeEligibleQuizzes.length === 0
                             ? t('createChallengeWizard.quizList.emptyNoEligibleHint', 'Content assigned to specific members cannot be used. Publish it as shared for the whole group or remove the per-member assignment first.')
                             : t('createChallengeWizard.quizList.emptyNoMatchesHint', 'Try a different keyword or clear the search box.')}
@@ -696,16 +603,18 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               </>
             )}
 
-            {sourceMode === 'NEW_CHALLENGE_QUIZ' && (
+            {isNewChallengeQuizSourceMode(sourceMode) && (
               <div className={`rounded-xl border p-6 text-center ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                 <FileText className={`mx-auto mb-2 h-8 w-8 ${isDarkMode ? 'text-orange-300/60' : 'text-orange-400'}`} />
                 <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-                  {t('createChallengeWizard.newQuizNotice.leadBefore', 'After creating the challenge, open its detail page and click ')}
+                  {t('createChallengeWizard.newQuizNotice.leadBefore', 'After creating the challenge, the detail page opens. Click ')}
                   <strong className="font-medium">{t('createChallengeWizard.newQuizNotice.composeLabel', 'Compose match')}</strong>
                   {t('createChallengeWizard.newQuizNotice.leadAfter', ' to launch the match editor.')}
                 </p>
                 <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-                  {t('createChallengeWizard.newQuizNotice.hint', 'The start date must be at least 3 days from now; after creation, open the challenge detail to compose the match before the challenge starts.')}
+                  {isAiSourceMode
+                    ? t('createChallengeWizard.newQuizNotice.aiHint', 'Choose a future start time; after creation, use QuizMate AI to generate the match content before publishing.')
+                    : t('createChallengeWizard.newQuizNotice.hint', 'Choose a future start time; after creation, use the manual editor to finish the match before publishing.')}
                 </p>
               </div>
             )}
@@ -950,13 +859,15 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                 {t('createChallengeWizard.review.quizHeading', 'Match content')}
               </h4>
               <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-                {sourceMode === 'EXISTING_SNAPSHOT'
+                {isExistingSourceMode
                   ? (selectedQuiz
                       ? t('createChallengeWizard.review.quizExistingSelected', '{{title}} (shared content snapshot)', { title: selectedQuiz.title })
                       : t('createChallengeWizard.review.quizNotChosen', 'Not selected'))
-                  : t('createChallengeWizard.review.quizNewNotice', 'New match (author the questions in the challenge detail after creation)')}
+                  : isAiSourceMode
+                    ? t('createChallengeWizard.review.quizAiNotice', 'AI challenge (generate the questions in the challenge detail after creation)')
+                    : t('createChallengeWizard.review.quizNewNotice', 'Manual challenge (author the questions in the challenge detail after creation)')}
               </p>
-              {sourceMode === 'EXISTING_SNAPSHOT' && selectedQuiz ? (
+              {isExistingSourceMode && selectedQuiz ? (
                 <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
                   {t('createChallengeWizard.review.snapshotNote', 'The snapshot is not assigned per member; all challenge participants share this same content.')}
                 </p>
