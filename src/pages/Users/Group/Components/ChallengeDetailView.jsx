@@ -59,6 +59,10 @@ function getSeedDisplayedChallengeProgress(targetPercent) {
   return Math.min(normalizedTarget, 8);
 }
 
+function isRequestTimeoutError(error) {
+  return Number(error?.statusCode) === 408 || String(error?.code || '').toUpperCase() === 'REQUEST_TIMEOUT';
+}
+
 function getReviewerStatusCopy(reviewer, t) {
   const invitationStatus = String(reviewer?.invitationStatus || '').toUpperCase();
   if (invitationStatus === 'PENDING' || !invitationStatus) {
@@ -214,7 +218,7 @@ export default function ChallengeDetailView({
   quizGenerationTaskByQuizId = {},
   quizGenerationProgressByQuizId = {},
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showSuccess } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -234,7 +238,13 @@ export default function ChallengeDetailView({
   const [manualMatchEditor, setManualMatchEditor] = useState(null);
   const [displayedRealtimeChallengeQuizPercent, setDisplayedRealtimeChallengeQuizPercent] = useState(0);
 
-  const { data: detail, isLoading, error: detailError } = useQuery({
+  const {
+    data: detail,
+    isLoading,
+    isFetching: isDetailFetching,
+    error: detailError,
+    refetch: refetchDetail,
+  } = useQuery({
     queryKey: ['challenge-detail', workspaceId, eventId],
     queryFn: async () => {
       const res = await getChallengeDetail(workspaceId, eventId);
@@ -532,6 +542,8 @@ export default function ChallengeDetailView({
   const showChallengeQuizCard = hasSnapshotQuiz || detail?.sourceMode === 'NEW_CHALLENGE_QUIZ';
   const showChallengeQuizProcessingState = showChallengeQuizCard
     && (snapshotStatusKeyRaw === 'PROCESSING' || hasRealtimeChallengeQuizProcessing);
+  const detailTimedOut = isRequestTimeoutError(detailError);
+  const isVietnameseLanguage = String(i18n?.language || '').toLowerCase().startsWith('vi');
 
   useEffect(() => {
     if (!showChallengeQuizProcessingState) {
@@ -579,7 +591,7 @@ export default function ChallengeDetailView({
     showChallengeQuizProcessingState,
   ]);
 
-  if (isLoading) {
+  if (isLoading && !detail) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -587,7 +599,51 @@ export default function ChallengeDetailView({
     );
   }
 
-  if (detailError || !detail) {
+  if (detailTimedOut && !detail) {
+    const openingTitle = t(
+      'challengeDetailView.openingTitle',
+      isVietnameseLanguage ? 'Đang mở challenge' : 'Opening challenge',
+    );
+    const openingHint = t(
+      'challengeDetailView.openingTimeoutHint',
+      isVietnameseLanguage
+        ? 'Challenge đã được tạo, hệ thống đang đồng bộ dữ liệu. Vui lòng chờ thêm một chút rồi tải lại.'
+        : 'The challenge was created and its data is still syncing. Please wait a moment, then refresh.',
+    );
+
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className={`w-full max-w-xl rounded-2xl border p-6 ${
+          isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'
+        }`}>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <Loader2 className="mt-0.5 h-5 w-5 animate-spin text-orange-500" />
+              <div>
+                <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {openingTitle}
+                </h3>
+                <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                  {openingHint}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => refetchDetail()} disabled={isDetailFetching}>
+                {isDetailFetching && <Loader2 className="h-4 w-4 animate-spin" />}
+                {t('common.refresh', 'Làm mới')}
+              </Button>
+              <Button type="button" variant="outline" onClick={onBack}>
+                {t('challengeDetailView.back', 'Back')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!detail) {
     const detailErrorMessage = getErrorMessage(t, detailError) || t('challengeDetailView.errors.cannotLoadDetail', 'Cannot load challenge detail');
     return (
       <div className={`rounded-2xl border p-6 ${
