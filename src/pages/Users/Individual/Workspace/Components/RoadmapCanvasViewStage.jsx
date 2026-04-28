@@ -1719,19 +1719,6 @@ function RoadmapCanvasViewStage({
       );
     }
 
-    const activePreLearningPhase = phases.find((phase, phaseIndex) => {
-      const phaseId = normalizePositiveId(phase?.phaseId);
-      return phaseId
-        && phaseIndex <= maxUnlockedPhaseIndex
-        && generatingPreLearningPhaseIds.includes(phaseId)
-        && !skipPreLearningPhaseIds.includes(phaseId)
-        && !hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
-    });
-    const activePreLearningPhaseId = normalizePositiveId(activePreLearningPhase?.phaseId);
-    const activePreLearningPercent = activePreLearningPhaseId
-      ? progressTracking?.getPreLearningProgress(activePreLearningPhaseId) ?? 0
-      : 0;
-
     return (
       <div className="space-y-6">
         {roadmap?.roadmapId && canShowRoadmapLevelFeedback ? (
@@ -1761,26 +1748,6 @@ function RoadmapCanvasViewStage({
         {Number.isInteger(Number(roadmap?.roadmapId ?? roadmap?.id)) && Number(roadmap?.roadmapId ?? roadmap?.id) > 0 && (
           <RoadmapReviewPanel roadmapId={Number(roadmap?.roadmapId ?? roadmap?.id)} isDarkMode={isDarkMode} />
         )}
-
-        {activePreLearningPhase ? (
-          <div className={`rounded-[26px] border p-4 ${isDarkMode ? "border-cyan-900/60 bg-cyan-950/25" : "border-cyan-100 bg-cyan-50"}`}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-cyan-300" : "text-cyan-700"} ${fontClass}`}>
-                {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
-              </p>
-              <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-slate-700"}`}>
-                {activePreLearningPhase.title}
-              </span>
-            </div>
-            <div className="mt-3">
-              {renderLoadingPlaceholder(
-                t("workspace.roadmap.generatingPreLearning", "AI is generating pre-learning for this phase..."),
-                true,
-                activePreLearningPercent,
-              )}
-            </div>
-          </div>
-        ) : null}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {summaryChips.map((chip) => {
