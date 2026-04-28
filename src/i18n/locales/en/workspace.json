@@ -1864,6 +1864,18 @@
       "updateConfirmAction": "Confirm update",
       "daysUnit": "days",
       "minutesPerDayUnit": "minutes/day",
+      "phaseSummary": {
+        "title": "Phase learning pace",
+        "pace": {
+          "FAST": "Faster than planned",
+          "ON_TRACK": "On track with plan",
+          "SLOW": "Slower than planned",
+          "UNKNOWN": "Not enough data"
+        },
+        "daysProgress": "Studied {{actual}} day(s) / planned {{estimated}} day(s)",
+        "deltaEarly": "Finished {{count}} day(s) earlier than planned",
+        "deltaLate": "{{count}} day(s) behind plan"
+      },
       "tabManual": "Manual",
       "tabAI": "AI Generate",
       "aiOnlyTitle": "AI builds the roadmap for you",
