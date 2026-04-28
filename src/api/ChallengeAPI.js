@@ -1,16 +1,23 @@
 import api from './api';
 
+const CHALLENGE_CREATE_TIMEOUT_MS = 60000;
+const CHALLENGE_DETAIL_TIMEOUT_MS = 60000;
+
 export const listChallenges = async (workspaceId, status) => {
   const params = status ? `?status=${status}` : '';
   return await api.get(`/group/${workspaceId}/challenges${params}`);
 };
 
 export const getChallengeDetail = async (workspaceId, eventId) => {
-  return await api.get(`/group/${workspaceId}/challenges/${eventId}`);
+  return await api.get(`/group/${workspaceId}/challenges/${eventId}`, {
+    timeout: CHALLENGE_DETAIL_TIMEOUT_MS,
+  });
 };
 
 export const createChallenge = async (workspaceId, data) => {
-  return await api.post(`/group/${workspaceId}/challenges`, data);
+  return await api.post(`/group/${workspaceId}/challenges`, data, {
+    timeout: CHALLENGE_CREATE_TIMEOUT_MS,
+  });
 };
 
 export const updateChallenge = async (workspaceId, eventId, data) => {
