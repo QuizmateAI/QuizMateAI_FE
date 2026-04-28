@@ -18,6 +18,7 @@ export default function usePaymentCheckout({
   planType,
   workspaceId,
   creditPackageId,
+  creditPackageName,
   extraSlotCount = 0,
 }) {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ export default function usePaymentCheckout({
           purchaseType: 'CREDIT',
           planId: '',
           creditPackageId,
-          planName: '',
+          planName: creditPackageName,
           planType: targetWorkspaceId ? 'GROUP' : 'INDIVIDUAL',
           workspaceId: targetWorkspaceId,
         }
@@ -113,7 +114,7 @@ export default function usePaymentCheckout({
     }
 
     return false;
-  }, [paymentType, workspaceId, creditPackageId, planId, planName, planType, extraSlotCount, t]);
+  }, [paymentType, workspaceId, creditPackageId, creditPackageName, planId, planName, planType, extraSlotCount, t]);
 
   return {
     clearPaymentError,

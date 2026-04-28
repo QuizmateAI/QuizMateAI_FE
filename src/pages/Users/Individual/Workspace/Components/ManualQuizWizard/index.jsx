@@ -248,9 +248,11 @@ function ManualQuizWizard({
   onSaveQuiz,
   onBack,
   isDarkMode = false,
+  surface = "quiz",
 }) {
   const { t } = useTranslation();
   const { addToast } = useToast();
+  const isChallengeSurface = surface === "challenge";
   const [step, setStep] = useState(1);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [questions, setQuestions] = useState([]);
@@ -305,11 +307,16 @@ function ManualQuizWizard({
         setConfig(loadedConfig);
         setQuestions(loadedQuestions);
         if (editingQuizId) setEditingSectionId(sectionId);
-        setStep(editingQuizId ? 2 : 1);
+        setStep(editingQuizId && loadedQuestions.length > 0 ? 2 : 1);
       } catch (err) {
         if (!active) return;
         console.error("[ManualQuizWizard] Failed to load quiz", err);
-        addToast?.({ type: "error", message: t("workspace.quiz.manualWizard.toasts.loadError", "Không thể tải dữ liệu quiz.") });
+        addToast?.({
+          type: "error",
+          message: isChallengeSurface
+            ? t("challengeManualMatchEditor.wizard.toasts.loadError", "Không thể tải dữ liệu đề challenge.")
+            : t("workspace.quiz.manualWizard.toasts.loadError", "Không thể tải dữ liệu quiz."),
+        });
         onBack?.();
       } finally {
         if (active) setInitialLoading(false);
@@ -318,7 +325,7 @@ function ManualQuizWizard({
 
     loadQuiz();
     return () => { active = false; };
-  }, [editingQuizId, cloneFromQuizId, addToast, onBack, t]);
+  }, [editingQuizId, cloneFromQuizId, addToast, onBack, isChallengeSurface, t]);
 
   // Restore draft from localStorage — only in create mode
   useEffect(() => {
@@ -379,15 +386,19 @@ function ManualQuizWizard({
     }
 
     const confirmMessage = isEditMode
-      ? t("workspace.quiz.manualWizard.confirm.exitEdit", "Bạn có thay đổi chưa lưu. Hủy chỉnh sửa và quay lại?")
+      ? isChallengeSurface
+        ? t("challengeManualMatchEditor.wizard.confirm.exitEdit", "Bạn có thay đổi chưa lưu. Quay lại challenge và bỏ thay đổi?")
+        : t("workspace.quiz.manualWizard.confirm.exitEdit", "Bạn có thay đổi chưa lưu. Hủy chỉnh sửa và quay lại?")
       : isCloneMode
         ? t("workspace.quiz.manualWizard.confirm.exitClone", "Bạn có thay đổi chưa lưu. Hủy tạo quiz tương tự và quay lại?")
-        : t("workspace.quiz.manualWizard.confirm.exitCreate", "Bạn có thay đổi chưa lưu. Quay lại ngay bây giờ? Bản nháp local sẽ vẫn được giữ.");
+        : isChallengeSurface
+          ? t("challengeManualMatchEditor.wizard.confirm.exitCreate", "Bạn có thay đổi chưa lưu. Quay lại challenge ngay bây giờ?")
+          : t("workspace.quiz.manualWizard.confirm.exitCreate", "Bạn có thay đổi chưa lưu. Quay lại ngay bây giờ? Bản nháp local sẽ vẫn được giữ.");
 
     if (window.confirm(confirmMessage)) {
       onBack?.();
     }
-  }, [hasUnsavedChanges, isEditMode, isCloneMode, onBack, t]);
+  }, [hasUnsavedChanges, isEditMode, isCloneMode, isChallengeSurface, onBack, t]);
 
   const handleGoToStep2 = useCallback(() => {
     setQuestions((prev) => syncQuestionsToCount(prev, config));
@@ -429,10 +440,15 @@ function ManualQuizWizard({
         try { localStorage.removeItem(DRAFT_STORAGE_KEY(workspaceId)); } catch { /* noop */ }
         addToast?.({
           type: "success",
-          message: t("workspace.quiz.manualWizard.toasts.saveUpdateSuccess", {
-            title: config.title,
-            defaultValue: `Đã cập nhật quiz "${config.title}" thành công!`,
-          }),
+          message: isChallengeSurface
+            ? t("challengeManualMatchEditor.wizard.toasts.saveUpdateSuccess", {
+                title: config.title,
+                defaultValue: `Đã lưu đề challenge "${config.title}" thành công!`,
+              })
+            : t("workspace.quiz.manualWizard.toasts.saveUpdateSuccess", {
+                title: config.title,
+                defaultValue: `Đã cập nhật quiz "${config.title}" thành công!`,
+              }),
         });
         onSaveQuiz?.(updatedQuiz);
       } else {
@@ -445,22 +461,31 @@ function ManualQuizWizard({
         try { localStorage.removeItem(DRAFT_STORAGE_KEY(workspaceId)); } catch { /* noop */ }
         addToast?.({
           type: "success",
-          message: t("workspace.quiz.manualWizard.toasts.saveDraftSuccess", {
-            title: config.title,
-            defaultValue: `Đã lưu quiz "${config.title}" ở trạng thái bản nháp!`,
-          }),
+          message: isChallengeSurface
+            ? t("challengeManualMatchEditor.wizard.toasts.saveDraftSuccess", {
+                title: config.title,
+                defaultValue: `Đã lưu đề challenge "${config.title}" ở trạng thái bản nháp!`,
+              })
+            : t("workspace.quiz.manualWizard.toasts.saveDraftSuccess", {
+                title: config.title,
+                defaultValue: `Đã lưu quiz "${config.title}" ở trạng thái bản nháp!`,
+              }),
         });
         onCreateQuiz?.(createdQuiz);
       }
     } catch (err) {
       console.error("[ManualQuizWizard] submit error", err);
       console.error("[ManualQuizWizard] submit error response", err?.response?.data || err?.data || err);
-      const msg = err?.message || err?.data?.message || t("workspace.quiz.manualWizard.toasts.saveError", "Có lỗi khi lưu quiz.");
+      const msg = err?.message || err?.data?.message || (
+        isChallengeSurface
+          ? t("challengeManualMatchEditor.wizard.toasts.saveError", "Có lỗi khi lưu đề challenge.")
+          : t("workspace.quiz.manualWizard.toasts.saveError", "Có lỗi khi lưu quiz.")
+      );
       addToast?.({ type: "error", message: msg });
     } finally {
       setSubmitting(false);
     }
-  }, [workspaceId, config, questions, questionTypes, editingQuizId, editingSectionId, addToast, onCreateQuiz, onSaveQuiz, currentSnapshot, t]);
+  }, [workspaceId, config, questions, questionTypes, editingQuizId, editingSectionId, addToast, onCreateQuiz, onSaveQuiz, currentSnapshot, isChallengeSurface, t]);
 
   if (initialLoading) {
     return (
@@ -471,26 +496,50 @@ function ManualQuizWizard({
   }
 
   const title = isEditMode
-    ? t("workspace.quiz.manualWizard.header.editTitle", "Chỉnh sửa quiz thủ công")
+    ? isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.header.editTitle", "Soạn đề challenge thủ công")
+      : t("workspace.quiz.manualWizard.header.editTitle", "Chỉnh sửa quiz thủ công")
     : isCloneMode
       ? t("workspace.quiz.manualWizard.header.cloneTitle", "Tạo quiz tương tự")
-      : t("workspace.quiz.manualWizard.header.createTitle", "Tạo quiz thủ công");
+      : isChallengeSurface
+        ? t("challengeManualMatchEditor.wizard.header.createTitle", "Tạo đề challenge thủ công")
+        : t("workspace.quiz.manualWizard.header.createTitle", "Tạo quiz thủ công");
   const description = isEditMode
-    ? t("workspace.quiz.manualWizard.header.editDescription", "Cập nhật nội dung quiz hiện có rồi lưu lại khi đã sẵn sàng.")
+    ? isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.header.editDescription", "Cập nhật câu hỏi cho challenge, sau đó lưu để tiếp tục review và publish.")
+      : t("workspace.quiz.manualWizard.header.editDescription", "Cập nhật nội dung quiz hiện có rồi lưu lại khi đã sẵn sàng.")
     : isCloneMode
       ? t("workspace.quiz.manualWizard.header.cloneDescription", "Bạn đang tạo một quiz nháp mới dựa trên nội dung của quiz gốc.")
-      : t("workspace.quiz.manualWizard.header.createDescription", "Thiết lập cấu hình rồi soạn câu hỏi để lưu quiz ở trạng thái bản nháp.");
+      : isChallengeSurface
+        ? t("challengeManualMatchEditor.wizard.header.createDescription", "Thiết lập cấu hình rồi soạn câu hỏi cho đề challenge.")
+        : t("workspace.quiz.manualWizard.header.createDescription", "Thiết lập cấu hình rồi soạn câu hỏi để lưu quiz ở trạng thái bản nháp.");
   const exitLabel = isEditMode
-    ? t("workspace.quiz.manualWizard.header.exitEdit", "Hủy chỉnh sửa")
+    ? isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.header.exitEdit", "Quay lại challenge")
+      : t("workspace.quiz.manualWizard.header.exitEdit", "Hủy chỉnh sửa")
     : isCloneMode
       ? t("workspace.quiz.manualWizard.header.exitClone", "Hủy tạo mới")
-      : t("workspace.quiz.manualWizard.header.exitCreate", "Quay lại");
+      : isChallengeSurface
+        ? t("challengeManualMatchEditor.wizard.header.exitCreate", "Quay lại challenge")
+        : t("workspace.quiz.manualWizard.header.exitCreate", "Quay lại");
   const submitLabel = isEditMode
-    ? t("workspace.quiz.manualWizard.header.submitEdit", "Lưu thay đổi")
-    : t("workspace.quiz.manualWizard.header.submitCreate", "Lưu bản nháp");
+    ? isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.header.submitEdit", "Lưu đề challenge")
+      : t("workspace.quiz.manualWizard.header.submitEdit", "Lưu thay đổi")
+    : isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.header.submitCreate", "Lưu đề nháp")
+      : t("workspace.quiz.manualWizard.header.submitCreate", "Lưu bản nháp");
   const submittingLabel = isEditMode
-    ? t("workspace.quiz.manualWizard.header.submitEditLoading", "Đang lưu...")
-    : t("workspace.quiz.manualWizard.header.submitCreateLoading", "Đang lưu nháp...");
+    ? isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.header.submitEditLoading", "Đang lưu đề...")
+      : t("workspace.quiz.manualWizard.header.submitEditLoading", "Đang lưu...")
+    : isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.header.submitCreateLoading", "Đang lưu đề...")
+      : t("workspace.quiz.manualWizard.header.submitCreateLoading", "Đang lưu nháp...");
+  const activeStepClass = isChallengeSurface ? "bg-orange-500" : "bg-blue-500";
+  const editBannerClass = isChallengeSurface
+    ? (isDarkMode ? "bg-orange-500/15 text-orange-200" : "bg-orange-50 text-orange-700")
+    : (isDarkMode ? "bg-blue-900/40 text-blue-300" : "bg-blue-50 text-blue-700");
 
   return (
     <div className={cn("h-full flex flex-col", isDarkMode ? "text-slate-100" : "text-gray-900")}>
@@ -533,8 +582,8 @@ function ManualQuizWizard({
 
       {/* Progress line */}
       <div className="shrink-0 flex h-1">
-        <div className={cn("flex-1 transition-colors", step >= 1 ? "bg-blue-500" : isDarkMode ? "bg-slate-700" : "bg-gray-200")} />
-        <div className={cn("flex-1 transition-colors", step >= 2 ? "bg-blue-500" : isDarkMode ? "bg-slate-700" : "bg-gray-200")} />
+        <div className={cn("flex-1 transition-colors", step >= 1 ? activeStepClass : isDarkMode ? "bg-slate-700" : "bg-gray-200")} />
+        <div className={cn("flex-1 transition-colors", step >= 2 ? activeStepClass : isDarkMode ? "bg-slate-700" : "bg-gray-200")} />
       </div>
 
       {/* Edit/clone mode banner */}
@@ -542,11 +591,13 @@ function ManualQuizWizard({
         <div className={cn(
           "shrink-0 px-4 py-1.5 text-xs font-medium text-center",
           isEditMode
-            ? isDarkMode ? "bg-blue-900/40 text-blue-300" : "bg-blue-50 text-blue-700"
+            ? editBannerClass
             : isDarkMode ? "bg-emerald-900/40 text-emerald-300" : "bg-emerald-50 text-emerald-700",
         )}>
           {isEditMode
-            ? t("workspace.quiz.manualWizard.header.editBanner", "Đang chỉnh sửa quiz")
+            ? isChallengeSurface
+              ? t("challengeManualMatchEditor.wizard.header.editBanner", "Đang soạn đề challenge")
+              : t("workspace.quiz.manualWizard.header.editBanner", "Đang chỉnh sửa quiz")
             : t("workspace.quiz.manualWizard.header.cloneBanner", "Tạo quiz tương tự - nội dung được sao chép từ quiz gốc")}
         </div>
       )}
@@ -559,6 +610,7 @@ function ManualQuizWizard({
               onConfigChange={handleConfigChange}
               onNext={handleGoToStep2}
               isDarkMode={isDarkMode}
+              surface={surface}
             />
           </div>
         )}
@@ -577,6 +629,7 @@ function ManualQuizWizard({
             submittingLabel={submittingLabel}
             submitting={submitting}
             isDarkMode={isDarkMode}
+            surface={surface}
           />
         )}
       </div>

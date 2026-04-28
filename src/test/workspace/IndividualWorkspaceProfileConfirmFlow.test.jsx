@@ -137,9 +137,10 @@ describe('IndividualWorkspaceProfileConfigDialog confirm flow', () => {
     expect(
       screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))
     ).not.toBeInTheDocument();
+    expect(confirmProfileButton).toBeDisabled();
     expect(
       within(confirmDialog).getByRole('button', {
-        name: 'Use this profile',
+        name: 'Applying...',
       })
     ).toBeDisabled();
 

@@ -41,6 +41,24 @@ vi.mock('@/api/QuizAPI', () => ({
   generateQuizFromWorkspaceAssessment: vi.fn(),
 }));
 
+vi.mock('@/pages/Users/Individual/Workspace/Components/ManualQuizWizard', () => ({
+  default: ({ contextType, editingQuizId, onCreateQuiz, onSaveQuiz }) => (
+    <button
+      type="button"
+      data-testid="manual-quiz-wizard"
+      onClick={() => {
+        if (editingQuizId) {
+          onSaveQuiz?.({ quizId: editingQuizId });
+        } else {
+          onCreateQuiz?.({ quizId: 123 });
+        }
+      }}
+    >
+      {`manual:${editingQuizId || 'new'}:${contextType}`}
+    </button>
+  ),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, fallbackOrOptions) => {
@@ -72,6 +90,7 @@ vi.mock('react-router-dom', async () => {
 describe('CreateQuizForm personalization preset', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     mockLocationState = null;
 
     getRoadmapsByWorkspace.mockResolvedValue({ data: [] });
@@ -187,5 +206,50 @@ describe('CreateQuizForm personalization preset', () => {
     expect(structureButton).toBeDisabled();
     fireEvent.click(structureButton);
     expect(previewAIQuizStructure).not.toHaveBeenCalled();
+  });
+
+  it('edits the existing quiz target in manual mode for challenge drafts', async () => {
+    window.localStorage.setItem('createQuizMode', 'ai');
+    const onCreateQuiz = vi.fn();
+
+    render(
+      <CreateQuizForm
+        isDarkMode={false}
+        onCreateQuiz={onCreateQuiz}
+        onBack={vi.fn()}
+        contextId={42}
+        contextType="GROUP"
+        existingQuizId={777}
+      />
+    );
+
+    expect(screen.getByTestId('manual-quiz-wizard')).toHaveTextContent('manual:777:GROUP');
+
+    fireEvent.click(screen.getByTestId('manual-quiz-wizard'));
+
+    expect(onCreateQuiz).toHaveBeenCalledWith({ quizId: 777 });
+
+    await waitFor(() => {
+      expect(getDifficultyDefinitions).toHaveBeenCalled();
+    });
+  });
+
+  it('opens AI mode for challenge drafts when requested', async () => {
+    window.localStorage.setItem('createQuizMode', 'manual');
+
+    render(
+      <CreateQuizForm
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onBack={vi.fn()}
+        contextId={42}
+        contextType="GROUP"
+        existingQuizId={777}
+        initialMode="ai"
+      />
+    );
+
+    expect(screen.queryByTestId('manual-quiz-wizard')).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Fetch detailed configuration/i })).toBeInTheDocument();
   });
 });
