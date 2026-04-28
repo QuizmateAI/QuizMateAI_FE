@@ -23,6 +23,8 @@ import {
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
 import ChallengeDetailContent from './ChallengeDetailContent';
+import ChallengeManualMatchEditor from './ChallengeManualMatchEditor';
+import { readChallengeDraftEditorMode } from './createChallengeWizardHelpers';
 
 /** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS): tối đa 2 reviewer. */
 const MAX_SNAPSHOT_REVIEW_INVITES = 2;
@@ -229,6 +231,7 @@ export default function ChallengeDetailView({
   const [editEndTime, setEditEndTime] = useState('');
   const [editScheduleIssues, setEditScheduleIssues] = useState([]);
   const [reviewerPick, setReviewerPick] = useState('');
+  const [manualMatchEditor, setManualMatchEditor] = useState(null);
   const [displayedRealtimeChallengeQuizPercent, setDisplayedRealtimeChallengeQuizPercent] = useState(0);
 
   const { data: detail, isLoading, error: detailError } = useQuery({
@@ -286,6 +289,15 @@ export default function ChallengeDetailView({
     queryClient.invalidateQueries({ queryKey: ['challenge-bracket', workspaceId, eventId] });
     queryClient.invalidateQueries({ queryKey: ['challenge-dashboard', workspaceId, eventId] });
   }, [queryClient, workspaceId, eventId]);
+
+  const handleCloseManualMatchEditor = useCallback(() => {
+    setManualMatchEditor(null);
+  }, []);
+
+  const handleManualMatchSaved = useCallback(() => {
+    setManualMatchEditor(null);
+    invalidate();
+  }, [invalidate]);
 
   const handleAction = useCallback(async (action, label) => {
     setActionLoading(label);
@@ -381,11 +393,17 @@ export default function ChallengeDetailView({
   const handleOpenDraftQuizEditor = useCallback(() => {
     const qid = detail?.snapshotQuizId;
     if (!qid) return;
+    const draftEditorMode = readChallengeDraftEditorMode(workspaceId, eventId) || 'manual';
+    if (draftEditorMode === 'manual') {
+      setManualMatchEditor({ quizId: qid, roundNumber: null });
+      return;
+    }
     navigate(
       buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
         challengeDraftQuizId: qid,
         challengeDraft: 1,
         challengeEventId: eventId,
+        challengeDraftMode: draftEditorMode,
       }),
       { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: eventId } } },
     );
@@ -394,12 +412,18 @@ export default function ChallengeDetailView({
   const handleOpenRoundQuizEditor = useCallback((round) => {
     const qid = round?.quizId;
     if (!qid) return;
+    const draftEditorMode = readChallengeDraftEditorMode(workspaceId, eventId) || 'manual';
+    if (draftEditorMode === 'manual') {
+      setManualMatchEditor({ quizId: qid, roundNumber: round?.roundNumber || null });
+      return;
+    }
     navigate(
       buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
         challengeDraftQuizId: qid,
         challengeDraft: 1,
         challengeEventId: eventId,
         challengeRound: round.roundNumber,
+        challengeDraftMode: draftEditorMode,
       }),
       { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: eventId } } },
     );
@@ -585,6 +609,21 @@ export default function ChallengeDetailView({
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (manualMatchEditor?.quizId) {
+    return (
+      <ChallengeManualMatchEditor
+        workspaceId={workspaceId}
+        quizId={manualMatchEditor.quizId}
+        detail={detail}
+        roundNumber={manualMatchEditor.roundNumber}
+        isDarkMode={isDarkMode}
+        onBack={handleCloseManualMatchEditor}
+        onSaved={handleManualMatchSaved}
+        formatDateTime={formatDateTime}
+      />
     );
   }
 

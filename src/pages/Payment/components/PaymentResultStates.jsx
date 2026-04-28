@@ -1,24 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  BrainCircuit,
   Check,
   CreditCard,
   Download,
   FileText,
-  Infinity as InfinityIcon,
   LifeBuoy,
   ReceiptText,
   RefreshCw,
   ShieldCheck,
   Smartphone,
   Sparkles,
-  Users,
   X,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import PaymentInvoicePreview from './PaymentInvoicePreview';
 
 const COPY = {
   vi: {
@@ -31,15 +29,27 @@ const COPY = {
     secured: 'Bảo mật bởi VNPay 3-D Secure',
     successEyebrow: 'Thanh toán thành công',
     successTitle: 'Mở khóa thành công',
+    creditSuccessTitle: 'Chúc mừng, bạn đã mua credit thành công',
     successSub: 'Gói Pro đã được kích hoạt. Bạn có thể bắt đầu tạo quiz không giới hạn ngay bây giờ.',
-    activated: 'Pro đã kích hoạt',
+    creditSuccessSub: 'Credit đã được cộng vào ví. Hóa đơn và biên lai đã sẵn sàng để xem hoặc tải xuống.',
+    activated: 'Đã thanh toán',
     welcome: 'Chào mừng bạn đến với',
+    creditReady: 'Đã cộng vào ví của bạn',
     validUntil: 'Hiệu lực đến',
     autoRenew: 'tự động gia hạn',
-    downloadInvoice: 'Tải hóa đơn PDF',
+    downloadInvoice: 'Tải hóa đơn',
     viewReceipt: 'Xem biên lai',
+    hideReceipt: 'Ẩn hóa đơn',
     startLearning: 'Bắt đầu học ngay',
-    receiptSent: 'Biên lai cũng đã được gửi tới email tài khoản của bạn.',
+    receiptSent: 'Biên lai và hóa đơn cũng đã được gửi tới email tài khoản của bạn.',
+    invoiceTitle: 'Hóa đơn',
+    invoiceIssuedAt: 'Phát hành lúc',
+    invoiceItem: 'Nội dung',
+    invoiceEmailSent: 'Bản sao đã được gửi qua email.',
+    closeInvoice: 'Đóng hóa đơn',
+    subtotal: 'Tạm tính',
+    totalPaid: 'Đã thanh toán',
+    paid: 'Đã thanh toán',
     failureEyebrow: 'Giao dịch thất bại',
     failureTitle: 'Đừng lo, chưa bị trừ tiền',
     failureSub: 'Giao dịch không hoàn tất. Bạn có thể thử lại ngay hoặc chọn một phương thức khác.',
@@ -66,22 +76,26 @@ const COPY = {
     status: 'Trạng thái',
     cancelled: 'Đã hủy',
     pending: 'Đang xử lý',
-    createOrder: 'Tạo đơn hàng',
-    createOrderDetail: 'Khóa giá và tạo đơn thanh toán',
-    verifyCard: 'Xác thực thẻ',
-    verifyCardDetail: 'Kiểm tra thẻ với 3-D Secure',
-    bank: 'Liên hệ ngân hàng',
-    bankDetail: 'Gửi yêu cầu tới VNPay',
-    finish: 'Hoàn tất giao dịch',
-    finishDetail: 'Cập nhật gói và phát hóa đơn',
-    bankApproved: 'Ngân hàng phê duyệt',
-    bankApprovedDetail: 'Mã xác thực 00',
-    activatePlan: 'Kích hoạt gói Pro',
-    activatePlanDetail: 'Hiệu lực ngay lập tức',
-    bankRejected: 'Ngân hàng từ chối',
-    bankRejectedDetail: 'Mã VNP_24, khách hàng hủy',
-    stopped: 'Hoàn tất',
-    stoppedDetail: 'Giao dịch dừng, không phát sinh phí',
+    createOrder: 'Đã tạo đơn hàng',
+    createOrderDetail: 'Mã đơn đã được ghi nhận',
+    verifyCard: 'Cổng thanh toán xác nhận',
+    verifyCardDetail: 'Đối soát mã giao dịch',
+    bank: 'Đang chờ kết quả',
+    bankDetail: 'Đồng bộ phản hồi từ cổng thanh toán',
+    finish: 'Cập nhật quyền lợi',
+    finishDetail: 'Cộng credit hoặc kích hoạt gói',
+    providerApproved: 'Thanh toán đã xác nhận',
+    providerApprovedDetail: 'Giao dịch hợp lệ từ cổng thanh toán',
+    activatePlan: 'Đã kích hoạt gói',
+    activatePlanDetail: 'Quyền lợi có hiệu lực ngay',
+    creditDelivered: 'Đã cộng credit vào ví',
+    creditDeliveredDetail: 'Số credit đã sẵn sàng để sử dụng',
+    invoiceIssued: 'Đã phát hành hóa đơn',
+    invoiceIssuedDetail: 'Biên lai đã gửi email tài khoản',
+    bankRejected: 'Thanh toán không thành công',
+    bankRejectedDetail: 'Cổng thanh toán trả về trạng thái thất bại',
+    stopped: 'Đơn hàng đã dừng',
+    stoppedDetail: 'Không ghi nhận khoản thu',
     ai: 'AI',
     unlimited: 'Unlimited',
     group: 'Group',
@@ -98,15 +112,27 @@ const COPY = {
     secured: 'Secured by VNPay 3-D Secure',
     successEyebrow: 'Payment successful',
     successTitle: 'Unlocked successfully',
+    creditSuccessTitle: 'Congrats, your credit package is ready',
     successSub: 'Your Pro plan is active. You can start creating unlimited quizzes now.',
-    activated: 'Pro activated',
+    creditSuccessSub: 'Credits have been added to your wallet. Your receipt and invoice are ready to view or download.',
+    activated: 'Paid',
     welcome: 'Welcome to',
+    creditReady: 'Added to your wallet',
     validUntil: 'Valid until',
     autoRenew: 'auto-renews',
-    downloadInvoice: 'Download invoice PDF',
+    downloadInvoice: 'Download invoice',
     viewReceipt: 'View receipt',
+    hideReceipt: 'Hide invoice',
     startLearning: 'Start learning now',
-    receiptSent: 'A receipt has also been sent to your account email.',
+    receiptSent: 'A receipt and invoice have also been sent to your account email.',
+    invoiceTitle: 'Invoice',
+    invoiceIssuedAt: 'Issued at',
+    invoiceItem: 'Item',
+    invoiceEmailSent: 'A copy has been sent by email.',
+    closeInvoice: 'Close invoice',
+    subtotal: 'Subtotal',
+    totalPaid: 'Total paid',
+    paid: 'Paid',
     failureEyebrow: 'Transaction failed',
     failureTitle: "Don't worry, no charge made",
     failureSub: 'The transaction did not complete. You can retry now or pick another method.',
@@ -134,21 +160,25 @@ const COPY = {
     cancelled: 'Cancelled',
     pending: 'Processing',
     createOrder: 'Order created',
-    createOrderDetail: 'Locking price and creating the order',
-    verifyCard: 'Verifying card',
-    verifyCardDetail: 'Checking card with 3-D Secure',
-    bank: 'Contacting bank',
-    bankDetail: 'Forwarding request to VNPay',
-    finish: 'Finalizing',
-    finishDetail: 'Activating plan and issuing invoice',
-    bankApproved: 'Bank approved',
-    bankApprovedDetail: 'Verification code 00',
-    activatePlan: 'Pro plan activated',
-    activatePlanDetail: 'Active immediately',
-    bankRejected: 'Bank rejected',
-    bankRejectedDetail: 'Code VNP_24, customer cancelled',
-    stopped: 'Resolved',
-    stoppedDetail: 'Stopped with no charge',
+    createOrderDetail: 'Order number recorded',
+    verifyCard: 'Payment provider confirmed',
+    verifyCardDetail: 'Reconciling transaction reference',
+    bank: 'Waiting for result',
+    bankDetail: 'Syncing the gateway response',
+    finish: 'Updating benefits',
+    finishDetail: 'Adding credits or activating the plan',
+    providerApproved: 'Payment confirmed',
+    providerApprovedDetail: 'Gateway transaction is valid',
+    activatePlan: 'Plan activated',
+    activatePlanDetail: 'Benefits are active immediately',
+    creditDelivered: 'Credits added to wallet',
+    creditDeliveredDetail: 'Credits are ready to use',
+    invoiceIssued: 'Invoice issued',
+    invoiceIssuedDetail: 'Receipt sent to account email',
+    bankRejected: 'Payment not completed',
+    bankRejectedDetail: 'The payment provider returned a failed status',
+    stopped: 'Order stopped',
+    stoppedDetail: 'No payment was recorded',
     ai: 'AI',
     unlimited: 'Unlimited',
     group: 'Group',
@@ -327,19 +357,19 @@ function Timeline({ steps, currentIdx, tone, isDarkMode = false }) {
             {active ? (
               <span className={cn('qm-motion absolute -left-[22px] top-0.5 h-5 w-5 rounded-full opacity-30', accent.bg)} style={{ animation: 'qm-pulse-ring 1.6s ease-out infinite' }} />
             ) : null}
-            <div className="flex items-baseline justify-between gap-3">
+            <div className="min-w-0">
               <p className={cn('text-sm font-black', active ? (isDarkMode ? 'text-white' : 'text-slate-950') : done ? (isDarkMode ? 'text-slate-200' : 'text-slate-700') : 'text-slate-400')}>
                 {step.label}
               </p>
-              {step.time ? (
-                <span className="shrink-0 text-[11px] font-medium tabular-nums text-slate-400">
-                  {step.time}
-                </span>
-              ) : null}
             </div>
             {step.detail ? (
               <p className={cn('mt-0.5 text-xs', active ? (isDarkMode ? 'text-slate-300' : 'text-slate-600') : 'text-slate-400')}>
                 {step.detail}
+              </p>
+            ) : null}
+            {step.time ? (
+              <p className="mt-1 text-[11px] font-medium tabular-nums text-slate-400">
+                {step.time}
               </p>
             ) : null}
           </li>
@@ -377,7 +407,7 @@ function DetailsPanel({ id, title, rows, tone, footer, isDarkMode = false }) {
             <dt className={cn('shrink-0', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
               {row.label}
             </dt>
-            <dd className={cn('break-words text-right font-bold tabular-nums', row.emph ? 'text-base' : '', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>
+            <dd className={cn('min-w-0 max-w-full break-all text-right font-bold tabular-nums', row.emph ? 'text-base' : '', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>
               {row.value}
             </dd>
           </div>
@@ -518,6 +548,9 @@ export function ProcessingScreen({ lang = 'vi', onAction, transaction = {}, plan
 export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transaction = {}, validUntil = '', isDarkMode = false }) {
   const copy = getCopy(lang);
   const planName = displayPlanName(planId, transaction, copy);
+  const isCreditPurchase = String(transaction.purchaseType || '').toUpperCase() === 'CREDIT';
+  const [showInvoice, setShowInvoice] = useState(false);
+  const invoiceRef = useRef(null);
   const confetti = useMemo(() => Array.from({ length: 36 }, (_, index) => ({
     left: (index * 53) % 100,
     delay: (index * 0.07) % 2.5,
@@ -528,11 +561,21 @@ export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transacti
     drift: `${(index % 2 === 0 ? 1 : -1) * (12 + (index % 5) * 4)}px`,
   })), []);
 
+  useEffect(() => {
+    if (!showInvoice) return;
+    window.setTimeout(() => {
+      invoiceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 0);
+  }, [showInvoice]);
+
   const steps = [
-    { label: copy.createOrder, detail: rowValue(transaction.orderId), time: rowValue(transaction.orderTime) },
-    { label: copy.verifyCard, detail: copy.verifyCardDetail, time: rowValue(transaction.verifyTime) },
-    { label: copy.bankApproved, detail: copy.bankApprovedDetail, time: rowValue(transaction.approvedTime) },
-    { label: copy.activatePlan, detail: copy.activatePlanDetail, time: rowValue(transaction.time) },
+    { label: copy.createOrder, detail: rowValue(transaction.orderId) },
+    { label: copy.providerApproved, detail: copy.providerApprovedDetail },
+    {
+      label: isCreditPurchase ? copy.creditDelivered : copy.activatePlan,
+      detail: isCreditPurchase ? copy.creditDeliveredDetail : copy.activatePlanDetail,
+    },
+    { label: copy.invoiceIssued, detail: copy.invoiceIssuedDetail, time: rowValue(transaction.time) },
   ];
 
   const hero = (
@@ -566,59 +609,67 @@ export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transacti
             {copy.activated}
           </Badge>
           <h2 className="mt-4 text-3xl font-black leading-tight tracking-normal">
-            {copy.welcome}
+            {isCreditPurchase ? planName : copy.welcome}
             <br />
-            <span>{planName}</span>
+            <span>{isCreditPurchase ? copy.creditReady : planName}</span>
           </h2>
-          <p className="mt-2 text-sm font-medium text-white/90">
-            {copy.validUntil} <span className="font-black">{validUntil || copy.updating}</span>, {copy.autoRenew}
-          </p>
+          {isCreditPurchase ? (
+            <p className="mt-2 text-sm font-medium text-white/90">
+              {copy.creditSuccessSub}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm font-medium text-white/90">
+              {copy.validUntil} <span className="font-black">{validUntil || copy.updating}</span>, {copy.autoRenew}
+            </p>
+          )}
         </div>
         <span className="qm-motion flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20" style={{ animation: 'qm-pop-in 0.55s ease-out' }}>
           <Check className="h-8 w-8 stroke-[3]" />
         </span>
       </div>
-      <div className="relative mt-6 grid grid-cols-3 gap-2">
-        {[
-          { icon: BrainCircuit, label: copy.ai },
-          { icon: InfinityIcon, label: copy.unlimited },
-          { icon: Users, label: copy.group },
-        ].map(({ icon: Icon, label }) => (
-          <div key={label} className="min-w-0 rounded-xl bg-white/15 px-3 py-2.5">
-            <Icon className="mb-1 h-4 w-4" />
-            <div className="truncate text-[11px] font-black leading-tight">{label}</div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 
   const details = (
-    <DetailsPanel
-      id="payment-receipt"
-      tone="emerald"
-      title={copy.receipt}
-      rows={[
-        { label: copy.txId, value: rowValue(transaction.transactionId) },
-        { label: copy.orderId, value: rowValue(transaction.orderId) },
-        { label: copy.plan, value: planName },
-        { label: copy.amount, value: rowValue(transaction.amountLabel), emph: true },
-        { label: copy.method, value: rowValue(transaction.method) },
-        { label: copy.time, value: rowValue(transaction.time) },
-      ]}
-      isDarkMode={isDarkMode}
-      footer={(
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => onAction?.('downloadInvoice')}
-          className={cn('h-10 w-full rounded-xl text-xs font-black', isDarkMode ? 'bg-slate-800 text-slate-100 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200')}
-        >
-          <Download className="h-3.5 w-3.5" />
-          {copy.downloadInvoice}
-        </Button>
-      )}
-    />
+    <>
+      <DetailsPanel
+        id="payment-receipt"
+        tone="emerald"
+        title={copy.receipt}
+        rows={[
+          { label: copy.txId, value: rowValue(transaction.transactionId) },
+          { label: copy.orderId, value: rowValue(transaction.orderId) },
+          { label: copy.plan, value: planName },
+          { label: copy.amount, value: rowValue(transaction.amountLabel), emph: true },
+          { label: copy.method, value: rowValue(transaction.method) },
+          { label: copy.time, value: rowValue(transaction.time) },
+        ]}
+        isDarkMode={isDarkMode}
+        footer={(
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onAction?.('downloadInvoice')}
+            className={cn('h-10 w-full rounded-xl text-xs font-black', isDarkMode ? 'bg-slate-800 text-slate-100 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200')}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {copy.downloadInvoice}
+          </Button>
+        )}
+      />
+      {showInvoice ? (
+        <div ref={invoiceRef} className="mt-4">
+          <PaymentInvoicePreview
+            copy={copy}
+            isDarkMode={isDarkMode}
+            onClose={() => setShowInvoice(false)}
+            onDownload={() => onAction?.('downloadInvoice')}
+            planName={planName}
+            transaction={transaction}
+          />
+        </div>
+      ) : null}
+    </>
   );
 
   const actions = (
@@ -626,11 +677,11 @@ export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transacti
       <Button
         type="button"
         variant="outline"
-        onClick={() => onAction?.('viewReceipt')}
+        onClick={() => setShowInvoice((current) => !current)}
         className={cn('h-12 rounded-2xl text-sm font-bold', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800' : 'bg-white text-slate-700 hover:bg-slate-50')}
       >
         <FileText className="h-4 w-4" />
-        {copy.viewReceipt}
+        {showInvoice ? copy.hideReceipt : copy.viewReceipt}
       </Button>
       <Button
         type="button"
@@ -647,8 +698,8 @@ export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transacti
     <StateShell
       tone="emerald"
       eyebrow={copy.successEyebrow}
-      title={copy.successTitle}
-      subtitle={copy.successSub}
+      title={isCreditPurchase ? copy.creditSuccessTitle : copy.successTitle}
+      subtitle={isCreditPurchase ? '' : copy.successSub}
       hero={hero}
       timeline={<Timeline steps={steps} currentIdx={steps.length} tone="emerald" isDarkMode={isDarkMode} />}
       details={details}

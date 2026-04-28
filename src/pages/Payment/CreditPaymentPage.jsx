@@ -69,6 +69,7 @@ export default function CreditPaymentPage() {
   } = usePaymentCheckout({
     paymentType: 'credit',
     creditPackageId: creditPackage?.creditPackageId,
+    creditPackageName: creditPackage?.displayName,
     workspaceId,
   });
 
