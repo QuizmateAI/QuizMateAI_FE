@@ -1833,6 +1833,18 @@
       "updateConfirmAction": "Xác nhận cập nhật",
       "daysUnit": "ngày",
       "minutesPerDayUnit": "phút/ngày",
+      "phaseSummary": {
+        "title": "Tốc độ học phase",
+        "pace": {
+          "FAST": "Học nhanh hơn kế hoạch",
+          "ON_TRACK": "Bám sát kế hoạch",
+          "SLOW": "Chậm hơn kế hoạch",
+          "UNKNOWN": "Chưa đủ dữ liệu"
+        },
+        "daysProgress": "Đã học {{actual}} ngày / dự kiến {{estimated}} ngày",
+        "deltaEarly": "Hoàn thành sớm {{count}} ngày so với kế hoạch",
+        "deltaLate": "Trễ {{count}} ngày so với kế hoạch"
+      },
       "tabManual": "Tạo thủ công",
       "tabAI": "Tạo bằng AI",
       "aiOnlyTitle": "AI sẽ tự dựng Lộ trình hoàn chỉnh cho bạn",

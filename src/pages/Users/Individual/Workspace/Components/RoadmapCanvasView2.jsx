@@ -7,12 +7,13 @@ import QuizListView from "./QuizListView";
 import { useToast } from "@/context/ToastContext";
 import {
   getCurrentRoadmapPhaseProgress,
-  getPhaseProgressReview,
+  getPhaseProgressSummary,
   submitRoadmapPhaseRemedialDecision,
 } from "@/api/RoadmapPhaseAPI";
 import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
 import { hasReadyRoadmapQuiz } from "../utils/roadmapProcessing";
+import PhaseProgressSummaryCard from "@/components/features/workspace/PhaseProgressSummaryCard";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -170,12 +171,12 @@ function RoadmapCanvasView2({
     }
     previousKnowledgeGenerationRef.current = hasKnowledgeGenerationRunning;
   }, [hasKnowledgeGenerationRunning, loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress]);
-  const [phaseReviewState, setPhaseReviewState] = useState({
+  const [phaseSummaryState, setPhaseSummaryState] = useState({
     loading: false,
     data: null,
     phaseId: null,
   });
-  const phaseReviewInFlightRef = useRef(false);
+  const phaseSummaryInFlightRef = useRef(false);
   const getDefaultOpenKnowledgeMap = (phaseList = []) => {
     return (phaseList || []).reduce((accumulator, phase) => {
       const phaseId = Number(phase?.phaseId);
@@ -451,58 +452,47 @@ function RoadmapCanvasView2({
     return isPassed;
   }, [hasCompletedPostLearning, hasPassedPostLearning, normalizedAdaptationMode]);
 
-  const syncPhaseReview = useCallback(async () => {
+  const syncPhaseSummary = useCallback(async () => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
     const activePhaseId = Number(activePhase?.phaseId);
     if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
-      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      setPhaseSummaryState({ loading: false, data: null, phaseId: null });
       return;
     }
     if (!Number.isInteger(activePhaseId) || activePhaseId <= 0) {
-      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      setPhaseSummaryState({ loading: false, data: null, phaseId: null });
       return;
     }
 
-    if (phaseReviewInFlightRef.current) return;
-    phaseReviewInFlightRef.current = true;
-    setPhaseReviewState({ loading: true, data: null, phaseId: activePhaseId });
+    if (phaseSummaryInFlightRef.current) return;
+    phaseSummaryInFlightRef.current = true;
+    setPhaseSummaryState({ loading: true, data: null, phaseId: activePhaseId });
 
     try {
       try {
-        const reviewResponse = await getPhaseProgressReview(activePhaseId);
-        const reviewData = reviewResponse?.data?.data || reviewResponse?.data || null;
-        const reviewPhaseId = Number(reviewData?.phaseId);
-        if (reviewData?.summary && reviewPhaseId === activePhaseId) {
-          setPhaseReviewState({ loading: false, data: reviewData, phaseId: activePhaseId });
+        const summaryResponse = await getPhaseProgressSummary(activePhaseId);
+        const summaryData = summaryResponse?.data?.data || summaryResponse?.data || null;
+        const summaryPhaseId = Number(summaryData?.phaseId);
+        if (summaryData && summaryPhaseId === activePhaseId) {
+          setPhaseSummaryState({ loading: false, data: summaryData, phaseId: activePhaseId });
           return;
         }
-      } catch (reviewError) {
-        // Chưa có review thì ẩn khung, không coi là lỗi UI.
+      } catch (summaryError) {
+        // Chưa có progress summary thì ẩn khung, không coi là lỗi UI.
       }
 
-      setPhaseReviewState({ loading: false, data: null, phaseId: activePhaseId });
+      setPhaseSummaryState({ loading: false, data: null, phaseId: activePhaseId });
     } catch (error) {
-      console.error("Failed to sync phase review state:", error);
-      setPhaseReviewState((current) => ({ ...current, loading: false }));
+      console.error("Failed to sync phase progress summary:", error);
+      setPhaseSummaryState((current) => ({ ...current, loading: false }));
     } finally {
-      phaseReviewInFlightRef.current = false;
+      phaseSummaryInFlightRef.current = false;
     }
   }, [activePhase?.phaseId, roadmap?.roadmapId]);
 
   useEffect(() => {
-    void syncPhaseReview();
-  }, [syncPhaseReview, activePhase?.phaseId]);
-
-  const phaseReviewAssessedAtLabel = useMemo(() => {
-    const rawValue = phaseReviewState?.data?.assessedAt;
-    if (!rawValue) return null;
-    const parsedDate = new Date(rawValue);
-    if (Number.isNaN(parsedDate.getTime())) return null;
-    return new Intl.DateTimeFormat("vi-VN", {
-      dateStyle: "short",
-      timeStyle: "short",
-    }).format(parsedDate);
-  }, [phaseReviewState?.data?.assessedAt]);
+    void syncPhaseSummary();
+  }, [syncPhaseSummary, activePhase?.phaseId]);
 
   useEffect(() => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -940,25 +930,12 @@ function RoadmapCanvasView2({
           ) : null}
         </div>
 
-        {phaseReviewState?.data?.summary && Number(phaseReviewState?.phaseId) === Number(activePhase?.phaseId) ? (
-          <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-emerald-800/70 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50"}`}>
-            <div className="flex items-center justify-between gap-3">
-              <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
-                {t("workspace.roadmap.phaseReviewTitle", "Đánh giá AI cho phase hiện tại")}
-              </p>
-            </div>
-            <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-              {phaseReviewState.data.summary}
-            </p>
-
-            {phaseReviewAssessedAtLabel ? (
-              <div className="mt-3 text-right">
-                <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
-                  {t("workspace.roadmap.phaseReviewAssessedAt", "Đánh giá lúc")}: {phaseReviewAssessedAtLabel}
-                </span>
-              </div>
-            ) : null}
-          </div>
+        {phaseSummaryState?.data && Number(phaseSummaryState?.phaseId) === Number(activePhase?.phaseId) ? (
+          <PhaseProgressSummaryCard
+            data={phaseSummaryState.data}
+            isDarkMode={isDarkMode}
+            fontClass={fontClass}
+          />
         ) : null}
         {activePhase ? [activePhase].map((phase) => {
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
