@@ -2648,6 +2648,7 @@
     "generateFromAssessmentSuccess": "Quiz generated from AI assessment successfully.",
     "generateFromAssessmentFail": "Failed to generate quiz from AI assessment.",
     "title": "Result",
+    "accuracy": "Accuracy",
     "correct": "Correct",
     "answered": "Answered",
     "time": "Time",
