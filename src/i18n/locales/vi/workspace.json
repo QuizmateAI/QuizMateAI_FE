@@ -2571,6 +2571,7 @@
     "generateFromAssessmentSuccess": "Đã tạo quiz từ đánh giá AI thành công",
     "generateFromAssessmentFail": "Tạo quiz từ đánh giá AI thất bại",
     "title": "Kết quả",
+    "accuracy": "Độ chính xác",
     "correct": "Đúng",
     "answered": "Đã trả lời",
     "time": "Thời gian",

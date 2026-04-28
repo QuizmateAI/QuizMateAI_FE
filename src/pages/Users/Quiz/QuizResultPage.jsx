@@ -1213,14 +1213,20 @@ handleBack,
     : (passScore != null && accuracyPercent != null
       ? accuracyPercent >= passScore
       : null);
-  const normalizedAccuracyPercent = Number.isFinite(Number(result.accuracyPercent))
+  const resultAccuracyPercent = result.accuracyPercent != null && result.accuracyPercent !== ''
     ? Number(result.accuracyPercent)
-    : accuracyPercent;
-  const scoreValue = Number(result.maxScore) > 0
-    ? `${result.score ?? 0}/${result.maxScore}`
-    : (normalizedAccuracyPercent != null
-      ? `${Math.round(normalizedAccuracyPercent * 10) / 10}%`
-      : `${result.score ?? 0}`);
+    : null;
+  const resultAccuracy = result.accuracy != null && result.accuracy !== ''
+    ? Number(result.accuracy)
+    : null;
+  const resolvedAccuracyPercent = Number.isFinite(resultAccuracyPercent)
+    ? resultAccuracyPercent
+    : Number.isFinite(resultAccuracy)
+      ? (Math.abs(resultAccuracy) <= 1 ? resultAccuracy * 100 : resultAccuracy)
+      : accuracyPercent;
+  const accuracyValue = Number.isFinite(resolvedAccuracyPercent)
+    ? `${Math.round(Math.max(0, Math.min(100, resolvedAccuracyPercent)) * 10) / 10}%`
+    : '--';
   const correctValue = `${correctQuestion}/${totalQuestion}`;
   const answeredValue = `${result.answeredQuestion ?? 0}/${totalQuestion}`;
   const gradingProgressText = t('quizResultPage.gradingProgress', 'Grading: {{pending}}/{{total}}', {
@@ -1509,7 +1515,7 @@ handleBack,
             <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-white/70 bg-white/45 p-4 shadow-inner shadow-white/60 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/25 dark:shadow-slate-950/20">
               {/* Score display */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 max-w-4xl mx-auto">
-                <ScoreStat label={t('quizResultPage.score', 'Score')} value={scoreValue} icon={BarChart3} />
+                <ScoreStat label={t('quizResultPage.accuracy', 'Accuracy')} value={accuracyValue} icon={BarChart3} />
                 <ScoreStat label={t('quizResultPage.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
                 <ScoreStat label={t('quizResultPage.answered', 'Answered')} value={answeredValue} icon={Eye} />
                 <ScoreStat label={t('quizResultPage.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
