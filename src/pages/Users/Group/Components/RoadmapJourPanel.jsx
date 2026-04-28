@@ -158,7 +158,9 @@ function RoadmapJourPanel({
       if (!isPhaseFinishedStatus(phases[index]?.status)) break;
       contiguousFinishedCount += 1;
     }
-    const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
+    const unlockedByStatusIndex = contiguousFinishedCount > 0
+      ? Math.min(phases.length - 1, contiguousFinishedCount - 1)
+      : -1;
 
     if (isStudyNewRoadmap) {
       const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
@@ -177,8 +179,24 @@ function RoadmapJourPanel({
       return Math.max(0, unlockedByManualProgressIndex);
     }
 
-    return Math.max(0, globalCurrentIndex, unlockedByStatusIndex);
-  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, isStudyNewRoadmap, phases]);
+    const currentPayloadFinished = isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
+    const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+    const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+      ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+      : -1;
+    const unlockedByFinishedPayloadIndex = currentPayloadFinished
+      ? (currentPayloadPhaseIndex >= 0 ? currentPayloadPhaseIndex : globalCurrentIndex)
+      : -1;
+
+    return Math.max(0, unlockedByStatusIndex, unlockedByFinishedPayloadIndex);
+  }, [
+    globalCurrentPhasePayload?.phaseId,
+    globalCurrentPhasePayload?.phaseIndex,
+    globalCurrentPhasePayload?.status,
+    isPhaseFinishedStatus,
+    isStudyNewRoadmap,
+    phases,
+  ]);
 
   const isCurrentPayloadFinished = useMemo(() => {
     return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
@@ -340,12 +358,14 @@ function RoadmapJourPanel({
                       const active = effectiveSelectedPhaseId === phase.phaseId;
                       const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
                         && phase.preLearningQuizzes.length > 0;
-                      const isLockedPhase = index > maxUnlockedPhaseIndex && !hasExistingPreLearning;
                       const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
                       const isCompletedPhase = isPhaseVisuallyCompleted(phase, index);
                       const isGeneratingByClientState = generatingKnowledgePhaseIds.includes(normalizedPhaseId)
                         || generatingKnowledgeQuizPhaseIds.includes(normalizedPhaseId)
                         || generatingPreLearningPhaseIds.includes(normalizedPhaseId);
+                      const isLockedPhase = index > maxUnlockedPhaseIndex
+                        && !hasExistingPreLearning
+                        && !isGeneratingByClientState;
                       const isProcessingPhase = !isCompletedPhase && (
                         normalizedPhaseStatus === "PROCESSING"
                         || isGeneratingByClientState

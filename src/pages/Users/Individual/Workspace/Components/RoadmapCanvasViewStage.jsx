@@ -271,12 +271,22 @@ function RoadmapCanvasViewStage({
   const globalCurrentIndex = Number.isInteger(globalPhaseId)
     ? phases.findIndex((phase) => normalizePositiveId(phase?.phaseId) === globalPhaseId)
     : -1;
+  const isCurrentPayloadFinished = isFinishedPhaseStatus(globalCurrentPhasePayload?.status);
+  const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+  const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+    ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+    : -1;
+  const currentPayloadStatus = String(globalCurrentPhasePayload?.status || "").toUpperCase();
+  const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
   let contiguousFinishedCount = 0;
   for (let index = 0; index < phases.length; index += 1) {
     if (!isFinishedPhaseStatus(phases[index]?.status)) break;
     contiguousFinishedCount += 1;
   }
-  const unlockedByStatusIndex = Math.min(Math.max(phases.length - 1, 0), contiguousFinishedCount);
+  const unlockedByStatusIndex = contiguousFinishedCount > 0
+    ? Math.min(Math.max(phases.length - 1, 0), contiguousFinishedCount - 1)
+    : -1;
   const unlockedByOptimisticIndex = optimisticUnlockedPhaseIds.reduce((maxIndex, phaseId) => {
     const normalizedPhaseId = normalizePositiveId(phaseId);
     if (!normalizedPhaseId) return maxIndex;
@@ -301,17 +311,20 @@ function RoadmapCanvasViewStage({
       return Math.max(unlockedByManualProgressIndex, unlockedByOptimisticIndex, 0);
     }
 
-    return Math.max(unlockedByStatusIndex, unlockedByOptimisticIndex, globalCurrentIndex, 0);
-  }, [globalCurrentIndex, isStudyNewRoadmap, phases, unlockedByOptimisticIndex, unlockedByStatusIndex]);
+    const unlockedByFinishedPayloadIndex = isCurrentPayloadFinished
+      ? (currentPayloadPhaseIndex >= 0 ? currentPayloadPhaseIndex : globalCurrentIndex)
+      : -1;
 
-  const isCurrentPayloadFinished = isFinishedPhaseStatus(globalCurrentPhasePayload?.status);
-  const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
-  const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
-  const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
-    ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
-    : -1;
-  const currentPayloadStatus = String(globalCurrentPhasePayload?.status || "").toUpperCase();
-  const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
+    return Math.max(unlockedByStatusIndex, unlockedByOptimisticIndex, unlockedByFinishedPayloadIndex, 0);
+  }, [
+    currentPayloadPhaseIndex,
+    globalCurrentIndex,
+    isCurrentPayloadFinished,
+    isStudyNewRoadmap,
+    phases,
+    unlockedByOptimisticIndex,
+    unlockedByStatusIndex,
+  ]);
   const isCurrentPhaseByPayload = useCallback((phaseId) => {
     const normalizedPhaseId = Number(phaseId);
     return isStudyNewRoadmap
@@ -1310,6 +1323,13 @@ function RoadmapCanvasViewStage({
         && !hasPreLearningQuiz
         && phaseKnowledges.length === 0
         && !isSkipPreLearningPhase;
+      const shouldShowStandalonePreLearningPlaceholder = !shouldShowPreLearningDecision
+        && !hasPreLearningQuiz
+        && isGeneratingPreLearning
+        && !isGeneratingPhaseContent
+        && !isSelectedPhaseLocked
+        && !isSkipPreLearningPhase
+        && !canRenderPreLearningDecisionCard;
       const totalKnowledgeCount = phaseKnowledges.length;
       const currentKnowledgeIndexInPhase = Number.isInteger(currentKnowledgeId) && currentKnowledgeId > 0
         ? phaseKnowledges.findIndex((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === currentKnowledgeId)
@@ -1471,6 +1491,21 @@ function RoadmapCanvasViewStage({
                   ) : null}
                 </div>
               ) : null}
+            </div>
+          ) : null}
+
+          {shouldShowStandalonePreLearningPlaceholder ? (
+            <div className={`rounded-[26px] border p-4 ${isDarkMode ? "border-cyan-900/60 bg-cyan-950/25" : "border-cyan-100 bg-cyan-50"}`}>
+              <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-cyan-300" : "text-cyan-700"} ${fontClass}`}>
+                {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
+              </p>
+              <div className="mt-3">
+                {renderLoadingPlaceholder(
+                  t("workspace.roadmap.generatingPreLearning", "AI is generating pre-learning for this phase..."),
+                  true,
+                  phasePreLearningPercent,
+                )}
+              </div>
             </div>
           ) : null}
 
@@ -1882,12 +1917,25 @@ function RoadmapCanvasViewStage({
                   </button>
 
                   {phases.map((phase, index) => {
-                    const active = selectedType !== "roadmap" && normalizedSelectedPhaseId === normalizePositiveId(phase?.phaseId);
+                    const phaseId = normalizePositiveId(phase?.phaseId);
+                    const active = selectedType !== "roadmap" && normalizedSelectedPhaseId === phaseId;
                     const hasExistingPreLearning = hasReadyRoadmapQuiz(phase?.preLearningQuizzes);
                     const isPhaseLocked = index > maxUnlockedPhaseIndex
                       && !hasExistingPreLearning
                       && !isCurrentPhaseByPayload(phase?.phaseId);
                     const isCompletedPhase = isPhaseCompleted(phase, index);
+                    const phaseStatus = String(phase?.status || "").toUpperCase();
+                    const isGeneratingPreLearningForPhase = generatingPreLearningPhaseIds.includes(phaseId);
+                    const isGeneratingKnowledgeForPhase = generatingKnowledgePhaseIds.includes(phaseId)
+                      || generatingKnowledgeQuizPhaseIds.includes(phaseId);
+                    const isProcessingPhase = !isCompletedPhase
+                      && !isPhaseLocked
+                      && (
+                        phaseStatus === "PROCESSING"
+                        || phaseStatus === "GENERATING"
+                        || isGeneratingPreLearningForPhase
+                        || isGeneratingKnowledgeForPhase
+                      );
                     return (
                       <button
                         key={phase.phaseId}
@@ -1913,6 +1961,9 @@ function RoadmapCanvasViewStage({
                           <div className="flex items-center gap-1.5">
                             {isCompletedPhase ? (
                               <CheckCircle2 className={`h-3.5 w-3.5 ${isDarkMode ? "text-emerald-300" : "text-emerald-600"}`} />
+                            ) : null}
+                            {isProcessingPhase ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-500" />
                             ) : null}
                             {isPhaseLocked ? <Lock className={`h-3.5 w-3.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} /> : null}
                           </div>

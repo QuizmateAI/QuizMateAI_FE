@@ -77,6 +77,7 @@ export function useWorkspaceRoadmapManager({
 	const knowledgeQuizGenerationRequestedByKnowledgeRef = useRef({});
 	const recoveredMockTestTaskRef = useRef(false);
 	const preLearningRoutedTaskIdsRef = useRef({});
+	const knownRoadmapPhaseIdsRef = useRef(new Set());
 	const roadmapLoaderFinalizeTimersRef = useRef({
 		knowledge: {},
 		preLearning: {},
@@ -104,6 +105,51 @@ export function useWorkspaceRoadmapManager({
 	const clearSelectedRoadmapPhaseNow = useCallback(() => {
 		clearSelectedRoadmapPhase?.();
 	}, [clearSelectedRoadmapPhase]);
+
+	const rememberKnownRoadmapPhases = useCallback((phases = []) => {
+		knownRoadmapPhaseIdsRef.current = new Set(normalizePositiveIds(
+			(Array.isArray(phases) ? phases : []).map((phase) => phase?.phaseId ?? phase?.id)
+		));
+	}, []);
+
+	const isRuntimeSignalForCurrentRoadmapScope = useCallback((signal) => {
+		const signalWorkspaceId = Number(signal?.workspaceId ?? signal?.processingObject?.workspaceId ?? 0);
+		const currentWorkspaceId = Number(workspaceId);
+		if (
+			Number.isInteger(signalWorkspaceId)
+			&& signalWorkspaceId > 0
+			&& Number.isInteger(currentWorkspaceId)
+			&& currentWorkspaceId > 0
+			&& signalWorkspaceId !== currentWorkspaceId
+		) {
+			return false;
+		}
+
+		const signalRoadmapId = Number(signal?.roadmapId ?? signal?.processingObject?.roadmapId ?? 0);
+		const currentRoadmapId = Number(roadmapAiRoadmapId);
+		if (
+			Number.isInteger(signalRoadmapId)
+			&& signalRoadmapId > 0
+			&& Number.isInteger(currentRoadmapId)
+			&& currentRoadmapId > 0
+			&& signalRoadmapId !== currentRoadmapId
+		) {
+			return false;
+		}
+
+		const signalPhaseId = Number(signal?.phaseId ?? signal?.processingObject?.phaseId ?? 0);
+		const knownPhaseIds = knownRoadmapPhaseIdsRef.current;
+		if (
+			Number.isInteger(signalPhaseId)
+			&& signalPhaseId > 0
+			&& knownPhaseIds.size > 0
+			&& !knownPhaseIds.has(signalPhaseId)
+		) {
+			return false;
+		}
+
+		return true;
+	}, [roadmapAiRoadmapId, workspaceId]);
 
 	const bumpRoadmapReloadToken = useCallback(() => {
 		const now = Date.now();
@@ -404,6 +450,7 @@ export function useWorkspaceRoadmapManager({
 		knowledgeQuizGenerationRequestedRef.current = {};
 		knowledgeQuizGenerationRequestedByKnowledgeRef.current = {};
 		preLearningRoutedTaskIdsRef.current = {};
+		knownRoadmapPhaseIdsRef.current = new Set();
 		nonStudyPreLearningAutoRunRef.current = { runId: 0, active: false };
 		clearPreLearningRequestGuard({ all: true });
 
@@ -545,6 +592,7 @@ export function useWorkspaceRoadmapManager({
 			const normalizedRoadmapId = Number(roadmapAiRoadmapId);
 			if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
 				if (cancelled || roadmapStructureSyncRunRef.current !== syncRunId) return;
+				knownRoadmapPhaseIdsRef.current = new Set();
 				setIsRoadmapStructureMissing(true);
 				setRoadmapHasPhases(false);
 				setIsGeneratingRoadmapPhases(false);
@@ -562,6 +610,7 @@ export function useWorkspaceRoadmapManager({
 				const roadmapStatus = String(roadmapData?.status || "").toUpperCase();
 				const isProcessing = roadmapStatus === "PROCESSING";
 				const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
+				rememberKnownRoadmapPhases(phases);
 				const skipPreLearningPhaseIdSet = new Set(normalizePositiveIds(skipPreLearningPhaseIds));
 				const {
 					knowledge: inferredPhaseContentGeneratingIds,
@@ -603,6 +652,7 @@ export function useWorkspaceRoadmapManager({
 				if (cancelled || roadmapStructureSyncRunRef.current !== syncRunId) return;
 				const statusCode = Number(error?.statusCode ?? error?.status ?? 0);
 				if (statusCode === 404) {
+					knownRoadmapPhaseIdsRef.current = new Set();
 					setIsRoadmapStructureMissing(true);
 					setRoadmapHasPhases(false);
 					setIsGeneratingRoadmapPhases(false);
@@ -620,6 +670,7 @@ export function useWorkspaceRoadmapManager({
 			cancelled = true;
 		};
 	}, [
+		rememberKnownRoadmapPhases,
 		roadmapAiRoadmapId,
 		roadmapReloadToken,
 		setIsRoadmapStructureMissing,
@@ -646,6 +697,7 @@ export function useWorkspaceRoadmapManager({
 			if (!Number.isInteger(roadmapId) || roadmapId <= 0) return;
 
 			const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
+			rememberKnownRoadmapPhases(phases);
 			const phaseIdsToGenerate = [];
 			if (phases.length > 0) {
 				const firstPhase = phases[0];
@@ -699,6 +751,7 @@ export function useWorkspaceRoadmapManager({
 		finishPreLearningRequest,
 		focusRoadmapViewSafely,
 		isStudyNewRoadmap,
+		rememberKnownRoadmapPhases,
 		roadmapAiRoadmapId,
 		setRoadmapAiRoadmapId,
 		showError,
@@ -964,41 +1017,18 @@ export function useWorkspaceRoadmapManager({
 
 	const applyRecoveredActiveTaskSnapshot = useCallback((snapshot) => {
 		const snapshotTasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
-		const currentWorkspaceId = Number(workspaceId);
-		const currentRoadmapId = Number(roadmapAiRoadmapId);
 		const knownMaterialIds = new Set(normalizePositiveIds((sources || []).map((item) => Number(item?.id))));
 
 		const tasks = snapshotTasks.filter((task) => {
-			const normalizedStatus = String(task?.status || "").toUpperCase();
+			const signal = normalizeRuntimeTaskSignal(task, { source: "active-task-filter" });
+			const normalizedStatus = signal.status;
 			if (normalizedStatus === "ROADMAP_MODERATION_DONE") return false;
 
-			const processingObject = (task?.processingObject && typeof task.processingObject === "object")
-				? task.processingObject
-				: {};
-
-			const taskWorkspaceId = Number(processingObject?.workspaceId ?? 0);
-			if (
-				Number.isInteger(taskWorkspaceId)
-				&& taskWorkspaceId > 0
-				&& Number.isInteger(currentWorkspaceId)
-				&& currentWorkspaceId > 0
-				&& taskWorkspaceId !== currentWorkspaceId
-			) {
+			if (!isRuntimeSignalForCurrentRoadmapScope(signal)) {
 				return false;
 			}
 
-			const taskRoadmapId = Number(processingObject?.roadmapId ?? 0);
-			if (
-				Number.isInteger(taskRoadmapId)
-				&& taskRoadmapId > 0
-				&& Number.isInteger(currentRoadmapId)
-				&& currentRoadmapId > 0
-				&& taskRoadmapId !== currentRoadmapId
-			) {
-				return false;
-			}
-
-			const taskMaterialId = Number(processingObject?.materialId ?? 0);
+			const taskMaterialId = Number(signal.materialId ?? signal.processingObject?.materialId ?? 0);
 			if (
 				Number.isInteger(taskMaterialId)
 				&& taskMaterialId > 0
@@ -1295,6 +1325,7 @@ export function useWorkspaceRoadmapManager({
 		fetchSources,
 		generatingKnowledgePhaseIds,
 		generatingPreLearningPhaseIds,
+		isRuntimeSignalForCurrentRoadmapScope,
 		keepRoadmapLoaderVisibleUntilReload,
 		progressTracking?.knowledgeProgressByPhaseId,
 		progressTracking?.postLearningProgressByPhaseId,
@@ -1335,6 +1366,9 @@ export function useWorkspaceRoadmapManager({
 			|| (Number.isInteger(progressPhaseId) && progressPhaseId > 0)
 			|| (Number.isInteger(progressRoadmapId) && progressRoadmapId > 0)
 		);
+		if (isRoadmapTaskSignal && !isRuntimeSignalForCurrentRoadmapScope(signal)) {
+			return;
+		}
 		const shouldTrackStandaloneQuizProgress = !isRoadmapTaskSignal;
 		const activePreLearningPhaseIds = normalizePositiveIds(
 			generatingPreLearningPhaseIds.filter((phaseId) => !skipPreLearningPhaseIds.includes(Number(phaseId)))
@@ -1790,6 +1824,7 @@ export function useWorkspaceRoadmapManager({
 		generatingKnowledgeQuizKnowledgeKeys,
 		generatingKnowledgeQuizPhaseIds,
 		generatingPreLearningPhaseIds,
+		isRuntimeSignalForCurrentRoadmapScope,
 		isStudyNewRoadmap,
 		keepRoadmapLoaderVisibleUntilReload,
 		onMockTestRealtime,

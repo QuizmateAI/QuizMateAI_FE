@@ -226,7 +226,9 @@ function RoadmapCanvasView2({
       if (!isPhaseFinishedStatus(phases[index]?.status)) break;
       contiguousFinishedCount += 1;
     }
-    const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
+    const unlockedByStatusIndex = contiguousFinishedCount > 0
+      ? Math.min(phases.length - 1, contiguousFinishedCount - 1)
+      : -1;
 
     const unlockedByOptimisticIndex = (optimisticUnlockedPhaseIds || []).reduce((maxIndex, phaseId) => {
       const normalizedPhaseId = Number(phaseId);
@@ -253,9 +255,20 @@ function RoadmapCanvasView2({
       return Math.max(0, unlockedByManualProgressIndex, unlockedByOptimisticIndex);
     }
 
-    return Math.max(0, globalCurrentIndex, unlockedByStatusIndex, unlockedByOptimisticIndex);
+    const currentPayloadFinished = isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
+    const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+    const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+      ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+      : -1;
+    const unlockedByFinishedPayloadIndex = currentPayloadFinished
+      ? (currentPayloadPhaseIndex >= 0 ? currentPayloadPhaseIndex : globalCurrentIndex)
+      : -1;
+
+    return Math.max(0, unlockedByStatusIndex, unlockedByOptimisticIndex, unlockedByFinishedPayloadIndex);
   }, [
     globalCurrentPhasePayload?.phaseId,
+    globalCurrentPhasePayload?.phaseIndex,
+    globalCurrentPhasePayload?.status,
     isPhaseFinishedStatus,
     isStudyNewRoadmap,
     optimisticUnlockedPhaseIds,
