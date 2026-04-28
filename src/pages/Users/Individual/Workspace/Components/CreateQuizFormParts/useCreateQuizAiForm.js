@@ -62,12 +62,15 @@ const formatPreviewValue = (value) => {
 const STRUCTURE_DIFFICULTY_OPTIONS = ["EASY", "MEDIUM", "HARD"];
 
 const normalizeStructureItems = (items) => (
-  (Array.isArray(items) ? items : []).map((item) => ({
-    difficulty: String(item?.difficulty || "MEDIUM").toUpperCase(),
-    questionType: String(item?.questionType || "SINGLE_CHOICE").toUpperCase(),
-    bloomSkill: String(item?.bloomSkill || "REMEMBER").toUpperCase(),
-    quantity: Math.max(1, Math.round(Number(item?.quantity) || 1)),
-  }))
+  (Array.isArray(items) ? items : []).map((item) => {
+    const normalized = {
+      difficulty: String(item?.difficulty || "MEDIUM").toUpperCase(),
+      questionType: String(item?.questionType || "SINGLE_CHOICE").toUpperCase(),
+      bloomSkill: String(item?.bloomSkill || "REMEMBER").toUpperCase(),
+      quantity: Math.max(1, Math.round(Number(item?.quantity) || 1)),
+    };
+    return normalized;
+  })
 );
 
 /**
@@ -180,6 +183,7 @@ export const useCreateQuizAiForm = ({
   onCreateQuiz,
   quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
   selectedMaterialIds,
+  selectedSubTopicIds = [],
   t,
   existingQuizId = null,
   seedQuizTitle = '',
@@ -1473,6 +1477,7 @@ export const useCreateQuizAiForm = ({
       const payload = {
         title: String(aiName || "").trim(),
         materialIds: selectedMaterialIds,
+        selectedSubTopicIds: Array.isArray(selectedSubTopicIds) ? selectedSubTopicIds : [],
         overallDifficulty: selectedDifficultyId === "CUSTOM"
           ? "CUSTOM"
           : selectedDifficulty?.difficultyName || "MEDIUM",

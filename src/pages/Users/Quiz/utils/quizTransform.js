@@ -257,6 +257,8 @@ export function normalizeQuizData(apiQuiz) {
     const normalizedQuestion = {
       id: q.questionId,
       content: q.content,
+      imageUrl: q.imageUrl || q.questionImageUrl || null,
+      imageUrls: Array.isArray(q.imageUrls) ? q.imageUrls : (Array.isArray(q.images) ? q.images : []),
       type: cardType,
       difficulty: q.difficulty || 'MEDIUM',
       score: q.score || 0,

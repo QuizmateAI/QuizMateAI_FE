@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { getCorrectMatchingPairs, getCorrectTextAnswers, normalizeMatchingPairs } from '../utils/quizTransform';
 import MatchingDragDrop from './MatchingDragDrop';
 import MixedMathText from '@/components/math/MixedMathText';
+import { getQuestionDisplayText, getQuestionImageList } from '@/lib/questionContentMedia';
 import './QuestionCard.css';
 
 function CheckboxIndicator({ id }) {
@@ -179,6 +180,8 @@ const QuestionCard = memo(function QuestionCard({
     return Array.from(new Set(combined.filter(Boolean)));
   }, [correctMatchingPairs, normalizedMatchingPairs, question.matchingRightOptions]);
   const gradingStatus = String(reviewState?.gradingStatus || question?.gradingStatus || '').toUpperCase();
+  const questionImages = useMemo(() => getQuestionImageList(question), [question]);
+  const questionDisplayText = useMemo(() => getQuestionDisplayText(question?.content), [question?.content]);
   const isPendingGrading = gradingStatus === 'PENDING';
   const showFlagToggle = !isReviewRevealed && typeof onToggleFlag === 'function';
   const correctAnswerIds = Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
@@ -298,9 +301,24 @@ const QuestionCard = memo(function QuestionCard({
               {questionNumber}
             </span>
           )}
-          <h3 className="min-w-0 text-base font-bold leading-snug whitespace-pre-wrap text-slate-800 dark:text-slate-100">
-            <MixedMathText>{question.content}</MixedMathText>
-          </h3>
+          <div className="min-w-0 flex-1">
+            {questionImages.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {questionImages.map((image, index) => (
+                  <img
+                    key={`${image.url}-${index}`}
+                    src={image.url}
+                    alt={image.alt || t('workspace.quiz.questionImageAlt', 'Question illustration')}
+                    loading="lazy"
+                    className="w-full max-h-[28rem] rounded-xl border border-slate-200 object-contain bg-slate-50 dark:border-slate-700 dark:bg-slate-900"
+                  />
+                ))}
+              </div>
+            )}
+            <h3 className="min-w-0 text-base font-bold leading-snug whitespace-pre-wrap text-slate-800 dark:text-slate-100">
+              <MixedMathText>{questionDisplayText}</MixedMathText>
+            </h3>
+          </div>
         </div>
         {(showHeaderMeta || showFlagToggle) && (
           <div className="flex shrink-0 items-center gap-2">
