@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import QuizResultPage from '@/pages/Users/Quiz/QuizResultPage';
+import QuizResultPage from '@/Pages/Users/Quiz/QuizResultPage';
 
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();

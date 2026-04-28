@@ -68,19 +68,19 @@ function isWarnSource(source) {
 function getSourceStatusTone(status, isDarkMode = false) {
   const normalizedStatus = String(status || "ACTIVE").toUpperCase();
 
-  if (normalizedStatus === "ACTIVE") {
-    return isDarkMode
-      ? "border border-emerald-700/60 bg-emerald-950/35 text-emerald-200"
-      : "border border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-
   if (["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(normalizedStatus)) {
     return isDarkMode
       ? "border border-amber-700/60 bg-amber-950/35 text-amber-200"
       : "border border-amber-200 bg-amber-50 text-amber-700";
   }
 
-  if (["ERROR", "REJECT", "REJECTED", "WARN", "WARNED"].includes(normalizedStatus)) {
+  if (["WARN", "WARNED"].includes(normalizedStatus)) {
+    return isDarkMode
+      ? "border border-amber-700/60 bg-amber-950/35 text-amber-200"
+      : "border border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  if (["ERROR", "REJECT", "REJECTED"].includes(normalizedStatus)) {
     return isDarkMode
       ? "border border-rose-700/60 bg-rose-950/35 text-rose-200"
       : "border border-rose-200 bg-rose-50 text-rose-700";
@@ -94,6 +94,31 @@ function getSourceStatusTone(status, isDarkMode = false) {
 function getSourceStatusLabel(status, t) {
   const normalizedStatus = String(status || "ACTIVE").toUpperCase();
   return t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus);
+}
+
+function formatUploadTime(uploadedAt, locale = "vi-VN") {
+  if (!uploadedAt) return "";
+  try {
+    const date = new Date(uploadedAt);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return locale.startsWith("en") ? "Just now" : "Vừa xong";
+    if (diffMins < 60) return locale.startsWith("en") ? `${diffMins}m ago` : `${diffMins} phút trước`;
+    if (diffHours < 24) return locale.startsWith("en") ? `${diffHours}h ago` : `${diffHours} giờ trước`;
+    if (diffDays < 7) return locale.startsWith("en") ? `${diffDays}d ago` : `${diffDays} ngày trước`;
+
+    return new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+  } catch {
+    return "";
+  }
 }
 
 function splitNameExt(name) {
@@ -168,6 +193,8 @@ function SourcesPanel({
         .includes(query),
     );
   }, [deferredSearch, sources]);
+
+  const uploadTimeLabel = t("workspace.shell.uploadTimeLabel", "Thời gian");
 
   useEffect(() => {
     onDetailViewChange?.(Boolean(viewingSource));
@@ -400,6 +427,7 @@ function SourcesPanel({
         <div className={cn("divide-y", isDarkMode ? "divide-slate-800" : "divide-slate-200")}>
           {filteredSources.map((source, index) => {
             const sourceId = Number(source?.id ?? source?.materialId);
+            const normalizedStatus = String(source?.status || "").toUpperCase();
             const isSelected =
               Number.isInteger(sourceId) && selectedIds.includes(sourceId);
             const isSelectable =
@@ -467,11 +495,29 @@ function SourcesPanel({
                       >
                         {formatFileType(source?.type ?? source?.materialType)}
                       </span>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSourceStatusTone(source?.status, isDarkMode)}`}
-                      >
-                        {getSourceStatusLabel(source?.status, t)}
-                      </span>
+                      {normalizedStatus !== "ACTIVE" && (
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSourceStatusTone(source?.status, isDarkMode)}`}
+                        >
+                          {getSourceStatusLabel(source?.status, t)}
+                        </span>
+                      )}
+                      {source?.uploadedAt && (
+                        <span
+                          className={cn(
+                            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-200",
+                            isDarkMode
+                              ? "border-slate-700 bg-slate-950 text-slate-400"
+                              : "border-slate-200 bg-slate-50 text-slate-500",
+                          )}
+                          title={new Intl.DateTimeFormat(i18n.language === "en" ? "en-US" : "vi-VN", {
+                            dateStyle: "full",
+                            timeStyle: "short",
+                          }).format(new Date(source.uploadedAt))}
+                        >
+                          {uploadTimeLabel}: {formatUploadTime(source.uploadedAt, i18n.language === "en" ? "en-US" : "vi-VN")}
+                        </span>
+                      )}
                     </div>
                     {(() => {
                       if (!isActivelyProcessing(source?.status)) return null;
