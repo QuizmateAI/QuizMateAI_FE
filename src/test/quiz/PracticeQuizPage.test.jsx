@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import PracticeQuizPage from '@/pages/Users/Quiz/PracticeQuizPage';
+import PracticeQuizPage from '@/Pages/Users/Quiz/PracticeQuizPage';
 
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();
@@ -50,11 +50,11 @@ vi.mock('@/context/ToastContext', () => ({
   }),
 }));
 
-vi.mock('@/pages/Users/Quiz/components/QuizHeader', () => ({
+vi.mock('@/Pages/Users/Quiz/components/QuizHeader', () => ({
   default: ({ title }) => <div data-testid="quiz-header">{title}</div>,
 }));
 
-vi.mock('@/pages/Users/Quiz/components/QuestionCard', () => ({
+vi.mock('@/Pages/Users/Quiz/components/QuestionCard', () => ({
   default: ({ question, questionNumber, reviewState, onSelectAnswer }) => (
     <div>
       <div data-testid="question-card">{`Question ${questionNumber}: ${question.content}`}</div>
@@ -98,7 +98,7 @@ describe('PracticeQuizPage', () => {
     await waitFor(() => {
       expect(mockStartQuizAttempt).toHaveBeenCalledWith('45', { isPracticeMode: true });
     });
-    expect(screen.getByText('Đang mở phòng luyện tập...')).toBeInTheDocument();
+    expect(screen.getByText('Opening practice room...')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -193,7 +193,7 @@ describe('PracticeQuizPage', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Select answer' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check answer' }));
 
     await waitFor(() => {
       expect(mockSubmitPracticeQuestion).toHaveBeenCalledWith(77, {
@@ -204,6 +204,6 @@ describe('PracticeQuizPage', () => {
     });
 
     expect(screen.getByTestId('question-review')).toHaveTextContent('reviewed');
-    expect(screen.getByRole('button', { name: 'Câu tiếp theo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next question' })).toBeInTheDocument();
   });
 });

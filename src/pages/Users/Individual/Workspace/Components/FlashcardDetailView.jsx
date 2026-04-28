@@ -31,10 +31,13 @@ import {
 } from "@/api/FlashcardAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/utils/apiResponse";
+import MixedMathText from "@/components/math/MixedMathText";
+import { getContentDisplayText, getContentImageList } from "@/lib/questionContentMedia";
 
 function FlashcardFace({
   accentClassName,
   content,
+  images = [],
   fontClass,
   hint,
   hintClassName,
@@ -47,9 +50,24 @@ function FlashcardFace({
       <div className="grid h-full grid-rows-[auto_1fr_auto] gap-6">
         <p className={labelClassName}>{label}</p>
         <div className="flex min-h-0 items-center justify-center px-2 sm:px-6">
-          <p className={`max-h-full overflow-y-auto whitespace-pre-wrap break-words text-center text-xl font-semibold leading-relaxed sm:text-2xl ${textClassName} ${fontClass}`}>
-            {content}
-          </p>
+          <div className="max-h-full w-full overflow-y-auto">
+            {images.length > 0 ? (
+              <div className="mb-3 space-y-2">
+                {images.map((image, index) => (
+                  <img
+                    key={`${image.url}-${index}`}
+                    src={image.url}
+                    alt={image.alt || 'Flashcard image'}
+                    loading="lazy"
+                    className="max-h-52 w-full rounded-xl border border-slate-200 object-contain bg-slate-50 dark:border-slate-700 dark:bg-slate-900"
+                  />
+                ))}
+              </div>
+            ) : null}
+            <p className={`whitespace-pre-wrap break-words text-center text-xl font-semibold leading-relaxed sm:text-2xl ${textClassName} ${fontClass}`}>
+              <MixedMathText>{content}</MixedMathText>
+            </p>
+          </div>
         </div>
         <p className={hintClassName}>{hint}</p>
       </div>
@@ -126,6 +144,22 @@ function FlashcardDetailView({
   }, [fetchDetail]);
 
   const activeItem = useMemo(() => items[activeIndex] || null, [activeIndex, items]);
+  const activeFrontDisplayText = useMemo(
+    () => getContentDisplayText(activeItem?.frontContent || ""),
+    [activeItem?.frontContent],
+  );
+  const activeBackDisplayText = useMemo(
+    () => getContentDisplayText(activeItem?.backContent || ""),
+    [activeItem?.backContent],
+  );
+  const activeFrontImages = useMemo(
+    () => getContentImageList(activeItem?.frontContent || ""),
+    [activeItem?.frontContent],
+  );
+  const activeBackImages = useMemo(
+    () => getContentImageList(activeItem?.backContent || ""),
+    [activeItem?.backContent],
+  );
   const inputCls = "w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-400 dark:focus:border-emerald-500";
   const detailStatus = String(detail?.status || flashcard?.status || "").toUpperCase();
   const canMutateContent = !hideEditButton && detailStatus === "ACTIVE";
@@ -459,7 +493,8 @@ function FlashcardDetailView({
               >
                 <FlashcardFace
                   accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm [backface-visibility:hidden] dark:border-slate-800 dark:bg-slate-900 sm:p-8"
-                  content={activeItem.frontContent}
+                  content={activeFrontDisplayText}
+                  images={activeFrontImages}
                   fontClass={fontClass}
                   hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
                   hintClassName="text-center text-sm text-slate-400 dark:text-slate-500"
@@ -470,7 +505,8 @@ function FlashcardDetailView({
 
                 <FlashcardFace
                   accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-emerald-300 bg-emerald-50 p-6 shadow-sm [backface-visibility:hidden] [transform:rotateX(180deg)] dark:border-emerald-900/50 dark:bg-emerald-950/20 sm:p-8"
-                  content={activeItem.backContent}
+                  content={activeBackDisplayText}
+                  images={activeBackImages}
                   fontClass={fontClass}
                   hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
                   hintClassName="text-center text-sm text-emerald-600/70 dark:text-emerald-500/70"
@@ -551,6 +587,8 @@ function FlashcardDetailView({
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {items.map((item, index) => {
                 const isEditing = editingItemId === item.flashcardItemId;
+                const frontPreviewImages = getContentImageList(item.frontContent || "");
+                const backPreviewImages = getContentImageList(item.backContent || "");
                 return (
                   <div key={item.flashcardItemId} className="py-4" style={{ contentVisibility: "auto" }}>
                     <div className="flex items-center justify-between gap-3">
@@ -589,13 +627,43 @@ function FlashcardDetailView({
                           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                             {t("workspace.flashcard.frontContent")}
                           </p>
-                          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{item.frontContent || "—"}</p>
+                          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                            <MixedMathText>{getContentDisplayText(item.frontContent || "") || "—"}</MixedMathText>
+                          </p>
+                          {frontPreviewImages.length > 0 ? (
+                            <div className="mt-2 space-y-2">
+                              {frontPreviewImages.map((image, imageIndex) => (
+                                <img
+                                  key={`front-${item.flashcardItemId}-${image.url}-${imageIndex}`}
+                                  src={image.url}
+                                  alt={image.alt || 'Flashcard image'}
+                                  loading="lazy"
+                                  className="max-h-40 w-full rounded-lg border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-900"
+                                />
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                         <div>
                           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                             {t("workspace.flashcard.backContent")}
                           </p>
-                          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{item.backContent || "—"}</p>
+                          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                            <MixedMathText>{getContentDisplayText(item.backContent || "") || "—"}</MixedMathText>
+                          </p>
+                          {backPreviewImages.length > 0 ? (
+                            <div className="mt-2 space-y-2">
+                              {backPreviewImages.map((image, imageIndex) => (
+                                <img
+                                  key={`back-${item.flashcardItemId}-${image.url}-${imageIndex}`}
+                                  src={image.url}
+                                  alt={image.alt || 'Flashcard image'}
+                                  loading="lazy"
+                                  className="max-h-40 w-full rounded-lg border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-900"
+                                />
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     )}

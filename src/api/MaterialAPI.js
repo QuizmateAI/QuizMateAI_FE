@@ -5,7 +5,7 @@ const MATERIAL_REVIEW_TIMEOUT_MS = 60000;
 // backend stores the file and starts downstream processing. A short client
 // timeout makes the UI think the upload failed even though the server may
 // still finish it, which leads to duplicate re-uploads.
-const MATERIAL_UPLOAD_TIMEOUT_MS = 0;
+const MATERIAL_UPLOAD_TIMEOUT_MS = 120000; // 2 phút timeout
 
 function buildMultipartConfig(workspaceId, options = {}) {
   const { onUploadProgress, timeout = MATERIAL_UPLOAD_TIMEOUT_MS } = options;

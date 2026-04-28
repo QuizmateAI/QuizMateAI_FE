@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import ChatPanel from '@/pages/Users/Individual/Workspace/Components/ChatPanel';
+import ChatPanel from '@/Pages/Users/Individual/Workspace/Components/ChatPanel';
 
 const ROADMAP_GUIDE_SEEN_STORAGE_KEY = 'quizmate_roadmap_guide_seen_v1';
 
@@ -22,7 +22,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/pages/Users/Individual/Workspace/Components/WorkspaceOverviewView', () => ({
+vi.mock('@/Pages/Users/Individual/Workspace/Components/WorkspaceOverviewView', () => ({
   default: (props) => {
     overviewSpy(props);
     return (
@@ -35,7 +35,7 @@ vi.mock('@/pages/Users/Individual/Workspace/Components/WorkspaceOverviewView', (
   },
 }));
 
-vi.mock('@/pages/Users/Individual/Workspace/Components/SourcesPanel', () => ({
+vi.mock('@/Pages/Users/Individual/Workspace/Components/SourcesPanel', () => ({
   default: (props) => {
     sourcesSpy(props);
     return (
@@ -48,7 +48,7 @@ vi.mock('@/pages/Users/Individual/Workspace/Components/SourcesPanel', () => ({
   },
 }));
 
-vi.mock('@/pages/Users/Individual/Workspace/Components/CreateQuizForm', () => ({
+vi.mock('@/Pages/Users/Individual/Workspace/Components/CreateQuizForm', () => ({
   default: () => <div data-testid="create-quiz-form" />,
 }));
 
@@ -68,11 +68,11 @@ function MockRoadmapCanvasView(props) {
   return <div data-testid="roadmap-canvas-view">Roadmap canvas mock</div>;
 }
 
-vi.mock('@/pages/Users/Individual/Workspace/Components/RoadmapCanvasView', () => ({
+vi.mock('@/Pages/Users/Individual/Workspace/Components/RoadmapCanvasView', () => ({
   default: MockRoadmapCanvasView,
 }));
 
-vi.mock('@/pages/Users/Individual/Workspace/Components/PostLearningListView', () => ({
+vi.mock('@/Pages/Users/Individual/Workspace/Components/PostLearningListView', () => ({
   default: (props) => {
     postLearningListSpy(props);
     return (
@@ -91,7 +91,7 @@ vi.mock('@/pages/Users/Individual/Workspace/Components/PostLearningListView', ()
   },
 }));
 
-vi.mock('@/pages/Users/Individual/Workspace/Components/CreatePostLearningForm', () => ({
+vi.mock('@/Pages/Users/Individual/Workspace/Components/CreatePostLearningForm', () => ({
   default: (props) => {
     createPostLearningFormSpy(props);
     return (
@@ -228,11 +228,11 @@ describe('Workspace ChatPanel', () => {
       roadmapPhaseGenerationProgress: 66,
       disableCreate: true,
     }));
-    expect(screen.getByText('Chi tiết')).toBeInTheDocument();
-    expect(screen.getByText('Tổng quan')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Roadmap guide/i })).toBeInTheDocument();
   });
 
-  it('shows the roadmap summary dropdown under the roadmap title', async () => {
+  it('shows roadmap header controls when roadmap view is active', async () => {
     window.localStorage.setItem('quizmate_roadmap_guide_seen_v2', 'true');
 
     renderChatPanel({
@@ -242,16 +242,8 @@ describe('Workspace ChatPanel', () => {
     });
 
     expect(await screen.findByRole('heading', { name: 'Lộ trình' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Tổng quan' }));
-    const summaryTriggerButton = await screen.findByRole('button', {
-      name: /roadmap content|nội dung roadmap|nội dung lộ trình|roadmap summary/i,
-    });
-    expect(summaryTriggerButton).toBeInTheDocument();
-
-    fireEvent.pointerDown(summaryTriggerButton);
-
-    expect(await screen.findByText('Tong hop noi dung roadmap hien tai.')).toBeInTheDocument();
-    expect(screen.getAllByText('Roadmap - Workspace 6').length).toBeGreaterThan(1);
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Roadmap guide/i })).toBeInTheDocument();
   });
 
   it('keeps detail canvas when re-entering roadmap with a phase or knowledge selected', async () => {

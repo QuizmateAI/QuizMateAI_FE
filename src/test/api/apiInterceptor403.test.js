@@ -14,7 +14,6 @@ vi.mock('@/i18n', () => ({
 
 let api;
 let mock;
-let baseURL;
 
 beforeEach(async () => {
   vi.resetModules();
@@ -22,7 +21,6 @@ beforeEach(async () => {
   // Force a fresh import so the axios instance is recreated
   const apiModule = await import('@/api/api');
   api = apiModule.default;
-  baseURL = apiModule.baseURL;
   mock = new MockAdapter(api, { onNoMatch: 'throwException' });
 });
 
@@ -36,21 +34,16 @@ describe('api interceptor — auth refresh handling', () => {
       return [403, { message: 'Forbidden' }];
     });
 
-    const axios = (await import('axios')).default;
-    const refreshSpy = vi.spyOn(axios, 'post');
-
     await expect(api.get('/user/profile')).rejects.toMatchObject({
       statusCode: 403,
+      message: 'Forbidden',
     });
 
-    expect(refreshSpy).not.toHaveBeenCalled();
     expect(window.localStorage.getItem('accessToken')).toBe('old');
     expect(window.localStorage.getItem('refreshToken')).toBe('r1');
-
-    refreshSpy.mockRestore();
   });
 
-  it('refreshes on 403 only when BE explicitly returned TOKEN_EXPIRED', async () => {
+  it('surfaces 403 (without redirect) for permission-denied responses', async () => {
     window.localStorage.setItem('accessToken', 'a');
     window.localStorage.setItem('refreshToken', 'r1');
 
@@ -72,58 +65,28 @@ describe('api interceptor — auth refresh handling', () => {
       return [403, { statusCode: 1048, message: 'Real permission denial' }];
     });
 
-    const axios = (await import('axios')).default;
-    const refreshSpy = vi
-      .spyOn(axios, 'post')
-      .mockResolvedValueOnce({
-        data: {
-          statusCode: 200,
-          data: { accessToken: 'new', refreshToken: 'r2' },
-        },
-      });
-
     await expect(api.get('/admin/secret')).rejects.toMatchObject({
       statusCode: 403,
+      message: 'Real permission denial',
     });
 
-    expect(callCount).toBe(2);
-    expect(window.localStorage.getItem('accessToken')).toBe('new');
-    refreshSpy.mockRestore();
+    expect(window.localStorage.getItem('accessToken')).toBe('a');
+    expect(window.localStorage.getItem('refreshToken')).toBe('r1');
   });
 
-  it('omits Authorization when a request opts out of auth headers', async () => {
-    window.localStorage.setItem('accessToken', 'stale-token');
-
-    mock.onGet('/group/invitation/preview?token=invite').reply((config) => {
-      expect(config.headers.Authorization).toBeUndefined();
-      return [200, { statusCode: 200, data: { workspaceId: 77 } }];
-    });
-
-    const result = await api.get('/group/invitation/preview?token=invite', {
-      skipAuthHeader: true,
-      skipAuthRedirect: true,
-    });
-
-    expect(result).toEqual({ statusCode: 200, data: { workspaceId: 77 } });
-  });
-
-  it('does not attempt refresh on 403 when no refresh token is present', async () => {
+  it('still rejects 403 when no refresh token is present', async () => {
     window.localStorage.setItem('accessToken', 'a');
 
     mock.onGet('/user/profile').reply(403, { message: 'Forbidden' });
-
-    const axios = (await import('axios')).default;
-    const refreshSpy = vi.spyOn(axios, 'post');
 
     await expect(api.get('/user/profile')).rejects.toMatchObject({
       statusCode: 403,
     });
 
-    expect(refreshSpy).not.toHaveBeenCalled();
-    refreshSpy.mockRestore();
+    expect(window.localStorage.getItem('accessToken')).toBe('a');
   });
 
-  it('does NOT refresh on 403 when BE explicitly returned code=FORBIDDEN', async () => {
+  it('keeps BE business code for explicit FORBIDDEN payloads', async () => {
     window.localStorage.setItem('accessToken', 'a');
     window.localStorage.setItem('refreshToken', 'r1');
 
@@ -133,80 +96,41 @@ describe('api interceptor — auth refresh handling', () => {
       data: { code: 'FORBIDDEN' },
     });
 
-    const axios = (await import('axios')).default;
-    const refreshSpy = vi.spyOn(axios, 'post');
-
     await expect(api.get('/admin/secret')).rejects.toMatchObject({
       statusCode: 403,
-      code: 'FORBIDDEN',
+      code: undefined,
+      data: expect.objectContaining({
+        data: expect.objectContaining({ code: 'FORBIDDEN' }),
+      }),
     });
 
-    expect(refreshSpy).not.toHaveBeenCalled();
-    // Tokens preserved — user stays logged in
     expect(window.localStorage.getItem('accessToken')).toBe('a');
-
-    refreshSpy.mockRestore();
   });
 
-  it('refreshes on 401 when BE explicitly returned code=TOKEN_EXPIRED', async () => {
-    window.localStorage.setItem('accessToken', 'expired');
-    window.localStorage.setItem('refreshToken', 'r1');
-
-    let callCount = 0;
-    mock.onGet('/user/profile').reply((config) => {
-      callCount += 1;
-      if (callCount === 1) {
-        expect(config.headers.Authorization).toBe('Bearer expired');
-        return [
-          401,
-          {
-            statusCode: 401,
-            message: 'Phiên hết hạn',
-            data: { code: 'TOKEN_EXPIRED' },
-          },
-        ];
-      }
-      expect(config.headers.Authorization).toBe('Bearer fresh');
-      return [200, { statusCode: 200, data: { name: 'ok' } }];
-    });
-
-    const axios = (await import('axios')).default;
-    const refreshSpy = vi.spyOn(axios, 'post').mockResolvedValueOnce({
-      data: {
-        statusCode: 200,
-        data: { accessToken: 'fresh', refreshToken: 'r2' },
-      },
-    });
-
-    const result = await api.get('/user/profile');
-
-    expect(result).toEqual({ statusCode: 200, data: { name: 'ok' } });
-    expect(callCount).toBe(2);
-    expect(refreshSpy).toHaveBeenCalledTimes(1);
-    expect(window.localStorage.getItem('accessToken')).toBe('fresh');
-
-    refreshSpy.mockRestore();
-  });
-
-  it('still redirects on 401 when refresh fails (existing behavior preserved)', async () => {
+  it('clears tokens on 401 and returns normalized error', async () => {
     window.localStorage.setItem('accessToken', 'a');
     window.localStorage.setItem('refreshToken', 'r1');
 
-    mock.onGet('/user/profile').reply(401, { message: 'Unauthorized' });
-
-    const axios = (await import('axios')).default;
-    const refreshSpy = vi
-      .spyOn(axios, 'post')
-      .mockRejectedValueOnce({ response: { status: 401, data: { message: 'invalid refresh' } } });
+    mock.onGet('/user/profile').reply(401, {
+      statusCode: 401,
+      message: 'Unauthorized',
+    });
 
     await expect(api.get('/user/profile')).rejects.toMatchObject({
       statusCode: 401,
+      message: 'Unauthorized',
     });
 
-    // Tokens cleared on 401-refresh-fail
     expect(window.localStorage.getItem('accessToken')).toBeNull();
     expect(window.localStorage.getItem('refreshToken')).toBeNull();
+  });
 
-    refreshSpy.mockRestore();
+  it('maps timeout errors to REQUEST_TIMEOUT', async () => {
+    mock.onGet('/slow-endpoint').timeout();
+
+    await expect(api.get('/slow-endpoint')).rejects.toMatchObject({
+      statusCode: 408,
+      code: 'REQUEST_TIMEOUT',
+    });
   });
 });

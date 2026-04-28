@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Rocket, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Rocket, Sparkles, X } from "lucide-react";
 import { getBloomSkillLabel, getQuizDifficultyLabel, getQuizQuestionTypeLabel } from "@/lib/quizQuestionTypes";
 
 function CreateQuizAiRecommendationsPanel({
@@ -18,11 +17,15 @@ function CreateQuizAiRecommendationsPanel({
   onToggleRecommendation,
   t,
 }) {
-  const [showStructure, setShowStructure] = useState(false);
   const getDifficultyLabel = (difficulty) => getQuizDifficultyLabel(difficulty, t);
   const getQuestionTypeLabel = (questionType) => getQuizQuestionTypeLabel(questionType, t);
   const getBloomLabel = (bloomSkill) => getBloomSkillLabel(bloomSkill, t);
   const hasRecommendations = Array.isArray(inlineRecommendations) && inlineRecommendations.length > 0;
+  const activeStructure = Array.isArray(activeRecommendation?.structure) ? activeRecommendation.structure : [];
+  const activeFocusLabels = Array.isArray(activeRecommendation?.focusTopics) ? activeRecommendation.focusTopics : [];
+  const focusLabels = activeFocusLabels
+    .map((label) => String(label || "").trim())
+    .filter(Boolean);
 
   if (!inlineRecError && !hasRecommendations) {
     return null;
@@ -92,7 +95,7 @@ function CreateQuizAiRecommendationsPanel({
                 </p>
                 <button
                   type="button"
-                  onClick={() => { onToggleRecommendation(null); setShowStructure(false); }}
+                  onClick={() => onToggleRecommendation(null)}
                   className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-600 hover:bg-gray-100"} ${fontClass}`}
                 >
                   {t("workspace.quiz.aiRecommendations.hideDetail")}
@@ -111,46 +114,44 @@ function CreateQuizAiRecommendationsPanel({
                 </span>
               </div>
 
-              {/* Structure detail toggle */}
-              {Array.isArray(activeRecommendation.structure) && activeRecommendation.structure.length > 0 && (
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowStructure((prev) => !prev)}
-                    className={`flex items-center gap-1 text-[11px] font-medium transition-colors ${isDarkMode
-                      ? "text-slate-400 hover:text-slate-200"
-                      : "text-gray-500 hover:text-gray-700"
-                      } ${fontClass}`}
-                  >
-                    {showStructure ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    {showStructure
-                      ? t("workspace.quiz.aiRecommendations.hideStructure")
-                      : t("workspace.quiz.aiRecommendations.showDetail")}
-                  </button>
-                  {showStructure && (
-                    <div className={`mt-2 rounded-lg border overflow-hidden ${isDarkMode ? "border-slate-700" : "border-gray-200"}`}>
-                      <table className="w-full text-[11px]">
-                        <thead>
-                          <tr className={isDarkMode ? "bg-slate-800/80" : "bg-gray-50"}>
-                            <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.difficulty")}</th>
-                            <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.type")}</th>
-                            <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.bloom")}</th>
-                            <th className={`px-2.5 py-1.5 text-right font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.quantity")}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {activeRecommendation.structure.map((item, sIdx) => (
-                            <tr key={sIdx} className={`border-t ${isDarkMode ? "border-slate-700/50" : "border-gray-100"}`}>
-                              <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getDifficultyLabel(item.difficulty)}</td>
-                              <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getQuestionTypeLabel(item.questionType)}</td>
-                              <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getBloomLabel(item.bloomSkill)}</td>
-                              <td className={`px-2.5 py-1.5 text-right font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{item.quantity}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+              {focusLabels.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {focusLabels.map((label) => (
+                    <span
+                      key={label}
+                      className={`rounded-md border px-2 py-1 text-[11px] font-medium ${isDarkMode
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        } ${fontClass}`}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {activeStructure.length > 0 && (
+                <div className={`mt-3 rounded-lg border overflow-hidden ${isDarkMode ? "border-slate-700" : "border-gray-200"}`}>
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className={isDarkMode ? "bg-slate-800/80" : "bg-gray-50"}>
+                        <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.difficulty")}</th>
+                        <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.type")}</th>
+                        <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.bloom")}</th>
+                        <th className={`px-2.5 py-1.5 text-right font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.quantity")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeStructure.map((item, sIdx) => (
+                        <tr key={sIdx} className={`border-t ${isDarkMode ? "border-slate-700/50" : "border-gray-100"}`}>
+                          <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getDifficultyLabel(item.difficulty)}</td>
+                          <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getQuestionTypeLabel(item.questionType)}</td>
+                          <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getBloomLabel(item.bloomSkill)}</td>
+                          <td className={`px-2.5 py-1.5 text-right font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{item.quantity}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
 
