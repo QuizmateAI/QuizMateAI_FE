@@ -143,6 +143,12 @@ function clampPercent(percent) {
   return Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
 }
 
+function normalizePositiveIds(ids = []) {
+  return Array.from(new Set((ids || [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0)));
+}
+
 function normalizeMaterialStatus(status) {
   const normalized = String(status || '').trim().toUpperCase();
   if (normalized === 'WARNED') return 'WARN';
@@ -729,6 +735,7 @@ function GroupWorkspacePage() {
   const [roadmapPhaseGenerationProgress, setRoadmapPhaseGenerationProgress] = useState(0);
   const [roadmapPhaseGenerationTaskId, setRoadmapPhaseGenerationTaskId] = useState(null);
   const [isGeneratingRoadmapPreLearning, setIsGeneratingRoadmapPreLearning] = useState(false);
+  const knownRoadmapPhaseIdsRef = useRef(new Set());
   const [phaseGenerateDialogOpen, setPhaseGenerateDialogOpen] = useState(false);
   const [phaseGenerateDialogDefaultIds, setPhaseGenerateDialogDefaultIds] = useState([]);
   const [isSubmittingRoadmapPhaseRequest, setIsSubmittingRoadmapPhaseRequest] = useState(false);
@@ -1228,6 +1235,51 @@ function GroupWorkspacePage() {
 
     return null;
   }, [currentRoadmapId, roadmapPathParams?.roadmapId, runtimeRoadmapId]);
+
+  const rememberKnownRoadmapPhases = useCallback((phases = []) => {
+    knownRoadmapPhaseIdsRef.current = new Set(normalizePositiveIds(
+      (Array.isArray(phases) ? phases : []).map((phase) => phase?.phaseId ?? phase?.id)
+    ));
+  }, []);
+
+  const isRuntimeSignalForCurrentRoadmapScope = useCallback((signal) => {
+    const signalWorkspaceId = Number(signal?.workspaceId ?? signal?.processingObject?.workspaceId ?? 0);
+    const currentWorkspaceId = Number(workspaceId);
+    if (
+      Number.isInteger(signalWorkspaceId)
+      && signalWorkspaceId > 0
+      && Number.isInteger(currentWorkspaceId)
+      && currentWorkspaceId > 0
+      && signalWorkspaceId !== currentWorkspaceId
+    ) {
+      return false;
+    }
+
+    const signalRoadmapId = Number(signal?.roadmapId ?? signal?.processingObject?.roadmapId ?? 0);
+    const currentResolvedRoadmapId = Number(resolvedRoadmapRouteId ?? currentRoadmapId);
+    if (
+      Number.isInteger(signalRoadmapId)
+      && signalRoadmapId > 0
+      && Number.isInteger(currentResolvedRoadmapId)
+      && currentResolvedRoadmapId > 0
+      && signalRoadmapId !== currentResolvedRoadmapId
+    ) {
+      return false;
+    }
+
+    const signalPhaseId = Number(signal?.phaseId ?? signal?.processingObject?.phaseId ?? 0);
+    const knownPhaseIds = knownRoadmapPhaseIdsRef.current;
+    if (
+      Number.isInteger(signalPhaseId)
+      && signalPhaseId > 0
+      && knownPhaseIds.size > 0
+      && !knownPhaseIds.has(signalPhaseId)
+    ) {
+      return false;
+    }
+
+    return true;
+  }, [currentRoadmapId, resolvedRoadmapRouteId, workspaceId]);
 
   const groupProfileRoadmapConfig = useMemo(
     () => extractRoadmapConfigValues(groupProfile || {}),
@@ -1922,6 +1974,7 @@ function GroupWorkspacePage() {
 
   const loadGroupRoadmapConfig = useCallback(async () => {
     if (!currentRoadmapId) {
+      knownRoadmapPhaseIdsRef.current = new Set();
       setGroupRoadmapConfig(null);
       return;
     }
@@ -1929,15 +1982,17 @@ function GroupWorkspacePage() {
     try {
       const response = await getRoadmapStructureById(currentRoadmapId);
       const payload = response?.data?.data || response?.data || response || null;
+      rememberKnownRoadmapPhases(payload?.phases);
       setGroupRoadmapConfig(extractRoadmapConfigValues(payload || {}));
     } catch (error) {
       const status = Number(error?.response?.status);
       if (status !== 404) {
         console.error('Failed to load group roadmap config:', error);
       }
+      knownRoadmapPhaseIdsRef.current = new Set();
       setGroupRoadmapConfig(null);
     }
-  }, [currentRoadmapId]);
+  }, [currentRoadmapId, rememberKnownRoadmapPhases]);
 
   const loadGroupLogs = useCallback(async () => {
     if (!resolvedWorkspaceId || isCreating) return;
@@ -2170,6 +2225,9 @@ function GroupWorkspacePage() {
       || normalizedTaskType.includes('ROADMAP')
       || (roadmapPhaseGenerationTaskId && String(signal.taskId || '') === String(roadmapPhaseGenerationTaskId))
     );
+    if (isRoadmapTaskSignal && !isRuntimeSignalForCurrentRoadmapScope(signal)) {
+      return;
+    }
 
     if (signal.isQuizSignal && Number.isInteger(progressQuizId) && progressQuizId > 0) {
       if (signalTaskId) {
@@ -2366,6 +2424,7 @@ function GroupWorkspacePage() {
     activeSection,
     announceRealtimeMaterialStatus,
     currentLang,
+    isRuntimeSignalForCurrentRoadmapScope,
     isLeader,
     loadGroupRoadmapConfig,
     materialProgress,
