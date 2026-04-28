@@ -62,6 +62,7 @@
       "maxAvailable": "Max {{count}}",
       "capReached": "This group has reached the maximum number of member slots allowed by system settings. You cannot buy more."
     },
+    "extraSlotLine": "{{count}} extra member slots",
     "orderConfirm": {
       "title": "Confirm order",
       "description": "Review the order details before payment.",
