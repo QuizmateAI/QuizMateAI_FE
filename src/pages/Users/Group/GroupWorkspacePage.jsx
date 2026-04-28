@@ -1370,8 +1370,9 @@ function GroupWorkspacePage() {
     || currentGroupWorkspace?.canUpload
     || currentGroupFromGroups?.canUpload,
   );
+  const routeWorkspaceId = Number(workspaceId);
   const resolvedWorkspaceId = currentGroupWorkspace?.workspaceId
-    ?? (isCreating ? null : workspaceId);
+    ?? (isCreating ? null : (Number.isInteger(routeWorkspaceId) ? routeWorkspaceId : workspaceId));
   const fallbackCanCreateContent = isLeader || isContributor || hasGrantedContentAccess;
   const fallbackCanUploadSource = isLeader || isContributor || hasGrantedContentAccess;
   const fallbackCanViewMemberDashboard = isLeader || isContributor;
@@ -4800,7 +4801,7 @@ function GroupWorkspacePage() {
           <React.Suspense fallback={renderSectionFallback(360)}>
             <LazyGroupMembersTab
             isDarkMode={isDarkMode}
-            workspaceId={workspaceId}
+            workspaceId={resolvedWorkspaceId}
             members={members}
             totalMemberCount={acceptedMemberFallbackCount}
             membersLoading={membersLoading}

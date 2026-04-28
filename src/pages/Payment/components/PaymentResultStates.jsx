@@ -98,7 +98,7 @@ const COPY = {
     stoppedDetail: 'Không ghi nhận khoản thu',
     ai: 'AI',
     unlimited: 'Unlimited',
-    group: 'Group',
+    group: 'Nhóm',
     defaultPlan: 'QuizMate Pro',
     updating: 'Đang cập nhật',
   },
