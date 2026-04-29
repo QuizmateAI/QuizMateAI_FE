@@ -1382,10 +1382,14 @@
       "createFailed": "Không thể tạo challenge"
     },
     "sourceMode": {
-      "existingLabel": "Đề có sẵn",
+      "existingLabel": "Có sẵn",
       "existingDesc": "Tạo bản sao từ nội dung đã có",
-      "newLabel": "Đề mới",
-      "newDesc": "Soạn đề sau trong chi tiết challenge"
+      "newLabel": "Tạo thủ công",
+      "newDesc": "Tạo đề challenge nháp và soạn câu hỏi bằng trình tạo thủ công",
+      "manualLabel": "Thủ công",
+      "manualDesc": "Tạo đề challenge nháp và tự soạn câu hỏi.",
+      "aiLabel": "AI",
+      "aiDesc": "Dùng QuizMate AI tạo đề challenge nháp."
     },
     "mode": {
       "personalLabel": "Đua cá nhân",
@@ -1408,17 +1412,18 @@
       "emptyNoQuizzes": "Chưa có nội dung chia sẻ nào trong workspace",
       "emptyNoEligible": "Không có nội dung chia sẻ để tạo challenge",
       "emptyNoMatches": "Không khớp từ khóa tìm kiếm",
-      "emptyNoQuizzesHint": "Tạo nội dung trong workspace trước, hoặc chọn \"Đề mới\" ở trên.",
+      "emptyNoQuizzesHint": "Tạo nội dung trong workspace trước, hoặc chọn \"Thủ công\" hoặc \"AI\" ở trên.",
       "emptyNoEligibleHint": "Nội dung đã giao riêng thành viên không dùng được. Xuất bản dạng chia sẻ cho cả nhóm hoặc bỏ giao riêng trước.",
       "emptyNoMatchesHint": "Thử từ khóa khác hoặc xóa ô tìm kiếm.",
       "questionCount": "{{count}} câu",
       "durationMinutes": "{{minutes}} phút"
     },
     "newQuizNotice": {
-      "leadBefore": "Sau khi tạo challenge, vào chi tiết challenge và bấm ",
+      "leadBefore": "Sau khi tạo challenge, hệ thống sẽ mở chi tiết challenge. Bấm ",
       "composeLabel": "Soạn đề",
       "leadAfter": " để mở trình soạn đề challenge.",
-      "hint": "Chọn thời gian tương lai; sau khi tạo, vào chi tiết challenge để soạn đề."
+      "hint": "Chọn thời gian tương lai; sau khi tạo, dùng trình soạn thủ công để hoàn tất đề trước khi publish.",
+      "aiHint": "Chọn thời gian tương lai; sau khi tạo, dùng QuizMate AI để sinh đề trước khi publish."
     },
     "schedule": {
       "titleLabel": "Tên Challenge *",
@@ -1460,7 +1465,8 @@
       "quizHeading": "Nội dung đề",
       "quizExistingSelected": "{{title}} (bản sao nội dung chia sẻ)",
       "quizNotChosen": "Chưa chọn",
-      "quizNewNotice": "Đề mới (soạn đề trong chi tiết challenge sau khi tạo)",
+      "quizNewNotice": "Tạo thủ công (soạn đề trong chi tiết challenge sau khi tạo)",
+      "quizAiNotice": "Tạo bằng AI (sinh đề trong chi tiết challenge sau khi tạo)",
       "snapshotNote": "Snapshot không giao riêng thành viên; toàn bộ người đăng ký challenge dùng chung nội dung này.",
       "registrationHeading": "Đăng ký",
       "registrationPublic": "Công khai - mọi thành viên đều có thể đăng ký",
@@ -1848,6 +1854,63 @@
       "body": "Leader đã chọn bạn làm reviewer. Nếu đồng ý, bạn sẽ được xem đề trước để kiểm tra và bạn sẽ không thể đăng ký tham gia challenge này như thí sinh.",
       "accept": "Đồng ý review",
       "decline": "Từ chối"
+    }
+  },
+  "challengeManualMatchEditor": {
+    "eyebrow": "Trình soạn challenge thủ công",
+    "title": "Soạn đề challenge thủ công",
+    "roundTitle": "Soạn đề vòng {{round}}",
+    "subtitle": "Cập nhật bộ câu hỏi cho trận đấu mà không chuyển sang form tạo quiz thường.",
+    "roundSubtitle": "Cập nhật bộ câu hỏi cho vòng đấu này mà không rời màn hình challenge.",
+    "back": "Quay lại challenge",
+    "draftBadge": "Bản nháp challenge",
+    "meta": {
+      "challenge": "Challenge",
+      "start": "Bắt đầu",
+      "end": "Kết thúc"
+    },
+    "wizard": {
+      "header": {
+        "editTitle": "Soạn đề challenge thủ công",
+        "createTitle": "Tạo đề challenge thủ công",
+        "editDescription": "Cập nhật câu hỏi cho challenge, sau đó lưu để tiếp tục review và publish.",
+        "createDescription": "Thiết lập cấu hình rồi soạn câu hỏi cho đề challenge.",
+        "exitEdit": "Quay lại challenge",
+        "exitCreate": "Quay lại challenge",
+        "submitEdit": "Lưu đề challenge",
+        "submitCreate": "Lưu đề nháp",
+        "submitEditLoading": "Đang lưu đề...",
+        "submitCreateLoading": "Đang lưu đề...",
+        "editBanner": "Đang soạn đề challenge"
+      },
+      "step1": {
+        "title": "Cấu hình đề challenge",
+        "description": "Thiết lập tên, số câu và thời gian cho đề challenge.",
+        "nextButton": "Soạn câu hỏi",
+        "errors": {
+          "titleRequired": "Tên đề challenge không được để trống."
+        },
+        "fields": {
+          "titleLabel": "Tên đề",
+          "titlePlaceholder": "Nhập tên đề challenge...",
+          "descriptionLabel": "Ghi chú",
+          "descriptionPlaceholder": "Ghi chú ngắn cho người review...",
+          "timerModeHintTotal": "Đồng hồ đếm ngược chung cho lượt thi."
+        }
+      },
+      "stickyBar": {
+        "untitledMatch": "Đề challenge thủ công"
+      },
+      "confirm": {
+        "exitEdit": "Bạn có thay đổi chưa lưu. Quay lại challenge và bỏ thay đổi?",
+        "exitCreate": "Bạn có thay đổi chưa lưu. Quay lại challenge ngay bây giờ?"
+      },
+      "toasts": {
+        "loadError": "Không thể tải dữ liệu đề challenge.",
+        "saveUpdateSuccess": "Đã lưu đề challenge \"{{title}}\" thành công.",
+        "saveDraftSuccess": "Đã lưu đề challenge \"{{title}}\" ở trạng thái bản nháp.",
+        "saveError": "Có lỗi khi lưu đề challenge."
+      }
     }
   },
   "challengeLeaderboard": {

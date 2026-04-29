@@ -389,7 +389,7 @@ export default function PaymentPage() {
                   <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {t(
                       'payment.extraSlots.description',
-                      'Slot mua thêm được cộng vĩnh viễn vào giới hạn thành viên của group, thanh toán cùng lúc với gói.',
+                      'Slot mua thêm được cộng vĩnh viễn vào giới hạn thành viên của nhóm và thanh toán cùng lúc với gói.',
                     )}
                   </p>
                   <div className={`grid grid-cols-2 gap-3 text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -437,7 +437,7 @@ export default function PaymentPage() {
                     </div>
                   ) : (
                     <p className={`text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-700'}`}>
-                      {t('payment.extraSlots.capReached', 'Group đã đạt số slot tối đa theo cấu hình hệ thống, không thể mua thêm.')}
+                      {t('payment.extraSlots.capReached', 'Nhóm đã đạt số slot tối đa theo cấu hình hệ thống, không thể mua thêm.')}
                     </p>
                   )}
                 </div>

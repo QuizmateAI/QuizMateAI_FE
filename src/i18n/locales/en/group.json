@@ -1411,8 +1411,12 @@
     "sourceMode": {
       "existingLabel": "Existing content",
       "existingDesc": "Create a snapshot from an existing content set",
-      "newLabel": "New match",
-      "newDesc": "Compose the match later in the challenge detail"
+      "newLabel": "Manual challenge",
+      "newDesc": "Create a draft challenge match and compose questions with the manual editor",
+      "manualLabel": "Manual challenge",
+      "manualDesc": "Create a draft challenge match and compose questions with the manual editor",
+      "aiLabel": "AI challenge",
+      "aiDesc": "Generate a draft challenge match with QuizMate AI"
     },
     "mode": {
       "personalLabel": "Free-for-all",
@@ -1435,17 +1439,18 @@
       "emptyNoQuizzes": "No shared content in this workspace yet",
       "emptyNoEligible": "No shared content available for a challenge",
       "emptyNoMatches": "No matches for your search",
-      "emptyNoQuizzesHint": "Create a content set in the workspace first, or choose \"New match\" above.",
+      "emptyNoQuizzesHint": "Create a content set in the workspace first, or choose \"Manual challenge\" or \"AI challenge\" above.",
       "emptyNoEligibleHint": "Content assigned to specific members cannot be used. Publish it as shared for the whole group or remove the per-member assignment first.",
       "emptyNoMatchesHint": "Try a different keyword or clear the search box.",
       "questionCount": "{{count}} questions",
       "durationMinutes": "{{minutes}} min"
     },
     "newQuizNotice": {
-      "leadBefore": "After creating the challenge, open its detail page and click ",
+      "leadBefore": "After creating the challenge, the detail page opens. Click ",
       "composeLabel": "Compose match",
       "leadAfter": " to launch the match editor.",
-      "hint": "Choose a future start time; after creation, open the challenge detail to compose the match before the challenge starts."
+      "hint": "Choose a future start time; after creation, use the manual editor to finish the match before publishing.",
+      "aiHint": "Choose a future start time; after creation, use QuizMate AI to generate the match content before publishing."
     },
     "schedule": {
       "titleLabel": "Challenge name *",
@@ -1487,7 +1492,8 @@
       "quizHeading": "Match content",
       "quizExistingSelected": "{{title}} (shared content snapshot)",
       "quizNotChosen": "Not selected",
-      "quizNewNotice": "New match (author the questions in the challenge detail after creation)",
+      "quizNewNotice": "Manual challenge (author the questions in the challenge detail after creation)",
+      "quizAiNotice": "AI challenge (generate the questions in the challenge detail after creation)",
       "snapshotNote": "The snapshot is not assigned per member; all challenge participants share this same content.",
       "registrationHeading": "Registration",
       "registrationPublic": "Public — any member can register",
@@ -1875,6 +1881,63 @@
       "body": "The leader selected you as a reviewer. If you accept, you can inspect the match before it is published and you will not be able to register as a participant in this challenge.",
       "accept": "Accept review",
       "decline": "Decline"
+    }
+  },
+  "challengeManualMatchEditor": {
+    "eyebrow": "Manual challenge editor",
+    "title": "Compose manual challenge match",
+    "roundTitle": "Compose round {{round}} match",
+    "subtitle": "Update the match questions without switching to the regular quiz form.",
+    "roundSubtitle": "Update this round's questions without leaving the challenge screen.",
+    "back": "Back to challenge",
+    "draftBadge": "Challenge draft",
+    "meta": {
+      "challenge": "Challenge",
+      "start": "Start",
+      "end": "End"
+    },
+    "wizard": {
+      "header": {
+        "editTitle": "Compose manual challenge match",
+        "createTitle": "Create manual challenge match",
+        "editDescription": "Update the challenge questions, then save for review and publishing.",
+        "createDescription": "Configure the match and write the challenge questions.",
+        "exitEdit": "Back to challenge",
+        "exitCreate": "Back to challenge",
+        "submitEdit": "Save challenge match",
+        "submitCreate": "Save match draft",
+        "submitEditLoading": "Saving match...",
+        "submitCreateLoading": "Saving match...",
+        "editBanner": "Editing challenge match"
+      },
+      "step1": {
+        "title": "Challenge match setup",
+        "description": "Set the name, question count, and time limit for this challenge match.",
+        "nextButton": "Compose questions",
+        "errors": {
+          "titleRequired": "Challenge match name is required."
+        },
+        "fields": {
+          "titleLabel": "Match name",
+          "titlePlaceholder": "Enter challenge match name...",
+          "descriptionLabel": "Reviewer note",
+          "descriptionPlaceholder": "Short note for reviewers...",
+          "timerModeHintTotal": "One countdown timer for the whole attempt."
+        }
+      },
+      "stickyBar": {
+        "untitledMatch": "Manual challenge match"
+      },
+      "confirm": {
+        "exitEdit": "You have unsaved changes. Return to the challenge and discard them?",
+        "exitCreate": "You have unsaved changes. Return to the challenge now?"
+      },
+      "toasts": {
+        "loadError": "Could not load the challenge match.",
+        "saveUpdateSuccess": "Saved challenge match \"{{title}}\" successfully.",
+        "saveDraftSuccess": "Saved challenge match \"{{title}}\" as a draft.",
+        "saveError": "Could not save the challenge match."
+      }
     }
   },
   "challengeLeaderboard": {

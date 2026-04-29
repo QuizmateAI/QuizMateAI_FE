@@ -242,6 +242,7 @@ export const generateGroupMemberLearningSnapshot = async (workspaceId, workspace
 // Xem trước thông tin lời mời vào nhóm
 export const previewInvitation = async (token) => {
   const response = await api.get(`/group/invitation/preview?token=${token}`, {
+    skipAuthHeader: true,
     skipAuthRedirect: true,
   });
   return response;

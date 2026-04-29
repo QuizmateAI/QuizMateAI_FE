@@ -24,14 +24,14 @@ beforeEach(async () => {
   mock = new MockAdapter(api, { onNoMatch: 'throwException' });
 });
 
-describe('api interceptor — 403 expired-token handling', () => {
-  it('returns 403 directly and does not rotate tokens', async () => {
+describe('api interceptor — auth refresh handling', () => {
+  it('does not refresh or clear tokens on a plain 403 permission response', async () => {
     window.localStorage.setItem('accessToken', 'old');
     window.localStorage.setItem('refreshToken', 'r1');
 
-    mock.onGet('/user/profile').reply(403, {
-      statusCode: 403,
-      message: 'Forbidden',
+    mock.onGet('/user/profile').reply((config) => {
+      expect(config.headers.Authorization).toBe('Bearer old');
+      return [403, { message: 'Forbidden' }];
     });
 
     await expect(api.get('/user/profile')).rejects.toMatchObject({
@@ -47,7 +47,23 @@ describe('api interceptor — 403 expired-token handling', () => {
     window.localStorage.setItem('accessToken', 'a');
     window.localStorage.setItem('refreshToken', 'r1');
 
-    mock.onGet('/admin/secret').reply(403, { message: 'Real permission denial' });
+    let callCount = 0;
+    mock.onGet('/admin/secret').reply((config) => {
+      callCount += 1;
+      if (callCount === 1) {
+        expect(config.headers.Authorization).toBe('Bearer a');
+        return [
+          403,
+          {
+            statusCode: 401,
+            message: 'Phiên hết hạn',
+            data: { code: 'TOKEN_EXPIRED' },
+          },
+        ];
+      }
+      expect(config.headers.Authorization).toBe('Bearer new');
+      return [403, { statusCode: 1048, message: 'Real permission denial' }];
+    });
 
     await expect(api.get('/admin/secret')).rejects.toMatchObject({
       statusCode: 403,

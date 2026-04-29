@@ -2660,6 +2660,7 @@
     "generateFromAssessmentSuccess": "Quiz generated from AI assessment successfully.",
     "generateFromAssessmentFail": "Failed to generate quiz from AI assessment.",
     "title": "Result",
+    "accuracy": "Accuracy",
     "correct": "Correct",
     "answered": "Answered",
     "time": "Time",
@@ -2792,10 +2793,12 @@
       "title": "Confirm using this profile",
       "description": "Are you sure you want to use this profile? Once confirmed, the system will save the current configuration for this learning workspace.",
       "badge": "PROFILE CONFIRMATION",
-      "finalReviewTitle": "Final review before applying this setup",
+      "finalReviewTitle": "Are you sure you want to use this profile?",
       "finalReviewDescription": "Check the summary below. Once confirmed, this configuration becomes the active workspace profile.",
       "summaryHelper": "Everything below will be saved as the current learning setup for this workspace.",
-      "footerHelper": "You can still go back to the wizard to edit before applying."
+      "footerHelper": "You can still go back to edit before applying.",
+      "backToEdit": "Back to edit",
+      "applying": "Applying..."
     },
     "mockProfileWizardData": {
       "template": {

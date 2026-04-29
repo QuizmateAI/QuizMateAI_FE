@@ -38,6 +38,9 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+  const draftModeSearch = typeof window === "undefined" ? "" : window.location.search;
+  const draftModeParam = String(new URLSearchParams(draftModeSearch).get("challengeDraftMode") || "").toLowerCase();
+  const challengeDraftInitialMode = draftModeParam === "ai" || draftModeParam === "manual" ? draftModeParam : null;
   const [activeRoadmapId, setActiveRoadmapId] = React.useState(null);
   const [roadmapReview, setRoadmapReview] = React.useState(null);
 
@@ -396,6 +399,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             readOnly={readOnly}
             existingQuizId={draftTargetId}
             seedQuizTitle={challengeDraftQuizEditor ? seedTitle : undefined}
+            initialMode={challengeDraftQuizEditor ? challengeDraftInitialMode : undefined}
             quizTitleMaxLength={quizTitleMaxLength}
             planUpgradeScope="GROUP"
             currentPlanSummaryOverride={currentPlanSummaryOverride}

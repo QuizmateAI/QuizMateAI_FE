@@ -181,9 +181,13 @@ function GroupMembersTab({
   const queryClient = useQueryClient();
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const resolvedWorkspaceId = useMemo(() => {
+    const numericWorkspaceId = Number(workspaceId);
+    return Number.isInteger(numericWorkspaceId) ? numericWorkspaceId : workspaceId;
+  }, [workspaceId]);
   const pendingInvitationsQueryKey = useMemo(
-    () => getPendingInvitationsQueryKey(workspaceId),
-    [workspaceId],
+    () => getPendingInvitationsQueryKey(resolvedWorkspaceId),
+    [resolvedWorkspaceId],
   );
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -228,8 +232,8 @@ function GroupMembersTab({
     refetch: refetchPendingInvitations,
   } = useQuery({
     queryKey: pendingInvitationsQueryKey,
-    queryFn: async () => normalizePendingInvitationSummary(await fetchPendingInvitations(workspaceId)),
-    enabled: Boolean(isLeader && workspaceId && fetchPendingInvitations),
+    queryFn: async () => normalizePendingInvitationSummary(await fetchPendingInvitations(resolvedWorkspaceId)),
+    enabled: Boolean(isLeader && resolvedWorkspaceId && fetchPendingInvitations),
   });
 
   const normalizedTotalMemberCount = Number(totalMemberCount);
@@ -466,7 +470,7 @@ function GroupMembersTab({
     try {
       let refreshedInvitation = null;
       if (onResendInvitation) {
-        refreshedInvitation = await onResendInvitation(workspaceId, invitationId, email);
+        refreshedInvitation = await onResendInvitation(resolvedWorkspaceId, invitationId, email);
       } else if (onInvite && email) {
         await onInvite(email);
       }
@@ -483,13 +487,13 @@ function GroupMembersTab({
         });
       }
       void queryClient.invalidateQueries({ queryKey: pendingInvitationsQueryKey });
-      void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', workspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', resolvedWorkspaceId] });
     } catch (error) {
       setPendingInviteActionError(error?.message || t('groupManage.members.invitations.resendFailed', { defaultValue: 'Không gửi lại được lời mời.' }));
     } finally {
       setResendingInviteKey('');
     }
-  }, [onInvite, onResendInvitation, pendingInvitationsQueryKey, queryClient, t, updatePendingInvitationCache, workspaceId]);
+  }, [onInvite, onResendInvitation, pendingInvitationsQueryKey, queryClient, resolvedWorkspaceId, t, updatePendingInvitationCache]);
 
   const handleCancelInvite = useCallback(async (invitation) => {
     const invitationId = getInviteId(invitation);
@@ -499,7 +503,7 @@ function GroupMembersTab({
     setCancelingInviteKey(key);
     setPendingInviteActionError('');
     try {
-      await onCancelInvitation(workspaceId, invitationId);
+      await onCancelInvitation(resolvedWorkspaceId, invitationId);
       updatePendingInvitationCache((current) => {
         const nextInvitations = current.invitations.filter((item) => getPendingInvitationIdentity(item) !== key);
         return {
@@ -508,13 +512,13 @@ function GroupMembersTab({
         };
       });
       void queryClient.invalidateQueries({ queryKey: pendingInvitationsQueryKey });
-      void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', workspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', resolvedWorkspaceId] });
     } catch (error) {
       setPendingInviteActionError(error?.message || t('groupManage.members.invitations.cancelFailed', { defaultValue: 'Không hủy được lời mời.' }));
     } finally {
       setCancelingInviteKey('');
     }
-  }, [onCancelInvitation, pendingInvitationsQueryKey, queryClient, t, updatePendingInvitationCache, workspaceId]);
+  }, [onCancelInvitation, pendingInvitationsQueryKey, queryClient, resolvedWorkspaceId, t, updatePendingInvitationCache]);
 
   const getRoleLabel = (role) => {
     const normalizedRole = normalizeRole(role);

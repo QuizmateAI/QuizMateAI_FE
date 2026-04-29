@@ -15,6 +15,7 @@ vi.mock("@/api/PaymentAPI", () => ({
 
 vi.mock("@/api/ManagementSystemAPI", () => ({
   getPaymentByOrderId: vi.fn(),
+  getPurchaseableCreditPackages: vi.fn(),
 }));
 
 vi.mock("@/hooks/useCurrentSubscription", () => ({

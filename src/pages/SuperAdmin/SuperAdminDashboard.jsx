@@ -554,7 +554,7 @@ function SuperAdminDashboard() {
     {
       title: t('dashboard.rolesAndAccess', { defaultValue: 'Roles & Access' }),
       description: t('dashboard.rolesAndAccessDesc', {
-        defaultValue: 'Review RBAC, admins and permission requests',
+        defaultValue: 'Review RBAC and admin access',
       }),
       icon: ShieldCheck,
       onClick: () => navigate('/super-admin/rbac'),
