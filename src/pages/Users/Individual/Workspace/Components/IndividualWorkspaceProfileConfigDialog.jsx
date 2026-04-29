@@ -5,12 +5,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import IndividualWorkspaceProfileConfirmView from './IndividualWorkspaceProfileConfirmView';
 import WorkspaceProfileStepOne from './WorkspaceProfileWizard/WorkspaceProfileStepOne';
 import WorkspaceProfileStepTwo from './WorkspaceProfileWizard/WorkspaceProfileStepTwo';
 import WorkspaceProfileStepThree from './WorkspaceProfileWizard/WorkspaceProfileStepThree';
@@ -378,8 +378,6 @@ function IndividualWorkspaceProfileConfigDialog({
 
   const shellClass = isDarkMode ? 'border-slate-800 bg-[#020817] text-white' : 'border-slate-200 bg-[#f8fbff] text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
-  const confirmMutedClass = isDarkMode ? 'text-slate-300' : 'text-slate-700';
-  const confirmLabelClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const isNavigationBusy = wizard.submitting;
   const isPrimaryActionBusy = isInitialProfileLoading || isNavigationBusy || wizard.isWaitingForOverallReview;
   const progressFraction = stepIds.length > 1 ? (wizard.step - 1) / (stepIds.length - 1) : 0;
@@ -853,235 +851,31 @@ function IndividualWorkspaceProfileConfigDialog({
         </div>
         </DialogContent>
       ) : (
-        <DialogContent
-          hideClose
-          className={cn(
-            'grid h-[88vh] w-[min(1240px,calc(100vw-16px))] max-w-none grid-rows-[auto,1fr,auto] gap-0 overflow-hidden rounded-[32px] border p-0 shadow-2xl',
-            shellClass,
-            fontClass
+        <IndividualWorkspaceProfileConfirmView
+          actionCopy={actionCopy}
+          confirmDisabled={wizard.submitting || wizard.isWaitingForOverallReview || isApplyingConfirmedProfile}
+          confirmProfileError={confirmProfileError}
+          confirmationDescription={confirmationDescription}
+          confirmationSummary={confirmationSummary}
+          confirmationTitle={confirmationTitle}
+          fontClass={fontClass}
+          isApplyingConfirmedProfile={isApplyingConfirmedProfile}
+          isDarkMode={isDarkMode}
+          isSubmitting={wizard.submitting}
+          onClose={handleCloseProfileConfirm}
+          onConfirm={handleConfirmedProfileUse}
+          shellClass={shellClass}
+          stepLabel={translateOrFallback(
+            t,
+            'workspace.profileConfig.footerHint',
+            `Step ${wizard.totalSteps} / ${wizard.totalSteps}`,
+            {
+              current: wizard.totalSteps,
+              total: wizard.totalSteps,
+            }
           )}
-        >
-        <div
-          className={cn(
-            'pointer-events-none absolute inset-x-0 top-0 h-20',
-            isDarkMode
-              ? 'bg-[linear-gradient(90deg,rgba(34,197,94,0.14),rgba(14,165,233,0.12),rgba(249,115,22,0.10),rgba(139,92,246,0.12))]'
-              : 'bg-[linear-gradient(90deg,rgba(34,197,94,0.12),rgba(14,165,233,0.10),rgba(249,115,22,0.08),rgba(139,92,246,0.10))]'
-          )}
+          t={t}
         />
-
-        <DialogHeader className="relative border-b border-inherit px-4 pb-3 pt-3 text-left sm:px-5 sm:pb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div
-                className={cn(
-                  'mb-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold tracking-[0.04em]',
-                  isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                )}
-              >
-                <Check className="h-3.5 w-3.5" />
-                {t('individualWorkspaceProfileConfigDialog.confirmProfile.badge', 'PROFILE CONFIRMATION')}
-              </div>
-              <DialogTitle className="max-w-4xl text-[clamp(1.55rem,1.8vw,1.95rem)] font-bold leading-[1.08] tracking-tight">
-                {confirmationTitle}
-              </DialogTitle>
-              <DialogDescription className={cn('mt-2 max-w-4xl text-sm leading-6', confirmMutedClass)}>
-                {confirmationDescription}
-              </DialogDescription>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              <div
-                className={cn(
-                  'hidden rounded-full border px-3 py-1 text-[11px] font-semibold md:inline-flex',
-                  isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200' : 'border-slate-300 bg-white text-slate-700'
-                )}
-              >
-                {t('workspace.profileConfig.footerHint', {
-                  current: wizard.totalSteps,
-                  total: wizard.totalSteps,
-                })}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCloseProfileConfirm}
-                className={cn(
-                  'inline-flex h-9 w-9 items-center justify-center rounded-2xl border transition-all',
-                  isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:border-slate-600' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
-                )}
-                aria-label={t('workspace.profileConfig.actions.close')}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="min-h-0 overflow-y-auto px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
-          <div
-            className={cn(
-              'mb-4 grid gap-3',
-              isDarkMode ? 'text-slate-100' : 'text-slate-900'
-            )}
-          >
-            <div
-              className={cn(
-                'rounded-[24px] border px-5 py-5 shadow-[0_20px_44px_-30px_rgba(15,23,42,0.35)]',
-                isDarkMode
-                  ? 'border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,47,73,0.78),rgba(6,78,59,0.78))]'
-                  : 'border-slate-300 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(239,246,255,1),rgba(236,253,245,0.98))]'
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                    isDarkMode ? 'bg-white/10 text-emerald-200' : 'bg-emerald-100 text-emerald-700'
-                  )}
-                >
-                  <Rocket className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                    {t(
-                      'individualWorkspaceProfileConfigDialog.confirmProfile.finalReviewTitle',
-                      'Final review before applying this setup'
-                    )}
-                  </p>
-                  <p className={cn('mt-1 text-sm leading-6', confirmMutedClass)}>
-                    {t(
-                      'individualWorkspaceProfileConfigDialog.confirmProfile.finalReviewDescription',
-                      'Check the summary below. Once confirmed, this configuration becomes the active workspace profile.'
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {confirmationSummary.sections.length > 0 ? (
-            <div
-              className={cn(
-                'rounded-[26px] border px-4 py-4 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.28)] sm:px-5 sm:py-5',
-                isDarkMode
-                  ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]'
-                  : 'border-slate-300 bg-[linear-gradient(180deg,#ffffff_0%,#f4f9ff_100%)]'
-              )}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-inherit pb-4">
-                <div>
-                  <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
-                    {confirmationSummary.summaryLabel}
-                  </p>
-                  <p className={cn('mt-1 text-sm leading-6', confirmMutedClass)}>
-                    {t(
-                      'individualWorkspaceProfileConfigDialog.confirmProfile.summaryHelper',
-                      'Everything below will be saved as the current learning setup for this workspace.'
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {confirmationSummary.sections.map((section) => (
-                  <section
-                    key={section.id}
-                    className={cn(
-                      'rounded-[24px] border px-4 py-4 shadow-[0_18px_36px_-30px_rgba(14,165,233,0.18)] sm:px-5',
-                      section.spanClass,
-                      isDarkMode
-                        ? 'border-cyan-400/15 bg-slate-950/70'
-                        : 'border-cyan-300 bg-white'
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
-                        {section.title}
-                      </p>
-                      <span
-                        className={cn(
-                          'inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-[11px] font-semibold',
-                          isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-700'
-                        )}
-                      >
-                        {section.items.length}
-                      </span>
-                    </div>
-
-                    <div className={cn('mt-4', section.itemsGridClass || 'space-y-3')}>
-                      {section.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            'rounded-[20px] border px-3.5 py-3.5 shadow-sm',
-                            isDarkMode
-                              ? 'border-white/10 bg-white/[0.04]'
-                              : 'border-slate-300 bg-slate-50'
-                          )}
-                        >
-                          {item.label ? (
-                            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
-                              {item.label}
-                            </p>
-                          ) : null}
-                          <p className={cn('text-sm font-semibold leading-6', item.label ? 'mt-1.5' : '', isDarkMode ? 'text-slate-100' : 'text-slate-900')}>
-                            {item.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <DialogFooter
-          className={cn(
-            'flex-col-reverse gap-3 border-t px-4 py-4 sm:flex-row sm:justify-end sm:space-x-0 sm:px-5',
-            isDarkMode ? 'border-slate-800 bg-[#020817]/95' : 'border-slate-300 bg-white/95'
-          )}
-        >
-          <div className="mr-auto">
-            {confirmProfileError ? (
-              <p className="text-xs font-medium text-red-400">
-                {confirmProfileError}
-              </p>
-            ) : (
-              <div className={cn('hidden text-xs leading-5 lg:block', confirmMutedClass)}>
-                {t(
-                  'individualWorkspaceProfileConfigDialog.confirmProfile.footerHelper',
-                  'You can still go back to the wizard to edit before applying.'
-                )}
-              </div>
-            )}
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCloseProfileConfirm}
-            disabled={isApplyingConfirmedProfile}
-            className={cn(
-              'rounded-full px-5',
-              isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-            )}
-          >
-            {actionCopy.cancel}
-          </Button>
-          <Button
-            type="button"
-            onClick={handleConfirmedProfileUse}
-            disabled={wizard.submitting || wizard.isWaitingForOverallReview || isApplyingConfirmedProfile}
-            className="rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700"
-          >
-            {wizard.submitting || isApplyingConfirmedProfile ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-            {actionCopy.confirmProfileUse}
-          </Button>
-        </DialogFooter>
-        </DialogContent>
       )}
     </Dialog>
   );

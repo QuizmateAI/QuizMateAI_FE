@@ -572,6 +572,17 @@ function SourcesPanel({
                               style={{ width: `${percent}%` }}
                             />
                           </div>
+                          <p
+                            className={cn(
+                              "text-[11px] leading-4",
+                              isDarkMode ? "text-slate-400" : "text-slate-500",
+                            )}
+                          >
+                            {t(
+                              "workspace.shell.uploadProgress.rejectionNotice",
+                              "Hệ thống sẽ từ chối đối với các tài liệu không liên quan",
+                            )}
+                          </p>
                         </div>
                       );
                     })()}

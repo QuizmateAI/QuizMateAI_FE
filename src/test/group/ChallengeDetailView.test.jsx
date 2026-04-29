@@ -4,8 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n, { preloadRouteNamespaces } from '@/i18n';
-import { buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
-import ChallengeDetailView from '@/Pages/Users/Group/Components/ChallengeDetailView';
+import ChallengeDetailView from '@/pages/Users/Group/Components/ChallengeDetailView';
 import {
   acceptQuizReviewInvitation,
   batchInviteQuizReviewers,
@@ -44,6 +43,16 @@ vi.mock('@/api/GroupAPI', () => ({
 
 vi.mock('@/components/features/users/UserDisplayName', () => ({
   default: ({ user, fallback }) => <span>{user?.fullName || user?.username || fallback}</span>,
+}));
+
+vi.mock('@/pages/Users/Individual/Workspace/Components/ManualQuizWizard', () => ({
+  default: ({ editingQuizId, onBack, onSaveQuiz, surface }) => (
+    <div data-testid="manual-quiz-wizard" data-surface={surface}>
+      <span>manual-editor:{editingQuizId}</span>
+      <button type="button" onClick={() => onSaveQuiz?.({ quizId: editingQuizId })}>Save manual match</button>
+      <button type="button" onClick={onBack}>Close manual match</button>
+    </div>
+  ),
 }));
 
 const baseDetail = {
@@ -106,7 +115,7 @@ describe('ChallengeDetailView', () => {
     await i18n.changeLanguage('en');
   });
 
-  it('keeps challengeEventId when opening the challenge quiz editor', async () => {
+  it('opens the dedicated manual challenge editor without leaving challenge detail', async () => {
     getChallengeDetail.mockResolvedValueOnce({
       data: {
         ...baseDetail,
@@ -117,14 +126,10 @@ describe('ChallengeDetailView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Compose match' }));
 
-    expect(navigateSpy).toHaveBeenCalledWith(
-      buildGroupWorkspaceSectionPath(55, 'quiz', {
-        challengeDraftQuizId: 901,
-        challengeDraft: 1,
-        challengeEventId: 77,
-      }),
-      { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: 77 } } },
-    );
+    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(screen.getByTestId('challenge-manual-match-editor')).toBeInTheDocument();
+    expect(screen.getByTestId('manual-quiz-wizard')).toHaveTextContent('manual-editor:901');
+    expect(screen.getByTestId('manual-quiz-wizard')).toHaveAttribute('data-surface', 'challenge');
   });
 
   it('invites a reviewer immediately and accepts member.userID payloads', async () => {
@@ -233,7 +238,7 @@ describe('ChallengeDetailView', () => {
     expect(screen.queryByText('55%')).not.toBeInTheDocument();
   });
 
-  it('uses the snapshot quiz editor for bracket challenges instead of round quiz creation', async () => {
+  it('uses the snapshot manual challenge editor for bracket challenges instead of round quiz creation', async () => {
     getChallengeDetail.mockResolvedValueOnce({
       data: {
         ...baseDetail,
@@ -246,14 +251,9 @@ describe('ChallengeDetailView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Compose match' }));
 
-    expect(navigateSpy).toHaveBeenCalledWith(
-      buildGroupWorkspaceSectionPath(55, 'quiz', {
-        challengeDraftQuizId: 901,
-        challengeDraft: 1,
-        challengeEventId: 77,
-      }),
-      { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: 77 } } },
-    );
+    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(screen.getByTestId('challenge-manual-match-editor')).toBeInTheDocument();
+    expect(screen.getByTestId('manual-quiz-wizard')).toHaveTextContent('manual-editor:901');
     expect(screen.queryByRole('button', { name: 'Tạo đề vòng' })).not.toBeInTheDocument();
   });
 
@@ -272,5 +272,19 @@ describe('ChallengeDetailView', () => {
 
     expect(await screen.findByText('Challenge match is being generated')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Compose match' })).not.toBeInTheDocument();
+  });
+
+  it('does not show the cannot-open error when the initial detail request times out', async () => {
+    getChallengeDetail.mockRejectedValueOnce({
+      statusCode: 408,
+      code: 'REQUEST_TIMEOUT',
+      message: 'The request is taking longer than expected.',
+    });
+
+    renderChallengeDetail();
+
+    expect(await screen.findByText('Opening challenge')).toBeInTheDocument();
+    expect(screen.queryByText('Cannot open challenge')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
   });
 });

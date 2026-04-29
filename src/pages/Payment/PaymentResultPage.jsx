@@ -15,7 +15,7 @@ import LogoDark from '@/assets/DarkMode_Logo.webp';
 import UserProfilePopover from '@/components/features/users/UserProfilePopover';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { createPlanSummaryFromPurchase, useCurrentSubscription } from '@/hooks/useCurrentSubscription';
-import { getPaymentByOrderId } from '@/api/ManagementSystemAPI';
+import { getPaymentByOrderId, getPurchaseableCreditPackages } from '@/api/ManagementSystemAPI';
 import {
   clearPendingPlanPurchase,
   getPendingPlanPurchase,
@@ -33,6 +33,7 @@ import {
   withQueryParams,
 } from '@/lib/routePaths';
 import { FailureScreen, ProcessingScreen, SuccessScreen } from './components/PaymentResultStates';
+import { downloadPaymentInvoice } from './utils/paymentInvoice';
 
 const PAYMENT_POLL_DELAY_MS = 1500;
 const PAYMENT_POLL_MAX_ATTEMPTS = 6;
@@ -41,6 +42,36 @@ const PAYMENT_LOOKUP_RETRY_ATTEMPTS = 2;
 function normalizeAmount(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function formatPaymentDateTime(value, lang) {
+  if (!value) return '';
+
+  const rawTime = String(value);
+  const date = /^\d+$/.test(rawTime) ? new Date(Number(rawTime)) : new Date(rawTime);
+  if (Number.isNaN(date.getTime())) return rawTime;
+  return date.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US');
+}
+
+function formatPaymentMethod(value) {
+  const rawMethod = String(value || '').trim();
+  if (!rawMethod) return '';
+
+  const normalizedMethod = rawMethod.toUpperCase();
+  if (rawMethod.toLowerCase() === 'qr') return 'VNPay QR';
+  if (normalizedMethod === 'VNPAY') return 'VNPay';
+  if (normalizedMethod === 'MOMO') return 'MoMo';
+  if (normalizedMethod === 'STRIPE') return 'Stripe';
+  return rawMethod;
+}
+
+function buildInvoiceNumber(paymentId, orderId) {
+  if (paymentId != null && paymentId !== '') {
+    return `QM-${String(paymentId).padStart(6, '0')}`;
+  }
+
+  const suffix = String(orderId || '').replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
+  return suffix ? `QM-${suffix}` : '';
 }
 
 export default function PaymentResultPage() {
@@ -52,6 +83,7 @@ export default function PaymentResultPage() {
   const [paymentRecord, setPaymentRecord] = useState(null);
   const [paymentLookupOrderId, setPaymentLookupOrderId] = useState('');
   const [isResolvingPayment, setIsResolvingPayment] = useState(false);
+  const [resolvedCreditPackage, setResolvedCreditPackage] = useState(null);
   const settingsRef = useRef(null);
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
@@ -78,6 +110,33 @@ export default function PaymentResultPage() {
   );
   const pendingPurchaseType = String(pendingPurchase?.purchaseType || 'PLAN').toUpperCase();
   const isCreditPurchase = pendingPurchaseType === 'CREDIT';
+
+  useEffect(() => {
+    if (!isCreditPurchase || !pendingPurchase?.creditPackageId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    getPurchaseableCreditPackages()
+      .then((response) => {
+        if (cancelled) return;
+        const packages = response?.data ?? response ?? [];
+        const matchedPackage = Array.isArray(packages)
+          ? packages.find((item) => String(item.creditPackageId) === String(pendingPurchase.creditPackageId))
+          : null;
+        setResolvedCreditPackage(matchedPackage || null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setResolvedCreditPackage(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isCreditPurchase, pendingPurchase?.creditPackageId]);
 
   const urlStatus = searchParams.get('status') || '';
   const urlResultCode = searchParams.get('resultCode') || '';
@@ -179,16 +238,19 @@ export default function PaymentResultPage() {
       transId: activePaymentRecord?.gatewayTransactionId || searchParams.get('transId') || searchParams.get('session_id') || '',
       message: searchParams.get('message') || '',
       payType: searchParams.get('payType') || '',
-      responseTime: activePaymentRecord?.gatewayVerifiedAt || searchParams.get('responseTime') || '',
+      responseTime: activePaymentRecord?.paidAt || activePaymentRecord?.gatewayVerifiedAt || searchParams.get('responseTime') || '',
+      orderTime: activePaymentRecord?.createdAt || '',
       gatewayCurrency: activePaymentRecord?.gatewayCurrency || '',
     };
   }, [
     activePaymentRecord?.amount,
+    activePaymentRecord?.createdAt,
     activePaymentRecord?.gatewayAmount,
     activePaymentRecord?.gatewayCurrency,
     activePaymentRecord?.gatewayTransactionId,
     activePaymentRecord?.gatewayVerifiedAt,
     activePaymentRecord?.orderId,
+    activePaymentRecord?.paidAt,
     effectiveOrderId,
     searchParams,
   ]);
@@ -198,13 +260,14 @@ export default function PaymentResultPage() {
     [details.amount],
   );
 
-  const formattedTime = useMemo(() => {
-    if (!details.responseTime) return '';
-    const rawTime = String(details.responseTime);
-    const date = /^\d+$/.test(rawTime) ? new Date(Number(rawTime)) : new Date(rawTime);
-    if (Number.isNaN(date.getTime())) return rawTime;
-    return date.toLocaleString(currentLang === 'vi' ? 'vi-VN' : 'en-US');
-  }, [details.responseTime, currentLang]);
+  const formattedTime = useMemo(
+    () => formatPaymentDateTime(details.responseTime, currentLang),
+    [details.responseTime, currentLang],
+  );
+  const formattedOrderTime = useMemo(
+    () => formatPaymentDateTime(details.orderTime, currentLang),
+    [details.orderTime, currentLang],
+  );
 
   const fallbackPlanSummary = useMemo(() => {
     if (!isSuccess || isCreditPurchase) return null;
@@ -238,8 +301,31 @@ export default function PaymentResultPage() {
           : t('paymentResult.failDesc')
       );
 
+  const creditPackageLabel = useMemo(() => {
+    const storedName = String(pendingPurchase?.planName || '').trim();
+    if (storedName) return storedName;
+
+    const packageName = String(resolvedCreditPackage?.displayName || '').trim();
+    if (packageName) return packageName;
+
+    const totalCredits = Number(resolvedCreditPackage?.baseCredit || 0) + Number(resolvedCreditPackage?.bonusCredit || 0);
+    if (totalCredits > 0) {
+      const formattedCredits = new Intl.NumberFormat(currentLang === 'vi' ? 'vi-VN' : 'en-US').format(totalCredits);
+      return `${formattedCredits} ${t('wallet.creditsUnit', { defaultValue: currentLang === 'vi' ? 'credit' : 'credits' })}`;
+    }
+
+    return t('paymentResult.creditPurchaseLabel');
+  }, [
+    currentLang,
+    pendingPurchase?.planName,
+    resolvedCreditPackage?.baseCredit,
+    resolvedCreditPackage?.bonusCredit,
+    resolvedCreditPackage?.displayName,
+    t,
+  ]);
+
   const purchaseLabel = isCreditPurchase
-    ? t('paymentResult.creditPurchaseLabel')
+    ? creditPackageLabel
     : activePlanSummary?.planName || pendingPurchase?.planName || t('paymentResult.planPurchaseLabel');
 
   const isGroupPlanPurchase =
@@ -261,9 +347,7 @@ export default function PaymentResultPage() {
       || searchParams.get('method')
       || details.payType
       || '';
-    const normalizedMethod = String(rawMethod).trim();
-
-    if (normalizedMethod.toLowerCase() === 'qr') return 'VNPay QR';
+    const normalizedMethod = formatPaymentMethod(rawMethod);
     if (normalizedMethod) return normalizedMethod;
     if (searchParams.get('session_id')) return 'Stripe';
     return 'VNPay';
@@ -277,23 +361,35 @@ export default function PaymentResultPage() {
 
   const resultTransaction = useMemo(() => ({
     orderId: details.orderId,
+    orderTime: formattedOrderTime,
     transactionId: details.transId,
     amountLabel: `${formattedAmount}₫`,
     method: paymentMethodLabel,
     planId: pendingPurchase?.planId || '',
     planName: purchaseLabel,
+    purchaseType: pendingPurchaseType,
+    paymentTargetType: activePaymentRecord?.paymentTargetType || '',
+    customer: activePaymentRecord?.chargedUserName || activePaymentRecord?.payerUserName || '',
+    invoiceNumber: buildInvoiceNumber(activePaymentRecord?.paymentId, details.orderId),
+    issuedAt: formattedTime,
     time: formattedTime,
     statusLabel: backendPaymentStatus === 'FAILED'
       ? t('paymentResult.failTitle')
       : undefined,
   }), [
+    activePaymentRecord?.chargedUserName,
+    activePaymentRecord?.payerUserName,
+    activePaymentRecord?.paymentId,
+    activePaymentRecord?.paymentTargetType,
     backendPaymentStatus,
     details.orderId,
     details.transId,
     formattedAmount,
+    formattedOrderTime,
     formattedTime,
     paymentMethodLabel,
     pendingPurchase?.planId,
+    pendingPurchaseType,
     purchaseLabel,
     t,
   ]);
@@ -326,9 +422,11 @@ export default function PaymentResultPage() {
 
   const handleResultAction = (action) => {
     if (action === 'downloadInvoice') {
-      if (typeof window !== 'undefined' && typeof window.print === 'function') {
-        window.print();
-      }
+      downloadPaymentInvoice({
+        lang: resultLang,
+        planName: purchaseLabel,
+        transaction: resultTransaction,
+      });
       return;
     }
 
