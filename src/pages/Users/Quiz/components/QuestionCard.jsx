@@ -181,7 +181,8 @@ const QuestionCard = memo(function QuestionCard({
   }, [correctMatchingPairs, normalizedMatchingPairs, question.matchingRightOptions]);
   const gradingStatus = String(reviewState?.gradingStatus || question?.gradingStatus || '').toUpperCase();
   const questionImages = useMemo(() => getQuestionImageList(question), [question]);
-  const questionDisplayText = useMemo(() => getQuestionDisplayText(question?.content), [question?.content]);
+  const questionContent = question?.content;
+  const questionDisplayText = useMemo(() => getQuestionDisplayText(questionContent), [questionContent]);
   const isPendingGrading = gradingStatus === 'PENDING';
   const showFlagToggle = !isReviewRevealed && typeof onToggleFlag === 'function';
   const correctAnswerIds = Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
