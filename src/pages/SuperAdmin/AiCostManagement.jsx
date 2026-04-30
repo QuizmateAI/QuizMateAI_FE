@@ -67,7 +67,7 @@ function extractData(response) {
 
 function formatVnd(value) {
   if (value === null || value === undefined || value === '') return '-';
-  return `${Number(value).toLocaleString('vi-VN')} VND`;
+  return `${Math.round(Number(value)).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} VND`;
 }
 
 function formatUsd(value) {

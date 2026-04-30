@@ -1,15 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import {
-  AlertTriangle,
-  Brain,
-  Minus,
-  Target,
-  TrendingDown,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
 import ListSpinner from '@/components/ui/ListSpinner';
 import GroupMemberStatsContent from './GroupMemberStatsContent';
 import { cn } from '@/lib/utils';
@@ -19,7 +10,6 @@ import { unwrapApiData } from '@/utils/apiResponse';
 import { useToast } from '@/context/ToastContext';
 import {
   buildMemberIntelligence,
-  buildTrendMeta,
   normalizeLearningSnapshotRow,
   normalizeScoreRatio,
   resolveUserId,
@@ -52,14 +42,28 @@ function toDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function formatScore(value) {
-  if (value == null || Number.isNaN(Number(value))) return '—';
-  return `${Math.round(Number(value) * 10) / 10}`;
-}
-
 function formatPercent(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return `${Math.round(Number(value) * 1000) / 10}%`;
+}
+
+function formatAverageResult(value) {
+  const ratio = normalizeScoreRatio(value);
+  return ratio == null ? '—' : formatPercent(ratio);
+}
+
+function getAttemptResultRatio(attempt) {
+  const accuracyPercent = attempt?.accuracyPercent != null ? Number(attempt.accuracyPercent) : null;
+  if (accuracyPercent != null && !Number.isNaN(accuracyPercent)) {
+    const ratio = accuracyPercent > 1 ? accuracyPercent / 100 : accuracyPercent;
+    return Math.max(0, Math.min(1, ratio));
+  }
+  return normalizeScoreRatio(attempt?.score);
+}
+
+function formatAttemptResult(attempt) {
+  const ratio = getAttemptResultRatio(attempt);
+  return ratio == null ? '—' : formatPercent(ratio);
 }
 
 function formatMinutes(value) {
@@ -120,35 +124,12 @@ function buildMemberKey(member) {
   );
 }
 
-function healthToneClass(tone, isDarkMode) {
-  const map = {
-    strong: isDarkMode ? 'bg-emerald-400/12 text-emerald-100 ring-1 ring-emerald-400/20' : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
-    stable: isDarkMode ? 'bg-cyan-400/12 text-cyan-100 ring-1 ring-cyan-400/20' : 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200',
-    watch: isDarkMode ? 'bg-amber-400/12 text-amber-100 ring-1 ring-amber-400/20' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-    risk: isDarkMode ? 'bg-rose-400/12 text-rose-100 ring-1 ring-rose-400/20' : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
-    new: isDarkMode ? 'bg-violet-400/12 text-violet-100 ring-1 ring-violet-400/20' : 'bg-violet-50 text-violet-700 ring-1 ring-violet-200',
-  };
-  return map[tone] || map.stable;
-}
-
 function classificationClass(classification, isDarkMode) {
   const normalized = String(classification || '').toUpperCase();
   if (normalized === 'STRONG') return isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700';
   if (normalized === 'AT_RISK') return isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700';
   if (normalized === 'WEAK') return isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700';
   return isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700';
-}
-
-function trendIcon(direction) {
-  if (direction === 'up') return TrendingUp;
-  if (direction === 'down') return TrendingDown;
-  return Minus;
-}
-
-function trendClass(direction, isDarkMode) {
-  if (direction === 'up') return isDarkMode ? 'text-emerald-200' : 'text-emerald-700';
-  if (direction === 'down') return isDarkMode ? 'text-rose-200' : 'text-rose-700';
-  return isDarkMode ? 'text-slate-300' : 'text-slate-600';
 }
 
 function GroupMemberStatsTab({
@@ -404,45 +385,6 @@ function GroupMemberStatsTab({
     buildMemberIntelligence(selectedMember ?? {}, isLeader ? selectedDetailQuery.data : null, isLeader ? selectedTrendQuery.data : null)
   ), [isLeader, selectedDetailQuery.data, selectedMember, selectedTrendQuery.data]);
 
-  const activeMembersCount = useMemo(() => (
-    sortedRows.filter((member) => Number(member?.totalQuizAttempts ?? 0) > 0).length
-  ), [sortedRows]);
-
-  const needsAttentionCount = useMemo(() => (
-    sortedRows.filter((member) => {
-      const tone = intelligenceMap.get(buildMemberKey(member))?.healthTone;
-      return tone === 'risk' || tone === 'watch';
-    }).length
-  ), [intelligenceMap, sortedRows]);
-
-  const averageVisibleScore = useMemo(() => {
-    const scores = sortedRows
-      .map((member) => member?.averageScore)
-      .filter((score) => score != null && !Number.isNaN(Number(score)))
-      .map(Number);
-    if (scores.length === 0) return '—';
-    return formatScore(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-  }, [sortedRows]);
-
-  const snapshotCoverage = useMemo(() => (
-    sortedRows.filter((member) => Boolean(member?.snapshotDate)).length
-  ), [sortedRows]);
-
-  const selectedTrendMeta = selectedIntelligence?.trend ?? buildTrendMeta();
-  const selectedTrendData = useMemo(() => (
-    (selectedTrendMeta.points || []).slice(-7).map((point) => ({
-      label: new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' }).format(new Date(point.snapshotDate)),
-      fullDate: formatDate(point.snapshotDate, locale),
-      performance: point.averageScore == null
-        ? null
-        : Math.round((normalizeScoreRatio(point.averageScore) ?? 0) * 1000) / 10,
-      passRate: point.totalQuizAttempts > 0
-        ? Math.round(((Number(point.totalQuizPassed ?? 0) / Number(point.totalQuizAttempts ?? 1)) * 1000)) / 10
-        : null,
-      minutes: Number(point.totalMinutesSpent ?? 0),
-    }))
-  ), [locale, selectedTrendMeta.points]);
-
   const selectedRecentActivities = useMemo(() => {
     const items = Array.isArray(selectedDetailQuery.data?.recentActivities)
       ? selectedDetailQuery.data.recentActivities
@@ -456,143 +398,6 @@ function GroupMemberStatsTab({
       : [];
     return items.slice(0, 8);
   }, [selectedDetailQuery.data?.attemptHistory]);
-
-  const healthLabel = useCallback((tone) => {
-    switch (tone) {
-      case 'strong':
-        return tt('groupWorkspace.memberStats.health.strong', 'Đang tiến tốt', 'Performing well');
-      case 'stable':
-        return tt('groupWorkspace.memberStats.health.stable', 'Ổn định', 'Stable');
-      case 'watch':
-        return tt('groupWorkspace.memberStats.health.watch', 'Cần theo dõi', 'Needs watching');
-      case 'risk':
-        return tt('groupWorkspace.memberStats.health.risk', 'Cần can thiệp', 'Needs intervention');
-      default:
-        return tt('groupWorkspace.memberStats.health.new', 'Chưa bắt đầu', 'Not started');
-    }
-  }, [tt]);
-
-  const cadenceLabel = useCallback((code) => {
-    switch (code) {
-      case 'consistent':
-        return tt('groupWorkspace.memberStats.cadence.consistent', 'Học đều mỗi ngày', 'Consistent cadence');
-      case 'sporadic':
-        return tt('groupWorkspace.memberStats.cadence.sporadic', 'Học ngắt quãng', 'Sporadic cadence');
-      case 'rushed':
-        return tt('groupWorkspace.memberStats.cadence.rushed', 'Làm quiz quá nhanh', 'Rushed attempts');
-      case 'deep':
-        return tt('groupWorkspace.memberStats.cadence.deep', 'Dành nhiều thời gian ôn', 'Deep study blocks');
-      case 'not_started':
-        return tt('groupWorkspace.memberStats.cadence.notStarted', 'Chưa có nhịp học', 'No study cadence yet');
-      default:
-        return tt('groupWorkspace.memberStats.cadence.balanced', 'Nhịp học trung bình', 'Balanced cadence');
-    }
-  }, [tt]);
-
-  const reasonLabel = useCallback((code, intelligence) => {
-    const weakLabel = intelligence?.weakFocus?.[0];
-    switch (code) {
-      case 'no_attempts':
-        return tt('groupWorkspace.memberStats.reason.noAttempts', 'Chưa làm quiz nào', 'No quizzes completed yet');
-      case 'low_score':
-        return tt('groupWorkspace.memberStats.reason.lowScore', 'Điểm trung bình đang thấp', 'Average score is low');
-      case 'low_pass_rate':
-        return tt('groupWorkspace.memberStats.reason.lowPassRate', 'Tỉ lệ pass còn thấp', 'Pass rate is still low');
-      case 'declining_trend':
-        return tt('groupWorkspace.memberStats.reason.decliningTrend', 'Kết quả đang giảm theo ngày', 'Performance is declining day by day');
-      case 'weak_topics':
-        return weakLabel
-          ? tt('groupWorkspace.memberStats.reason.weakTopics', `Vướng nhiều ở ${weakLabel}`, `Struggling on ${weakLabel}`)
-          : tt('groupWorkspace.memberStats.reason.weakTopicsGeneric', 'Đang vướng ở các chủ đề yếu', 'Current weak areas need support');
-      case 'rushed_attempts':
-        return tt('groupWorkspace.memberStats.reason.rushedAttempts', 'Thời gian làm quá nhanh so với kết quả', 'Attempts are too fast for the current result');
-      case 'low_study_time':
-        return tt('groupWorkspace.memberStats.reason.lowStudyTime', 'Thời lượng học còn ít', 'Study time is still light');
-      case 'sporadic':
-        return tt('groupWorkspace.memberStats.reason.sporadic', 'Nhịp học chưa đều', 'Study rhythm is inconsistent');
-      case 'roadmap_not_started':
-        return tt('groupWorkspace.memberStats.reason.roadmapNotStarted', 'Chưa bắt đầu học lộ trình', 'Roadmap has not started');
-      case 'roadmap_inactive':
-        return tt('groupWorkspace.memberStats.reason.roadmapInactive', 'Đã lâu chưa tiếp tục lộ trình', 'Roadmap activity is stale');
-      case 'roadmap_behind':
-        return tt('groupWorkspace.memberStats.reason.roadmapBehind', 'Đang chậm so với nhịp lộ trình', 'Behind roadmap pace');
-      case 'roadmap_remedial':
-        return tt('groupWorkspace.memberStats.reason.roadmapRemedial', 'Đang cần xử lý remedial', 'Needs remedial decision');
-      case 'roadmap_empty':
-        return tt('groupWorkspace.memberStats.reason.roadmapEmpty', 'Lộ trình chưa có nội dung học', 'Roadmap has no learning content');
-      case 'improving':
-        return tt('groupWorkspace.memberStats.reason.improving', 'Kết quả đang đi lên', 'Results are improving');
-      default:
-        return tt('groupWorkspace.memberStats.reason.steady', 'Giữ được nhịp ổn định', 'Maintaining steady progress');
-    }
-  }, [tt]);
-
-  const recommendationLabel = useCallback((code, intelligence) => {
-    const focusLabel = intelligence?.weakFocus?.slice(0, 2).join(', ');
-    switch (code) {
-      case 'assign_baseline':
-        return tt('groupWorkspace.memberStats.recommend.assignBaseline', 'Giao 1 quiz nền tảng để lấy baseline đầu tiên.', 'Assign one baseline quiz to establish the first checkpoint.');
-      case 'refresh_snapshot':
-        return tt('groupWorkspace.memberStats.recommend.refreshSnapshot', 'Cập nhật snapshot ngay sau phiên học đầu tiên để có dữ liệu theo dõi.', 'Refresh the snapshot after the first study session to start tracking properly.');
-      case 'schedule_followup':
-        return tt('groupWorkspace.memberStats.recommend.followUp', 'Lên follow-up 1:1 trong 1-2 ngày tới.', 'Schedule a 1:1 follow-up within the next 1-2 days.');
-      case 'focus_weak_topics':
-        return focusLabel
-          ? tt('groupWorkspace.memberStats.recommend.focusWeakTopics', `Ưu tiên ôn ${focusLabel} trước quiz tiếp theo.`, `Review ${focusLabel} before the next quiz.`)
-          : tt('groupWorkspace.memberStats.recommend.focusWeakTopicsGeneric', 'Ôn lại các chủ đề yếu trước khi giao quiz mới.', 'Review weak topics before assigning another quiz.');
-      case 'practice_foundation':
-        return tt('groupWorkspace.memberStats.recommend.foundation', 'Tạm quay về quiz mức cơ bản để củng cố nền tảng.', 'Step back to easier quizzes to rebuild the foundation.');
-      case 'slow_down_review':
-        return tt('groupWorkspace.memberStats.recommend.slowDown', 'Yêu cầu member review lời giải kỹ hơn thay vì làm nhanh.', 'Ask the member to slow down and review explanations more carefully.');
-      case 'increase_study_time':
-        return tt('groupWorkspace.memberStats.recommend.increaseTime', 'Tăng thêm thời gian ôn sau quiz, không chỉ tăng số lượng quiz.', 'Increase review time after each quiz instead of only increasing quiz count.');
-      case 'unlock_harder_quiz':
-        return tt('groupWorkspace.memberStats.recommend.harderQuiz', 'Có thể giao quiz khó hơn hoặc mở roadmap nâng cao.', 'You can assign a harder quiz or unlock a more advanced roadmap step.');
-      case 'start_roadmap':
-        return tt('groupWorkspace.memberStats.recommend.startRoadmap', 'Nhắc member mở lộ trình và hoàn thành bước học đầu tiên.', 'Ask the member to open the roadmap and finish the first learning step.');
-      case 'roadmap_checkpoint':
-        return tt('groupWorkspace.memberStats.recommend.roadmapCheckpoint', 'Kiểm tra lại tiến độ phase/knowledge trước khi giao thêm bài mới.', 'Check phase and knowledge progress before assigning more work.');
-      case 'remedial_support':
-        return tt('groupWorkspace.memberStats.recommend.remedialSupport', 'Ưu tiên hỗ trợ remedial trước khi đẩy sang phần tiếp theo.', 'Prioritize remedial support before moving to the next part.');
-      default:
-        return tt('groupWorkspace.memberStats.recommend.keepMomentum', 'Giữ nhịp hiện tại và kiểm tra lại sau snapshot tiếp theo.', 'Keep the current cadence and re-check on the next snapshot.');
-    }
-  }, [tt]);
-
-  const selectedNarrative = useMemo(() => {
-    if (!selectedMember) return '';
-    const memberName = selectedMember?.fullName || selectedMember?.username || tt('groupWorkspace.memberStats.memberFallback', 'Thành viên', 'Member');
-    const cadence = cadenceLabel(selectedIntelligence.cadenceCode).toLowerCase();
-    const weakLabel = selectedIntelligence.weakFocus.slice(0, 2).join(', ');
-    const delta = selectedTrendMeta.scoreDelta;
-
-    let trendSentence = tt('groupWorkspace.memberStats.narrative.noTrend', 'Chưa đủ dữ liệu để kết luận xu hướng theo ngày.', 'There is not enough daily data to conclude a trend yet.');
-    if (delta != null) {
-      const deltaPct = Math.abs(Math.round(delta * 1000) / 10);
-      trendSentence = delta > 0
-        ? tt('groupWorkspace.memberStats.narrative.up', `Điểm hiệu suất đang tăng khoảng ${deltaPct}%.`, `Performance is trending up by about ${deltaPct}%.`)
-        : delta < 0
-          ? tt('groupWorkspace.memberStats.narrative.down', `Điểm hiệu suất đang giảm khoảng ${deltaPct}%.`, `Performance is trending down by about ${deltaPct}%.`)
-          : tt('groupWorkspace.memberStats.narrative.flat', 'Kết quả đang đi ngang.', 'Results are holding steady.');
-    }
-
-    return tt(
-      'groupWorkspace.memberStats.memberNarrative',
-      `${memberName} hiện ở trạng thái ${healthLabel(selectedIntelligence.healthTone).toLowerCase()}. Đã làm ${selectedSnapshot.totalQuizAttempts ?? 0} quiz và học khoảng ${formatMinutes(selectedSnapshot.totalMinutesSpent)}. ${trendSentence}${weakLabel ? ` Điểm yếu hiện tại: ${weakLabel}.` : ''}`,
-      `${memberName} is currently ${healthLabel(selectedIntelligence.healthTone).toLowerCase()}. Completed ${selectedSnapshot.totalQuizAttempts ?? 0} quizzes with about ${formatMinutes(selectedSnapshot.totalMinutesSpent)} of study time. ${trendSentence}${weakLabel ? ` Current weak areas: ${weakLabel}.` : ''}`,
-    );
-  }, [
-    cadenceLabel,
-    healthLabel,
-    selectedIntelligence.cadenceCode,
-    selectedIntelligence.healthTone,
-    selectedIntelligence.weakFocus,
-    selectedMember,
-    selectedSnapshot.totalMinutesSpent,
-    selectedSnapshot.totalQuizAttempts,
-    selectedTrendMeta.scoreDelta,
-    tt,
-  ]);
 
   const shellClass = isDarkMode
     ? 'border-white/12 bg-[#08131a]/92'
@@ -694,41 +499,6 @@ function GroupMemberStatsTab({
     workspaceId,
   ]);
 
-  const overviewCards = [
-    {
-      key: 'roster',
-      icon: Users,
-      label: tt('groupWorkspace.memberStats.overview.roster', 'Tổng thành viên', 'Roster'),
-      value: `${sortedRows.length}`,
-      note: tt('groupWorkspace.memberStats.overview.coverage', `${snapshotCoverage}/${sortedRows.length} có snapshot gần nhất`, `${snapshotCoverage}/${sortedRows.length} have a recent snapshot`),
-      tone: isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700',
-    },
-    {
-      key: 'active',
-      icon: Brain,
-      label: tt('groupWorkspace.memberStats.overview.active', 'Đang có dữ liệu học', 'Active learners'),
-      value: `${activeMembersCount}`,
-      note: tt('groupWorkspace.memberStats.overview.activeNote', 'Đã làm ít nhất 1 quiz', 'Have attempted at least one quiz'),
-      tone: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
-    },
-    {
-      key: 'avg',
-      icon: Target,
-      label: tt('groupWorkspace.memberStats.overview.avg', 'Kết quả trung bình', 'Average result'),
-      value: averageVisibleScore,
-      note: tt('groupWorkspace.memberStats.overview.avgNote', 'Tính trên toàn bộ member đang hiển thị', 'Calculated across the current roster'),
-      tone: isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700',
-    },
-    {
-      key: 'attention',
-      icon: AlertTriangle,
-      label: tt('groupWorkspace.memberStats.overview.attention', 'Cần follow-up', 'Need follow-up'),
-      value: `${needsAttentionCount}`,
-      note: tt('groupWorkspace.memberStats.overview.attentionNote', 'Ưu tiên hiển thị ở đầu danh sách', 'Prioritized at the top of the list'),
-      tone: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
-    },
-  ];
-
   if (membersLoading || memberCardsQuery.isLoading || memberStatsQuery.isLoading) {
     return (
       <div className={cn('space-y-5 animate-in fade-in duration-300', fontClass)}>
@@ -762,19 +532,18 @@ function GroupMemberStatsTab({
       eyebrowClass={eyebrowClass}
       fontClass={fontClass}
       formatAttemptModeLabel={formatAttemptModeLabel}
+      formatAttemptResult={formatAttemptResult}
       formatAttemptStatusLabel={formatAttemptStatusLabel}
+      formatAverageResult={formatAverageResult}
       formatDate={formatDate}
       formatMinutes={formatMinutes}
       formatPercent={formatPercent}
       formatRelativeDate={formatRelativeDate}
-      formatScore={formatScore}
+      getAttemptResultRatio={getAttemptResultRatio}
       generatingMemberId={generatingMemberId}
       handleAssignQuiz={handleAssignQuiz}
       handleGenerateMemberSnapshot={handleGenerateMemberSnapshot}
       handleOpenMember={handleOpenMember}
-      healthLabel={healthLabel}
-      healthToneClass={healthToneClass}
-      intelligenceMap={intelligenceMap}
       isDarkMode={isDarkMode}
       isEnglish={isEnglish}
       locale={locale}
@@ -786,8 +555,6 @@ function GroupMemberStatsTab({
       pagedRows={pagedRows}
       panelClass={panelClass}
       quizzesQuery={quizzesQuery}
-      reasonLabel={reasonLabel}
-      recommendationLabel={recommendationLabel}
       selectedAttemptHistory={selectedAttemptHistory}
       selectedDetailQuery={selectedDetailQuery}
       selectedIntelligence={selectedIntelligence}
@@ -806,7 +573,6 @@ function GroupMemberStatsTab({
       t={t}
       targetMember={targetMember}
       totalPages={totalPages}
-      trendIcon={trendIcon}
       tt={tt}
     />
   );

@@ -1543,8 +1543,7 @@ function GroupWorkspacePage() {
   }), [canManageGroup, canManageMembers, isLeader]);
   const groupSidebarBadgeMap = useMemo(() => ({
     documents: sources.length || undefined,
-    notifications: pendingReviewMaterials.length || undefined,
-  }), [pendingReviewMaterials.length, sources.length]);
+  }), [sources.length]);
   const groupDescription = groupProfile?.groupLearningGoal
     || currentGroupWorkspace?.description
     || currentGroupFromGroups?.description
@@ -2371,10 +2370,36 @@ function GroupWorkspacePage() {
       !isLeader,
     );
     const nextDisplayPercent = rawPercent > 0 ? mapProcessingProgressToDisplay(rawPercent) : 28;
-    materialProgress.setProgress(progressKey, nextDisplayPercent);
+    // Trần creep theo phase: phaseEnd của Python (0-100) đi qua cùng mapping
+    // mà rawPercent dùng, để hai giá trị nằm trên cùng thang display.
+    // tickIntervalMs = phaseDurationMs / phaseLengthDisplay, để bar trôi đều
+    // xuyên phase đúng theo wallclock kỳ vọng (vd EXTRACT 25s × 26 display
+    // points → 962ms/%).
+    const phaseEndPercent = Number(signal?.phaseEnd);
+    const phaseStartPercent = Number(signal?.phaseStart);
+    const phaseDurationSec = Number(signal?.phaseDurationSec);
+    const phaseEndDisplay = Number.isFinite(phaseEndPercent)
+      ? mapProcessingProgressToDisplay(phaseEndPercent)
+      : null;
+    const phaseStartDisplay = Number.isFinite(phaseStartPercent)
+      ? mapProcessingProgressToDisplay(phaseStartPercent)
+      : null;
+    const phaseLengthDisplay = phaseEndDisplay != null && phaseStartDisplay != null
+      ? Math.max(1, phaseEndDisplay - phaseStartDisplay)
+      : null;
+    const tickIntervalMs = phaseLengthDisplay != null && phaseDurationSec > 0
+      ? (phaseDurationSec * 1000) / phaseLengthDisplay
+      : null;
+    const phaseOpts = phaseEndDisplay != null
+      ? {
+        phaseEnd: phaseEndDisplay,
+        ...(tickIntervalMs != null ? { tickIntervalMs } : {}),
+      }
+      : undefined;
+    materialProgress.setProgress(progressKey, nextDisplayPercent, phaseOpts);
 
     if (materialId && progressKey !== String(materialId)) {
-      materialProgress.setProgress(String(materialId), Math.max(materialProgress.getProgress(progressKey), nextDisplayPercent), { instant: true });
+      materialProgress.setProgress(String(materialId), Math.max(materialProgress.getProgress(progressKey), nextDisplayPercent), { instant: true, ...(phaseOpts || {}) });
       materialProgress.clearProgress(progressKey);
     }
 

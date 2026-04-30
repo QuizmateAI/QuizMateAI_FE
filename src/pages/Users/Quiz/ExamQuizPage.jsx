@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, FileQuestion, Loader2, Star } from 'lucide-react';
@@ -17,11 +17,13 @@ import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/utils/quizAttemptTracker';
 import { buildQuizResultPath } from '@/lib/routePaths';
 import MixedMathText from '@/components/math/MixedMathText';
+import { markChallengeAttemptFinished } from './utils/challengeAttemptCache';
 
 export default function ExamQuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { i18n, t } = useTranslation();
   const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -330,6 +332,7 @@ export default function ExamQuizPage() {
           await submitAttempt(attemptId, submitPayload);
         }
         markQuizCompleted(quizId);
+        markChallengeAttemptFinished(queryClient, location.state?.challengeContext);
         // Add delay to ensure backend finishes processing before navigating
         // Tăng từ 500ms lên 1500ms để backend có đủ thời gian xử lý và đánh dấu attempt thành COMPLETED
         // Điều này tránh lỗi 400 "Lượt làm quiz chưa hoàn thành"
@@ -364,7 +367,7 @@ export default function ExamQuizPage() {
     submittingRef.current = false;
     setIsSubmitted(false);
     return false;
-  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, showError, t, isPerQuestionMode, location.state?.sourceKnowledgeId, location.state?.sourcePhaseId, location.state?.sourceRoadmapId, location.state?.sourceView, location.state?.sourceWorkspaceId]);
+  }, [answers, attemptId, navigate, queryClient, quiz?.questions, quizId, returnToQuizPath, showError, t, isPerQuestionMode, location.state?.challengeContext, location.state?.sourceKnowledgeId, location.state?.sourcePhaseId, location.state?.sourceRoadmapId, location.state?.sourceView, location.state?.sourceWorkspaceId]);
 
   const handleHeaderBack = useCallback(async (confirmed) => {
     if (isStarted && !isSubmitted) {
