@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox"; 
+import { Checkbox } from "@/components/ui/checkbox";
 import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
 import { ChevronLeft } from 'lucide-react';
 import AuthIllustration from '@/components/ui/AuthIllustration';
@@ -105,16 +105,34 @@ const RegisterPage = () => {
                 onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
               />
 
-              {/* Terms and Conditions */}
+              {/* Terms and Conditions (browsewrap) */}
               <div className="flex items-start space-x-2">
-                <Checkbox 
-                  id="agreeToTerms" 
+                <Checkbox
+                  id="agreeToTerms"
                   checked={formData.agreeToTerms}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreeToTerms: checked }))}
                   required
                 />
                 <label htmlFor="agreeToTerms" className="text-sm text-[#313131] cursor-pointer leading-relaxed">
-                  {t('agreeToTerms')} <span className="text-[#FF8682]">{t('terms')}</span> {t('and')} <span className="text-[#FF8682]">{t('privacyPolicies')}</span>
+                  {t('policies.browsewrap.prefix', { defaultValue: t('agreeToTerms') })}{' '}
+                  <Link
+                    to="/policies/terms-of-service"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#FF8682] hover:underline font-medium"
+                  >
+                    {t('policies.browsewrap.termsLabel', { defaultValue: t('terms') })}
+                  </Link>{' '}
+                  {t('policies.browsewrap.and', { defaultValue: t('and') })}{' '}
+                  <Link
+                    to="/policies/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#FF8682] hover:underline font-medium"
+                  >
+                    {t('policies.browsewrap.privacyLabel', { defaultValue: t('privacyPolicies') })}
+                  </Link>
+                  {t('policies.browsewrap.suffix', { defaultValue: '.' })}
                 </label>
               </div>
 
