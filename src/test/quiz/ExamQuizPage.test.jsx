@@ -1,17 +1,24 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import ExamQuizPage from '@/Pages/Users/Quiz/ExamQuizPage';
+import ExamQuizPage from '@/pages/Users/Quiz/ExamQuizPage';
 
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();
 const mockUseQuery = vi.fn();
 const mockStartQuizAttempt = vi.fn();
 const mockSubmitAttempt = vi.fn();
+const mockQueryCacheFindAll = vi.fn(() => []);
+const mockQueryClient = {
+  getQueryCache: vi.fn(() => ({ findAll: mockQueryCacheFindAll })),
+  invalidateQueries: vi.fn(),
+  setQueryData: vi.fn(),
+};
 let mockLocationState = {};
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: (...args) => mockUseQuery(...args),
+  useQueryClient: () => mockQueryClient,
 }));
 
 vi.mock('@/api/QuizAPI', () => ({
@@ -48,15 +55,15 @@ vi.mock('@/context/ToastContext', () => ({
   }),
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/QuizHeader', () => ({
+vi.mock('@/pages/Users/Quiz/components/QuizHeader', () => ({
   default: ({ title }) => <div data-testid="quiz-header">{title}</div>,
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/QuestionCard', () => ({
+vi.mock('@/pages/Users/Quiz/components/QuestionCard', () => ({
   default: ({ questionNumber }) => <div data-testid={`question-card-${questionNumber}`}>Question {questionNumber}</div>,
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/QuestionNavPanel', () => ({
+vi.mock('@/pages/Users/Quiz/components/QuestionNavPanel', () => ({
   default: ({ onRequestSubmit, t }) => (
     <div data-testid="question-nav-panel">
       <button type="button" onClick={onRequestSubmit}>
@@ -66,11 +73,11 @@ vi.mock('@/Pages/Users/Quiz/components/QuestionNavPanel', () => ({
   ),
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/ExamPerQuestion', () => ({
+vi.mock('@/pages/Users/Quiz/components/ExamPerQuestion', () => ({
   default: () => <div data-testid="exam-per-question" />,
 }));
 
-vi.mock('@/Pages/Users/Quiz/hooks/useQuizAutoSave', () => ({
+vi.mock('@/pages/Users/Quiz/hooks/useQuizAutoSave', () => ({
   useQuizAutoSave: () => ({
     saveManually: vi.fn().mockResolvedValue({ ok: true }),
     syncSnapshot: vi.fn(),
@@ -88,6 +95,7 @@ describe('ExamQuizPage', () => {
     mockLocationState = {};
     mockStartQuizAttempt.mockReset();
     mockSubmitAttempt.mockReset();
+    mockQueryCacheFindAll.mockReturnValue([]);
     mockUseQuery.mockReturnValue({
       data: null,
       isLoading: true,
