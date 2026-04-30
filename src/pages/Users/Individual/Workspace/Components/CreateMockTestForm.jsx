@@ -73,7 +73,37 @@ function aggregateStructure(structure, bloomMap) {
   return { numQuestions, easyRatio, mediumRatio, hardRatio, questionTypes: [], bloomSkills };
 }
 
-function sectionsToServerDTOs(sections, bloomMap) {
+// Build raw structureItems để BE per-row scoring. Mỗi row pair với bloomId resolved từ name.
+function buildStructureItems(structure, bloomMap, useScoring) {
+  if (!Array.isArray(structure) || !useScoring) return [];
+  return structure
+    .map((it) => {
+      const quantity = Number(it?.quantity) || 0;
+      if (quantity <= 0 || !it?.difficulty || !it?.bloomSkill) return null;
+      const bloomId = bloomMap?.[it.bloomSkill];
+      const score = Number(it?.scorePerQuestion);
+      return {
+        difficulty: it.difficulty,
+        bloomSkill: it.bloomSkill,
+        bloomId: Number.isFinite(bloomId) ? bloomId : null,
+        quantity,
+        scorePerQuestion: Number.isFinite(score) && score > 0 ? score : null,
+      };
+    })
+    .filter(Boolean);
+}
+
+// Tổng max score của 1 leaf section (dùng cho field maxScore trong DTO).
+function leafSectionMaxScore(structure) {
+  if (!Array.isArray(structure)) return 0;
+  return structure.reduce((s, it) => {
+    const score = Number(it?.scorePerQuestion) || 0;
+    const qty = Number(it?.quantity) || 0;
+    return s + score * qty;
+  }, 0);
+}
+
+function sectionsToServerDTOs(sections, bloomMap, useScoring) {
   if (!Array.isArray(sections)) return [];
   return sections.map((sec) => {
     const hasSubs = sec.subConfigs && sec.subConfigs.length > 0;
@@ -82,6 +112,9 @@ function sectionsToServerDTOs(sections, bloomMap) {
         name: sec.name,
         description: sec.description,
         numQuestions: null,
+        // Wrapper: BE auto recompute từ leaves; FE gửi null cho rõ.
+        maxScore: useScoring ? null : null,
+        structureItems: [],
         easyRatio: 0,
         mediumRatio: 0,
         hardRatio: 0,
@@ -91,14 +124,17 @@ function sectionsToServerDTOs(sections, bloomMap) {
         requiresSharedContext: false,
         questionTypes: [],
         bloomSkills: [],
-        subConfigs: sectionsToServerDTOs(sec.subConfigs, bloomMap),
+        subConfigs: sectionsToServerDTOs(sec.subConfigs, bloomMap, useScoring),
       };
     }
     const agg = aggregateStructure(sec.structure, bloomMap);
+    const leafMax = useScoring ? leafSectionMaxScore(sec.structure) : 0;
     return {
       name: sec.name,
       description: sec.description,
       numQuestions: agg.numQuestions,
+      maxScore: useScoring && leafMax > 0 ? leafMax : null,
+      structureItems: buildStructureItems(sec.structure, bloomMap, useScoring),
       easyRatio: agg.easyRatio,
       mediumRatio: agg.mediumRatio,
       hardRatio: agg.hardRatio,
@@ -146,6 +182,8 @@ function CreateMockTestForm({
   const [aiSections, setAiSections] = useState([]);
   const [aiTopNotice, setAiTopNotice] = useState("");
   const [examLanguage, setExamLanguage] = useState("");
+  // Toggle "dùng cấu trúc điểm" — bật ở step 2 header. Khi off, BE/UI bỏ qua mọi maxScore + per-row score.
+  const [useScoring, setUseScoring] = useState(false);
 
   // Map tên → ID cho bloom skill (fetch 1 lần khi mở form)
   const [bloomMap, setBloomMap] = useState({});
@@ -244,6 +282,21 @@ function CreateMockTestForm({
     setStep("BASIC");
   }, []);
 
+  // Skip AI suggest — user tự thiết kế cấu trúc từ blank canvas. Dùng khi user đã biết
+  // chính xác đề mình muốn (ví dụ giáo viên có sẵn ma trận đề), không cần AI gợi ý.
+  const handleStartManualDesign = useCallback(() => {
+    setError("");
+    if (!examName.trim()) {
+      setError(t("mockTestForms.common.nameRequired", "Please enter a name."));
+      return;
+    }
+    const uiLanguage = getUiLanguage(i18n.language);
+    setAiSections([]);
+    setAiTopNotice("");
+    setExamLanguage(uiLanguage);
+    setStep("STRUCTURE");
+  }, [examName, i18n.language, t]);
+
   const handleSubmit = useCallback(async () => {
     setError("");
     const validation = validateMockTestStructure(aiSections, Number(totalQuestions) || undefined, t);
@@ -254,7 +307,7 @@ function CreateMockTestForm({
     setSubmitting(true);
     setStep("GENERATING");
     try {
-      const sectionConfigs = sectionsToServerDTOs(aiSections, bloomMap);
+      const sectionConfigs = sectionsToServerDTOs(aiSections, bloomMap, useScoring);
       const uiLanguage = getUiLanguage(i18n.language);
       const payload = {
         title: examName.trim(),
@@ -284,7 +337,7 @@ function CreateMockTestForm({
     } finally {
       setSubmitting(false);
     }
-  }, [aiSections, totalQuestions, bloomMap, examName, difficulty, duration, aiPrompt, i18n.language, examLanguage, effectiveSelectedSourceIds, contextId, onCreateMockTest, t]);
+  }, [aiSections, totalQuestions, bloomMap, examName, difficulty, duration, aiPrompt, i18n.language, examLanguage, effectiveSelectedSourceIds, contextId, onCreateMockTest, t, useScoring]);
 
   const inputCls = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
     isDarkMode ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
@@ -451,7 +504,8 @@ function CreateMockTestForm({
               onChange={setAiSections}
               targetTotalQuestions={Number(totalQuestions) || undefined}
               topNotice={aiTopNotice}
-              readOnly
+              useScoring={useScoring}
+              onUseScoringChange={setUseScoring}
             />
             {error && (
               <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
@@ -481,12 +535,22 @@ function CreateMockTestForm({
         </Button>
 
         {step === "BASIC" && (
-          <Button onClick={handleRequestSuggestion} disabled={isSuggesting} className="bg-purple-600 hover:bg-purple-700 text-white">
-            {isSuggesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            {isSuggesting
-              ? t("mockTestForms.create.requestingSuggestion", "Generating suggestion...")
-              : t("mockTestForms.create.requestSuggestion", "Get structure suggestion")}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              onClick={handleStartManualDesign}
+              disabled={isSuggesting}
+              className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+            >
+              {t("mockTestForms.create.manualDesign", "Design manually")}
+            </Button>
+            <Button onClick={handleRequestSuggestion} disabled={isSuggesting} className="bg-purple-600 hover:bg-purple-700 text-white">
+              {isSuggesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+              {isSuggesting
+                ? t("mockTestForms.create.requestingSuggestion", "Generating suggestion...")
+                : t("mockTestForms.create.requestSuggestion", "Get structure suggestion")}
+            </Button>
+          </>
         )}
 
         {step === "STRUCTURE" && (
