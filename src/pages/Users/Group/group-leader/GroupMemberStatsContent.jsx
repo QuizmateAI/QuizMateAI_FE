@@ -1,11 +1,9 @@
 import {
   Activity,
-  AlertTriangle,
   ArrowLeft,
   BarChart3,
   Brain,
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
   History,
   PenLine,
@@ -23,7 +21,6 @@ import {
 import ListSpinner from '@/components/ui/ListSpinner';
 import UserDisplayName from '@/components/features/users/UserDisplayName';
 import { cn } from '@/lib/utils';
-import { buildMemberIntelligence } from './memberStatsInsights';
 import GroupMemberRoadmapProgressPanel from './GroupMemberRoadmapProgressPanel';
 
 function GroupMemberStatsContent({
@@ -36,19 +33,18 @@ function GroupMemberStatsContent({
   eyebrowClass,
   fontClass,
   formatAttemptModeLabel,
+  formatAttemptResult,
   formatAttemptStatusLabel,
+  formatAverageResult,
   formatDate,
   formatMinutes,
   formatPercent,
   formatRelativeDate,
-  formatScore,
+  getAttemptResultRatio,
   generatingMemberId,
   handleAssignQuiz,
   handleGenerateMemberSnapshot,
   handleOpenMember,
-  healthLabel,
-  healthToneClass,
-  intelligenceMap,
   isDarkMode,
   isEnglish,
   locale,
@@ -60,8 +56,6 @@ function GroupMemberStatsContent({
   pagedRows,
   panelClass,
   quizzesQuery,
-  reasonLabel,
-  recommendationLabel,
   selectedAttemptHistory,
   selectedDetailQuery,
   selectedIntelligence,
@@ -80,24 +74,46 @@ function GroupMemberStatsContent({
   t,
   targetMember,
   totalPages,
-  trendIcon,
   tt,
 }) {
+  const attemptResultRows = selectedAttemptHistory
+    .map((attempt) => ({
+      attempt,
+      ratio: getAttemptResultRatio(attempt),
+    }))
+    .filter((item) => item.ratio != null);
+  const recentAverageRatio = attemptResultRows.length > 0
+    ? attemptResultRows.reduce((sum, item) => sum + item.ratio, 0) / attemptResultRows.length
+    : null;
+  const bestAttemptResult = attemptResultRows.reduce(
+    (best, item) => (!best || item.ratio > best.ratio ? item : best),
+    null,
+  );
+  const weakestAttemptResult = attemptResultRows.reduce(
+    (weakest, item) => (!weakest || item.ratio < weakest.ratio ? item : weakest),
+    null,
+  );
+  const weakFocus = selectedIntelligence?.weakFocus || [];
+  const roadmapProgress = selectedSnapshot?.roadmapProgress || selectedIntelligence?.roadmapProgress || {};
+  const roadmapPercent = Math.max(0, Math.min(100, Math.round(Number(roadmapProgress.roadmapProgressPercent ?? 0))));
+  const roadmapCurrent = roadmapProgress.currentPhaseTitle
+    || roadmapProgress.currentKnowledgeTitle
+    || tt('groupWorkspace.memberStats.roadmap.noCurrent', 'Chưa bắt đầu lộ trình', 'Roadmap not started');
+  const recentStatusLabel = (() => {
+    if (recentAverageRatio == null) {
+      return tt('groupWorkspace.memberStats.learningDiagnosis.noRecent', 'Chưa đủ dữ liệu quiz gần đây', 'Not enough recent quiz data');
+    }
+    if (recentAverageRatio >= 0.75) {
+      return tt('groupWorkspace.memberStats.learningDiagnosis.recentGood', 'Quiz gần đây đang ổn', 'Recent quizzes look stable');
+    }
+    if (recentAverageRatio >= 0.55) {
+      return tt('groupWorkspace.memberStats.learningDiagnosis.recentWatch', 'Quiz gần đây cần ôn lại', 'Recent quizzes need review');
+    }
+    return tt('groupWorkspace.memberStats.learningDiagnosis.recentRisk', 'Quiz gần đây đang yếu', 'Recent quizzes are weak');
+  })();
+
   return (
     <div className={cn('space-y-5 animate-in fade-in duration-300', fontClass)}>
-      {!shouldRenderDedicatedDetail ? (
-        <section className={cn('rounded-[30px] border p-5 md:p-6', shellClass)}>
-          <div className="min-w-0 max-w-3xl">
-            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', eyebrowClass)}>
-              {tt('groupWorkspace.memberStats.eyebrow', 'Theo dõi học tập từng thành viên', 'Member learning stats')}
-            </p>
-            <h2 className={cn('mt-2 text-2xl font-black tracking-[-0.04em]', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {tt('groupWorkspace.memberStats.titleV2', 'Thống kê thành viên', 'Member stats')}
-            </h2>
-          </div>
-        </section>
-      ) : null}
-
       <section className="space-y-4">
         {!shouldRenderDedicatedDetail ? (
           <div className={cn('rounded-[28px] border p-4 md:p-5', shellClass)}>
@@ -129,14 +145,11 @@ function GroupMemberStatsContent({
 
           <div className={cn('mt-4 overflow-hidden rounded-[24px] border', isDarkMode ? 'border-white/10 bg-black/10' : 'border-slate-200 bg-white')}>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1120px] text-sm">
+              <table className="w-full min-w-[920px] text-sm">
                 <thead className={isDarkMode ? 'bg-white/[0.04]' : 'bg-slate-50/90'}>
                   <tr className={isDarkMode ? 'border-b border-white/10' : 'border-b border-slate-200'}>
                     <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
                       {tt('groupWorkspace.memberStats.table.member', 'Member', 'Member')}
-                    </th>
-                    <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
-                      {tt('groupWorkspace.memberStats.table.health', 'Trạng thái', 'Health')}
                     </th>
                     <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
                       {tt('groupWorkspace.memberStats.table.score', 'KQ TB', 'Avg result')}
@@ -150,10 +163,6 @@ function GroupMemberStatsContent({
                     <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
                       {tt('groupWorkspace.memberStats.table.roadmap', 'Lộ trình', 'Roadmap')}
                     </th>
-
-                    <th className={cn('px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
-                      {tt('groupWorkspace.memberStats.table.notes', 'Ghi chú', 'Notes')}
-                    </th>
                     <th className={cn('px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.16em]', eyebrowClass)}>
                       {tt('groupWorkspace.memberStats.table.actions', 'Chi tiết', 'Details')}
                     </th>
@@ -162,10 +171,7 @@ function GroupMemberStatsContent({
                 <tbody>
                   {pagedRows.map((member) => {
                     const key = buildMemberKey(member);
-                    const intelligence = intelligenceMap.get(key) ?? buildMemberIntelligence(member);
                     const memberName = member?.fullName || member?.username || '—';
-                    const TrendIcon = trendIcon(intelligence.trend.direction);
-                    const reasons = intelligence.reasonCodes.slice(0, 2).map((code) => reasonLabel(code, intelligence));
 
                     return (
                       <tr
@@ -199,13 +205,8 @@ function GroupMemberStatsContent({
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 align-top">
-                          <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold', healthToneClass(intelligence.healthTone, isDarkMode))}>
-                            {healthLabel(intelligence.healthTone)}
-                          </span>
-                        </td>
                         <td className={cn('px-4 py-4 align-top font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                          {formatScore(member.averageScore)}
+                          {formatAverageResult(member.averageScore)}
                         </td>
                         <td className={cn('px-4 py-4 align-top font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                           {member.totalQuizAttempts ?? 0}
@@ -239,12 +240,6 @@ function GroupMemberStatsContent({
                             );
                           })()}
                         </td>
-
-                        <td className="px-4 py-4 align-top">
-                          <p className={cn('max-w-[280px] text-xs leading-5', mutedClass)}>
-                            {reasons.join(' • ')}
-                          </p>
-                        </td>
                         <td className="px-4 py-4 align-top text-right">
                           <Button
                             type="button"
@@ -268,10 +263,7 @@ function GroupMemberStatsContent({
           {showLegacyMemberCards ? (<div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {pagedRows.map((member) => {
               const key = buildMemberKey(member);
-              const intelligence = intelligenceMap.get(key) ?? buildMemberIntelligence(member);
               const memberName = member?.fullName || member?.username || '—';
-              const TrendIcon = trendIcon(intelligence.trend.direction);
-              const reasons = intelligence.reasonCodes.slice(0, 2).map((code) => reasonLabel(code, intelligence));
 
               return (
                 <button
@@ -299,7 +291,7 @@ function GroupMemberStatsContent({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
                         <div className="min-w-0">
                           <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                             <UserDisplayName user={member} fallback={memberName} isDarkMode={isDarkMode} showUsernameSuffix={false} />
@@ -308,10 +300,6 @@ function GroupMemberStatsContent({
                             {member.email || '—'}
                           </p>
                         </div>
-
-                        <span className={cn('inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold', healthToneClass(intelligence.healthTone, isDarkMode))}>
-                          {healthLabel(intelligence.healthTone)}
-                        </span>
                       </div>
 
                       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -320,7 +308,7 @@ function GroupMemberStatsContent({
                             {tt('groupWorkspace.memberStats.card.score', 'KQ TB', 'Avg result')}
                           </p>
                           <p className={cn('mt-1 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                            {formatScore(member.averageScore)}
+                            {formatAverageResult(member.averageScore)}
                           </p>
                         </div>
                         <div className={cn('rounded-2xl border px-3 py-2', isDarkMode ? 'border-white/10 bg-black/15' : 'border-slate-200 bg-slate-50/80')}>
@@ -342,11 +330,9 @@ function GroupMemberStatsContent({
                       </div>
 
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className={cn('truncate text-xs font-medium', mutedClass)}>
-                            {reasons.join(' · ')}
-                          </p>
-                        </div>
+                        <span className={cn('truncate text-xs font-medium', mutedClass)}>
+                          {tt('groupWorkspace.memberStats.card.openDetail', 'Xem tình hình học tập', 'Open learning detail')}
+                        </span>
                         <ChevronRight className={cn('h-4 w-4 shrink-0', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')} />
                       </div>
                     </div>
@@ -444,16 +430,11 @@ function GroupMemberStatsContent({
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', healthToneClass(selectedIntelligence.healthTone, isDarkMode))}>
-                    {healthLabel(selectedIntelligence.healthTone)}
+                {selectedSnapshot.aiClassification ? (
+                  <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', classificationClass(selectedSnapshot.aiClassification, isDarkMode))}>
+                    {String(selectedSnapshot.aiClassification).replaceAll('_', ' ')}
                   </span>
-                  {selectedSnapshot.aiClassification ? (
-                    <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', classificationClass(selectedSnapshot.aiClassification, isDarkMode))}>
-                      {String(selectedSnapshot.aiClassification).replaceAll('_', ' ')}
-                    </span>
-                  ) : null}
-                </div>
+                ) : null}
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -475,7 +456,7 @@ function GroupMemberStatsContent({
                   {
                     key: 'score',
                     label: tt('groupWorkspace.memberStats.detail.avgScore', 'Kết quả trung bình', 'Average result'),
-                    value: formatScore(selectedSnapshot.averageScore),
+                    value: formatAverageResult(selectedSnapshot.averageScore),
                     note: tt('groupWorkspace.memberStats.detail.passRate', `${formatPercent(selectedIntelligence.passRate)} pass rate`, `${formatPercent(selectedIntelligence.passRate)} pass rate`),
                     accent: isDarkMode ? 'text-violet-200' : 'text-violet-700',
                   },
@@ -506,63 +487,105 @@ function GroupMemberStatsContent({
                 tt={tt}
               />
 
-              <div className="grid gap-4 xl:grid-cols-2">
-                <div className={cn('rounded-[24px] border p-4', panelClass)}>
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className={cn('h-4 w-4', isDarkMode ? 'text-amber-200' : 'text-amber-700')} />
-                    <h4 className={cn('text-base font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {tt('groupWorkspace.memberStats.focus.title', 'Đang lỗi ở phần nào?', 'Where is this member struggling?')}
-                    </h4>
+              <div className={cn('rounded-[24px] border p-4', panelClass)}>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className={cn('h-4 w-4', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')} />
+                  <h4 className={cn('text-base font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                    {tt('groupWorkspace.memberStats.learningDiagnosis.title', 'Chẩn đoán học tập', 'Learning diagnosis')}
+                  </h4>
+                </div>
+                <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
+                  {tt(
+                    'groupWorkspace.memberStats.learningDiagnosis.subtitle',
+                    'Tổng hợp quiz gần đây, topic sai và roadmap để leader biết member đang học thế nào.',
+                    'Combines recent quizzes, weak topics, and roadmap signals so leaders can understand this member.',
+                  )}
+                </p>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-4">
+                  <div className={cn('rounded-[18px] border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/15' : 'border-slate-200 bg-slate-50/80')}>
+                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', eyebrowClass)}>
+                      {tt('groupWorkspace.memberStats.learningDiagnosis.recentLabel', 'Quiz gần đây', 'Recent quizzes')}
+                    </p>
+                    <p className={cn('mt-2 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      {recentStatusLabel}
+                    </p>
+                    <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
+                      {recentAverageRatio == null
+                        ? tt('groupWorkspace.memberStats.learningDiagnosis.noRecentAverage', 'Chưa có bài nộp đủ dữ liệu.', 'No completed result data yet.')
+                        : tt(
+                          'groupWorkspace.memberStats.learningDiagnosis.recentAverage',
+                          `Trung bình ${formatPercent(recentAverageRatio)} trên ${attemptResultRows.length} bài gần nhất.`,
+                          `Average ${formatPercent(recentAverageRatio)} across ${attemptResultRows.length} recent quizzes.`,
+                        )}
+                    </p>
                   </div>
 
-                  {selectedIntelligence.weakFocus.length === 0 ? (
-                    <p className={cn('mt-3 text-sm leading-6', mutedClass)}>
-                      {tt('groupWorkspace.memberStats.focus.none', 'Chưa có chủ đề yếu nổi bật trong snapshot hiện tại.', 'No standout weak topics appear in the current snapshot.')}
-                      </p>
-                    ) : (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {selectedIntelligence.weakFocus.map((topic) => (
-                          <span key={topic} className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700')}>
-                            {topic}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                  <div className={cn('rounded-[18px] border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/15' : 'border-slate-200 bg-slate-50/80')}>
+                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', eyebrowClass)}>
+                      {tt('groupWorkspace.memberStats.learningDiagnosis.bestQuiz', 'Quiz đúng cao nhất', 'Highest quiz')}
+                    </p>
+                    <p className={cn('mt-2 line-clamp-2 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      {bestAttemptResult?.attempt?.quizTitle || tt('groupWorkspace.memberStats.learningDiagnosis.noBestQuiz', 'Chưa có dữ liệu', 'No data yet')}
+                    </p>
+                    <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
+                      {bestAttemptResult ? formatAttemptResult(bestAttemptResult.attempt) : '—'}
+                    </p>
+                  </div>
 
-                    {selectedIntelligence.strongFocus.length > 0 ? (
-                      <>
-                        <div className={cn('mt-4 h-px', isDarkMode ? 'bg-white/10' : 'bg-slate-200')} />
-                        <p className={cn('mt-4 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                          {tt('groupWorkspace.memberStats.focus.strongTitle', 'Điểm đang làm tốt', 'Current strengths')}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {selectedIntelligence.strongFocus.map((topic) => (
-                            <span key={topic} className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700')}>
-                              {topic}
-                            </span>
-                          ))}
-                        </div>
-                      </>
-                    ) : null}
+                  <div className={cn('rounded-[18px] border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/15' : 'border-slate-200 bg-slate-50/80')}>
+                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', eyebrowClass)}>
+                      {tt('groupWorkspace.memberStats.learningDiagnosis.lowQuiz', 'Quiz đúng thấp nhất', 'Lowest quiz')}
+                    </p>
+                    <p className={cn('mt-2 line-clamp-2 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      {weakestAttemptResult?.attempt?.quizTitle || tt('groupWorkspace.memberStats.learningDiagnosis.noLowQuiz', 'Chưa có dữ liệu', 'No data yet')}
+                    </p>
+                    <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
+                      {weakestAttemptResult ? formatAttemptResult(weakestAttemptResult.attempt) : '—'}
+                    </p>
+                  </div>
+
+                  <div className={cn('rounded-[18px] border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/15' : 'border-slate-200 bg-slate-50/80')}>
+                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', eyebrowClass)}>
+                      {tt('groupWorkspace.memberStats.learningDiagnosis.roadmap', 'Roadmap', 'Roadmap')}
+                    </p>
+                    <p className={cn('mt-2 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      {roadmapProgress.hasRoadmap
+                        ? `${roadmapPercent}%`
+                        : tt('groupWorkspace.memberStats.learningDiagnosis.noRoadmap', 'Chưa có roadmap', 'No roadmap')}
+                    </p>
+                    <p className={cn('mt-1 line-clamp-2 text-xs leading-5', mutedClass)}>
+                      {roadmapProgress.needsSupport
+                        ? tt('groupWorkspace.memberStats.learningDiagnosis.roadmapNeedCheck', `Cần kiểm tra: ${roadmapCurrent}`, `Needs check: ${roadmapCurrent}`)
+                        : roadmapCurrent}
+                    </p>
+                  </div>
                 </div>
 
-                <div className={cn('rounded-[24px] border p-4', panelClass)}>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className={cn('h-4 w-4', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')} />
-                    <h4 className={cn('text-base font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {tt('groupWorkspace.memberStats.recommend.title', 'Leader nên làm gì tiếp?', 'Recommended next steps')}
-                    </h4>
-                  </div>
-
-                  <div className="mt-3 space-y-3">
-                    {selectedIntelligence.recommendationCodes.map((code) => (
-                      <div key={code} className={cn('rounded-[20px] border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/15' : 'border-slate-200 bg-slate-50/80')}>
-                        <p className={cn('text-sm leading-6', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>
-                          {recommendationLabel(code, selectedIntelligence)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                <div className={cn('mt-4 rounded-[18px] border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/10' : 'border-slate-200 bg-white')}>
+                  <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                    {tt('groupWorkspace.memberStats.learningDiagnosis.weakTopicTitle', 'Topic/knowledge cần ôn', 'Topics/knowledge to review')}
+                  </p>
+                  {weakFocus.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {weakFocus.map((topic) => (
+                        <span key={topic} className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700')}>
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
+                      {tt('groupWorkspace.memberStats.learningDiagnosis.noWeakTopic', 'Chưa thấy topic yếu nổi bật trong snapshot hiện tại.', 'No standout weak topic appears in the current snapshot.')}
+                    </p>
+                  )}
+                  <p className={cn('mt-3 text-sm leading-6', mutedClass)}>
+                    {tt(
+                      'groupWorkspace.memberStats.learningDiagnosis.privateAssignHint',
+                      'Nếu member sai nhiều ở topic này, hãy giao quiz mức dễ hơn để ôn lại. Quiz giao từ đây chỉ gán riêng member này, không đưa vào quiz chung của nhóm.',
+                      'If this member misses these topics often, assign an easier review quiz. Quizzes assigned here are private to this member and are not added to the shared group quiz list.',
+                    )}
+                  </p>
                 </div>
               </div>
 
@@ -600,25 +623,12 @@ function GroupMemberStatsContent({
                               </div>
                             </div>
                             <div className="text-right">
-                              {(() => {
-                                const rawScore = attempt.score != null ? Number(attempt.score) : null;
-                                const accPct = attempt.accuracyPercent != null ? Number(attempt.accuracyPercent) : null;
-                                const hasScore = rawScore != null && rawScore > 0;
-                                const primaryValue = hasScore ? formatScore(rawScore) : (accPct != null ? `${Math.round(accPct * 10) / 10}%` : '—');
-                                const primaryLabel = hasScore
-                                  ? tt('groupWorkspace.memberStats.attemptHistory.score', 'điểm', 'score')
-                                  : tt('groupWorkspace.memberStats.attemptHistory.accuracy', 'chính xác', 'accuracy');
-                                return (
-                                  <>
-                                    <p className={cn('text-sm font-semibold', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')}>
-                                      {primaryValue}
-                                    </p>
-                                    <p className={cn('mt-0.5 text-[10px]', mutedClass)}>
-                                      {primaryLabel}
-                                    </p>
-                                  </>
-                                );
-                              })()}
+                              <p className={cn('text-sm font-semibold', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')}>
+                                {formatAttemptResult(attempt)}
+                              </p>
+                              <p className={cn('mt-0.5 text-[10px]', mutedClass)}>
+                                {tt('groupWorkspace.memberStats.attemptHistory.result', 'kết quả', 'result')}
+                              </p>
                             </div>
                           </div>
                           <p className={cn('mt-3 text-xs', mutedClass)}>

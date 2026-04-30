@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import PracticeQuizPage from '@/Pages/Users/Quiz/PracticeQuizPage';
+import PracticeQuizPage from '@/pages/Users/Quiz/PracticeQuizPage';
 
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();
@@ -50,11 +50,11 @@ vi.mock('@/context/ToastContext', () => ({
   }),
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/QuizHeader', () => ({
+vi.mock('@/pages/Users/Quiz/components/QuizHeader', () => ({
   default: ({ title }) => <div data-testid="quiz-header">{title}</div>,
 }));
 
-vi.mock('@/Pages/Users/Quiz/components/QuestionCard', () => ({
+vi.mock('@/pages/Users/Quiz/components/QuestionCard', () => ({
   default: ({ question, questionNumber, reviewState, onSelectAnswer }) => (
     <div>
       <div data-testid="question-card">{`Question ${questionNumber}: ${question.content}`}</div>

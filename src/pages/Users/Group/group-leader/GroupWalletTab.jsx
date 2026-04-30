@@ -6,13 +6,10 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
   ReceiptText,
   Shield,
-  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import CreditIconImage from '@/components/ui/CreditIconImage';
 import { cn } from '@/lib/utils';
 import {
   getGroupWorkspaceWallet,
@@ -21,6 +18,7 @@ import {
   getWorkspacePayments,
 } from '@/api/ManagementSystemAPI';
 import { unwrapApiData } from '@/utils/apiResponse';
+import GroupWalletOverviewSection from './GroupWalletOverviewSection';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HISTORY_PAGE_SIZE = 5;
@@ -537,197 +535,30 @@ export default function GroupWalletTab({
 
   return (
     <div className={`space-y-5 animate-in fade-in duration-300 ${fontClass}`}>
-      <section className={`${cardClass} p-5 lg:p-6`}>
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)] lg:items-start">
-          <div className="min-w-0 flex-1">
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>
-              {t('groupWalletTab.groupWalletEyebrow', 'Group wallet')}
-            </p>
-            <h2 className={`mt-1 truncate text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {groupName}
-            </h2>
-            <p className={`mt-2 max-w-xl text-sm leading-relaxed ${subtleTextClass}`}>
-              {t('groupWalletTab.qmcDescription', 'QMC means QuizMate Credit — the shared credit unit this group uses for quiz, flashcard, roadmap, and other AI actions.')}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${isDarkMode ? 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700'}`}>
-                {t('groupWalletTab.qmcBadge', 'QMC = QuizMate Credit')}
-              </span>
-              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${isDarkMode ? 'border-white/12 bg-white/[0.05] text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
-                {t('groupWalletTab.sharedByGroup', 'Shared by the whole group')}
-              </span>
-            </div>
-          </div>
-          <div
-            className={cn(
-              'rounded-[26px] border px-5 py-5',
-              isDarkMode
-                ? 'border-cyan-400/20 bg-[linear-gradient(145deg,rgba(34,211,238,0.12),rgba(8,19,26,0.94),rgba(8,19,26,0.92))]'
-                : 'border-cyan-200 bg-[linear-gradient(145deg,rgba(236,254,255,0.92),rgba(255,255,255,0.98),rgba(240,249,255,0.94))]',
-            )}
-          >
-            <div className="flex items-start gap-3">
-              <span className={`inline-flex items-center justify-center rounded-2xl ring-1 ring-inset ${isDarkMode ? 'bg-cyan-400/10 ring-cyan-300/20' : 'bg-cyan-50 ring-cyan-200'}`}>
-                <CreditIconImage alt={t('common.creditIconAlt', { brandName: 'QuizMate AI' })} className="h-11 w-11 rounded-2xl" />
-              </span>
-              <div className="min-w-0">
-                <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
-                  {t('groupWalletTab.balanceEyebrow', 'Group wallet balance')}
-                </p>
-                <p className={`mt-1 text-xs leading-relaxed ${subtleTextClass}`}>
-                  {t('groupWalletTab.balanceSubtitle', 'Available now for shared AI actions.')}
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 flex items-end gap-3">
-              <p className={`text-4xl font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {walletLoading ? '…' : formatNumber(walletSummary.totalAvailableCredits, locale)}
-              </p>
-              <span className={`pb-1 text-sm font-semibold ${isDarkMode ? 'text-cyan-200' : 'text-cyan-700'}`}>QMC</span>
-            </div>
-            <p className={`mt-2 text-xs ${subtleTextClass}`}>QuizMate Credit (QMC)</p>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <span
-            className={`inline-flex max-w-[min(100%,320px)] items-center truncate rounded-full border px-3 py-1 text-xs font-semibold ${
-              isDarkMode ? 'border-white/15 bg-white/[0.06] text-slate-100' : 'border-slate-200 bg-slate-50 text-slate-800'
-            }`}
-            title={displayPlanLabel || undefined}
-          >
-            {displayPlanLabel || t('groupWalletTab.noPaidPlan', 'No paid plan')}
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {groupPlanExpiryLabel ? (
-              <p className={`text-right text-xs ${subtleTextClass}`}>
-                {t('groupWalletTab.expires', 'Expires')}: {groupPlanExpiryLabel}
-              </p>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn(
-                'h-8 rounded-full px-3 text-xs',
-                isDarkMode ? 'border-slate-600 text-slate-100 hover:bg-slate-900' : 'border-slate-200 bg-white hover:bg-slate-50',
-              )}
-              onClick={openGroupPlanManager}
-            >
-              {displayPlanLabel
-                ? t('groupWalletTab.managePlan', 'Manage plan')
-                : t('groupWalletTab.choosePlan', 'Choose plan')}
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {(walletError || workspacePaymentsError || walletTransactionsError) ? (
-        <p className={`rounded-2xl border px-4 py-3 text-sm ${isDarkMode ? 'border-rose-400/30 bg-rose-400/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
-          {t('groupWalletTab.dataError', 'Some wallet data could not be loaded. Refresh to try again.')}
-        </p>
-      ) : null}
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
-        <div className={cn(cardClass, 'p-5')}>
-          <div className="flex items-center gap-2">
-            <CreditCard className={cn('h-4 w-4', isDarkMode ? 'text-blue-300' : 'text-blue-600')} />
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
-              {t('groupWalletTab.balanceBreakdown', 'Balance breakdown')}
-            </p>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className={cn('rounded-2xl border px-4 py-3', innerCardClass)}>
-              <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${eyebrowClass}`}>
-                {t('groupWalletTab.regularCredits', 'Regular credits')}
-              </p>
-              <p className={cn('mt-2 text-xl font-bold tabular-nums tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                {walletLoading ? '…' : formatNumber(walletSummary.regularCreditBalance, locale)}
-              </p>
-            </div>
-            <div className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-blue-400/20 bg-blue-400/10' : 'border-blue-200 bg-blue-50')}>
-              <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-                {t('groupWalletTab.planCredits', 'Plan credits')}
-              </p>
-              <p className={cn('mt-2 text-xl font-bold tabular-nums tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                {walletLoading ? '…' : formatNumber(walletSummary.planCreditBalance, locale)}
-              </p>
-            </div>
-          </div>
-
-          <div className={`mt-4 flex flex-wrap items-center gap-3 text-xs ${subtleTextClass}`}>
-            <span>
-              {t('groupWalletTab.walletUpdated', 'Wallet updated')}:{' '}
-              {walletSummary.updatedAt ? formatDateTime(walletSummary.updatedAt, lang, true, t) : '—'}
-            </span>
-            {walletSummary.planCreditExpiresAt ? (
-              <span>
-                {t('groupWalletTab.planCreditsExpire', 'Plan credits expire')}:{' '}
-                {formatDateTime(walletSummary.planCreditExpiresAt, lang, true, t)}
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        <div className={cn(cardClass, 'p-5 lg:max-w-xl lg:justify-self-end w-full')}>
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles className={cn('h-4 w-4', isDarkMode ? 'text-cyan-300' : 'text-cyan-600')} />
-            <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {t('groupWalletTab.topUpCredits', 'Top up credits')}
-            </h3>
-          </div>
-          <p className={`text-xs leading-relaxed ${subtleTextClass}`}>
-            {t('groupWalletTab.topUpDescription', 'Add more QMC to this shared wallet.')}
-          </p>
-          {!canBuyGroupCredits ? (
-            <div className={`mt-4 rounded-xl border px-4 py-4 text-sm ${isDarkMode ? 'border-amber-400/20 bg-amber-400/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-              {t('groupWalletTab.notAllowedBuyCredits', 'This plan currently does not allow buying extra credits for the group.')}
-            </div>
-          ) : creditPackagesLoading && featuredCreditPackages.length === 0 ? (
-            <div className={`mt-4 rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>…</div>
-          ) : featuredCreditPackages.length === 0 ? (
-            <div className={`mt-4 rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>
-              {t('groupWalletTab.noCreditPackages', 'No credit packages are available right now.')}
-            </div>
-          ) : (
-            <div className="mt-3 space-y-2">
-              {featuredCreditPackages.map((pkg) => {
-                const totalCredits = Number(pkg?.baseCredit ?? 0) + Number(pkg?.bonusCredit ?? 0);
-                return (
-                  <button
-                    key={pkg.creditPackageId}
-                    type="button"
-                    className={cn(
-                      'flex w-full max-w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:brightness-110',
-                      isDarkMode ? 'border-white/12 bg-black/20' : 'border-slate-200/90 bg-white/94',
-                    )}
-                    onClick={() => openGroupCreditCheckout(pkg.creditPackageId)}
-                  >
-                    <div>
-                      <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                        {formatNumber(totalCredits, locale)} QMC
-                      </p>
-                      <p className={`mt-1 text-xs ${subtleTextClass}`}>
-                        {Number(pkg?.bonusCredit ?? 0) > 0
-                          ? t('groupWalletTab.bonusIncluded', 'Includes +{{amount}} bonus QMC', { amount: formatNumber(pkg.bonusCredit, locale) })
-                          : t('groupWalletTab.topUpSharedWallet', 'Top up the shared wallet')}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className={cn('text-sm font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                        {formatCurrency(pkg?.price, locale)}
-                      </p>
-                      <p className={`mt-1 text-[11px] font-semibold ${isDarkMode ? 'text-cyan-300' : 'text-cyan-700'}`}>
-                        {t('groupWalletTab.buyNow', 'Buy now')}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+      <GroupWalletOverviewSection
+        isDarkMode={isDarkMode}
+        t={t}
+        locale={locale}
+        lang={lang}
+        groupName={groupName}
+        walletLoading={walletLoading}
+        walletSummary={walletSummary}
+        walletError={walletError}
+        workspacePaymentsError={workspacePaymentsError}
+        walletTransactionsError={walletTransactionsError}
+        displayPlanLabel={displayPlanLabel}
+        groupPlanExpiryLabel={groupPlanExpiryLabel}
+        canBuyGroupCredits={canBuyGroupCredits}
+        creditPackagesLoading={creditPackagesLoading}
+        featuredCreditPackages={featuredCreditPackages}
+        openGroupPlanManager={openGroupPlanManager}
+        openGroupCreditCheckout={openGroupCreditCheckout}
+        formatNumber={formatNumber}
+        formatCurrency={formatCurrency}
+        formatDateTime={formatDateTime}
+        cardClass={cardClass}
+        subtleTextClass={subtleTextClass}
+      />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <div className={cn(cardClass, 'p-5')}>

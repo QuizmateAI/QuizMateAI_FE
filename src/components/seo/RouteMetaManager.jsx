@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-const SITE_NAME = 'QuizMate AI';
+const SITE_NAME = 'Quizmate AI';
 const DEFAULT_IMAGE = '/logo-light.webp';
 
 function getSiteUrl() {
@@ -47,31 +47,31 @@ function buildRouteMeta(pathname, language) {
   const lang = language === 'en' ? 'en' : 'vi';
   const localized = {
     en: {
-      defaultTitle: `${SITE_NAME} | AI-first learning workspace`,
+      defaultTitle: SITE_NAME,
       defaultDescription: 'Create quizzes, flashcards, and roadmaps faster with an AI learning workspace built for focused study.',
-      landingTitle: `${SITE_NAME} | AI-first learning workspace`,
+      landingTitle: SITE_NAME,
       landingDescription: 'Turn materials into quizzes, flashcards, and study roadmaps with an AI workspace built for modern learners.',
-      pricingTitle: `Credit guide | ${SITE_NAME}`,
+      pricingTitle: SITE_NAME,
       pricingDescription: 'Understand QuizMate AI credit usage, pricing logic, and quick estimation examples before you start.',
-      loginTitle: `Login | ${SITE_NAME}`,
+      loginTitle: SITE_NAME,
       loginDescription: 'Access your QuizMate AI workspace and continue studying with AI-powered tools.',
-      registerTitle: `Register | ${SITE_NAME}`,
+      registerTitle: SITE_NAME,
       registerDescription: 'Create a QuizMate AI account to start learning with quizzes, flashcards, and personalized roadmaps.',
-      forgotPasswordTitle: `Reset password | ${SITE_NAME}`,
+      forgotPasswordTitle: SITE_NAME,
       forgotPasswordDescription: 'Recover access to your QuizMate AI account and return to your learning workspace.',
     },
     vi: {
-      defaultTitle: `${SITE_NAME} | Nen tang hoc tap cung AI`,
+      defaultTitle: SITE_NAME,
       defaultDescription: 'Tao quiz, flashcard va roadmap nhanh hon voi khong gian hoc tap duoc ho tro boi AI.',
-      landingTitle: `${SITE_NAME} | Nen tang hoc tap cung AI`,
+      landingTitle: SITE_NAME,
       landingDescription: 'Bien tai lieu thanh quiz, flashcard va roadmap hoc tap voi khong gian hoc AI danh cho nguoi hoc hien dai.',
-      pricingTitle: `Huong dan credit | ${SITE_NAME}`,
+      pricingTitle: SITE_NAME,
       pricingDescription: 'Hieu cach tinh credit, chi phi va cac vi du uoc tinh nhanh truoc khi ban su dung QuizMate AI.',
-      loginTitle: `Dang nhap | ${SITE_NAME}`,
+      loginTitle: SITE_NAME,
       loginDescription: 'Dang nhap vao QuizMate AI de tiep tuc hoc tap voi quiz, flashcard va roadmap duoc AI ho tro.',
-      registerTitle: `Dang ky | ${SITE_NAME}`,
+      registerTitle: SITE_NAME,
       registerDescription: 'Tao tai khoan QuizMate AI de bat dau hoc voi quiz, flashcard va roadmap ca nhan hoa.',
-      forgotPasswordTitle: `Quen mat khau | ${SITE_NAME}`,
+      forgotPasswordTitle: SITE_NAME,
       forgotPasswordDescription: 'Khoi phuc truy cap vao tai khoan QuizMate AI va quay lai khong gian hoc tap cua ban.',
     },
   }[lang];
@@ -139,7 +139,7 @@ function buildRouteMeta(pathname, language) {
 
   if (authenticatedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return {
-      title: `${SITE_NAME} App`,
+      title: SITE_NAME,
       description: localized.defaultDescription,
       canonicalPath: pathname,
       robots: 'noindex,nofollow',

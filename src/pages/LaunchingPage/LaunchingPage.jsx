@@ -137,15 +137,6 @@ function LaunchingPage() {
   const [countdown, setCountdown] = useState(() => buildCountdown(launchDate));
 
   useEffect(() => {
-    const previousTitle = document.title;
-    document.title = `${launchConfig.brandName} | Private Launch`;
-
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!launchDate) {
       return undefined;
     }
