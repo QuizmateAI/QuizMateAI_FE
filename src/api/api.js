@@ -182,6 +182,15 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     const status = error.response?.status;
     const skipAuthRedirect = Boolean(originalRequest?.skipAuthRedirect);
+    const code = extractErrorCode(error?.response?.data);
+
+    // BE trả 403 + USER_BANNED khi user đang bị ban → đẩy về /account-suspended.
+    // Bỏ qua nếu đang ở chính trang đó để tránh loop.
+    if (status === 403 && code === 'USER_BANNED' && typeof window !== 'undefined'
+        && !window.location.pathname.startsWith('/account-suspended')
+        && !originalRequest?.skipBanRedirect) {
+      window.location.href = '/account-suspended';
+    }
 
     if (shouldAttemptRefresh(error, originalRequest)) {
       originalRequest._retry = true;

@@ -12,8 +12,7 @@
       "hint": "Credit được dùng để chạy các tác vụ AI như tạo quiz, flashcard, lộ trình học...",
       "regularCredits": "Credit thường",
       "planCredits": "Credit từ gói",
-      "expiresAt": "Hết hạn lúc",
-      "pricingGuide": "Xem bảng giá chi tiết"
+      "expiresAt": "Hết hạn lúc"
     },
     "buy": {
       "title": "Mua thêm credit",
