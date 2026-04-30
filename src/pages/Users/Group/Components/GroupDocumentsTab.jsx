@@ -20,6 +20,7 @@ import {
 
 import i18n from '@/i18n';
 import GroupPendingReviewPanel from '@/pages/Users/Group/group-leader/GroupPendingReviewPanel';
+import GroupDeleteMaterialDialog from './GroupDeleteMaterialDialog';
 import SourceDetailView from './SourceDetailView';
 
 function normalizeStatus(status) {
@@ -253,6 +254,7 @@ export default function GroupDocumentsTab({
   const [viewingMaterial, setViewingMaterial] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [deletingMaterialId, setDeletingMaterialId] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
 
   const sharedMaterials = Array.isArray(sources) ? sources : [];
   const reviewQueueItems = Array.isArray(pendingItems) ? pendingItems : [];
@@ -311,22 +313,26 @@ export default function GroupDocumentsTab({
     }
   };
 
-  const handleDeleteMaterial = async (material) => {
+  const handleDeleteMaterial = (material) => {
     const materialId = Number(material?.materialId ?? material?.id ?? 0);
     if (!Number.isInteger(materialId) || materialId <= 0 || typeof onDeleteSource !== 'function') return;
+    setDeleteCandidate(material);
+  };
 
-    const fallbackTitle = t('groupDocumentsTab.confirmDeleteFallbackTitle', 'this material');
-    const confirmed = globalThis.confirm?.(
-      t('groupDocumentsTab.confirmDeleteMaterial', 'Delete "{{title}}" from the group workspace?', {
-        title: material?.title || material?.name || fallbackTitle,
-      }),
-    );
+  const handleDeleteDialogOpenChange = (open) => {
+    if (!open && !deletingMaterialId) {
+      setDeleteCandidate(null);
+    }
+  };
 
-    if (!confirmed) return;
-
+  const confirmDeleteMaterial = async () => {
+    const material = deleteCandidate;
+    const materialId = Number(material?.materialId ?? material?.id ?? 0);
+    if (!Number.isInteger(materialId) || materialId <= 0 || typeof onDeleteSource !== 'function') return;
     setDeletingMaterialId(materialId);
     try {
       await onDeleteSource(materialId);
+      setDeleteCandidate(null);
     } finally {
       setDeletingMaterialId(null);
     }
@@ -749,6 +755,16 @@ export default function GroupDocumentsTab({
         ) : null}
       </div>
       ) : null}
+
+      <GroupDeleteMaterialDialog
+        open={Boolean(deleteCandidate)}
+        material={deleteCandidate}
+        deleting={Boolean(deletingMaterialId)}
+        isDarkMode={isDarkMode}
+        onOpenChange={handleDeleteDialogOpenChange}
+        onConfirm={confirmDeleteMaterial}
+        t={t}
+      />
     </div>
   );
 }
