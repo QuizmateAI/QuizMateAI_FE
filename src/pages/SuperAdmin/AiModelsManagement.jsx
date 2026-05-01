@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Archive,
   Bot,
@@ -232,10 +233,8 @@ function AiModelsManagement() {
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
 
+  const queryClient = useQueryClient();
   const canWrite = !permLoading && permissions.has('ai-model:write');
-  const [models, setModels] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState({ provider: '', modelGroup: '', status: '', search: '' });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingModel, setEditingModel] = useState(null);
@@ -243,53 +242,37 @@ function AiModelsManagement() {
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [pricingModel, setPricingModel] = useState(null);
   const [priceForm, setPriceForm] = useState({ ...EMPTY_PRICE_FORM });
-  const [exchangeRate, setExchangeRate] = useState(null);
-  const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [officialPricing, setOfficialPricing] = useState(null);
   const [officialPricingLoading, setOfficialPricingLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const fetchModels = async () => {
-    setLoading(true);
-    try {
+  const AI_MODELS_QUERY_KEY = ['superAdmin', 'aiModels'];
+  const AI_MODELS_RATE_KEY = ['superAdmin', 'aiModelsRate'];
+
+  const modelsQuery = useQuery({
+    queryKey: [...AI_MODELS_QUERY_KEY, filters.provider, filters.modelGroup, filters.status],
+    queryFn: async () => {
       const response = await getAiModels({
         provider: filters.provider || undefined,
         modelGroup: filters.modelGroup || undefined,
         status: filters.status || undefined,
       });
-      const data = extractData(response);
-      const nextModels = filterSupportedAiModels(Array.isArray(data) ? data : []);
-      setModels(nextModels);
-      return nextModels;
-    } catch (error) {
-      setModels([]);
-      showError(getErrorMessage(t, error));
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
+      const responseData = extractData(response);
+      return filterSupportedAiModels(Array.isArray(responseData) ? responseData : []);
+    },
+  });
+  const models = modelsQuery.data ?? [];
+  const loading = modelsQuery.isLoading;
 
-  useEffect(() => {
-    fetchModels();
-  }, [filters.provider, filters.modelGroup, filters.status]);
+  const exchangeRateQuery = useQuery({
+    queryKey: AI_MODELS_RATE_KEY,
+    queryFn: async () => extractData(await getUsdVndExchangeRate()),
+  });
+  const exchangeRate = exchangeRateQuery.data ?? null;
+  const exchangeRateLoading = exchangeRateQuery.isFetching;
 
-  const fetchExchangeRate = async ({ silent = false } = {}) => {
-    if (!silent) setExchangeRateLoading(true);
-    try {
-      const response = await getUsdVndExchangeRate();
-      setExchangeRate(extractData(response));
-    } catch (error) {
-      setExchangeRate(null);
-      if (!silent) showError(getErrorMessage(t, error));
-    } finally {
-      if (!silent) setExchangeRateLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchExchangeRate({ silent: true });
-  }, []);
+  const invalidateModels = () =>
+    queryClient.invalidateQueries({ queryKey: AI_MODELS_QUERY_KEY });
 
   const filteredModels = models.filter((model) => {
     const term = filters.search.trim().toLowerCase();
@@ -361,100 +344,92 @@ function AiModelsManagement() {
     setPriceForm({ ...EMPTY_PRICE_FORM });
     setOfficialPricing(null);
     setIsPriceOpen(true);
-    fetchExchangeRate();
+    exchangeRateQuery.refetch();
     fetchOfficialPricing(model.aiModelId, { silent: true, applyToForm: true });
   };
 
-  const submitModelForm = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
-    try {
-      const payload = {
-        provider: String(formData.provider || '').trim().toUpperCase(),
-        modelCode: String(formData.modelCode || '').trim(),
-        displayName: String(formData.displayName || '').trim(),
-        modelGroup: formData.modelGroup,
-        description: String(formData.description || '').trim() || null,
-        systemDefault: Boolean(formData.systemDefault),
-      };
-
-      if (editingModel) {
-        await updateAiModel(editingModel.aiModelId, payload);
-        showSuccess(t('aiModels.messages.updateSuccess'));
-      } else {
-        await createAiModel(payload);
-        showSuccess(t('aiModels.messages.createSuccess'));
-      }
-
+  const saveModelMutation = useMutation({
+    mutationFn: async ({ id, payload }) => {
+      if (id != null) return updateAiModel(id, payload);
+      return createAiModel(payload);
+    },
+    onSuccess: (_resp, { id }) => {
+      showSuccess(id != null ? t('aiModels.messages.updateSuccess') : t('aiModels.messages.createSuccess'));
       setIsFormOpen(false);
-      await fetchModels();
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      invalidateModels();
+    },
+    onError: (error) => showError(getErrorMessage(t, error)),
+  });
 
-  const submitPriceVersion = async (event) => {
-    event.preventDefault();
-    if (!pricingModel) return;
-    setSubmitting(true);
-    try {
-      await addAiModelPriceVersion(pricingModel.aiModelId, {
-        inputPriceUsdPer1M: Number(priceForm.inputPriceUsdPer1M || 0),
-        outputPriceUsdPer1M: Number(priceForm.outputPriceUsdPer1M || 0),
-      });
+  const priceVersionMutation = useMutation({
+    mutationFn: ({ id, body }) => addAiModelPriceVersion(id, body),
+    onSuccess: () => {
       showSuccess(t('aiModels.messages.priceSuccess'));
       setPriceForm({ ...EMPTY_PRICE_FORM });
-      const nextModels = await fetchModels();
-      setPricingModel(nextModels.find((item) => item.aiModelId === pricingModel.aiModelId) ?? pricingModel);
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      invalidateModels();
+    },
+    onError: (error) => showError(getErrorMessage(t, error)),
+  });
 
-  const toggleStatus = async (model) => {
-    const nextStatus = model.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    setSubmitting(true);
-    try {
-      await updateAiModelStatus(model.aiModelId, nextStatus);
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => updateAiModelStatus(id, status),
+    onSuccess: () => {
       showSuccess(t('aiModels.messages.statusSuccess'));
-      await fetchModels();
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      invalidateModels();
+    },
+    onError: (error) => showError(getErrorMessage(t, error)),
+  });
 
-  const archiveModel = async (model) => {
-    setSubmitting(true);
-    try {
-      await updateAiModelStatus(model.aiModelId, 'ARCHIVED');
-      showSuccess(t('aiModels.messages.statusSuccess'));
-      await fetchModels();
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    setSubmitting(true);
-    try {
-      await deleteAiModel(deleteTarget.aiModelId);
+  const deleteMutation = useMutation({
+    mutationFn: ({ id }) => deleteAiModel(id),
+    onSuccess: () => {
       showSuccess(t('aiModels.messages.deleteSuccess'));
       setDeleteTarget(null);
-      await fetchModels();
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    } finally {
-      setSubmitting(false);
-    }
+      invalidateModels();
+    },
+    onError: (error) => showError(getErrorMessage(t, error)),
+  });
+
+  const submitting = saveModelMutation.isPending || priceVersionMutation.isPending
+    || statusMutation.isPending || deleteMutation.isPending;
+
+  const submitModelForm = (event) => {
+    event.preventDefault();
+    const payload = {
+      provider: String(formData.provider || '').trim().toUpperCase(),
+      modelCode: String(formData.modelCode || '').trim(),
+      displayName: String(formData.displayName || '').trim(),
+      modelGroup: formData.modelGroup,
+      description: String(formData.description || '').trim() || null,
+      systemDefault: Boolean(formData.systemDefault),
+    };
+    saveModelMutation.mutate({ id: editingModel?.aiModelId ?? null, payload });
+  };
+
+  const submitPriceVersion = (event) => {
+    event.preventDefault();
+    if (!pricingModel) return;
+    priceVersionMutation.mutate({
+      id: pricingModel.aiModelId,
+      body: {
+        inputPriceUsdPer1M: Number(priceForm.inputPriceUsdPer1M || 0),
+        outputPriceUsdPer1M: Number(priceForm.outputPriceUsdPer1M || 0),
+      },
+    });
+  };
+
+  const toggleStatus = (model) => {
+    const nextStatus = model.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    statusMutation.mutate({ id: model.aiModelId, status: nextStatus });
+  };
+
+  const archiveModel = (model) => {
+    statusMutation.mutate({ id: model.aiModelId, status: 'ARCHIVED' });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate({ id: deleteTarget.aiModelId });
   };
 
   return (
@@ -469,13 +444,13 @@ function AiModelsManagement() {
               type="button"
               variant="outline"
               size="icon"
-              onClick={fetchModels}
-              disabled={loading}
+              onClick={invalidateModels}
+              disabled={modelsQuery.isFetching}
               className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               aria-label={t('aiModels.refresh')}
               title={t('aiModels.refresh')}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${modelsQuery.isFetching ? 'animate-spin' : ''}`} />
             </Button>
             {canWrite ? (
               <Button onClick={openCreateForm} className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]">
@@ -502,7 +477,7 @@ function AiModelsManagement() {
         statusOptions={AI_MODEL_STATUS_OPTIONS}
         exchangeRate={exchangeRate}
         exchangeRateLoading={exchangeRateLoading}
-        onRefreshExchangeRate={() => fetchExchangeRate()}
+        onRefreshExchangeRate={() => exchangeRateQuery.refetch()}
         formatExchangeRate={formatExchangeRate}
         formatDateTime={formatDateTime}
         locale={locale}
@@ -754,7 +729,7 @@ function AiModelsManagement() {
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={() => fetchExchangeRate()}
+                          onClick={() => exchangeRateQuery.refetch()}
                           disabled={exchangeRateLoading}
                           className={`shrink-0 ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}`}
                           aria-label={t('aiModels.exchangeRate.refresh')}

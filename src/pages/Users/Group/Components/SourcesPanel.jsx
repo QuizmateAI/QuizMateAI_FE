@@ -1,33 +1,64 @@
 ﻿import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal, Download, PenLine } from "lucide-react";
+import { Search, Plus, FileText, FileType, FileSpreadsheet, Headphones, Image, Film, Link2, Presentation, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal, Download, PenLine, Youtube } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 import SourceDetailView from "./SourceDetailView";
 
-// Format MIME type thành tên file type ngắn gọn
-function formatFileType(type) {
-  if (!type) return "FILE";
-  const lower = type.toLowerCase();
-  if (lower.includes("pdf")) return "PDF";
-  if (lower.includes("wordprocessingml") || lower.includes("msword")) return "DOCX";
-  if (lower.includes("spreadsheetml") || lower.includes("excel")) return "XLSX";
-  if (lower.includes("presentationml") || lower.includes("powerpoint")) return "PPTX";
-  if (lower.includes("image")) return "IMAGE";
-  if (lower.includes("video")) return "VIDEO";
-  if (lower === "url") return "URL";
-  return "FILE";
+function classifySourceType(type) {
+  const lower = String(type || "").toLowerCase();
+  if (!lower) return "file";
+  if (lower.includes("youtube") || lower.includes("youtu.be")) return "youtube";
+  if (lower.includes("vimeo")) return "vimeo";
+  if (lower === "url" || lower.startsWith("link")) return "url";
+  if (lower.includes("pdf")) return "pdf";
+  if (lower.includes("wordprocessingml") || lower.includes("msword") || lower === "doc" || lower === "docx") return "docx";
+  if (lower.includes("spreadsheetml") || lower.includes("excel") || lower === "xls" || lower === "xlsx" || lower.includes("csv")) return "xlsx";
+  if (lower.includes("presentationml") || lower.includes("powerpoint") || lower === "ppt" || lower === "pptx") return "pptx";
+  if (lower.includes("markdown") || lower === "md") return "markdown";
+  if (lower === "text/plain" || lower === "txt" || lower.startsWith("text/")) return "text";
+  if (lower.startsWith("image/") || lower.includes("image")) return "image";
+  if (lower.startsWith("audio/") || lower.includes("audio")) return "audio";
+  if (lower.startsWith("video/") || lower.includes("video")) return "video";
+  return "file";
 }
 
-// Lấy icon theo loại tài liệu
+function formatFileType(type) {
+  switch (classifySourceType(type)) {
+    case "youtube": return "URL";
+    case "vimeo": return "URL";
+    case "url": return "URL";
+    case "pdf": return "PDF";
+    case "docx": return "DOCX";
+    case "xlsx": return "XLSX";
+    case "pptx": return "PPTX";
+    case "markdown": return "MD";
+    case "text": return "TXT";
+    case "image": return "IMAGE";
+    case "audio": return "AUDIO";
+    case "video": return "VIDEO";
+    default: return "FILE";
+  }
+}
+
+// Render icon component theo loại tài liệu, mau sac thoi tu kha hoi loai mime
 function getSourceIcon(type) {
-  if (type?.toLowerCase().includes("pdf")) return <FileText className="w-4 h-4 text-red-500" />;
-  if (type?.toLowerCase().includes("doc")) return <FileText className="w-4 h-4 text-blue-600" />;
-  if (type?.toLowerCase().includes("image")) return <Image className="w-4 h-4 text-green-500" />;
-  if (type?.toLowerCase().includes("video")) return <Film className="w-4 h-4 text-purple-500" />;
-  if (type?.toLowerCase() === "url") return <Link2 className="w-4 h-4 text-blue-500" />;
-  return <FileText className="w-4 h-4 text-gray-500" />;
+  switch (classifySourceType(type)) {
+    case "youtube": return <Youtube className="w-4 h-4 text-rose-500" />;
+    case "vimeo": return <Film className="w-4 h-4 text-sky-500" />;
+    case "url": return <Link2 className="w-4 h-4 text-blue-500" />;
+    case "pdf": return <FileText className="w-4 h-4 text-red-500" />;
+    case "docx": return <FileType className="w-4 h-4 text-blue-600" />;
+    case "xlsx": return <FileSpreadsheet className="w-4 h-4 text-emerald-600" />;
+    case "pptx": return <Presentation className="w-4 h-4 text-orange-500" />;
+    case "markdown":
+    case "text": return <FileText className="w-4 h-4 text-slate-600" />;
+    case "image": return <Image className="w-4 h-4 text-green-500" />;
+    case "audio": return <Headphones className="w-4 h-4 text-purple-500" />;
+    case "video": return <Film className="w-4 h-4 text-fuchsia-500" />;
+    default: return <FileText className="w-4 h-4 text-gray-500" />;
+  }
 }
 
 function getSourceDisplayIcon(source) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shield, Key, ClipboardList, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -48,10 +49,16 @@ import {
   filterRemovedLearningConfigPermissions,
 } from '@/lib/learningConfigAdminFilters';
 
+const RBAC_PERMS_KEY = ['superAdmin', 'rbac', 'permissions'];
+const RBAC_ROLES_KEY = ['superAdmin', 'rbac', 'roles'];
+const RBAC_AUDIT_KEY = ['superAdmin', 'rbac', 'audit'];
+const RBAC_USERS_KEY = ['superAdmin', 'rbac', 'users'];
+
 function RbacManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   const getFriendlyError = (err, fallbackText, fallbackKey) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
@@ -60,21 +67,14 @@ function RbacManagement() {
   };
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  const [activeTab, setActiveTab] = useState('permissions'); // permissions | audit
-  const [permissions, setPermissions] = useState([]);
-  const [roles, setRoles] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('permissions');
   const [error, setError] = useState('');
 
-  // User permission modal
   const [selectedUser, setSelectedUser] = useState(null);
   const [userPermissions, setUserPermissions] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
 
-  // Role management
   const [selectedRole, setSelectedRole] = useState(null);
   const [rolePermissions, setRolePermissions] = useState([]);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -82,80 +82,63 @@ function RbacManagement() {
   const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
 
-  const fetchPermissions = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
+  const permsQuery = useQuery({
+    queryKey: RBAC_PERMS_KEY,
+    queryFn: async () => {
       const res = await listPermissions();
-      const data = res?.data ?? res;
-      const list = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
-      setPermissions(filterRemovedLearningConfigPermissions(list));
-    } catch (err) {
-      setError(getFriendlyError(err, null, 'rbac.errors.loadPermissions'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const responseData = res?.data ?? res;
+      const list = Array.isArray(responseData) ? responseData : (Array.isArray(responseData?.content) ? responseData.content : []);
+      return filterRemovedLearningConfigPermissions(list);
+    },
+    enabled: activeTab === 'permissions' || activeTab === 'roles',
+  });
+  const permissions = permsQuery.data ?? [];
 
-  const fetchAuditLogs = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const res = await getAuditLogs();
-      const data = res?.data ?? res;
-      const list = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
-      setAuditLogs(filterRemovedLearningConfigAuditLogs(list));
-    } catch (err) {
-      setError(getFriendlyError(err, null, 'rbac.errors.loadAuditLogs'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchRoles = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
+  const rolesQuery = useQuery({
+    queryKey: RBAC_ROLES_KEY,
+    queryFn: async () => {
       const res = await listRoles();
-      const data = res?.data ?? res;
-      setRoles(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(getFriendlyError(err, null, 'rbac.errors.loadRoles'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const responseData = res?.data ?? res;
+      return Array.isArray(responseData) ? responseData : [];
+    },
+    enabled: activeTab === 'roles',
+  });
+  const roles = rolesQuery.data ?? [];
+
+  const auditQuery = useQuery({
+    queryKey: RBAC_AUDIT_KEY,
+    queryFn: async () => {
+      const res = await getAuditLogs();
+      const responseData = res?.data ?? res;
+      const list = Array.isArray(responseData) ? responseData : (Array.isArray(responseData?.content) ? responseData.content : []);
+      return filterRemovedLearningConfigAuditLogs(list);
+    },
+    enabled: activeTab === 'audit',
+  });
+  const auditLogs = auditQuery.data ?? [];
+
+  const usersQuery = useQuery({
+    queryKey: RBAC_USERS_KEY,
+    queryFn: async () => {
+      const res = await getAllSystemUsers();
+      const responseData = res?.data ?? res;
+      return Array.isArray(responseData) ? responseData : (Array.isArray(responseData?.content) ? responseData.content : []);
+    },
+  });
+  const users = usersQuery.data ?? [];
+
+  const isLoading = permsQuery.isLoading || rolesQuery.isLoading || auditQuery.isLoading;
+
+  useEffect(() => {
+    const e = permsQuery.error || rolesQuery.error || auditQuery.error;
+    if (e) setError(getFriendlyError(e, null, 'rbac.errors.loadPermissions'));
+  }, [permsQuery.error, rolesQuery.error, auditQuery.error]);
 
   const ensurePermissionsLoaded = async () => {
     if (permissions.length > 0) return permissions;
-    const res = await listPermissions();
-    const data = res?.data ?? res;
-    const list = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
-    const filtered = filterRemovedLearningConfigPermissions(list);
-    setPermissions(filtered);
-    return filtered;
+    const result = await permsQuery.refetch();
+    return result.data ?? [];
   };
-
-  const fetchUsers = async () => {
-    try {
-      const res = await getAllSystemUsers();
-      const data = res?.data ?? res;
-      const list = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
-      setUsers(list);
-    } catch (err) {
-      console.error('Fetch users error:', err);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'permissions') fetchPermissions();
-    else if (activeTab === 'audit') fetchAuditLogs();
-    else if (activeTab === 'roles') fetchRoles();
-  }, [activeTab]);
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
 
   const openUserPermissions = async (user) => {
     setSelectedUser(user);
@@ -191,26 +174,62 @@ function RbacManagement() {
     }
   };
 
-  const handleSyncPermissions = async () => {
-    if (!selectedUser) return;
-    setIsModalLoading(true);
-    setError('');
-    try {
-      await syncUserPermissions(selectedUser.id, userPermissions);
+  const invalidateRoles = () => queryClient.invalidateQueries({ queryKey: RBAC_ROLES_KEY });
+
+  const syncUserMutation = useMutation({
+    mutationFn: ({ userId, perms }) => syncUserPermissions(userId, perms),
+    onSuccess: async (_resp, { userId }) => {
       showSuccess(t('rbac.syncSuccess'));
-      const refreshed = await getUserPermissions(selectedUser.id);
-      const refreshedData = refreshed?.data ?? refreshed;
-      setUserPermissions(filterRemovedLearningConfigPermissionCodes(Array.isArray(refreshedData) ? refreshedData : []));
-    } catch (err) {
+      try {
+        const refreshed = await getUserPermissions(userId);
+        const refreshedData = refreshed?.data ?? refreshed;
+        setUserPermissions(filterRemovedLearningConfigPermissionCodes(Array.isArray(refreshedData) ? refreshedData : []));
+      } catch {
+        // ignore refresh failure
+      }
+    },
+    onError: (err) => {
       const msg = getFriendlyError(err, null, 'rbac.syncError');
       setError(msg);
       showError(msg);
-    } finally {
-      setIsModalLoading(false);
-    }
+    },
+  });
+
+  const createRoleMutation = useMutation({
+    mutationFn: (roleName) => createRole({ roleName }),
+    onSuccess: () => {
+      setNewRoleName('');
+      setIsCreateRoleOpen(false);
+      showSuccess(t('rbac.success.roleCreated'));
+      invalidateRoles();
+    },
+    onError: (err) => {
+      const msg = getFriendlyError(err, null, 'rbac.errors.createRole');
+      setError(msg);
+      showError(msg);
+    },
+  });
+
+  const syncRoleMutation = useMutation({
+    mutationFn: ({ roleId, perms }) => syncRolePermissions(roleId, perms),
+    onSuccess: () => {
+      showSuccess(t('rbac.success.rolePermissionsSynced'));
+      invalidateRoles();
+    },
+    onError: (err) => {
+      const msg = getFriendlyError(err, null, 'rbac.errors.syncRolePermissions');
+      setError(msg);
+      showError(msg);
+    },
+  });
+
+  const handleSyncPermissions = () => {
+    if (!selectedUser) return;
+    setError('');
+    syncUserMutation.mutate({ userId: selectedUser.id, perms: userPermissions });
   };
 
-  const handleCreateRole = async () => {
+  const handleCreateRole = () => {
     const trimmedRoleName = newRoleName.trim();
     if (!trimmedRoleName) {
       const msg = t('rbac.errors.roleNameRequired');
@@ -218,46 +237,14 @@ function RbacManagement() {
       showError(msg);
       return;
     }
-
-    setIsModalLoading(true);
     setError('');
-    try {
-      await createRole({ roleName: trimmedRoleName });
-      setNewRoleName('');
-      setIsCreateRoleOpen(false);
-      showSuccess(t('rbac.success.roleCreated'));
-      await fetchRoles();
-    } catch (err) {
-      const msg = getFriendlyError(err, null, 'rbac.errors.createRole');
-      setError(msg);
-      showError(msg);
-    } finally {
-      setIsModalLoading(false);
-    }
+    createRoleMutation.mutate(trimmedRoleName);
   };
 
-  const handleSyncRolePermissions = async () => {
+  const handleSyncRolePermissions = () => {
     if (!selectedRole) return;
-    setIsRoleModalLoading(true);
     setError('');
-    try {
-      await syncRolePermissions(selectedRole.roleId, rolePermissions);
-      showSuccess(t('rbac.success.rolePermissionsSynced'));
-      await fetchRoles();
-      setRoles((currentRoles) =>
-        currentRoles.map((role) =>
-          role.roleId === selectedRole.roleId
-            ? { ...role, permissions: [...rolePermissions] }
-            : role
-        )
-      );
-    } catch (err) {
-      const msg = getFriendlyError(err, null, 'rbac.errors.syncRolePermissions');
-      setError(msg);
-      showError(msg);
-    } finally {
-      setIsRoleModalLoading(false);
-    }
+    syncRoleMutation.mutate({ roleId: selectedRole.roleId, perms: rolePermissions });
   };
 
   const handleDeleteRole = async (role) => {
@@ -270,18 +257,15 @@ function RbacManagement() {
     );
     if (!confirmed) return;
 
-    setIsLoading(true);
     setError('');
     try {
       await deleteRole(role.roleId);
       showSuccess(t('rbac.success.roleDeleted'));
-      await fetchRoles();
+      invalidateRoles();
     } catch (err) {
       const msg = getFriendlyError(err, null, 'rbac.errors.deleteRole');
       setError(msg);
       showError(msg);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -391,13 +375,13 @@ function RbacManagement() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={fetchRoles}
-                disabled={isLoading}
+                onClick={() => rolesQuery.refetch()}
+                disabled={rolesQuery.isFetching}
                 className="rounded-xl"
                 aria-label={t('common.refresh')}
                 title={t('common.refresh')}
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${rolesQuery.isFetching ? 'animate-spin' : ''}`} />
               </Button>
               <Button size="sm" onClick={() => setIsCreateRoleOpen(true)} className="rounded-xl">
                 <Plus className="w-4 h-4 mr-2" />
@@ -514,13 +498,13 @@ function RbacManagement() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={fetchPermissions}
-                disabled={isLoading}
+                onClick={() => permsQuery.refetch()}
+                disabled={permsQuery.isFetching}
                 className="rounded-xl"
                 aria-label={t('common.refresh')}
                 title={t('common.refresh')}
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${permsQuery.isFetching ? 'animate-spin' : ''}`} />
               </Button>
             </CardHeader>
             <CardContent className="p-0">
@@ -647,13 +631,13 @@ function RbacManagement() {
             <Button
               variant="outline"
               size="icon"
-              onClick={fetchAuditLogs}
-              disabled={isLoading}
+              onClick={() => auditQuery.refetch()}
+              disabled={auditQuery.isFetching}
               className="rounded-xl"
               aria-label={t('common.refresh')}
               title={t('common.refresh')}
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${auditQuery.isFetching ? 'animate-spin' : ''}`} />
             </Button>
           </CardHeader>
           <CardContent className="p-0">

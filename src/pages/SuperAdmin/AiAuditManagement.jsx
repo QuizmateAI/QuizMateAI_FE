@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -251,10 +252,14 @@ function MetricCard({ icon: Icon, label, value, tone, isDarkMode, subtext }) {
   );
 }
 
+const AI_AUDIT_LOGS_KEY = ['superAdmin', 'aiAuditLogs'];
+const AI_AUDIT_METRICS_KEY = ['superAdmin', 'aiAuditMetrics'];
+
 function AiAuditManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
 
@@ -269,26 +274,12 @@ function AiAuditManagement() {
   });
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [pageInfo, setPageInfo] = useState({
-    totalElements: 0,
-    totalPages: 0,
-    page: 0,
-    size: 20,
-  });
-  const [metrics, setMetrics] = useState(EMPTY_AUDIT_METRICS);
   const [selectedAuditId, setSelectedAuditId] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const stompClientRef = useRef(null);
   const refreshTimeoutRef = useRef(null);
-  const pageRef = useRef(page);
-  const pageSizeRef = useRef(pageSize);
-  const filtersRef = useRef(filters);
-  const metricsRequestRef = useRef(0);
 
-  const buildAuditQuery = (activeFilters = filtersRef.current) => ({
+  const buildAuditQuery = (activeFilters) => ({
     provider: activeFilters.provider || undefined,
     featureKey: activeFilters.featureKey || undefined,
     actorUserId: activeFilters.actorUserId || undefined,
@@ -298,142 +289,91 @@ function AiAuditManagement() {
     to: activeFilters.to ? new Date(activeFilters.to).toISOString() : undefined,
   });
 
-  const fetchAuditLogs = async (
-    nextPage = pageRef.current,
-    nextPageSize = pageSizeRef.current,
-    activeFilters = filtersRef.current
-  ) => {
-    setIsLoading(true);
-    setError('');
-    try {
+  const auditLogsQuery = useQuery({
+    queryKey: [...AI_AUDIT_LOGS_KEY, page, pageSize, filters],
+    queryFn: async () => {
       const response = await getAiAuditLogs({
-        ...buildAuditQuery(activeFilters),
-        page: nextPage,
-        size: nextPageSize,
+        ...buildAuditQuery(filters),
+        page,
+        size: pageSize,
       });
-
       const pageData = response?.data ?? response ?? {};
       const content = Array.isArray(pageData?.content) ? pageData.content : [];
-      setAuditLogs(content);
-      setPageInfo({
-        totalElements: Number(pageData?.totalElements || 0),
-        totalPages: Number(pageData?.totalPages || 0),
-        page: Number(pageData?.page || 0),
-        size: Number(pageData?.size || nextPageSize),
-      });
-      setSelectedAuditId((currentSelectedId) => {
-        if (!currentSelectedId) return null;
-        if (content.some((entry) => entry.auditId === currentSelectedId)) {
-          return currentSelectedId;
-        }
-        return null;
-      });
-    } catch (err) {
-      setAuditLogs([]);
-      setPageInfo({
-        totalElements: 0,
-        totalPages: 0,
-        page: 0,
-        size: nextPageSize,
-      });
-      setError(err?.message || t('aiAudit.errors.loadLogs', 'Unable to load AI audit logs'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return {
+        auditLogs: content,
+        pageInfo: {
+          totalElements: Number(pageData?.totalElements || 0),
+          totalPages: Number(pageData?.totalPages || 0),
+          page: Number(pageData?.page || 0),
+          size: Number(pageData?.size || pageSize),
+        },
+      };
+    },
+    placeholderData: (previous) => previous,
+  });
+  const auditLogs = auditLogsQuery.data?.auditLogs ?? [];
+  const pageInfo = auditLogsQuery.data?.pageInfo ?? { totalElements: 0, totalPages: 0, page: 0, size: pageSize };
+  const isLoading = auditLogsQuery.isLoading;
+  const error = auditLogsQuery.error
+    ? (auditLogsQuery.error?.message || t('aiAudit.errors.loadLogs', 'Unable to load AI audit logs'))
+    : '';
 
-  const fetchAuditMetrics = async (activeFilters = filtersRef.current) => {
-    const requestId = ++metricsRequestRef.current;
-    setMetrics({ ...EMPTY_AUDIT_METRICS });
-
-    try {
+  const metricsQuery = useQuery({
+    queryKey: [...AI_AUDIT_METRICS_KEY, filters],
+    queryFn: async () => {
       const firstResponse = await getAiAuditLogs({
-        ...buildAuditQuery(activeFilters),
+        ...buildAuditQuery(filters),
         page: 0,
         size: AUDIT_METRICS_PAGE_SIZE,
       });
-
       const firstPage = firstResponse?.data ?? firstResponse ?? {};
       const directMetrics = extractAuditMetrics(firstPage);
-      if (directMetrics) {
-        if (metricsRequestRef.current === requestId) {
-          setMetrics(directMetrics);
-        }
-        return;
-      }
+      if (directMetrics) return directMetrics;
 
       const allEntries = Array.isArray(firstPage?.content) ? [...firstPage.content] : [];
       const totalPages = Number(firstPage?.totalPages || 0);
-
       if (totalPages > 1) {
         const remainingResponses = await Promise.all(
           Array.from({ length: totalPages - 1 }, (_, index) => getAiAuditLogs({
-            ...buildAuditQuery(activeFilters),
+            ...buildAuditQuery(filters),
             page: index + 1,
             size: AUDIT_METRICS_PAGE_SIZE,
           })),
         );
-
         remainingResponses.forEach((response) => {
           const pageData = response?.data ?? response ?? {};
           const content = Array.isArray(pageData?.content) ? pageData.content : [];
           allEntries.push(...content);
         });
       }
+      return buildAuditMetricsFromEntries(allEntries);
+    },
+  });
+  const metrics = metricsQuery.data ?? EMPTY_AUDIT_METRICS;
 
-      if (metricsRequestRef.current === requestId) {
-        setMetrics(buildAuditMetricsFromEntries(allEntries));
-      }
-    } catch {
-      if (metricsRequestRef.current === requestId) {
-        setMetrics({ ...EMPTY_AUDIT_METRICS });
-      }
+  // Drop selectedAuditId if no longer in current page
+  useEffect(() => {
+    if (!selectedAuditId) return;
+    if (!auditLogs.some((entry) => entry.auditId === selectedAuditId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync derived selection with current page
+      setSelectedAuditId(null);
     }
-  };
+  }, [auditLogs, selectedAuditId]);
 
-  useEffect(() => {
-    pageRef.current = page;
-  }, [page]);
-
-  useEffect(() => {
-    pageSizeRef.current = pageSize;
-  }, [pageSize]);
-
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
-
+  // Apply ?taskId= from URL
   useEffect(() => {
     const taskId = String(searchParams.get('taskId') || '').trim();
-    if (!taskId || taskId === filtersRef.current.taskId) {
+    if (!taskId || taskId === filters.taskId) {
       return;
     }
-
-    const nextFilters = {
-      ...filtersRef.current,
-      taskId,
-    };
-
-    filtersRef.current = nextFilters;
-    setFilters(nextFilters);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync URL param into filter state
+    setFilters((prev) => ({ ...prev, taskId }));
     setPage(0);
-    fetchAuditLogs(0, pageSizeRef.current, nextFilters);
-    fetchAuditMetrics(nextFilters);
-  }, [searchParams]);
-
-  useEffect(() => {
-    fetchAuditLogs(page, pageSize, filters);
-  }, [page, pageSize]);
-
-  useEffect(() => {
-    fetchAuditMetrics(filtersRef.current);
-  }, []);
+  }, [searchParams, filters.taskId]);
 
   useEffect(() => {
     const websocketUrl = getWebSocketUrl();
-    if (!websocketUrl) {
-      return undefined;
-    }
+    if (!websocketUrl) return undefined;
 
     const token = getAuthToken();
     const stompClient = new Client({
@@ -448,8 +388,8 @@ function AiAuditManagement() {
             window.clearTimeout(refreshTimeoutRef.current);
           }
           refreshTimeoutRef.current = window.setTimeout(() => {
-            fetchAuditLogs(pageRef.current, pageSizeRef.current, filtersRef.current);
-            fetchAuditMetrics(filtersRef.current);
+            queryClient.invalidateQueries({ queryKey: AI_AUDIT_LOGS_KEY });
+            queryClient.invalidateQueries({ queryKey: AI_AUDIT_METRICS_KEY });
           }, 350);
         });
       },
@@ -470,7 +410,7 @@ function AiAuditManagement() {
         stompClientRef.current.deactivate();
       }
     };
-  }, []);
+  }, [queryClient]);
 
   const selectedAudit = useMemo(
     () => auditLogs.find((entry) => entry.auditId === selectedAuditId) || null,
@@ -485,12 +425,10 @@ function AiAuditManagement() {
 
   const handleApplyFilters = () => {
     setPage(0);
-    fetchAuditLogs(0, pageSize, filters);
-    fetchAuditMetrics(filters);
   };
 
   const handleResetFilters = () => {
-    const resetFilters = {
+    setFilters({
       provider: '',
       featureKey: '',
       actorUserId: '',
@@ -498,11 +436,8 @@ function AiAuditManagement() {
       status: '',
       from: '',
       to: '',
-    };
-    setFilters(resetFilters);
+    });
     setPage(0);
-    fetchAuditLogs(0, pageSize, resetFilters);
-    fetchAuditMetrics(resetFilters);
   };
 
   const openAuditDetail = (auditId) => {
@@ -650,13 +585,16 @@ function AiAuditManagement() {
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => fetchAuditLogs(page, pageSize, filters)}
-                disabled={isLoading}
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: AI_AUDIT_LOGS_KEY });
+                  queryClient.invalidateQueries({ queryKey: AI_AUDIT_METRICS_KEY });
+                }}
+                disabled={auditLogsQuery.isFetching}
                 className="rounded-xl"
                 aria-label={t('common.refresh')}
                 title={t('common.refresh')}
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${auditLogsQuery.isFetching ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </div>

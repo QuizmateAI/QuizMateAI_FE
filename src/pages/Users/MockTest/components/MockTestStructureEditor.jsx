@@ -9,7 +9,9 @@ import { useTranslation } from 'react-i18next';
 import {
   MOCK_TEST_BLOOM_SKILLS,
   MOCK_TEST_DIFFICULTIES,
+  MOCK_TEST_QUESTION_TYPES,
 } from '../hooks/useMockTestStructureSuggestion';
+import { MOCK_TEST_QUESTION_TYPE_VALUES } from '../utils/mockTestScoring';
 
 const MIN_DESCRIPTION_LENGTH = 10;
 
@@ -40,6 +42,19 @@ function translateDifficulty(t, difficulty) {
       return t('mockTestForms.common.difficultyHard', 'Hard');
     default:
       return difficulty;
+  }
+}
+
+function translateQuestionType(t, questionType) {
+  switch (questionType) {
+    case 'SINGLE_CHOICE':
+      return t('mockTestForms.common.questionTypeSingle', 'Single choice');
+    case 'MULTIPLE_CHOICE':
+      return t('mockTestForms.common.questionTypeMultiple', 'Multiple choice');
+    case 'TRUE_FALSE':
+      return t('mockTestForms.common.questionTypeTrueFalse', 'True / False');
+    default:
+      return questionType;
   }
 }
 
@@ -100,6 +115,11 @@ function validateSection(section, t) {
             index: idx + 1,
           }));
         }
+        if (!MOCK_TEST_QUESTION_TYPE_VALUES.includes(it?.questionType || '')) {
+          errors.push(t('mockTestForms.structure.validation.questionTypeInvalid', 'Structure #{{index}}: question type is not supported.', {
+            index: idx + 1,
+          }));
+        }
       });
       const total = sumStructureQuantity(section.structure);
       const num = Number(section.numQuestions) || 0;
@@ -119,15 +139,16 @@ function StructureItemRow({ item, onChange, onRemove, readOnly, t }) {
   if (readOnly) {
     return (
       <div className="grid grid-cols-12 items-center gap-2 rounded-md border border-gray-200 bg-white p-2">
-        <div className="col-span-4 px-2 py-1 text-xs text-muted-foreground">{translateDifficulty(t, item.difficulty)}</div>
+        <div className="col-span-3 px-2 py-1 text-xs text-muted-foreground">{translateDifficulty(t, item.difficulty)}</div>
+        <div className="col-span-3 px-2 py-1 text-xs text-muted-foreground">{translateQuestionType(t, item.questionType)}</div>
         <div className="col-span-4 px-2 py-1 text-xs text-muted-foreground">{translateBloomSkill(t, item.bloomSkill)}</div>
-        <div className="col-span-4 px-2 py-1 text-xs font-medium">{item.quantity ?? 1}</div>
+        <div className="col-span-2 px-2 py-1 text-xs font-medium">{item.quantity ?? 1}</div>
       </div>
     );
   }
   return (
     <div className="grid grid-cols-12 items-center gap-2 rounded-md border border-gray-200 bg-white p-2">
-      <div className="col-span-4">
+      <div className="col-span-3">
         <select
           value={item.difficulty}
           onChange={(e) => update('difficulty', e.target.value)}
@@ -138,7 +159,18 @@ function StructureItemRow({ item, onChange, onRemove, readOnly, t }) {
           ))}
         </select>
       </div>
-      <div className="col-span-4">
+      <div className="col-span-3">
+        <select
+          value={item.questionType || 'SINGLE_CHOICE'}
+          onChange={(e) => update('questionType', e.target.value)}
+          className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {MOCK_TEST_QUESTION_TYPES.map((type) => (
+            <option key={type} value={type}>{translateQuestionType(t, type)}</option>
+          ))}
+        </select>
+      </div>
+      <div className="col-span-3">
         <select
           value={item.bloomSkill}
           onChange={(e) => update('bloomSkill', e.target.value)}
@@ -149,7 +181,7 @@ function StructureItemRow({ item, onChange, onRemove, readOnly, t }) {
           ))}
         </select>
       </div>
-      <div className="col-span-3">
+      <div className="col-span-2">
         <Input
           type="number"
           min={1}
@@ -306,9 +338,10 @@ function SectionCard({
                 </Badge>
               </div>
               <div className="mt-2 grid grid-cols-12 gap-2 px-2 text-[10px] uppercase tracking-wide text-muted-foreground">
-                <div className="col-span-4">{t('mockTestForms.structure.columnDifficulty', 'Difficulty')}</div>
-                <div className="col-span-4">{t('mockTestForms.structure.columnBloom', 'Bloom level')}</div>
-                <div className="col-span-4">{t('mockTestForms.structure.columnQuantity', 'Quantity')}</div>
+                <div className="col-span-3">{t('mockTestForms.structure.columnDifficulty', 'Difficulty')}</div>
+                <div className="col-span-3">{t('mockTestForms.structure.columnQuestionType', 'Question type')}</div>
+                <div className="col-span-3">{t('mockTestForms.structure.columnBloom', 'Bloom level')}</div>
+                <div className="col-span-3">{t('mockTestForms.structure.columnQuantity', 'Quantity')}</div>
               </div>
               <div className="mt-1 space-y-2">
                 {(section.structure || []).map((item, idx) => (
@@ -391,7 +424,7 @@ function SectionCard({
 
 /**
  * Editor cấu trúc mock test: tree section, mỗi leaf có danh sách tổ hợp
- * {difficulty, bloomSkill, quantity}. questionType luôn là SINGLE_CHOICE theo rule mock-test.
+ * {difficulty, questionType, bloomSkill, quantity}.
  * Wrapper section chỉ có subConfigs.
  *
  * Props:

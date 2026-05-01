@@ -2,7 +2,8 @@
 import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
-import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
+import { getExtractedText, getExtractedSummary, getMaterialContent, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
+import { MaterialContentRenderer } from "@/components/features/material/MaterialContentRenderer";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 const IMAGE_URL_REGEX = /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -238,6 +239,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
   const [extractedText, setExtractedText] = useState(null);
   const [textLoading, setTextLoading] = useState(false);
   const [textError, setTextError] = useState(false);
+  const [materialContent, setMaterialContent] = useState(null);
 
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -263,7 +265,24 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
     if (!currentSource?.id) return;
     setTextLoading(true);
     setTextError(false);
+    setMaterialContent(null);
     try {
+      const lower = String(currentSource?.type || "").toLowerCase();
+      const looksMedia = lower.includes("video") || lower.includes("audio")
+        || lower.includes("youtube") || lower.includes("vimeo") || lower.includes("image");
+      if (looksMedia) {
+        try {
+          const contentRes = await getMaterialContent(currentSource.id);
+          const data = contentRes?.data ?? contentRes ?? null;
+          if (data && (data.url || data.transcript)) {
+            setMaterialContent(data);
+            setExtractedText(data.transcript || data.url || "");
+            return;
+          }
+        } catch {
+          // Fall through to legacy /extracted-text fetch
+        }
+      }
       const res = await getExtractedText(currentSource.id);
       setExtractedText(typeof res === "string" ? res : res?.data ?? "");
     } catch {
@@ -271,7 +290,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
     } finally {
       setTextLoading(false);
     }
-  }, [currentSource?.id]);
+  }, [currentSource?.id, currentSource?.type]);
 
   const fetchSummary = useCallback(async () => {
     if (!currentSource?.id) return;
@@ -339,6 +358,41 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
 
   const keywords = useMemo(() => extractKeywords(summary), [summary]);
   const contentBlocks = useMemo(() => buildContentBlocks(extractedText), [extractedText]);
+
+  const mediaInfo = useMemo(() => {
+    if (!currentSource) return null;
+    if (materialContent) {
+      const url = materialContent.url || currentSource.fileUrl || currentSource.url;
+      const isMediaUrl = url && /^https?:\/\/(?:[a-z]+\.)?(?:youtube\.com|youtu\.be|vimeo\.com)\//i.test(url)
+        || /\.(mp4|webm|ogg|mov|avi|mkv|m4v|mp3|wav|m4a|flac|aac|opus|oga)(\?.*)?$/i.test(url || '');
+      if (materialContent.isMedia || isMediaUrl) {
+        return {
+          url: url || null,
+          script: (materialContent.transcript || '').trim(),
+        };
+      }
+      return null;
+    }
+    const lower = String(currentSource.type || '').toLowerCase();
+    const isMediaType = lower.includes('video') || lower.includes('audio')
+      || lower.includes('youtube') || lower.includes('vimeo');
+    const trimmedText = (extractedText || '').trim();
+    const firstLine = trimmedText.split('\n')[0]?.trim();
+    const looksLikeUrlLine = firstLine && /^https?:\/\/\S+$/.test(firstLine) && firstLine.length < 600;
+    const candidateUrl = (looksLikeUrlLine ? firstLine : null)
+      || currentSource.fileUrl || currentSource.url || null;
+    if (!candidateUrl) return null;
+    const urlLooksMedia = /^https?:\/\/(?:[a-z]+\.)?(?:youtube\.com|youtu\.be|vimeo\.com)\//i.test(candidateUrl)
+      || /\.(mp4|webm|ogg|mov|avi|mkv|m4v|mp3|wav|m4a|flac|aac|opus|oga)(\?.*)?$/i.test(candidateUrl);
+    if (!isMediaType && !urlLooksMedia) return null;
+    let scriptText = '';
+    if (looksLikeUrlLine) {
+      scriptText = trimmedText.slice(firstLine.length).trim();
+    } else if (trimmedText && trimmedText !== candidateUrl) {
+      scriptText = trimmedText;
+    }
+    return { url: candidateUrl, script: scriptText };
+  }, [currentSource, extractedText, materialContent]);
   const extractedImageUrls = useMemo(
     () => contentBlocks.filter((block) => block.type === "image" && block.url).map((block) => block.url),
     [contentBlocks]
@@ -372,17 +426,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
     moderationNodeFindings.length > 0
   );
 
-  // Render summary with bold markdown **text**
-  const renderSummary = (text) => {
-    if (!text) return null;
-    const parts = text.split(/(\*\*.+?\*\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
-      }
-      return <span key={i}>{part}</span>;
-    });
-  };
+  // Summary rendering moved to MaterialContentRenderer (markdown + tables + lists support)
 
   if (!currentSource) return null;
 
@@ -603,9 +647,12 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
                   </div>
                 ) : summary ? (
                   <div className="space-y-3">
-                    <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                      {renderSummary(summary)}
-                    </p>
+                    <MaterialContentRenderer
+                      value={summary}
+                      type="text"
+                      isDarkMode={isDarkMode}
+                      fontClass={fontClass}
+                    />
                     {/* Topic keyword chips */}
                     {keywords.length > 0 && (
                       <div className="flex flex-wrap gap-2 pt-1">
@@ -649,6 +696,17 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
               <p className={`text-sm text-center py-16 ${isDarkMode ? "text-red-400" : "text-red-500"} ${fontClass}`}>
                 {t("workspace.sources.loadError")}
               </p>
+            ) : mediaInfo ? (
+              <div className="space-y-4">
+                <MaterialContentRenderer
+                  value={mediaInfo.url}
+                  type={currentSource?.type}
+                  script={mediaInfo.script}
+                  scriptLabel={t("workspace.sources.scriptLabel", "Script / Transcript")}
+                  isDarkMode={isDarkMode}
+                  fontClass={fontClass}
+                />
+              </div>
             ) : (fallbackImageUrls.length > 0 || (extractedText && contentBlocks.length > 0)) ? (
               <div className="space-y-4">
                 {fallbackImageUrls.map((imageUrl, index) => (
@@ -682,12 +740,13 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
                   }
 
                   return (
-                    <div
+                    <MaterialContentRenderer
                       key={`txt-${index}`}
-                      className={`text-sm leading-relaxed whitespace-pre-wrap ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}
-                    >
-                      {block.value}
-                    </div>
+                      value={block.value}
+                      type={currentSource?.type}
+                      isDarkMode={isDarkMode}
+                      fontClass={fontClass}
+                    />
                   );
                 })}
               </div>
