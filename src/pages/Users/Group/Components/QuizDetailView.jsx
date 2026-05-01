@@ -38,6 +38,7 @@ import MixedMathText from "@/components/math/MixedMathText";
 import { hasQuizCompleted } from "@/utils/quizAttemptTracker";
 import { getQuestionDisplayText, getQuestionImageList } from "@/lib/questionContentMedia";
 import {
+  buildMockTestExamPath,
   buildQuizAttemptPath,
   buildQuizResultPath,
   isWorkspaceRoadmapsPath,
@@ -534,21 +535,30 @@ function QuizDetailView({
     sourceKnowledgeId: Number(effectiveQuiz?.knowledgeId) || null,
     sourceRoadmapId: Number(effectiveQuiz?.roadmapId) || null,
   };
+  // MockTest v2: route exam mode for MOCK_TEST intent vào dedicated section-by-section page.
+  // Practice mode + non-MOCK_TEST intents van di qua ExamQuizPage cu (shared).
+  const resolveAttemptPath = useCallback((mode, qid) => {
+    if (mode === "exam" && quiz?.quizIntent === "MOCK_TEST") {
+      return buildMockTestExamPath(qid);
+    }
+    return buildQuizAttemptPath(mode, qid);
+  }, [quiz?.quizIntent]);
+
   const handleStartQuiz = useCallback((mode) => {
     if (!mode || !quiz?.quizId) return;
 
-    navigate(buildQuizAttemptPath(mode, quiz.quizId), {
+    navigate(resolveAttemptPath(mode, quiz.quizId), {
       state: {
         returnToQuizPath: `${location.pathname}${location.search || ""}`,
         ...(mode === 'practice' ? { autoStart: true } : {}),
         ...resultSourceState,
       },
     });
-  }, [location.pathname, location.search, navigate, quiz?.quizId, resultSourceState]);
+  }, [location.pathname, location.search, navigate, quiz?.quizId, resolveAttemptPath, resultSourceState]);
   const handleConfirmExamStart = useCallback(() => {
     if (!quiz?.quizId) return;
 
-    navigate(buildQuizAttemptPath("exam", quiz.quizId), {
+    navigate(resolveAttemptPath("exam", quiz.quizId), {
       state: {
         returnToQuizPath: `${location.pathname}${location.search || ""}`,
         autoStart: true,
@@ -556,7 +566,7 @@ function QuizDetailView({
       },
     });
     setExamStartOpen(false);
-  }, [location.pathname, location.search, navigate, quiz?.quizId, resultSourceState]);
+  }, [location.pathname, location.search, navigate, quiz?.quizId, resolveAttemptPath, resultSourceState]);
 
   const openAudienceDialog = useCallback(() => {
     const eq = quizMeta || quiz;

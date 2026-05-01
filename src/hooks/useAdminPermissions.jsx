@@ -24,6 +24,7 @@ const SUPER_ADMIN_PERMISSION_CODES = [
   'learning-config:read',
   'learning-config:write',
   'ai-provider:read',
+  'ai-provider:test',
   'ai-model:read',
   'ai-model:write',
   'ai-cost:read',

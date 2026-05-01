@@ -387,6 +387,7 @@
     },
     "sources": {
       "title": "Sources",
+      "scriptLabel": "Script / Transcript",
       "addSource": "Add source",
       "searchPlaceholder": "Search sources...",
       "emptyTitle": "No sources yet",
@@ -1497,6 +1498,47 @@
         "navigationLocked": "You are in an active exam, so going back or changing pages is disabled.",
         "starting": "Starting"
       },
+      "mockTestExam": {
+        "confirmStartTitle": "Start the mock test?",
+        "confirmStartDescription": "The exam has {{sectionsCount}} sections, {{questionsCount}} questions.",
+        "confirmStartDuration": "Duration: {{durationMinutes}} minutes.",
+        "confirmStartWarning": "Once started, sections appear one at a time — you cannot return to a completed section.",
+        "cancelButton": "Cancel",
+        "startButton": "Start",
+        "notMockTestTitle": "Not a valid mock test",
+        "notMockTestMessage": "This page only works for MockTests with section structure.",
+        "goBackButton": "Go back",
+        "navigationLocked": "You cannot leave the exam while it is in progress. Submit to exit.",
+        "submitFailed": "Submit failed. Please try again.",
+        "submitMissingAttempt": "Cannot submit — attempt is missing.",
+        "cannotStart": "Cannot start the mock test.",
+        "sectionPosition": "Section {{index}} / {{total}}",
+        "sectionLabelWithName": "Section {{index}} / {{total}}: {{name}}",
+        "sharedContextLabel": "Passage / Context",
+        "intro": {
+          "questionsCountLabel": "Questions",
+          "durationLabel": "Duration",
+          "durationMinutesValue": "{{minutes}} min",
+          "warning": "Once you move on, **you cannot come back** to this section. Finish all questions before clicking \"Next\".",
+          "startSectionButton": "Start section {{index}}"
+        },
+        "transition": {
+          "completedHeading": "Completed: {{name}}",
+          "completedDetail": "Answered <strong>{{answered}}</strong> / <strong>{{total}}</strong> questions. Answers saved — cannot edit.",
+          "previousSectionFallback": "Previous section",
+          "upcomingLabel": "Up next",
+          "upcomingQuestionCount": "This section has <strong>{{count}}</strong> questions.",
+          "continueNowButton": "Ready — start now",
+          "autoCountdown": "auto in {{seconds}}s"
+        },
+        "complete": {
+          "progressLabel": "Answered {{answered}} / {{total}} questions in this section.",
+          "lastSectionHint": "This is the last section — ready to submit?",
+          "nextSectionHint": "Continue to next section? You cannot return to edit this one.",
+          "submitButton": "Submit",
+          "nextButton": "Next"
+        }
+      },
       "practiceActions": {
         "confirmExitTitle": "Leave practice mode?",
         "confirmExitDescription": "Your unchecked answer may be lost.",
@@ -2061,6 +2103,8 @@
       "start": "Start Mock Test",
       "completeAllPhases": "Complete all post-learning tests and phases to unlock the final mock test.",
       "noItems": "No mock tests yet.",
+      "savedTemplatesButton": "Saved templates",
+      "savedTemplatesTitle": "Saved templates library",
       "validation": {
         "roadmapRequired": "Please select a roadmap.",
         "mockTestLimit": "This roadmap already has a mock test. Only one is allowed per roadmap.",
@@ -2958,11 +3002,24 @@
       "statusActive": "Active",
       "statusDraft": "Draft",
       "statusCompleted": "Completed",
-      "statusInactive": "Inactive"
+      "statusInactive": "Inactive",
+      "questionsShort": "questions",
+      "minutesShort": "min",
+      "sectionsShort": "sections",
+      "questionTypeSingle": "Single choice",
+      "questionTypeMultiple": "Multiple choice",
+      "questionTypeTrueFalse": "True / False",
+      "close": "Close",
+      "materialRequired": "Please select at least one material."
     },
     "create": {
       "title": "Create Mock Test",
       "desc": "Create a comprehensive test covering an entire roadmap.",
+      "manualTitle": "Manual mock test",
+      "manualNotice": "Manual template — you can adjust each part, question type, difficulty, Bloom level, and points before creating.",
+      "manualTemplate": "Build manually",
+      "matchedTemplate": "Selected template",
+      "nameHint": "Type the exam name then press Enter — the system will suggest a standard template (questions, duration, structure).",
       "name": "Mock Test Name",
       "namePlaceholder": "Enter mock test name...",
       "nameExample": "E.g. IELTS, TOEIC 900, final Math 12 exam...",
@@ -2998,6 +3055,57 @@
       "saveSuccess": "Mock test updated successfully!",
       "saveFailed": "Failed to save mock test. Please try again.",
       "loadFailed": "Failed to load mock test data."
+    },
+    "scoring": {
+      "title": "Scoring system",
+      "totalPoints": "Total points",
+      "passingScore": "Passing score (absolute)",
+      "passingPercent": "Passing score (%)",
+      "pointsEach": "pts/Q avg",
+      "toPass": "to pass",
+      "sectionBreakdown": "PER-SECTION POINTS",
+      "colSection": "Section",
+      "colLeaf": "Questions",
+      "colPoints": "Points",
+      "colPercent": "% of test",
+      "colPerQuestion": "Pts/question",
+      "totalRow": "Total",
+      "linkedHint": "Changing one section's points updates the total; changing the total redistributes section points proportionally."
+    },
+    "templatePicker": {
+      "title": "Pick 1 of {{count}} matching templates",
+      "singleTitle": "Matched template",
+      "saveTemplate": "Save template",
+      "saved": "Saved",
+      "saving": "Saving...",
+      "basedOn": "Based on"
+    },
+    "savedTemplates": {
+      "title": "Saved templates library",
+      "description": "Templates you've saved in this workspace. Click \"Use template\" to quickly create a new mock test from an existing structure.",
+      "searchPlaceholder": "Search by name or exam...",
+      "loading": "Loading...",
+      "loadFailed": "Failed to load templates.",
+      "empty": "You haven't saved any templates yet. Save one from the create form to reuse it later.",
+      "noMatch": "No matching template found.",
+      "use": "Use template",
+      "delete": "Delete template",
+      "deleting": "Deleting...",
+      "confirmDeleteTitle": "Confirm delete template",
+      "confirmDeleteDesc": "The template will be hidden from your library. Mock tests already created from it will remain unchanged.",
+      "savedToast": "Template saved to your library.",
+      "saveFailed": "Failed to save template.",
+      "saveShort": "Save template",
+      "savedShort": "Saved",
+      "savingShort": "Saving...",
+      "validationFailed": "Structure is not valid yet."
+    },
+    "exitConfirm": {
+      "title": "Exit the create-mocktest form?",
+      "description": "The AI-suggested template may be lost if you exit without saving. You can save this template to your library for later use, or exit without saving.",
+      "keepEditing": "Keep editing",
+      "saveAndExit": "Save template and exit",
+      "discard": "Exit without saving"
     },
     "structure": {
       "delete": "Delete",

@@ -8,6 +8,7 @@ import React, {
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
+  Bookmark,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -38,6 +39,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { deleteQuiz, getQuizzesByScope } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
+import { SavedMockTestTemplatesPanel } from "@/pages/Users/MockTest/components/SavedMockTestTemplatesPanel";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -84,6 +86,7 @@ async function loadMockTests({ contextId }) {
 function MockTestListView({
   isDarkMode = false,
   onCreateMockTest,
+  onCreateMockTestFromTemplate,
   onNavigateHome,
   onViewMockTest,
   contextType = "WORKSPACE",
@@ -99,6 +102,7 @@ function MockTestListView({
   const [page, setPage] = useState(1);
   const [deleteTargetQuiz, setDeleteTargetQuiz] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [savedPanelOpen, setSavedPanelOpen] = useState(false);
   const deferredSearchQuery = useDeferredValue(searchQuery.trim().toLowerCase());
 
   const {
@@ -207,6 +211,18 @@ function MockTestListView({
             className="h-11 rounded-full border-slate-200 px-4"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSavedPanelOpen(true)}
+            className="h-11 rounded-full border-slate-200 px-4"
+            title={t("workspace.mockTest.savedTemplatesTitle", "Kho template đã lưu")}
+          >
+            <Bookmark className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">
+              {t("workspace.mockTest.savedTemplatesButton", "Template đã lưu")}
+            </span>
           </Button>
           {onCreateMockTest && !hideCreateButton ? (
             <Button
@@ -480,6 +496,16 @@ function MockTestListView({
           </>
         )}
       </div>
+
+      <SavedMockTestTemplatesPanel
+        open={savedPanelOpen}
+        onClose={() => setSavedPanelOpen(false)}
+        onUseTemplate={(template) => {
+          setSavedPanelOpen(false);
+          onCreateMockTestFromTemplate?.(template);
+        }}
+        isDarkMode={isDarkMode}
+      />
 
       <Dialog
         open={Boolean(deleteTargetQuiz)}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
   ClipboardList,
@@ -154,21 +155,56 @@ function MetricCard({ title, value, helper, icon: Icon, isDarkMode }) {
   );
 }
 
+const FEEDBACK_MGMT_QUERY_KEY = ['superAdmin', 'feedbackForms'];
+
 function FeedbackManagement() {
   const { i18n, t } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   const currentLang = i18n.language;
   const isEnglish = currentLang.startsWith('en');
   const fontClass = isEnglish ? 'font-poppins' : 'font-sans';
 
-  const [forms, setForms] = useState([]);
-  const [overview, setOverview] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [selectedFormId, setSelectedFormId] = useState(null);
   const [draft, setDraft] = useState(createBlankDraft());
+
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: FEEDBACK_MGMT_QUERY_KEY,
+    queryFn: async () => {
+      const [formsResponse, overviewResponse] = await Promise.all([
+        getManagementFeedbackForms(),
+        getManagementFeedbackOverviewStats(),
+      ]);
+      return {
+        forms: unwrapApiList(formsResponse),
+        overview: unwrapApiData(overviewResponse),
+      };
+    },
+  });
+
+  const forms = useMemo(() => data?.forms ?? [], [data?.forms]);
+  const overview = data?.overview ?? null;
+
+  useEffect(() => {
+    if (queryError) showError(getErrorMessage(t, queryError));
+  }, [queryError, t, showError]);
+
+  // Initialize selectedFormId from forms when first loaded
+  useEffect(() => {
+    if (selectedFormId == null && forms[0]?.formId != null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize derived selection from first load
+      setSelectedFormId(forms[0].formId);
+    }
+  }, [forms, selectedFormId]);
+
+  const refreshPage = () =>
+    queryClient.invalidateQueries({ queryKey: FEEDBACK_MGMT_QUERY_KEY });
 
   const selectedForm = useMemo(
     () => forms.find((form) => form.formId === selectedFormId) ?? forms[0] ?? null,
@@ -178,59 +214,6 @@ function FeedbackManagement() {
   const fieldClass = isDarkMode
     ? 'border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500'
     : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400';
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadPage = async () => {
-      setLoading(true);
-      try {
-        const [formsResponse, overviewResponse] = await Promise.all([
-          getManagementFeedbackForms(),
-          getManagementFeedbackOverviewStats(),
-        ]);
-
-        if (cancelled) return;
-        const nextForms = unwrapApiList(formsResponse);
-        setForms(nextForms);
-        setOverview(unwrapApiData(overviewResponse));
-        setSelectedFormId((currentSelectedFormId) => currentSelectedFormId ?? nextForms[0]?.formId ?? null);
-      } catch (error) {
-        if (!cancelled) {
-          showError(getErrorMessage(t, error));
-          setForms([]);
-          setOverview(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadPage();
-    return () => {
-      cancelled = true;
-    };
-  }, [showError, t]);
-
-  const refreshPage = async () => {
-    setLoading(true);
-    try {
-      const [formsResponse, overviewResponse] = await Promise.all([
-        getManagementFeedbackForms(),
-        getManagementFeedbackOverviewStats(),
-      ]);
-      const nextForms = unwrapApiList(formsResponse);
-      setForms(nextForms);
-      setOverview(unwrapApiData(overviewResponse));
-      setSelectedFormId((currentSelectedFormId) => currentSelectedFormId ?? nextForms[0]?.formId ?? null);
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const openCreateEditor = () => {
     setDraft(createBlankDraft());
@@ -393,7 +376,29 @@ function FeedbackManagement() {
     }));
   };
 
-  const handleSave = async () => {
+  const saveMutation = useMutation({
+    mutationFn: async ({ id, payload }) => {
+      if (id != null) {
+        return updateManagementFeedbackForm(id, payload);
+      }
+      return createManagementFeedbackForm(payload);
+    },
+    onSuccess: (_resp, { id }) => {
+      showSuccess(
+        id != null
+          ? t('feedbackManagement.toast.formUpdated', 'Feedback form updated.')
+          : t('feedbackManagement.toast.formCreated', 'Feedback form created.'),
+      );
+      setEditorOpen(false);
+      refreshPage();
+    },
+    onError: (error) => {
+      showError(getErrorMessage(t, error));
+    },
+  });
+  const saving = saveMutation.isPending;
+
+  const handleSave = () => {
     if (draft.triggerType === 'AFTER_TIME' && Number(draft.configValues?.daysAfter) <= 0) {
       showError(t('feedbackManagement.validation.daysAfterRequired', 'Please enter the number of days before sending feedback.'));
       return;
@@ -419,41 +424,25 @@ function FeedbackManagement() {
       return;
     }
 
-    setSaving(true);
-    try {
-      const payload = {
-        code: draft.code.trim(),
-        title: draft.title.trim(),
-        description: draft.description?.trim() || '',
-        targetType: draft.targetType,
-        triggerType: draft.triggerType,
-        configJson: buildFeedbackFormConfig(draft.triggerType, draft.configValues),
-        active: draft.active,
-        questions: draft.questions.map((question, index) => ({
-          questionId: question.questionId,
-          questionText: question.questionText.trim(),
-          questionType: question.questionType,
-          required: Boolean(question.required),
-          displayOrder: Number(question.displayOrder) || index + 1,
-          configJson: buildFeedbackQuestionConfig(question.questionType, question.configValues),
-        })),
-      };
+    const payload = {
+      code: draft.code.trim(),
+      title: draft.title.trim(),
+      description: draft.description?.trim() || '',
+      targetType: draft.targetType,
+      triggerType: draft.triggerType,
+      configJson: buildFeedbackFormConfig(draft.triggerType, draft.configValues),
+      active: draft.active,
+      questions: draft.questions.map((question, index) => ({
+        questionId: question.questionId,
+        questionText: question.questionText.trim(),
+        questionType: question.questionType,
+        required: Boolean(question.required),
+        displayOrder: Number(question.displayOrder) || index + 1,
+        configJson: buildFeedbackQuestionConfig(question.questionType, question.configValues),
+      })),
+    };
 
-      if (draft.formId) {
-        await updateManagementFeedbackForm(draft.formId, payload);
-        showSuccess(t('feedbackManagement.toast.formUpdated', 'Feedback form updated.'));
-      } else {
-        await createManagementFeedbackForm(payload);
-        showSuccess(t('feedbackManagement.toast.formCreated', 'Feedback form created.'));
-      }
-
-      setEditorOpen(false);
-      await refreshPage();
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate({ id: draft.formId, payload });
   };
 
   const renderFormConfigFields = () => {

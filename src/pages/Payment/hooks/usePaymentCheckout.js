@@ -2,10 +2,13 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   createMomoCreditPayment,
+  createMomoCustomCreditPayment,
   createMomoPayment,
   createStripeCreditPayment,
+  createStripeCustomCreditPayment,
   createStripePayment,
   createVnPayCreditPayment,
+  createVnPayCustomCreditPayment,
   createVnPayPayment,
 } from '@/api/PaymentAPI';
 import { setPendingPlanPurchase } from '@/utils/planPurchaseState';
@@ -19,6 +22,7 @@ export default function usePaymentCheckout({
   workspaceId,
   creditPackageId,
   creditPackageName,
+  customCreditUnits,
   extraSlotCount = 0,
 }) {
   const { t } = useTranslation();
@@ -36,13 +40,16 @@ export default function usePaymentCheckout({
     setPaymentError('');
 
     try {
-      const isCreditPayment = paymentType === 'credit';
+      const isCustomCreditPayment = paymentType === 'custom-credit';
+      const isCreditPayment = paymentType === 'credit' || isCustomCreditPayment;
       const targetWorkspaceId = workspaceId != null && workspaceId !== '' ? String(workspaceId) : null;
+      const customCreditAmount = isCustomCreditPayment ? Number(customCreditUnits) : 0;
       const pendingPurchasePayload = isCreditPayment
         ? {
           purchaseType: 'CREDIT',
           planId: '',
-          creditPackageId,
+          creditPackageId: isCustomCreditPayment ? null : creditPackageId,
+          customCreditUnits: isCustomCreditPayment ? customCreditAmount : null,
           planName: creditPackageName,
           planType: targetWorkspaceId ? 'GROUP' : 'INDIVIDUAL',
           workspaceId: targetWorkspaceId,
@@ -59,9 +66,15 @@ export default function usePaymentCheckout({
         ? Number(extraSlotCount)
         : 0;
 
+      const callCreditApi = (creditFn, customCreditFn) => (
+        isCustomCreditPayment
+          ? customCreditFn(customCreditAmount, targetWorkspaceId)
+          : creditFn(creditPackageId, targetWorkspaceId)
+      );
+
       if (selectedMethod === 'momo') {
         const res = isCreditPayment
-          ? await createMomoCreditPayment(creditPackageId, targetWorkspaceId)
+          ? await callCreditApi(createMomoCreditPayment, createMomoCustomCreditPayment)
           : await createMomoPayment(planId, targetWorkspaceId, normalizedExtraSlots);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         const orderId = res?.data?.orderId || res?.orderId || '';
@@ -76,7 +89,7 @@ export default function usePaymentCheckout({
 
       if (selectedMethod === 'vnpay') {
         const res = isCreditPayment
-          ? await createVnPayCreditPayment(creditPackageId, targetWorkspaceId)
+          ? await callCreditApi(createVnPayCreditPayment, createVnPayCustomCreditPayment)
           : await createVnPayPayment(planId, targetWorkspaceId, normalizedExtraSlots);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         const orderId = res?.data?.orderId || res?.orderId || '';
@@ -91,7 +104,7 @@ export default function usePaymentCheckout({
 
       if (selectedMethod === 'stripe') {
         const res = isCreditPayment
-          ? await createStripeCreditPayment(creditPackageId, targetWorkspaceId)
+          ? await callCreditApi(createStripeCreditPayment, createStripeCustomCreditPayment)
           : await createStripePayment(planId, targetWorkspaceId, normalizedExtraSlots);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         const orderId = res?.data?.orderId || res?.orderId || '';
@@ -114,7 +127,7 @@ export default function usePaymentCheckout({
     }
 
     return false;
-  }, [paymentType, workspaceId, creditPackageId, creditPackageName, planId, planName, planType, extraSlotCount, t]);
+  }, [paymentType, workspaceId, creditPackageId, creditPackageName, customCreditUnits, planId, planName, planType, extraSlotCount, t]);
 
   return {
     clearPaymentError,
