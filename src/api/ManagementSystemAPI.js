@@ -276,6 +276,19 @@ export const getAiProviderHealth = async () => {
   return response;
 };
 
+export const testAiProviderConnection = async (provider) => {
+  const response = await api.post('/management/ai-health/test-connection', { provider });
+  return response;
+};
+
+export const getAiProviderHealthHistory = async ({ provider, hours = 24 } = {}) => {
+  const params = new URLSearchParams();
+  if (provider) params.append('provider', String(provider));
+  params.append('hours', String(hours));
+  const response = await api.get(`/management/ai-health/history?${params.toString()}`);
+  return response;
+};
+
 export const createAiModel = async (data) => {
   const response = await api.post('/management/ai-models', data);
   return response;

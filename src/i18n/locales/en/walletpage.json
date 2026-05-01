@@ -12,8 +12,7 @@
       "hint": "Credits are used to run AI tasks like quiz generation, flashcards, study roadmaps...",
       "regularCredits": "Regular credits",
       "planCredits": "Plan credits",
-      "expiresAt": "Expires at",
-      "pricingGuide": "View detailed pricing"
+      "expiresAt": "Expires at"
     },
     "buy": {
       "title": "Buy more credits",

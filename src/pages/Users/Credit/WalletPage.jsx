@@ -261,7 +261,6 @@ export default function WalletPage() {
           walletSummary={walletSummary}
           canBuyCredit={canBuyCredit}
           onBrowsePlans={() => navigate("/plans", { state: { from: "/wallets" } })}
-          onTopUpCredits={() => navigate("/pricing", { state: { from: "/wallets" } })}
         />
       </main>
     </div>

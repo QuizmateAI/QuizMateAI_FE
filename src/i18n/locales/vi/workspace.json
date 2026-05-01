@@ -1495,6 +1495,47 @@
         "navigationLocked": "Đang trong bài thi, không thể quay lại hoặc chuyển trang.",
         "starting": "Đang bắt đầu"
       },
+      "mockTestExam": {
+        "confirmStartTitle": "Bắt đầu mocktest?",
+        "confirmStartDescription": "Bài thi gồm {{sectionsCount}} phần, {{questionsCount}} câu.",
+        "confirmStartDuration": "Thời gian: {{durationMinutes}} phút.",
+        "confirmStartWarning": "Khi bắt đầu, các phần sẽ hiển thị tuần tự — bạn không thể quay lại phần đã hoàn thành.",
+        "cancelButton": "Hủy",
+        "startButton": "Bắt đầu",
+        "notMockTestTitle": "Không phải mocktest hợp lệ",
+        "notMockTestMessage": "Trang này chỉ hoạt động với MockTest có cấu trúc section.",
+        "goBackButton": "Quay lại",
+        "navigationLocked": "Không thể rời khỏi bài làm khi đang thi. Hãy nộp bài để thoát.",
+        "submitFailed": "Nộp bài thất bại. Vui lòng thử lại.",
+        "submitMissingAttempt": "Không thể nộp vì chưa có attempt.",
+        "cannotStart": "Không thể bắt đầu mocktest.",
+        "sectionPosition": "Phần {{index}} / {{total}}",
+        "sectionLabelWithName": "Phần {{index}} / {{total}}: {{name}}",
+        "sharedContextLabel": "Đoạn văn / Ngữ cảnh",
+        "intro": {
+          "questionsCountLabel": "Số câu",
+          "durationLabel": "Thời gian",
+          "durationMinutesValue": "{{minutes}} phút",
+          "warning": "Khi đã sang phần kế tiếp, **bạn không thể quay lại** phần này. Hãy hoàn thành tất cả câu hỏi trước khi nhấn \"Tiếp theo\".",
+          "startSectionButton": "Bắt đầu phần {{index}}"
+        },
+        "transition": {
+          "completedHeading": "Hoàn thành: {{name}}",
+          "completedDetail": "Đã trả lời <strong>{{answered}}</strong> / <strong>{{total}}</strong> câu. Câu trả lời đã được lưu — không thể quay lại sửa.",
+          "previousSectionFallback": "Phần trước",
+          "upcomingLabel": "Tiếp theo",
+          "upcomingQuestionCount": "Phần này có <strong>{{count}}</strong> câu hỏi.",
+          "continueNowButton": "Sẵn sàng — bắt đầu ngay",
+          "autoCountdown": "tự động sau {{seconds}}s"
+        },
+        "complete": {
+          "progressLabel": "Đã trả lời {{answered}} / {{total}} câu trong phần này.",
+          "lastSectionHint": "Đây là phần cuối — sẵn sàng nộp bài?",
+          "nextSectionHint": "Sang phần tiếp theo? Bạn sẽ không thể quay lại sửa phần này.",
+          "submitButton": "Nộp bài",
+          "nextButton": "Tiếp theo"
+        }
+      },
       "practiceActions": {
         "confirmExitTitle": "Thoát thực hành?",
         "confirmExitDescription": "Câu bạn chưa kiểm tra có thể bị mất.",

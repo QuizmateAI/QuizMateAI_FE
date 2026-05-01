@@ -16,6 +16,21 @@ import { generateMockTest, getBloomSkills } from "@/api/AIAPI";
 import { getMaterialsByWorkspace } from "@/api/MaterialAPI";
 import { useMockTestStructureSuggestion } from "@/pages/Users/MockTest/hooks/useMockTestStructureSuggestion";
 import { MockTestStructureEditor, validateMockTestStructure } from "@/pages/Users/MockTest/components/MockTestStructureEditor";
+import { MockTestScoringEditor } from "@/pages/Users/MockTest/components/MockTestScoringEditor";
+import { MockTestTemplatePicker } from "@/pages/Users/MockTest/components/MockTestTemplatePicker";
+import {
+  buildMockTestCustomScoring,
+  countLeafQuestions,
+  normalizeMockTestScoring,
+  roundScore,
+  scorePerQuestion,
+} from "@/pages/Users/MockTest/utils/mockTestScoring";
+import {
+  clearMockTestDraft,
+  loadMockTestDraft,
+  saveMockTestDraft,
+} from "@/pages/Users/MockTest/utils/mockTestTemplateDraft";
+import { buildManualMockTestSections } from "@/pages/Users/MockTest/utils/mockTestManualTemplate";
 
 function unwrapMaterialList(response) {
   const payload = response?.data?.data ?? response?.data ?? response;
@@ -53,6 +68,13 @@ function getUiLanguage(language) {
 function normalizeExamLanguage(value, fallback) {
   const normalized = String(value || "").trim().toLowerCase();
   return /^[a-z]{2,3}$/.test(normalized) ? normalized : fallback;
+}
+
+function resolveMaterialIdsForMockTest(selectedIds, materials) {
+  if (Array.isArray(selectedIds) && selectedIds.length > 0) return selectedIds;
+  return (Array.isArray(materials) ? materials : [])
+    .map((material) => Number(material?.id))
+    .filter((id) => Number.isInteger(id) && id > 0);
 }
 
 // Aggregation: editor structure[{difficulty, bloomSkill, quantity}] → SectionConfigDTO.
@@ -95,8 +117,9 @@ function aggregateStructure(structure, bloomMap) {
   return { numQuestions, easyRatio, mediumRatio, hardRatio, questionTypes: [], bloomSkills };
 }
 
-function sectionsToServerDTOs(sections, bloomMap) {
+function sectionsToServerDTOs(sections, bloomMap, scoring) {
   if (!Array.isArray(sections)) return [];
+  const pointPerQuestion = scorePerQuestion(scoring, sections);
   return sections.map((sec) => {
     const hasSubs = sec.subConfigs && sec.subConfigs.length > 0;
     if (hasSubs) {
@@ -113,10 +136,23 @@ function sectionsToServerDTOs(sections, bloomMap) {
         requiresSharedContext: false,
         questionTypes: [],
         bloomSkills: [],
-        subConfigs: sectionsToServerDTOs(sec.subConfigs, bloomMap),
+        subConfigs: sectionsToServerDTOs(sec.subConfigs, bloomMap, scoring),
       };
     }
     const agg = aggregateStructure(sec.structure, bloomMap);
+    const structureItems = (Array.isArray(sec.structure) ? sec.structure : [])
+      .map((item) => {
+        const quantity = Number(item?.quantity) || 0;
+        if (quantity <= 0) return null;
+        return {
+          difficulty: item.difficulty || "MEDIUM",
+          questionType: item.questionType || "SINGLE_CHOICE",
+          bloomSkill: item.bloomSkill || "UNDERSTAND",
+          quantity,
+          scorePerQuestion: pointPerQuestion,
+        };
+      })
+      .filter(Boolean);
     return {
       name: sec.name,
       description: sec.description,
@@ -130,6 +166,8 @@ function sectionsToServerDTOs(sections, bloomMap) {
       requiresSharedContext: sec.requiresSharedContext === true,
       questionTypes: agg.questionTypes,
       bloomSkills: agg.bloomSkills,
+      maxScore: roundScore(agg.numQuestions * pointPerQuestion),
+      structureItems,
       subConfigs: [],
     };
   });
@@ -162,22 +200,18 @@ export default function CreateGroupMockTestForm({
   const handleFinished = onCreateMockTest || onCreated;
   const { t, i18n } = useTranslation();
 
-  const DIFFICULTY_LEVELS = useMemo(() => [
-    { value: "easy", label: t("createGroupMockTestForm.difficulty.easy", "Easy") },
-    { value: "medium", label: t("createGroupMockTestForm.difficulty.medium", "Medium") },
-    { value: "hard", label: t("createGroupMockTestForm.difficulty.hard", "Hard") },
-  ], [t]);
-
   const [step, setStep] = useState("BASIC"); // BASIC | STRUCTURE | GENERATING
   const [examName, setExamName] = useState("");
   const [customPrompt, setCustomPrompt] = useState("");
-  const [difficulty, setDifficulty] = useState("medium");
+  const [difficulty] = useState("medium");
   const [totalQuestions, setTotalQuestions] = useState(30);
   const [duration, setDuration] = useState(60);
 
   const [sections, setSections] = useState([]);
   const [topNotice, setTopNotice] = useState("");
   const [examLanguage, setExamLanguage] = useState("");
+  const [scoring, setScoring] = useState(() => normalizeMockTestScoring());
+  const [matchedTemplate, setMatchedTemplate] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -190,10 +224,12 @@ export default function CreateGroupMockTestForm({
 
   const {
     suggestion,
+    suggestions: templateOptions,
     isLoading: isSuggesting,
     error: suggestError,
     requestSuggestion,
     regenerate,
+    selectSuggestion,
   } = useMockTestStructureSuggestion();
 
   const inputCls = [
@@ -303,16 +339,66 @@ export default function CreateGroupMockTestForm({
     return () => { cancelled = true; };
   }, []);
 
-  // Khi suggestion mới về → chuyển sang STRUCTURE
+  const applySuggestion = useCallback((nextSuggestion) => {
+    if (!nextSuggestion) return;
+    setSections(nextSuggestion.sections || []);
+    setTopNotice(nextSuggestion.description || "");
+    setExamLanguage(normalizeExamLanguage(nextSuggestion.examLanguage, ""));
+    if (Number.isFinite(nextSuggestion.totalQuestion) && nextSuggestion.totalQuestion > 0) {
+      setTotalQuestions(nextSuggestion.totalQuestion);
+    }
+    if (Number.isFinite(nextSuggestion.durationMinutes) && nextSuggestion.durationMinutes > 0) {
+      setDuration(nextSuggestion.durationMinutes);
+    }
+    setScoring(normalizeMockTestScoring(nextSuggestion.scoring, nextSuggestion.totalQuestion));
+    setMatchedTemplate(nextSuggestion.v2Template || null);
+    setStep("STRUCTURE");
+  }, []);
+
+  // V2 redesign: auto-fill total/duration từ template thay vì user nhập tay.
   useEffect(() => {
-    if (suggestion) {
-      const uiLanguage = getUiLanguage(i18n.language);
-      setSections(suggestion.sections || []);
-      setTopNotice(suggestion.description || "");
-      setExamLanguage(normalizeExamLanguage(suggestion.examLanguage, uiLanguage));
+    applySuggestion(suggestion);
+  }, [suggestion, applySuggestion]);
+
+  useEffect(() => {
+    const draft = loadMockTestDraft("group", resolvedWorkspaceId);
+    if (!draft) return;
+    setExamName(draft.examName || "");
+    setCustomPrompt(draft.customPrompt || "");
+    setSections(Array.isArray(draft.sections) ? draft.sections : []);
+    setTopNotice(draft.topNotice || "");
+    setExamLanguage(draft.examLanguage || "");
+    setMatchedTemplate(draft.matchedTemplate || null);
+    setTotalQuestions(Number(draft.totalQuestions) || 30);
+    setDuration(Number(draft.duration) || 60);
+    setScoring(normalizeMockTestScoring(draft.scoring, draft.totalQuestions));
+    if (Array.isArray(draft.sections) && draft.sections.length > 0) {
       setStep("STRUCTURE");
     }
-  }, [suggestion, i18n.language]);
+  }, [resolvedWorkspaceId]);
+
+  useEffect(() => {
+    if (!resolvedWorkspaceId) return;
+    if (!examName.trim() && sections.length === 0) return;
+    saveMockTestDraft("group", resolvedWorkspaceId, {
+      examName,
+      customPrompt,
+      sections,
+      topNotice,
+      examLanguage,
+      matchedTemplate,
+      totalQuestions,
+      duration,
+      scoring,
+    });
+  }, [resolvedWorkspaceId, examName, customPrompt, sections, topNotice, examLanguage, matchedTemplate, totalQuestions, duration, scoring]);
+
+  useEffect(() => {
+    const leafTotal = countLeafQuestions(sections);
+    if (leafTotal > 0 && leafTotal !== Number(totalQuestions)) {
+      setTotalQuestions(leafTotal);
+    }
+  }, [sections, totalQuestions]);
 
   const handleRequestSuggestion = useCallback(async () => {
     setError("");
@@ -327,20 +413,35 @@ export default function CreateGroupMockTestForm({
     }
     try {
       const uiLanguage = getUiLanguage(i18n.language);
+      const materialIds = resolveMaterialIdsForMockTest(effectiveSelectedMaterialIds, materials);
       setExamLanguage("");
+      // V2: total/duration auto-fill từ template — không gửi để hook dùng template default.
       await requestSuggestion({
         examName: examName.trim(),
         description: customPrompt?.trim() || undefined,
-        totalQuestion: Number(totalQuestions) || 1,
-        durationInMinute: Number(duration) || 60,
-        overallDifficulty: uppercaseDifficulty(difficulty),
+        totalQuestion: 0,
         outputLanguage: uiLanguage,
         workspaceId: wsId,
+        materialIds,
       });
     } catch (e) {
       setError(e?.message || t("createGroupMockTestForm.errors.generateFailed", "Failed to generate template. Please try again."));
     }
-  }, [examName, customPrompt, totalQuestions, duration, difficulty, i18n.language, requestSuggestion, t, resolvedWorkspaceId]);
+  }, [examName, customPrompt, i18n.language, requestSuggestion, t, resolvedWorkspaceId, effectiveSelectedMaterialIds, materials]);
+
+  const handleStartManualTemplate = useCallback(() => {
+    const title = examName.trim() || t("createGroupMockTestForm.examName.manualTitle", "Mock test thủ công");
+    const nextSections = buildManualMockTestSections(title);
+    setExamName(title);
+    setSections(nextSections);
+    setTopNotice(t("createGroupMockTestForm.structure.manualNotice", "Template thủ công, leader có thể chỉnh từng phần, loại câu, độ khó, Bloom và điểm trước khi tạo draft."));
+    setMatchedTemplate(null);
+    setExamLanguage("");
+    setTotalQuestions(countLeafQuestions(nextSections));
+    setDuration(60);
+    setScoring(normalizeMockTestScoring({ totalPoints: 100, passingScore: 50 }, 40));
+    setStep("STRUCTURE");
+  }, [examName, t]);
 
   const handleSubmit = useCallback(async () => {
     setError("");
@@ -352,7 +453,12 @@ export default function CreateGroupMockTestForm({
     setSubmitting(true);
     setStep("GENERATING");
     try {
-      const sectionConfigs = sectionsToServerDTOs(sections, bloomMap);
+      const materialIds = resolveMaterialIdsForMockTest(effectiveSelectedMaterialIds, materials);
+      if (materialIds.length === 0) {
+        throw new Error(t("createGroupMockTestForm.errors.materialRequired", "Please select at least one material."));
+      }
+      const normalizedScoring = normalizeMockTestScoring(scoring, totalQuestions);
+      const sectionConfigs = sectionsToServerDTOs(sections, bloomMap, normalizedScoring);
       const uiLanguage = getUiLanguage(i18n.language);
       const payload = {
         title: examName.trim(),
@@ -362,12 +468,14 @@ export default function CreateGroupMockTestForm({
         durationInSecond: 0,
         prompt: customPrompt?.trim() || "",
         outputLanguage: uiLanguage,
-        examLanguage: normalizeExamLanguage(examLanguage, uiLanguage),
-        materialIds: effectiveSelectedMaterialIds,
+        examLanguage: normalizeExamLanguage(examLanguage, "") || undefined,
+        materialIds,
         workspaceId: Number(resolvedWorkspaceId),
         sectionConfigs,
+        customScoring: buildMockTestCustomScoring(normalizedScoring),
       };
       const result = await generateMockTest(payload);
+      clearMockTestDraft("group", resolvedWorkspaceId);
       handleFinished?.({
         quizId: result?.quizId,
         taskId: result?.taskId,
@@ -382,11 +490,16 @@ export default function CreateGroupMockTestForm({
     } finally {
       setSubmitting(false);
     }
-  }, [sections, totalQuestions, bloomMap, examName, difficulty, duration, customPrompt, i18n.language, examLanguage, resolvedWorkspaceId, handleFinished, t, effectiveSelectedMaterialIds]);
+  }, [sections, totalQuestions, bloomMap, scoring, examName, difficulty, duration, customPrompt, i18n.language, examLanguage, resolvedWorkspaceId, handleFinished, t, effectiveSelectedMaterialIds, materials]);
 
   const handleBackToBasic = useCallback(() => {
     setStep("BASIC");
   }, []);
+
+  const handleSelectTemplate = useCallback((option) => {
+    const selected = selectSuggestion(option?.v2Template?.mockTestTemplateId) || option;
+    applySuggestion(selected);
+  }, [selectSuggestion, applySuggestion]);
 
   return (
     <div className="flex flex-col h-full">
@@ -428,7 +541,7 @@ export default function CreateGroupMockTestForm({
             <div className={`rounded-lg border p-3 text-xs ${isDarkMode ? "border-blue-800/50 bg-blue-950/20 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
               {t(
                 "createGroupMockTestForm.scopeNotice",
-                "Mock tests only generate single-answer multiple-choice questions. Listening, Writing, and Speaking are not supported, so AI will skip those parts. The generated test is saved as DRAFT so the leader can publish it later."
+                "Mock tests support single choice, multiple choice, and true/false questions. Listening, Writing, and Speaking are skipped. The generated test is saved as DRAFT so the leader can publish it later."
               )}
             </div>
 
@@ -470,50 +583,7 @@ export default function CreateGroupMockTestForm({
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={labelCls}>
-                  {t("createGroupMockTestForm.fields.difficulty", "Độ khó")}
-                </label>
-                <select
-                  className={inputCls}
-                  value={difficulty}
-                  onChange={(e) => setDifficulty(e.target.value)}
-                  disabled={isSuggesting}
-                >
-                  {DIFFICULTY_LEVELS.map((d) => (
-                    <option key={d.value} value={d.value}>{d.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>
-                  {t("createGroupMockTestForm.fields.totalQuestions", "Số câu")}
-                </label>
-                <input
-                  type="number"
-                  className={inputCls}
-                  value={totalQuestions}
-                  onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                  min={5}
-                  max={200}
-                  disabled={isSuggesting}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>
-                  {t("createGroupMockTestForm.fields.duration", "Thời lượng (phút)")}
-                </label>
-                <input
-                  type="number"
-                  className={inputCls}
-                  value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                  min={5}
-                  disabled={isSuggesting}
-                />
-              </div>
-            </div>
+            {/* V2 redesign: Số câu / Thời lượng / Độ khó tự fill từ template, không bắt user nhập tay. */}
 
             {/* Material picker */}
             <div className={`rounded-xl border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-800/40" : "border-[#BFDBFE] bg-white"}`}>
@@ -594,6 +664,34 @@ export default function CreateGroupMockTestForm({
                 {t("createGroupMockTestForm.structure.regenerate", "Regenerate")}
               </Button>
             </div>
+            {matchedTemplate && (
+              <div className={`rounded-lg border p-3 ${isDarkMode ? "border-blue-800/40 bg-blue-950/20" : "border-blue-200 bg-blue-50"}`}>
+                <div className="flex items-center gap-2 text-xs">
+                  <Sparkles className={`w-3.5 h-3.5 ${isDarkMode ? "text-blue-400" : "text-[#0455BF]"}`} />
+                  <span className={`font-semibold ${isDarkMode ? "text-blue-100" : "text-blue-950"}`}>
+                    {t("createGroupMockTestForm.structure.matchedTemplate", "Matched template")}: {matchedTemplate.displayName}
+                  </span>
+                  <span className={`text-[10px] uppercase tracking-wider ${isDarkMode ? "text-blue-300/70" : "text-blue-700/70"}`}>
+                    {matchedTemplate.examType}
+                  </span>
+                </div>
+                <div className={`mt-1 text-[11px] ${isDarkMode ? "text-blue-200/80" : "text-blue-700"}`}>
+                  {Number(totalQuestions) || 0} {t("mockTestForms.common.questionsShort", "câu")} · {Number(duration) || 0} {t("mockTestForms.common.minutesShort", "phút")} · {(sections || []).length} {t("mockTestForms.common.sectionsShort", "phần")}
+                </div>
+              </div>
+            )}
+            <MockTestTemplatePicker
+              options={templateOptions}
+              selectedTemplateId={matchedTemplate?.mockTestTemplateId}
+              onSelect={handleSelectTemplate}
+              isDarkMode={isDarkMode}
+            />
+            <MockTestScoringEditor
+              sections={sections}
+              scoring={scoring}
+              onChange={setScoring}
+              isDarkMode={isDarkMode}
+            />
             <MockTestStructureEditor
               sections={sections}
               onChange={setSections}
@@ -630,6 +728,18 @@ export default function CreateGroupMockTestForm({
         >
           {t("createGroupMockTestForm.buttons.cancel", "Cancel")}
         </Button>
+
+        {step === "BASIC" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleStartManualTemplate}
+            disabled={isSuggesting}
+            className={isDarkMode ? "border-slate-700 text-slate-300" : "border-[#BFDBFE] text-gray-700"}
+          >
+            {t("createGroupMockTestForm.buttons.manualTemplate", "Tạo thủ công")}
+          </Button>
+        )}
 
         {step === "BASIC" && (
           <Button

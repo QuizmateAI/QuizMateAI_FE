@@ -309,6 +309,15 @@ export function buildQuizAttemptPath(mode, quizId) {
   return null;
 }
 
+/**
+ * MockTest v2 — dedicated section-by-section attempt page (separate from ExamQuizPage).
+ * Mounted at /quizzes/mock-tests/{quizId}/exam.
+ */
+export function buildMockTestExamPath(quizId) {
+  if (!quizId) return null;
+  return `/${APP_ROUTE_SEGMENTS.quizzes}/${WORKSPACE_ROUTE_SEGMENTS.mockTests}/${quizId}/exam`;
+}
+
 export function buildQuizResultPath(attemptId) {
   return `/${APP_ROUTE_SEGMENTS.quizzes}/results/${attemptId}`;
 }

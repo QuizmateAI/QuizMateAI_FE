@@ -215,9 +215,12 @@ api.interceptors.response.use(
     // Trả về lỗi - ưu tiên chi tiết validation (data.errors) nếu có
     const data = error.response?.data;
     const validationErrors = data?.data;
-    const errorMessage = data?.message || (validationErrors && typeof validationErrors === 'object'
-      ? Object.values(validationErrors).join(', ')
-      : null) || i18n.t('error.unknown');
+    const validationMessage = validationErrors && typeof validationErrors === 'object'
+      ? Object.entries(validationErrors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join(', ')
+      : null;
+    const errorMessage = validationMessage || data?.message || i18n.t('error.unknown');
 
     // Phát sự kiện toàn cục khi BE trả về lỗi giới hạn gói (safety net cho UI guards)
     const businessCode = data?.code;
