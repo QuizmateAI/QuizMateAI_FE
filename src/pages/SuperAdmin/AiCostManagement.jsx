@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, Coins, DatabaseZap, MoreVertical, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -286,53 +287,27 @@ function MetricCard({ label, value, icon: Icon, tone, isDarkMode, subtext }) {
   );
 }
 
+const AI_COST_PLANS_KEY = ['superAdmin', 'aiCostPlans'];
+const AI_COST_RATE_KEY = ['superAdmin', 'aiCostExchangeRate'];
+const AI_COST_DATA_KEY = ['superAdmin', 'aiCostData'];
+
 function AiCostManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showError } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const numberLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
 
-  const [plans, setPlans] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [requests, setRequests] = useState([]);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
-  const [pageInfo, setPageInfo] = useState({ totalPages: 0, totalElements: 0, page: 0, size: 20 });
-  const [loading, setLoading] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
-  const [exchangeRate, setExchangeRate] = useState(null);
-  const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [filters, setFilters] = useState(createEmptyFilters);
   const [draftFilters, setDraftFilters] = useState(createEmptyFilters);
 
-  const fetchPlans = async () => {
-    try {
-      const response = await getAllPlans();
-      const data = extractData(response);
-      setPlans(Array.isArray(data) ? data : []);
-    } catch (error) {
-      setPlans([]);
-      showError(getErrorMessage(t, error));
-    }
-  };
-
-  const fetchExchangeRate = async ({ silent = false } = {}) => {
-    if (!silent) setExchangeRateLoading(true);
-    try {
-      const response = await getUsdVndExchangeRate();
-      setExchangeRate(extractData(response));
-    } catch (error) {
-      setExchangeRate(null);
-      if (!silent) showError(getErrorMessage(t, error));
-    } finally {
-      if (!silent) setExchangeRateLoading(false);
-    }
-  };
-
-  const buildQuery = (activeFilters = filters) => ({
+  const buildQuery = (activeFilters) => ({
     taskId: activeFilters.taskId || undefined,
     actorUserId: activeFilters.actorUserId || undefined,
     planCatalogId: activeFilters.planCatalogId || undefined,
@@ -344,41 +319,60 @@ function AiCostManagement() {
     to: activeFilters.to ? new Date(activeFilters.to).toISOString() : undefined,
   });
 
-  const fetchCostData = async (nextPage = page, nextPageSize = pageSize, activeFilters = filters) => {
-    setLoading(true);
-    try {
-      const query = buildQuery(activeFilters);
+  const plansQuery = useQuery({
+    queryKey: AI_COST_PLANS_KEY,
+    queryFn: async () => {
+      const response = await getAllPlans();
+      const list = extractData(response);
+      return Array.isArray(list) ? list : [];
+    },
+  });
+  const plans = plansQuery.data ?? [];
+
+  const exchangeRateQuery = useQuery({
+    queryKey: AI_COST_RATE_KEY,
+    queryFn: async () => extractData(await getUsdVndExchangeRate()),
+  });
+  const exchangeRate = exchangeRateQuery.data ?? null;
+  const exchangeRateLoading = exchangeRateQuery.isFetching;
+
+  const costQuery = useQuery({
+    queryKey: [...AI_COST_DATA_KEY, page, pageSize, filters],
+    queryFn: async () => {
+      const query = buildQuery(filters);
       const [summaryResponse, requestResponse] = await Promise.all([
         getAiCostSummary(query),
-        getAiCostRequests({ ...query, page: nextPage, size: nextPageSize }),
+        getAiCostRequests({ ...query, page, size: pageSize }),
       ]);
-      setSummary(extractData(summaryResponse));
       const requestPage = extractData(requestResponse) || {};
-      setRequests(Array.isArray(requestPage.content) ? requestPage.content : []);
-      setPageInfo({
-        totalPages: Number(requestPage.totalPages || 0),
-        totalElements: Number(requestPage.totalElements || 0),
-        page: Number(requestPage.page || nextPage),
-        size: Number(requestPage.size || nextPageSize),
-      });
-    } catch (error) {
-      setSummary(null);
-      setRequests([]);
-      setPageInfo({ totalPages: 0, totalElements: 0, page: 0, size: nextPageSize });
-      showError(getErrorMessage(t, error));
-    } finally {
-      setLoading(false);
-    }
+      return {
+        summary: extractData(summaryResponse),
+        requests: Array.isArray(requestPage.content) ? requestPage.content : [],
+        pageInfo: {
+          totalPages: Number(requestPage.totalPages || 0),
+          totalElements: Number(requestPage.totalElements || 0),
+          page: Number(requestPage.page || page),
+          size: Number(requestPage.size || pageSize),
+        },
+      };
+    },
+    placeholderData: (previous) => previous,
+  });
+  const summary = costQuery.data?.summary ?? null;
+  const requests = costQuery.data?.requests ?? [];
+  const pageInfo = costQuery.data?.pageInfo ?? { totalPages: 0, totalElements: 0, page: 0, size: pageSize };
+  const loading = costQuery.isLoading;
+  const isFetching = costQuery.isFetching;
+
+  useEffect(() => {
+    if (costQuery.error) showError(getErrorMessage(t, costQuery.error));
+    if (plansQuery.error) showError(getErrorMessage(t, plansQuery.error));
+  }, [costQuery.error, plansQuery.error, t, showError]);
+
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: AI_COST_DATA_KEY });
+    queryClient.invalidateQueries({ queryKey: AI_COST_RATE_KEY });
   };
-
-  useEffect(() => {
-    fetchPlans();
-    fetchExchangeRate({ silent: true });
-  }, []);
-
-  useEffect(() => {
-    fetchCostData(page, pageSize, filters);
-  }, [page, pageSize]);
 
   const detailActualTokenEquivalent = detailRow ? getActualTokenEquivalent(detailRow) : null;
   const isDetailProfitPositive = Number(detailRow?.profitVnd || 0) >= 0;
@@ -395,10 +389,8 @@ function AiCostManagement() {
   };
 
   const handleApplyFilters = () => {
-    const nextFilters = { ...draftFilters };
-    setFilters(nextFilters);
+    setFilters({ ...draftFilters });
     setPage(0);
-    fetchCostData(0, pageSize, nextFilters);
     setIsFilterDialogOpen(false);
   };
 
@@ -407,7 +399,6 @@ function AiCostManagement() {
     setDraftFilters(clearedFilters);
     setFilters(clearedFilters);
     setPage(0);
-    fetchCostData(0, pageSize, clearedFilters);
     setIsFilterDialogOpen(false);
   };
 
@@ -422,8 +413,8 @@ function AiCostManagement() {
             type="button"
             variant="outline"
             size="icon"
-            onClick={() => { fetchCostData(page, pageSize, filters); fetchExchangeRate(); }}
-            disabled={loading || exchangeRateLoading}
+            onClick={refreshAll}
+            disabled={isFetching || exchangeRateLoading}
             className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
             aria-label={t('aiCosts.refresh')}
             title={t('aiCosts.refresh')}
@@ -454,7 +445,7 @@ function AiCostManagement() {
             type="button"
             variant="outline"
             size="icon"
-            onClick={() => fetchExchangeRate()}
+            onClick={() => exchangeRateQuery.refetch()}
             disabled={exchangeRateLoading}
             className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
             aria-label={t('aiCosts.exchangeRate.refresh')}

@@ -383,6 +383,7 @@
     },
     "sources": {
       "title": "Tài liệu",
+      "scriptLabel": "Script / Lời thoại",
       "addSource": "Thêm tài liệu",
       "searchPlaceholder": "Tìm tài liệu...",
       "emptyTitle": "Chưa có tài liệu",
