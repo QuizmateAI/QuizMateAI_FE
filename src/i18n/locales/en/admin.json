@@ -1406,6 +1406,7 @@
     "emptyModels": "No models registered for this provider yet.",
     "providerStatus": {
       "HEALTHY": "Healthy",
+      "DEGRADED": "Degraded",
       "UNREACHABLE": "Unreachable",
       "UNCONFIGURED": "Unconfigured"
     },
@@ -1413,6 +1414,38 @@
       "ACTIVE": "Active",
       "ARCHIVED": "Archived",
       "INACTIVE": "Inactive"
+    },
+    "testConnection": {
+      "button": "Test connection",
+      "running": "Testing...",
+      "title": "API key test results",
+      "description": "Direct auth-light check against each {{provider}} API key (no tokens consumed).",
+      "summary": "{{valid}}/{{total}} keys valid • took {{duration}}ms",
+      "noKeys": "No API keys are configured for this provider yet.",
+      "rateLimitHit": "Rate limit hit (10/min). Try again in 1 minute.",
+      "successToast": "Tested {{provider}}: {{valid}}/{{total}} keys healthy.",
+      "viewHistory": "View history"
+    },
+    "keyStatus": {
+      "VALID": "Valid",
+      "INVALID": "Invalid",
+      "RATE_LIMITED": "Rate limited",
+      "ERROR": "Error",
+      "UNREACHABLE": "Unreachable"
+    },
+    "keys": {
+      "index": "#",
+      "key": "API Key",
+      "status": "Status",
+      "latency": "Latency",
+      "error": "Error"
+    },
+    "history": {
+      "title": "{{provider}} test history (last {{hours}}h)",
+      "checkedAt": "Time",
+      "checkedBy": "Tested by",
+      "noData": "No test history in this time window.",
+      "rangeHours": "Window (hours)"
     }
   },
   "groupPage": {
