@@ -41,6 +41,11 @@ export const updatePolicy = async (policyId, payload) => {
   return response?.data ?? null;
 };
 
+export const publishPolicy = async (policyId) => {
+  const response = await api.post(`/management/policies/${policyId}/publish`);
+  return response?.data ?? null;
+};
+
 export const archivePolicy = async (policyId) => {
   const response = await api.delete(`/management/policies/${policyId}`);
   return response;

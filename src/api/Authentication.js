@@ -3,6 +3,12 @@ import { setCachedProfile, setCachedSubscription, clearUserCache } from '@/utils
 import { normalizeUserProfile } from '@/utils/userProfile';
 import { queryClient } from '@/lib/queryClient';
 import { clearPlanPurchaseState } from '@/utils/planPurchaseState';
+import {
+  clearTokens,
+  getAccessToken,
+  hasAccessToken,
+  setTokens,
+} from '@/utils/tokenStorage';
 
 // ======================= AUTH API SERVICES =======================
 
@@ -60,9 +66,12 @@ function notifyAuthChanged(type) {
 }
 
 function clearAuthState() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    clearTokens();
+    try {
+        localStorage.removeItem('user');
+    } catch {
+        /* storage disabled */
+    }
     clearUserCache();
     clearPlanPurchaseState();
     queryClient.clear();
@@ -80,12 +89,17 @@ export const login = async (credentials) => {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
     });
 
-    // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
+    // Lưu token và thông tin user nếu đăng nhập thành công.
+    // Access token chỉ giữ trong RAM; refresh token được BE set bằng httpOnly cookie
+    // (browser tự handle, JS không đụng được).
     if (response.statusCode === 200 || response.statusCode === 0) {
-        const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+        const { accessToken, userID, username, role, email, authProvider } = response.data;
+        setTokens({ accessToken });
+        try {
+            localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+        } catch {
+            /* storage disabled — user info available from server next refetch */
+        }
         // Cache profile + subscription từ BE (lần load sau chỉ verify token)
         saveLoginDataToCache(response.data);
         notifyAuthChanged('login');
@@ -124,12 +138,15 @@ export const googleLogin = async (idToken) => {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
     });
 
-    // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
+    // See login() above — access in RAM, refresh in cookie.
     if (response.statusCode === 200 || response.statusCode === 0) {
-        const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+        const { accessToken, userID, username, role, email, authProvider } = response.data;
+        setTokens({ accessToken });
+        try {
+            localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+        } catch {
+            /* storage disabled */
+        }
         saveLoginDataToCache(response.data);
         notifyAuthChanged('login');
     }
@@ -239,16 +256,16 @@ export const resetPassword = async (email, newPassword) => {
 };
 
 /**
- * Đăng xuất - Xóa token, thông tin user và cache khỏi localStorage
+ * Đăng xuất - Xóa token RAM, info user khỏi localStorage, và clear refresh cookie phía BE.
  */
 export const logout = () => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
 
     // Dọn local state ngay để UI chuyển trạng thái tức thì.
     clearAuthState();
     notifyAuthChanged('logout');
 
-    // Gọi BE logout song song để revoke token phía server.
+    // Gọi BE logout song song để revoke token + clear refresh cookie phía server.
     if (token) {
         void api.post('/auth/logout', null, {
             skipAuthRedirect: true,
@@ -271,9 +288,9 @@ export const getCurrentUser = () => {
 };
 
 /**
- * Kiểm tra user đã đăng nhập chưa
+ * Kiểm tra user đã đăng nhập chưa (in-memory access token).
  * @returns {boolean} true nếu đã đăng nhập
  */
 export const isAuthenticated = () => {
-    return !!localStorage.getItem('accessToken');
+    return hasAccessToken();
 };
