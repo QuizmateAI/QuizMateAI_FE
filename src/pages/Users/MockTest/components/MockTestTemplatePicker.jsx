@@ -1,18 +1,31 @@
-import React from 'react';
-import { CheckCircle2, Sparkles, BookmarkPlus, Loader2, Check } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { CheckCircle2, Sparkles, BookmarkPlus, Loader2, Check, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+
+function buildMaterialNameMap(workspaceMaterials) {
+  if (!Array.isArray(workspaceMaterials)) return new Map();
+  const map = new Map();
+  workspaceMaterials.forEach((item) => {
+    const id = Number(item?.id ?? item?.materialId);
+    if (!Number.isInteger(id) || id <= 0) return;
+    const label = item?.name || item?.title || item?.originalFileName || `#${id}`;
+    map.set(id, label);
+  });
+  return map;
+}
 
 /**
  * Show templates returned by the recommender.
  *
  * Props:
- *   options: list of suggestion objects (each has v2Template, sections, totalQuestion, ...)
+ *   options: list of suggestion objects
  *   selectedTemplateId: id of currently active template
  *   onSelect: callback when user picks a card
  *   onSaveTemplate: optional callback to save the AI-suggested template into user's library
  *   savedTemplateIds: Set<number> of already-saved template ids
  *   savingTemplateId: id currently being saved (to show spinner)
+ *   workspaceMaterials: list of {id, name} so card can show "Dua tren: ..."
  *   isDarkMode: theme flag
  *
  * Renders even when only 1 template is returned (so user sees the matched template card).
@@ -24,9 +37,12 @@ export function MockTestTemplatePicker({
   onSaveTemplate,
   savedTemplateIds,
   savingTemplateId,
+  workspaceMaterials,
   isDarkMode = false,
 }) {
   const { t } = useTranslation();
+  const materialNameMap = useMemo(() => buildMaterialNameMap(workspaceMaterials), [workspaceMaterials]);
+
   if (!Array.isArray(options) || options.length === 0) return null;
 
   const savedSet = savedTemplateIds instanceof Set
@@ -83,6 +99,25 @@ export function MockTestTemplatePicker({
                   <p className={`line-clamp-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                     {option.description}
                   </p>
+                )}
+                {Array.isArray(option.sourceMaterialIds) && option.sourceMaterialIds.length > 0 && (
+                  <div className={`flex flex-wrap items-center gap-1 text-[10.5px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <FileText className="h-3 w-3 shrink-0" />
+                    <span className="font-medium">{t('mockTestForms.templatePicker.basedOn', 'Dựa trên')}:</span>
+                    {option.sourceMaterialIds.map((id, idx) => {
+                      const label = materialNameMap.get(Number(id)) || `#${id}`;
+                      return (
+                        <span
+                          key={id}
+                          className={`inline-flex items-center rounded-full px-1.5 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}
+                          title={label}
+                        >
+                          {label.length > 28 ? `${label.slice(0, 26)}…` : label}
+                          {idx < option.sourceMaterialIds.length - 1 ? '' : ''}
+                        </span>
+                      );
+                    })}
+                  </div>
                 )}
               </button>
               {canSave && (
