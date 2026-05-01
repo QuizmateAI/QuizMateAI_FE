@@ -19,7 +19,7 @@ import UserProfilePopover from '@/components/features/users/UserProfilePopover';
 import CreditIconImage from '@/components/ui/CreditIconImage';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
-import { getPurchaseableCreditPackages } from '@/api/ManagementSystemAPI';
+import { getCustomCreditConfig, getPurchaseableCreditPackages } from '@/api/ManagementSystemAPI';
 import PaymentSidebar from './components/PaymentSidebar';
 import PaymentMethods from './components/PaymentMethods';
 import usePaymentCheckout from './hooks/usePaymentCheckout';
@@ -47,11 +47,14 @@ export default function CreditPaymentPage() {
   const currentLang = i18n.language;
   const locale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
   const creditPackageId = searchParams.get('creditPackageId');
+  const customCreditsParam = searchParams.get('customCredits');
+  const customCreditUnits = customCreditsParam ? Number(customCreditsParam) : null;
+  const isCustomMode = Number.isFinite(customCreditUnits) && customCreditUnits > 0;
   const workspaceId = searchParams.get('workspaceId') || location.state?.workspaceId || null;
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [creditPackage, setCreditPackage] = useState(null);
-  const [loading, setLoading] = useState(Boolean(creditPackageId));
+  const [loading, setLoading] = useState(Boolean(creditPackageId) || isCustomMode);
   const [error, setError] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const settingsRef = useRef(null);
@@ -67,9 +70,10 @@ export default function CreditPaymentPage() {
     isPaying,
     paymentError,
   } = usePaymentCheckout({
-    paymentType: 'credit',
+    paymentType: isCustomMode ? 'custom-credit' : 'credit',
     creditPackageId: creditPackage?.creditPackageId,
     creditPackageName: creditPackage?.displayName,
+    customCreditUnits: isCustomMode ? customCreditUnits : null,
     workspaceId,
   });
 
@@ -91,7 +95,52 @@ export default function CreditPaymentPage() {
   }, [isSettingsOpen]);
 
   useEffect(() => {
-    if (!creditPackageId) return;
+    if (isCustomMode) {
+      let cancelled = false;
+      getCustomCreditConfig()
+        .then((res) => {
+          if (cancelled) return;
+          const data = res?.data?.data ?? res?.data ?? {};
+          const unitPrice = Number(data?.unitPriceVnd ?? 0);
+          const minUnits = Number(data?.minUnits ?? 0);
+          if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+            setError(t('wallet.customCreditConfigError', { defaultValue: 'Không lấy được đơn giá credit.' }));
+            return;
+          }
+          if (minUnits > 0 && customCreditUnits < minUnits) {
+            setError(t('wallet.customCreditBelowMin', {
+              defaultValue: 'Số credit tối thiểu là {{min}}.',
+              min: minUnits,
+            }));
+            return;
+          }
+          setCreditPackage({
+            creditPackageId: null,
+            displayName: t('wallet.customCreditPackName', {
+              defaultValue: '{{count}} credit (mua lẻ)',
+              count: customCreditUnits,
+            }),
+            baseCredit: customCreditUnits,
+            bonusCredit: 0,
+            price: customCreditUnits * unitPrice,
+          });
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setError(t('payment.fetchError'));
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!creditPackageId) return undefined;
 
     let cancelled = false;
 
@@ -123,7 +172,7 @@ export default function CreditPaymentPage() {
     return () => {
       cancelled = true;
     };
-  }, [creditPackageId, t]);
+  }, [creditPackageId, customCreditUnits, isCustomMode, t]);
 
   return (
     <div className={`min-h-screen ${fontClass} transition-colors ${
@@ -226,7 +275,7 @@ export default function CreditPaymentPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        {!creditPackageId ? (
+        {!creditPackageId && !isCustomMode ? (
           <div className="flex flex-col items-center justify-center gap-4 py-32">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
             <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('payment.noPlanId')}</p>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeft,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useGroup } from "@/hooks/useGroup";
+import { useWallet } from "@/hooks/useWallet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ListSpinner from "@/components/ui/ListSpinner";
@@ -24,7 +26,7 @@ import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserProfilePopover from "@/components/features/users/UserProfilePopover";
 import CreditIconImage from "@/components/ui/CreditIconImage";
-import { getActiveGroupPlan, getActiveUserPlans, getMyWallet } from "@/api/ManagementSystemAPI";
+import { getActiveGroupPlan, getActiveUserPlans } from "@/api/ManagementSystemAPI";
 import { getWorkspaceCurrentPlan } from "@/api/WorkspaceAPI";
 import { createPlanSummaryFromSubscription, useCurrentSubscription } from "@/hooks/useCurrentSubscription";
 import { buildWalletsPath } from "@/lib/routePaths";
@@ -524,12 +526,30 @@ export default function PlanPage() {
     i18n.changeLanguage(newLang);
   };
 
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
-  const [loadingWallet, setLoadingWallet] = useState(true);
-  const [groupCurrentPlan, setGroupCurrentPlan] = useState(null);
+  const plansQuery = useQuery({
+    queryKey: ['user', 'activePlans', isGroupScopedPage ? 'group' : 'user'],
+    queryFn: async () => {
+      const res = isGroupScopedPage ? await getActiveGroupPlan() : await getActiveUserPlans();
+      const raw = res?.data?.data ?? res?.data ?? res;
+      const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      return list.map(mapPlanCatalogToCard).sort((a, b) => Number(a.price ?? 0) - Number(b.price ?? 0));
+    },
+  });
+  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
+  const loading = plansQuery.isLoading;
+  const error = plansQuery.error ? t('plan.loadError') : null;
+
+  const groupPlanQuery = useQuery({
+    queryKey: ['user', 'workspaceCurrentPlan', scopedWorkspaceId],
+    queryFn: async () => {
+      const res = await getWorkspaceCurrentPlan(scopedWorkspaceId);
+      return res?.data?.data ?? res?.data ?? res ?? null;
+    },
+    enabled: Boolean(isGroupScopedPage && scopedWorkspaceId),
+  });
+  const groupCurrentPlan = groupPlanQuery.data ?? null;
+
+  const { wallet: walletSummary, isLoading: loadingWallet } = useWallet();
   const { summary: userPlanSummary } = useCurrentSubscription({ enabled: !isGroupScopedPage });
   const { groups, loading: loadingGroups } = useGroup({ enabled: isGroupScopedPage });
   const scopedGroup = useMemo(
@@ -555,97 +575,6 @@ export default function PlanPage() {
     ? t("plan.groupLeaderManagedCta")
     : "";
 
-  useEffect(() => {
-    let cancelled = false;
-
-    setLoading(true);
-    setError(null);
-
-    const fetchPlans = isGroupScopedPage
-      ? getActiveGroupPlan().then((res) => {
-          const raw = res?.data?.data ?? res?.data ?? res;
-          return Array.isArray(raw) ? raw : raw ? [raw] : [];
-        })
-      : getActiveUserPlans().then((res) => {
-          const raw = res?.data?.data ?? res?.data ?? res;
-          return Array.isArray(raw) ? raw : [];
-        });
-
-    fetchPlans
-      .then((list) => {
-        if (cancelled) return;
-        const normalizedPlans = list
-          .map(mapPlanCatalogToCard)
-          .sort((a, b) => Number(a.price ?? 0) - Number(b.price ?? 0));
-        setPlans(normalizedPlans);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setError(t("plan.loadError"));
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isGroupScopedPage, t]);
-
-  useEffect(() => {
-    if (!isGroupScopedPage || !scopedWorkspaceId) {
-      setGroupCurrentPlan(null);
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    getWorkspaceCurrentPlan(scopedWorkspaceId)
-      .then((res) => {
-        if (!cancelled) {
-          setGroupCurrentPlan(res?.data?.data ?? res?.data ?? res ?? null);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setGroupCurrentPlan(null);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isGroupScopedPage, scopedWorkspaceId]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchWallet = async () => {
-      setLoadingWallet(true);
-      try {
-        const res = await getMyWallet();
-        const data = res?.data ?? res;
-        if (cancelled) return;
-        setWalletSummary({
-          ...EMPTY_WALLET_SUMMARY,
-          ...data,
-          totalAvailableCredits: data?.totalAvailableCredits ?? data?.balance ?? 0,
-          regularCreditBalance: data?.regularCreditBalance ?? 0,
-          planCreditBalance: data?.planCreditBalance ?? 0,
-          hasActivePlan: Boolean(data?.hasActivePlan),
-          planCreditExpiresAt: data?.planCreditExpiresAt ?? null,
-        });
-      } catch {
-        if (!cancelled) setWalletSummary(EMPTY_WALLET_SUMMARY);
-      } finally {
-        if (!cancelled) setLoadingWallet(false);
-      }
-    };
-
-    fetchWallet();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const handleUpgrade = useCallback(
     (plan) => {

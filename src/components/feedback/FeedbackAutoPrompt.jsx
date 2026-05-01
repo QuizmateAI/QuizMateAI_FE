@@ -6,7 +6,7 @@ import { getCurrentUser, isAuthenticated } from '@/api/Authentication';
 import { unwrapApiList } from '@/utils/apiResponse';
 
 const AUTO_PROMPT_TARGET_TYPES = new Set(['WORKSPACE', 'SYSTEM_MILESTONE']);
-const BLOCKED_PREFIXES = ['/login', '/register', '/forgot-password', '/pricing', '/payments', '/admin', '/super-admin'];
+const BLOCKED_PREFIXES = ['/login', '/register', '/forgot-password', '/payments', '/admin', '/super-admin'];
 
 function shouldBlockAutoPrompt(pathname) {
   if (!pathname) {

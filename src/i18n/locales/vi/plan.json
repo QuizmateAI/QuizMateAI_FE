@@ -44,6 +44,11 @@
       "creditWallet": "Ví Credit",
       "regularCredits": "Credit thường",
       "planCredits": "Credit từ gói",
+      "planCreditsExpire": "Hết hạn",
+      "planEndsIn": "Gói của bạn còn {{count}} ngày",
+      "planEndsToday": "Gói của bạn hết hạn hôm nay",
+      "planExpired": "Gói của bạn đã hết hạn",
+      "resubscribe": "Mua lại",
       "topUpCredits": "Nạp credit",
       "subscriptionStatus": {
         "ACTIVE": "Đang hoạt động",
@@ -76,7 +81,18 @@
         "status": "Trạng thái",
         "loading": "Đang tải lịch sử...",
         "empty": "Chưa có giao dịch thanh toán.",
-        "loadError": "Không thể tải lịch sử thanh toán."
+        "loadError": "Không thể tải lịch sử thanh toán.",
+        "usage": {
+          "title": "Lịch sử sử dụng",
+          "groupTitle": "Lịch sử sử dụng nhóm",
+          "subtitle": "5 biến động QMC gần nhất",
+          "refresh": "Tải lại lịch sử sử dụng",
+          "activity": "Hoạt động",
+          "change": "Biến động",
+          "balance": "Số dư sau",
+          "empty": "Chưa có hoạt động sử dụng QMC.",
+          "loadError": "Không thể tải lịch sử sử dụng."
+        }
       }
     },
     "noPlans": "Chưa có plan nào cho danh mục này.",

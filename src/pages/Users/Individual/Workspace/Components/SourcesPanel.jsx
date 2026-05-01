@@ -11,34 +11,134 @@ import SourceDetailView from "./SourceDetailView";
 import {
   Check,
   FileText,
+  FileType,
+  FileSpreadsheet,
+  Film,
+  Headphones,
   Image,
   Link2,
   PencilLine,
   Plus,
+  Presentation,
   Search,
   Share2,
   Sparkles,
   Trash2,
+  Youtube,
   X,
 } from "lucide-react";
 
+/**
+ * Classify a material type (mime / short label) into a coarse category used by both
+ * the badge label and the icon picker. Centralised so labels + icons + colors stay in sync.
+ */
+function classifySourceType(type) {
+  const lower = String(type || "").toLowerCase();
+  if (!lower) return "file";
+  if (lower.includes("youtube") || lower.includes("youtu.be")) return "youtube";
+  if (lower.includes("vimeo")) return "vimeo";
+  if (lower === "url" || lower.startsWith("link")) return "url";
+  if (lower.includes("pdf")) return "pdf";
+  if (lower.includes("wordprocessingml") || lower.includes("msword") || lower === "doc" || lower === "docx") return "docx";
+  if (lower.includes("spreadsheetml") || lower.includes("excel") || lower === "xls" || lower === "xlsx" || lower === "csv" || lower.includes("csv")) return "xlsx";
+  if (lower.includes("presentationml") || lower.includes("powerpoint") || lower === "ppt" || lower === "pptx") return "pptx";
+  if (lower.includes("markdown") || lower === "md") return "markdown";
+  if (lower === "text/plain" || lower === "txt" || lower.startsWith("text/")) return "text";
+  if (lower.startsWith("image/") || lower.includes("image")) return "image";
+  if (lower.startsWith("audio/") || lower.includes("audio")) return "audio";
+  if (lower.startsWith("video/") || lower.includes("video")) return "video";
+  return "file";
+}
+
 function formatFileType(type) {
-  if (!type) return "FILE";
-  const lower = String(type).toLowerCase();
-  if (lower.includes("pdf")) return "PDF";
-  if (lower.includes("doc")) return "DOCX";
-  if (lower.includes("sheet") || lower.includes("excel")) return "XLSX";
-  if (lower.includes("ppt")) return "PPTX";
-  if (lower.includes("image")) return "IMAGE";
-  if (lower === "url") return "URL";
-  return "FILE";
+  switch (classifySourceType(type)) {
+    case "youtube": return "URL";
+    case "vimeo": return "URL";
+    case "url": return "URL";
+    case "pdf": return "PDF";
+    case "docx": return "DOCX";
+    case "xlsx": return "XLSX";
+    case "pptx": return "PPTX";
+    case "markdown": return "MD";
+    case "text": return "TXT";
+    case "image": return "IMAGE";
+    case "audio": return "AUDIO";
+    case "video": return "VIDEO";
+    default: return "FILE";
+  }
 }
 
 function getSourceIcon(type) {
-  const lower = String(type || "").toLowerCase();
-  if (lower.includes("image")) return Image;
-  if (lower === "url") return Link2;
-  return FileText;
+  switch (classifySourceType(type)) {
+    case "youtube": return Youtube;
+    case "vimeo": return Film;
+    case "url": return Link2;
+    case "pdf": return FileText;
+    case "docx": return FileType;
+    case "xlsx": return FileSpreadsheet;
+    case "pptx": return Presentation;
+    case "markdown":
+    case "text": return FileText;
+    case "image": return Image;
+    case "audio": return Headphones;
+    case "video": return Film;
+    default: return FileText;
+  }
+}
+
+/** Tailwind text/bg color tone per category — used for the badge + icon. */
+function getSourceTypeTone(type, isDarkMode = false) {
+  switch (classifySourceType(type)) {
+    case "youtube":
+      return isDarkMode
+        ? { icon: "text-rose-400", badge: "border-rose-700/40 bg-rose-950/40 text-rose-300" }
+        : { icon: "text-rose-500", badge: "border-rose-200 bg-rose-50 text-rose-700" };
+    case "vimeo":
+      return isDarkMode
+        ? { icon: "text-sky-400", badge: "border-sky-700/40 bg-sky-950/40 text-sky-300" }
+        : { icon: "text-sky-500", badge: "border-sky-200 bg-sky-50 text-sky-700" };
+    case "url":
+      return isDarkMode
+        ? { icon: "text-blue-400", badge: "border-blue-700/40 bg-blue-950/40 text-blue-300" }
+        : { icon: "text-blue-500", badge: "border-blue-200 bg-blue-50 text-blue-700" };
+    case "pdf":
+      return isDarkMode
+        ? { icon: "text-red-400", badge: "border-red-800/40 bg-red-950/40 text-red-300" }
+        : { icon: "text-red-500", badge: "border-red-200 bg-red-50 text-red-700" };
+    case "docx":
+      return isDarkMode
+        ? { icon: "text-blue-400", badge: "border-blue-800/40 bg-blue-950/40 text-blue-300" }
+        : { icon: "text-blue-600", badge: "border-blue-200 bg-blue-50 text-blue-700" };
+    case "xlsx":
+      return isDarkMode
+        ? { icon: "text-emerald-400", badge: "border-emerald-800/40 bg-emerald-950/40 text-emerald-300" }
+        : { icon: "text-emerald-600", badge: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+    case "pptx":
+      return isDarkMode
+        ? { icon: "text-orange-400", badge: "border-orange-800/40 bg-orange-950/40 text-orange-300" }
+        : { icon: "text-orange-500", badge: "border-orange-200 bg-orange-50 text-orange-700" };
+    case "markdown":
+    case "text":
+      return isDarkMode
+        ? { icon: "text-slate-300", badge: "border-slate-700 bg-slate-800/60 text-slate-200" }
+        : { icon: "text-slate-600", badge: "border-slate-200 bg-slate-100 text-slate-700" };
+    case "image":
+      return isDarkMode
+        ? { icon: "text-green-400", badge: "border-green-800/40 bg-green-950/40 text-green-300" }
+        : { icon: "text-green-500", badge: "border-green-200 bg-green-50 text-green-700" };
+    case "audio":
+      return isDarkMode
+        ? { icon: "text-purple-400", badge: "border-purple-800/40 bg-purple-950/40 text-purple-300" }
+        : { icon: "text-purple-500", badge: "border-purple-200 bg-purple-50 text-purple-700" };
+    case "video":
+      return isDarkMode
+        ? { icon: "text-fuchsia-400", badge: "border-fuchsia-800/40 bg-fuchsia-950/40 text-fuchsia-300" }
+        : { icon: "text-fuchsia-500", badge: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700" };
+    default:
+      return isDarkMode
+        ? { icon: "text-slate-400", badge: "border-slate-700 bg-slate-800/60 text-slate-300" }
+        : { icon: "text-slate-500", badge: "border-slate-200 bg-slate-100 text-slate-700" };
+  }
 }
 
 function canOpenSourceDetail(source) {
@@ -432,7 +532,9 @@ function SourcesPanel({
               Number.isInteger(sourceId) && selectedIds.includes(sourceId);
             const isSelectable =
               Number.isInteger(sourceId) && canSelectSource(source);
-            const Icon = getSourceIcon(source?.type ?? source?.materialType);
+            const sourceType = source?.type ?? source?.materialType;
+            const Icon = getSourceIcon(sourceType);
+            const tone = getSourceTypeTone(sourceType, isDarkMode);
 
             return (
               <article
@@ -465,11 +567,11 @@ function SourcesPanel({
                     className={cn(
                       "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-colors duration-200",
                       isDarkMode
-                        ? "border-slate-700 bg-slate-900 text-slate-300"
-                        : "border-slate-200 bg-slate-50 text-slate-700",
+                        ? "border-slate-700 bg-slate-900"
+                        : "border-slate-200 bg-slate-50",
                     )}
                   >
-                    <Icon className="h-4.5 w-4.5" />
+                    <Icon className={cn("h-4.5 w-4.5", tone.icon)} />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -488,12 +590,10 @@ function SourcesPanel({
                       <span
                         className={cn(
                           "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors duration-200",
-                          isDarkMode
-                            ? "border-slate-700 bg-slate-900 text-slate-300"
-                            : "border-slate-200 bg-slate-100 text-slate-600",
+                          tone.badge,
                         )}
                       >
-                        {formatFileType(source?.type ?? source?.materialType)}
+                        {formatFileType(sourceType)}
                       </span>
                       {normalizedStatus !== "ACTIVE" && (
                         <span

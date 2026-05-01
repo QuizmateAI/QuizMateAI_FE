@@ -51,8 +51,6 @@ function buildRouteMeta(pathname, language) {
       defaultDescription: 'Create quizzes, flashcards, and roadmaps faster with an AI learning workspace built for focused study.',
       landingTitle: SITE_NAME,
       landingDescription: 'Turn materials into quizzes, flashcards, and study roadmaps with an AI workspace built for modern learners.',
-      pricingTitle: SITE_NAME,
-      pricingDescription: 'Understand QuizMate AI credit usage, pricing logic, and quick estimation examples before you start.',
       loginTitle: SITE_NAME,
       loginDescription: 'Access your QuizMate AI workspace and continue studying with AI-powered tools.',
       registerTitle: SITE_NAME,
@@ -65,8 +63,6 @@ function buildRouteMeta(pathname, language) {
       defaultDescription: 'Tao quiz, flashcard va roadmap nhanh hon voi khong gian hoc tap duoc ho tro boi AI.',
       landingTitle: SITE_NAME,
       landingDescription: 'Bien tai lieu thanh quiz, flashcard va roadmap hoc tap voi khong gian hoc AI danh cho nguoi hoc hien dai.',
-      pricingTitle: SITE_NAME,
-      pricingDescription: 'Hieu cach tinh credit, chi phi va cac vi du uoc tinh nhanh truoc khi ban su dung QuizMate AI.',
       loginTitle: SITE_NAME,
       loginDescription: 'Dang nhap vao QuizMate AI de tiep tuc hoc tap voi quiz, flashcard va roadmap duoc AI ho tro.',
       registerTitle: SITE_NAME,
@@ -97,15 +93,6 @@ function buildRouteMeta(pathname, language) {
       title: localized.landingTitle,
       description: localized.landingDescription,
       canonicalPath: '/',
-      robots: 'index,follow',
-    };
-  }
-
-  if (pathname === '/pricing') {
-    return {
-      title: localized.pricingTitle,
-      description: localized.pricingDescription,
-      canonicalPath: '/pricing',
       robots: 'index,follow',
     };
   }
