@@ -54,6 +54,7 @@ const CommunityQuizManagement = lazy(() => import('./pages/Admin/CommunityQuizMa
 const PracticeQuizPage = lazy(() => import('./pages/Users/Quiz/PracticeQuizPage'));
 const ExamQuizPage = lazy(() => import('./pages/Users/Quiz/ExamQuizPage'));
 const QuizResultPage = lazy(() => import('./pages/Users/Quiz/QuizResultPage'));
+const MockTestExamPage = lazy(() => import('./pages/Users/MockTest/MockTestExamPage'));
 
 // Payment
 const PaymentPage = lazy(() => import('./pages/Payment/PaymentPage'));
@@ -107,6 +108,7 @@ function MainRoutes() {
             <Route path="/policies/:slug" element={<PolicyDetailPage />} />
             <Route path="/account-suspended" element={<AccountSuspendedPage />} />
 
+
             <Route element={<PublicRoute />}>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -145,6 +147,7 @@ function MainRoutes() {
                 <Route path="/groups/:workspaceId/manage" element={<GroupManagementPage />} />
                 <Route path="/quizzes/practice/:quizId" element={<PracticeQuizPage />} />
                 <Route path="/quizzes/exams/:quizId" element={<ExamQuizPage />} />
+                <Route path="/quizzes/mock-tests/:quizId/exam" element={<MockTestExamPage />} />
                 <Route path="/quizzes/results/:attemptId" element={<QuizResultPage />} />
             </Route>
 

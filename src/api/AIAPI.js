@@ -1,18 +1,107 @@
 import api from './api';
 
-// Tạo Mock Test thông qua AI (async, trả về taskId).
-// Endpoint thật: POST /api/ai/mocktest:generated. baseURL đã là /api → path cần "/ai/...".
+// ========== MockTest v2 adapters ==========
+// Migration: legacy /api/ai/mocktest:* → /api/mocktest/* (v2). Form payload shape preserved
+// via adapter; v2 response (ApiResponse-wrapped) is unwrapped to match v1 callers.
+
+function flattenLeafSectionConfigs(sectionConfigs) {
+  const out = [];
+  const walk = (sc) => {
+    if (!sc) return;
+    const subs = Array.isArray(sc.subConfigs) ? sc.subConfigs : [];
+    if (subs.length > 0) {
+      subs.forEach(walk);
+    } else {
+      out.push(sc);
+    }
+  };
+  (sectionConfigs || []).forEach(walk);
+  return out;
+}
+
+function sectionConfigsToCustomStructure(sectionConfigs, totalQuestion) {
+  const leaves = flattenLeafSectionConfigs(sectionConfigs);
+  const total = Math.max(1, Number(totalQuestion) || 0);
+  return {
+    sections: leaves.map((sc, idx) => {
+      const numQuestions = Math.max(1, Number(sc.numQuestions) || 0);
+      const rawItems = Array.isArray(sc.structureItems) && sc.structureItems.length > 0
+        ? sc.structureItems
+        : (Array.isArray(sc.structure) ? sc.structure : []);
+      const items = rawItems
+        .map((item) => {
+          const qty = Number(item.quantity) || 0;
+          if (qty <= 0) return null;
+          return {
+            difficulty: item.difficulty,
+            bloomSkill: item.bloomSkill,
+            questionType: item.questionType || 'SINGLE_CHOICE',
+            quantityRatio: qty / numQuestions,
+          };
+        })
+        .filter(Boolean);
+      return {
+        name: sc.name || `Section ${idx + 1}`,
+        description: sc.description || '',
+        questionRatio: numQuestions / total,
+        sharedContextRequired: sc.requiresSharedContext === true,
+        items: items.length > 0 ? items : [{
+          difficulty: 'MEDIUM',
+          bloomSkill: 'UNDERSTAND',
+          questionType: 'SINGLE_CHOICE',
+          quantityRatio: 1.0,
+        }],
+      };
+    }),
+  };
+}
+
+/**
+ * Tạo Mock Test thông qua AI (async, trả về taskId).
+ * Migration: gọi v2 POST /api/mocktest/generate, giữ nguyên external interface.
+ * Caller form vẫn pass v1 AIMockTestRequest shape — adapter convert sang v2 GenerateMockTestRequest.
+ */
 export const generateMockTest = async (data) => {
-  const response = await api.post('/ai/mocktest:generated', data, { timeout: 0 });
+  const v2Payload = {
+    title: data?.title,
+    description: data?.description,
+    workspaceId: data?.workspaceId,
+    materialIds: Array.isArray(data?.materialIds) ? data.materialIds : [],
+    customStructure: sectionConfigsToCustomStructure(data?.sectionConfigs, data?.totalQuestion),
+    customScoring: data?.customScoring,
+    totalQuestion: data?.totalQuestion,
+    durationInMinute: data?.durationInMinute,
+    overallDifficulty: data?.overallDifficulty,
+    outputLanguage: data?.outputLanguage,
+    examLanguage: data?.examLanguage,
+    additionalPrompt: data?.prompt,
+    taskId: data?.taskId,
+    userPromptId: data?.userPromptId,
+  };
+  const response = await api.post('/mocktest/generate', v2Payload, { timeout: 0 });
+  // Unwrap ApiResponse → flat shape giống v1 (cho callers cũ tương thích).
+  const apiBody = response?.statusCode ? response : response?.data;
+  const inner = apiBody?.data;
+  if (inner && typeof inner === 'object') {
+    return {
+      ...apiBody,
+      ...inner,
+      message: apiBody.message,
+      websocketTaskId: inner.taskId,
+    };
+  }
   return response;
 };
 
-// Bước 1 của flow tạo mock test: gọi AI gợi ý cấu trúc sections + description
-// (đồng bộ ~3-15s tuỳ độ phức tạp đề, KHÔNG sinh câu hỏi). User confirm/edit rồi mới gọi generateMockTest.
-// Override default 10s timeout của axios — AI chat call có thể chạm 30s khi BE/Python bận.
-export const suggestMockTestStructure = async (data) => {
-  const response = await api.post('/ai/mocktest:suggest-structure', data, { timeout: 60000 });
-  return response;
+/**
+ * @deprecated Use useMockTestStructureSuggestion hook (đã migrate sang v2 recommend + getTemplate).
+ * Giữ stub này để không break import cũ — nhưng chỉ throw để dev biết phải migrate sang hook.
+ */
+export const suggestMockTestStructure = async () => {
+  throw new Error(
+    '[DEPRECATED] suggestMockTestStructure() — sử dụng useMockTestStructureSuggestion hook hoặc '
+    + 'recommendMockTestTemplate() + getMockTestTemplate() từ @/api/MockTestAPI thay thế.',
+  );
 };
 
 // Tạo Mock Test preview cho group (đồng bộ) — trả về template với sections + questions
@@ -125,4 +214,3 @@ export const processYoutubeResource = async ({ url, workspaceId }) => {
   });
   return response;
 };
-

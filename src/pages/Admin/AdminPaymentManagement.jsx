@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, RefreshCw, Eye, Banknote, Clock, X, ReceiptText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,38 +66,41 @@ const TARGET_TYPE_LABELS = {
   WORKSPACE_SLOT: 'adminPayments.targetTypes.WORKSPACE_SLOT',
 };
 
+const ADMIN_PAYMENTS_QUERY_KEY = ['admin', 'payments'];
+
+const EMPTY_PAGE_INFO = {
+  page: 0,
+  size: 10,
+  totalElements: 0,
+  totalPages: 0,
+  first: true,
+  last: true,
+};
+
 function AdminPaymentManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { permissions, loading: permLoading } = useAdminPermissions();
   const { showError, showSuccess } = useToast();
+  const queryClient = useQueryClient();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
   const canRead = !permLoading && permissions.has('payment:read');
   const canWrite = !permLoading && permissions.has('payment:write');
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [payments, setPayments] = useState([]);
-  const [pageInfo, setPageInfo] = useState({
-    page: 0,
-    size: 10,
-    totalElements: 0,
-    totalPages: 0,
-    first: true,
-    last: true,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [detailError, setDetailError] = useState('');
   const [isExpireOpen, setIsExpireOpen] = useState(false);
-  const [isExpiring, setIsExpiring] = useState(false);
   const [expireForm, setExpireForm] = useState({ confirmText: '', reason: '' });
 
   const confirmTextValid = expireForm.confirmText === 'EXPIRE-OVERDUE';
   const reasonValid = expireForm.reason.trim().length >= 10 && expireForm.reason.trim().length <= 500;
-  const canSubmitExpire = confirmTextValid && reasonValid && !isExpiring;
 
   const openExpireDialog = () => {
     setExpireForm({ confirmText: '', reason: '' });
@@ -172,68 +176,67 @@ function AdminPaymentManagement() {
     return Number(trimmed);
   };
 
-  const loadPayments = async (nextPage = 0, overrideFilters = filters, overrideSize = pageInfo.size) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const orderId = overrideFilters.orderId.trim();
-      if (orderId) {
-        const detailRes = await getAdminPaymentByOrderId(orderId);
-        const detailData = detailRes?.data ?? detailRes;
-        setPayments(detailData ? [detailData] : []);
-        setPageInfo({
+  const fetchPayments = async (currentPage, currentSize, currentFilters) => {
+    const orderId = currentFilters.orderId.trim();
+    if (orderId) {
+      const detailRes = await getAdminPaymentByOrderId(orderId);
+      const detailData = detailRes?.data ?? detailRes;
+      return {
+        payments: detailData ? [detailData] : [],
+        pageInfo: {
           page: 0,
-          size: overrideSize,
+          size: currentSize,
           totalElements: detailData ? 1 : 0,
           totalPages: detailData ? 1 : 0,
           first: true,
           last: true,
-        });
-        return;
-      }
+        },
+      };
+    }
 
-      const userId = normalizeNumericFilter(overrideFilters.userId, t('adminPayments.fields.userId'));
-      const workspaceId = normalizeNumericFilter(overrideFilters.workspaceId, t('adminPayments.fields.workspaceId'));
-      const res = await getAdminPayments({
-        page: nextPage,
-        size: overrideSize,
-        userId,
-        workspaceId,
-        status: overrideFilters.status || undefined,
-      });
-      const data = res?.data ?? res ?? {};
-      const content = Array.isArray(data?.content) ? data.content : [];
-      setPayments(content);
-      setPageInfo({
+    const userId = normalizeNumericFilter(currentFilters.userId, t('adminPayments.fields.userId'));
+    const workspaceId = normalizeNumericFilter(currentFilters.workspaceId, t('adminPayments.fields.workspaceId'));
+    const res = await getAdminPayments({
+      page: currentPage,
+      size: currentSize,
+      userId,
+      workspaceId,
+      status: currentFilters.status || undefined,
+    });
+    const data = res?.data ?? res ?? {};
+    const content = Array.isArray(data?.content) ? data.content : [];
+    return {
+      payments: content,
+      pageInfo: {
         page: Number(data?.page || 0),
-        size: Number(data?.size || overrideSize || 10),
+        size: Number(data?.size || currentSize || 10),
         totalElements: Number(data?.totalElements || 0),
         totalPages: Number(data?.totalPages || 0),
         first: Boolean(data?.first),
         last: Boolean(data?.last),
-      });
-    } catch (err) {
-      const msg = getFriendlyError(err, t('adminPayments.errors.loadList'));
-      setPayments([]);
-      setPageInfo({
-        page: 0,
-        size: overrideSize,
-        totalElements: 0,
-        totalPages: 0,
-        first: true,
-        last: true,
-      });
-      setError(msg);
-      showError(msg);
-    } finally {
-      setIsLoading(false);
-    }
+      },
+    };
   };
 
-  useEffect(() => {
-    if (permLoading || !canRead) return;
-    loadPayments(0, INITIAL_FILTERS);
-  }, [permLoading, canRead]);
+  const {
+    data: queryData,
+    isLoading,
+    isFetching,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: [...ADMIN_PAYMENTS_QUERY_KEY, page, size, appliedFilters],
+    queryFn: () => fetchPayments(page, size, appliedFilters),
+    enabled: canRead && !permLoading,
+    placeholderData: (previous) => previous,
+  });
+
+  const payments = queryData?.payments ?? [];
+  const pageInfo = queryData?.pageInfo ?? { ...EMPTY_PAGE_INFO, size };
+  const error = queryError ? getFriendlyError(queryError, t('adminPayments.errors.loadList')) : detailError;
+
+  const invalidatePayments = () =>
+    queryClient.invalidateQueries({ queryKey: ADMIN_PAYMENTS_QUERY_KEY });
 
   const handleFilterChange = (key, value) => {
     setFilters((current) => ({
@@ -242,24 +245,26 @@ function AdminPaymentManagement() {
     }));
   };
 
-  const handleSearch = async (event) => {
+  const handleSearch = (event) => {
     event.preventDefault();
-    await loadPayments(0, filters);
+    setAppliedFilters(filters);
+    setPage(0);
   };
 
-  const handleReset = async () => {
+  const handleReset = () => {
     setFilters(INITIAL_FILTERS);
-    await loadPayments(0, INITIAL_FILTERS);
+    setAppliedFilters(INITIAL_FILTERS);
+    setPage(0);
   };
 
   const handlePageChange = (nextPage) => {
     if (nextPage < 0 || nextPage >= pageInfo.totalPages || nextPage === pageInfo.page) return;
-    loadPayments(nextPage, filters);
+    setPage(nextPage);
   };
 
   const handlePageSizeChange = (nextSize) => {
-    setPageInfo((current) => ({ ...current, size: nextSize }));
-    loadPayments(0, filters, nextSize);
+    setSize(nextSize);
+    setPage(0);
   };
 
   const handleOpenDetail = async (payment) => {
@@ -267,36 +272,44 @@ function AdminPaymentManagement() {
     setSelectedPayment(payment);
     setIsDetailOpen(true);
     setIsDetailLoading(true);
+    setDetailError('');
     try {
       const res = await getAdminPaymentByOrderId(payment.orderId);
       setSelectedPayment(res?.data ?? res ?? payment);
     } catch (err) {
       const msg = getFriendlyError(err, t('adminPayments.errors.loadDetail'));
-      setError(msg);
+      setDetailError(msg);
       showError(msg);
     } finally {
       setIsDetailLoading(false);
     }
   };
 
-  const handleExpireOverdue = async () => {
-    if (!canSubmitExpire) return;
-    setIsExpiring(true);
-    try {
-      const res = await expireOverduePayments({
-        confirmText: expireForm.confirmText,
-        reason: expireForm.reason.trim(),
-      });
-      const count = res?.data?.data ?? res?.data ?? 0;
+  const expireMutation = useMutation({
+    mutationFn: async ({ confirmText, reason }) => {
+      const res = await expireOverduePayments({ confirmText, reason: reason.trim() });
+      return res?.data?.data ?? res?.data ?? 0;
+    },
+    onSuccess: (count) => {
       showSuccess(t('adminPayments.expireSuccess', { count }));
       setIsExpireOpen(false);
       setExpireForm({ confirmText: '', reason: '' });
-      await loadPayments(pageInfo.page, filters);
-    } catch (err) {
+      invalidatePayments();
+    },
+    onError: (err) => {
       showError(getFriendlyError(err, t('adminPayments.errors.expireFailed')));
-    } finally {
-      setIsExpiring(false);
-    }
+    },
+  });
+
+  const isExpiring = expireMutation.isPending;
+  const canSubmitExpire = confirmTextValid && reasonValid && !isExpiring;
+
+  const handleExpireOverdue = () => {
+    if (!canSubmitExpire) return;
+    expireMutation.mutate({
+      confirmText: expireForm.confirmText,
+      reason: expireForm.reason,
+    });
   };
 
   const renderStatusBadge = (status) => (

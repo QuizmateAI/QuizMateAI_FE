@@ -40,6 +40,9 @@
       "source": "Source",
       "status": "Status"
     },
-    "noPackage": "Credit package not found."
+    "noPackage": "Credit package not found.",
+    "customCreditPackName": "{{count}} credits (custom)",
+    "customCreditConfigError": "Couldn't load the credit unit price.",
+    "customCreditBelowMin": "Minimum is {{min}} credits."
   }
 }
