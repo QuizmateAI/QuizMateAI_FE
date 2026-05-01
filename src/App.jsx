@@ -80,6 +80,16 @@ const FeedbackManagement = lazy(() => import('./pages/SuperAdmin/FeedbackManagem
 const FeedbackResponseActivityPage = lazy(() => import('./pages/SuperAdmin/FeedbackResponseActivityPage'));
 const PermissionRequestsPage = lazy(() => import('./pages/SuperAdmin/PermissionRequestsPage'));
 
+// Policies (public)
+const PoliciesIndexPage = lazy(() => import('./pages/Policies/PoliciesIndexPage'));
+const PolicyDetailPage = lazy(() => import('./pages/Policies/PolicyDetailPage'));
+const AccountSuspendedPage = lazy(() => import('./pages/Policies/AccountSuspendedPage'));
+
+// Policies (SuperAdmin)
+const PoliciesManagement = lazy(() => import('./pages/SuperAdmin/PoliciesManagement'));
+const ViolationsManagement = lazy(() => import('./pages/SuperAdmin/ViolationsManagement'));
+const PenaltiesManagement = lazy(() => import('./pages/SuperAdmin/PenaltiesManagement'));
+
 // 404
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 
@@ -94,6 +104,10 @@ function MainRoutes() {
             <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
             <Route path="/api/stripe/return" element={<StripeReturnRedirect />} />
             <Route path="/accept-invite" element={<AcceptInvitationPage />} />
+            <Route path="/policies" element={<PoliciesIndexPage />} />
+            <Route path="/policies/:slug" element={<PolicyDetailPage />} />
+            <Route path="/account-suspended" element={<AccountSuspendedPage />} />
+
 
             <Route element={<PublicRoute />}>
                 <Route path="/" element={<LandingPage />} />
@@ -158,6 +172,9 @@ function MainRoutes() {
                     <Route path="payments" element={<AdminPaymentManagement />} />
                     <Route path="system-settings" element={<SystemSettingManagement />} />
                     <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
+                    <Route path="policies" element={<PoliciesManagement />} />
+                    <Route path="violations" element={<ViolationsManagement />} />
+                    <Route path="penalties" element={<PenaltiesManagement />} />
                     <Route path="feedbacks" element={<FeedbackManagementLayout />}>
                         <Route index element={<Navigate to="forms" replace />} />
                         <Route path="forms" element={<FeedbackManagement />} />
