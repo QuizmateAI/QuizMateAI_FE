@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
   Bot,
@@ -392,80 +393,73 @@ function SuperAdminDashboard() {
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
 
-  const [dashboardData, setDashboardData] = useState({
+  const [chartView, setChartView] = useState('day');
+
+  const { data: queryData, error: queryError } = useQuery({
+    queryKey: ['superAdmin', 'dashboard'],
+    queryFn: async () => {
+      const [overviewResult, plansResult, creditPackagesResult, paymentsResult] = await Promise.allSettled([
+        getSystemOverviewStats(),
+        getAllPlans(),
+        getAllCreditPackages(),
+        getAdminPayments({ page: 0, size: 150 }),
+      ]);
+
+      const data = {
+        systemOverview: null,
+        plans: [],
+        creditPackages: [],
+        payments: [],
+        paymentTotal: 0,
+      };
+      const issues = [];
+
+      if (overviewResult.status === 'fulfilled') {
+        data.systemOverview = unwrapPayload(overviewResult.value) || {};
+      } else {
+        issues.push('system-overview');
+      }
+
+      if (plansResult.status === 'fulfilled') {
+        data.plans = Array.isArray(unwrapPayload(plansResult.value)) ? unwrapPayload(plansResult.value) : [];
+      } else {
+        issues.push('plans');
+      }
+
+      if (creditPackagesResult.status === 'fulfilled') {
+        data.creditPackages = Array.isArray(unwrapPayload(creditPackagesResult.value)) ? unwrapPayload(creditPackagesResult.value) : [];
+      } else {
+        issues.push('credit-packages');
+      }
+
+      if (paymentsResult.status === 'fulfilled') {
+        const payload = unwrapPayload(paymentsResult.value) || {};
+        data.payments = Array.isArray(payload.content) ? payload.content : [];
+        data.paymentTotal = safeNumber(payload.totalElements || data.payments.length);
+      } else {
+        issues.push('payments');
+      }
+
+      // Throw only when every section failed → React Query surfaces it as `error`.
+      if (!data.systemOverview && issues.length === 4) {
+        throw new Error('dashboard-all-failed');
+      }
+
+      return { data, issues };
+    },
+  });
+
+  const dashboardData = queryData?.data ?? {
     systemOverview: null,
     plans: [],
     creditPackages: [],
     payments: [],
     paymentTotal: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [loadIssues, setLoadIssues] = useState([]);
-  const [chartView, setChartView] = useState('day');
-
-  const fetchDashboard = async () => {
-    setIsLoading(true);
-    setError('');
-
-    const [overviewResult, plansResult, creditPackagesResult, paymentsResult] = await Promise.allSettled([
-      getSystemOverviewStats(),
-      getAllPlans(),
-      getAllCreditPackages(),
-      getAdminPayments({ page: 0, size: 150 }),
-    ]);
-
-    const nextData = {
-      systemOverview: null,
-      plans: [],
-      creditPackages: [],
-      payments: [],
-      paymentTotal: 0,
-    };
-    const nextIssues = [];
-
-    if (overviewResult.status === 'fulfilled') {
-      nextData.systemOverview = unwrapPayload(overviewResult.value) || {};
-    } else {
-      nextIssues.push('system-overview');
-    }
-
-    if (plansResult.status === 'fulfilled') {
-      nextData.plans = Array.isArray(unwrapPayload(plansResult.value)) ? unwrapPayload(plansResult.value) : [];
-    } else {
-      nextIssues.push('plans');
-    }
-
-    if (creditPackagesResult.status === 'fulfilled') {
-      nextData.creditPackages = Array.isArray(unwrapPayload(creditPackagesResult.value)) ? unwrapPayload(creditPackagesResult.value) : [];
-    } else {
-      nextIssues.push('credit-packages');
-    }
-
-    if (paymentsResult.status === 'fulfilled') {
-      const payload = unwrapPayload(paymentsResult.value) || {};
-      nextData.payments = Array.isArray(payload.content) ? payload.content : [];
-      nextData.paymentTotal = safeNumber(payload.totalElements || nextData.payments.length);
-    } else {
-      nextIssues.push('payments');
-    }
-
-    if (!nextData.systemOverview && nextIssues.length === 4) {
-      setError(t('dashboard.loadError', { defaultValue: 'Unable to load dashboard data.' }));
-    }
-
-    setDashboardData(nextData);
-    setLoadIssues(nextIssues);
-    setIsLoading(false);
   };
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      fetchDashboard();
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, []);
+  const loadIssues = queryData?.issues ?? [];
+  const error = queryError
+    ? t('dashboard.loadError', { defaultValue: 'Unable to load dashboard data.' })
+    : '';
 
   const systemOverview = dashboardData.systemOverview || {};
   const payments = dashboardData.payments;

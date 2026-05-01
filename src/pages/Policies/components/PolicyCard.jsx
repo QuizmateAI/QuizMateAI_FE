@@ -12,6 +12,12 @@ const ACCENT_GRADIENTS = {
   violet: 'from-violet-500/15 to-violet-500/5 dark:from-violet-400/20 dark:to-violet-500/5',
   rose: 'from-rose-500/15 to-rose-500/5 dark:from-rose-400/20 dark:to-rose-500/5',
   sky: 'from-sky-500/15 to-sky-500/5 dark:from-sky-400/20 dark:to-sky-500/5',
+  blue: 'from-blue-500/15 to-blue-500/5 dark:from-blue-400/20 dark:to-blue-500/5',
+  teal: 'from-teal-500/15 to-teal-500/5 dark:from-teal-400/20 dark:to-teal-500/5',
+  pink: 'from-pink-500/15 to-pink-500/5 dark:from-pink-400/20 dark:to-pink-500/5',
+  orange: 'from-orange-500/15 to-orange-500/5 dark:from-orange-400/20 dark:to-orange-500/5',
+  lime: 'from-lime-500/15 to-lime-500/5 dark:from-lime-400/20 dark:to-lime-500/5',
+  fuchsia: 'from-fuchsia-500/15 to-fuchsia-500/5 dark:from-fuchsia-400/20 dark:to-fuchsia-500/5',
 };
 
 const ACCENT_BORDERS = {
@@ -21,6 +27,12 @@ const ACCENT_BORDERS = {
   violet: 'border-violet-200 dark:border-violet-900/50 group-hover:border-violet-400 dark:group-hover:border-violet-500',
   rose: 'border-rose-200 dark:border-rose-900/50 group-hover:border-rose-400 dark:group-hover:border-rose-500',
   sky: 'border-sky-200 dark:border-sky-900/50 group-hover:border-sky-400 dark:group-hover:border-sky-500',
+  blue: 'border-blue-200 dark:border-blue-900/50 group-hover:border-blue-400 dark:group-hover:border-blue-500',
+  teal: 'border-teal-200 dark:border-teal-900/50 group-hover:border-teal-400 dark:group-hover:border-teal-500',
+  pink: 'border-pink-200 dark:border-pink-900/50 group-hover:border-pink-400 dark:group-hover:border-pink-500',
+  orange: 'border-orange-200 dark:border-orange-900/50 group-hover:border-orange-400 dark:group-hover:border-orange-500',
+  lime: 'border-lime-200 dark:border-lime-900/50 group-hover:border-lime-400 dark:group-hover:border-lime-500',
+  fuchsia: 'border-fuchsia-200 dark:border-fuchsia-900/50 group-hover:border-fuchsia-400 dark:group-hover:border-fuchsia-500',
 };
 
 const ACCENT_ICON = {
@@ -30,6 +42,12 @@ const ACCENT_ICON = {
   violet: 'text-violet-600 dark:text-violet-400',
   rose: 'text-rose-600 dark:text-rose-400',
   sky: 'text-sky-600 dark:text-sky-400',
+  blue: 'text-blue-600 dark:text-blue-400',
+  teal: 'text-teal-600 dark:text-teal-400',
+  pink: 'text-pink-600 dark:text-pink-400',
+  orange: 'text-orange-600 dark:text-orange-400',
+  lime: 'text-lime-600 dark:text-lime-400',
+  fuchsia: 'text-fuchsia-600 dark:text-fuchsia-400',
 };
 
 export default function PolicyCard({ policy }) {

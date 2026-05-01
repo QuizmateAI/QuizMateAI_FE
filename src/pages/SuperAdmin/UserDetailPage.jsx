@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, User, LayoutDashboard, FolderKanban, UsersRound,
   Activity, CreditCard, ChevronDown, ChevronRight, User as UserIcon,
@@ -148,23 +149,86 @@ function UserDetailPage() {
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [activeTab, setActiveTab] = useState('overview');
-  const [user, setUser] = useState(null);
-  const [workspaces, setWorkspaces] = useState([]);
-  const [groups, setGroups] = useState([]);
-  const [subscription, setSubscription] = useState(null);
-  const [logs, setLogs] = useState([]);
   const [workspaceSnapshots, setWorkspaceSnapshots] = useState({});
   const [expandedWorkspace, setExpandedWorkspace] = useState(null);
   const [expandedGroup, setExpandedGroup] = useState(null);
   const [groupDetails, setGroupDetails] = useState({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const workspaceSnapshotsRef = useRef({});
+
+  // Top-level fetches → React Query so revisiting this user (or switching tabs)
+  // hits cache and stays under the configured staleTime instead of refetching.
+  const userQuery = useQuery({
+    queryKey: ['superAdmin', 'user', userId],
+    queryFn: async () => {
+      const res = await getUserById(userId);
+      return res?.data ?? res ?? null;
+    },
+    enabled: Boolean(userId),
+  });
+  const user = userQuery.data ?? null;
+  const loading = userQuery.isLoading;
+
+  const workspacesQuery = useQuery({
+    queryKey: ['superAdmin', 'user', userId, 'workspaces'],
+    queryFn: async () => unwrapApiList(await getWorkspacesByUserId(userId, 0, 50)),
+    enabled: Boolean(user) && (activeTab === 'overview' || activeTab === 'workspaces'),
+  });
+  const workspaces = workspacesQuery.data ?? [];
+
+  const groupsQuery = useQuery({
+    queryKey: ['superAdmin', 'user', userId, 'groups'],
+    queryFn: async () => {
+      const res = await getGroupsByUserId(userId);
+      const data = res?.data ?? res;
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: Boolean(user) && (activeTab === 'overview' || activeTab === 'groups'),
+  });
+  const groups = groupsQuery.data ?? [];
+
+  const subscriptionQuery = useQuery({
+    queryKey: ['superAdmin', 'user', userId, 'subscription'],
+    queryFn: async () => {
+      const res = await getUserSubscription(userId);
+      return res?.data ?? res ?? null;
+    },
+    enabled: Boolean(user) && (activeTab === 'overview' || activeTab === 'subscription'),
+  });
+  const subscription = subscriptionQuery.data ?? null;
   const subscriptionPlanName = subscription?.plan?.displayName || subscription?.plan?.planName;
+
+  const logsQuery = useQuery({
+    queryKey: ['superAdmin', 'user', userId, 'logs'],
+    queryFn: async () => {
+      const res = await getAuditLogs(userId, null, 0, 50);
+      const data = res?.data ?? res;
+      return data?.content ?? (Array.isArray(data) ? data : []);
+    },
+    enabled: Boolean(user) && activeTab === 'logs',
+  });
+  const logs = logsQuery.data ?? [];
 
   useEffect(() => {
     workspaceSnapshotsRef.current = workspaceSnapshots;
   }, [workspaceSnapshots]);
+
+  // Per-item caches (workspaceSnapshots, groupDetails) are keyed by workspaceId,
+  // so they must be cleared whenever the page switches users.
+  useEffect(() => {
+    setWorkspaceSnapshots({});
+    setExpandedWorkspace(null);
+    setExpandedGroup(null);
+    setGroupDetails({});
+  }, [userId]);
+
+  useEffect(() => {
+    if (userQuery.error) {
+      setError(userQuery.error?.message || t('userDetail.loadError'));
+    } else {
+      setError('');
+    }
+  }, [userQuery.error, t]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -172,59 +236,6 @@ function UserDetailPage() {
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit',
     });
-  };
-
-  const fetchUser = async () => {
-    try {
-      const res = await getUserById(userId);
-      setUser(res?.data ?? res);
-    } catch (err) {
-      setError(err?.message || t('userDetail.loadError'));
-    }
-  };
-
-  const fetchWorkspaces = async () => {
-    try {
-      const res = await getWorkspacesByUserId(userId, 0, 50);
-      const list = unwrapApiList(res);
-      setWorkspaces(list);
-    } catch (err) {
-      console.error('Fetch workspaces:', err);
-      setWorkspaces([]);
-    }
-  };
-
-  const fetchGroups = async () => {
-    try {
-      const res = await getGroupsByUserId(userId);
-      const data = res?.data ?? res;
-      setGroups(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Fetch groups:', err);
-      setGroups([]);
-    }
-  };
-
-  const fetchSubscription = async () => {
-    try {
-      const res = await getUserSubscription(userId);
-      setSubscription(res?.data ?? res);
-    } catch (err) {
-      console.error('Fetch subscription:', err);
-      setSubscription(null);
-    }
-  };
-
-  const fetchLogs = async () => {
-    try {
-      const res = await getAuditLogs(userId, null, 0, 50);
-      const data = res?.data ?? res;
-      const list = data?.content ?? (Array.isArray(data) ? data : []);
-      setLogs(list);
-    } catch (err) {
-      console.error('Fetch logs:', err);
-      setLogs([]);
-    }
   };
 
   const fetchWorkspaceSnapshot = async (workspace, force = false) => {
@@ -298,34 +309,6 @@ function UserDetailPage() {
       setGroupDetails((prev) => ({ ...prev, [workspaceId]: null }));
     }
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(true);
-      setError('');
-      setWorkspaceSnapshots({});
-      setExpandedWorkspace(null);
-      setExpandedGroup(null);
-      setGroupDetails({});
-      fetchUser().finally(() => setLoading(false));
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [userId]);
-
-  useEffect(() => {
-    if (!user) return;
-    const timer = setTimeout(() => {
-      if (activeTab === 'overview') {
-        fetchWorkspaces();
-        fetchGroups();
-        fetchSubscription();
-      } else if (activeTab === 'workspaces') fetchWorkspaces();
-      else if (activeTab === 'groups') fetchGroups();
-      else if (activeTab === 'logs') fetchLogs();
-      else if (activeTab === 'subscription') fetchSubscription();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [activeTab, user]);
 
   useEffect(() => {
     if (activeTab !== 'workspaces' || workspaces.length === 0) return undefined;

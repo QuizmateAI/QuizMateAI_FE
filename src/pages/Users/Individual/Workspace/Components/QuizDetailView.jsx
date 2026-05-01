@@ -347,33 +347,34 @@ function QuizDetailView({
     const requestPromise = (async () => {
       let nextQuizMeta = null;
       let nextStatus = quiz?.status || "DRAFT";
-      let nextSections = [];
-      let nextExpandedSections = {};
-      let nextQuestionsMap = {};
       let nextAnswersMap = {};
 
-      // Luôn đồng bộ metadata/status mới nhất để tránh giữ trạng thái cũ từ prop.
-      try {
-        const fullRes = await getQuizFull(quiz.quizId);
-        if (fullRes?.data) {
-          nextQuizMeta = fullRes.data;
-          nextStatus = fullRes.data.status || nextStatus;
-        }
-      } catch (fullErr) {
-        console.error("Lỗi khi tải metadata quiz:", fullErr);
+      // Bước 1: chạy song song metadata + sections (chúng độc lập với nhau).
+      const [fullSettled, sectSettled] = await Promise.allSettled([
+        getQuizFull(quiz.quizId),
+        getSectionsByQuiz(quiz.quizId),
+      ]);
+
+      if (fullSettled.status === "fulfilled" && fullSettled.value?.data) {
+        nextQuizMeta = fullSettled.value.data;
+        nextStatus = fullSettled.value.data.status || nextStatus;
+      } else if (fullSettled.status === "rejected") {
+        console.error("Lỗi khi tải metadata quiz:", fullSettled.reason);
       }
 
-      // Bước 1: Lấy sections
-      const sectRes = await getSectionsByQuiz(quiz.quizId);
-      const sectionList = sectRes.data || [];
-      nextSections = sectionList;
-
-      // Tự động mở rộng section đầu tiên
-      if (sectionList.length > 0) {
-        nextExpandedSections = { [sectionList[0].sectionId]: true };
+      const sectionList = sectSettled.status === "fulfilled"
+        ? (sectSettled.value?.data || [])
+        : [];
+      if (sectSettled.status === "rejected") {
+        console.error("Lỗi khi tải sections:", sectSettled.reason);
       }
 
-      // Bước 2: Lấy questions cho mỗi section
+      const nextSections = sectionList;
+      const nextExpandedSections = sectionList.length > 0
+        ? { [sectionList[0].sectionId]: true }
+        : {};
+
+      // Bước 2: Lấy questions cho mỗi section (parallel).
       const sectionQuestionEntries = await Promise.all(
         sectionList.map(async (section) => {
           try {
@@ -386,11 +387,22 @@ function QuizDetailView({
         })
       );
 
+      const nextQuestionsMap = {};
       sectionQuestionEntries.forEach(([sectionId, questions]) => {
         nextQuestionsMap[sectionId] = questions;
       });
 
-      // Chỉ lấy đáp án sau khi user đã hoàn thành bài để tránh lộ đáp án sớm.
+      // Render sớm: cho user thấy đề ngay khi có sections + questions, đáp án nạp ở background.
+      if (detailRequestRunRef.current === runId) {
+        setQuizMeta(nextQuizMeta);
+        setCurrentStatus(nextStatus);
+        setSections(nextSections);
+        setExpandedSections(nextExpandedSections);
+        setQuestionsMap(nextQuestionsMap);
+        setLoading(false);
+      }
+
+      // Bước 3: Đáp án — chỉ tải khi đã hoàn thành bài, chạy nền.
       if (canViewAnswers) {
         const allQuestions = sectionQuestionEntries.flatMap(([, questions]) => questions || []);
         const answerEntries = await Promise.all(
@@ -408,6 +420,10 @@ function QuizDetailView({
         answerEntries.forEach(([questionId, answers]) => {
           nextAnswersMap[questionId] = answers;
         });
+
+        if (detailRequestRunRef.current === runId) {
+          setAnswersMap(nextAnswersMap);
+        }
       }
 
       return {

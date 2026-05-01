@@ -1,3 +1,4 @@
+import { startTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,13 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
   const location = useLocation();
   const { t } = useTranslation();
   const brandName = 'QuizMateAI';
+
+  // Wrap tab navigation in a transition so React 19 keeps the previous tab's
+  // rendered output visible while the new chunk/data loads, instead of
+  // unmounting to a Suspense fallback (the visible 1-2s "khựng").
+  const goTo = (to) => {
+    startTransition(() => navigate(to));
+  };
 
   const handleLogout = () => {
     logout();
@@ -81,7 +89,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => navigate(item.to)}
+                    onClick={() => goTo(item.to)}
                     title={collapsed ? t(item.labelKey, item.defaultLabel) : undefined}
                     className={cn(
                       'group relative flex w-full items-center gap-3 rounded-[20px] px-3 py-3 text-left text-sm font-medium transition-all',

@@ -5,6 +5,7 @@ import {
   updateUserPreferredLanguage,
   updateUserThemeMode,
 } from '@/api/ProfilePreferencesAPI';
+import { __resetForTests, setAccessToken } from '@/utils/tokenStorage';
 
 vi.mock('@/utils/userCache', () => ({
   clearUserCache: vi.fn(),
@@ -14,6 +15,7 @@ describe('ProfilePreferencesAPI', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    __resetForTests();
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
   });
 
@@ -21,12 +23,10 @@ describe('ProfilePreferencesAPI', () => {
     vi.unstubAllGlobals();
   });
 
-  it('reads the stored auth token with jwt_token fallback', () => {
-    localStorage.setItem('jwt_token', 'legacy-token');
+  it('reads the stored auth token from the in-memory token store', () => {
+    expect(getStoredToken()).toBe('');
 
-    expect(getStoredToken()).toBe('legacy-token');
-
-    localStorage.setItem('accessToken', 'access-token');
+    setAccessToken('access-token');
 
     expect(getStoredToken()).toBe('access-token');
   });
@@ -39,7 +39,7 @@ describe('ProfilePreferencesAPI', () => {
   });
 
   it('persists normalized theme mode with the auth header', async () => {
-    localStorage.setItem('accessToken', 'access-token');
+    setAccessToken('access-token');
 
     await expect(updateUserThemeMode(' Dark ')).resolves.toBe('dark');
 
@@ -60,7 +60,7 @@ describe('ProfilePreferencesAPI', () => {
 
   it('returns null instead of throwing when preference sync fails', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    localStorage.setItem('accessToken', 'access-token');
+    setAccessToken('access-token');
     fetch.mockResolvedValueOnce({ ok: false, status: 500 });
 
     await expect(updateUserPreferredLanguage('EN')).resolves.toBeNull();

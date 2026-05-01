@@ -5,6 +5,7 @@ import { Ban, Clock, Mail, ShieldX, LogOut, FileText } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { fetchMyBanStatus } from '@/api/PolicyAPI';
 import { Button } from '@/components/ui/button';
+import { clearTokens } from '@/utils/tokenStorage';
 import PolicyHeader from './components/PolicyHeader';
 import Footer from '@/pages/LandingPage/components/Footer';
 
@@ -70,9 +71,12 @@ export default function AccountSuspendedPage() {
   const remaining = primary?.expireAt ? computeRemaining(primary.expireAt) : null;
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    clearTokens();
+    try {
+      localStorage.removeItem('user');
+    } catch {
+      /* storage disabled */
+    }
     navigate('/login');
   };
 

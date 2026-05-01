@@ -1,9 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, History, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  AlignLeft,
+  CalendarDays,
+  ExternalLink,
+  FileText,
+  Hash,
+  History,
+  Link2,
+  Loader2,
+  Palette,
+  Pencil,
+  Plus,
+  RefreshCw,
+  ScrollText,
+  Send,
+  Sparkles,
+  StickyNote,
+  Tag,
+  Trash2,
+  Type as TypeIcon,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -16,7 +36,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -30,6 +49,7 @@ import {
   fetchAllPolicies,
   fetchPolicyById,
   fetchPolicyVersions,
+  publishPolicy,
   updatePolicy,
 } from '@/api/PolicyAPI';
 import {
@@ -39,6 +59,12 @@ import {
   SuperAdminEmptyState,
   getSuperAdminStatusBadgeClass,
 } from './Components/SuperAdminSurface';
+import {
+  ColorPicker,
+  Field,
+  IconPicker,
+  SectionHeader,
+} from './Components/PolicyEditDialogParts';
 
 const POLICY_TYPES = [
   'TERMS_OF_SERVICE',
@@ -49,11 +75,11 @@ const POLICY_TYPES = [
   'COPYRIGHT_POLICY',
 ];
 
-const STATUSES = ['DRAFT', 'ACTIVE', 'ARCHIVED'];
-const ACCENT_COLORS = ['indigo', 'emerald', 'amber', 'violet', 'rose', 'sky'];
+// Helpers (SectionHeader, Field, IconPicker, ColorPicker) and the accent
+// + icon-quick-pick lookups now live in ./Components/PolicyEditDialogParts.
 
 const EMPTY_FORM = {
-  type: 'TERMS_OF_SERVICE',
+  type: '',
   slug: '',
   title: '',
   summary: '',
@@ -79,88 +105,115 @@ function formatDate(value) {
   }
 }
 
+const POLICIES_QUERY_KEY = ['superAdmin', 'policies'];
+
 export default function PoliciesManagement() {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
 
-  const [policies, setPolicies] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // policyId or 'new' or null
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [contentLoading, setContentLoading] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(null);
   const [versions, setVersions] = useState([]);
+  // Cache `content` per policyId to skip refetch when re-opening the same policy
+  const [contentCache, setContentCache] = useState({});
 
-  const reload = async () => {
-    setLoading(true);
-    try {
+  const {
+    data: policies = [],
+    isLoading: loading,
+    error: policiesError,
+  } = useQuery({
+    queryKey: POLICIES_QUERY_KEY,
+    queryFn: async () => {
       const data = await fetchAllPolicies();
-      setPolicies(Array.isArray(data) ? data : []);
-    } catch (err) {
-      showToast(getErrorMessage(err), 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(data) ? data : [];
+    },
+  });
 
   useEffect(() => {
-    reload();
-  }, []);
+    if (policiesError) showError(getErrorMessage(t, policiesError));
+  }, [policiesError, showError, t]);
+
+  const reload = () => queryClient.invalidateQueries({ queryKey: POLICIES_QUERY_KEY });
 
   const openCreate = () => {
     setForm(EMPTY_FORM);
     setEditing('new');
   };
 
-  const openEdit = async (policyId) => {
-    try {
-      const detail = await fetchPolicyById(policyId);
-      if (!detail) return;
-      setForm({
-        type: detail.type ?? 'TERMS_OF_SERVICE',
-        slug: detail.slug ?? '',
-        title: detail.title ?? '',
-        summary: detail.summary ?? '',
-        content: detail.content ?? '',
-        version: detail.version ?? '1.0',
-        status: detail.status ?? 'DRAFT',
-        effectiveDate: detail.effectiveDate ?? '',
-        iconName: detail.iconName ?? 'FileText',
-        accentColor: detail.accentColor ?? 'indigo',
-        displayOrder: detail.displayOrder ?? 0,
-        changelog: '',
-      });
-      setEditing(policyId);
-    } catch (err) {
-      showToast(getErrorMessage(err), 'error');
-    }
+  const openEdit = (policyId) => {
+    // Open instantly with summary data from the list (everything except `content`).
+    const summary = policies.find((p) => p.policyId === policyId);
+    if (!summary) return;
+
+    const cachedContent = contentCache[policyId];
+    setForm({
+      type: summary.type ?? 'TERMS_OF_SERVICE',
+      slug: summary.slug ?? '',
+      title: summary.title ?? '',
+      summary: summary.summary ?? '',
+      content: cachedContent ?? '',
+      version: summary.version ?? '1.0',
+      status: summary.status ?? 'DRAFT',
+      effectiveDate: summary.effectiveDate ?? '',
+      iconName: summary.iconName ?? 'FileText',
+      accentColor: summary.accentColor ?? 'indigo',
+      displayOrder: summary.displayOrder ?? 0,
+      changelog: '',
+    });
+    setEditing(policyId);
+
+    if (cachedContent != null) return; // Already have content cached → no refetch.
+
+    setContentLoading(true);
+    fetchPolicyById(policyId)
+      .then((detail) => {
+        if (!detail) return;
+        const nextContent = detail.content ?? '';
+        setContentCache((prev) => ({ ...prev, [policyId]: nextContent }));
+        // Only fill in if user hasn't started typing in the textarea already.
+        setForm((f) => (f.content ? f : { ...f, content: nextContent }));
+      })
+      .catch((err) => showError(getErrorMessage(t, err)))
+      .finally(() => setContentLoading(false));
   };
 
   const closeDialog = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setContentLoading(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload = {
+      const basePayload = {
         ...form,
         displayOrder: Number(form.displayOrder) || 0,
         effectiveDate: form.effectiveDate || null,
       };
       if (editing === 'new') {
-        await createPolicy(payload);
-        showToast(t('policiesAdmin.createSuccess', 'Policy created'), 'success');
+        await createPolicy({ ...basePayload, status: 'DRAFT', version: '1.0' });
+        showSuccess(t('policiesAdmin.createSuccess', 'Policy created'));
       } else {
-        await updatePolicy(editing, payload);
-        showToast(t('policiesAdmin.updateSuccess', 'Policy updated'), 'success');
+        const { version: _v, status: _s, ...updatePayload } = basePayload;
+        await updatePolicy(editing, updatePayload);
+        // Invalidate cached content for this policy — server bumped the version.
+        setContentCache((prev) => {
+          const next = { ...prev };
+          delete next[editing];
+          return next;
+        });
+        showSuccess(t('policiesAdmin.updateSuccess', 'Policy updated'));
       }
       closeDialog();
       reload();
     } catch (err) {
-      showToast(getErrorMessage(err), 'error');
+      showError(getErrorMessage(t, err));
     } finally {
       setSaving(false);
     }
@@ -170,10 +223,21 @@ export default function PoliciesManagement() {
     if (!window.confirm(t('policiesAdmin.archiveConfirm'))) return;
     try {
       await archivePolicy(policyId);
-      showToast(t('policiesAdmin.archiveSuccess', 'Policy archived'), 'success');
+      showSuccess(t('policiesAdmin.archiveSuccess', 'Policy archived'));
       reload();
     } catch (err) {
-      showToast(getErrorMessage(err), 'error');
+      showError(getErrorMessage(t, err));
+    }
+  };
+
+  const handlePublish = async (policyId) => {
+    if (!window.confirm(t('policiesAdmin.publishConfirm'))) return;
+    try {
+      await publishPolicy(policyId);
+      showSuccess(t('policiesAdmin.publishSuccess', 'Policy published'));
+      reload();
+    } catch (err) {
+      showError(getErrorMessage(t, err));
     }
   };
 
@@ -183,7 +247,7 @@ export default function PoliciesManagement() {
       setVersions(Array.isArray(data) ? data : []);
       setVersionsOpen(policyId);
     } catch (err) {
-      showToast(getErrorMessage(err), 'error');
+      showError(getErrorMessage(t, err));
     }
   };
 
@@ -235,7 +299,29 @@ export default function PoliciesManagement() {
                     </div>
                   </TableCell>
                   <TableCell className="text-xs">{p.type}</TableCell>
-                  <TableCell>{p.version}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      {p.publishedVersion && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 dark:bg-emerald-400/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/20"
+                          title={t('policiesAdmin.publishedVersionTitle')}
+                        >
+                          {p.publishedVersion}
+                        </span>
+                      )}
+                      {p.hasUnpublishedChanges && p.publishedVersion && (
+                        <span className="text-slate-400">→</span>
+                      )}
+                      {(p.hasUnpublishedChanges || !p.publishedVersion) && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 dark:bg-amber-400/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/20"
+                          title={t('policiesAdmin.draftVersionTitle')}
+                        >
+                          {p.version}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getSuperAdminStatusBadgeClass(p.status, isDarkMode)}`}
@@ -273,6 +359,16 @@ export default function PoliciesManagement() {
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
+                      {p.status === 'DRAFT' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title={t('policiesAdmin.publish')}
+                          onClick={() => handlePublish(p.policyId)}
+                        >
+                          <Send className="w-3.5 h-3.5 text-emerald-500" />
+                        </Button>
+                      )}
                       {p.status !== 'ARCHIVED' && (
                         <Button
                           variant="ghost"
@@ -293,129 +389,260 @@ export default function PoliciesManagement() {
       </SuperAdminPanel>
 
       <Dialog open={editing !== null} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editing === 'new'
-                ? t('policiesAdmin.createDialog')
-                : t('policiesAdmin.editDialog')}
-            </DialogTitle>
-            <DialogDescription>{form.title}</DialogDescription>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>{t('policiesAdmin.field.type')}</Label>
-              <select
-                disabled={editing !== 'new'}
-                value={form.type}
-                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                className="mt-1 w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-              >
-                {POLICY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>{t('policiesAdmin.field.slug')}</Label>
-              <Input
-                value={form.slug}
-                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                placeholder="terms-of-service"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label>{t('policiesAdmin.field.title')}</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label>{t('policiesAdmin.field.summary')}</Label>
-              <Input
-                value={form.summary}
-                onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>{t('policiesAdmin.field.version')}</Label>
-              <Input
-                value={form.version}
-                onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>{t('policiesAdmin.field.status')}</Label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                className="mt-1 w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-              >
-                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>{t('policiesAdmin.field.effectiveDate')}</Label>
-              <Input
-                type="date"
-                value={form.effectiveDate || ''}
-                onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>{t('policiesAdmin.field.displayOrder')}</Label>
-              <Input
-                type="number"
-                value={form.displayOrder}
-                onChange={(e) => setForm((f) => ({ ...f, displayOrder: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>{t('policiesAdmin.field.iconName')}</Label>
-              <Input
-                value={form.iconName}
-                onChange={(e) => setForm((f) => ({ ...f, iconName: e.target.value }))}
-                placeholder="Shield, FileText, ..."
-              />
-            </div>
-            <div>
-              <Label>{t('policiesAdmin.field.accentColor')}</Label>
-              <select
-                value={form.accentColor}
-                onChange={(e) => setForm((f) => ({ ...f, accentColor: e.target.value }))}
-                className="mt-1 w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-              >
-                {ACCENT_COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <Label>{t('policiesAdmin.field.content')}</Label>
-              <textarea
-                value={form.content}
-                onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-                rows={16}
-                className="mt-1 w-full px-3 py-2 rounded-md border border-input bg-background text-sm font-mono leading-relaxed"
-                placeholder="# Heading&#10;&#10;Paragraph..."
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label>{t('policiesAdmin.field.changelog')}</Label>
-              <Input
-                value={form.changelog}
-                onChange={(e) => setForm((f) => ({ ...f, changelog: e.target.value }))}
-                placeholder="Cập nhật mục 6 về xử phạt"
-              />
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-hidden p-0 gap-0 border-slate-200/80 dark:border-slate-800/80">
+          {/* Header */}
+          <div className="relative px-6 pt-6 pb-5 border-b border-slate-200/70 dark:border-slate-800/70 bg-gradient-to-br from-indigo-50/60 via-white to-white dark:from-indigo-950/30 dark:via-slate-950 dark:to-slate-950">
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 rounded-xl bg-indigo-500/10 dark:bg-indigo-400/10 p-2.5 ring-1 ring-indigo-500/20 dark:ring-indigo-400/20 animate-in zoom-in-50 fade-in duration-300">
+                <ScrollText className="h-5 w-5 text-indigo-600 dark:text-indigo-300" strokeWidth={2.25} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                  {editing === 'new'
+                    ? t('policiesAdmin.createDialog')
+                    : t('policiesAdmin.editDialog')}
+                </DialogTitle>
+                <DialogDescription className="mt-0.5 text-sm text-slate-500 dark:text-slate-400 truncate">
+                  {form.title || t('policiesAdmin.subtitle')}
+                </DialogDescription>
+              </div>
+              {editing !== 'new' && form.type && (
+                <span
+                  className="hidden sm:inline-flex shrink-0 items-center gap-1.5 rounded-full bg-slate-900/[0.04] dark:bg-white/[0.06] px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 ring-1 ring-slate-900/5 dark:ring-white/10 animate-in fade-in slide-in-from-right-2 duration-300"
+                  title={t('policiesAdmin.field.type')}
+                >
+                  <Tag className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-300" />
+                  <span className="font-mono tracking-tight">{form.type}</span>
+                </span>
+              )}
             </div>
           </div>
 
-          <DialogFooter>
+          {/* Body */}
+          <div className="px-6 py-5 space-y-7 overflow-y-auto max-h-[calc(92vh-9rem-4rem)]">
+            {/* Section 1 — Identity */}
+            <section
+              className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+              style={{ animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+            >
+              <SectionHeader
+                icon={<Tag className="h-3.5 w-3.5" />}
+                tone="indigo"
+                title={t('policiesAdmin.section.identity')}
+              />
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {editing === 'new' && (
+                  <Field icon={<TypeIcon className="h-3.5 w-3.5" />} label={t('policiesAdmin.field.type')}>
+                    <Input
+                      list="policy-type-suggestions"
+                      value={form.type}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          type: e.target.value
+                            .toUpperCase()
+                            .replace(/[^A-Z0-9_]/g, '_')
+                            .replace(/_+/g, '_'),
+                        }))
+                      }
+                      placeholder="TERMS_OF_SERVICE"
+                      className="font-mono"
+                    />
+                    <datalist id="policy-type-suggestions">
+                      {POLICY_TYPES.map((pt) => (
+                        <option key={pt} value={pt} />
+                      ))}
+                    </datalist>
+                    <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      {t('policiesAdmin.typeHint')}
+                    </p>
+                  </Field>
+                )}
+                <Field icon={<Link2 className="h-3.5 w-3.5" />} label={t('policiesAdmin.field.slug')}>
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                    placeholder="terms-of-service"
+                    className="font-mono"
+                  />
+                </Field>
+                {editing !== 'new' && (
+                  <Field icon={<Tag className="h-3.5 w-3.5" />} label={t('policiesAdmin.field.type')}>
+                    <div className="flex h-9 items-center gap-2 rounded-md border border-dashed border-slate-300/80 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-900/40 px-3">
+                      <Tag className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-300 shrink-0" />
+                      <span className="font-mono text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+                        {form.type}
+                      </span>
+                      <span className="ml-auto text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        {t('policiesAdmin.locked')}
+                      </span>
+                    </div>
+                  </Field>
+                )}
+              </div>
+            </section>
+
+            {/* Section 2 — Display */}
+            <section
+              className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+              style={{
+                animationDelay: '60ms',
+                animationFillMode: 'both',
+                animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
+              <SectionHeader
+                icon={<Sparkles className="h-3.5 w-3.5" />}
+                tone="emerald"
+                title={t('policiesAdmin.section.display')}
+              />
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field
+                  icon={<TypeIcon className="h-3.5 w-3.5" />}
+                  label={t('policiesAdmin.field.title')}
+                  className="md:col-span-2"
+                >
+                  <Input
+                    value={form.title}
+                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                    placeholder="Điều khoản sử dụng"
+                  />
+                </Field>
+                <Field
+                  icon={<AlignLeft className="h-3.5 w-3.5" />}
+                  label={t('policiesAdmin.field.summary')}
+                  className="md:col-span-2"
+                >
+                  <Input
+                    value={form.summary}
+                    onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
+                    placeholder="Tóm tắt 1-2 câu hiển thị trên trang công khai"
+                  />
+                </Field>
+                <Field
+                  icon={<Sparkles className="h-3.5 w-3.5" />}
+                  label={t('policiesAdmin.field.iconName')}
+                  className="md:col-span-2"
+                >
+                  <IconPicker
+                    value={form.iconName}
+                    onChange={(name) => setForm((f) => ({ ...f, iconName: name }))}
+                    accent={form.accentColor || 'indigo'}
+                    typeHint={t('policiesAdmin.iconHint')}
+                  />
+                </Field>
+                <Field
+                  icon={<Palette className="h-3.5 w-3.5" />}
+                  label={t('policiesAdmin.field.accentColor')}
+                  className="md:col-span-2"
+                >
+                  <ColorPicker
+                    value={form.accentColor}
+                    onChange={(c) => setForm((f) => ({ ...f, accentColor: c }))}
+                  />
+                </Field>
+              </div>
+            </section>
+
+            {/* Section 3 — Schedule */}
+            <section
+              className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+              style={{
+                animationDelay: '120ms',
+                animationFillMode: 'both',
+                animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
+              <SectionHeader
+                icon={<CalendarDays className="h-3.5 w-3.5" />}
+                tone="amber"
+                title={t('policiesAdmin.section.schedule')}
+              />
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field icon={<CalendarDays className="h-3.5 w-3.5" />} label={t('policiesAdmin.field.effectiveDate')}>
+                  <Input
+                    type="date"
+                    value={form.effectiveDate || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))}
+                  />
+                </Field>
+                <Field icon={<Hash className="h-3.5 w-3.5" />} label={t('policiesAdmin.field.displayOrder')}>
+                  <Input
+                    type="number"
+                    value={form.displayOrder}
+                    onChange={(e) => setForm((f) => ({ ...f, displayOrder: e.target.value }))}
+                  />
+                </Field>
+              </div>
+            </section>
+
+            {/* Section 4 — Content */}
+            <section
+              className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+              style={{
+                animationDelay: '180ms',
+                animationFillMode: 'both',
+                animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
+              <SectionHeader
+                icon={<FileText className="h-3.5 w-3.5" />}
+                tone="violet"
+                title={t('policiesAdmin.section.content')}
+              />
+              <div className="mt-3 space-y-4">
+                <Field
+                  icon={<FileText className="h-3.5 w-3.5" />}
+                  label={t('policiesAdmin.field.content')}
+                  badge={
+                    contentLoading && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-normal text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-3 w-3 animate-spin text-indigo-500 dark:text-indigo-300" />
+                        {t('policiesAdmin.contentLoading')}
+                      </span>
+                    )
+                  }
+                >
+                  <textarea
+                    value={form.content}
+                    onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+                    rows={14}
+                    disabled={contentLoading}
+                    className="w-full px-3.5 py-3 rounded-md border border-input bg-transparent text-sm font-mono leading-relaxed shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-wait resize-y"
+                    placeholder={contentLoading ? t('policiesAdmin.contentLoading') : '# Heading\n\nParagraph...'}
+                  />
+                </Field>
+                <Field icon={<StickyNote className="h-3.5 w-3.5" />} label={t('policiesAdmin.field.changelog')}>
+                  <Input
+                    value={form.changelog}
+                    onChange={(e) => setForm((f) => ({ ...f, changelog: e.target.value }))}
+                    placeholder="Cập nhật mục 6 về xử phạt"
+                  />
+                </Field>
+              </div>
+            </section>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-slate-200/70 dark:border-slate-800/70 bg-slate-50/60 dark:bg-slate-950/60 flex items-center justify-end gap-2">
             <Button variant="outline" onClick={closeDialog} disabled={saving}>
               {t('policiesAdmin.cancel')}
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {t('policiesAdmin.save')}
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="min-w-[120px] transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.015] active:scale-[0.985]"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('policiesAdmin.saving', 'Đang lưu...')}
+                </>
+              ) : (
+                t('policiesAdmin.save')
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -393,7 +393,7 @@ function MockTestListView({
                             {t("quizListView.cards.processing", "Generating quiz")}
                           </p>
                           <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                            {processingPercent}%
+                            {Math.round(processingPercent)}%
                           </span>
                         </div>
                         <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,13 +76,15 @@ function formatDate(value) {
   }
 }
 
+const VIOLATIONS_QUERY_KEY = (statusFilter) => ['superAdmin', 'violations', statusFilter || 'all'];
+const PAGE_SIZE = 20;
+
 export default function ViolationsManagement() {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [page, setPage] = useState({ content: [], totalElements: 0, number: 0, size: 20 });
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(EMPTY_FORM);
@@ -89,31 +92,32 @@ export default function ViolationsManagement() {
   const [statusForm, setStatusForm] = useState(EMPTY_STATUS_FORM);
   const [saving, setSaving] = useState(false);
 
-  const reload = async (overrides = {}) => {
-    setLoading(true);
-    try {
+  const {
+    data: page = { content: [], totalElements: 0, number: 0, size: PAGE_SIZE },
+    isLoading: loading,
+    error: violationsError,
+  } = useQuery({
+    queryKey: VIOLATIONS_QUERY_KEY(statusFilter),
+    queryFn: async () => {
       const data = await fetchViolations({
-        status: overrides.status ?? statusFilter ?? undefined,
-        page: overrides.page ?? page.number,
-        size: page.size,
+        status: statusFilter || undefined,
+        page: 0,
+        size: PAGE_SIZE,
       });
-      setPage({
+      return {
         content: data?.content ?? [],
         totalElements: data?.totalElements ?? 0,
         number: data?.number ?? 0,
-        size: data?.size ?? 20,
-      });
-    } catch (err) {
-      showToast(getErrorMessage(err), 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+        size: data?.size ?? PAGE_SIZE,
+      };
+    },
+  });
 
   useEffect(() => {
-    reload({ status: statusFilter, page: 0 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+    if (violationsError) showToast(getErrorMessage(violationsError), 'error');
+  }, [violationsError, showToast]);
+
+  const reload = () => queryClient.invalidateQueries({ queryKey: VIOLATIONS_QUERY_KEY(statusFilter) });
 
   const handleCreate = async () => {
     setSaving(true);
