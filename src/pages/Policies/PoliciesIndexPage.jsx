@@ -16,7 +16,6 @@ export default function PoliciesIndexPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setStatus('loading');
     fetchPublicPolicies()
       .then((data) => {
         if (cancelled) return;

@@ -1070,6 +1070,10 @@ function QuizListView({
         key={resolvedQuizId}
         onClick={() => {
           if (isInteractionBlocked) return;
+          if (normalizedStatus === "ACTIVE" && !myAttempted) {
+            setExamStartQuiz(quiz);
+            return;
+          }
           onViewQuiz?.(quiz);
         }}
         className={`overflow-hidden rounded-[26px] border shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${
@@ -1196,7 +1200,7 @@ function QuizListView({
                       {t("quizListView.cards.processing", "Generating quiz")}
                     </span>
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                      {processingPercent}%
+                      {Math.round(processingPercent)}%
                     </span>
                   </div>
                   <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
@@ -1569,12 +1573,20 @@ function QuizListView({
                   tabIndex={isInteractionBlocked ? -1 : 0}
                   onClick={() => {
                     if (isInteractionBlocked) return;
+                    if (normalizedStatus === "ACTIVE" && !myAttempted) {
+                      setExamStartQuiz(quiz);
+                      return;
+                    }
                     onViewQuiz?.(quiz);
                   }}
                   onKeyDown={(event) => {
                     if (isInteractionBlocked) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
+                      if (normalizedStatus === "ACTIVE" && !myAttempted) {
+                        setExamStartQuiz(quiz);
+                        return;
+                      }
                       onViewQuiz?.(quiz);
                     }
                   }}
@@ -1666,7 +1678,7 @@ function QuizListView({
                   {isProcessing ? (
                     <div className="mt-4">
                       <div className="flex items-center justify-end gap-3">
-                        <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
+                        <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{Math.round(processingPercent)}%</span>
                       </div>
                       <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
                         <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />

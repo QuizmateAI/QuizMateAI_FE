@@ -132,10 +132,10 @@ export default function SuperAdminRecentPayments({ payments, statusMeta, locale,
           </tr>
         </thead>
         <tbody className={cn('divide-y', darkMode ? 'divide-slate-800/80' : 'divide-slate-100')}>
-          {payments.map((payment) => {
+          {payments.map((payment, index) => {
             const status = getPaymentStatus(payment);
             return (
-              <tr key={payment?.paymentId ?? payment?.orderId ?? Math.random()} className="align-middle">
+              <tr key={payment?.paymentId ?? payment?.orderId ?? `row-${index}`} className="align-middle">
                 <td className={cn('py-3 pr-4 font-semibold tabular-nums', darkMode ? 'text-white' : 'text-slate-900')}>
                   {getOrderLabel(payment)}
                 </td>

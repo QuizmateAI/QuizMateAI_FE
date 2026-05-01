@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -22,6 +22,12 @@ const ACCENT_GRADIENT_HERO = {
   violet: 'from-violet-500 via-fuchsia-500 to-pink-500',
   rose: 'from-rose-500 via-pink-500 to-orange-500',
   sky: 'from-sky-500 via-blue-500 to-indigo-500',
+  blue: 'from-blue-500 via-indigo-500 to-violet-500',
+  teal: 'from-teal-500 via-cyan-500 to-sky-500',
+  pink: 'from-pink-500 via-rose-500 to-fuchsia-500',
+  orange: 'from-orange-500 via-amber-500 to-yellow-500',
+  lime: 'from-lime-500 via-green-500 to-emerald-500',
+  fuchsia: 'from-fuchsia-500 via-purple-500 to-violet-500',
 };
 
 const ACCENT_BG_TINT = {
@@ -31,6 +37,12 @@ const ACCENT_BG_TINT = {
   violet: 'from-violet-100/50 dark:from-violet-950/30',
   rose: 'from-rose-100/50 dark:from-rose-950/30',
   sky: 'from-sky-100/50 dark:from-sky-950/30',
+  blue: 'from-blue-100/50 dark:from-blue-950/30',
+  teal: 'from-teal-100/50 dark:from-teal-950/30',
+  pink: 'from-pink-100/50 dark:from-pink-950/30',
+  orange: 'from-orange-100/50 dark:from-orange-950/30',
+  lime: 'from-lime-100/50 dark:from-lime-950/30',
+  fuchsia: 'from-fuchsia-100/50 dark:from-fuchsia-950/30',
 };
 
 const ACCENT_ICON_BG = {
@@ -40,6 +52,12 @@ const ACCENT_ICON_BG = {
   violet: 'bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white',
   rose: 'bg-gradient-to-br from-rose-500 to-pink-600 text-white',
   sky: 'bg-gradient-to-br from-sky-500 to-blue-600 text-white',
+  blue: 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white',
+  teal: 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white',
+  pink: 'bg-gradient-to-br from-pink-500 to-rose-600 text-white',
+  orange: 'bg-gradient-to-br from-orange-500 to-red-600 text-white',
+  lime: 'bg-gradient-to-br from-lime-500 to-green-600 text-white',
+  fuchsia: 'bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white',
 };
 
 function ReadingProgressBar({ accent }) {
@@ -76,10 +94,16 @@ export default function PolicyDetailPage() {
 
   const [policy, setPolicy] = useState(null);
   const [status, setStatus] = useState('loading');
+  const [trackedSlug, setTrackedSlug] = useState(slug);
+
+  if (trackedSlug !== slug) {
+    setTrackedSlug(slug);
+    setPolicy(null);
+    setStatus('loading');
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setStatus('loading');
     fetchPublicPolicyBySlug(slug)
       .then((data) => {
         if (cancelled) return;
@@ -99,10 +123,7 @@ export default function PolicyDetailPage() {
     };
   }, [slug]);
 
-  const headings = useMemo(
-    () => (policy?.content ? extractHeadings(policy.content) : []),
-    [policy?.content]
-  );
+  const headings = policy?.content ? extractHeadings(policy.content) : [];
 
   const i18nKey = policy ? `policies.categories.${policy.type}` : null;
   const displayTitle = policy ? t(i18nKey ? `${i18nKey}.title` : '', policy.title) : '';

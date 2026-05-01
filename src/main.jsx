@@ -8,6 +8,10 @@ import { DarkModeProvider } from './hooks/useDarkMode'
 import { i18nReady, preloadLanguage } from './i18n'
 import { RuntimeRecoveryScreen } from '@/components/system/RuntimeRecoveryBoundary'
 import { installRuntimeRecoveryListeners, tryScheduleRuntimeRecovery } from '@/lib/runtimeRecovery'
+// IMPORTANT: import api so its module-level configureRefresh wires up before the
+// token bootstrap below tries to call it.
+import './api/api'
+import { bootstrap as bootstrapTokenStorage } from '@/utils/tokenStorage'
 
 installRuntimeRecoveryListeners()
 
@@ -21,7 +25,11 @@ async function bootstrap() {
   const root = createRoot(rootElement)
 
   try {
-    await i18nReady
+    // i18n + access-token recovery in parallel. Token bootstrap calls /auth/refresh
+    // (browser sends the httpOnly refresh cookie) and either restores the in-memory
+    // access token or resolves with no auth — components render in their logged-out
+    // state in the latter case.
+    await Promise.all([i18nReady, bootstrapTokenStorage()])
 
     root.render(
       <StrictMode>

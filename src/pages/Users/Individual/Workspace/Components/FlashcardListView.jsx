@@ -444,7 +444,7 @@ function FlashcardListView({
                             <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
                               {t("workspace.flashcard.processing", t("workspace.flashcard.generating", "Generating flashcards"))}
                             </p>
-                            <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
+                            <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{Math.round(processingPercent)}%</span>
                           </div>
                           <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
                             <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
