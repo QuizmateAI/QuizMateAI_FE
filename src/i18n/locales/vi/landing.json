@@ -78,21 +78,33 @@
       "student2Name": "Mark Thompson"
     },
     "footer": {
-      "brandDesc": "Trao quyền cho học sinh toàn cầu với các công cụ học tập AI cho một tương lai thông minh hơn.",
+      "brandDesc": "Trao quyền cho người học toàn cầu với công cụ AI cho một tương lai học tập thông minh hơn.",
+      "tagline": "Học thông minh hơn, không vất vả hơn.",
       "product": "Sản phẩm",
       "productLinks": {
         "roadmap": "Lộ trình AI",
         "quizzes": "Trắc nghiệm thông minh",
+        "flashcards": "Flashcard AI",
         "groups": "Nhóm học tập"
       },
       "company": "Công ty",
       "companyLinks": {
-        "about": "Về AI của chúng tôi",
+        "about": "Về QuizMate AI",
+        "support": "Hỗ trợ"
+      },
+      "legal": "Pháp lý",
+      "legalLinks": {
+        "terms": "Điều khoản sử dụng",
         "privacy": "Chính sách bảo mật",
-        "terms": "Điều khoản dịch vụ"
+        "community": "Quy tắc cộng đồng",
+        "aiUsage": "Chính sách AI",
+        "refund": "Chính sách hoàn tiền",
+        "copyright": "Bản quyền",
+        "viewAll": "Xem tất cả chính sách"
       },
       "connect": "Kết nối",
-      "copyright": "© 2026 QuizMate AI. Xây dựng bằng trí tuệ dành cho người học."
+      "copyright": "© 2026 QuizMate AI. Mọi quyền được bảo lưu.",
+      "madeIn": "Made in Vietnam"
     }
   }
 }

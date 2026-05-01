@@ -84,21 +84,33 @@
       "student2Name": "Mark Thompson"
     },
     "footer": {
-      "brandDesc": "Empowering students worldwide with AI-driven study tools for a smarter future.",
+      "brandDesc": "Empowering learners worldwide with AI-driven tools for a smarter learning future.",
+      "tagline": "Study smarter, not harder.",
       "product": "Product",
       "productLinks": {
         "roadmap": "AI Roadmap",
         "quizzes": "Smart Quizzes",
+        "flashcards": "AI Flashcards",
         "groups": "Study Groups"
       },
       "company": "Company",
       "companyLinks": {
-        "about": "About Our AI",
-        "privacy": "Privacy Policy",
-        "terms": "Terms of Service"
+        "about": "About QuizMate AI",
+        "support": "Support"
       },
+      "legal": "Legal",
+      "legalLinks": {
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "community": "Community Guidelines",
+        "aiUsage": "AI Usage Policy",
+        "refund": "Refund Policy",
+        "copyright": "Copyright",
+        "viewAll": "View all policies"
+      },
+      "madeIn": "Made in Vietnam",
       "connect": "Connect",
-      "copyright": "© 2026 QuizMate AI. Built with intelligence for learners."
+      "copyright": "© 2026 QuizMate AI. All rights reserved."
     }
   }
 }

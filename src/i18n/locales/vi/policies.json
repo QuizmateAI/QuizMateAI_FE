@@ -1,0 +1,80 @@
+{
+  "policies": {
+    "pageTitle": "Chính sách & Điều khoản",
+    "pageSubtitle": "QuizMate AI cam kết minh bạch, công bằng, và xử lý nghiêm các vi phạm.",
+    "lastUpdated": "Cập nhật lần cuối",
+    "version": "Phiên bản",
+    "effectiveDate": "Có hiệu lực từ",
+    "readPolicy": "Đọc chi tiết",
+    "tableOfContents": "Mục lục",
+    "backToPolicies": "← Quay lại tất cả chính sách",
+    "searchInDocument": "Tìm trong văn bản...",
+    "noResultsFound": "Không tìm thấy kết quả",
+    "loading": "Đang tải...",
+    "errorLoading": "Không thể tải chính sách. Vui lòng thử lại.",
+    "notFound": "Không tìm thấy chính sách",
+    "agreeBanner": "Bằng việc sử dụng QuizMate AI, bạn đồng ý tuân thủ các chính sách dưới đây. Vi phạm sẽ bị xử lý nghiêm theo quy định.",
+    "violationWarningTitle": "Lưu ý quan trọng",
+    "violationWarningText": "Mọi hành vi gian lận, lạm dụng hoặc phát tán nội dung độc hại đều bị xử phạt nghiêm theo bảng quy định, từ cảnh báo đến khóa tài khoản vĩnh viễn.",
+    "needHelp": "Cần hỗ trợ?",
+    "contactUs": "Liên hệ với chúng tôi",
+    "categories": {
+      "TERMS_OF_SERVICE": {
+        "title": "Điều khoản sử dụng",
+        "summary": "Quy định chung khi sử dụng QuizMate AI: tài khoản, hành vi, xử phạt vi phạm.",
+        "category": "Điều khoản"
+      },
+      "PRIVACY_POLICY": {
+        "title": "Chính sách bảo mật",
+        "summary": "Cách QuizMate AI thu thập, lưu trữ và bảo vệ dữ liệu cá nhân theo Nghị định 13/2023.",
+        "category": "Bảo mật"
+      },
+      "COMMUNITY_GUIDELINES": {
+        "title": "Quy tắc cộng đồng",
+        "summary": "Chuẩn mực ứng xử trong workspace nhóm và thảo luận cộng đồng.",
+        "category": "Cộng đồng"
+      },
+      "AI_USAGE_POLICY": {
+        "title": "Chính sách sử dụng AI",
+        "summary": "Cơ chế tín dụng (credit), trách nhiệm khi dùng AI và giới hạn sử dụng.",
+        "category": "Trí tuệ nhân tạo"
+      },
+      "REFUND_POLICY": {
+        "title": "Chính sách hoàn tiền",
+        "summary": "Trường hợp được hoàn tiền, quy trình yêu cầu và xử lý tranh chấp.",
+        "category": "Thanh toán"
+      },
+      "COPYRIGHT_POLICY": {
+        "title": "Chính sách bản quyền",
+        "summary": "Quyền sở hữu nội dung, quy trình DMCA và xử lý tái phạm bản quyền.",
+        "category": "Bản quyền"
+      }
+    },
+    "browsewrap": {
+      "prefix": "Bằng việc đăng ký, bạn đồng ý với",
+      "termsLabel": "Điều khoản sử dụng",
+      "and": "và",
+      "privacyLabel": "Chính sách bảo mật",
+      "suffix": "của QuizMate AI."
+    },
+    "suspended": {
+      "title": "Tài khoản của bạn đã bị tạm khóa",
+      "subtitle": "Bạn đã vi phạm chính sách của QuizMate AI. Vui lòng đọc kỹ lý do và thời gian khóa bên dưới.",
+      "reasonLabel": "Lý do",
+      "issuedAt": "Áp dụng từ",
+      "expiresAt": "Hiệu lực đến",
+      "permanent": "Vĩnh viễn",
+      "remaining": "Còn lại",
+      "type": {
+        "WARNING": "Cảnh báo",
+        "FEATURE_RESTRICTION": "Hạn chế tính năng",
+        "TEMPORARY_BAN": "Khóa tài khoản tạm thời",
+        "PERMANENT_BAN": "Khóa tài khoản vĩnh viễn"
+      },
+      "appealCta": "Khiếu nại",
+      "logoutCta": "Đăng xuất",
+      "viewPoliciesCta": "Xem chính sách",
+      "appealHint": "Nếu bạn cho rằng quyết định này sai sót, vui lòng gửi khiếu nại qua email support@quizmateai.io.vn trong vòng 14 ngày."
+    }
+  }
+}
