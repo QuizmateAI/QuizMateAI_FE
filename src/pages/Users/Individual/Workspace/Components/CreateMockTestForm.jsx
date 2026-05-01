@@ -153,6 +153,21 @@ function CreateMockTestForm({
     [normalizedSources, selectedIdSet],
   );
 
+  // Auto-select all sources khi form vua mount (truoc khi user pick) —
+  // user mong doi behavior "default analyze all materials, uncheck rieng".
+  // Chi chay khi normalizedSources co data va chua co material nao duoc chon.
+  const [autoSelectedOnce, setAutoSelectedOnce] = useState(false);
+  useEffect(() => {
+    if (autoSelectedOnce) return;
+    if (!Array.isArray(normalizedSources) || normalizedSources.length === 0) return;
+    if (effectiveSelectedSourceIds.length > 0) {
+      setAutoSelectedOnce(true);
+      return;
+    }
+    selectAllSources();
+    setAutoSelectedOnce(true);
+  }, [autoSelectedOnce, normalizedSources, effectiveSelectedSourceIds, selectAllSources]);
+
   // Fetch bloom skills 1 lần để map name → id khi submit.
   // Question type của mock-test do backend tự set SINGLE_CHOICE.
   useEffect(() => {
@@ -618,6 +633,7 @@ function CreateMockTestForm({
               onSaveTemplate={handleSaveSuggestedTemplate}
               savedTemplateIds={savedDerivedIds}
               savingTemplateId={savingTemplateId}
+              workspaceMaterials={normalizedSources}
               isDarkMode={isDarkMode}
             />
             <MockTestScoringEditor

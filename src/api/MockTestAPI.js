@@ -35,16 +35,27 @@ export const getMockTestTemplate = async (templateId) => {
 
 /**
  * POST /api/mocktest/recommend-template
- * Spring AI classifier: takes examName + optional language → returns top-N matched templates.
- * Strategy field in response: "DB_LOOKUP" | "AI_CLASSIFIER" | "FALLBACK_CUSTOM".
+ * Strategy field in response:
+ *   - "DB_LOOKUP" — db cache hit (no material).
+ *   - "MATERIAL_RAG_SYNTHESIZED" — Python RAG read material content -> AI synth (slow, 30-90s).
+ *   - "AI_SYNTHESIZED" — Spring AI canonical exam synth (no material, ~5-15s).
+ *   - "FALLBACK_GENERIC" — single programmatic fallback when AI fails.
+ *
+ * Khi user chon material, BE forward sang Python RAG endpoint -> mat 30-90s.
+ * Set timeout 120s de chu RAG ket thuc thay vi axios default 10s.
  */
 export const recommendMockTestTemplate = async ({ examName, contentLanguage, workspaceId, materialIds, limit }) => {
+  const hasMaterial = Array.isArray(materialIds) && materialIds.length > 0;
   const response = await api.post('/mocktest/recommend-template', {
     examName,
     contentLanguage,
     workspaceId,
     materialIds,
     limit,
+  }, {
+    // RAG path can take up to ~90s. Cap at 2min so a hung BE still surfaces an
+    // error eventually instead of waiting forever.
+    timeout: hasMaterial ? 120000 : 30000,
   });
   return response;
 };

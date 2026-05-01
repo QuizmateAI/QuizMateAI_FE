@@ -112,10 +112,19 @@ function unwrapApiData(response) {
   return response?.data?.data || response?.data || response || {};
 }
 
+function extractSourceMaterialIds(scoringJsonb) {
+  const list = scoringJsonb?.sourceMaterialIds;
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+}
+
 function templateToSuggestion(template, recommendation, recData, totalQuestion) {
   const sections = templateStructureToV1Sections(template, totalQuestion);
   // Preserve sectionScoring from AI/system template — normalizeMockTestScoring carries it through.
   const scoring = normalizeMockTestScoring(template.scoring, template.totalQuestion);
+  const sourceMaterialIds = extractSourceMaterialIds(template.scoring);
   return {
     description: typeof template.description === 'string' ? template.description.trim() : '',
     examLanguage: (template.contentLanguage || recData.resolvedLanguage || '').toLowerCase(),
@@ -123,6 +132,7 @@ function templateToSuggestion(template, recommendation, recData, totalQuestion) 
     totalQuestion: Number.isFinite(template.totalQuestion) ? template.totalQuestion : null,
     durationMinutes: Number.isFinite(template.durationMinutes) ? template.durationMinutes : null,
     scoring,
+    sourceMaterialIds,
     v2Template: {
       mockTestTemplateId: template.mockTestTemplateId,
       code: template.code,
@@ -137,6 +147,7 @@ function templateToSuggestion(template, recommendation, recData, totalQuestion) 
       source: template.source,
       visibility: template.visibility,
       ownerUserId: template.ownerUserId,
+      sourceMaterialIds,
       confidence: recommendation?.confidence,
       strategy: recData.strategy,
     },
@@ -173,14 +184,15 @@ export function useMockTestStructureSuggestion() {
       const totalQuestion = Number.isFinite(payload?.totalQuestion) ? payload.totalQuestion : 0;
 
       // Step 1: ask v2 recommender for matching templates.
-      // Cho server tra ve toi da 6 template, but the backend will return only as many
-      // as it actually finds (e.g. 1 cho VSTEP B2, 5 cho JLPT, 2 cho IELTS Academic+General).
+      // limit=4: balance between du dien va toc do.
+      // - Material RAG path: 4 template ~30-45s thay vi 6 templates ~60-90s.
+      // - DB hit / Spring AI path: 4 da du, BE van co the tra it hon neu khong tim duoc.
       const recRes = await recommendMockTestTemplate({
         examName,
         contentLanguage,
         workspaceId,
         materialIds,
-        limit: 6,
+        limit: 4,
       });
       const recData = unwrapApiData(recRes);
       const recommendations = Array.isArray(recData.recommendations) ? recData.recommendations : [];
