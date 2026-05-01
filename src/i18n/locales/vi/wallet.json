@@ -40,6 +40,9 @@
       "source": "Nguồn",
       "status": "Trạng thái"
     },
-    "noPackage": "Không tìm thấy gói credit."
+    "noPackage": "Không tìm thấy gói credit.",
+    "customCreditPackName": "{{count}} credit (mua lẻ)",
+    "customCreditConfigError": "Không lấy được đơn giá credit.",
+    "customCreditBelowMin": "Số credit tối thiểu là {{min}}."
   }
 }

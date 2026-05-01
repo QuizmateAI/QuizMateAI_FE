@@ -494,6 +494,12 @@ export const getPurchaseableCreditPackages = async () => {
   return response;
 };
 
+// Public config for custom credit purchase (unit price + minimum units)
+export const getCustomCreditConfig = async () => {
+  const response = await api.get('/credit-package/custom-config');
+  return response;
+};
+
 // Payment APIs — maps to PaymentController (/api/payment/...)
 export const getUserPayments = async (page = 0, size = 10) => {
   const response = await api.get(`/payment/user?page=${page}&size=${size}`);

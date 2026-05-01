@@ -1704,6 +1704,16 @@
       "creditAmount": "Số lượng credit",
       "price": "Giá (VND)",
       "bonusCredit": "Credit thưởng"
+    },
+    "systemSettings": {
+      "title": "Cấu hình mua credit",
+      "subtitle": "Áp dụng cho cả gói credit có sẵn và mua lẻ theo số lượng tự nhập.",
+      "unitPrice": "Đơn giá 1 credit (VND)",
+      "unitPriceDesc": "Đơn giá dùng để tính tổng tiền cho mọi loại mua credit (package & mua lẻ).",
+      "customMinUnits": "Số credit tối thiểu khi mua lẻ",
+      "customMinUnitsDesc": "User phải nhập tối thiểu số credit này khi mua theo số lượng tự nhập.",
+      "invalid": "Giá trị phải là số nguyên dương.",
+      "updateSuccess": "Cập nhật cấu hình thành công."
     }
   },
   "feedbackManagement": {

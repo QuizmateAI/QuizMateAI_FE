@@ -1725,6 +1725,16 @@
       "creditAmount": "Credit amount",
       "price": "Price (VND)",
       "bonusCredit": "Bonus credits"
+    },
+    "systemSettings": {
+      "title": "Credit purchase settings",
+      "subtitle": "Applies to both fixed credit packages and custom-amount purchases.",
+      "unitPrice": "Unit price per credit (VND)",
+      "unitPriceDesc": "Used to compute the total for every credit purchase (package & custom).",
+      "customMinUnits": "Minimum credits for custom purchase",
+      "customMinUnitsDesc": "Users must enter at least this many credits when buying a custom amount.",
+      "invalid": "Value must be a positive integer.",
+      "updateSuccess": "Settings updated successfully."
     }
   },
   "feedbackManagement": {
