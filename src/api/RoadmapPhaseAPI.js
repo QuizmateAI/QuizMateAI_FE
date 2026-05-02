@@ -27,14 +27,8 @@ export const submitRoadmapPhaseRemedialDecision = async (phaseId, option) => {
   return response;
 };
 
-export const createPhaseProgressReview = async (phaseProgressId) => {
-  const normalizedPhaseProgressId = Number(phaseProgressId);
-  const response = await api.post(`/roadmap-phases/progress/${normalizedPhaseProgressId}/review`, null);
-  return response;
-};
-
-export const getPhaseProgressReview = async (phaseId) => {
+export const getPhaseProgressSummary = async (phaseId) => {
   const normalizedPhaseId = Number(phaseId);
-  const response = await api.get(`/roadmap-phases/${normalizedPhaseId}/review`);
+  const response = await api.get(`/roadmap-phases/${normalizedPhaseId}/progress-summary`);
   return response;
 };

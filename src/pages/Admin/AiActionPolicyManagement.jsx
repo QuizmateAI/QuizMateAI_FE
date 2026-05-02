@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   RefreshCw,
@@ -45,6 +45,7 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { getAllAiActionPolicies, updateAiActionPolicy } from '@/api/ManagementSystemAPI';
+import { useAiFeatureCatalog } from '@/hooks/useAiFeatureCatalog';
 import {
   SuperAdminPage,
   SuperAdminPageHeader,
@@ -404,6 +405,9 @@ export default function AiActionPolicyManagement() {
 
   const canWrite = !permLoading && permissions.has('system-settings:write');
 
+  const { catalog, isLoading: catalogLoading } = useAiFeatureCatalog();
+  const userPaidActionKeys = catalog.userPaid;
+
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -412,22 +416,27 @@ export default function AiActionPolicyManagement() {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const fetchPolicies = async () => {
+  const fetchPolicies = useCallback(async () => {
+    if (userPaidActionKeys.length === 0) return;
     setLoading(true);
     setError('');
     try {
       const res = await getAllAiActionPolicies();
-      setPolicies(extractData(res) || []);
+      const all = extractData(res) || [];
+      // Chi hien thi policy cho actionKey USER_PAID; SYSTEM/PLAN_BASED an khoi trang nay.
+      const userPaidSet = new Set(userPaidActionKeys);
+      setPolicies(all.filter((policy) => userPaidSet.has(policy.actionKey)));
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, [userPaidActionKeys]);
 
   useEffect(() => {
+    if (catalogLoading) return;
     fetchPolicies();
-  }, []);
+  }, [fetchPolicies, catalogLoading]);
 
   const sortPolicies = (list) => [...list].sort((left, right) => {
     const categoryPriority = { generate: 0, analysis: 1, process: 2 };
