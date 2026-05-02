@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
 import { logout } from "@/api/Authentication";
-import { getMyWallet } from "@/api/ManagementSystemAPI";
+import { useWallet } from "@/hooks/useWallet";
 import {
   changePassword,
   getProfileLearningSummary,
@@ -27,10 +28,7 @@ import {
   ProfileTabsTrigger,
 } from "./Components/ProfileTabs";
 import ProfileTopbar from "./Components/ProfileTopbar";
-import {
-  EMPTY_WALLET_SUMMARY,
-  getAvatarLetter,
-} from "./Components/profileHelpers";
+import { getAvatarLetter } from "./Components/profileHelpers";
 
 const DEFAULT_PROFILE = {
   email: "",
@@ -95,8 +93,6 @@ function ProfilePage() {
 
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [editForm, setEditForm] = useState({ fullName: "", birthday: "" });
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -104,51 +100,17 @@ function ProfilePage() {
   const [passwordDialog, setPasswordDialog] = useState(false);
   const [passwordForm, setPasswordForm] = useState(DEFAULT_PASSWORD_FORM);
   const [showPasswords, setShowPasswords] = useState({ old: false, new: false, confirm: false });
-  const [changingPassword, setChangingPassword] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
-  const [loadingWallet, setLoadingWallet] = useState(true);
-  const [learningSummary, setLearningSummary] = useState(EMPTY_LEARNING_SUMMARY);
-  const [loadingLearningSummary, setLoadingLearningSummary] = useState(true);
 
-  const loadWallet = useCallback(async () => {
-    try {
-      setLoadingWallet(true);
-      const response = await getMyWallet();
-      const data = response?.data ?? response;
-      setWalletSummary({
-        ...EMPTY_WALLET_SUMMARY,
-        ...data,
-        totalAvailableCredits: data?.totalAvailableCredits ?? data?.balance ?? 0,
-        regularCreditBalance: data?.regularCreditBalance ?? 0,
-        planCreditBalance: data?.planCreditBalance ?? 0,
-        hasActivePlan: Boolean(data?.hasActivePlan),
-        planCreditExpiresAt: data?.planCreditExpiresAt ?? null,
-      });
-    } catch {
-      setWalletSummary(EMPTY_WALLET_SUMMARY);
-    } finally {
-      setLoadingWallet(false);
-    }
-  }, []);
+  const { wallet: walletSummary, isLoading: loadingWallet } = useWallet();
 
-  const loadLearningSummary = useCallback(async ({ silent = false } = {}) => {
-    try {
-      if (!silent) {
-        setLoadingLearningSummary(true);
-      }
-      const response = await getProfileLearningSummary();
-      setLearningSummary(normalizeLearningSummary(response));
-    } catch {
-      if (!silent) {
-        setLearningSummary(EMPTY_LEARNING_SUMMARY);
-      }
-    } finally {
-      if (!silent) {
-        setLoadingLearningSummary(false);
-      }
-    }
-  }, []);
+  const learningSummaryQuery = useQuery({
+    queryKey: ['user', 'learningSummary'],
+    queryFn: async () => normalizeLearningSummary(await getProfileLearningSummary()),
+    refetchInterval: LEARNING_SUMMARY_REFRESH_MS,
+  });
+  const learningSummary = learningSummaryQuery.data ?? EMPTY_LEARNING_SUMMARY;
+  const loadingLearningSummary = learningSummaryQuery.isLoading;
 
   const showMessage = useCallback((type, text) => {
     setMessage({ type, text });
@@ -169,10 +131,8 @@ function ProfilePage() {
 
   useEffect(() => {
     if (contextProfile) {
-      setProfile((prev) => ({
-        ...prev,
-        ...contextProfile,
-      }));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync from context
+      setProfile((prev) => ({ ...prev, ...contextProfile }));
       setEditForm({
         fullName: contextProfile.fullName || "",
         birthday: contextProfile.birthday || "",
@@ -181,18 +141,7 @@ function ProfilePage() {
     } else if (!profileLoading) {
       setLoading(false);
     }
-
-    void loadWallet();
-  }, [contextProfile, loadWallet, profileLoading]);
-
-  useEffect(() => {
-    void loadLearningSummary();
-    const intervalId = window.setInterval(() => {
-      void loadLearningSummary({ silent: true });
-    }, LEARNING_SUMMARY_REFRESH_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [loadLearningSummary]);
+  }, [contextProfile, profileLoading]);
 
   useEffect(() => {
     if (!location.state?.tab) return;
@@ -202,6 +151,7 @@ function ProfilePage() {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync tab from navigation state
     setActiveTab(location.state.tab);
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.pathname, location.state, navigate]);
@@ -239,7 +189,24 @@ function ProfilePage() {
     fileInputRef.current?.click();
   }, []);
 
-  const handleAvatarChange = useCallback(async (event) => {
+  const avatarMutation = useMutation({
+    mutationFn: (file) => uploadAvatar(file),
+    onSuccess: (uploaded) => {
+      const avatarUrl = resolveAvatarUrl(uploaded);
+      if (!avatarUrl) {
+        showMessage("error", t("profile.avatarError"));
+        return;
+      }
+      updateProfileState({ avatarUrl });
+      showMessage("success", t("profile.avatarSuccess"));
+    },
+    onError: (error) => {
+      showMessage("error", error.message || t("profile.avatarError"));
+    },
+  });
+  const uploadingAvatar = avatarMutation.isPending;
+
+  const handleAvatarChange = useCallback((event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -255,86 +222,73 @@ function ProfilePage() {
       return;
     }
 
-    try {
-      setUploadingAvatar(true);
-      const uploaded = await uploadAvatar(file);
-      const avatarUrl = resolveAvatarUrl(uploaded);
+    avatarMutation.mutate(file, {
+      onSettled: () => {
+        event.target.value = "";
+      },
+    });
+  }, [avatarMutation, showMessage, t]);
 
-      if (!avatarUrl) {
-        throw new Error(t("profile.avatarError"));
-      }
+  const saveProfileMutation = useMutation({
+    mutationFn: (payload) => updateUserProfile(payload),
+    onSuccess: (_resp, variables) => {
+      updateProfileState({
+        fullName: variables.fullName,
+        birthday: variables.birthday || "",
+      });
+      setIsEditing(false);
+      showMessage("success", t("profile.updateSuccess"));
+    },
+    onError: (error) => showMessage("error", error.message || t("profile.updateError")),
+  });
+  const saving = saveProfileMutation.isPending;
 
-      updateProfileState({ avatarUrl });
-      showMessage("success", t("profile.avatarSuccess"));
-    } catch (error) {
-      showMessage("error", error.message || t("profile.avatarError"));
-    } finally {
-      setUploadingAvatar(false);
-      event.target.value = "";
-    }
-  }, [showMessage, t, updateProfileState]);
-
-  const handleSaveProfile = useCallback(async () => {
+  const handleSaveProfile = useCallback(() => {
     if (!editForm.fullName.trim()) {
       showMessage("error", t("profile.fullNameRequired"));
       return;
     }
-
-    try {
-      setSaving(true);
-      await updateUserProfile({
-        fullName: editForm.fullName,
-        birthday: editForm.birthday || null,
-        avatar: profile.avatarUrl,
-      });
-      updateProfileState({
-        fullName: editForm.fullName,
-        birthday: editForm.birthday || "",
-      });
-      setIsEditing(false);
-      showMessage("success", t("profile.updateSuccess"));
-    } catch (error) {
-      showMessage("error", error.message || t("profile.updateError"));
-    } finally {
-      setSaving(false);
-    }
-  }, [editForm.birthday, editForm.fullName, profile.avatarUrl, showMessage, t, updateProfileState]);
+    saveProfileMutation.mutate({
+      fullName: editForm.fullName,
+      birthday: editForm.birthday || null,
+      avatar: profile.avatarUrl,
+    });
+  }, [editForm.birthday, editForm.fullName, profile.avatarUrl, saveProfileMutation, showMessage, t]);
 
   const handleCancelEdit = useCallback(() => {
     setEditForm({ fullName: profile.fullName || "", birthday: profile.birthday || "" });
     setIsEditing(false);
   }, [profile.birthday, profile.fullName]);
 
-  const handleChangePassword = useCallback(async () => {
+  const passwordMutation = useMutation({
+    mutationFn: (payload) => changePassword(payload),
+    onSuccess: () => {
+      setPasswordDialog(false);
+      setPasswordForm(DEFAULT_PASSWORD_FORM);
+      showMessage("success", t("profile.passwordSuccess"));
+    },
+    onError: (error) => showMessage("error", error.message || t("profile.passwordError")),
+  });
+  const changingPassword = passwordMutation.isPending;
+
+  const handleChangePassword = useCallback(() => {
     const { oldPassword, newPassword, confirmNewPassword } = passwordForm;
 
     if (!oldPassword || !newPassword || !confirmNewPassword) {
       showMessage("error", t("profile.passwordFieldsRequired"));
       return;
     }
-
     if (newPassword !== confirmNewPassword) {
       showMessage("error", t("profile.passwordMismatch"));
       return;
     }
-
     if (newPassword.length < 6) {
       showMessage("error", t("profile.passwordTooShort"));
       return;
     }
 
-    try {
-      setChangingPassword(true);
-      await changePassword({ oldPassword, newPassword, confirmNewPassword });
-      setPasswordDialog(false);
-      setPasswordForm(DEFAULT_PASSWORD_FORM);
-      showMessage("success", t("profile.passwordSuccess"));
-    } catch (error) {
-      showMessage("error", error.message || t("profile.passwordError"));
-    } finally {
-      setChangingPassword(false);
-    }
-  }, [passwordForm, showMessage, t]);
+    passwordMutation.mutate({ oldPassword, newPassword, confirmNewPassword });
+  }, [passwordForm, passwordMutation, showMessage, t]);
 
   const handlePasswordDialogOpenChange = useCallback((open) => {
     setPasswordDialog(open);

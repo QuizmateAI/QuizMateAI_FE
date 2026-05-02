@@ -77,6 +77,7 @@ function normalizeWorkspaceList(payload) {
 
 const WORKSPACES_QUERY_KEY = ['workspaces'];
 const GROUPS_QUERY_KEY = ['groups'];
+const workspaceDetailQueryKey = (id) => ['workspace', id];
 
 function prependWorkspaceToCurrentPage(oldData, workspace) {
   if (!oldData || !Array.isArray(oldData.workspaces) || !workspace) {
@@ -109,8 +110,7 @@ function prependWorkspaceToCurrentPage(oldData, workspace) {
 export function useWorkspace(options = {}) {
   const { enabled = true } = options;
   const queryClient = useQueryClient();
-  const [currentWorkspace, setCurrentWorkspace] = useState(null);
-  const [workspaceDetailLoading, setWorkspaceDetailLoading] = useState(false);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sortMode, setSortMode] = useState(() => {
@@ -152,43 +152,58 @@ export function useWorkspace(options = {}) {
   const pagination = data?.pagination ?? { page: 0, size: 10, totalPages: 0, totalElements: 0 };
   const error = queryError?.message || null;
 
+  // Detail cache, keyed by workspaceId. Driven by `currentWorkspaceId` state so
+  // navigating between workspaces revalidates against cache instead of doing a
+  // fresh GET /workspaces/:id every time.
+  const detailQuery = useQuery({
+    queryKey: workspaceDetailQueryKey(currentWorkspaceId),
+    queryFn: async () => {
+      const res = await getWorkspaceById(currentWorkspaceId);
+      return normalizeWorkspace(unwrapApiData(res) || null);
+    },
+    enabled: Boolean(currentWorkspaceId),
+  });
+  const currentWorkspace = detailQuery.data ?? null;
+  const workspaceDetailLoading = Boolean(currentWorkspaceId) && detailQuery.isPending;
+
   const fetchWorkspaces = useCallback((newPage = 0, newSize = 10) => {
     setPage(newPage);
     setSize(newSize);
   }, []);
 
-  // Lấy chi tiết workspace theo id
+  // Lấy chi tiết workspace theo id. Returns the workspace (cached or freshly
+  // fetched) so existing `await fetchWorkspaceDetail(...)` callers still work.
   const fetchWorkspaceDetail = useCallback(async (workspaceId) => {
     if (!workspaceId) {
-      setCurrentWorkspace(null);
+      setCurrentWorkspaceId(null);
       return null;
     }
 
-    setWorkspaceDetailLoading(true);
+    setCurrentWorkspaceId(workspaceId);
+
+    // Mark access as a side-effect; on success patch lastAccessedAt in the
+    // detail cache and refresh the list so sort-by-recent stays correct.
+    void markWorkspaceAccessAPI(workspaceId)
+      .then(() => {
+        const accessedAt = new Date().toISOString();
+        queryClient.setQueryData(workspaceDetailQueryKey(workspaceId), (prev) => (
+          prev ? { ...prev, lastAccessedAt: accessedAt } : prev
+        ));
+        void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
+      })
+      .catch(() => {});
+
     try {
-      const res = await getWorkspaceById(workspaceId);
-      const workspace = normalizeWorkspace(unwrapApiData(res) || null);
-      setCurrentWorkspace(workspace);
-      void markWorkspaceAccessAPI(workspaceId)
-        .then(() => {
-          const accessedAt = new Date().toISOString();
-          setCurrentWorkspace((prev) => (
-            Number(prev?.workspaceId) === Number(workspaceId)
-              ? { ...prev, lastAccessedAt: accessedAt }
-              : prev
-          ));
-          void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
-        })
-        .catch(() => {});
-      return workspace;
+      return await queryClient.fetchQuery({
+        queryKey: workspaceDetailQueryKey(workspaceId),
+        queryFn: async () => {
+          const res = await getWorkspaceById(workspaceId);
+          return normalizeWorkspace(unwrapApiData(res) || null);
+        },
+      });
     } catch (err) {
       console.error('Lỗi khi lấy chi tiết workspace:', err);
-      setCurrentWorkspace((prev) =>
-        Number(prev?.workspaceId) === Number(workspaceId) ? prev : null,
-      );
       throw err;
-    } finally {
-      setWorkspaceDetailLoading(false);
     }
   }, [queryClient]);
 
@@ -256,15 +271,14 @@ export function useWorkspace(options = {}) {
         ),
       };
     });
-    if (currentWorkspace?.workspaceId === workspaceId) {
-      setCurrentWorkspace(updatedWorkspace);
-    }
+    queryClient.setQueryData(workspaceDetailQueryKey(workspaceId), updatedWorkspace);
     return updatedWorkspace;
-  }, [currentWorkspace?.workspaceId, queryClient, page, size, sortMode]);
+  }, [queryClient, page, size, sortMode]);
 
   // Xóa workspace
   const removeWorkspace = useCallback(async (workspaceId) => {
     await deleteWorkspaceAPI(workspaceId);
+    queryClient.removeQueries({ queryKey: workspaceDetailQueryKey(workspaceId) });
     await queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
   }, [queryClient]);
 

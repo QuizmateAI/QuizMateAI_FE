@@ -160,6 +160,16 @@ function ChatPanel({
   const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
   const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
+  // Saved mocktest template selected by user from the saved-templates panel — used to
+  // pre-fill CreateMockTestForm when user clicks "Dùng template".
+  const [pendingSavedMockTemplate, setPendingSavedMockTemplate] = React.useState(null);
+
+  // Clear pending template when user leaves the createMockTest view.
+  React.useEffect(() => {
+    if (resolvedView !== "createMockTest" && pendingSavedMockTemplate) {
+      setPendingSavedMockTemplate(null);
+    }
+  }, [resolvedView, pendingSavedMockTemplate]);
 
   React.useEffect(() => {
     if (!workspaceId) {
@@ -335,6 +345,10 @@ function ChatPanel({
           <LazyMockTestListView
             isDarkMode={isDarkMode}
             onCreateMockTest={() => onChangeView?.("createMockTest")}
+            onCreateMockTestFromTemplate={(template) => {
+              setPendingSavedMockTemplate(template);
+              onChangeView?.("createMockTest");
+            }}
             onNavigateHome={onNavigateHome}
             onViewMockTest={onViewMockTest}
             contextType="WORKSPACE"
@@ -500,6 +514,7 @@ function ChatPanel({
             selectedSourceIds={selectedSourceIds}
             sources={sources}
             onToggleMaterialSelection={onToggleMaterialSelection}
+            initialSavedTemplate={pendingSavedMockTemplate}
           />
         );
       case "createPostLearning":

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, ShieldCheck, CircleSlash, Infinity as InfinityIcon, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,15 +62,17 @@ function formatDate(d) {
   return date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+const PERMISSION_REQUESTS_QUERY_KEY = ['superAdmin', 'permissionRequests'];
+
 export default function PermissionRequestsPage() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
 
   const [tab, setTab] = useState('PENDING');
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ page: 0, size: 20, totalPages: 0, totalElements: 0 });
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(20);
 
   const [approving, setApproving] = useState(null);
   const [rejecting, setRejecting] = useState(null);
@@ -80,31 +83,47 @@ export default function PermissionRequestsPage() {
     return mapped && mapped !== 'error.unknown' ? mapped : fallback;
   };
 
-  const fetchData = useCallback(async (page = 0, size = pagination.size) => {
-    setLoading(true);
-    try {
+  const {
+    data,
+    isLoading: loading,
+    isFetching,
+    error: queryError,
+  } = useQuery({
+    queryKey: [...PERMISSION_REQUESTS_QUERY_KEY, tab, page, size],
+    queryFn: async () => {
       const res = await listPermissionRequests({
         status: tab === 'ALL' ? undefined : tab,
         page,
         size,
       });
-      const data = res?.data || {};
-      setRows(data.content || []);
-      setPagination({
-        page: data.page ?? 0,
-        size: data.size ?? size,
-        totalPages: data.totalPages ?? 0,
-        totalElements: data.totalElements ?? 0,
-      });
-    } catch (err) {
-      showError(friendly(err, 'Không thể tải danh sách yêu cầu'));
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [tab, pagination.size]);
+      const responseData = res?.data || {};
+      return {
+        rows: responseData.content || [],
+        page: responseData.page ?? 0,
+        size: responseData.size ?? size,
+        totalPages: responseData.totalPages ?? 0,
+        totalElements: responseData.totalElements ?? 0,
+      };
+    },
+    placeholderData: (previous) => previous,
+  });
 
-  useEffect(() => { fetchData(0, pagination.size); }, [tab]);
+  const rows = data?.rows ?? [];
+  const pagination = {
+    page: data?.page ?? page,
+    size: data?.size ?? size,
+    totalPages: data?.totalPages ?? 0,
+    totalElements: data?.totalElements ?? 0,
+  };
+
+  useEffect(() => {
+    if (queryError) {
+      showError(friendly(queryError, 'Không thể tải danh sách yêu cầu'));
+    }
+  }, [queryError]);
+
+  const invalidateRequests = () =>
+    queryClient.invalidateQueries({ queryKey: PERMISSION_REQUESTS_QUERY_KEY });
 
   return (
     <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
@@ -115,11 +134,11 @@ export default function PermissionRequestsPage() {
         actions={(
           <Button
             variant="outline"
-            onClick={() => fetchData(pagination.page, pagination.size)}
-            disabled={loading}
+            onClick={invalidateRequests}
+            disabled={isFetching}
             className="h-10 rounded-2xl"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             Làm mới
           </Button>
         )}
@@ -212,8 +231,8 @@ export default function PermissionRequestsPage() {
             totalPages={pagination.totalPages}
             totalElements={pagination.totalElements}
             pageSize={pagination.size}
-            onPageChange={(p) => fetchData(p, pagination.size)}
-            onPageSizeChange={(s) => fetchData(0, s)}
+            onPageChange={(p) => setPage(p)}
+            onPageSizeChange={(s) => { setSize(s); setPage(0); }}
             isDarkMode={isDarkMode}
           />
         )}
@@ -222,7 +241,7 @@ export default function PermissionRequestsPage() {
       <ApproveDialog
         request={approving}
         onClose={() => setApproving(null)}
-        onDone={() => { setApproving(null); fetchData(pagination.page, pagination.size); }}
+        onDone={() => { setApproving(null); invalidateRequests(); }}
         isDarkMode={isDarkMode}
         showError={showError}
         showSuccess={showSuccess}
@@ -232,7 +251,7 @@ export default function PermissionRequestsPage() {
       <RejectDialog
         request={rejecting}
         onClose={() => setRejecting(null)}
-        onDone={() => { setRejecting(null); fetchData(pagination.page, pagination.size); }}
+        onDone={() => { setRejecting(null); invalidateRequests(); }}
         isDarkMode={isDarkMode}
         showError={showError}
         showSuccess={showSuccess}
@@ -246,7 +265,6 @@ function ApproveDialog({ request, onClose, onDone, isDarkMode, showError, showSu
   const [durationDays, setDurationDays] = useState(null);
   const [customDateTime, setCustomDateTime] = useState('');
   const [note, setNote] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (request) {
@@ -260,27 +278,31 @@ function ApproveDialog({ request, onClose, onDone, isDarkMode, showError, showSu
   const expiresAtPreview = useMemo(() => {
     if (useCustomDate) return customDateTime;
     if (durationDays) {
+      // eslint-disable-next-line react-hooks/purity -- preview only, intentional non-pure
       const d = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
       return d.toLocaleString('vi-VN');
     }
     return 'Vĩnh viễn';
   }, [useCustomDate, customDateTime, durationDays]);
 
-  const submit = async () => {
-    if (!request) return;
-    setSubmitting(true);
-    try {
-      const payload = useCustomDate
-        ? { expiresAt: customDateTime, note: note.trim() || undefined }
-        : { durationDays: durationDays ?? undefined, note: note.trim() || undefined };
-      await approvePermissionRequest(request.id, payload);
+  const approveMutation = useMutation({
+    mutationFn: ({ id, payload }) => approvePermissionRequest(id, payload),
+    onSuccess: () => {
       showSuccess('Đã duyệt yêu cầu');
       onDone();
-    } catch (err) {
+    },
+    onError: (err) => {
       showError(friendly(err, 'Không thể duyệt yêu cầu'));
-    } finally {
-      setSubmitting(false);
-    }
+    },
+  });
+  const submitting = approveMutation.isPending;
+
+  const submit = () => {
+    if (!request) return;
+    const payload = useCustomDate
+      ? { expiresAt: customDateTime, note: note.trim() || undefined }
+      : { durationDays: durationDays ?? undefined, note: note.trim() || undefined };
+    approveMutation.mutate({ id: request.id, payload });
   };
 
   return (
@@ -381,26 +403,29 @@ function ApproveDialog({ request, onClose, onDone, isDarkMode, showError, showSu
 
 function RejectDialog({ request, onClose, onDone, isDarkMode, showError, showSuccess, friendly }) {
   const [note, setNote] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset textarea when dialog reopens
     if (request) setNote('');
   }, [request]);
 
   const canSubmit = note.trim().length >= 5;
 
-  const submit = async () => {
-    if (!request || !canSubmit) return;
-    setSubmitting(true);
-    try {
-      await rejectPermissionRequest(request.id, { note: note.trim() });
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, payload }) => rejectPermissionRequest(id, payload),
+    onSuccess: () => {
       showSuccess('Đã từ chối yêu cầu');
       onDone();
-    } catch (err) {
+    },
+    onError: (err) => {
       showError(friendly(err, 'Không thể từ chối yêu cầu'));
-    } finally {
-      setSubmitting(false);
-    }
+    },
+  });
+  const submitting = rejectMutation.isPending;
+
+  const submit = () => {
+    if (!request || !canSubmit) return;
+    rejectMutation.mutate({ id: request.id, payload: { note: note.trim() } });
   };
 
   return (

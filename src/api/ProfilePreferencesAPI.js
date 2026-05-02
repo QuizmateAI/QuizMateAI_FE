@@ -1,5 +1,6 @@
 import { clearUserCache } from "@/utils/userCache";
 import { clearPlanPurchaseState } from "@/utils/planPurchaseState";
+import { clearTokens, getAccessToken } from "@/utils/tokenStorage";
 
 const configuredBaseUrl = typeof import.meta.env.VITE_API_BASE_URL === "string"
   ? import.meta.env.VITE_API_BASE_URL.trim()
@@ -9,7 +10,7 @@ const profileEndpoint = `${baseURL.replace(/\/+$/, "")}/user/profile`;
 const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(configuredBaseUrl || baseURL);
 
 function getStoredToken() {
-  return localStorage.getItem("accessToken") || localStorage.getItem("jwt_token") || "";
+  return getAccessToken();
 }
 
 function getPreferenceHeaders(token) {
@@ -22,9 +23,12 @@ function getPreferenceHeaders(token) {
 }
 
 function handleUnauthorizedPreferenceResponse() {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user");
+  clearTokens();
+  try {
+    localStorage.removeItem("user");
+  } catch {
+    /* storage disabled */
+  }
   clearUserCache();
   clearPlanPurchaseState();
   window.location.href = "/login";

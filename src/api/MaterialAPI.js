@@ -40,6 +40,14 @@ export const getExtractedText = async (materialId) => {
   return response;
 };
 
+// Lấy material content (URL + transcript) — dùng cho SourceDetailView khi
+// material là media (audio/video) cần render player + script panel.
+// Response shape: { materialId, materialType, url, transcript, isMedia }
+export const getMaterialContent = async (materialId) => {
+  const response = await api.get(`/materials/${materialId}/content`);
+  return response;
+};
+
 // Lấy extracted summary từ materialId
 export const getExtractedSummary = async (materialId) => {
   const response = await api.get(`/materials/${materialId}/extracted-summary`);

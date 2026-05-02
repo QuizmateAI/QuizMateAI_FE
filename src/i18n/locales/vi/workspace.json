@@ -383,6 +383,7 @@
     },
     "sources": {
       "title": "Tài liệu",
+      "scriptLabel": "Script / Lời thoại",
       "addSource": "Thêm tài liệu",
       "searchPlaceholder": "Tìm tài liệu...",
       "emptyTitle": "Chưa có tài liệu",
@@ -1495,6 +1496,47 @@
         "navigationLocked": "Đang trong bài thi, không thể quay lại hoặc chuyển trang.",
         "starting": "Đang bắt đầu"
       },
+      "mockTestExam": {
+        "confirmStartTitle": "Bắt đầu mocktest?",
+        "confirmStartDescription": "Bài thi gồm {{sectionsCount}} phần, {{questionsCount}} câu.",
+        "confirmStartDuration": "Thời gian: {{durationMinutes}} phút.",
+        "confirmStartWarning": "Khi bắt đầu, các phần sẽ hiển thị tuần tự — bạn không thể quay lại phần đã hoàn thành.",
+        "cancelButton": "Hủy",
+        "startButton": "Bắt đầu",
+        "notMockTestTitle": "Không phải mocktest hợp lệ",
+        "notMockTestMessage": "Trang này chỉ hoạt động với MockTest có cấu trúc section.",
+        "goBackButton": "Quay lại",
+        "navigationLocked": "Không thể rời khỏi bài làm khi đang thi. Hãy nộp bài để thoát.",
+        "submitFailed": "Nộp bài thất bại. Vui lòng thử lại.",
+        "submitMissingAttempt": "Không thể nộp vì chưa có attempt.",
+        "cannotStart": "Không thể bắt đầu mocktest.",
+        "sectionPosition": "Phần {{index}} / {{total}}",
+        "sectionLabelWithName": "Phần {{index}} / {{total}}: {{name}}",
+        "sharedContextLabel": "Đoạn văn / Ngữ cảnh",
+        "intro": {
+          "questionsCountLabel": "Số câu",
+          "durationLabel": "Thời gian",
+          "durationMinutesValue": "{{minutes}} phút",
+          "warning": "Khi đã sang phần kế tiếp, **bạn không thể quay lại** phần này. Hãy hoàn thành tất cả câu hỏi trước khi nhấn \"Tiếp theo\".",
+          "startSectionButton": "Bắt đầu phần {{index}}"
+        },
+        "transition": {
+          "completedHeading": "Hoàn thành: {{name}}",
+          "completedDetail": "Đã trả lời <strong>{{answered}}</strong> / <strong>{{total}}</strong> câu. Câu trả lời đã được lưu — không thể quay lại sửa.",
+          "previousSectionFallback": "Phần trước",
+          "upcomingLabel": "Tiếp theo",
+          "upcomingQuestionCount": "Phần này có <strong>{{count}}</strong> câu hỏi.",
+          "continueNowButton": "Sẵn sàng — bắt đầu ngay",
+          "autoCountdown": "tự động sau {{seconds}}s"
+        },
+        "complete": {
+          "progressLabel": "Đã trả lời {{answered}} / {{total}} câu trong phần này.",
+          "lastSectionHint": "Đây là phần cuối — sẵn sàng nộp bài?",
+          "nextSectionHint": "Sang phần tiếp theo? Bạn sẽ không thể quay lại sửa phần này.",
+          "submitButton": "Nộp bài",
+          "nextButton": "Tiếp theo"
+        }
+      },
       "practiceActions": {
         "confirmExitTitle": "Thoát thực hành?",
         "confirmExitDescription": "Câu bạn chưa kiểm tra có thể bị mất.",
@@ -2016,6 +2058,8 @@
       "start": "Bắt đầu Mock Test",
       "completeAllPhases": "Hoàn thành tất cả post-learning và Giai đoạn để mở mock test cuối cùng.",
       "noItems": "Chưa có mock test nào.",
+      "savedTemplatesButton": "Template đã lưu",
+      "savedTemplatesTitle": "Kho template đã lưu",
       "validation": {
         "roadmapRequired": "Vui lòng chọn một lộ trình.",
         "mockTestLimit": "Lộ trình này đã có mock test. Mỗi lộ trình chỉ được phép có một bài.",
@@ -2893,11 +2937,24 @@
       "statusActive": "Đang hoạt động",
       "statusDraft": "Nháp",
       "statusCompleted": "Đã hoàn thành",
-      "statusInactive": "Ngưng hoạt động"
+      "statusInactive": "Ngưng hoạt động",
+      "questionsShort": "câu",
+      "minutesShort": "phút",
+      "sectionsShort": "phần",
+      "questionTypeSingle": "Trắc nghiệm",
+      "questionTypeMultiple": "Nhiều đáp án",
+      "questionTypeTrueFalse": "Đúng / Sai",
+      "close": "Đóng",
+      "materialRequired": "Vui lòng chọn ít nhất một tài liệu."
     },
     "create": {
       "title": "Tạo Mock Test",
       "desc": "Tạo bài kiểm tra tổng hợp cho toàn bộ lộ trình.",
+      "manualTitle": "Mock test thủ công",
+      "manualNotice": "Template thủ công, bạn có thể chỉnh từng phần, loại câu, độ khó, Bloom và điểm trước khi tạo.",
+      "manualTemplate": "Tạo thủ công",
+      "matchedTemplate": "Template đã chọn",
+      "nameHint": "Nhập tên kỳ thi rồi nhấn Enter — hệ thống sẽ tự gợi ý template chuẩn (số câu, thời gian, cấu trúc).",
       "name": "Tên Mock Test",
       "namePlaceholder": "Nhập tên mock test...",
       "nameExample": "Ví dụ: IELTS, TOEIC 900, đề thi Toán 12 cuối kỳ...",
@@ -2934,6 +2991,57 @@
       "saveSuccess": "Cập nhật mock test thành công!",
       "saveFailed": "Lưu mock test thất bại. Vui lòng thử lại.",
       "loadFailed": "Tải dữ liệu mock test thất bại."
+    },
+    "scoring": {
+      "title": "Hệ thống điểm",
+      "totalPoints": "Tổng điểm bài",
+      "passingScore": "Điểm pass (tuyệt đối)",
+      "passingPercent": "Điểm pass (%)",
+      "pointsEach": "đ/câu TB",
+      "toPass": "để đạt",
+      "sectionBreakdown": "ĐIỂM TỪNG PHẦN",
+      "colSection": "Phần thi",
+      "colLeaf": "Số câu",
+      "colPoints": "Điểm phần",
+      "colPercent": "% bài",
+      "colPerQuestion": "Điểm/câu",
+      "totalRow": "Tổng",
+      "linkedHint": "Thay đổi điểm 1 phần sẽ tự cập nhật tổng điểm; thay đổi tổng sẽ phân bổ lại điểm các phần theo tỉ lệ."
+    },
+    "templatePicker": {
+      "title": "Chọn 1 trong {{count}} template phù hợp",
+      "singleTitle": "Template đã tìm thấy",
+      "saveTemplate": "Lưu template",
+      "saved": "Đã lưu",
+      "saving": "Đang lưu...",
+      "basedOn": "Dựa trên"
+    },
+    "savedTemplates": {
+      "title": "Kho template đã lưu",
+      "description": "Các template bạn đã lưu trong workspace. Bấm \"Dùng template\" để tạo nhanh mocktest mới từ cấu trúc đã có.",
+      "searchPlaceholder": "Tìm theo tên hoặc kỳ thi...",
+      "loading": "Đang tải...",
+      "loadFailed": "Không tải được danh sách template.",
+      "empty": "Bạn chưa lưu template nào. Lưu template từ form tạo mocktest để dùng lại sau.",
+      "noMatch": "Không tìm thấy template phù hợp.",
+      "use": "Dùng template",
+      "delete": "Xóa template",
+      "deleting": "Đang xóa...",
+      "confirmDeleteTitle": "Xác nhận xóa template",
+      "confirmDeleteDesc": "Template sẽ bị ẩn khỏi kho. Mocktest đã tạo từ template này vẫn giữ nguyên.",
+      "savedToast": "Đã lưu template vào kho riêng.",
+      "saveFailed": "Lưu template thất bại.",
+      "saveShort": "Lưu template",
+      "savedShort": "Đã lưu",
+      "savingShort": "Đang lưu...",
+      "validationFailed": "Cấu trúc chưa hợp lệ."
+    },
+    "exitConfirm": {
+      "title": "Thoát khỏi form tạo mocktest?",
+      "description": "Template AI vừa gợi ý có thể bị mất nếu bạn thoát mà chưa lưu. Bạn có thể lưu template này vào kho riêng để dùng lại sau hoặc thoát không lưu.",
+      "keepEditing": "Tiếp tục chỉnh sửa",
+      "saveAndExit": "Lưu template và thoát",
+      "discard": "Thoát không lưu"
     },
     "structure": {
       "delete": "Xóa",

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { Search, RefreshCw, Users, Eye, MoreHorizontal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,6 @@ import {
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAllGroups } from '@/api/ManagementSystemAPI';
 import AdminPagination from './components/AdminPagination';
-import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import {
   SuperAdminPage,
@@ -47,23 +47,40 @@ function normalizeText(value) {
   return trimmed;
 }
 
+const ADMIN_GROUPS_QUERY_KEY = ['admin', 'groups'];
+
+function normalizeGroupListResponse(response, requestedSize) {
+  const responseData = response?.data || {};
+  if (Array.isArray(responseData)) {
+    return {
+      groups: responseData,
+      page: 0,
+      size: responseData.length || requestedSize,
+      totalPages: 1,
+      totalElements: responseData.length,
+    };
+  }
+  if (responseData.content && Array.isArray(responseData.content)) {
+    return {
+      groups: responseData.content,
+      page: responseData.page ?? responseData.number ?? 0,
+      size: responseData.size || requestedSize,
+      totalPages: responseData.totalPages || 0,
+      totalElements: responseData.totalElements || 0,
+    };
+  }
+  return { groups: [], page: 0, size: requestedSize, totalPages: 0, totalElements: 0 };
+}
+
 function GroupManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const { showError } = useToast();
   const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
   const [searchTerm, setSearchTerm] = useState('');
-  const [groups, setGroups] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [pagination, setPagination] = useState({
-    page: 0,
-    size: 10,
-    totalPages: 0,
-    totalElements: 0,
-  });
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const getFriendlyError = (err, fallbackText) => {
@@ -71,6 +88,27 @@ function GroupManagement() {
     if (mapped && mapped !== 'error.unknown') return mapped;
     return fallbackText;
   };
+
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: [...ADMIN_GROUPS_QUERY_KEY, page, size],
+    queryFn: async () => normalizeGroupListResponse(await getAllGroups(page, size), size),
+    placeholderData: (previous) => previous,
+  });
+
+  const groups = data?.groups ?? [];
+  const pagination = {
+    page: data?.page ?? page,
+    size: data?.size ?? size,
+    totalPages: data?.totalPages ?? 0,
+    totalElements: data?.totalElements ?? 0,
+  };
+  const error = queryError ? getFriendlyError(queryError, 'Không thể tải danh sách nhóm') : '';
 
   const getGroupName = (group) => {
     const rawName = normalizeText(group?.groupName || group?.name);
@@ -93,53 +131,13 @@ function GroupManagement() {
       || t('groupPage.unknownLeader');
   };
 
-  // Lấy danh sách nhóm từ API (có hỗ trợ phân trang)
-  const fetchGroups = async (page = 0, size = 10) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const response = await getAllGroups(page, size);
-      const responseData = response?.data || {};
-      
-      // Xử lý cấu trúc response có thể là paginated hoặc array thuần
-      if (Array.isArray(responseData)) {
-        setGroups(responseData);
-        setPagination({ page: 0, size: responseData.length, totalPages: 1, totalElements: responseData.length });
-      } else if (responseData.content && Array.isArray(responseData.content)) {
-        setGroups(responseData.content);
-        setPagination({
-          page: responseData.page ?? responseData.number ?? 0,
-          size: responseData.size || size,
-          totalPages: responseData.totalPages || 0,
-          totalElements: responseData.totalElements || 0,
-        });
-      } else {
-        setGroups([]);
-        setPagination({ page: 0, size: size, totalPages: 0, totalElements: 0 });
-      }
-    } catch (err) {
-      const msg = getFriendlyError(err, 'Không thể tải danh sách nhóm');
-      setError(msg);
-      showError(msg);
-      console.error('Lỗi khi lấy danh sách groups:', err);
-      setGroups([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchGroups();
-  }, []);
-
-  // Thay đổi trang
   const handlePageChange = (newPage) => {
-    fetchGroups(newPage, pagination.size);
+    setPage(newPage);
   };
 
-  // Thay đổi kích thước trang
   const handlePageSizeChange = (newSize) => {
-    fetchGroups(0, newSize);
+    setSize(newSize);
+    setPage(0);
   };
 
   // Lọc groups theo search term
@@ -166,11 +164,11 @@ function GroupManagement() {
         title={t('groupPage.title')}
         actions={(
           <Button
-            onClick={() => fetchGroups(pagination.page, pagination.size)}
-            disabled={isLoading}
+            onClick={() => refetch()}
+            disabled={isFetching}
             className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             {t('groupPage.refresh')}
           </Button>
         )}

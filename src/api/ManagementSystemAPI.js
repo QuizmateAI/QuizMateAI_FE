@@ -276,6 +276,19 @@ export const getAiProviderHealth = async () => {
   return response;
 };
 
+export const testAiProviderConnection = async (provider) => {
+  const response = await api.post('/management/ai-health/test-connection', { provider });
+  return response;
+};
+
+export const getAiProviderHealthHistory = async ({ provider, hours = 24 } = {}) => {
+  const params = new URLSearchParams();
+  if (provider) params.append('provider', String(provider));
+  params.append('hours', String(hours));
+  const response = await api.get(`/management/ai-health/history?${params.toString()}`);
+  return response;
+};
+
 export const createAiModel = async (data) => {
   const response = await api.post('/management/ai-models', data);
   return response;
@@ -478,6 +491,12 @@ export const deleteCreditPackage = async (id) => {
 // Public purchaseable credit packages for wallet (ACTIVE only)
 export const getPurchaseableCreditPackages = async () => {
   const response = await api.get('/credit-package/purchaseable');
+  return response;
+};
+
+// Public config for custom credit purchase (unit price + minimum units)
+export const getCustomCreditConfig = async () => {
+  const response = await api.get('/credit-package/custom-config');
   return response;
 };
 

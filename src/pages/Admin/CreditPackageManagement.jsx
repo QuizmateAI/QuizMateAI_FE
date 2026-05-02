@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, RefreshCw, Plus, Edit2, Trash2, Eye,
   Coins, ToggleLeft, ToggleRight, CheckCircle2, CircleOff,
@@ -12,14 +13,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import ListSpinner from '@/components/ui/ListSpinner';
+import CreditPackageFormDialog from './components/CreditPackageFormDialog';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useFormValidator } from '@/hooks/useFormValidator';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage, buildAdminErrorPayload } from '@/utils/getErrorMessage';
-import { cn } from '@/lib/utils';
 import {
   getAllCreditPackages,
   createCreditPackage,
@@ -67,25 +67,24 @@ const STATUS_META = {
   },
 };
 
+const CREDIT_PACKAGES_QUERY_KEY = ['admin', 'creditPackages'];
+
 function CreditPackageManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { permissions, loading: permLoading } = useAdminPermissions();
   const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const dk = isDarkMode;
 
   const canWrite = !permLoading && permissions.has('credit-package:write');
 
-  const [packages, setPackages] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
-  const [creditUnitPrice, setCreditUnitPrice] = useState(DEFAULT_CREDIT_UNIT_PRICE);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingPackage, setDeletingPackage] = useState(null);
@@ -112,33 +111,44 @@ function CreditPackageManagement() {
     return t(fallbackKey);
   };
 
-  const fetchPackages = async () => {
-    setIsLoading(true);
-    try {
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error: queryError,
+  } = useQuery({
+    queryKey: CREDIT_PACKAGES_QUERY_KEY,
+    queryFn: async () => {
       const [res, settingsRes] = await Promise.all([
         getAllCreditPackages(),
         getAllSystemSettings().catch(() => null),
       ]);
-      const data = res?.data ?? res;
-      setPackages(Array.isArray(data) ? data : []);
+      const list = res?.data ?? res;
       const settingsData = settingsRes?.data ?? settingsRes;
-      const unitPriceSetting = Array.isArray(settingsData)
-        ? settingsData.find((s) => s.key === 'credit.unit_price_vnd')
-        : null;
+      const settingsList = Array.isArray(settingsData) ? settingsData : [];
+      const unitPriceSetting = settingsList.find((s) => s.key === 'credit.unit_price_vnd');
       const resolvedUnitPrice = Number(unitPriceSetting?.value);
-      if (Number.isFinite(resolvedUnitPrice) && resolvedUnitPrice > 0) {
-        setCreditUnitPrice(resolvedUnitPrice);
-      }
-    } catch (err) {
-      showError(getFriendlyError(err, 'creditPackageManagement.fetchError'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const creditUnitPrice = Number.isFinite(resolvedUnitPrice) && resolvedUnitPrice > 0
+        ? resolvedUnitPrice
+        : DEFAULT_CREDIT_UNIT_PRICE;
+      return {
+        packages: Array.isArray(list) ? list : [],
+        creditUnitPrice,
+      };
+    },
+  });
 
-  useEffect(() => {
-    fetchPackages();
-  }, []);
+  const packages = data?.packages ?? [];
+  const creditUnitPrice = data?.creditUnitPrice ?? DEFAULT_CREDIT_UNIT_PRICE;
+
+  React.useEffect(() => {
+    if (queryError) {
+      showError(getFriendlyError(queryError, 'creditPackageManagement.fetchError'));
+    }
+  }, [queryError]);
+
+  const invalidatePackages = () =>
+    queryClient.invalidateQueries({ queryKey: CREDIT_PACKAGES_QUERY_KEY });
 
   const calculatePrice = (baseCredit) => {
     const credit = parseInt(baseCredit, 10) || 0;
@@ -165,53 +175,86 @@ function CreditPackageManagement() {
     setIsFormOpen(true);
   };
 
-  const handleSubmit = async (e) => {
+  const saveMutation = useMutation({
+    mutationFn: async ({ id, payload }) => {
+      if (id != null) {
+        return updateCreditPackage(id, payload);
+      }
+      return createCreditPackage(payload);
+    },
+    onSuccess: (_resp, variables) => {
+      showSuccess(
+        variables.id != null
+          ? t('creditPackageManagement.updateSuccess', 'Credit package updated successfully.')
+          : t('creditPackageManagement.createSuccess', 'Credit package created successfully.'),
+      );
+      setIsFormOpen(false);
+      invalidatePackages();
+    },
+    onError: (err) => {
+      showError(buildAdminErrorPayload(t, err, 'Không lưu được gói Credit'));
+    },
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => updateCreditPackageStatus(id, { status }),
+    onSuccess: () => {
+      showSuccess(t('creditPackageManagement.updateStatusSuccess', 'Credit package status updated successfully.'));
+      invalidatePackages();
+    },
+    onError: (err) => {
+      showError(buildAdminErrorPayload(t, err, 'Không đổi được trạng thái gói'));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ id }) => deleteCreditPackage(id),
+    onSuccess: () => {
+      showSuccess(t('creditPackageManagement.deleteSuccess', 'Credit package deleted successfully.'));
+      setIsDeleteOpen(false);
+      setDeletingPackage(null);
+      invalidatePackages();
+    },
+    onError: (err) => {
+      showError(buildAdminErrorPayload(t, err, 'Không xoá được gói Credit'));
+    },
+  });
+
+  const isSubmitting = saveMutation.isPending || deleteMutation.isPending;
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!validator.validateAll(formData)) {
       showError(t('common.formHasErrors', 'Vui lòng kiểm tra các trường bị đánh dấu đỏ.'));
       return;
     }
-    setIsSubmitting(true);
-    try {
-      const baseCredit = parseInt(formData.creditAmount, 10) || 0;
-      const bonusCredit = Math.floor(baseCredit * 0.1);
-      const price = calculatePrice(baseCredit);
-      const displayName = formData.name.trim();
+    const baseCredit = parseInt(formData.creditAmount, 10) || 0;
+    const bonusCredit = Math.floor(baseCredit * 0.1);
+    const price = calculatePrice(baseCredit);
+    const displayName = formData.name.trim();
 
-      if (editingPackage) {
-        // Do not send `code` on update — keep existing stable and avoid unique-collision.
-        const payload = { displayName, baseCredit, bonusCredit, price };
-        await updateCreditPackage(editingPackage.creditPackageId ?? editingPackage.id, payload);
-        showSuccess(t('creditPackageManagement.updateSuccess', 'Credit package updated successfully.'));
-      } else {
-        const payload = {
+    if (editingPackage) {
+      saveMutation.mutate({
+        id: editingPackage.creditPackageId ?? editingPackage.id,
+        payload: { displayName, baseCredit, bonusCredit, price },
+      });
+    } else {
+      saveMutation.mutate({
+        id: null,
+        payload: {
           code: slugifyCode(displayName),
           displayName,
           baseCredit,
           bonusCredit,
           price,
-        };
-        await createCreditPackage(payload);
-        showSuccess(t('creditPackageManagement.createSuccess', 'Credit package created successfully.'));
-      }
-      setIsFormOpen(false);
-      fetchPackages();
-    } catch (err) {
-      showError(buildAdminErrorPayload(t, err, 'Không lưu được gói Credit'));
-    } finally {
-      setIsSubmitting(false);
+        },
+      });
     }
   };
 
-  const handleToggleStatus = async (pkg) => {
-    try {
-      const nextStatus = (pkg.status || '').toUpperCase() === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-      await updateCreditPackageStatus(pkg.creditPackageId ?? pkg.id, { status: nextStatus });
-      showSuccess(t('creditPackageManagement.updateStatusSuccess', 'Credit package status updated successfully.'));
-      fetchPackages();
-    } catch (err) {
-      showError(buildAdminErrorPayload(t, err, 'Không đổi được trạng thái gói'));
-    }
+  const handleToggleStatus = (pkg) => {
+    const nextStatus = (pkg.status || '').toUpperCase() === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    statusMutation.mutate({ id: pkg.creditPackageId ?? pkg.id, status: nextStatus });
   };
 
   const confirmDelete = (pkg) => {
@@ -219,36 +262,15 @@ function CreditPackageManagement() {
     setIsDeleteOpen(true);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deletingPackage) return;
-    setIsSubmitting(true);
-    try {
-      await deleteCreditPackage(deletingPackage.creditPackageId ?? deletingPackage.id);
-      showSuccess(t('creditPackageManagement.deleteSuccess', 'Credit package deleted successfully.'));
-      fetchPackages();
-    } catch (err) {
-      showError(buildAdminErrorPayload(t, err, 'Không xoá được gói Credit'));
-    } finally {
-      setIsDeleteOpen(false);
-      setDeletingPackage(null);
-      setIsSubmitting(false);
-    }
+    deleteMutation.mutate({ id: deletingPackage.creditPackageId ?? deletingPackage.id });
   };
 
   const filteredPackages = useMemo(
     () => packages.filter((p) => (p.displayName || p.name || '').toLowerCase().includes(searchTerm.toLowerCase())),
     [packages, searchTerm],
   );
-
-  const inputCls = `mt-1.5 h-10 rounded-lg transition-colors duration-200 ${
-    dk
-      ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-ocean-500 focus:ring-ocean-500/20'
-      : 'bg-white border-slate-200 text-slate-900 focus:border-ocean-500 focus:ring-ocean-500/20'
-  }`;
-
-  const sectionCls = `rounded-xl border p-4 ${
-    dk ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-50/80 border-slate-100'
-  }`;
 
   const formatCurrency = (val) => {
     if (val == null) return '—';
@@ -374,11 +396,11 @@ function CreditPackageManagement() {
             <Button
               variant="outline"
               size="icon"
-              onClick={fetchPackages}
-              disabled={isLoading}
+              onClick={invalidatePackages}
+              disabled={isFetching}
               className={`h-10 w-10 rounded-xl cursor-pointer ${dk ? 'border-white/10 hover:bg-white/5' : ''}`}
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
@@ -540,182 +562,19 @@ function CreditPackageManagement() {
         </div>
       </div>
 
-      {/* Create / Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent
-          hideClose
-          className={`max-w-lg max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden ${
-            dk ? 'bg-[#0f1629] border-white/[0.08]' : 'bg-white'
-          }`}
-        >
-          <div
-            className={`flex-shrink-0 px-6 pt-6 pb-4 border-b ${
-              dk ? 'border-white/[0.06]' : 'border-slate-100'
-            }`}
-          >
-            <DialogHeader className="p-0 space-y-1">
-              <DialogTitle className={`text-xl font-bold ${dk ? 'text-white' : 'text-slate-900'}`}>
-                {editingPackage
-                  ? t('creditPackageManagement.editTitle', 'Edit credit package')
-                  : t('creditPackageManagement.addTitle', 'Add credit package')}
-              </DialogTitle>
-              <DialogDescription className={dk ? 'text-slate-400' : 'text-slate-500'}>
-                {t('creditPackageManagement.formDesc', 'Enter the package details. The price and bonus credits are calculated automatically based on the credit amount.',
-                )}
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
-            <div className={sectionCls}>
-              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-ocean-300' : 'text-ocean-700'}`}>
-                {t('creditPackage.basicInfo', 'Thông tin cơ bản')}
-              </p>
-              <div className="space-y-4">
-                        <div>
-                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {t('creditPackageManagement.form.name', 'Name')} *
-                  </Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setFormData({ ...formData, name: v });
-                      validator.change('name', v, { ...formData, name: v });
-                    }}
-                    onBlur={() => validator.touch('name', formData.name, formData)}
-                    placeholder={t('creditPackage.form.namePlaceholder', 'VD: Starter, Pro, Enterprise...')}
-                    className={cn(
-                      inputCls,
-                      validator.hasError('name') && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30',
-                    )}
-                    aria-invalid={validator.hasError('name')}
-                  />
-                  {validator.errorOf('name') ? (
-                    <p className="mt-1 text-xs text-rose-500">{validator.errorOf('name')}</p>
-                  ) : null}
-                </div>
-                <div>
-                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {t('creditPackageManagement.form.description', 'Description')}
-                  </Label>
-                  <Input
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('creditPackageManagement.form.descriptionPlaceholder', 'Short description of what this package offers')}
-                    className={inputCls}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {t('creditPackage.form.creditAmount', 'Số Credit')}
-                    </Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="100000000"
-                      value={formData.creditAmount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const n = parseInt(value, 10) || 0;
-                        const bonus = Math.floor(n * 0.1);
-                        const next = {
-                          ...formData,
-                          creditAmount: value,
-                          price: String(calculatePrice(n)),
-                          bonusCredit: String(bonus),
-                        };
-                        setFormData(next);
-                        validator.change('creditAmount', value, next);
-                      }}
-                      onBlur={() => {
-                        const n = parseInt(formData.creditAmount, 10) || 0;
-                        const bonus = Math.floor(n * 0.1);
-                        const next = {
-                          ...formData,
-                          creditAmount: String(n),
-                          price: String(calculatePrice(n)),
-                          bonusCredit: String(bonus),
-                        };
-                        setFormData(next);
-                        validator.touch('creditAmount', next.creditAmount, next);
-                      }}
-                      className={cn(
-                        inputCls,
-                        validator.hasError('creditAmount') && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30',
-                      )}
-                      aria-invalid={validator.hasError('creditAmount')}
-                    />
-                    {validator.errorOf('creditAmount') ? (
-                      <p className="mt-1 text-xs text-rose-500">{validator.errorOf('creditAmount')}</p>
-                    ) : null}
-                  </div>
-                  <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {t('creditPackageManagement.form.price', 'Price (VND)')}
-                    </Label>
-                    <Input
-                      type="text"
-                      value={(parseInt(formData.price, 10) || 0).toLocaleString('vi-VN')}
-                      readOnly
-                      tabIndex={-1}
-                      aria-disabled="true"
-                      className={`${inputCls} bg-transparent dark:bg-transparent cursor-default pointer-events-none select-none`}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {t('creditPackageManagement.form.bonusCredit', 'Bonus credits')}
-                    </Label>
-                    <span className={`text-[11px] ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {t('creditPackageManagement.form.bonusCreditHint', '+10% of Credit Amount')}
-                    </span>
-                  </div>
-                  <Input
-                    type="text"
-                    value={(parseInt(formData.bonusCredit, 10) || 0).toLocaleString('vi-VN')}
-                    readOnly
-                    tabIndex={-1}
-                    aria-disabled="true"
-                    className={`${inputCls} bg-transparent dark:bg-transparent cursor-default pointer-events-none select-none`}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className={`flex justify-end gap-3 pt-2 border-t ${
-                dk ? 'border-white/[0.06]' : 'border-slate-100'
-              }`}
-            >
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsFormOpen(false)}
-                className={`rounded-lg cursor-pointer ${
-                  dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''
-                }`}
-              >
-                {t('auth.cancel', 'Cancel')}
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-ocean-cta hover:brightness-110 text-white rounded-lg shadow-lg shadow-ocean-500/25 cursor-pointer"
-              >
-                {isSubmitting
-                  ? t('creditPackageManagement.submitting', 'Saving...')
-                  : editingPackage
-                    ? t('creditPackageManagement.save', 'Save changes')
-                    : t('creditPackageManagement.create', 'Create package')}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreditPackageFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        editingPackage={editingPackage}
+        formData={formData}
+        setFormData={setFormData}
+        validator={validator}
+        calculatePrice={calculatePrice}
+        isSubmitting={isSubmitting}
+        onSubmit={handleSubmit}
+        isDarkMode={dk}
+        t={t}
+      />
 
       {/* Delete dialog */}
       <Dialog
