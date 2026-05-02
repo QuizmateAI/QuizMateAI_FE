@@ -44,6 +44,11 @@
       "creditWallet": "Credit wallet",
       "regularCredits": "Regular credits",
       "planCredits": "Plan credits",
+      "planCreditsExpire": "Expires",
+      "planEndsIn": "Your plan ends in {{count}} days",
+      "planEndsToday": "Your plan ends today",
+      "planExpired": "Your plan has expired",
+      "resubscribe": "Resubscribe",
       "topUpCredits": "Top up credits",
       "subscriptionStatus": {
         "ACTIVE": "Active",
@@ -76,7 +81,18 @@
         "status": "Status",
         "loading": "Loading history...",
         "empty": "No payment transactions yet.",
-        "loadError": "Unable to load payment history."
+        "loadError": "Unable to load payment history.",
+        "usage": {
+          "title": "Usage history",
+          "groupTitle": "Group usage history",
+          "subtitle": "The 5 most recent credit movements",
+          "refresh": "Refresh usage history",
+          "activity": "Activity",
+          "change": "Change",
+          "balance": "Balance after",
+          "empty": "No credit usage activity yet.",
+          "loadError": "Unable to load usage history."
+        }
       }
     },
     "noPlans": "No plans available for this category.",

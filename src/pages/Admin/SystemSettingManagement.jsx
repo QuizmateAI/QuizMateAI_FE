@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   RefreshCw,
   Edit2,
   Settings2,
-  Save,
   X,
-  Info,
   RefreshCcw,
   Search,
   Coins,
@@ -34,9 +33,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import ListSpinner from '@/components/ui/ListSpinner';
+import SystemSettingEditDialog from './components/SystemSettingEditDialog';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
@@ -137,6 +136,8 @@ function getValueFormat(key = '') {
   return 'number';
 }
 
+const SYSTEM_SETTINGS_QUERY_KEY = ['admin', 'systemSettings'];
+
 function getSettingCategory(key = '') {
   if (
     key.startsWith('credit.')
@@ -166,6 +167,7 @@ function SystemSettingManagement() {
   const { isDarkMode } = useDarkMode();
   const { permissions, loading: permLoading } = useAdminPermissions();
   const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   const dk = isDarkMode;
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
@@ -173,39 +175,37 @@ function SystemSettingManagement() {
   const canWrite = !permLoading && permissions.has('system-settings:write');
   const canResync = !permLoading && permissions.has('credit-package:write');
 
-  const [settings, setSettings] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSetting, setEditSetting] = useState(null);
   const [editValue, setEditValue] = useState('');
-  const [saving, setSaving] = useState(false);
 
   const [resyncOpen, setResyncOpen] = useState(false);
-  const [resyncing, setResyncing] = useState(false);
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    setError('');
-    try {
+  const {
+    data,
+    isLoading: loading,
+    isFetching,
+    error: queryError,
+  } = useQuery({
+    queryKey: SYSTEM_SETTINGS_QUERY_KEY,
+    queryFn: async () => {
       const response = await getAllSystemSettings();
-      const data = extractData(response);
-      setSettings(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+      const list = extractData(response);
+      return Array.isArray(list) ? list : [];
+    },
+  });
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  const settings = useMemo(() => data ?? [], [data]);
 
-  const formatValue = (key, value) => {
+  const error = queryError ? getErrorMessage(queryError) : '';
+
+  const invalidateSettings = () =>
+    queryClient.invalidateQueries({ queryKey: SYSTEM_SETTINGS_QUERY_KEY });
+
+  const formatValue = useCallback((key, value) => {
     const numericValue = Number(value);
     if (Number.isNaN(numericValue)) {
       return value == null || value === '' ? '-' : String(value);
@@ -222,7 +222,7 @@ function SystemSettingManagement() {
     }
 
     return numericValue.toLocaleString(locale);
-  };
+  }, [locale]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -294,7 +294,7 @@ function SystemSettingManagement() {
 
       return haystack.includes(searchQuery);
     });
-  }, [activeFilter, normalizedSettings, searchTerm]);
+  }, [activeFilter, normalizedSettings, searchTerm, formatValue]);
 
   const latestUpdatedSetting = useMemo(() => normalizedSettings.reduce((latest, setting) => {
     const currentTime = new Date(setting.updatedAt || 0).getTime();
@@ -323,33 +323,39 @@ function SystemSettingManagement() {
     }
   };
 
-  const handleSave = async () => {
-    if (!editSetting) return;
-
-    setSaving(true);
-    try {
-      await updateSystemSetting(editSetting.key, { value: editValue });
+  const saveMutation = useMutation({
+    mutationFn: ({ key, value }) => updateSystemSetting(key, { value }),
+    onSuccess: () => {
       showSuccess(t('systemSettings.updateSuccess'));
       closeEdit(false);
-      await fetchSettings();
-    } catch (err) {
+      invalidateSettings();
+    },
+    onError: (err) => {
       showError(getErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+  });
 
-  const handleResync = async () => {
-    setResyncing(true);
-    try {
-      await resyncCreditPackagePrices();
+  const resyncMutation = useMutation({
+    mutationFn: () => resyncCreditPackagePrices(),
+    onSuccess: () => {
       showSuccess(t('systemSettings.resyncSuccess'));
       setResyncOpen(false);
-    } catch (err) {
+    },
+    onError: (err) => {
       showError(getErrorMessage(err));
-    } finally {
-      setResyncing(false);
-    }
+    },
+  });
+
+  const saving = saveMutation.isPending;
+  const resyncing = resyncMutation.isPending;
+
+  const handleSave = () => {
+    if (!editSetting) return;
+    saveMutation.mutate({ key: editSetting.key, value: editValue });
+  };
+
+  const handleResync = () => {
+    resyncMutation.mutate();
   };
 
   const panelClass = dk ? 'border-slate-800 bg-slate-900/95' : 'border-slate-200 bg-white';
@@ -441,14 +447,14 @@ function SystemSettingManagement() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchSettings}
-              disabled={loading}
+              onClick={invalidateSettings}
+              disabled={isFetching}
               className={cn(
                 'h-9 rounded-lg px-3',
                 dk ? 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800' : 'border-slate-200 bg-white hover:bg-slate-50'
               )}
             >
-              <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+              <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
               {t('systemSettings.refresh')}
             </Button>
           </div>
@@ -824,148 +830,23 @@ function SystemSettingManagement() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editOpen} onOpenChange={closeEdit}>
-        <DialogContent className={cn('overflow-hidden rounded-xl border p-0 sm:max-w-xl', dk ? 'border-slate-800 bg-slate-900 text-white' : 'border-slate-200 bg-white')}>
-          <div className="space-y-5 p-6">
-            <DialogHeader className="space-y-2 text-left">
-              <DialogTitle className="flex items-center gap-2">
-                <Edit2 className="h-5 w-5" />
-                {t('systemSettings.editTitle')}
-              </DialogTitle>
-              <DialogDescription>
-                {t('systemSettings.editDescription')}
-              </DialogDescription>
-            </DialogHeader>
-
-            {editSetting && (
-              <div className="space-y-5">
-                <div className={cn('rounded-xl border px-4 py-4', subtlePanelClass)}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <code className={cn(
-                      'inline-flex rounded-md border px-2.5 py-1 font-mono text-[11px] font-semibold',
-                      dk ? 'border-slate-700 bg-slate-950 text-cyan-200' : 'border-slate-200 bg-white text-cyan-700'
-                    )}
-                    >
-                      {editSetting.key}
-                    </code>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'rounded-full border px-2.5 py-1 text-[11px] font-semibold',
-                        (CATEGORY_META[editSetting.category] || CATEGORY_META.other).chipClass
-                      )}
-                    >
-                      {t(`systemSettings.categories.${editSetting.category}`)}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'rounded-full border px-2.5 py-1 text-[11px] font-semibold',
-                        dk ? 'border-slate-700 bg-slate-950 text-slate-200' : 'border-slate-200 bg-white text-slate-700'
-                      )}
-                    >
-                      {getFormatLabel(editSetting.key)}
-                    </Badge>
-                  </div>
-
-                  {editSetting.description && (
-                    <div className={cn(
-                      'mt-4 flex items-start gap-2 rounded-lg border px-3 py-3 text-sm',
-                      dk ? 'border-slate-700 bg-slate-950 text-slate-300' : 'border-slate-200 bg-white text-slate-700'
-                    )}
-                    >
-                      <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>{editSetting.description}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className={cn('rounded-xl border px-4 py-4', subtlePanelClass)}>
-                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedTextClass)}>
-                      {t('systemSettings.editCurrent')}
-                    </p>
-                    <p className={cn('mt-2 text-lg font-semibold', strongTextClass)}>
-                      {formatValue(editSetting.key, editSetting.value)}
-                    </p>
-                  </div>
-
-                  <div className={cn('rounded-xl border px-4 py-4', subtlePanelClass)}>
-                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedTextClass)}>
-                      {t('systemSettings.editPreview')}
-                    </p>
-                    <p className={cn('mt-2 text-lg font-semibold', strongTextClass)}>
-                      {editValue === '' ? '-' : formatValue(editSetting.key, editValue)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className={dk ? 'text-slate-300' : ''}>{t('systemSettings.colValue')}</Label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      value={editValue}
-                      onChange={(event) => setEditValue(event.target.value)}
-                      autoFocus
-                      className={cn(
-                        'h-11 rounded-lg pr-16',
-                        dk ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white'
-                      )}
-                    />
-
-                    {getValueFormat(editSetting.key) === 'percent' && (
-                      <span className={cn(
-                        'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold',
-                        mutedTextClass
-                      )}
-                      >
-                        %
-                      </span>
-                    )}
-
-                    {getValueFormat(editSetting.key) === 'vnd' && (
-                      <span className={cn(
-                        'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold',
-                        mutedTextClass
-                      )}
-                      >
-                        VND
-                      </span>
-                    )}
-                  </div>
-                  <p className={cn('text-xs', mutedTextClass)}>
-                    {getInputHint(editSetting.key)}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <DialogFooter className="gap-2 sm:justify-end">
-              <Button
-                variant="outline"
-                onClick={() => closeEdit(false)}
-                disabled={saving}
-                className={cn(
-                  'rounded-lg',
-                  dk ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : 'border-slate-200 hover:bg-slate-50'
-                )}
-              >
-                <X className="h-4 w-4" />
-                {t('systemSettings.cancel')}
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving || editValue === ''}
-                className="rounded-lg"
-              >
-                <Save className="h-4 w-4" />
-                {saving ? t('systemSettings.saving') : t('systemSettings.save')}
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SystemSettingEditDialog
+        open={editOpen}
+        onOpenChange={closeEdit}
+        setting={editSetting}
+        value={editValue}
+        onValueChange={setEditValue}
+        saving={saving}
+        onSave={handleSave}
+        onCancel={() => closeEdit(false)}
+        isDarkMode={dk}
+        t={t}
+        formatValue={formatValue}
+        getFormatLabel={getFormatLabel}
+        getInputHint={getInputHint}
+        getValueFormat={getValueFormat}
+        categoryMeta={editSetting ? (CATEGORY_META[editSetting.category] || CATEGORY_META.other) : CATEGORY_META.other}
+      />
     </div>
   );
 }

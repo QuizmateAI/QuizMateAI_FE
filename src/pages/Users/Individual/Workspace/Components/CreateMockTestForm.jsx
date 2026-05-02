@@ -1,14 +1,34 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, ClipboardList, ArrowLeft, RefreshCw, Rocket, Sparkles, ChevronLeft } from "lucide-react";
+import { Loader2, ClipboardList, ArrowLeft, RefreshCw, Rocket, Sparkles, ChevronLeft, BookmarkPlus, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { generateMockTest, getBloomSkills } from "@/api/AIAPI";
 import { Checkbox } from "@/components/ui/checkbox";
 import useWorkspaceMaterialSelection from "./useWorkspaceMaterialSelection";
 import { useMockTestStructureSuggestion } from "@/pages/Users/MockTest/hooks/useMockTestStructureSuggestion";
+import { useSavedMockTestTemplates } from "@/pages/Users/MockTest/hooks/useSavedMockTestTemplates";
 import { MockTestStructureEditor, validateMockTestStructure } from "@/pages/Users/MockTest/components/MockTestStructureEditor";
-
-const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
+import { MockTestScoringEditor } from "@/pages/Users/MockTest/components/MockTestScoringEditor";
+import { MockTestTemplatePicker } from "@/pages/Users/MockTest/components/MockTestTemplatePicker";
+import { MockTestExitConfirmDialog } from "@/pages/Users/MockTest/components/MockTestExitConfirmDialog";
+import {
+  buildMockTestCustomScoring,
+  countLeafQuestions,
+  normalizeMockTestScoring,
+} from "@/pages/Users/MockTest/utils/mockTestScoring";
+import { sectionsToServerDTOs } from "@/pages/Users/MockTest/utils/mockTestSectionDTOs";
+import {
+  clearMockTestDraft,
+  loadMockTestDraft,
+  saveMockTestDraft,
+} from "@/pages/Users/MockTest/utils/mockTestTemplateDraft";
+import { buildManualMockTestSections } from "@/pages/Users/MockTest/utils/mockTestManualTemplate";
+import {
+  buildSavedTemplatePayload,
+  buildSavedTemplatePayloadFromSuggestion,
+  templateStructureToV1ForForm,
+} from "@/pages/Users/MockTest/utils/mockTestTemplateLoader";
+import { useToast } from "@/context/ToastContext";
 
 // Map difficulty client → server (server enum: EASY/MEDIUM/HARD)
 function uppercaseDifficulty(value) {
@@ -25,129 +45,14 @@ function normalizeExamLanguage(value, fallback) {
   return /^[a-z]{2,3}$/.test(normalized) ? normalized : fallback;
 }
 
-// BE rule (validateMockTestConfig):
-// - Mock test mặc định dùng SINGLE_CHOICE cho mọi leaf section; FE không gửi cấu hình question type.
-// - questionUnit=false: difficulty ratio là PHẦN TRĂM — sum = 100.
-// - bloomUnit=true: bloom ratio là SỐ CÂU — sum = numQuestions.
-// Aggregation: editor structure[{difficulty, bloomSkill, quantity}] → SectionConfigDTO.
-// - Difficulty %s tính từ tổng quantity theo bucket, làm tròn rồi bù vào bucket lớn nhất cho đủ 100.
-// - Bloom: group quantity theo skill.
-
-function aggregateStructure(structure, bloomMap) {
-  const items = Array.isArray(structure) ? structure : [];
-  const numQuestions = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
-
-  const diffCounts = { EASY: 0, MEDIUM: 0, HARD: 0 };
-  const bloomCounts = {};
-  items.forEach((it) => {
-    const q = Number(it?.quantity) || 0;
-    if (q <= 0) return;
-    if (it?.difficulty && diffCounts[it.difficulty] != null) diffCounts[it.difficulty] += q;
-    if (it?.bloomSkill) bloomCounts[it.bloomSkill] = (bloomCounts[it.bloomSkill] || 0) + q;
-  });
-
-  // Difficulty → % sum=100
-  let easyRatio = 0, mediumRatio = 0, hardRatio = 0;
-  if (numQuestions > 0) {
-    easyRatio = Math.round((diffCounts.EASY / numQuestions) * 100);
-    mediumRatio = Math.round((diffCounts.MEDIUM / numQuestions) * 100);
-    hardRatio = Math.round((diffCounts.HARD / numQuestions) * 100);
-    const sum = easyRatio + mediumRatio + hardRatio;
-    if (sum !== 100) {
-      const delta = 100 - sum;
-      if (diffCounts.MEDIUM >= diffCounts.EASY && diffCounts.MEDIUM >= diffCounts.HARD) mediumRatio += delta;
-      else if (diffCounts.EASY >= diffCounts.HARD) easyRatio += delta;
-      else hardRatio += delta;
-    }
-  }
-
-  // Bloom: per-skill count
-  const bloomSkills = Object.entries(bloomCounts)
-    .map(([skill, count]) => {
-      const id = bloomMap?.[skill];
-      if (!Number.isFinite(id) || count <= 0) return null;
-      return { bloomId: id, ratio: count };
-    })
-    .filter(Boolean);
-
-  return { numQuestions, easyRatio, mediumRatio, hardRatio, questionTypes: [], bloomSkills };
+function resolveMaterialIdsForMockTest(selectedIds, sources) {
+  if (Array.isArray(selectedIds) && selectedIds.length > 0) return selectedIds;
+  return (Array.isArray(sources) ? sources : [])
+    .map((source) => Number(source?.id))
+    .filter((id) => Number.isInteger(id) && id > 0);
 }
 
-// Build raw structureItems để BE per-row scoring. Mỗi row pair với bloomId resolved từ name.
-function buildStructureItems(structure, bloomMap, useScoring) {
-  if (!Array.isArray(structure) || !useScoring) return [];
-  return structure
-    .map((it) => {
-      const quantity = Number(it?.quantity) || 0;
-      if (quantity <= 0 || !it?.difficulty || !it?.bloomSkill) return null;
-      const bloomId = bloomMap?.[it.bloomSkill];
-      const score = Number(it?.scorePerQuestion);
-      return {
-        difficulty: it.difficulty,
-        bloomSkill: it.bloomSkill,
-        bloomId: Number.isFinite(bloomId) ? bloomId : null,
-        quantity,
-        scorePerQuestion: Number.isFinite(score) && score > 0 ? score : null,
-      };
-    })
-    .filter(Boolean);
-}
-
-// Tổng max score của 1 leaf section (dùng cho field maxScore trong DTO).
-function leafSectionMaxScore(structure) {
-  if (!Array.isArray(structure)) return 0;
-  return structure.reduce((s, it) => {
-    const score = Number(it?.scorePerQuestion) || 0;
-    const qty = Number(it?.quantity) || 0;
-    return s + score * qty;
-  }, 0);
-}
-
-function sectionsToServerDTOs(sections, bloomMap, useScoring) {
-  if (!Array.isArray(sections)) return [];
-  return sections.map((sec) => {
-    const hasSubs = sec.subConfigs && sec.subConfigs.length > 0;
-    if (hasSubs) {
-      return {
-        name: sec.name,
-        description: sec.description,
-        numQuestions: null,
-        // Wrapper: BE auto recompute từ leaves; FE gửi null cho rõ.
-        maxScore: useScoring ? null : null,
-        structureItems: [],
-        easyRatio: 0,
-        mediumRatio: 0,
-        hardRatio: 0,
-        questionUnit: false,
-        bloomUnit: true,
-        timerMode: true,
-        requiresSharedContext: false,
-        questionTypes: [],
-        bloomSkills: [],
-        subConfigs: sectionsToServerDTOs(sec.subConfigs, bloomMap, useScoring),
-      };
-    }
-    const agg = aggregateStructure(sec.structure, bloomMap);
-    const leafMax = useScoring ? leafSectionMaxScore(sec.structure) : 0;
-    return {
-      name: sec.name,
-      description: sec.description,
-      numQuestions: agg.numQuestions,
-      maxScore: useScoring && leafMax > 0 ? leafMax : null,
-      structureItems: buildStructureItems(sec.structure, bloomMap, useScoring),
-      easyRatio: agg.easyRatio,
-      mediumRatio: agg.mediumRatio,
-      hardRatio: agg.hardRatio,
-      questionUnit: false,
-      bloomUnit: true,
-      timerMode: true,
-      requiresSharedContext: sec.requiresSharedContext === true,
-      questionTypes: agg.questionTypes,
-      bloomSkills: agg.bloomSkills,
-      subConfigs: [],
-    };
-  });
-}
+// Aggregation logic moved to ../../MockTest/utils/mockTestSectionDTOs (shared with other entry points).
 
 /**
  * Form tạo Mock Test bằng AI — flow 3-step:
@@ -166,8 +71,10 @@ function CreateMockTestForm({
   sources,
   selectedSourceIds,
   onToggleMaterialSelection,
+  initialSavedTemplate = null,
 }) {
   const { t, i18n } = useTranslation();
+  const { showSuccess, showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -175,26 +82,53 @@ function CreateMockTestForm({
   // State step machine
   const [step, setStep] = useState("BASIC"); // 'BASIC' | 'STRUCTURE' | 'GENERATING'
   const [examName, setExamName] = useState("");
-  const [difficulty, setDifficulty] = useState("medium");
+  // Difficulty/total/duration are now AUTO-FILLED from template after suggestion (v2 redesign).
+  // Defaults below are placeholders only — overridden by suggestion.totalQuestion/durationMinutes.
+  const [difficulty] = useState("medium");
   const [totalQuestions, setTotalQuestions] = useState(30);
   const [duration, setDuration] = useState(60);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiSections, setAiSections] = useState([]);
   const [aiTopNotice, setAiTopNotice] = useState("");
   const [examLanguage, setExamLanguage] = useState("");
-  // Toggle "dùng cấu trúc điểm" — bật ở step 2 header. Khi off, BE/UI bỏ qua mọi maxScore + per-row score.
-  const [useScoring, setUseScoring] = useState(false);
+  const [scoring, setScoring] = useState(() => normalizeMockTestScoring());
+  // Template metadata after suggestion (display only).
+  const [matchedTemplate, setMatchedTemplate] = useState(null);
+  // Exit confirm dialog visibility
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  // Saved-template state for the "Lưu template" button on STRUCTURE step
+  const [savingActive, setSavingActive] = useState(false);
+  const [savedActiveTemplateId, setSavedActiveTemplateId] = useState(null);
 
   // Map tên → ID cho bloom skill (fetch 1 lần khi mở form)
   const [bloomMap, setBloomMap] = useState({});
 
   const {
     suggestion,
+    suggestions: templateOptions,
     isLoading: isSuggesting,
     error: suggestError,
     requestSuggestion,
     regenerate,
+    selectSuggestion,
   } = useMockTestStructureSuggestion();
+
+  // Saved template library (for "save AI template" button + cross-marking saved cards)
+  const {
+    templates: savedTemplates,
+    savingTemplateId,
+    derivedFromTemplateIds,
+    save: saveTemplateToLibrary,
+  } = useSavedMockTestTemplates({ enabled: true });
+
+  // Set of template ids already saved (derived from), so picker shows "Đã lưu" badge
+  const savedDerivedIds = useMemo(() => {
+    const set = new Set(derivedFromTemplateIds || []);
+    // Also infer from displayName + structure equivalence isn't reliable; rely on derivedFromTemplateIds
+    // populated when user saves. On reload, savedTemplates won't have derivedFromTemplateId field
+    // (entity has it stored separately) — so initial state shows nothing as saved which is OK.
+    return set;
+  }, [derivedFromTemplateIds, savedTemplates]);
 
   const {
     allSelected,
@@ -218,6 +152,21 @@ function CreateMockTestForm({
     () => normalizedSources.filter((item) => selectedIdSet.has(item.id)),
     [normalizedSources, selectedIdSet],
   );
+
+  // Auto-select all sources khi form vua mount (truoc khi user pick) —
+  // user mong doi behavior "default analyze all materials, uncheck rieng".
+  // Chi chay khi normalizedSources co data va chua co material nao duoc chon.
+  const [autoSelectedOnce, setAutoSelectedOnce] = useState(false);
+  useEffect(() => {
+    if (autoSelectedOnce) return;
+    if (!Array.isArray(normalizedSources) || normalizedSources.length === 0) return;
+    if (effectiveSelectedSourceIds.length > 0) {
+      setAutoSelectedOnce(true);
+      return;
+    }
+    selectAllSources();
+    setAutoSelectedOnce(true);
+  }, [autoSelectedOnce, normalizedSources, effectiveSelectedSourceIds, selectAllSources]);
 
   // Fetch bloom skills 1 lần để map name → id khi submit.
   // Question type của mock-test do backend tự set SINGLE_CHOICE.
@@ -244,16 +193,66 @@ function CreateMockTestForm({
     return () => { cancelled = true; };
   }, []);
 
-  // Khi suggestion mới về → chuyển sang STRUCTURE
+  const applySuggestion = useCallback((nextSuggestion) => {
+    if (!nextSuggestion) return;
+    setAiSections(nextSuggestion.sections || []);
+    setAiTopNotice(nextSuggestion.description || "");
+    setExamLanguage(normalizeExamLanguage(nextSuggestion.examLanguage, ""));
+    if (Number.isFinite(nextSuggestion.totalQuestion) && nextSuggestion.totalQuestion > 0) {
+      setTotalQuestions(nextSuggestion.totalQuestion);
+    }
+    if (Number.isFinite(nextSuggestion.durationMinutes) && nextSuggestion.durationMinutes > 0) {
+      setDuration(nextSuggestion.durationMinutes);
+    }
+    setScoring(normalizeMockTestScoring(nextSuggestion.scoring, nextSuggestion.totalQuestion));
+    setMatchedTemplate(nextSuggestion.v2Template || null);
+    setStep("STRUCTURE");
+  }, []);
+
+  // Khi suggestion mới về → auto-fill template defaults rồi chuyển sang STRUCTURE.
   useEffect(() => {
-    if (suggestion) {
-      const uiLanguage = getUiLanguage(i18n.language);
-      setAiSections(suggestion.sections || []);
-      setAiTopNotice(suggestion.description || "");
-      setExamLanguage(normalizeExamLanguage(suggestion.examLanguage, uiLanguage));
+    applySuggestion(suggestion);
+  }, [suggestion, applySuggestion]);
+
+  useEffect(() => {
+    const draft = loadMockTestDraft("individual", contextId);
+    if (!draft) return;
+    setExamName(draft.examName || "");
+    setAiPrompt(draft.aiPrompt || "");
+    setAiSections(Array.isArray(draft.sections) ? draft.sections : []);
+    setAiTopNotice(draft.topNotice || "");
+    setExamLanguage(draft.examLanguage || "");
+    setMatchedTemplate(draft.matchedTemplate || null);
+    setTotalQuestions(Number(draft.totalQuestions) || 30);
+    setDuration(Number(draft.duration) || 60);
+    setScoring(normalizeMockTestScoring(draft.scoring, draft.totalQuestions));
+    if (Array.isArray(draft.sections) && draft.sections.length > 0) {
       setStep("STRUCTURE");
     }
-  }, [suggestion, i18n.language]);
+  }, [contextId]);
+
+  useEffect(() => {
+    if (!contextId) return;
+    if (!examName.trim() && aiSections.length === 0) return;
+    saveMockTestDraft("individual", contextId, {
+      examName,
+      aiPrompt,
+      sections: aiSections,
+      topNotice: aiTopNotice,
+      examLanguage,
+      matchedTemplate,
+      totalQuestions,
+      duration,
+      scoring,
+    });
+  }, [contextId, examName, aiPrompt, aiSections, aiTopNotice, examLanguage, matchedTemplate, totalQuestions, duration, scoring]);
+
+  useEffect(() => {
+    const leafTotal = countLeafQuestions(aiSections);
+    if (leafTotal > 0 && leafTotal !== Number(totalQuestions)) {
+      setTotalQuestions(leafTotal);
+    }
+  }, [aiSections, totalQuestions]);
 
   const handleRequestSuggestion = useCallback(async () => {
     setError("");
@@ -263,39 +262,40 @@ function CreateMockTestForm({
     }
     try {
       const uiLanguage = getUiLanguage(i18n.language);
+      const materialIds = resolveMaterialIdsForMockTest(effectiveSelectedSourceIds, normalizedSources);
       setExamLanguage("");
+      // V2 redesign: total/duration sẽ tự fill từ template — gửi 0 để hook không
+      // ép distribution với số sai. Hook sẽ dùng template.totalQuestion làm default.
       await requestSuggestion({
         examName: examName.trim(),
         description: aiPrompt?.trim() || undefined,
-        totalQuestion: Number(totalQuestions) || 1,
-        durationInMinute: Number(duration) || 60,
-        overallDifficulty: uppercaseDifficulty(difficulty),
+        totalQuestion: 0,
         outputLanguage: uiLanguage,
         workspaceId: Number(contextId),
+        materialIds,
       });
     } catch (e) {
       setError(e?.message || t("mockTestForms.common.createFailed", "Failed to suggest structure."));
     }
-  }, [examName, aiPrompt, totalQuestions, duration, difficulty, contextId, i18n.language, requestSuggestion, t]);
+  }, [examName, aiPrompt, contextId, i18n.language, requestSuggestion, t, effectiveSelectedSourceIds, normalizedSources]);
+
+  const handleStartManualTemplate = useCallback(() => {
+    const title = examName.trim() || t("mockTestForms.create.manualTitle", "Mock test thủ công");
+    const sections = buildManualMockTestSections(title);
+    setExamName(title);
+    setAiSections(sections);
+    setAiTopNotice(t("mockTestForms.create.manualNotice", "Template thủ công, bạn có thể chỉnh từng phần, loại câu, độ khó, Bloom và điểm trước khi tạo."));
+    setMatchedTemplate(null);
+    setExamLanguage("");
+    setTotalQuestions(countLeafQuestions(sections));
+    setDuration(60);
+    setScoring(normalizeMockTestScoring({ totalPoints: 100, passingScore: 50 }, 40));
+    setStep("STRUCTURE");
+  }, [examName, t]);
 
   const handleBackToBasic = useCallback(() => {
     setStep("BASIC");
   }, []);
-
-  // Skip AI suggest — user tự thiết kế cấu trúc từ blank canvas. Dùng khi user đã biết
-  // chính xác đề mình muốn (ví dụ giáo viên có sẵn ma trận đề), không cần AI gợi ý.
-  const handleStartManualDesign = useCallback(() => {
-    setError("");
-    if (!examName.trim()) {
-      setError(t("mockTestForms.common.nameRequired", "Please enter a name."));
-      return;
-    }
-    const uiLanguage = getUiLanguage(i18n.language);
-    setAiSections([]);
-    setAiTopNotice("");
-    setExamLanguage(uiLanguage);
-    setStep("STRUCTURE");
-  }, [examName, i18n.language, t]);
 
   const handleSubmit = useCallback(async () => {
     setError("");
@@ -307,7 +307,12 @@ function CreateMockTestForm({
     setSubmitting(true);
     setStep("GENERATING");
     try {
-      const sectionConfigs = sectionsToServerDTOs(aiSections, bloomMap, useScoring);
+      const materialIds = resolveMaterialIdsForMockTest(effectiveSelectedSourceIds, normalizedSources);
+      if (materialIds.length === 0) {
+        throw new Error(t("mockTestForms.common.materialRequired", "Please select at least one material."));
+      }
+      const normalizedScoring = normalizeMockTestScoring(scoring, totalQuestions);
+      const sectionConfigs = sectionsToServerDTOs(aiSections, bloomMap, normalizedScoring);
       const uiLanguage = getUiLanguage(i18n.language);
       const payload = {
         title: examName.trim(),
@@ -317,12 +322,14 @@ function CreateMockTestForm({
         durationInSecond: 0,
         prompt: aiPrompt?.trim() || "",
         outputLanguage: uiLanguage,
-        examLanguage: normalizeExamLanguage(examLanguage, uiLanguage),
-        materialIds: effectiveSelectedSourceIds || [],
+        examLanguage: normalizeExamLanguage(examLanguage, "") || undefined,
+        materialIds,
         workspaceId: Number(contextId),
         sectionConfigs,
+        customScoring: buildMockTestCustomScoring(normalizedScoring, aiSections),
       };
       const result = await generateMockTest(payload);
+      clearMockTestDraft("individual", contextId);
       await onCreateMockTest?.({
         quizId: result?.quizId,
         taskId: result?.taskId,
@@ -337,20 +344,130 @@ function CreateMockTestForm({
     } finally {
       setSubmitting(false);
     }
-  }, [aiSections, totalQuestions, bloomMap, examName, difficulty, duration, aiPrompt, i18n.language, examLanguage, effectiveSelectedSourceIds, contextId, onCreateMockTest, t, useScoring]);
+  }, [aiSections, totalQuestions, bloomMap, scoring, examName, difficulty, duration, aiPrompt, i18n.language, examLanguage, effectiveSelectedSourceIds, normalizedSources, contextId, onCreateMockTest, t]);
+
+  const handleSelectTemplate = useCallback((option) => {
+    const selected = selectSuggestion(option?.v2Template?.mockTestTemplateId) || option;
+    applySuggestion(selected);
+    setSavedActiveTemplateId(null);
+  }, [selectSuggestion, applySuggestion]);
+
+  // Build a SaveMockTestTemplateRequest payload from current form state.
+  const buildSavePayload = useCallback(() => buildSavedTemplatePayload({
+    sections: aiSections,
+    scoring,
+    totalQuestions,
+    duration,
+    examName,
+    examLanguage,
+    aiTopNotice,
+    matchedTemplate,
+  }), [aiSections, scoring, totalQuestions, duration, examName, examLanguage, aiTopNotice, matchedTemplate]);
+
+  // Save the AI-suggested template (the one shown in the picker card).
+  const handleSaveSuggestedTemplate = useCallback(async (option) => {
+    if (!option) return;
+    try {
+      const payload = buildSavedTemplatePayloadFromSuggestion(option);
+      if (!payload) return;
+      await saveTemplateToLibrary(payload);
+      showSuccess?.(t("mockTestForms.savedTemplates.savedToast", "Đã lưu template vào kho riêng."));
+    } catch (e) {
+      showError?.(e?.message || t("mockTestForms.savedTemplates.saveFailed", "Lưu template thất bại."));
+    }
+  }, [saveTemplateToLibrary, showSuccess, showError, t]);
+
+  // Save the currently-edited template (after user has tweaked structure/scoring).
+  const handleSaveCurrentTemplate = useCallback(async () => {
+    if (savingActive) return;
+    setSavingActive(true);
+    try {
+      const validation = validateMockTestStructure(aiSections, undefined, t);
+      if (!validation.isValid) {
+        showError?.(validation.errors[0] || t("mockTestForms.savedTemplates.validationFailed", "Cấu trúc chưa hợp lệ."));
+        return;
+      }
+      const payload = buildSavePayload();
+      const result = await saveTemplateToLibrary(payload);
+      setSavedActiveTemplateId(result?.mockTestTemplateId || true);
+      showSuccess?.(t("mockTestForms.savedTemplates.savedToast", "Đã lưu template vào kho riêng."));
+    } catch (e) {
+      showError?.(e?.message || t("mockTestForms.savedTemplates.saveFailed", "Lưu template thất bại."));
+    } finally {
+      setSavingActive(false);
+    }
+  }, [savingActive, aiSections, buildSavePayload, saveTemplateToLibrary, showSuccess, showError, t]);
+
+  const hasUnsavedWork = useMemo(() => {
+    if (step === "BASIC") return Boolean(examName.trim());
+    if (step === "STRUCTURE") return Array.isArray(aiSections) && aiSections.length > 0;
+    return false;
+  }, [step, examName, aiSections]);
+
+  const handleRequestClose = useCallback(() => {
+    if (!hasUnsavedWork) {
+      onBack?.();
+      return;
+    }
+    setExitConfirmOpen(true);
+  }, [hasUnsavedWork, onBack]);
+
+  const handleDiscardAndExit = useCallback(() => {
+    clearMockTestDraft("individual", contextId);
+    setExitConfirmOpen(false);
+    onBack?.();
+  }, [contextId, onBack]);
+
+  const handleSaveAndExit = useCallback(async () => {
+    try {
+      if (Array.isArray(aiSections) && aiSections.length > 0) {
+        const payload = buildSavePayload();
+        await saveTemplateToLibrary(payload);
+        showSuccess?.(t("mockTestForms.savedTemplates.savedToast", "Đã lưu template vào kho riêng."));
+      }
+    } catch (e) {
+      showError?.(e?.message || t("mockTestForms.savedTemplates.saveFailed", "Lưu template thất bại."));
+      return;
+    } finally {
+      clearMockTestDraft("individual", contextId);
+    }
+    setExitConfirmOpen(false);
+    onBack?.();
+  }, [aiSections, buildSavePayload, contextId, onBack, saveTemplateToLibrary, showSuccess, showError, t]);
+
+  // Apply initialSavedTemplate (when MockTestListView opens form via "Use saved template")
+  useEffect(() => {
+    if (!initialSavedTemplate || !initialSavedTemplate.structure) return;
+    const sectionsFromV2 = templateStructureToV1ForForm(initialSavedTemplate);
+    setExamName(initialSavedTemplate.displayName || "");
+    setAiSections(sectionsFromV2);
+    setAiTopNotice(initialSavedTemplate.description || "");
+    setExamLanguage(normalizeExamLanguage(initialSavedTemplate.contentLanguage, ""));
+    setTotalQuestions(initialSavedTemplate.totalQuestion || countLeafQuestions(sectionsFromV2) || 30);
+    setDuration(initialSavedTemplate.durationMinutes || 60);
+    setScoring(normalizeMockTestScoring(initialSavedTemplate.scoring, initialSavedTemplate.totalQuestion));
+    setMatchedTemplate({
+      mockTestTemplateId: initialSavedTemplate.mockTestTemplateId,
+      displayName: initialSavedTemplate.displayName,
+      examType: initialSavedTemplate.examType,
+      contentLanguage: initialSavedTemplate.contentLanguage,
+      structure: initialSavedTemplate.structure,
+      scoring: initialSavedTemplate.scoring,
+    });
+    setStep("STRUCTURE");
+  }, [initialSavedTemplate]);
 
   const inputCls = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
     isDarkMode ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
               : "bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400"
   }`;
-  const selectCls = `${inputCls} appearance-none cursor-pointer`;
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
+        <button type="button" onClick={handleRequestClose} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-2">
@@ -445,39 +562,33 @@ function CreateMockTestForm({
             <div className={`rounded-lg border p-3 text-xs ${isDarkMode ? "border-blue-800/50 bg-blue-950/20 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
               {t(
                 "mockTestForms.create.scopeNotice",
-                "Mock tests only generate single-answer multiple-choice questions. Listening, Writing, and Speaking are not supported, so AI will skip them and only suggest text-based sections for exams like IELTS or TOEIC."
+                "Mock tests support single choice, multiple choice, and true/false questions. Listening, Writing, and Speaking are skipped, so AI only suggests text-based sections."
               )}
             </div>
 
             <div>
-              <label className={labelCls}>{t("mockTestForms.create.name", "Mock Test Name")}</label>
+              <label className={labelCls}>
+                {t("mockTestForms.create.name", "Mock Test Name")}
+              </label>
               <input
                 className={inputCls}
-                placeholder={t("mockTestForms.create.nameExample", "E.g. IELTS, TOEIC 900, final Math 12 exam...")}
+                placeholder={t("mockTestForms.create.nameExample", "E.g. IELTS, TOEIC 900, JLPT N5, VSTEP B2, THPT...")}
                 value={examName}
                 onChange={(e) => setExamName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && examName.trim() && !isSuggesting) {
+                    e.preventDefault();
+                    handleRequestSuggestion();
+                  }
+                }}
+                autoFocus
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>{t("mockTestForms.common.difficulty", "Difficulty")}</label>
-                <select className={selectCls} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>{t("mockTestForms.common.totalQuestions", "Total questions")}</label>
-                <input type="number" className={inputCls} value={totalQuestions} onChange={(e) => setTotalQuestions(Number(e.target.value))} min={1} />
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>{t("mockTestForms.common.timeDuration", "Duration (minutes)")}</label>
-              <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
-            </div>
-            <div>
-              <label className={labelCls}>{t("mockTestForms.common.additionalPrompt", "Additional prompt")}</label>
-              <textarea className={`${inputCls} min-h-[80px] resize-none`} placeholder={t("mockTestForms.common.promptPlaceholder", "Add extra instructions for the AI...")} value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
+              <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+                {t(
+                  "mockTestForms.create.nameHint",
+                  "Nhập tên kỳ thi rồi nhấn Enter — hệ thống sẽ tự gợi ý template chuẩn (số câu, thời gian, cấu trúc).",
+                )}
+              </p>
             </div>
 
             {(error || suggestError) && (
@@ -499,13 +610,43 @@ function CreateMockTestForm({
                 {t("mockTestForms.create.regenerate", "Regenerate")}
               </Button>
             </div>
+            {matchedTemplate && (
+              <div className={`rounded-lg border p-3 ${isDarkMode ? "border-purple-800/40 bg-purple-950/20" : "border-purple-200 bg-purple-50"}`}>
+                <div className="flex items-center gap-2 text-xs">
+                  <Sparkles className={`w-3.5 h-3.5 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
+                  <span className={`font-semibold ${isDarkMode ? "text-purple-200" : "text-purple-900"}`}>
+                    {t("mockTestForms.create.matchedTemplate", "Matched template")}: {matchedTemplate.displayName}
+                  </span>
+                  <span className={`text-[10px] uppercase tracking-wider ${isDarkMode ? "text-purple-400/70" : "text-purple-600/70"}`}>
+                    {matchedTemplate.examType}
+                  </span>
+                </div>
+                <div className={`mt-1 text-[11px] ${isDarkMode ? "text-purple-300/80" : "text-purple-700"}`}>
+                  {Number(totalQuestions) || 0} {t("mockTestForms.common.questionsShort", "câu")} · {Number(duration) || 0} {t("mockTestForms.common.minutesShort", "phút")} · {(aiSections || []).length} {t("mockTestForms.common.sectionsShort", "phần")}
+                </div>
+              </div>
+            )}
+            <MockTestTemplatePicker
+              options={templateOptions}
+              selectedTemplateId={matchedTemplate?.mockTestTemplateId}
+              onSelect={handleSelectTemplate}
+              onSaveTemplate={handleSaveSuggestedTemplate}
+              savedTemplateIds={savedDerivedIds}
+              savingTemplateId={savingTemplateId}
+              workspaceMaterials={normalizedSources}
+              isDarkMode={isDarkMode}
+            />
+            <MockTestScoringEditor
+              sections={aiSections}
+              scoring={scoring}
+              onChange={setScoring}
+              isDarkMode={isDarkMode}
+            />
             <MockTestStructureEditor
               sections={aiSections}
               onChange={setAiSections}
               targetTotalQuestions={Number(totalQuestions) || undefined}
               topNotice={aiTopNotice}
-              useScoring={useScoring}
-              onUseScoringChange={setUseScoring}
             />
             {error && (
               <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
@@ -530,27 +671,52 @@ function CreateMockTestForm({
 
       {/* Footer */}
       <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
+        <Button variant="outline" onClick={handleRequestClose} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
           {t("mockTestForms.common.cancel", "Cancel")}
         </Button>
 
+        {step === "STRUCTURE" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSaveCurrentTemplate}
+            disabled={savingActive || aiSections.length === 0}
+            className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+          >
+            {savingActive ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : savedActiveTemplateId ? (
+              <Check className="w-4 h-4 mr-2 text-emerald-500" />
+            ) : (
+              <BookmarkPlus className="w-4 h-4 mr-2" />
+            )}
+            {savedActiveTemplateId
+              ? t("mockTestForms.savedTemplates.savedShort", "Đã lưu")
+              : savingActive
+                ? t("mockTestForms.savedTemplates.savingShort", "Đang lưu...")
+                : t("mockTestForms.savedTemplates.saveShort", "Lưu template")}
+          </Button>
+        )}
+
         {step === "BASIC" && (
-          <>
-            <Button
-              variant="outline"
-              onClick={handleStartManualDesign}
-              disabled={isSuggesting}
-              className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
-            >
-              {t("mockTestForms.create.manualDesign", "Design manually")}
-            </Button>
-            <Button onClick={handleRequestSuggestion} disabled={isSuggesting} className="bg-purple-600 hover:bg-purple-700 text-white">
-              {isSuggesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-              {isSuggesting
-                ? t("mockTestForms.create.requestingSuggestion", "Generating suggestion...")
-                : t("mockTestForms.create.requestSuggestion", "Get structure suggestion")}
-            </Button>
-          </>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleStartManualTemplate}
+            disabled={isSuggesting}
+            className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+          >
+            {t("mockTestForms.create.manualTemplate", "Tạo thủ công")}
+          </Button>
+        )}
+
+        {step === "BASIC" && (
+          <Button onClick={handleRequestSuggestion} disabled={isSuggesting} className="bg-purple-600 hover:bg-purple-700 text-white">
+            {isSuggesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+            {isSuggesting
+              ? t("mockTestForms.create.requestingSuggestion", "Generating suggestion...")
+              : t("mockTestForms.create.requestSuggestion", "Get structure suggestion")}
+          </Button>
         )}
 
         {step === "STRUCTURE" && (
@@ -562,6 +728,14 @@ function CreateMockTestForm({
           </Button>
         )}
       </div>
+
+      <MockTestExitConfirmDialog
+        open={exitConfirmOpen}
+        onCancel={() => setExitConfirmOpen(false)}
+        onDiscard={handleDiscardAndExit}
+        onSaveAndExit={handleSaveAndExit}
+        canSaveTemplate={Array.isArray(aiSections) && aiSections.length > 0 && step === "STRUCTURE"}
+      />
     </div>
   );
 }

@@ -14,20 +14,26 @@ vi.mock('@/i18n', () => ({
 
 let api;
 let mock;
+let tokenStorage;
 
 beforeEach(async () => {
   vi.resetModules();
+  // tokenStorage is in-memory now; resetModules resets its internal _accessToken.
+  // We still wipe localStorage in case legacy 'user' / 'jwt_token' keys leak in.
   window.localStorage.clear();
-  // Force a fresh import so the axios instance is recreated
+
+  // Force a fresh import so the axios instance is recreated. Importing api.js
+  // also wires configureRefresh on the fresh tokenStorage module.
   const apiModule = await import('@/api/api');
   api = apiModule.default;
+  tokenStorage = await import('@/utils/tokenStorage');
+
   mock = new MockAdapter(api, { onNoMatch: 'throwException' });
 });
 
 describe('api interceptor — auth refresh handling', () => {
   it('does not refresh or clear tokens on a plain 403 permission response', async () => {
-    window.localStorage.setItem('accessToken', 'old');
-    window.localStorage.setItem('refreshToken', 'r1');
+    tokenStorage.setAccessToken('old');
 
     mock.onGet('/user/profile').reply((config) => {
       expect(config.headers.Authorization).toBe('Bearer old');
@@ -39,56 +45,11 @@ describe('api interceptor — auth refresh handling', () => {
       message: 'Forbidden',
     });
 
-    expect(window.localStorage.getItem('accessToken')).toBe('old');
-    expect(window.localStorage.getItem('refreshToken')).toBe('r1');
-  });
-
-  it('surfaces 403 (without redirect) for permission-denied responses', async () => {
-    window.localStorage.setItem('accessToken', 'a');
-    window.localStorage.setItem('refreshToken', 'r1');
-
-    let callCount = 0;
-    mock.onGet('/admin/secret').reply((config) => {
-      callCount += 1;
-      if (callCount === 1) {
-        expect(config.headers.Authorization).toBe('Bearer a');
-        return [
-          403,
-          {
-            statusCode: 401,
-            message: 'Phiên hết hạn',
-            data: { code: 'TOKEN_EXPIRED' },
-          },
-        ];
-      }
-      expect(config.headers.Authorization).toBe('Bearer new');
-      return [403, { statusCode: 1048, message: 'Real permission denial' }];
-    });
-
-    await expect(api.get('/admin/secret')).rejects.toMatchObject({
-      statusCode: 403,
-      message: 'Real permission denial',
-    });
-
-    expect(window.localStorage.getItem('accessToken')).toBe('a');
-    expect(window.localStorage.getItem('refreshToken')).toBe('r1');
-  });
-
-  it('still rejects 403 when no refresh token is present', async () => {
-    window.localStorage.setItem('accessToken', 'a');
-
-    mock.onGet('/user/profile').reply(403, { message: 'Forbidden' });
-
-    await expect(api.get('/user/profile')).rejects.toMatchObject({
-      statusCode: 403,
-    });
-
-    expect(window.localStorage.getItem('accessToken')).toBe('a');
+    expect(tokenStorage.getAccessToken()).toBe('old');
   });
 
   it('keeps BE business code for explicit FORBIDDEN payloads', async () => {
-    window.localStorage.setItem('accessToken', 'a');
-    window.localStorage.setItem('refreshToken', 'r1');
+    tokenStorage.setAccessToken('a');
 
     mock.onGet('/admin/secret').reply(403, {
       statusCode: 403,
@@ -98,31 +59,43 @@ describe('api interceptor — auth refresh handling', () => {
 
     await expect(api.get('/admin/secret')).rejects.toMatchObject({
       statusCode: 403,
-      code: undefined,
+      // extractErrorCode reads data?.code ?? data?.data?.code so the nested
+      // FORBIDDEN bubbles up as the top-level code on the rejection object.
+      code: 'FORBIDDEN',
       data: expect.objectContaining({
         data: expect.objectContaining({ code: 'FORBIDDEN' }),
       }),
     });
 
-    expect(window.localStorage.getItem('accessToken')).toBe('a');
+    expect(tokenStorage.getAccessToken()).toBe('a');
   });
 
-  it('clears tokens on 401 and returns normalized error', async () => {
-    window.localStorage.setItem('accessToken', 'a');
-    window.localStorage.setItem('refreshToken', 'r1');
+  it('clears the in-memory access token on 401', async () => {
+    tokenStorage.setAccessToken('a');
 
     mock.onGet('/user/profile').reply(401, {
       statusCode: 401,
       message: 'Unauthorized',
     });
 
+    // jsdom redirect on clearAuthAndRedirect — silenced by jsdom but harmless.
     await expect(api.get('/user/profile')).rejects.toMatchObject({
       statusCode: 401,
       message: 'Unauthorized',
     });
 
-    expect(window.localStorage.getItem('accessToken')).toBeNull();
-    expect(window.localStorage.getItem('refreshToken')).toBeNull();
+    expect(tokenStorage.getAccessToken()).toBe('');
+  });
+
+  it('does not attach Authorization header when no access token is set', async () => {
+    // No setAccessToken call — token is empty.
+
+    mock.onGet('/public').reply((config) => {
+      expect(config.headers.Authorization).toBeUndefined();
+      return [200, { ok: true }];
+    });
+
+    await expect(api.get('/public')).resolves.toMatchObject({ ok: true });
   });
 
   it('maps timeout errors to REQUEST_TIMEOUT', async () => {
@@ -133,4 +106,11 @@ describe('api interceptor — auth refresh handling', () => {
       code: 'REQUEST_TIMEOUT',
     });
   });
+
+  // NOTE: the previous TOKEN_EXPIRED → refresh → retry test relied on the
+  // refresh token being readable from localStorage. Under cookie-based auth
+  // the refresh call uses an httpOnly cookie that JS cannot read, and the
+  // refresh request travels through bare axios (not the mocked api instance).
+  // Validate that path with an end-to-end smoke test against a running BE
+  // rather than from this unit suite.
 });

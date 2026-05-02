@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   getQuizFull, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizHistory, publishGroupQuiz
 } from "@/api/QuizAPI";
-import { buildQuizResultPath } from "@/lib/routePaths";
+import { buildMockTestExamPath, buildQuizResultPath } from "@/lib/routePaths";
 import { hasQuizCompleted } from "@/utils/quizAttemptTracker";
 import MixedMathText from "@/components/math/MixedMathText";
 
@@ -196,7 +196,8 @@ function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEd
 
   const handleTakeExam = useCallback(() => {
     if (!quiz?.quizId) return;
-    navigate(`/quizzes/exams/${quiz.quizId}`, {
+    // MockTest v2: dedicated section-by-section page (separate from shared ExamQuizPage).
+    navigate(buildMockTestExamPath(quiz.quizId), {
       state: {
         returnToQuizPath: `${location.pathname}${location.search || ""}`,
         quizId: quiz.quizId,

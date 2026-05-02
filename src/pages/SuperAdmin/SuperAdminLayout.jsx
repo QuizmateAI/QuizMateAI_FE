@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, ChevronRight, Globe, KeyRound, Moon, Sun } from 'lucide-react';
@@ -121,7 +121,16 @@ function SuperAdminLayoutContent() {
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <Outlet />
+          {/*
+            Scoped Suspense keeps the layout chrome (sidebar/header) stable while
+            a tab's lazy chunk loads. With navigation wrapped in startTransition,
+            React 19 retains the previous tab's content during the transition
+            instead of falling through to the App's full-page LoadingSpinner.
+            The fallback is `null` (invisible) — perceived as instant.
+          */}
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 

@@ -21,7 +21,10 @@
     "aiActionPolicies": "Chính sách AI",
     "feedback": "Phản hồi",
     "myPermissions": "Quyền của tôi",
-    "communityQuizzes": "Quiz cộng đồng"
+    "communityQuizzes": "Quiz cộng đồng",
+    "policies": "Chính sách",
+    "violations": "Vi phạm",
+    "penalties": "Hình phạt"
   },
   "sidebarSections": {
     "overview": "Tổng quan",
@@ -31,7 +34,158 @@
     "access": "Truy cập",
     "accessControl": "Quản trị truy cập",
     "aiGovernance": "Điều phối AI",
+    "trustSafety": "Tin cậy & An toàn",
     "platformConfig": "Cấu hình nền tảng"
+  },
+  "policiesAdmin": {
+    "title": "Quản lý chính sách",
+    "subtitle": "Tạo, chỉnh sửa và lưu trữ các chính sách của QuizMate AI",
+    "newPolicy": "Tạo chính sách",
+    "refresh": "Làm mới",
+    "search": "Tìm theo tiêu đề, slug...",
+    "colTitle": "Tiêu đề",
+    "colType": "Loại",
+    "colVersion": "Phiên bản",
+    "colStatus": "Trạng thái",
+    "colDisplayOrder": "Thứ tự",
+    "colUpdatedAt": "Cập nhật",
+    "colActions": "Thao tác",
+    "edit": "Sửa",
+    "publish": "Phát hành",
+    "archive": "Lưu trữ",
+    "versions": "Lịch sử",
+    "preview": "Xem trước",
+    "empty": "Chưa có chính sách nào",
+    "createDialog": "Tạo chính sách mới",
+    "editDialog": "Chỉnh sửa chính sách",
+    "editNote": "Lưu chỉnh sửa sẽ tự động tăng số phiên bản và đưa chính sách về trạng thái DRAFT. Nhấn Phát hành để áp dụng phiên bản này cho người dùng.",
+    "versionHint": "Phiên bản tự động tăng sau mỗi lần lưu.",
+    "statusHint": "Mọi chỉnh sửa đều được lưu ở trạng thái DRAFT.",
+    "publishConfirm": "Phát hành phiên bản này? Người dùng sẽ thấy nội dung mới nhất trên trang công khai.",
+    "publishedVersionTitle": "Phiên bản đang hiển thị công khai",
+    "draftVersionTitle": "Bản nháp chờ phát hành",
+    "publishSuccess": "Đã phát hành chính sách",
+    "contentLoading": "Đang tải nội dung...",
+    "typeHint": "Mã loại viết HOA, ví dụ TERMS_OF_SERVICE. Bạn có thể tạo loại mới ngoài danh sách gợi ý.",
+    "iconHint": "Tên icon trong thư viện Lucide. Click vào ô vuông bên dưới để chọn nhanh, hoặc gõ bất kỳ tên Lucide nào.",
+    "locked": "Khóa",
+    "saving": "Đang lưu...",
+    "section": {
+      "identity": "Định danh",
+      "display": "Hiển thị",
+      "schedule": "Lịch & thứ tự",
+      "content": "Nội dung & ghi chú"
+    },
+    "field": {
+      "type": "Loại chính sách",
+      "slug": "Slug (URL)",
+      "title": "Tiêu đề",
+      "summary": "Tóm tắt ngắn",
+      "content": "Nội dung (Markdown)",
+      "version": "Phiên bản",
+      "status": "Trạng thái",
+      "effectiveDate": "Ngày hiệu lực",
+      "iconName": "Icon (Lucide)",
+      "accentColor": "Màu nhấn",
+      "displayOrder": "Thứ tự hiển thị",
+      "changelog": "Ghi chú thay đổi (changelog)"
+    },
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "createSuccess": "Đã tạo chính sách",
+    "updateSuccess": "Đã cập nhật chính sách",
+    "archiveSuccess": "Đã lưu trữ chính sách",
+    "archiveConfirm": "Lưu trữ chính sách này? User sẽ không còn thấy chính sách trên trang công khai.",
+    "versionsDialog": "Lịch sử thay đổi"
+  },
+  "violationsAdmin": {
+    "title": "Quản lý vi phạm",
+    "subtitle": "Theo dõi và xử lý các báo cáo vi phạm chính sách",
+    "newViolation": "Ghi nhận vi phạm",
+    "issuePenalty": "Ban hành hình phạt",
+    "filterStatus": "Lọc theo trạng thái",
+    "filterAll": "Tất cả",
+    "colId": "ID",
+    "colOffender": "Người vi phạm",
+    "colSummary": "Tóm tắt",
+    "colSeverity": "Mức độ",
+    "colStatus": "Trạng thái",
+    "colReportedAt": "Báo cáo lúc",
+    "colActions": "Thao tác",
+    "viewDetail": "Chi tiết",
+    "review": "Xét duyệt",
+    "confirm": "Xác nhận vi phạm",
+    "dismiss": "Bác bỏ",
+    "empty": "Không có vi phạm nào",
+    "createDialog": "Ghi nhận vi phạm mới",
+    "field": {
+      "offenderId": "ID người vi phạm",
+      "policyId": "Chính sách bị vi phạm (tùy chọn)",
+      "severity": "Mức độ",
+      "summary": "Tóm tắt vi phạm",
+      "details": "Chi tiết",
+      "evidenceUrl": "Link bằng chứng",
+      "occurredAt": "Thời gian xảy ra",
+      "newStatus": "Trạng thái mới",
+      "resolutionNote": "Ghi chú xử lý"
+    },
+    "severity": {
+      "LOW": "Nhẹ",
+      "MEDIUM": "Trung bình",
+      "HIGH": "Nặng",
+      "CRITICAL": "Cực kỳ nghiêm trọng"
+    },
+    "status": {
+      "PENDING": "Chờ xử lý",
+      "REVIEWING": "Đang xét",
+      "CONFIRMED": "Đã xác nhận",
+      "DISMISSED": "Đã bác bỏ"
+    },
+    "createSuccess": "Đã ghi nhận vi phạm",
+    "updateSuccess": "Đã cập nhật trạng thái vi phạm"
+  },
+  "penaltiesAdmin": {
+    "title": "Quản lý hình phạt",
+    "subtitle": "Theo dõi và thu hồi các hình phạt đã ban hành",
+    "lookupTitle": "Tra cứu user",
+    "lookupHint": "Nhập User ID để xem lịch sử hình phạt và ban hành mới",
+    "userId": "User ID",
+    "lookup": "Tra cứu",
+    "issueDialog": "Ban hành hình phạt mới",
+    "revokeDialog": "Thu hồi hình phạt",
+    "colType": "Loại",
+    "colReason": "Lý do",
+    "colStatus": "Trạng thái",
+    "colStartAt": "Bắt đầu",
+    "colExpireAt": "Hết hạn",
+    "colIssuedBy": "Ban hành bởi",
+    "colActions": "Thao tác",
+    "issue": "Ban hành",
+    "revoke": "Thu hồi",
+    "empty": "User này chưa có hình phạt nào",
+    "field": {
+      "type": "Loại hình phạt",
+      "reason": "Lý do",
+      "details": "Chi tiết",
+      "durationHours": "Thời lượng (giờ)",
+      "relatedViolationId": "Vi phạm liên quan (ID)",
+      "revokeReason": "Lý do thu hồi"
+    },
+    "type": {
+      "WARNING": "Cảnh báo",
+      "FEATURE_RESTRICTION": "Hạn chế tính năng",
+      "TEMPORARY_BAN": "Khóa tạm thời",
+      "PERMANENT_BAN": "Khóa vĩnh viễn"
+    },
+    "status": {
+      "ACTIVE": "Đang áp dụng",
+      "EXPIRED": "Đã hết hạn",
+      "REVOKED": "Đã thu hồi"
+    },
+    "issueSuccess": "Đã ban hành hình phạt",
+    "revokeSuccess": "Đã thu hồi hình phạt",
+    "revokeConfirm": "Thu hồi hình phạt này? Hành động sẽ được ghi vào audit log.",
+    "permanent": "Vĩnh viễn"
   },
   "systemSettings": {
     "title": "Cấu hình hệ thống",
@@ -1437,6 +1591,7 @@
     "emptyModels": "Chưa có mô hình nào được đăng ký cho nhà cung cấp này.",
     "providerStatus": {
       "HEALTHY": "Ổn định",
+      "DEGRADED": "Một phần lỗi",
       "UNREACHABLE": "Không thể kết nối",
       "UNCONFIGURED": "Chưa cấu hình"
     },
@@ -1444,6 +1599,38 @@
       "ACTIVE": "Đang hoạt động",
       "ARCHIVED": "Đã lưu trữ",
       "INACTIVE": "Tạm ngưng"
+    },
+    "testConnection": {
+      "button": "Kiểm tra kết nối",
+      "running": "Đang kiểm tra...",
+      "title": "Kết quả kiểm tra API key",
+      "description": "Test trực tiếp từng API key của {{provider}} bằng endpoint xác thực nhẹ (không tốn token).",
+      "summary": "{{valid}}/{{total}} key hợp lệ • mất {{duration}}ms",
+      "noKeys": "Provider này chưa có API key nào được cấu hình.",
+      "rateLimitHit": "Đã đạt giới hạn 10 lượt/phút. Thử lại sau 1 phút.",
+      "successToast": "Đã test xong {{provider}}: {{valid}}/{{total}} key hoạt động.",
+      "viewHistory": "Xem lịch sử"
+    },
+    "keyStatus": {
+      "VALID": "Hợp lệ",
+      "INVALID": "Sai key",
+      "RATE_LIMITED": "Bị giới hạn",
+      "ERROR": "Lỗi",
+      "UNREACHABLE": "Không kết nối"
+    },
+    "keys": {
+      "index": "STT",
+      "key": "API Key",
+      "status": "Trạng thái",
+      "latency": "Độ trễ",
+      "error": "Lỗi"
+    },
+    "history": {
+      "title": "Lịch sử test {{provider}} ({{hours}}h gần nhất)",
+      "checkedAt": "Thời gian",
+      "checkedBy": "Người test",
+      "noData": "Chưa có lịch sử test trong khoảng thời gian này.",
+      "rangeHours": "Khoảng thời gian (giờ)"
     }
   },
   "groupPage": {
@@ -1671,6 +1858,16 @@
       "creditAmount": "Số lượng credit",
       "price": "Giá (VND)",
       "bonusCredit": "Credit thưởng"
+    },
+    "systemSettings": {
+      "title": "Cấu hình mua credit",
+      "subtitle": "Áp dụng cho cả gói credit có sẵn và mua lẻ theo số lượng tự nhập.",
+      "unitPrice": "Đơn giá 1 credit (VND)",
+      "unitPriceDesc": "Đơn giá dùng để tính tổng tiền cho mọi loại mua credit (package & mua lẻ).",
+      "customMinUnits": "Số credit tối thiểu khi mua lẻ",
+      "customMinUnitsDesc": "User phải nhập tối thiểu số credit này khi mua theo số lượng tự nhập.",
+      "invalid": "Giá trị phải là số nguyên dương.",
+      "updateSuccess": "Cập nhật cấu hình thành công."
     }
   },
   "feedbackManagement": {
