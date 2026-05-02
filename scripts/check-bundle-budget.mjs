@@ -21,7 +21,7 @@ const budgets = [
   { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 144 * 1024 },
   { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-', 'i18n-vi-group-', 'i18n-vi-grouphome-', 'i18n-vi-wallet-'], maxBytes: 270 * 1024 },
   { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-', 'i18n-en-group-', 'i18n-en-grouphome-', 'i18n-en-wallet-'], maxBytes: 240 * 1024 },
-  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-', 'i18n-vi-wallet-'], maxBytes: 95 * 1024 },
+  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-', 'i18n-vi-wallet-'], maxBytes: 96 * 1024 },
   { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-', 'i18n-en-wallet-'], maxBytes: 82 * 1024 },
 ];
 

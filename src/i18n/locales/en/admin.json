@@ -1314,6 +1314,7 @@
   "aiCosts": {
     "title": "AI Costs",
     "subtitle": "Separate what the user paid, the actual provider spend, and the margin kept on each AI request.",
+    "scopeNote": "· Only user-paid features. Click a row to inspect AI sub-calls.",
     "refresh": "Refresh",
     "clear": "Clear filters",
     "apply": "Apply",
@@ -1339,6 +1340,7 @@
       "dialogDescription": "Choose the conditions used to narrow the AI cost ledger.",
       "taskId": "Task ID",
       "actorUserId": "User ID",
+      "actorEmail": "Actor email",
       "plan": "Plan",
       "allPlans": "All plans",
       "provider": "Provider",
@@ -1353,6 +1355,9 @@
       "to": "To"
     },
     "table": {
+      "actor": "Actor",
+      "systemUser": "System",
+      "noEmail": "No email",
       "request": "Request",
       "plan": "Plan",
       "model": "Model",
@@ -1410,7 +1415,16 @@
       "explain": "How to read this",
       "explainCharged": "The user paid {{credit}} credits for this request, which equals {{vnd}}.",
       "explainProvider": "The actual spend is derived from {{prompt}} input tokens and {{output}} output tokens, totaling about {{actualTokens}} tokens and {{cost}}.",
-      "explainMargin": "Profit is calculated as user-paid amount minus actual provider cost. The current value is {{profitVnd}}; a negative value means a loss."
+      "explainMargin": "Profit is calculated as user-paid amount minus actual provider cost. The current value is {{profitVnd}}; a negative value means a loss.",
+      "subCallsHeader": "AI sub-calls in this task",
+      "subCallsHint": "Click a call to inspect input / output",
+      "subCallsEmpty": "No audit sub-calls were recorded for this task.",
+      "subCallDetailHeader": "Call #{{index}} detail",
+      "subCallProviderCost": "Provider cost (this call)",
+      "subCallError": "Error",
+      "subCallInput": "Input",
+      "subCallOutput": "Output",
+      "subCallNoPreview": "No data"
     }
   },
   "adminLayout": {
@@ -1448,38 +1462,64 @@
     },
     "metrics": {
       "totalRequests": "Total requests",
-      "totalRequestsHint": "Based on the current filters",
+      "totalRequestsHint": "System + plan-based features only",
       "totalTokens": "Total tokens",
       "totalTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "pageTokens": "Tokens on this page",
       "pageTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "averageTokens": "Avg tokens / request",
       "averageTokensHint": "Calculated from all matching requests",
+      "systemCost": "System cost",
+      "systemCostHint": "Provider cost of system features",
+      "planCost": "Plan cost",
+      "planCostHint": "Provider cost of plan features. Avg {{avg}} tokens/request",
       "errors": "Errors",
       "errorsHint": "Errored requests matching the current filters"
     },
     "filters": {
       "title": "AI audit filters",
+      "open": "Filters",
+      "dialogTitle": "Filter AI audit",
+      "dialogDescription": "Pick conditions to narrow down the audit list.",
+      "provider": "Provider",
+      "status": "Status",
+      "category": "Category",
+      "from": "From",
+      "to": "To",
       "allProviders": "All providers",
       "allStatuses": "All statuses",
+      "allCategories": "All categories",
+      "allFeatureKeys": "All feature keys",
+      "plan": "Plan",
+      "allPlans": "All plans",
       "featureKeyPlaceholder": "Feature key",
       "userIdPlaceholder": "User ID",
+      "actorEmail": "Actor email",
       "taskIdPlaceholder": "Task ID",
-      "reset": "Reset filters",
-      "apply": "Apply filters"
+      "reset": "Reset",
+      "apply": "Apply"
     },
     "table": {
       "title": "AI request list",
       "actor": "Actor",
       "feature": "Feature",
+      "category": "Category",
+      "plan": "Plan",
       "tokens": "Tokens",
+      "systemCost": "Cost (VND)",
       "model": "Model",
       "provider": "Provider",
       "status": "Request status",
       "createdAt": "Created",
       "systemUser": "System user",
       "noEmail": "No email",
-      "empty": "No AI audit logs match the current filters."
+      "empty": "No AI audit logs match the current filters.",
+      "callCount": "{{count}} calls"
+    },
+    "category": {
+      "SYSTEM": "System",
+      "PLAN_BASED": "Plan-based",
+      "USER_PAID": "User-paid"
     },
     "detail": {
       "title": "AI request details",
@@ -1501,7 +1541,14 @@
       "requestPreview": "Input",
       "responsePreview": "Output",
       "noPreview": "No data available",
-      "missing": "This request is no longer present in the current list. Close the dialog and refresh the list if needed."
+      "missing": "This request is no longer present in the current list. Close the dialog and refresh the list if needed.",
+      "tokensTotal": "Total tokens (whole session)",
+      "systemCost": "System cost (provider)",
+      "callsHeader": "{{count}} AI calls in this session",
+      "callsHint": "Click a call to view its input / output",
+      "tokensSuffix": "tokens",
+      "callDetailHeader": "Detail of call #{{index}}",
+      "selectCallHint": "Click a call above to view its input, output, and per-call tokens."
     },
     "status": {
       "PROCESSING": "Processing",
@@ -1512,6 +1559,7 @@
       "GENERATE_FLASHCARDS": "Generate flashcards",
       "GENERATE_QUIZ": "Generate quiz",
       "EVALUATE_SHORT_ANSWER": "Evaluate short answer",
+      "COMPANION_GROUP": "Companion (voice quiz)",
       "COMPANION_INTERPRET": "Companion answer",
       "COMPANION_TRANSCRIBE": "Companion speech-to-text",
       "COMPANION_TTS": "Companion text-to-speech",
@@ -1527,7 +1575,17 @@
       "CONTENT_MODERATION": "Content moderation",
       "GEMINI_VISION_OCR": "Image OCR",
       "GEMINI_PDF_FILE_OCR": "PDF OCR",
-      "GEMINI_VIDEO_FILE_ANALYSIS": "Video analysis"
+      "GEMINI_VIDEO_FILE_ANALYSIS": "Video analysis",
+      "MATERIAL_TOPIC_EXTRACTION": "Material topic extraction",
+      "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "Analyze study profile knowledge",
+      "SUGGEST_STUDY_PROFILE_FIELDS": "Suggest study profile fields",
+      "SUGGEST_WORKSPACE_NAME": "Suggest workspace name",
+      "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Validate profile consistency",
+      "PREVIEW_QUIZ_STRUCTURE": "Preview quiz structure",
+      "GENERATE_ROADMAP_PHASES": "Generate roadmap phases",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Generate roadmap phase content",
+      "SUGGEST_MOCK_TEST_STRUCTURE": "Suggest mock test structure",
+      "ROADMAP_REVIEW": "Roadmap review"
     }
   },
   "aiProviders": {
