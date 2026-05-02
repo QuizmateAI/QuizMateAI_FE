@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/table';
 import ListSpinner from '@/components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAiAuditLogs, getAiAuditSummary, getAllPlans, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
+import { getAiAuditLogs, getAllPlans, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
 import { mergeCompanionFeatureKeys } from '@/lib/aiModelCatalog';
 import { useAiFeatureCatalog } from '@/hooks/useAiFeatureCatalog';
 import TokenBreakdownCell from './Components/TokenBreakdownCell';
@@ -58,6 +58,7 @@ import {
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 const STATUS_OPTIONS = ['', 'PROCESSING', 'SUCCESS', 'ERROR'];
 const CATEGORY_OPTIONS = ['', 'SYSTEM', 'PLAN_BASED'];
+const AUDIT_METRICS_PAGE_SIZE = 200;
 const EMPTY_AUDIT_METRICS = {
   requestCount: 0,
   totalTokens: 0,
@@ -125,6 +126,71 @@ function formatOptionalTokenValue(value, locale) {
 function toMetricNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function buildAuditMetricsFromEntries(entries = []) {
+  return entries.reduce((accumulator, entry) => {
+    const providerCost = toMetricNumber(entry?.providerCostVnd);
+    accumulator.requestCount += 1;
+    accumulator.totalTokens += toMetricNumber(entry?.totalTokens);
+    accumulator.promptTokens += toMetricNumber(entry?.promptTokens);
+    accumulator.completionTokens += toMetricNumber(entry?.completionTokens);
+    accumulator.thoughtTokens += toMetricNumber(entry?.thoughtTokens);
+    accumulator.totalProviderCostVnd += providerCost;
+
+    if (String(entry?.category || '').toUpperCase() === 'PLAN_BASED') {
+      accumulator.planCostVnd += providerCost;
+    } else {
+      accumulator.systemCostVnd += providerCost;
+    }
+
+    return accumulator;
+  }, { ...EMPTY_AUDIT_METRICS });
+}
+
+function normalizeAuditMetrics(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const requestCount = payload.requestCount ?? payload.totalRequests ?? payload.totalElements ?? payload.count;
+  const totalTokens = payload.totalTokens ?? payload.totalTokenCount;
+  const promptTokens = payload.promptTokens ?? payload.totalPromptTokens ?? payload.inputTokens;
+  const completionTokens = payload.completionTokens ?? payload.totalCompletionTokens ?? payload.outputTokens;
+  const thoughtTokens = payload.thoughtTokens ?? payload.totalThoughtTokens;
+  const systemCostVnd = payload.systemCostVnd ?? payload.totalSystemCostVnd;
+  const planCostVnd = payload.planCostVnd ?? payload.totalPlanCostVnd;
+  const totalProviderCostVnd = payload.totalProviderCostVnd ?? payload.providerCostVnd;
+
+  if (
+    totalTokens === undefined
+    && promptTokens === undefined
+    && completionTokens === undefined
+    && thoughtTokens === undefined
+    && systemCostVnd === undefined
+    && planCostVnd === undefined
+    && totalProviderCostVnd === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    requestCount: toMetricNumber(requestCount),
+    totalTokens: toMetricNumber(totalTokens),
+    promptTokens: toMetricNumber(promptTokens),
+    completionTokens: toMetricNumber(completionTokens),
+    thoughtTokens: toMetricNumber(thoughtTokens),
+    systemCostVnd: toMetricNumber(systemCostVnd),
+    planCostVnd: toMetricNumber(planCostVnd),
+    totalProviderCostVnd: toMetricNumber(totalProviderCostVnd),
+  };
+}
+
+function extractAuditMetrics(pageData) {
+  return (
+    normalizeAuditMetrics(pageData?.summary)
+    || normalizeAuditMetrics(pageData?.metrics)
+    || normalizeAuditMetrics(pageData?.totals)
+    || normalizeAuditMetrics(pageData)
+  );
 }
 
 function formatVndValue(value, locale) {
@@ -367,11 +433,51 @@ function AiAuditManagement() {
   });
   const metrics = metricsQuery.data ?? EMPTY_AUDIT_METRICS;
 
+  const fetchAuditLogs = (nextPage = page, nextSize = pageSize, nextFilters = filters) => {
+    setPage(nextPage);
+    setPageSize(nextSize);
+    setFilters(nextFilters);
+    queryClient.invalidateQueries({ queryKey: AI_AUDIT_LOGS_KEY });
+  };
+
+  const fetchAuditMetrics = () => {
+    queryClient.invalidateQueries({ queryKey: AI_AUDIT_METRICS_KEY });
+  };
+
+  const fetchExchangeRate = async () => {
+    setExchangeRateLoading(true);
+    try {
+      setExchangeRate(extractData(await getUsdVndExchangeRate()));
+    } finally {
+      setExchangeRateLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllPlans()
+      .then((response) => {
+        if (cancelled) return;
+        const data = extractData(response);
+        setPlans(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setPlans([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchExchangeRate();
+  }, []);
+
   // Drop selectedAuditId if no longer in current page
   useEffect(() => {
     if (!selectedAuditId) return;
     if (!auditLogs.some((entry) => entry.auditId === selectedAuditId)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync derived selection with current page
       setSelectedAuditId(null);
     }
   }, [auditLogs, selectedAuditId]);
@@ -382,10 +488,10 @@ function AiAuditManagement() {
     if (!taskId || taskId === filters.taskId) {
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync URL param into filter state
-    setFilters((prev) => ({ ...prev, taskId }));
+    const nextFilters = { ...filters, taskId };
+    setFilters(nextFilters);
     setPage(0);
-    fetchAuditLogs(0, pageSizeRef.current, nextFilters);
+    fetchAuditLogs(0, pageSize, nextFilters);
     fetchAuditMetrics(nextFilters);
   }, [searchParams]);
 
@@ -394,7 +500,7 @@ function AiAuditManagement() {
   }, [page, pageSize]);
 
   useEffect(() => {
-    fetchAuditMetrics(filtersRef.current);
+    fetchAuditMetrics(filters);
   }, []);
 
   useEffect(() => {
@@ -450,8 +556,20 @@ function AiAuditManagement() {
 
   const activeFilterCount = Object.values(filters).filter((value) => String(value ?? '').trim() !== '').length;
 
+  const handleDateRangeChipChange = ({ from, to }) => {
+    const nextFilters = { ...filters, from, to };
+    setDraftFilters(nextFilters);
+    fetchAuditLogs(0, pageSize, nextFilters);
+    fetchAuditMetrics(nextFilters);
+  };
+
   const handleDraftFilterChange = (field, value) => {
     setDraftFilters((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+    setPage(0);
   };
 
   const handleOpenFilterDialog = () => {
@@ -463,24 +581,19 @@ function AiAuditManagement() {
     const next = { ...draftFilters };
     setFilters(next);
     setPage(0);
-    fetchAuditLogs(0, pageSize, filters);
-    fetchAuditMetrics(filters);
+    fetchAuditLogs(0, pageSize, next);
+    fetchAuditMetrics(next);
+    setIsFilterDialogOpen(false);
   };
 
   const handleResetFilters = () => {
-    const resetFilters = {
-      provider: '',
-      featureKey: '',
-      actorUserId: '',
-      taskId: '',
-      status: '',
-      from: '',
-      to: '',
-    };
+    const resetFilters = createEmptyAuditFilters();
     setFilters(resetFilters);
+    setDraftFilters(resetFilters);
     setPage(0);
     fetchAuditLogs(0, pageSize, resetFilters);
     fetchAuditMetrics(resetFilters);
+    setIsFilterDialogOpen(false);
   };
 
   const openAuditDetail = async (auditId) => {
@@ -695,6 +808,9 @@ function AiAuditManagement() {
                 <RefreshCw className={`h-4 w-4 ${auditLogsQuery.isFetching ? 'animate-spin' : ''}`} />
               </Button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
       <div className={`flex flex-col gap-4 rounded-2xl border p-5 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
         <div>
           <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.exchangeRate.title', 'Tỷ giá USD/VND hiện tại')}</p>

@@ -214,9 +214,13 @@ function AiCostManagement() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [detailRow, setDetailRow] = useState(null);
+  const [detailSubCalls, setDetailSubCalls] = useState([]);
+  const [detailSubSelectedIndex, setDetailSubSelectedIndex] = useState(-1);
+  const [detailSubLoading, setDetailSubLoading] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [filters, setFilters] = useState(createEmptyFilters);
   const [draftFilters, setDraftFilters] = useState(createEmptyFilters);
+  const { catalog: featureCatalog } = useAiFeatureCatalog();
 
   const buildQuery = (activeFilters) => ({
     taskId: activeFilters.taskId || undefined,
@@ -285,14 +289,29 @@ function AiCostManagement() {
     queryClient.invalidateQueries({ queryKey: AI_COST_RATE_KEY });
   };
 
-  useEffect(() => {
+  const fetchCostData = () => {
+    queryClient.invalidateQueries({ queryKey: AI_COST_DATA_KEY });
+  };
+
+  const openDetailRow = (row) => {
     setDetailSubCalls([]);
     setDetailSubSelectedIndex(-1);
+    setDetailSubLoading(Boolean(row?.taskId));
+    setDetailRow(row);
+  };
+
+  const closeDetailRow = () => {
+    setDetailRow(null);
+    setDetailSubCalls([]);
+    setDetailSubSelectedIndex(-1);
+    setDetailSubLoading(false);
+  };
+
+  useEffect(() => {
     if (!detailRow || !detailRow.taskId) {
       return;
     }
     let cancelled = false;
-    setDetailSubLoading(true);
     getAiAuditLogs({
       taskId: detailRow.taskId,
       expand: true,
@@ -585,7 +604,7 @@ function AiCostManagement() {
                 return (
                   <TableRow
                     key={row.aiUsageId}
-                    onClick={() => setDetailRow(row)}
+                    onClick={() => openDetailRow(row)}
                     className={`cursor-pointer border-b ${tableStroke} transition-colors ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800/60' : 'bg-white hover:bg-blue-50/60'}`}
                   >
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
@@ -659,7 +678,7 @@ function AiCostManagement() {
         </div>
       </div>
 
-      <Dialog open={Boolean(detailRow)} onOpenChange={(open) => !open && setDetailRow(null)}>
+      <Dialog open={Boolean(detailRow)} onOpenChange={(open) => !open && closeDetailRow()}>
         <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'border-slate-800 bg-slate-950 text-white' : ''}`}>
           <DialogHeader>
             <DialogTitle>{t('aiCosts.detail.title')}</DialogTitle>
