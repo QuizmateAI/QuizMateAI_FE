@@ -19,6 +19,7 @@ const I18N_NAMESPACES = [
   'group',
   'grouphome',
   'admin',
+  'policies',
 ];
 
 const localeNamespaceLoaders = import.meta.glob('./locales/*/*.json');
@@ -33,9 +34,15 @@ const routeNamespaceRules = [
   },
   {
     matches: (pathname) => pathname === '/login' || pathname === '/register' || pathname === '/forgot-password',
-    namespaces: ['common', 'auth'],
+    namespaces: ['common', 'auth', 'policies'],
   },
   {
+
+    matches: (pathname) => pathname.startsWith('/policies') || pathname === '/account-suspended',
+    namespaces: ['common', 'policies', 'landing'],
+  },
+  {
+
     matches: (pathname) => pathname === '/home',
     namespaces: ['common', 'home', 'grouphome'],
   },

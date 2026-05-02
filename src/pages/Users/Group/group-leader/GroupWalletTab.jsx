@@ -18,6 +18,14 @@ import {
   getWorkspacePayments,
 } from '@/api/ManagementSystemAPI';
 import { unwrapApiData } from '@/utils/apiResponse';
+import {
+  creditSourceLabel,
+  creditTransactionLabel,
+  formatUiActivitySubtitle,
+  formatUiActivityTitle,
+  parseUiActivityNote,
+  sanitizeActivityNote,
+} from '@/utils/creditTransactionLabels';
 import GroupWalletOverviewSection from './GroupWalletOverviewSection';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -79,149 +87,6 @@ function extractPageItems(pageData) {
   if (Array.isArray(pageData)) return pageData;
   if (Array.isArray(pageData?.content)) return pageData.content;
   return [];
-}
-
-function creditTransactionLabel(type, lang, t) {
-  const fallbackLabels = {
-    WELCOME: lang === 'en' ? 'Welcome credits' : 'QMC chào mừng',
-    TOPUP: lang === 'en' ? 'Top up' : 'Nạp QMC',
-    CONSUME: lang === 'en' ? 'Consume' : 'Tiêu hao',
-    RESERVE: lang === 'en' ? 'Reserved' : 'Tạm giữ',
-    RESERVE_CANCELLED: lang === 'en' ? 'Reserve released' : 'Hoàn tạm giữ',
-    REFUND: lang === 'en' ? 'Refund' : 'Hoàn QMC',
-    ADJUST: lang === 'en' ? 'Adjustment' : 'Điều chỉnh',
-    PLAN_BONUS: lang === 'en' ? 'Plan bonus' : 'QMC từ gói',
-    PLAN_EXPIRE_RESET: lang === 'en' ? 'Plan reset' : 'Đặt lại QMC gói',
-  };
-  const enFallback = {
-    WELCOME: 'Welcome credits',
-    TOPUP: 'Top up',
-    CONSUME: 'Consume',
-    RESERVE: 'Reserved',
-    RESERVE_CANCELLED: 'Reserve released',
-    REFUND: 'Refund',
-    ADJUST: 'Adjustment',
-    PLAN_BONUS: 'Plan bonus',
-    PLAN_EXPIRE_RESET: 'Plan reset',
-  };
-  const key = String(type || '').toUpperCase();
-  if (fallbackLabels[key]) {
-    return t
-      ? t(`groupWalletTab.creditLabels.${key}`, enFallback[key])
-      : fallbackLabels[key];
-  }
-  return type || '—';
-}
-
-function creditSourceLabel(type, lang, t) {
-  const fallbackLabels = {
-    SYSTEM: lang === 'en' ? 'System' : 'Hệ thống',
-    PAYMENT: lang === 'en' ? 'Payment' : 'Thanh toán',
-    AI_USAGE: lang === 'en' ? 'AI usage' : 'Sử dụng AI',
-    USER_PLAN: lang === 'en' ? 'User plan' : 'Gói cá nhân',
-    WORKSPACE_PLAN: lang === 'en' ? 'Group plan' : 'Gói nhóm',
-    ADMIN: lang === 'en' ? 'Admin' : 'Quản trị',
-  };
-  const enFallback = {
-    SYSTEM: 'System',
-    PAYMENT: 'Payment',
-    AI_USAGE: 'AI usage',
-    USER_PLAN: 'User plan',
-    WORKSPACE_PLAN: 'Group plan',
-    ADMIN: 'Admin',
-  };
-  const key = String(type || '').toUpperCase();
-  if (fallbackLabels[key]) {
-    return t
-      ? t(`groupWalletTab.creditSources.${key}`, enFallback[key])
-      : fallbackLabels[key];
-  }
-  return type || '—';
-}
-
-function sanitizeActivityNote(note) {
-  return String(note || '')
-    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED|PLAN_CREDIT_FORFEITED)[^\]]*\]/gi, '')
-    .trim();
-}
-
-function decodeUiActivityValue(value) {
-  const normalizedValue = String(value || '').trim();
-  if (!normalizedValue) return '';
-
-  try {
-    return decodeURIComponent(normalizedValue.replace(/\+/g, '%20'));
-  } catch {
-    return normalizedValue;
-  }
-}
-
-function parseUiActivityNote(note) {
-  const normalizedNote = sanitizeActivityNote(note);
-  if (normalizedNote.startsWith('UI_ACTIVITY_V2|')) {
-    const [, actionKey, encodedTarget = '', encodedWorkspace = ''] = normalizedNote.split('|');
-    return {
-      actionKey: String(actionKey || '').toUpperCase(),
-      target: decodeUiActivityValue(encodedTarget),
-      workspaceName: decodeUiActivityValue(encodedWorkspace),
-    };
-  }
-
-  if (!normalizedNote.startsWith('UI_ACTIVITY|')) return null;
-
-  const [, actionKey, ...targetParts] = normalizedNote.split('|');
-  return {
-    actionKey: String(actionKey || '').toUpperCase(),
-    target: targetParts.join('|').trim(),
-    workspaceName: '',
-  };
-}
-
-function formatUiActivityTitle(actionKey, target, lang, t) {
-  const safeTarget = String(target || '').trim();
-  const withTarget = (viPrefix, enPrefix, fallback, prefixKey, fallbackKey) => {
-    const prefix = t && prefixKey
-      ? t(`groupWalletTab.uiActivity.${prefixKey}`, enPrefix)
-      : (lang === 'en' ? enPrefix : viPrefix);
-    const fallbackLabel = t && fallbackKey
-      ? t(`groupWalletTab.uiActivity.${fallbackKey}`, fallback)
-      : fallback;
-    return safeTarget ? `${prefix}${safeTarget}` : fallbackLabel;
-  };
-
-  const fallback = t
-    ? t('groupWalletTab.uiActivity.fallback', 'Used an AI feature')
-    : (lang === 'en' ? 'Used an AI feature' : 'Đã dùng một tính năng AI');
-  const titleMap = {
-    PROCESS_PDF: withTarget('Đã tải lên PDF: ', 'Uploaded PDF: ', lang === 'en' ? 'Uploaded a PDF' : 'Đã tải lên PDF', 'processPdfPrefix', 'processPdfFallback'),
-    PROCESS_DOCX: withTarget('Đã tải lên file Word: ', 'Uploaded Word file: ', lang === 'en' ? 'Uploaded a Word file' : 'Đã tải lên file Word', 'processDocxPrefix', 'processDocxFallback'),
-    PROCESS_PPTX: withTarget('Đã tải lên slide: ', 'Uploaded slides: ', lang === 'en' ? 'Uploaded slides' : 'Đã tải lên slide', 'processPptxPrefix', 'processPptxFallback'),
-    PROCESS_XLSX: withTarget('Đã tải lên file Excel: ', 'Uploaded Excel file: ', lang === 'en' ? 'Uploaded an Excel file' : 'Đã tải lên file Excel', 'processXlsxPrefix', 'processXlsxFallback'),
-    PROCESS_IMAGE: withTarget('Đã tải lên ảnh: ', 'Uploaded image: ', lang === 'en' ? 'Uploaded an image' : 'Đã tải lên ảnh', 'processImagePrefix', 'processImageFallback'),
-    PROCESS_AUDIO: withTarget('Đã tải lên audio: ', 'Uploaded audio: ', lang === 'en' ? 'Uploaded audio' : 'Đã tải lên audio', 'processAudioPrefix', 'processAudioFallback'),
-    PROCESS_VIDEO: withTarget('Đã tải lên video: ', 'Uploaded video: ', lang === 'en' ? 'Uploaded a video' : 'Đã tải lên video', 'processVideoPrefix', 'processVideoFallback'),
-    GENERATE_QUIZ: withTarget('Đã tạo quiz: ', 'Generated quiz: ', lang === 'en' ? 'Generated a quiz' : 'Đã tạo quiz', 'generateQuizPrefix', 'generateQuizFallback'),
-    GENERATE_FLASHCARDS: withTarget('Đã tạo flashcard từ: ', 'Generated flashcards from: ', lang === 'en' ? 'Generated flashcards' : 'Đã tạo flashcard', 'generateFlashcardsPrefix', 'generateFlashcardsFallback'),
-    GENERATE_MOCK_TEST: withTarget('Đã tạo mock test: ', 'Generated mock test: ', lang === 'en' ? 'Generated a mock test' : 'Đã tạo mock test', 'generateMockTestPrefix', 'generateMockTestFallback'),
-  };
-
-  if (titleMap[actionKey]) return titleMap[actionKey];
-  const defaultPrefix = t
-    ? t('groupWalletTab.uiActivity.defaultPrefix', 'Used AI for: ')
-    : (lang === 'en' ? 'Used AI for: ' : 'Đã dùng AI cho: ');
-  return safeTarget ? `${defaultPrefix}${safeTarget}` : fallback;
-}
-
-function formatUiActivitySubtitle(workspaceName, lang, t) {
-  const safeWorkspaceName = String(workspaceName || '').trim();
-  if (!safeWorkspaceName) return '';
-
-  if (t) {
-    return t('groupWalletTab.uiActivity.inWorkspace', 'In workspace: {{name}}', { name: safeWorkspaceName });
-  }
-  return lang === 'en'
-    ? `In workspace: ${safeWorkspaceName}`
-    : `Trong workspace: ${safeWorkspaceName}`;
 }
 
 function paymentTargetLabel(type, lang, t) {

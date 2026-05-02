@@ -23,6 +23,25 @@
       "baseCredits": "{{count}} base credits",
       "bonusCredits": "+{{count}} bonus credits"
     },
+    "customCredit": {
+      "title": "Enter custom credit amount",
+      "cta": "Custom amount",
+      "openAria": "Buy credits with a custom amount",
+      "dialogDesc": "Enter how many credits you want; the total is calculated automatically from the unit price.",
+      "helper": "Minimum {{min}} credits · {{price}} per credit",
+      "configError": "Couldn't load credit purchase config. Please try again.",
+      "placeholder": "e.g. {{example}}",
+      "inputAria": "Credits to buy",
+      "buy": "Buy now",
+      "belowMin": "Minimum is {{min}} credits.",
+      "previewTotal": "Total: {{credits}} credits · {{price}}",
+      "minBadge": "Minimum {{min}} credits",
+      "priceBadge": "{{price}} per credit",
+      "youGet": "You'll receive",
+      "totalLabel": "Total",
+      "breakdown": "{{credits}} × {{unitPrice}}",
+      "readyToUse": "Available right after payment"
+    },
     "history": {
       "title": "Transaction history",
       "subtitle": "The 20 most recent transactions on your wallet",

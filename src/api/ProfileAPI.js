@@ -4,6 +4,7 @@ import { getStoredToken, updateUserPreferredLanguage, updateUserThemeMode } from
 import { getCachedProfile, setCachedProfile, clearUserCache } from "@/utils/userCache";
 import { getCurrentUser } from "@/api/Authentication";
 import { normalizeUserProfile } from "@/utils/userProfile";
+import { hasAccessToken } from "@/utils/tokenStorage";
 
 /**
  * Lấy profile user - dùng cache trước, fetch khi hết hạn (5 phút)
@@ -22,9 +23,9 @@ async function getUserProfile() {
     return cached;
   }
 
-  const hasAccessToken = !!localStorage.getItem("accessToken");
+  const hasInMemoryAccessToken = hasAccessToken();
 
-  const response = hasAccessToken
+  const response = hasInMemoryAccessToken
     ? await api.get("/user/profile")
     : await api.get("/user/profile", {
         headers: { Authorization: `Bearer ${token}` },

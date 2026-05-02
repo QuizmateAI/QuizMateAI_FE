@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, RefreshCw, MoreHorizontal, Shield, Ban, CheckCircle2, Eye, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,28 +36,46 @@ import {
   SuperAdminPageHeader,
 } from '@/pages/SuperAdmin/Components/SuperAdminSurface';
 
+const ADMIN_USERS_QUERY_KEY = ['admin', 'users'];
+
+function normalizeUserListResponse(response, requestedSize) {
+  const responseData = response?.data || {};
+  if (Array.isArray(responseData)) {
+    return {
+      users: responseData,
+      page: 0,
+      size: responseData.length || requestedSize,
+      totalPages: 1,
+      totalElements: responseData.length,
+    };
+  }
+  if (responseData.content && Array.isArray(responseData.content)) {
+    return {
+      users: responseData.content,
+      page: responseData.page ?? responseData.number ?? 0,
+      size: responseData.size || requestedSize,
+      totalPages: responseData.totalPages || 0,
+      totalElements: responseData.totalElements || 0,
+    };
+  }
+  return { users: [], page: 0, size: requestedSize, totalPages: 0, totalElements: 0 };
+}
+
 function UserManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showError, showSuccess } = useToast();
+  const queryClient = useQueryClient();
   const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
   const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [pagination, setPagination] = useState({
-    page: 0,
-    size: 10,
-    totalPages: 0,
-    totalElements: 0,
-  });
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const isSuperAdminContext = basePath === '/super-admin';
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
   const DELETE_PHRASE = 'FORCE-DELETE-USER';
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -66,73 +85,53 @@ function UserManagement() {
     return fallbackText;
   };
 
-  // Lấy danh sách người dùng từ API (có hỗ trợ phân trang)
-  const fetchUsers = async (page = 0, size = 10) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const response = await getAllUsers(page, size);
-      const responseData = response?.data || {};
-      
-      // Xử lý cấu trúc response có thể là paginated hoặc array thuần
-      if (Array.isArray(responseData)) {
-        setUsers(responseData);
-        setPagination({ page: 0, size: responseData.length, totalPages: 1, totalElements: responseData.length });
-      } else if (responseData.content && Array.isArray(responseData.content)) {
-        setUsers(responseData.content);
-        setPagination({
-          page: responseData.page ?? responseData.number ?? 0,
-          size: responseData.size || size,
-          totalPages: responseData.totalPages || 0,
-          totalElements: responseData.totalElements || 0,
-        });
-      } else {
-        setUsers([]);
-        setPagination({ page: 0, size: size, totalPages: 0, totalElements: 0 });
-      }
-    } catch (err) {
-      const msg = getFriendlyError(err, 'Không thể tải danh sách người dùng');
-      setError(msg);
-      showError(msg);
-      console.error('Lỗi khi lấy danh sách users:', err);
-      setUsers([]);
-    } finally {
-      setIsLoading(false);
-    }
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: [...ADMIN_USERS_QUERY_KEY, page, size],
+    queryFn: async () => normalizeUserListResponse(await getAllUsers(page, size), size),
+    placeholderData: (previous) => previous,
+  });
+
+  const users = data?.users ?? [];
+  const pagination = {
+    page: data?.page ?? page,
+    size: data?.size ?? size,
+    totalPages: data?.totalPages ?? 0,
+    totalElements: data?.totalElements ?? 0,
   };
+  const error = queryError ? getFriendlyError(queryError, 'Không thể tải danh sách người dùng') : '';
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const invalidateUsers = () =>
+    queryClient.invalidateQueries({ queryKey: ADMIN_USERS_QUERY_KEY });
 
-  // Thay đổi trang
   const handlePageChange = (newPage) => {
-    fetchUsers(newPage, pagination.size);
+    setPage(newPage);
   };
 
-  // Thay đổi kích thước trang
   const handlePageSizeChange = (newSize) => {
-    fetchUsers(0, newSize);
+    setSize(newSize);
+    setPage(0);
   };
 
-  // Cập nhật trạng thái người dùng
-  const handleUpdateStatus = async (userId, newStatus) => {
-    try {
-      await updateUserStatus(userId, newStatus);
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === userId ? { ...user, status: newStatus } : user
-        )
-      );
-    } catch (err) {
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ userId, status }) => updateUserStatus(userId, status),
+    onSuccess: () => {
+      invalidateUsers();
+      showSuccess('Cập nhật trạng thái người dùng thành công');
+    },
+    onError: (err) => {
       const msg = getFriendlyError(err, 'Không thể cập nhật trạng thái');
-      setError(msg);
       showError(msg);
-      console.error('Lỗi khi cập nhật status:', err);
-      return;
-    }
+    },
+  });
 
-    showSuccess('Cập nhật trạng thái người dùng thành công');
+  const handleUpdateStatus = (userId, newStatus) => {
+    updateStatusMutation.mutate({ userId, status: newStatus });
   };
 
   const openDeleteDialog = (user) => {
@@ -140,6 +139,24 @@ function UserManagement() {
     setDeleteConfirmText('');
     setDeleteReason('');
   };
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ userId, confirmText, reason }) =>
+      forceDeleteUser(userId, { confirmText, reason }),
+    onSuccess: () => {
+      showSuccess('Đã xoá người dùng');
+      setDeleteTarget(null);
+      setDeleteConfirmText('');
+      setDeleteReason('');
+      invalidateUsers();
+    },
+    onError: (err) => {
+      const msg = getFriendlyError(err, 'Không thể xoá người dùng');
+      showError(msg);
+    },
+  });
+
+  const isDeleting = deleteMutation.isPending;
 
   const closeDeleteDialog = () => {
     if (isDeleting) return;
@@ -153,26 +170,13 @@ function UserManagement() {
     deleteReason.trim().length >= 10 &&
     deleteReason.trim().length <= 500;
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = () => {
     if (!deleteTarget || !canSubmitDelete) return;
-    setIsDeleting(true);
-    try {
-      await forceDeleteUser(deleteTarget.id, {
-        confirmText: deleteConfirmText,
-        reason: deleteReason.trim(),
-      });
-      showSuccess('Đã xoá người dùng');
-      setDeleteTarget(null);
-      setDeleteConfirmText('');
-      setDeleteReason('');
-      fetchUsers(pagination.page, pagination.size);
-    } catch (err) {
-      const msg = getFriendlyError(err, 'Không thể xoá người dùng');
-      showError(msg);
-      console.error('Lỗi khi force-delete user:', err);
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteMutation.mutate({
+      userId: deleteTarget.id,
+      confirmText: deleteConfirmText,
+      reason: deleteReason.trim(),
+    });
   };
 
   // Lọc users theo search term và chỉ hiển thị role USER (ẩn ADMIN và SUPER_ADMIN)
@@ -216,11 +220,11 @@ function UserManagement() {
         title={t('userPage.title')}
         actions={(
           <Button
-            onClick={() => fetchUsers(pagination.page, pagination.size)}
-            disabled={isLoading}
+            onClick={() => refetch()}
+            disabled={isFetching}
             className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             {t('userPage.refresh')}
           </Button>
         )}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, RefreshCw, Plus, Edit2, Trash2, Eye,
-  Package, Check, X, Zap, Coins,
+  Package, Zap, Coins,
   ToggleLeft, ToggleRight, Users, User,
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
   Presentation, Bot, BarChart3, AlignLeft, Map, Lock,
@@ -25,6 +26,7 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import PlanFormWizard from '@/pages/Admin/components/PlanFormWizard';
+import PlanDetailDialog from '@/pages/Admin/components/PlanDetailDialog';
 import {
   getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus, getAiModels, getPlanById,
   getAllSystemSettings,
@@ -95,6 +97,8 @@ const ENTITLEMENT_TOGGLES = {
 const extractApiData = (response) => response?.data?.data ?? response?.data ?? response ?? null;
 const PLAN_LOCKED_EDIT_FALLBACK = 'Goi level 1/2 da co nguoi mua hoac dang mua nen khong the cap nhat.';
 
+const PLAN_CATALOG_QUERY_KEY = ['admin', 'planCatalog'];
+
 function getAuthToken() {
   try {
     return getAccessToken() || null;
@@ -121,6 +125,7 @@ function PlanManagement() {
   const { isDarkMode } = useDarkMode();
   const { permissions, loading: permLoading } = useAdminPermissions();
   const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   // Quyền ghi cho Plan sử dụng permission backend `plan:write`
   const canWrite = !permLoading && permissions.has('plan:write');
   const getFriendlyError = (err, fallbackKey) => {
@@ -137,25 +142,20 @@ function PlanManagement() {
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
   const dk = isDarkMode;
 
-  const [plans, setPlans] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [entitlement, setEntitlement] = useState({ ...EMPTY_ENTITLEMENT });
   const [aiModelAssignments, setAiModelAssignments] = useState({ ...EMPTY_AI_MODEL_ASSIGNMENTS });
   const [functionAssignmentMap, setFunctionAssignmentMap] = useState({ ...EMPTY_FUNCTION_ASSIGNMENTS });
-  const [availableAiModels, setAvailableAiModels] = useState([]);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingPlan, setDeletingPlan] = useState(null);
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailPlan, setDetailPlan] = useState(null);
-  const [creditUnitPrice, setCreditUnitPrice] = useState(200);
   const editingPlanRef = useRef(null);
   const stompClientRef = useRef(null);
 
@@ -163,39 +163,61 @@ function PlanManagement() {
     editingPlanRef.current = editingPlan;
   }, [editingPlan]);
 
-  useEffect(() => {
-    const fetchCatalogs = async () => {
-      setIsLoading(true);
-      try {
-        const [plansRes, modelsRes, settingsRes] = await Promise.all([
-          getAllPlans(),
-          getAiModels(),
-          getAllSystemSettings().catch(() => null),
-        ]);
-        const planData = extractApiData(plansRes);
-        const modelData = extractApiData(modelsRes);
-        setPlans(Array.isArray(planData) ? planData : []);
-        setAvailableAiModels(filterSupportedAiModels(Array.isArray(modelData) ? modelData : []));
-        const settingsData = extractApiData(settingsRes);
-        if (Array.isArray(settingsData)) {
-          const creditSetting = settingsData.find((s) => s.key === 'credit.unit_price_vnd');
-          if (creditSetting?.value) setCreditUnitPrice(Number(creditSetting.value) || 200);
-        }
-      } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
-      finally { setIsLoading(false); }
-    };
-    fetchCatalogs();
-  }, [t, showError]);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error: queryError,
+  } = useQuery({
+    queryKey: PLAN_CATALOG_QUERY_KEY,
+    queryFn: async () => {
+      const [plansRes, modelsRes, settingsRes] = await Promise.all([
+        getAllPlans(),
+        getAiModels(),
+        getAllSystemSettings().catch(() => null),
+      ]);
+      const planData = extractApiData(plansRes);
+      const modelData = extractApiData(modelsRes);
+      const settingsData = extractApiData(settingsRes);
+      let creditUnitPrice = 200;
+      if (Array.isArray(settingsData)) {
+        const creditSetting = settingsData.find((s) => s.key === 'credit.unit_price_vnd');
+        if (creditSetting?.value) creditUnitPrice = Number(creditSetting.value) || 200;
+      }
+      return {
+        plans: Array.isArray(planData) ? planData : [],
+        availableAiModels: filterSupportedAiModels(Array.isArray(modelData) ? modelData : []),
+        creditUnitPrice,
+      };
+    },
+  });
 
-  const fetchPlans = async () => {
-    setIsLoading(true);
-    try {
-      const res = await getAllPlans();
-      const data = extractApiData(res);
-      setPlans(Array.isArray(data) ? data : []);
-    } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
-    finally { setIsLoading(false); }
-  };
+  const plans = useMemo(() => data?.plans ?? [], [data?.plans]);
+  const availableAiModels = useMemo(() => data?.availableAiModels ?? [], [data?.availableAiModels]);
+  const creditUnitPrice = data?.creditUnitPrice ?? 200;
+
+  useEffect(() => {
+    if (queryError) {
+      showError(getFriendlyError(queryError, 'subscription.fetchError'));
+    }
+  }, [queryError]);
+
+  const invalidatePlanCatalog = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: PLAN_CATALOG_QUERY_KEY }),
+    [queryClient],
+  );
+
+  const updateCachedPlan = useCallback((planCatalogId, patch) => {
+    queryClient.setQueryData(PLAN_CATALOG_QUERY_KEY, (current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        plans: current.plans.map((plan) => (
+          plan.planCatalogId === planCatalogId ? { ...plan, ...patch } : plan
+        )),
+      };
+    });
+  }, [queryClient]);
 
   const getPlanEditLockedReason = useCallback(
     (plan) => plan?.editLockedReason || t(
@@ -214,11 +236,7 @@ function PlanManagement() {
     const editable = payload?.editable !== false;
     const editLockedReason = payload?.editLockedReason || PLAN_LOCKED_EDIT_FALLBACK;
 
-    setPlans((prev) => prev.map((plan) => (
-      plan.planCatalogId === planCatalogId
-        ? { ...plan, editable, editLockedReason }
-        : plan
-    )));
+    updateCachedPlan(planCatalogId, { editable, editLockedReason });
     setDetailPlan((prev) => (
       prev?.planCatalogId === planCatalogId
         ? { ...prev, editable, editLockedReason }
@@ -236,7 +254,7 @@ function PlanManagement() {
           : prev
       ));
     }
-  }, [showError]);
+  }, [showError, updateCachedPlan]);
 
   useEffect(() => {
     const websocketUrl = getWebSocketUrl();
@@ -314,9 +332,7 @@ function PlanManagement() {
       const detail = extractApiData(response);
       if (detail?.editable === false) {
         showError(getPlanEditLockedReason(detail));
-        setPlans((prev) => prev.map((item) => (
-          item.planCatalogId === detail.planCatalogId ? { ...item, ...detail } : item
-        )));
+        updateCachedPlan(detail.planCatalogId, detail);
         return;
       }
       populatePlanForm(detail || plan);
@@ -326,7 +342,63 @@ function PlanManagement() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const savePlanMutation = useMutation({
+    mutationFn: async ({ id, payload, createPayload }) => {
+      if (id != null) {
+        return updatePlan(id, payload);
+      }
+      return createPlan(createPayload);
+    },
+    onSuccess: (_resp, variables) => {
+      showSuccess(
+        variables.id != null
+          ? t('subscription.updateSuccess')
+          : t('subscription.createSuccess'),
+      );
+      setIsFormOpen(false);
+      invalidatePlanCatalog();
+    },
+    onError: (err, variables) => {
+      const rawMsg = err?.message || '';
+      let msg = getFriendlyError(err, 'subscription.submitError');
+      if (rawMsg === 'Default plan already exists for this type' || rawMsg?.includes?.('Default plan already exists')) {
+        msg = t('subscription.defaultPlanExists', { type: variables?.createPayload?.planScope });
+      }
+      showError(msg);
+    },
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => updatePlanStatus(id, status),
+    onSuccess: () => {
+      showSuccess(t('subscription.updateSuccess'));
+      invalidatePlanCatalog();
+    },
+    onError: (err) => {
+      showError(getFriendlyError(err, 'subscription.submitError'));
+    },
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: ({ id }) => deletePlan(id),
+    onSuccess: () => {
+      showSuccess(t('subscription.deleteSuccess'));
+      setIsDeleteOpen(false);
+      setDeletingPlan(null);
+      invalidatePlanCatalog();
+    },
+    onError: (err) => {
+      const rawMsg = err?.message || '';
+      const msg = (rawMsg === 'Plan is in use' || rawMsg?.includes?.('Plan is in use'))
+        ? t('subscription.planInUse')
+        : getFriendlyError(err, 'subscription.deleteError');
+      showError(msg);
+    },
+  });
+
+  const isSubmitting = savePlanMutation.isPending || deletePlanMutation.isPending;
+
+  const handleSubmit = (e) => {
     e?.preventDefault?.();
     const isDefaultPlanLevel = String(formData.planLevel ?? '0') === '0';
     if (editingPlan?.editable === false) {
@@ -365,35 +437,34 @@ function PlanManagement() {
         }
       }
     }
-    setIsSubmitting(true);
-    try {
-      const credits = isDefaultPlanLevel ? 0 : (parseInt(entitlement.planIncludedCredits, 10) || 0);
-      const minPrice = credits * creditUnitPrice;
-      const inputPrice = parseInt(formData.price, 10) || 0;
-      const resolvedPrice = isDefaultPlanLevel ? 0 : Math.max(inputPrice, minPrice);
 
-      const payload = {
-        displayName: formData.displayName.trim(),
-        price: resolvedPrice,
-        description: formData.description || '',
-        entitlement: {
-          ...entitlement,
-          maxIndividualWorkspace: entitlement.maxIndividualWorkspace != null ? parseInt(entitlement.maxIndividualWorkspace, 10) || 0 : 0,
-          maxMaterialInWorkspace: entitlement.maxMaterialInWorkspace != null ? parseInt(entitlement.maxMaterialInWorkspace, 10) || 0 : 0,
-          canBuyCredit: isDefaultPlanLevel ? false : entitlement.canBuyCredit,
-          planIncludedCredits: credits,
-        },
-        aiModelAssignments: buildAiModelAssignmentsPayload(aiModelAssignments),
-        aiFunctionAssignments: buildFunctionAssignmentsPayload(functionAssignmentMap),
-      };
+    const credits = isDefaultPlanLevel ? 0 : (parseInt(entitlement.planIncludedCredits, 10) || 0);
+    const minPrice = credits * creditUnitPrice;
+    const inputPrice = parseInt(formData.price, 10) || 0;
+    const resolvedPrice = isDefaultPlanLevel ? 0 : Math.max(inputPrice, minPrice);
 
-      if (editingPlan) {
-        await updatePlan(editingPlan.planCatalogId, payload);
-        showSuccess(t('subscription.updateSuccess'));
-      } else {
-        // Backend enum is USER | WORKSPACE only (normalize legacy GROUP_WORKSPACE)
-        const planScope = (formData.planScope === 'GROUP_WORKSPACE' || formData.planScope === 'WORKSPACE') ? 'WORKSPACE' : (formData.planScope || 'USER');
-        await createPlan({
+    const payload = {
+      displayName: formData.displayName.trim(),
+      price: resolvedPrice,
+      description: formData.description || '',
+      entitlement: {
+        ...entitlement,
+        maxIndividualWorkspace: entitlement.maxIndividualWorkspace != null ? parseInt(entitlement.maxIndividualWorkspace, 10) || 0 : 0,
+        maxMaterialInWorkspace: entitlement.maxMaterialInWorkspace != null ? parseInt(entitlement.maxMaterialInWorkspace, 10) || 0 : 0,
+        canBuyCredit: isDefaultPlanLevel ? false : entitlement.canBuyCredit,
+        planIncludedCredits: credits,
+      },
+      aiModelAssignments: buildAiModelAssignmentsPayload(aiModelAssignments),
+      aiFunctionAssignments: buildFunctionAssignmentsPayload(functionAssignmentMap),
+    };
+
+    if (editingPlan) {
+      savePlanMutation.mutate({ id: editingPlan.planCatalogId, payload });
+    } else {
+      const planScope = (formData.planScope === 'GROUP_WORKSPACE' || formData.planScope === 'WORKSPACE') ? 'WORKSPACE' : (formData.planScope || 'USER');
+      savePlanMutation.mutate({
+        id: null,
+        createPayload: {
           code: formData.code.trim(),
           displayName: formData.displayName.trim(),
           planScope,
@@ -403,50 +474,21 @@ function PlanManagement() {
           entitlement: payload.entitlement,
           aiModelAssignments: payload.aiModelAssignments,
           aiFunctionAssignments: payload.aiFunctionAssignments,
-        });
-        showSuccess(t('subscription.createSuccess'));
-      }
-      setIsFormOpen(false); fetchPlans();
-    } catch (err) {
-      const rawMsg = err?.message || '';
-      let msg = getFriendlyError(err, 'subscription.submitError');
-      if (rawMsg === 'Default plan already exists for this type' || rawMsg?.includes?.('Default plan already exists')) {
-        msg = t('subscription.defaultPlanExists', { type: formData.planType });
-      }
-      showError(msg);
+        },
+      });
     }
-    finally { setIsSubmitting(false); }
   };
 
-  const handleToggleStatus = async (plan) => {
+  const handleToggleStatus = (plan) => {
     const nextStatus = isActive(plan.status) ? 'INACTIVE' : 'ACTIVE';
-    try {
-      await updatePlanStatus(plan.planCatalogId, nextStatus);
-      showSuccess(t('subscription.updateSuccess'));
-      fetchPlans();
-    }
-    catch (err) { showError(getFriendlyError(err, 'subscription.submitError')); }
+    statusMutation.mutate({ id: plan.planCatalogId, status: nextStatus });
   };
 
   const confirmDelete = (plan) => { setDeletingPlan(plan); setIsDeleteOpen(true); };
 
-  const handleDelete = async () => {
-    if (!deletingPlan) return; setIsSubmitting(true);
-    try {
-      await deletePlan(deletingPlan.planCatalogId);
-      showSuccess(t('subscription.deleteSuccess'));
-      fetchPlans();
-    } catch (err) {
-      const rawMsg = err?.message || '';
-      const msg = (rawMsg === 'Plan is in use' || rawMsg?.includes?.('Plan is in use'))
-        ? t('subscription.planInUse')
-        : getFriendlyError(err, 'subscription.deleteError');
-      showError(msg);
-    } finally {
-      setIsDeleteOpen(false);
-      setDeletingPlan(null);
-      setIsSubmitting(false);
-    }
+  const handleDelete = () => {
+    if (!deletingPlan) return;
+    deletePlanMutation.mutate({ id: deletingPlan.planCatalogId });
   };
 
   const filteredPlans = plans.filter((p) => {
@@ -536,8 +578,8 @@ function PlanManagement() {
               <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${dk ? 'text-slate-400' : 'text-slate-500'}`} />
               <Input placeholder={t('subscription.searchPlan')} className={`pl-10 h-10 rounded-xl ${dk ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30' : 'border-slate-300 text-slate-800 placeholder:text-slate-500'}`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <Button variant="outline" size="icon" onClick={fetchPlans} disabled={isLoading} className={`h-10 w-10 rounded-xl cursor-pointer ${dk ? 'border-white/10 hover:bg-white/5' : ''}`}>
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <Button variant="outline" size="icon" onClick={invalidatePlanCatalog} disabled={isFetching} className={`h-10 w-10 rounded-xl cursor-pointer ${dk ? 'border-white/10 hover:bg-white/5' : ''}`}>
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
@@ -674,148 +716,20 @@ function PlanManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* ──── Plan Detail Dialog ──── */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent hideClose className={`max-w-4xl max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden ${dk ? 'bg-[#0f1629] border-white/[0.08]' : 'bg-white'}`}>
-          {detailPlan && (
-            <>
-              {/* Fixed header */}
-              <div className={`flex-shrink-0 px-6 pt-6 pb-4 border-b ${dk ? 'border-white/[0.06]' : 'border-slate-100'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                      detailPlan.planScope === 'WORKSPACE'
-                        ? 'bg-gradient-to-br from-violet-500 to-purple-600' : 'bg-gradient-to-br from-cyan-500 to-blue-600'
-                    } shadow-lg`}>
-                      {detailPlan.planScope === 'WORKSPACE' ? <Users className="w-5 h-5 text-white" /> : <User className="w-5 h-5 text-white" />}
-                    </div>
-                    <div>
-                      <h3 className={`text-lg font-bold ${dk ? 'text-white' : 'text-slate-900'}`}>{detailPlan.displayName}</h3>
-                      <p className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {t('subscription.detail.planType', {
-                          scope: getScopeLabel(detailPlan.planScope, t),
-                          defaultValue: '{{scope}} plan',
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
-                    isActive(detailPlan.status)
-                      ? dk ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
-                      : dk ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full ${isActive(detailPlan.status) ? 'bg-emerald-400' : 'bg-slate-400'}`} />
-                    {detailPlan.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
-                {/* Quick stats */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: t('subscription.table.price'), value: formatCurrency(detailPlan.price, t, locale), color: dk ? 'text-emerald-400' : 'text-emerald-600' },
-                    { label: t('subscription.table.scope', 'Scope'), value: getScopeLabel(detailPlan.planScope, t), color: dk ? 'text-blue-400' : 'text-blue-600' },
-                    { label: t('subscription.table.level', 'Level'), value: detailPlan.planLevel ?? '-', color: dk ? 'text-amber-400' : 'text-amber-600' },
-                  ].map((item) => (
-                    <div key={item.label} className={`p-3.5 rounded-xl text-center ${dk ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-slate-50 border border-slate-100'}`}>
-                      <p className={`text-[11px] font-semibold uppercase tracking-wider ${dk ? 'text-slate-500' : 'text-slate-400'}`}>{item.label}</p>
-                      <p className={`font-bold mt-1 ${item.color}`}>{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Entitlement & features */}
-                {detailPlan.entitlement && (
-                  <div className={sectionCls}>
-                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                      {t('subscription.detail.entitlement', 'Entitlement')}
-                    </p>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-4">
-                      <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
-                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace')}
-                        </span>
-                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.maxIndividualWorkspace ?? '—'}</span>
-                      </div>
-                      <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
-                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')}
-                        </span>
-                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.maxMaterialInWorkspace ?? '—'}</span>
-                      </div>
-                      <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
-                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {t('subscription.detail.planIncludedCredits', 'Included credits')}
-                        </span>
-                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.planIncludedCredits ?? 0}</span>
-                      </div>
-                    </div>
-                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>
-                      {t('subscription.detail.features', 'Features')}
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(ENTITLEMENT_TOGGLES).map(([key, meta]) => {
-                        const enabled = detailPlan.entitlement[key];
-                        const Icon = meta.icon;
-                        return (
-                          <div key={key} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${
-                            enabled
-                              ? dk ? 'bg-white/[0.04]' : 'bg-emerald-50/80'
-                              : dk ? 'opacity-40' : 'opacity-40'
-                          }`}>
-                            {enabled ? <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <X className="w-4 h-4 text-slate-400 flex-shrink-0" />}
-                            <Icon className={`w-4 h-4 flex-shrink-0 ${enabled ? 'text-blue-400' : dk ? 'text-slate-600' : 'text-slate-300'}`} />
-                            <span className={`text-sm font-medium ${
-                              enabled ? dk ? 'text-white' : 'text-slate-700' : dk ? 'text-slate-600 line-through' : 'text-slate-400 line-through'
-                            }`}>{t(meta.labelKey, meta.defaultLabel)}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <div className={sectionCls}>
-                  <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>
-                    {t('subscription.aiModels.title')}
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {AI_MODEL_GROUP_OPTIONS.map((group) => {
-                      const assignedModel = getAssignedModelForPlan(detailPlan, group.value);
-
-                      return (
-                        <div
-                          key={group.value}
-                          className={`rounded-xl border px-4 py-3 ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-white'}`}
-                        >
-                          <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
-                            {t(group.labelKey)}
-                          </p>
-                          {assignedModel ? (
-                            <>
-                              <p className={`mt-2 text-sm font-medium ${dk ? 'text-slate-200' : 'text-slate-700'}`}>
-                                {assignedModel.displayName || assignedModel.modelCode || `#${assignedModel.aiModelId}`}
-                              </p>
-                              <p className={`mt-1 text-xs ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
-                                {assignedModel.provider || '-'} / {assignedModel.modelCode || `#${assignedModel.aiModelId}`}
-                              </p>
-                            </>
-                          ) : (
-                            <p className={`mt-2 text-sm italic ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
-                              {t('subscription.aiModels.noAssignment')}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PlanDetailDialog
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        plan={detailPlan}
+        isDarkMode={dk}
+        t={t}
+        locale={locale}
+        formatCurrency={formatCurrency}
+        getScopeLabel={getScopeLabel}
+        isActive={isActive}
+        entitlementToggles={ENTITLEMENT_TOGGLES}
+        aiModelGroupOptions={AI_MODEL_GROUP_OPTIONS}
+        getAssignedModelForPlan={getAssignedModelForPlan}
+      />
     </div>
   );
 }
