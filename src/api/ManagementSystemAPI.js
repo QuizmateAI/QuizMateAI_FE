@@ -226,10 +226,14 @@ export const getAiAuditLogs = async ({
   provider,
   featureKey,
   actorUserId,
+  actorEmail,
+  planCatalogId,
   taskId,
   status,
   from,
   to,
+  category,
+  expand,
   page = 0,
   size = 20,
 } = {}) => {
@@ -239,11 +243,46 @@ export const getAiAuditLogs = async ({
   if (provider) params.append('provider', String(provider));
   if (featureKey) params.append('featureKey', String(featureKey));
   if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
+  if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
   if (taskId) params.append('taskId', String(taskId));
   if (status) params.append('status', String(status));
   if (from) params.append('from', String(from));
   if (to) params.append('to', String(to));
+  if (category) params.append('category', String(category));
+  if (expand) params.append('expand', 'true');
   const response = await api.get(`/management/ai-audit/logs?${params.toString()}`);
+  return response;
+};
+
+export const getAiAuditSummary = async ({
+  provider,
+  featureKey,
+  actorUserId,
+  actorEmail,
+  planCatalogId,
+  status,
+  from,
+  to,
+  category,
+} = {}) => {
+  const params = new URLSearchParams();
+  if (provider) params.append('provider', String(provider));
+  if (featureKey) params.append('featureKey', String(featureKey));
+  if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
+  if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
+  if (status) params.append('status', String(status));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  if (category) params.append('category', String(category));
+  const queryString = params.toString();
+  const response = await api.get(`/management/ai-audit/summary${queryString ? `?${queryString}` : ''}`);
+  return response;
+};
+
+export const getAiFeatureCatalog = async () => {
+  const response = await api.get('/management/ai-feature-catalog');
   return response;
 };
 
@@ -317,6 +356,7 @@ export const deleteAiModel = async (id) => {
 export const getAiCostRequests = async ({
   taskId,
   actorUserId,
+  actorEmail,
   chargedWorkspaceId,
   chargedUserId,
   planCatalogId,
@@ -334,6 +374,7 @@ export const getAiCostRequests = async ({
   params.append('size', String(size));
   if (taskId) params.append('taskId', String(taskId));
   if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
   if (chargedWorkspaceId != null && chargedWorkspaceId !== '') params.append('chargedWorkspaceId', String(chargedWorkspaceId));
   if (chargedUserId != null && chargedUserId !== '') params.append('chargedUserId', String(chargedUserId));
   if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
@@ -350,6 +391,7 @@ export const getAiCostRequests = async ({
 export const getAiCostSummary = async ({
   taskId,
   actorUserId,
+  actorEmail,
   chargedWorkspaceId,
   chargedUserId,
   planCatalogId,
@@ -363,6 +405,7 @@ export const getAiCostSummary = async ({
   const params = new URLSearchParams();
   if (taskId) params.append('taskId', String(taskId));
   if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
   if (chargedWorkspaceId != null && chargedWorkspaceId !== '') params.append('chargedWorkspaceId', String(chargedWorkspaceId));
   if (chargedUserId != null && chargedUserId !== '') params.append('chargedUserId', String(chargedUserId));
   if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));

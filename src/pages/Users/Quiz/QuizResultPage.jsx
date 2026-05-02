@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles, BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles, BookOpen, ChevronDown, ChevronRight, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import DirectFeedbackButton from '@/components/feedback/DirectFeedbackButton';
@@ -1513,13 +1513,26 @@ handleBack,
             </h1>
 
             <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-white/70 bg-white/45 p-4 shadow-inner shadow-white/60 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/25 dark:shadow-slate-950/20">
-              {/* Score display */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 max-w-4xl mx-auto">
-                <ScoreStat label={t('quizResultPage.accuracy', 'Accuracy')} value={accuracyValue} icon={BarChart3} />
-                <ScoreStat label={t('quizResultPage.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
-                <ScoreStat label={t('quizResultPage.answered', 'Answered')} value={answeredValue} icon={Eye} />
-                <ScoreStat label={t('quizResultPage.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
-              </div>
+              {/* Score display — score card chỉ hiện khi quiz có cấu trúc điểm (maxScore > 0) */}
+              {(() => {
+                const hasScoring = Number(result.maxScore) > 0;
+                const gridCols = hasScoring ? 'xl:grid-cols-5' : 'xl:grid-cols-4';
+                return (
+                  <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${gridCols} max-w-4xl mx-auto`}>
+                    {hasScoring && (
+                      <ScoreStat
+                        label={t('quizResultPage.score', 'Score')}
+                        value={`${round2Display(result.score ?? 0)}/${round2Display(result.maxScore)}`}
+                        icon={Award}
+                      />
+                    )}
+                    <ScoreStat label={t('quizResultPage.accuracy', 'Accuracy')} value={accuracyValue} icon={BarChart3} />
+                    <ScoreStat label={t('quizResultPage.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
+                    <ScoreStat label={t('quizResultPage.answered', 'Answered')} value={answeredValue} icon={Eye} />
+                    <ScoreStat label={t('quizResultPage.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
+                  </div>
+                );
+              })()}
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
@@ -1945,6 +1958,14 @@ handleBack,
       </div>
     </div>
   );
+}
+
+// Format số điểm: integer hiển thị nguyên, decimal làm tròn 2 chữ số (tránh 3.333333).
+function round2Display(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0';
+  if (Number.isInteger(n)) return String(n);
+  return (Math.round(n * 100) / 100).toString();
 }
 
 function ScoreStat({ label, value, icon: Icon }) {
