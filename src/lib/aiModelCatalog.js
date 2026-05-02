@@ -104,6 +104,47 @@ export const AI_ACTION_GROUP_MAP = {
 
 export const AI_ACTION_OPTIONS = Object.keys(AI_ACTION_LABEL_KEYS);
 
+/**
+ * UI-only mapping: gop nhung action vao group hien thi cho dropdown filter.
+ * Khac voi AI_ACTION_GROUP_MAP (technical model_group) — vd PROCESS_AUDIO ve technical thuoc TRANSCRIPTION
+ * (can model Whisper) nhung user nhin thay no nhu 1 dang upload tai lieu, nen gop vao DOCUMENT_PROCESSING.
+ */
+const ACTION_DISPLAY_GROUP_OVERRIDES = {
+  PROCESS_AUDIO: 'DOCUMENT_PROCESSING',
+};
+
+function getActionDisplayGroup(actionKey) {
+  return ACTION_DISPLAY_GROUP_OVERRIDES[actionKey] ?? AI_ACTION_GROUP_MAP[actionKey] ?? null;
+}
+
+/**
+ * Tra ve list cac group (TEXT_GENERATION/DOCUMENT_PROCESSING/...) chi chua actionKey USER_PAID.
+ * Dung de render <optgroup> trong dropdown filter "Chuc nang" cua trang AI Costs.
+ *
+ * Truyen userPaidActionKeys lay tu hook useAiFeatureCatalog (BE la single source of truth).
+ */
+export function groupUserPaidAiActions(userPaidActionKeys = []) {
+  return AI_MODEL_GROUP_OPTIONS.map((group) => ({
+    value: group.value,
+    labelKey: group.labelKey,
+    actions: userPaidActionKeys.filter(
+      (actionKey) => getActionDisplayGroup(actionKey) === group.value,
+    ),
+  })).filter((group) => group.actions.length > 0);
+}
+
+/**
+ * COMPANION_INTERPRET / COMPANION_TRANSCRIBE / COMPANION_TTS gop thanh 1 entry "COMPANION_" trong dropdown filter
+ * — vi 3 sub-call nay luon di kem nhau trong 1 voice answer va da duoc gom theo task_id (quiz-attempt-companion-<attemptId>).
+ * BE filter dung LIKE '%COMPANION_%' nen 1 value match het 3 feature_key con. Drill-down detail van hien
+ * dung label tung loai (TRANSCRIBE/INTERPRET/TTS).
+ */
+export function mergeCompanionFeatureKeys(featureKeys = []) {
+  const nonCompanion = featureKeys.filter((key) => !String(key).startsWith('COMPANION_'));
+  const hasCompanion = featureKeys.some((key) => String(key).startsWith('COMPANION_'));
+  return hasCompanion ? [...nonCompanion, 'COMPANION_'] : nonCompanion;
+}
+
 export const AI_ACTION_PROVIDER_ALLOWLIST = {
   PREVIEW_QUIZ_STRUCTURE: ['OPENAI'],
   ANALYZE_STUDY_PROFILE_KNOWLEDGE: ['OPENAI'],

@@ -1345,6 +1345,7 @@
   "aiCosts": {
     "title": "Chi phí AI",
     "subtitle": "Tách rõ số người dùng trả, chi phí thực tế và phần lợi nhuận của từng request AI.",
+    "scopeNote": "· Chỉ tính tính năng người dùng trả credit. Click vào dòng để xem chi tiết các call AI con.",
     "refresh": "Làm mới",
     "clear": "Xóa lọc",
     "apply": "Áp dụng",
@@ -1370,6 +1371,7 @@
       "dialogDescription": "Chọn các điều kiện để thu gọn danh sách thu chi AI.",
       "taskId": "Task ID",
       "actorUserId": "User ID",
+      "actorEmail": "Email người dùng",
       "plan": "Gói",
       "allPlans": "Tất cả gói",
       "provider": "Provider",
@@ -1384,6 +1386,9 @@
       "to": "Đến thời điểm"
     },
     "table": {
+      "actor": "Người dùng",
+      "systemUser": "Hệ thống",
+      "noEmail": "Không có email",
       "request": "Request",
       "plan": "Gói",
       "model": "Model",
@@ -1441,7 +1446,16 @@
       "explain": "Cách hiểu số liệu",
       "explainCharged": "Người dùng đã trả {{credit}} credit, tương ứng {{vnd}} cho request này.",
       "explainProvider": "Chi phí thực tế được tính từ {{prompt}} input token và {{output}} output token, tổng khoảng {{actualTokens}} token với chi phí {{cost}}.",
-      "explainMargin": "Lợi nhuận được tính bằng tiền người dùng trả trừ đi chi phí thực tế. Giá trị hiện tại là {{profitVnd}}; số âm nghĩa là đang lỗ."
+      "explainMargin": "Lợi nhuận được tính bằng tiền người dùng trả trừ đi chi phí thực tế. Giá trị hiện tại là {{profitVnd}}; số âm nghĩa là đang lỗ.",
+      "subCallsHeader": "Các call AI con của task này",
+      "subCallsHint": "Click 1 dòng để xem input / output",
+      "subCallsEmpty": "Không có audit sub-call nào cho task này.",
+      "subCallDetailHeader": "Chi tiết call #{{index}}",
+      "subCallProviderCost": "Chi phí provider (call này)",
+      "subCallError": "Lỗi",
+      "subCallInput": "Input",
+      "subCallOutput": "Output",
+      "subCallNoPreview": "Không có dữ liệu"
     }
   },
   "adminLayout": {
@@ -1479,38 +1493,64 @@
     },
     "metrics": {
       "totalRequests": "Tổng request",
-      "totalRequestsHint": "Theo bộ lọc hiện tại",
+      "totalRequestsHint": "Chỉ tính tính năng hệ thống và theo gói",
       "totalTokens": "Tổng token",
       "totalTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "pageTokens": "Token trang hiện tại",
       "pageTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "averageTokens": "Token trung bình / request",
       "averageTokensHint": "Tính trên toàn bộ request khớp bộ lọc",
+      "systemCost": "Chi phí hệ thống",
+      "systemCostHint": "Provider cost của các tính năng hệ thống",
+      "planCost": "Chi phí theo gói",
+      "planCostHint": "Provider cost các tính năng trong gói. Trung bình {{avg}} tokens/request",
       "errors": "Lỗi",
       "errorsHint": "Số request lỗi theo bộ lọc hiện tại"
     },
     "filters": {
       "title": "Bộ lọc AI audit",
+      "open": "Bộ lọc",
+      "dialogTitle": "Lọc AI audit",
+      "dialogDescription": "Chọn các điều kiện để thu gọn danh sách AI audit log.",
+      "provider": "Provider",
+      "status": "Trạng thái",
+      "category": "Nhóm tính năng",
+      "from": "Từ thời điểm",
+      "to": "Đến thời điểm",
       "allProviders": "Tất cả provider",
       "allStatuses": "Tất cả trạng thái",
+      "allCategories": "Tất cả nhóm tính năng",
+      "allFeatureKeys": "Tất cả feature key",
+      "plan": "Gói",
+      "allPlans": "Tất cả gói",
       "featureKeyPlaceholder": "Feature key",
       "userIdPlaceholder": "User ID",
+      "actorEmail": "Email người dùng",
       "taskIdPlaceholder": "Task ID",
       "reset": "Xóa lọc",
-      "apply": "Áp dụng lọc"
+      "apply": "Áp dụng"
     },
     "table": {
       "title": "Danh sách AI request",
       "actor": "Người dùng",
       "feature": "Chức năng",
+      "category": "Nhóm",
+      "plan": "Gói",
       "tokens": "Tokens",
+      "systemCost": "Chi phí (VND)",
       "model": "Model",
       "provider": "Provider",
       "status": "Trạng thái request",
       "createdAt": "Thời gian tạo",
       "systemUser": "Người dùng hệ thống",
       "noEmail": "Không có email",
-      "empty": "Chưa có AI audit log nào theo bộ lọc hiện tại."
+      "empty": "Chưa có AI audit log nào theo bộ lọc hiện tại.",
+      "callCount": "{{count}} call"
+    },
+    "category": {
+      "SYSTEM": "Hệ thống",
+      "PLAN_BASED": "Theo gói",
+      "USER_PAID": "Trừ credit"
     },
     "detail": {
       "title": "Chi tiết AI request",
@@ -1532,7 +1572,14 @@
       "requestPreview": "Input",
       "responsePreview": "Output",
       "noPreview": "Không có dữ liệu",
-      "missing": "Request này không còn nằm trong danh sách hiện tại. Hãy đóng popup và tải lại danh sách nếu cần."
+      "missing": "Request này không còn nằm trong danh sách hiện tại. Hãy đóng popup và tải lại danh sách nếu cần.",
+      "tokensTotal": "Tổng tokens (cả phiên)",
+      "systemCost": "Chi phí hệ thống (provider)",
+      "callsHeader": "{{count}} lần gọi AI trong phiên này",
+      "callsHint": "Click 1 dòng để xem input / output",
+      "tokensSuffix": "tokens",
+      "callDetailHeader": "Chi tiết lần gọi #{{index}}",
+      "selectCallHint": "Click 1 dòng phía trên để xem input, output, và token của lần gọi đó."
     },
     "status": {
       "PROCESSING": "Đang xử lý",
@@ -1543,6 +1590,7 @@
       "GENERATE_FLASHCARDS": "Tạo flashcards",
       "GENERATE_QUIZ": "Tạo quiz",
       "EVALUATE_SHORT_ANSWER": "Chấm câu trả lời ngắn",
+      "COMPANION_GROUP": "Companion (voice quiz)",
       "COMPANION_INTERPRET": "Companion trả lời",
       "COMPANION_TRANSCRIBE": "Companion speech-to-text",
       "COMPANION_TTS": "Companion text-to-speech",
@@ -1558,7 +1606,17 @@
       "CONTENT_MODERATION": "Kiểm duyệt nội dung",
       "GEMINI_VISION_OCR": "OCR ảnh",
       "GEMINI_PDF_FILE_OCR": "OCR PDF",
-      "GEMINI_VIDEO_FILE_ANALYSIS": "Phân tích video"
+      "GEMINI_VIDEO_FILE_ANALYSIS": "Phân tích video",
+      "MATERIAL_TOPIC_EXTRACTION": "Trích xuất topic tài liệu",
+      "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "Phân tích kiến thức hồ sơ học tập",
+      "SUGGEST_STUDY_PROFILE_FIELDS": "Gợi ý trường hồ sơ học tập",
+      "SUGGEST_WORKSPACE_NAME": "Gợi ý tên workspace",
+      "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Kiểm tra độ nhất quán hồ sơ",
+      "PREVIEW_QUIZ_STRUCTURE": "Xem trước cấu trúc quiz",
+      "GENERATE_ROADMAP_PHASES": "Tạo phase roadmap",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Tạo nội dung phase roadmap",
+      "SUGGEST_MOCK_TEST_STRUCTURE": "Gợi ý cấu trúc đề thi thử",
+      "ROADMAP_REVIEW": "Đánh giá roadmap"
     }
   },
   "aiProviders": {
