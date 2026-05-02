@@ -807,6 +807,17 @@ export function useWorkspaceProfileWizard({
     isWaitingForOverallReview,
     t,
   });
+  const workspaceNameSuggestion = typeof (
+    consistencyResult?.workspaceNameSuggestion
+    || consistencyResult?.workspaceTitleSuggestion
+    || consistencyResult?.workspaceTitle
+  ) === 'string'
+    ? (
+      consistencyResult?.workspaceNameSuggestion
+      || consistencyResult?.workspaceTitleSuggestion
+      || consistencyResult?.workspaceTitle
+    ).trim()
+    : '';
   return {
     getSuggestedPublicExams: () => [],
     totalSteps,
@@ -835,6 +846,7 @@ export function useWorkspaceProfileWizard({
     examTemplateSuggestionStatus,
     consistencyResult,
     consistencyStatus,
+    workspaceNameSuggestion,
     // Actions
     updateField,
     setPurpose,

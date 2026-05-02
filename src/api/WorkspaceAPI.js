@@ -321,8 +321,11 @@ export const saveIndividualWorkspaceRoadmapConfigStep = async (workspaceId, data
   return response;
 };
 
-export const confirmIndividualWorkspaceProfile = async (workspaceId) => {
-  const response = await api.post(`/workspace-profile/individual/${workspaceId}/steps/confirm`);
+export const confirmIndividualWorkspaceProfile = async (workspaceId, data = {}) => {
+  const payload = {
+    workspaceNameSuggestion: trimToNullSafe(data.workspaceNameSuggestion),
+  };
+  const response = await api.post(`/workspace-profile/individual/${workspaceId}/steps/confirm`, payload);
   return response;
 };
 
