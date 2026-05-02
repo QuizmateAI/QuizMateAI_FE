@@ -1,16 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpRight, Coins, DatabaseZap, MoreVertical, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -33,25 +26,28 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import AdminPagination from '@/pages/Admin/components/AdminPagination';
-import { getAiCostRequests, getAiCostSummary, getAllPlans, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
+import { getAiAuditLogs, getAiCostRequests, getAiCostSummary, getAllPlans, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
 import {
-  AI_ACTION_OPTIONS,
   AI_COST_STATUS_OPTIONS,
   AI_MODEL_GROUP_OPTIONS,
   getAiActionLabel,
   getAiModelGroupLabel,
+  groupUserPaidAiActions,
 } from '@/lib/aiModelCatalog';
+import { useAiFeatureCatalog } from '@/hooks/useAiFeatureCatalog';
 import {
   SuperAdminPage,
   SuperAdminPageHeader,
 } from './Components/SuperAdminSurface';
+import TokenBreakdownCell from './Components/TokenBreakdownCell';
+import DateRangeChips from './Components/DateRangeChips';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 
 function createEmptyFilters() {
   return {
     taskId: '',
-    actorUserId: '',
+    actorEmail: '',
     planCatalogId: '',
     provider: '',
     modelGroup: '',
@@ -185,98 +181,13 @@ function getStatusBadgeClass(status, isDarkMode) {
   return isDarkMode ? 'border-slate-600 bg-slate-800 text-slate-200' : 'border-slate-300 bg-slate-100 text-slate-800';
 }
 
-function getOutputTokens(row) {
-  return Number(row?.completionTokens || 0) + Number(row?.thoughtTokens || 0);
-}
-
-function getTokenTone(kind, isDarkMode) {
-  if (kind === 'input') {
-    return isDarkMode
-      ? {
-        box: 'border-slate-600 bg-slate-900/60',
-        label: 'text-slate-200',
-        value: 'text-white',
-      }
-      : {
-        box: 'border-slate-300 bg-white',
-        label: 'text-slate-700',
-        value: 'text-slate-900',
-      };
-  }
-
-  if (kind === 'output') {
-    return isDarkMode
-      ? {
-        box: 'border-slate-600 bg-slate-900/60',
-        label: 'text-slate-200',
-        value: 'text-white',
-      }
-      : {
-        box: 'border-slate-300 bg-white',
-        label: 'text-slate-700',
-        value: 'text-slate-900',
-      };
-  }
-
-  return isDarkMode
-    ? {
-      box: 'border-slate-600 bg-slate-900/60',
-      label: 'text-slate-200',
-      value: 'text-white',
-    }
-    : {
-      box: 'border-slate-300 bg-white',
-      label: 'text-slate-700',
-      value: 'text-slate-900',
-    };
-}
-
-function TokenBreakdownCell({ row, isDarkMode, t }) {
-  const outputTokens = getOutputTokens(row);
-  const inputTone = getTokenTone('input', isDarkMode);
-  const outputTone = getTokenTone('output', isDarkMode);
-  const totalTone = getTokenTone('total', isDarkMode);
-  const labelCls = 'text-[11px] font-semibold uppercase tracking-[0.18em]';
-
-  return (
-    <div className="mx-auto min-w-[240px]">
-      <div className="grid grid-cols-2 gap-2">
-        <div className={`rounded-2xl border px-3 py-3 text-center ${inputTone.box}`}>
-          <p className={`${labelCls} ${inputTone.label}`}>
-            {t('aiCosts.tokens.input', { defaultValue: 'Input' })}
-          </p>
-          <p className={`mt-1 text-base font-semibold tabular-nums ${inputTone.value}`}>
-            {formatInteger(row?.promptTokens)}
-          </p>
-        </div>
-        <div className={`rounded-2xl border px-3 py-3 text-center ${outputTone.box}`}>
-          <p className={`${labelCls} ${outputTone.label}`}>
-            {t('aiCosts.tokens.output', { defaultValue: 'Output' })}
-          </p>
-          <p className={`mt-1 text-base font-semibold tabular-nums ${outputTone.value}`}>
-            {formatInteger(outputTokens)}
-          </p>
-        </div>
-      </div>
-      <div className={`mt-2 rounded-2xl border px-3 py-3 text-center ${totalTone.box}`}>
-        <p className={`${labelCls} ${totalTone.label}`}>
-          {t('aiCosts.tokens.total', { defaultValue: 'Total' })}
-        </p>
-        <p className={`mt-1 text-lg font-bold tabular-nums tracking-tight ${totalTone.value}`}>
-          {formatInteger(row?.totalTokens)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function MetricCard({ label, value, icon: Icon, tone, isDarkMode, subtext }) {
   return (
-    <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
+    <div className={`rounded-2xl border p-5 transition-colors ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'}`}>
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{label}</p>
-          <p className={`mt-2 text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
+          <p className={`mt-2 text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
           {subtext ? <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p> : null}
         </div>
         <div className={`rounded-2xl p-3 ${tone}`}>
@@ -309,7 +220,7 @@ function AiCostManagement() {
 
   const buildQuery = (activeFilters) => ({
     taskId: activeFilters.taskId || undefined,
-    actorUserId: activeFilters.actorUserId || undefined,
+    actorEmail: activeFilters.actorEmail || undefined,
     planCatalogId: activeFilters.planCatalogId || undefined,
     provider: activeFilters.provider || undefined,
     modelGroup: activeFilters.modelGroup || undefined,
@@ -374,7 +285,43 @@ function AiCostManagement() {
     queryClient.invalidateQueries({ queryKey: AI_COST_RATE_KEY });
   };
 
+  useEffect(() => {
+    setDetailSubCalls([]);
+    setDetailSubSelectedIndex(-1);
+    if (!detailRow || !detailRow.taskId) {
+      return;
+    }
+    let cancelled = false;
+    setDetailSubLoading(true);
+    getAiAuditLogs({
+      taskId: detailRow.taskId,
+      expand: true,
+      page: 0,
+      size: 50,
+    })
+      .then((response) => {
+        if (cancelled) return;
+        const pageData = response?.data ?? response ?? {};
+        const rows = Array.isArray(pageData?.content) ? pageData.content : [];
+        setDetailSubCalls(rows);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDetailSubCalls([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setDetailSubLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detailRow]);
+
   const detailActualTokenEquivalent = detailRow ? getActualTokenEquivalent(detailRow) : null;
+  const detailSelectedSubCall = detailSubSelectedIndex >= 0 && detailSubSelectedIndex < detailSubCalls.length
+    ? detailSubCalls[detailSubSelectedIndex]
+    : null;
   const isDetailProfitPositive = Number(detailRow?.profitVnd || 0) >= 0;
   const tableStroke = isDarkMode ? 'border-slate-700' : 'border-slate-300';
   const activeFilterCount = Object.values(filters).filter((value) => String(value ?? '').trim() !== '').length;
@@ -402,12 +349,20 @@ function AiCostManagement() {
     setIsFilterDialogOpen(false);
   };
 
+  const handleDateRangeChipChange = ({ from, to }) => {
+    const nextFilters = { ...filters, from, to };
+    setDraftFilters(nextFilters);
+    setFilters(nextFilters);
+    setPage(0);
+    fetchCostData(0, pageSize, nextFilters);
+  };
+
   return (
     <SuperAdminPage className={fontClass}>
       <SuperAdminPageHeader
         eyebrow="AI Governance"
         title={t('aiCosts.title')}
-        description={t('aiCosts.subtitle')}
+        description={`${t('aiCosts.subtitle')} ${t('aiCosts.scopeNote', '· Only user-paid features. Click a row to inspect AI sub-calls.')}`}
         actions={(
           <Button
             type="button"
@@ -453,6 +408,11 @@ function AiCostManagement() {
           >
             <RefreshCw className={`h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
           </Button>
+          <DateRangeChips
+            value={{ from: filters.from, to: filters.to }}
+            onChange={handleDateRangeChipChange}
+            isDarkMode={isDarkMode}
+          />
           <Button
             type="button"
             variant="outline"
@@ -492,12 +452,13 @@ function AiCostManagement() {
               />
             </div>
             <div>
-              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.actorUserId')}</Label>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.actorEmail', { defaultValue: 'Email người dùng' })}</Label>
               <Input
-                value={draftFilters.actorUserId}
-                onChange={(event) => handleDraftFilterChange('actorUserId', event.target.value)}
+                type="email"
+                value={draftFilters.actorEmail}
+                onChange={(event) => handleDraftFilterChange('actorEmail', event.target.value)}
                 className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
-                placeholder="123"
+                placeholder="user@example.com"
               />
             </div>
             <div>
@@ -541,7 +502,13 @@ function AiCostManagement() {
                 className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
               >
                 <option value="">{t('aiCosts.filters.allActions')}</option>
-                {AI_ACTION_OPTIONS.map((option) => <option key={option} value={option}>{getAiActionLabel(option, t)}</option>)}
+                {groupUserPaidAiActions(featureCatalog.userPaid).map((group) => (
+                  <optgroup key={group.value} label={t(group.labelKey, group.value)}>
+                    {group.actions.map((actionKey) => (
+                      <option key={actionKey} value={actionKey}>{getAiActionLabel(actionKey, t)}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             </div>
             <div>
@@ -555,14 +522,14 @@ function AiCostManagement() {
                 {AI_COST_STATUS_OPTIONS.map((option) => <option key={option} value={option}>{t(`aiCosts.status.${option}`)}</option>)}
               </select>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:col-span-1">
+            <div className="grid gap-3 sm:grid-cols-2 lg:col-span-2">
               <div>
                 <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiCosts.filters.from')}</Label>
                 <Input
                   type="datetime-local"
                   value={draftFilters.from}
                   onChange={(event) => handleDraftFilterChange('from', event.target.value)}
-                  className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                  className={`mt-1.5 w-full ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
                 />
               </div>
               <div>
@@ -571,7 +538,7 @@ function AiCostManagement() {
                   type="datetime-local"
                   value={draftFilters.to}
                   onChange={(event) => handleDraftFilterChange('to', event.target.value)}
-                  className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                  className={`mt-1.5 w-full ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
                 />
               </div>
             </div>
@@ -590,9 +557,10 @@ function AiCostManagement() {
       </Dialog>
 
       <div className={`overflow-hidden rounded-2xl border-2 ${isDarkMode ? 'border-slate-700 bg-slate-900 shadow-lg shadow-slate-950/20' : 'border-slate-300 bg-white shadow-sm'}`}>
-        <Table className="min-w-[1600px]">
+        <Table className="min-w-[1800px]">
           <TableHeader>
             <TableRow className={`border-b-2 ${tableStroke} ${isDarkMode ? 'bg-slate-800/80' : 'bg-white'}`}>
+              <TableHead className={`w-[200px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.actor', { defaultValue: 'Người dùng' })}</TableHead>
               <TableHead className={`w-[220px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.request')}</TableHead>
               <TableHead className={`w-[170px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.plan', { defaultValue: 'Gói' })}</TableHead>
               <TableHead className={`w-[190px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.model', { defaultValue: 'Model' })}</TableHead>
@@ -600,8 +568,7 @@ function AiCostManagement() {
               <TableHead className={`w-[190px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.charged')}</TableHead>
               <TableHead className={`w-[190px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.actual', { defaultValue: 'Chi phí thực tế' })}</TableHead>
               <TableHead className={`w-[190px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.profit', { defaultValue: 'Lợi nhuận' })}</TableHead>
-              <TableHead className={`w-[120px] border-r font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} ${tableStroke}`}>{t('aiCosts.table.status')}</TableHead>
-              <TableHead className={`w-[72px] text-right font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{t('aiCosts.table.actions')}</TableHead>
+              <TableHead className={`w-[120px] font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{t('aiCosts.table.status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -613,9 +580,18 @@ function AiCostManagement() {
               requests.map((row) => {
                 const actualTokenEquivalent = getActualTokenEquivalent(row);
                 const isProfitPositive = Number(row.profitVnd || 0) >= 0;
+                const actorName = row.actorFullName || row.actorUsername || row.actorEmail || t('aiCosts.table.systemUser', { defaultValue: 'System' });
 
                 return (
-                  <TableRow key={row.aiUsageId} className={`border-b ${tableStroke} ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800/40' : 'bg-white hover:bg-slate-50/80'}`}>
+                  <TableRow
+                    key={row.aiUsageId}
+                    onClick={() => setDetailRow(row)}
+                    className={`cursor-pointer border-b ${tableStroke} transition-colors ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800/60' : 'bg-white hover:bg-blue-50/60'}`}
+                  >
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
+                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{actorName}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{row.actorEmail || t('aiCosts.table.noEmail', { defaultValue: 'Không có email' })}</p>
+                    </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
                       <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{getAiActionLabel(row.actionKey, t)}</p>
                       <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{row.taskId || '-'}</p>
@@ -669,38 +645,8 @@ function AiCostManagement() {
                           : t('aiCosts.table.profitLossHint', { defaultValue: 'QuizMate đang bị lỗ' })}
                       </p>
                     </TableCell>
-                    <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
+                    <TableCell className="py-4 align-middle">
                       <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(row.requestStatus, isDarkMode)}`}>{t(`aiCosts.status.${row.requestStatus}`, row.requestStatus)}</span>
-                    </TableCell>
-                    <TableCell className="py-4 text-right align-middle">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className={isDarkMode ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className={`w-40 ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100' : ''}`}
-                        >
-                          <DropdownMenuItem onSelect={() => setDetailRow(row)} className="cursor-pointer">
-                            {t('aiCosts.actions.details')}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator className={isDarkMode ? 'bg-slate-700' : ''} />
-                          <DropdownMenuItem
-                            onSelect={() => navigate(`/super-admin/ai-audit?taskId=${encodeURIComponent(row.taskId || '')}`)}
-                            disabled={!row.taskId}
-                            className="cursor-pointer"
-                          >
-                            {t('aiCosts.actions.audit')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -714,12 +660,13 @@ function AiCostManagement() {
       </div>
 
       <Dialog open={Boolean(detailRow)} onOpenChange={(open) => !open && setDetailRow(null)}>
-        <DialogContent className={`max-w-4xl ${isDarkMode ? 'border-slate-800 bg-slate-950 text-white' : ''}`}>
+        <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'border-slate-800 bg-slate-950 text-white' : ''}`}>
           <DialogHeader>
             <DialogTitle>{t('aiCosts.detail.title')}</DialogTitle>
             <DialogDescription>{detailRow?.taskId || '-'}</DialogDescription>
           </DialogHeader>
           {detailRow ? (
+            <div className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-2">
               <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
                 <h3 className={`text-sm font-bold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('aiCosts.detail.ledger')}</h3>
@@ -777,6 +724,136 @@ function AiCostManagement() {
                   })}</p>
                 </div>
               </div>
+            </div>
+
+            <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className={`flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  <Layers className="h-4 w-4 text-indigo-500" />
+                  {t('aiCosts.detail.subCallsHeader', 'AI sub-calls in this task')}
+                  {detailSubCalls.length > 0 ? (
+                    <span className={`ml-2 rounded-full px-2 py-0.5 text-xs ${isDarkMode ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-700'}`}>
+                      {detailSubCalls.length}
+                    </span>
+                  ) : null}
+                </h3>
+                <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {t('aiCosts.detail.subCallsHint', 'Click a call to inspect input / output')}
+                </span>
+              </div>
+
+              {detailSubLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <ListSpinner variant="table" />
+                </div>
+              ) : null}
+
+              {!detailSubLoading && detailSubCalls.length === 0 ? (
+                <p className={`mt-3 text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {t('aiCosts.detail.subCallsEmpty', 'No audit sub-calls were recorded for this task.')}
+                </p>
+              ) : null}
+
+              {!detailSubLoading && detailSubCalls.length > 0 ? (
+                <>
+                  <div className="mt-3 space-y-1 max-h-[260px] overflow-y-auto pr-1">
+                    {detailSubCalls.map((row, idx) => {
+                      const isActive = idx === detailSubSelectedIndex;
+                      return (
+                        <button
+                          key={row.auditId}
+                          type="button"
+                          onClick={() => setDetailSubSelectedIndex(isActive ? -1 : idx)}
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                            isActive
+                              ? (isDarkMode ? 'border-indigo-500 bg-indigo-900/30' : 'border-indigo-300 bg-indigo-50')
+                              : (isDarkMode ? 'border-slate-800 hover:bg-slate-800/60' : 'border-slate-200 hover:bg-slate-100')
+                          }`}
+                        >
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-xs opacity-80">#{idx + 1}</span>
+                            <span className="font-medium">{row.featureKey || '-'}</span>
+                            <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{formatDateTime(row.createdAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}</span>
+                          </span>
+                          <span className="flex items-center gap-2 text-xs">
+                            <span className={`rounded-full px-2 py-0.5 ${
+                              String(row.status || '').toUpperCase() === 'ERROR'
+                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            }`}>{row.status || '-'}</span>
+                            <span className="opacity-70">{formatInteger(row.totalTokens)} tokens</span>
+                            <span className="opacity-70">{formatVnd(row.providerCostVnd)}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {detailSelectedSubCall ? (
+                    <div className={`mt-4 rounded-xl border p-4 ${isDarkMode ? 'border-indigo-700/60 bg-indigo-950/30' : 'border-indigo-300 bg-indigo-50/60'}`}>
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
+                        <span className="flex items-center gap-2">
+                          <ChevronDown className="h-4 w-4 text-indigo-500" />
+                          {t('aiCosts.detail.subCallDetailHeader', 'Call #{{index}} detail', { index: detailSubSelectedIndex + 1 })}
+                        </span>
+                        <span className="text-xs opacity-70">{detailSelectedSubCall.modelName || '-'} • {detailSelectedSubCall.provider || '-'}</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiCosts.formula.prompt')}</p>
+                          <p className={`mt-1 font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatInteger(detailSelectedSubCall.promptTokens)}</p>
+                        </div>
+                        <div>
+                          <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiCosts.formula.thought')}</p>
+                          <p className={`mt-1 font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatInteger(detailSelectedSubCall.thoughtTokens)}</p>
+                        </div>
+                        <div>
+                          <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiCosts.formula.completion')}</p>
+                          <p className={`mt-1 font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatInteger(detailSelectedSubCall.completionTokens)}</p>
+                        </div>
+                        <div>
+                          <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiCosts.formula.total')}</p>
+                          <p className={`mt-1 font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatInteger(detailSelectedSubCall.totalTokens)}</p>
+                        </div>
+                      </div>
+                      <div className={`mt-3 flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-900/60' : 'border-slate-200 bg-white'}`}>
+                        <span className={`flex items-center gap-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <Coins className="h-4 w-4 text-amber-500" />
+                          {t('aiCosts.detail.subCallProviderCost', 'Provider cost (this call)')}
+                        </span>
+                        <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatVnd(detailSelectedSubCall.providerCostVnd)}</span>
+                      </div>
+                      {detailSelectedSubCall.errorMessage ? (
+                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-100 p-3 text-xs text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
+                          <p className="font-semibold">{t('aiCosts.detail.subCallError', 'Error')}</p>
+                          <p className="mt-1 whitespace-pre-wrap break-words">{detailSelectedSubCall.errorMessage}</p>
+                        </div>
+                      ) : null}
+                      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                        <div>
+                          <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
+                            <Braces className="h-3 w-3 text-blue-500" />
+                            {t('aiCosts.detail.subCallInput', 'Input')}
+                          </div>
+                          <pre className={`max-h-[220px] overflow-auto rounded-lg border p-3 text-xs leading-5 whitespace-pre-wrap break-words ${isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-200' : 'border-slate-200 bg-white text-slate-700'}`}>
+                            {detailSelectedSubCall.requestPreview || t('aiCosts.detail.subCallNoPreview', 'No data')}
+                          </pre>
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
+                            <Braces className="h-3 w-3 text-emerald-500" />
+                            {t('aiCosts.detail.subCallOutput', 'Output')}
+                          </div>
+                          <pre className={`max-h-[220px] overflow-auto rounded-lg border p-3 text-xs leading-5 whitespace-pre-wrap break-words ${isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-200' : 'border-slate-200 bg-white text-slate-700'}`}>
+                            {detailSelectedSubCall.responsePreview || t('aiCosts.detail.subCallNoPreview', 'No data')}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
             </div>
           ) : null}
         </DialogContent>

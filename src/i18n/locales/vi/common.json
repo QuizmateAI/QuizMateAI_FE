@@ -44,6 +44,14 @@
     "save": "Lưu",
     "saving": "Đang lưu...",
     "creditsUnit": "credit",
+    "dateRange": {
+      "today": "Hôm nay",
+      "last7Days": "7 ngày",
+      "last30Days": "30 ngày",
+      "thisMonth": "Tháng này",
+      "custom": "Tùy chỉnh",
+      "clear": "Xóa"
+    },
     "dialog": {
       "defaultTitle": "Hộp thoại",
       "defaultDescription": "Nội dung hộp thoại",
