@@ -23,6 +23,25 @@
       "baseCredits": "{{count}} credit gốc",
       "bonusCredits": "+{{count}} bonus credit"
     },
+    "customCredit": {
+      "title": "Tự nhập số credit",
+      "cta": "Số lượng tùy chọn",
+      "openAria": "Mua credit theo số lượng tự nhập",
+      "dialogDesc": "Chọn số credit muốn mua, hệ thống sẽ tự tính tổng tiền theo đơn giá.",
+      "helper": "Tối thiểu {{min}} credit · Đơn giá {{price}}/credit",
+      "configError": "Không tải được cấu hình mua credit. Vui lòng thử lại.",
+      "placeholder": "VD: {{example}}",
+      "inputAria": "Số credit muốn mua",
+      "buy": "Mua ngay",
+      "belowMin": "Số credit tối thiểu là {{min}}.",
+      "previewTotal": "Tổng: {{credits}} credit · {{price}}",
+      "minBadge": "Tối thiểu {{min}} credit",
+      "priceBadge": "Đơn giá {{price}}/credit",
+      "youGet": "Bạn sẽ nhận",
+      "totalLabel": "Tổng tiền",
+      "breakdown": "{{credits}} × {{unitPrice}}",
+      "readyToUse": "Dùng ngay sau khi thanh toán"
+    },
     "history": {
       "title": "Lịch sử giao dịch",
       "subtitle": "20 giao dịch gần nhất trên ví của bạn",

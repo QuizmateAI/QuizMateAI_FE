@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MoreHorizontal, Plus, Shield, RefreshCw, Trash2,
   Users, Package, CreditCard, Banknote, FileText,
@@ -82,39 +83,36 @@ const getPermAction = (code) => {
   return action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+const ADMIN_LIST_QUERY_KEY = ['superAdmin', 'admins'];
+
 function AdminManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   const getFriendlyError = (err, fallbackKey, fallbackText) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
     if (fallbackKey) return t(fallbackKey);
     return fallbackText;
   };
-  
-  // State definitions
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [admins, setAdmins] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  // Create Admin Dialog State
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ 
-    username: '', 
-    email: '', 
-    password: '', 
-    confirmPassword: '', 
-    fullName: '' 
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    fullName: ''
   });
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
 
-  // RBAC Dialog State
   const [isRbacOpen, setIsRbacOpen] = useState(false);
   const [isRbacLoading, setIsRbacLoading] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
@@ -124,28 +122,48 @@ function AdminManagement() {
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  const fetchAdmins = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
+  const {
+    data: admins = [],
+    isLoading,
+    isFetching,
+    error: queryError,
+  } = useQuery({
+    queryKey: ADMIN_LIST_QUERY_KEY,
+    queryFn: async () => {
       const res = await getAllSystemUsers();
       const pageData = res?.data ?? res;
       const list = Array.isArray(pageData?.content) ? pageData.content : (Array.isArray(pageData) ? pageData : []);
-      setAdmins(
-        list.filter(
-          (u) => u.role === 'ADMIN' && String(u.status || '').toUpperCase() !== 'DELETED',
-        ),
+      return list.filter(
+        (u) => u.role === 'ADMIN' && String(u.status || '').toUpperCase() !== 'DELETED',
       );
-    } catch (err) {
-      setError(getFriendlyError(err, 'adminManagement.errors.loadAdmins'));
-    } finally {
-      setIsLoading(false);
+    },
+  });
+
+  useEffect(() => {
+    if (queryError) {
+      setError(getFriendlyError(queryError, 'adminManagement.errors.loadAdmins'));
     }
-  };
+  }, [queryError]);
 
-  useEffect(() => { fetchAdmins(); }, []);
+  const invalidateAdmins = () =>
+    queryClient.invalidateQueries({ queryKey: ADMIN_LIST_QUERY_KEY });
 
-  const handleCreateAdmin = async (e) => {
+  const createMutation = useMutation({
+    mutationFn: (payload) => createAdmin(payload),
+    onSuccess: () => {
+      showSuccess(t('adminManagement.form.success'));
+      setIsCreateOpen(false);
+      setFormData({ username: '', email: '', password: '', confirmPassword: '', fullName: '' });
+      invalidateAdmins();
+    },
+    onError: (err) => {
+      const msg = getFriendlyError(err, 'adminManagement.form.error');
+      setError(msg);
+      showError(msg);
+    },
+  });
+
+  const handleCreateAdmin = (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       const msg = t('adminManagement.form.passwordMismatch');
@@ -159,28 +177,17 @@ function AdminManagement() {
       showError(msg);
       return;
     }
-    setIsSubmitting(true);
     setError('');
-    try {
-      await createAdmin({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        confirmPassword: formData.confirmPassword,
-        fullName: formData.fullName || undefined,
-      });
-      showSuccess(t('adminManagement.form.success'));
-      setIsCreateOpen(false);
-      setFormData({ username: '', email: '', password: '', confirmPassword: '', fullName: '' });
-      fetchAdmins();
-    } catch (err) {
-      const msg = getFriendlyError(err, 'adminManagement.form.error');
-      setError(msg);
-      showError(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
+    createMutation.mutate({
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+      fullName: formData.fullName || undefined,
+    });
   };
+
+  const isSubmitting = createMutation.isPending;
 
   const openRbacPopup = async (admin) => {
     setSelectedAdmin(admin);
@@ -240,20 +247,23 @@ function AdminManagement() {
     }
   };
 
-  const handleSyncPermissions = async () => {
-    if (!selectedAdmin || selectedAdmin.role !== 'ADMIN') return;
-    setIsRbacLoading(true);
-    setError('');
-    try {
-      await syncUserPermissions(selectedAdmin.id, userPermissions);
+  const syncMutation = useMutation({
+    mutationFn: ({ id, perms }) => syncUserPermissions(id, perms),
+    onSuccess: () => {
       showSuccess(t('adminManagement.syncSuccess'));
-    } catch (err) {
+      invalidateAdmins();
+    },
+    onError: (err) => {
       const msg = getFriendlyError(err, 'adminManagement.syncError');
       setError(msg);
       showError(msg);
-    } finally {
-      setIsRbacLoading(false);
-    }
+    },
+  });
+
+  const handleSyncPermissions = () => {
+    if (!selectedAdmin || selectedAdmin.role !== 'ADMIN') return;
+    setError('');
+    syncMutation.mutate({ id: selectedAdmin.id, perms: userPermissions });
   };
 
   const openDeleteDialog = (admin) => {
@@ -264,7 +274,28 @@ function AdminManagement() {
     setIsDeleteOpen(true);
   };
 
-  const handleDeleteAdmin = async () => {
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, confirmText, reason }) => deleteAdmin(id, { confirmText, reason }),
+    onSuccess: () => {
+      showSuccess(t('adminManagement.deleteSuccess', 'Xóa tài khoản admin thành công.'));
+      setIsDeleteOpen(false);
+      setDeleteTarget(null);
+      setDeleteConfirmText('');
+      setDeleteReason('');
+      invalidateAdmins();
+    },
+    onError: (err) => {
+      const msg = getFriendlyError(
+        err,
+        null,
+        t('adminManagement.deleteError', 'Không thể xóa tài khoản admin.'),
+      );
+      setError(msg);
+      showError(msg);
+    },
+  });
+
+  const handleDeleteAdmin = () => {
     if (!deleteTarget?.id) return;
     const trimmedReason = deleteReason.trim();
 
@@ -288,30 +319,12 @@ function AdminManagement() {
       return;
     }
 
-    setIsLoading(true);
     setError('');
-    try {
-      await deleteAdmin(deleteTarget.id, {
-        confirmText: deleteConfirmText,
-        reason: trimmedReason,
-      });
-      showSuccess(t('adminManagement.deleteSuccess', 'Xóa tài khoản admin thành công.'));
-      setIsDeleteOpen(false);
-      setDeleteTarget(null);
-      setDeleteConfirmText('');
-      setDeleteReason('');
-      await fetchAdmins();
-    } catch (err) {
-      const msg = getFriendlyError(
-        err,
-        null,
-        t('adminManagement.deleteError', 'Không thể xóa tài khoản admin.'),
-      );
-      setError(msg);
-      showError(msg);
-    } finally {
-      setIsLoading(false);
-    }
+    deleteMutation.mutate({
+      id: deleteTarget.id,
+      confirmText: deleteConfirmText,
+      reason: trimmedReason,
+    });
   };
 
   const filteredAdmins = admins.filter(
@@ -439,13 +452,13 @@ function AdminManagement() {
             <Button
               variant="outline"
               size="icon"
-              onClick={fetchAdmins}
-              disabled={isLoading}
+              onClick={invalidateAdmins}
+              disabled={isFetching}
               className="h-11 rounded-2xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
               aria-label={t('common.refresh')}
               title={t('common.refresh')}
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Coins, History, PlugZap, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -207,35 +208,36 @@ function HealthDetailPill({ label, value, tone = 'neutral', isDarkMode }) {
   );
 }
 
+const AI_PROVIDERS_QUERY_KEY = ['superAdmin', 'aiProviders'];
+
 function AiProvidersOverview() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showError, showSuccess } = useToast();
+  const queryClient = useQueryClient();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  const [models, setModels] = useState([]);
-  const [healthMap, setHealthMap] = useState({});
-  const [costSummaryMap, setCostSummaryMap] = useState({});
-  const [loading, setLoading] = useState(false);
   const [activeProvider, setActiveProvider] = useState(AI_PROVIDER_OPTIONS[0] ?? '');
   const [testResult, setTestResult] = useState(null);
   const [testProvider, setTestProvider] = useState(null);
-  const [testing, setTesting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyEntries, setHistoryEntries] = useState([]);
   const [historyHours, setHistoryHours] = useState(24);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
+  const {
+    data,
+    isLoading: loading,
+    isFetching,
+    error: queryError,
+  } = useQuery({
+    queryKey: AI_PROVIDERS_QUERY_KEY,
+    queryFn: async () => {
       const modelsResponse = await getAiModels();
       const rawModels = Array.isArray(extractData(modelsResponse)) ? extractData(modelsResponse) : [];
       const nextModels = filterSupportedAiModels(rawModels);
-      setModels(nextModels);
 
       const providerList = [...AI_PROVIDER_OPTIONS];
-
       const [healthResponse, ...summaryResponses] = await Promise.all([
         getAiProviderHealth().catch(() => null),
         ...providerList.map((provider) => getAiCostSummary({ provider }).catch(() => null)),
@@ -243,44 +245,46 @@ function AiProvidersOverview() {
 
       const healthPayload = extractData(healthResponse);
       const healthEntries = Array.isArray(healthPayload?.providers) ? healthPayload.providers : [];
-      setHealthMap(
-        healthEntries.reduce((acc, item) => {
-          acc[String(item.provider || '').toUpperCase()] = item;
-          return acc;
-        }, {}),
-      );
+      const healthMap = healthEntries.reduce((acc, item) => {
+        acc[String(item.provider || '').toUpperCase()] = item;
+        return acc;
+      }, {});
 
-      setCostSummaryMap(
-        providerList.reduce((acc, provider, index) => {
-          acc[provider] = extractData(summaryResponses[index]) || null;
-          return acc;
-        }, {}),
-      );
-    } catch (error) {
-      setModels([]);
-      setHealthMap({});
-      setCostSummaryMap({});
-      showError(getErrorMessage(t, error));
-    } finally {
-      setLoading(false);
-    }
-  };
+      const costSummaryMap = providerList.reduce((acc, provider, index) => {
+        acc[provider] = extractData(summaryResponses[index]) || null;
+        return acc;
+      }, {});
+
+      return { models: nextModels, healthMap, costSummaryMap };
+    },
+  });
+
+  const models = useMemo(() => data?.models ?? [], [data?.models]);
+  const healthMap = useMemo(() => data?.healthMap ?? {}, [data?.healthMap]);
+  const costSummaryMap = useMemo(() => data?.costSummaryMap ?? {}, [data?.costSummaryMap]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (queryError) {
+      showError(getErrorMessage(t, queryError));
+    }
+  }, [queryError, t, showError]);
 
-  const handleTestConnection = async (provider) => {
-    if (!provider || testing) return;
-    setTesting(true);
-    setTestProvider(provider);
-    setTestResult(null);
-    try {
+  const refetchProviders = () =>
+    queryClient.invalidateQueries({ queryKey: AI_PROVIDERS_QUERY_KEY });
+
+  const testMutation = useMutation({
+    mutationFn: async (provider) => {
       const response = await testAiProviderConnection(provider);
-      const data = extractData(response);
-      setTestResult(data);
-      const valid = data?.validKeyCount ?? 0;
-      const total = data?.keyCount ?? 0;
+      return { provider, data: extractData(response) };
+    },
+    onMutate: (provider) => {
+      setTestProvider(provider);
+      setTestResult(null);
+    },
+    onSuccess: ({ provider, data: testData }) => {
+      setTestResult(testData);
+      const valid = testData?.validKeyCount ?? 0;
+      const total = testData?.keyCount ?? 0;
       showSuccess(t('aiProviders.testConnection.successToast', {
         defaultValue: 'Tested {{provider}}: {{valid}}/{{total}} keys healthy.',
         provider,
@@ -289,13 +293,20 @@ function AiProvidersOverview() {
       }));
       const nextHealth = {
         provider,
-        status: data?.status ?? 'UNREACHABLE',
-        configured: Boolean(data?.configured),
-        reachable: (data?.validKeyCount ?? 0) > 0,
-        keyCount: data?.keyCount ?? 0,
+        status: testData?.status ?? 'UNREACHABLE',
+        configured: Boolean(testData?.configured),
+        reachable: (testData?.validKeyCount ?? 0) > 0,
+        keyCount: testData?.keyCount ?? 0,
       };
-      setHealthMap((prev) => ({ ...prev, [provider]: nextHealth }));
-    } catch (error) {
+      queryClient.setQueryData(AI_PROVIDERS_QUERY_KEY, (current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          healthMap: { ...current.healthMap, [provider]: nextHealth },
+        };
+      });
+    },
+    onError: (error) => {
       const status = error?.response?.status;
       if (status === 429) {
         showError(t('aiProviders.testConnection.rateLimitHit', {
@@ -304,9 +315,13 @@ function AiProvidersOverview() {
       } else {
         showError(getErrorMessage(t, error));
       }
-    } finally {
-      setTesting(false);
-    }
+    },
+  });
+  const testing = testMutation.isPending;
+
+  const handleTestConnection = (provider) => {
+    if (!provider || testing) return;
+    testMutation.mutate(provider);
   };
 
   const handleOpenHistory = async (provider, hours = historyHours) => {
@@ -316,8 +331,8 @@ function AiProvidersOverview() {
     setHistoryHours(hours);
     try {
       const response = await getAiProviderHealthHistory({ provider, hours });
-      const data = extractData(response);
-      setHistoryEntries(Array.isArray(data) ? data : []);
+      const historyData = extractData(response);
+      setHistoryEntries(Array.isArray(historyData) ? historyData : []);
     } catch (error) {
       setHistoryEntries([]);
       showError(getErrorMessage(t, error));
@@ -373,13 +388,13 @@ function AiProvidersOverview() {
             type="button"
             variant="outline"
             size="icon"
-            onClick={loadData}
-            disabled={loading}
+            onClick={refetchProviders}
+            disabled={isFetching}
             className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             aria-label={t('common.refresh')}
             title={t('common.refresh')}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
         )}
       />

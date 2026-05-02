@@ -34,6 +34,25 @@ export const createVnPayCreditPayment = (creditPackageId, workspaceId = null) =>
   return api.post(`/vnpay/create-credit/${creditPackageId}`, null, { params });
 };
 
+// Custom credit purchase (user-typed amount, ≥ system-defined minimum)
+export const createMomoCustomCreditPayment = (creditUnits, workspaceId = null) => {
+  const params = { creditUnits };
+  if (workspaceId) params.workspaceId = workspaceId;
+  return api.post('/momo/create-custom-credit', null, { params });
+};
+
+export const createVnPayCustomCreditPayment = (creditUnits, workspaceId = null) => {
+  const params = { creditUnits };
+  if (workspaceId) params.workspaceId = workspaceId;
+  return api.post('/vnpay/create-custom-credit', null, { params });
+};
+
+export const createStripeCustomCreditPayment = (creditUnits, workspaceId = null) => {
+  const params = { creditUnits };
+  if (workspaceId) params.workspaceId = workspaceId;
+  return api.post('/stripe/create-custom-credit', null, { params });
+};
+
 export const createStripePayment = (planId, workspaceId = null, extraSlotCount = 0) => {
   if (workspaceId) {
     const params = { planId };

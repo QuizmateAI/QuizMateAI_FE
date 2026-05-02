@@ -1,0 +1,80 @@
+{
+  "policies": {
+    "pageTitle": "Policies & Terms",
+    "pageSubtitle": "QuizMate AI is committed to transparency, fairness, and strict enforcement of violations.",
+    "lastUpdated": "Last updated",
+    "version": "Version",
+    "effectiveDate": "Effective from",
+    "readPolicy": "Read full",
+    "tableOfContents": "Table of contents",
+    "backToPolicies": "← Back to all policies",
+    "searchInDocument": "Search within document...",
+    "noResultsFound": "No results found",
+    "loading": "Loading...",
+    "errorLoading": "Failed to load policy. Please try again.",
+    "notFound": "Policy not found",
+    "agreeBanner": "By using QuizMate AI, you agree to comply with the policies below. Violations will be enforced according to the rules.",
+    "violationWarningTitle": "Important notice",
+    "violationWarningText": "Any cheating, abuse, or distribution of harmful content will be strictly punished according to the rules, from warnings to permanent account bans.",
+    "needHelp": "Need help?",
+    "contactUs": "Contact us",
+    "categories": {
+      "TERMS_OF_SERVICE": {
+        "title": "Terms of Service",
+        "summary": "General rules for using QuizMate AI: accounts, conduct, violation enforcement.",
+        "category": "Terms"
+      },
+      "PRIVACY_POLICY": {
+        "title": "Privacy Policy",
+        "summary": "How QuizMate AI collects, stores, and protects personal data per Decree 13/2023.",
+        "category": "Privacy"
+      },
+      "COMMUNITY_GUIDELINES": {
+        "title": "Community Guidelines",
+        "summary": "Standards of conduct in group workspaces and community discussions.",
+        "category": "Community"
+      },
+      "AI_USAGE_POLICY": {
+        "title": "AI Usage Policy",
+        "summary": "Credit mechanism, responsibilities when using AI, and usage limits.",
+        "category": "AI"
+      },
+      "REFUND_POLICY": {
+        "title": "Refund Policy",
+        "summary": "Eligible refund cases, request process, and dispute resolution.",
+        "category": "Billing"
+      },
+      "COPYRIGHT_POLICY": {
+        "title": "Copyright Policy",
+        "summary": "Content ownership, DMCA procedure, and repeat infringement enforcement.",
+        "category": "Copyright"
+      }
+    },
+    "browsewrap": {
+      "prefix": "By signing up, you agree to QuizMate AI's",
+      "termsLabel": "Terms of Service",
+      "and": "and",
+      "privacyLabel": "Privacy Policy",
+      "suffix": "."
+    },
+    "suspended": {
+      "title": "Your account has been suspended",
+      "subtitle": "You have violated QuizMate AI's policies. Please read the reason and ban duration carefully below.",
+      "reasonLabel": "Reason",
+      "issuedAt": "Issued at",
+      "expiresAt": "Expires at",
+      "permanent": "Permanent",
+      "remaining": "Time remaining",
+      "type": {
+        "WARNING": "Warning",
+        "FEATURE_RESTRICTION": "Feature restriction",
+        "TEMPORARY_BAN": "Temporary suspension",
+        "PERMANENT_BAN": "Permanent ban"
+      },
+      "appealCta": "Appeal",
+      "logoutCta": "Sign out",
+      "viewPoliciesCta": "View policies",
+      "appealHint": "If you believe this decision is wrong, please submit an appeal to support@quizmateai.io.vn within 14 days."
+    }
+  }
+}

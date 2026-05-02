@@ -387,6 +387,7 @@
     },
     "sources": {
       "title": "Sources",
+      "scriptLabel": "Script / Transcript",
       "addSource": "Add source",
       "searchPlaceholder": "Search sources...",
       "emptyTitle": "No sources yet",

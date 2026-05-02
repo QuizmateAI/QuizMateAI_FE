@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   ClipboardList,
@@ -60,45 +61,53 @@ function normalizeTicketsByDate(items = []) {
   });
 }
 
+const FEEDBACK_SYSTEM_QUERY_KEY = ['user', 'feedbackSystem'];
+
 function FeedbackSystemLayout() {
   const { i18n, t } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showError } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const currentLang = i18n.language || 'vi';
   const isEnglish = currentLang.startsWith('en');
   const fontClass = isEnglish ? 'font-poppins' : 'font-sans';
   const locale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
 
-  const [requests, setRequests] = useState([]);
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [ticketDialogChannel, setTicketDialogChannel] = useState('PRODUCT');
 
-  const loadFeedbackSystem = useCallback(async () => {
-    setLoading(true);
-    try {
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: FEEDBACK_SYSTEM_QUERY_KEY,
+    queryFn: async () => {
       const [pendingResponse, ticketsResponse] = await Promise.all([
         getPendingFeedbackRequests(),
         getMyFeedbackTickets(),
       ]);
-      setRequests(unwrapApiList(pendingResponse));
-      setTickets(normalizeTicketsByDate(unwrapApiList(ticketsResponse)));
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-      setRequests([]);
-      setTickets([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [showError, t]);
+      return {
+        requests: unwrapApiList(pendingResponse),
+        tickets: normalizeTicketsByDate(unwrapApiList(ticketsResponse)),
+      };
+    },
+  });
+
+  const requests = useMemo(() => data?.requests ?? [], [data?.requests]);
+  const tickets = useMemo(() => data?.tickets ?? [], [data?.tickets]);
 
   useEffect(() => {
-    loadFeedbackSystem();
-  }, [loadFeedbackSystem]);
+    if (queryError) showError(getErrorMessage(t, queryError));
+  }, [queryError, t, showError]);
+
+  const loadFeedbackSystem = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: FEEDBACK_SYSTEM_QUERY_KEY }),
+    [queryClient],
+  );
 
   const ticketStats = useMemo(() => {
     return tickets.reduce((result, ticket) => {
@@ -147,10 +156,10 @@ function FeedbackSystemLayout() {
     setRequestDialogOpen(true);
   }, []);
 
-  const handleRequestSubmitted = async () => {
+  const handleRequestSubmitted = () => {
     setRequestDialogOpen(false);
     setSelectedRequest(null);
-    await loadFeedbackSystem();
+    loadFeedbackSystem();
   };
 
   const outletContext = useMemo(() => ({
