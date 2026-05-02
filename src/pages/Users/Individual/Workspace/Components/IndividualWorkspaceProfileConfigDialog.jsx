@@ -433,7 +433,9 @@ function IndividualWorkspaceProfileConfigDialog({
         setIsApplyingConfirmedProfile(true);
 
         try {
-          await onConfirm?.();
+          await onConfirm?.({
+            workspaceNameSuggestion: wizard.workspaceNameSuggestion || null,
+          });
           onOpenChange(false);
         } catch (error) {
           setConfirmProfileError(

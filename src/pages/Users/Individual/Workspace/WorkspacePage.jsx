@@ -898,11 +898,11 @@ function WorkspacePage() {
     return applyResolvedWorkspaceProfile(profileData);
   }, [applyResolvedWorkspaceProfile, workspaceId]);
 
-  const confirmWorkspaceProfileData = useCallback(async () => {
+  const confirmWorkspaceProfileData = useCallback(async (options = {}) => {
     if (!workspaceId) return null;
 
     const confirmedProfile = extractProfileData(
-      await confirmIndividualWorkspaceProfile(workspaceId),
+      await confirmIndividualWorkspaceProfile(workspaceId, options),
     );
 
     return applyResolvedWorkspaceProfile(confirmedProfile);
@@ -1734,11 +1734,11 @@ function WorkspacePage() {
     ],
   );
 
-  const handleConfirmProfileConfig = useCallback(async () => {
+  const handleConfirmProfileConfig = useCallback(async (options = {}) => {
     if (!workspaceId) return;
 
     try {
-      await confirmWorkspaceProfileData();
+      await confirmWorkspaceProfileData(options);
 
       closeProfileDialogs();
 
