@@ -2248,7 +2248,6 @@
     "reasonLabel": "Lý do: ",
     "suggestionLabel": "Gợi ý: ",
     "detectedTopicLabel": "Chủ đề phát hiện của tài liệu: ",
-    "suitablePercentLabel": "Phần trăm nội dung phù hợp: ",
     "currentLevelLabel": "Mức hiện tại của tài liệu: ",
     "requiredLevelLabel": " | Mức yêu cầu: ",
     "leaderReviewPrompt": "Leader có muốn duyệt tài liệu này cho group không?",

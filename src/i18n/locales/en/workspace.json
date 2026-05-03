@@ -2896,7 +2896,6 @@
     "labelReason": "Reason: ",
     "labelSuggestion": "Suggestion: ",
     "labelDetectedTopic": "Detected topic of the document: ",
-    "labelSuitablePercent": "Percentage of suitable content: ",
     "labelCurrentLevel": "Current level of the document: ",
     "labelTargetLevel": " | Required level: ",
     "reviewPrompt": "Do you want to approve this document?",

@@ -2819,7 +2819,6 @@
     "labelReason": "Lý do: ",
     "labelSuggestion": "Gợi ý: ",
     "labelDetectedTopic": "Chủ đề phát hiện của tài liệu: ",
-    "labelSuitablePercent": "Phần trăm nội dung phù hợp: ",
     "labelCurrentLevel": "Mức hiện tại của tài liệu: ",
     "labelTargetLevel": " | Mức yêu cầu: ",
     "reviewPrompt": "Có duyệt tài liệu này không?",
