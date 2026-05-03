@@ -4,24 +4,19 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { Button } from '@/components/ui/button';
 import ListSpinner from '@/components/ui/ListSpinner';
 import GroupWalletTab from './group-leader/GroupWalletTab';
-import WorkspaceOnboardingUpdateGuardDialog from '@/components/features/workspace/WorkspaceOnboardingUpdateGuardDialog';
-import {
-  Menu,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react';
+import { Menu } from 'lucide-react';
 import GroupSidebar from './Components/GroupSidebar';
 import {
   GroupActivityFeedPanel,
   GroupPersonalDashboardPanel,
 } from './Components/GroupPersonalDashboardPanel';
+import GroupBootstrapLoading from './Components/GroupBootstrapLoading';
+import GroupProfileSetupGate from './Components/GroupProfileSetupGate';
+import GroupWorkspaceDialogs from './Components/GroupWorkspaceDialogs';
 import { useTranslation } from 'react-i18next';
-import i18nInstance from '@/i18n';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { buildPlanEntitlementFlags } from '@/hooks/usePlanEntitlements';
-import PlanUpgradeModal from '@/components/plan/PlanUpgradeModal';
-import GroupWorkspaceCreditGateModal from './Components/GroupWorkspaceCreditGateModal';
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
@@ -34,10 +29,7 @@ import {
   deleteRoadmapPhaseById,
 } from '@/api/RoadmapAPI';
 
-const loadUploadSourceDialog = () => import("./Components/UploadSourceDialog");
 const loadGroupDocumentsTab = () => import("./Components/GroupDocumentsTab");
-const loadInviteMemberDialog = () => import("./group-leader/InviteMemberDialog");
-const loadGroupWorkspaceProfileConfigDialog = () => import("./Components/GroupWorkspaceProfileConfigDialog");
 const loadGroupDashboardTab = () => import("./group-leader/GroupDashboardTab");
 const loadGroupMembersTab = () => import("./group-leader/GroupMembersTab");
 const loadGroupMemberStatsTab = () => import("./group-leader/GroupMemberStatsTab");
@@ -47,21 +39,13 @@ const loadChallengeTab = () => import("./Components/ChallengeTab");
 const loadWorkspaceOnboardingUpdateGuardDialog = () => import("@/components/features/workspace/WorkspaceOnboardingUpdateGuardDialog");
 const loadPlanUpgradeModal = () => import("@/components/plan/PlanUpgradeModal");
 
-const LazyUploadSourceDialog = React.lazy(loadUploadSourceDialog);
 const LazyGroupDocumentsTab = React.lazy(loadGroupDocumentsTab);
-const LazyInviteMemberDialog = React.lazy(loadInviteMemberDialog);
-const LazyGroupWorkspaceProfileConfigDialog = React.lazy(loadGroupWorkspaceProfileConfigDialog);
 const LazyGroupDashboardTab = React.lazy(loadGroupDashboardTab);
 const LazyGroupMembersTab = React.lazy(loadGroupMembersTab);
 const LazyGroupMemberStatsTab = React.lazy(loadGroupMemberStatsTab);
 const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
 const LazyChallengeTab = React.lazy(loadChallengeTab);
 const LazyGroupRankingTab = React.lazy(() => import("./Components/GroupRankingTab"));
-React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
-React.lazy(loadPlanUpgradeModal);
-const LazyRoadmapPhaseGenerateDialog = React.lazy(() => import("./Components/RoadmapPhaseGenerateDialog"));
-const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/components/features/workspace/RoadmapConfigEditDialog"));
-const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/components/features/workspace/RoadmapConfigSummaryDialog"));
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
   deleteMaterial,
@@ -103,309 +87,54 @@ import { formatGroupRole } from './utils/groupDisplay';
 import { resolveGroupUiPermissions } from './utils/groupPermissionView';
 import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/components/features/workspace/roadmapConfigUtils';
-import { buildGroupMemberSeatSummary, normalizePendingInvitationSummary, resolveGroupMemberSeatLimit } from './utils/memberSeatLimit';
+import {
+  buildGroupMemberSeatSummary,
+  buildMemberSeatLimitErrorMessage,
+  normalizePendingInvitationSummary,
+  resolveGroupMemberSeatLimit,
+} from './utils/memberSeatLimit';
 import { resolveGroupQuizTitleMaxLength } from './utils/groupQuizTitleLimit';
+import {
+  extractRealtimeMemberPayload,
+  mergeRealtimeMember,
+  removeRealtimeMember,
+  resolveMemberUserId,
+  resolveWorkspaceMemberId,
+} from './utils/groupRealtimeHelpers';
+import {
+  buildPendingQueueMessage,
+  buildUploadFailureToastMessage,
+  clampPercent,
+  createUploadSessionKey,
+  getPendingMaterialRenderKey,
+  getRealtimeMaterialId,
+  inferMaterialType,
+  isProcessingMaterialStatus,
+  isReviewableMaterialStatus,
+  isSupportedGroupUploadFile,
+  isTerminalMaterialStatus,
+  mapProcessingProgressToDisplay,
+  mapTransportProgressToDisplay,
+  normalizeMaterialStatus,
+  normalizePositiveIds,
+  normalizeWorkspaceSourceItem,
+  resolveNeedReviewFlag,
+  shouldTrackInLeaderReviewQueue,
+  uploadFailuresIndicateWorkspaceCreditShortage,
+} from './utils/groupMaterialHelpers';
+import {
+  extractGroupCreatedQuizPayload,
+  isRealtimeProcessingQuizPayload,
+} from './utils/groupQuizPayload';
+import {
+  getWelcomeStorageKey,
+  readCurrentUser,
+} from './utils/groupWelcomeStorage';
 
 
 
-const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 const LEARNING_SNAPSHOT_PERIOD = 'DAILY';
-const GROUP_UPLOAD_ACCEPTED_EXTENSIONS = new Set([
-  '.pdf',
-  '.doc',
-  '.docx',
-  '.ppt',
-  '.pptx',
-  '.xls',
-  '.xlsx',
-  '.txt',
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.mp3',
-  '.mp4',
-]);
 const EMPTY_PENDING_INVITATION_SUMMARY = Object.freeze({ count: 0, invitations: [] });
-
-function clampPercent(percent) {
-  return Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
-}
-
-function normalizePositiveIds(ids = []) {
-  return Array.from(new Set((ids || [])
-    .map((id) => Number(id))
-    .filter((id) => Number.isInteger(id) && id > 0)));
-}
-
-function normalizeMaterialStatus(status) {
-  const normalized = String(status || '').trim().toUpperCase();
-  if (normalized === 'WARNED') return 'WARN';
-  if (normalized === 'REJECTED') return 'REJECT';
-  return normalized;
-}
-
-function resolveMemberUserId(member = {}) {
-  return member.userId
-    ?? member.userID
-    ?? member.memberUserId
-    ?? member.user?.userId
-    ?? member.user?.userID
-    ?? null;
-}
-
-function resolveWorkspaceMemberId(member = {}) {
-  return member.groupMemberId
-    ?? member.workspaceMemberId
-    ?? member.memberId
-    ?? member.id
-    ?? null;
-}
-
-function hasMemberIdentity(value) {
-  return Boolean(resolveMemberUserId(value) != null || resolveWorkspaceMemberId(value) != null);
-}
-
-function extractRealtimeMemberPayload(event = {}) {
-  const candidates = [
-    event?.member,
-    event?.workspaceMember,
-    event?.groupMember,
-    event?.payload?.member,
-    event?.payload?.workspaceMember,
-    event?.data?.member,
-    event?.data?.workspaceMember,
-    event?.data?.groupMember,
-    event?.user,
-  ];
-
-  const nested = candidates.find((candidate) => candidate && typeof candidate === 'object' && hasMemberIdentity(candidate));
-  if (nested) return nested;
-
-  const eventLooksLikeMemberPatch = (
-    hasMemberIdentity(event)
-    && (
-      event.onlineStatus != null
-      || event.presenceStatus != null
-      || event.activityStatus != null
-      || event.memberStatus != null
-      || event.status != null
-      || event.lastActiveAt != null
-      || event.lastActivityAt != null
-      || event.lastSeenAt != null
-      || event.lastLoginAt != null
-      || event.role != null
-      || event.canUpload != null
-    )
-  );
-
-  return eventLooksLikeMemberPatch ? event : null;
-}
-
-function mergeRealtimeMember(currentMembers, incomingMember) {
-  if (!incomingMember || typeof incomingMember !== 'object') return currentMembers;
-
-  const incomingUserId = resolveMemberUserId(incomingMember);
-  const incomingMemberId = resolveWorkspaceMemberId(incomingMember);
-  let matched = false;
-
-  const nextMembers = currentMembers.map((member) => {
-    const sameUser = incomingUserId != null && String(resolveMemberUserId(member)) === String(incomingUserId);
-    const sameMember = incomingMemberId != null && String(resolveWorkspaceMemberId(member)) === String(incomingMemberId);
-    if (!sameUser && !sameMember) return member;
-
-    matched = true;
-    return {
-      ...member,
-      ...incomingMember,
-      userId: member.userId ?? incomingUserId,
-      groupMemberId: member.groupMemberId ?? incomingMember.groupMemberId,
-    };
-  });
-
-  if (matched) return nextMembers;
-
-  const hasEnoughMemberShape = incomingMember.fullName
-    || incomingMember.username
-    || incomingMember.email
-    || incomingMember.role;
-  return hasEnoughMemberShape ? [incomingMember, ...nextMembers] : nextMembers;
-}
-
-function removeRealtimeMember(currentMembers, event = {}) {
-  const removedUserId = event.removedUserId
-    ?? event.userId
-    ?? event.userID
-    ?? event.memberUserId
-    ?? event?.member?.userId
-    ?? null;
-  const removedMemberId = event.groupMemberId
-    ?? event.workspaceMemberId
-    ?? event.memberId
-    ?? event?.member?.groupMemberId
-    ?? null;
-
-  if (removedUserId == null && removedMemberId == null) return currentMembers;
-
-  return currentMembers.filter((member) => {
-    const sameUser = removedUserId != null && String(resolveMemberUserId(member)) === String(removedUserId);
-    const sameMember = removedMemberId != null && String(resolveWorkspaceMemberId(member)) === String(removedMemberId);
-    return !sameUser && !sameMember;
-  });
-}
-
-function isProcessingMaterialStatus(status) {
-  return ['UPLOADING', 'PROCESSING', 'PENDING', 'QUEUED'].includes(normalizeMaterialStatus(status));
-}
-
-function isReviewableMaterialStatus(status) {
-  return ['ACTIVE', 'WARN'].includes(normalizeMaterialStatus(status));
-}
-
-function isTerminalMaterialStatus(status) {
-  return ['ACTIVE', 'WARN', 'ERROR', 'REJECT', 'DELETED'].includes(normalizeMaterialStatus(status));
-}
-
-function resolveNeedReviewFlag(...candidates) {
-  for (const candidate of candidates) {
-    if (candidate === undefined || candidate === null) continue;
-    return Boolean(candidate);
-  }
-  return true;
-}
-
-function compactToastFilename(name, maxLength = 44) {
-  const safeName = String(name || '').trim();
-  if (!safeName || safeName.length <= maxLength) return safeName;
-
-  const extensionIndex = safeName.lastIndexOf('.');
-  const hasExtension = extensionIndex > 0 && extensionIndex >= safeName.length - 8;
-  const extension = hasExtension ? safeName.slice(extensionIndex) : '';
-  const availableLength = Math.max(12, maxLength - extension.length - 3);
-  return `${safeName.slice(0, availableLength)}...${extension}`;
-}
-
-function normalizeUploadFailureReason(message, lang = 'vi') {
-  const rawMessage = String(message || '').replace(/\s+/g, ' ').trim();
-  const t = i18nInstance.t.bind(i18nInstance);
-  if (!rawMessage) {
-    return t('groupWorkspacePage.upload.failedDefault', 'Upload failed.', { lng: lang });
-  }
-
-  const qmcMatch = rawMessage.match(/(?:can|cần|need)\s*(\d+)\s*QMC.*?(?:hien co|hiện có|available|currently)\s*(\d+)\s*QMC/i);
-  const workspaceCreditIssue = /credit workspace|workspace credit|QMC/i.test(rawMessage);
-  if (qmcMatch && workspaceCreditIssue) {
-    const needed = qmcMatch[1];
-    const available = qmcMatch[2];
-    return t('groupWorkspacePage.upload.insufficientCredit', 'Not enough workspace credits: need {{needed}} QMC, available {{available}} QMC.', { needed, available, lng: lang });
-  }
-
-  return rawMessage.replace(/\.+$/, '');
-}
-
-function parseUploadFailureEntry(rawEntry, lang = 'vi') {
-  const text = String(rawEntry || '').trim();
-  const t = i18nInstance.t.bind(i18nInstance);
-  if (!text) {
-    return {
-      label: t('groupWorkspacePage.upload.unknownFile', 'Unknown file', { lng: lang }),
-      detail: t('groupWorkspacePage.upload.failedDefault', 'Upload failed.', { lng: lang }),
-    };
-  }
-
-  const separatorIndex = text.indexOf(':');
-  const hasSeparator = separatorIndex > 0 && separatorIndex < text.length - 1;
-  const fileName = hasSeparator ? text.slice(0, separatorIndex).trim() : '';
-  const reason = hasSeparator ? text.slice(separatorIndex + 1).trim() : text;
-
-  return {
-    label: compactToastFilename(fileName || t('groupWorkspacePage.upload.unknownFile', 'Unknown file', { lng: lang })),
-    detail: normalizeUploadFailureReason(reason, lang),
-  };
-}
-
-function buildUploadFailureToastMessage(failedUploads, lang = 'vi') {
-  const safeEntries = Array.isArray(failedUploads) ? failedUploads.filter(Boolean) : [];
-  const visibleItems = safeEntries.slice(0, 3).map((entry) => parseUploadFailureEntry(entry, lang));
-  const remainingCount = Math.max(0, safeEntries.length - visibleItems.length);
-  const t = i18nInstance.t.bind(i18nInstance);
-
-  const titleKey = safeEntries.length > 1
-    ? 'groupWorkspacePage.upload.filesFailedTitlePlural'
-    : 'groupWorkspacePage.upload.filesFailedTitle';
-  const moreKey = remainingCount > 1
-    ? 'groupWorkspacePage.upload.moreFiles'
-    : 'groupWorkspacePage.upload.moreFile';
-
-  return {
-    title: t(titleKey, '{{count}} file(s) could not be uploaded', { count: safeEntries.length, lng: lang }),
-    description: t('groupWorkspacePage.upload.filesFailedDescription', 'Please review the failed files below and try again.', { lng: lang }),
-    items: visibleItems,
-    meta: remainingCount > 0
-      ? t(moreKey, '+{{count}} more file(s)', { count: remainingCount, lng: lang })
-      : '',
-  };
-}
-
-function uploadFailuresIndicateWorkspaceCreditShortage(failedUploads) {
-  const safeEntries = Array.isArray(failedUploads) ? failedUploads.filter(Boolean) : [];
-  return safeEntries.some((entry) => {
-    const text = String(entry || '');
-    return /QMC|workspace credit|credit workspace|không đủ credit|insufficient.*credit|Số dư credit không đủ|Not enough workspace credits/i.test(text);
-  });
-}
-
-/** Payload từ CreateQuizForm (manual / AI) — có thể lồng ApiResponse { data }. */
-function extractGroupCreatedQuizPayload(payload) {
-  if (payload == null || typeof payload !== 'object') return null;
-  let cur = payload;
-  for (let depth = 0; depth < 4; depth += 1) {
-    const quizId = Number(cur.quizId ?? cur.id);
-    if (Number.isInteger(quizId) && quizId > 0) {
-      return {
-        ...cur,
-        quizId,
-        title: cur.title ?? '',
-      };
-    }
-    if (cur.data != null && typeof cur.data === 'object') {
-      cur = cur.data;
-    } else {
-      break;
-    }
-  }
-  return null;
-}
-
-function isRealtimeProcessingQuizPayload(payload) {
-  if (payload == null || typeof payload !== 'object') return false;
-  let current = payload;
-
-  for (let depth = 0; depth < 4; depth += 1) {
-    const taskId = String(current?.websocketTaskId ?? current?.taskId ?? '').trim();
-    const status = String(current?.status ?? current?.final_status ?? '').toUpperCase();
-    const percent = Number(
-      current?.percent
-      ?? current?.progressPercent
-      ?? current?.processingPercent
-      ?? current?.data?.percent
-      ?? current?.data?.progressPercent
-      ?? 0
-    );
-
-    if (taskId) return true;
-    if (['PROCESSING', 'PENDING', 'QUEUED'].includes(status)) return true;
-    if (Number.isFinite(percent) && percent > 0 && percent < 100) return true;
-
-    if (current?.data != null && typeof current.data === 'object') {
-      current = current.data;
-      continue;
-    }
-
-    break;
-  }
-
-  return false;
-}
 
 /** Các tab studio / section hợp lệ trong URL `?section=` — không dùng cho sub-view (createQuiz, ...). */
 const GROUP_WORKSPACE_VALID_SECTIONS = [
@@ -432,277 +161,6 @@ const GROUP_SECTIONS_REQUIRE_MATERIALS = new Set([
   'mockTest',
   'challenge',
 ]);
-
-function normalizePlanNameToken(value) {
-  return String(value || '')
-    .trim()
-    .toUpperCase()
-    .replace(/[\s-]+/g, '_')
-    .replace(/[^A-Z0-9_]/g, '');
-}
-
-function canonicalPlanNameToken(value) {
-  const normalizedValue = normalizePlanNameToken(value);
-  if (normalizedValue === 'GROUPBASE') {
-    return 'GROUP_BASE';
-  }
-  return normalizedValue;
-}
-
-function normalizePlanLookupText(value) {
-  return String(value || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\s_-]+/g, ' ')
-    .replace(/[^a-z0-9 ]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function inferGroupPlanTokenFromDisplayName(planDisplayName) {
-  const normalized = normalizePlanLookupText(planDisplayName);
-  if (!normalized) return '';
-
-  if (
-    normalized.includes('group base')
-    || normalized.includes('goi nhom co ban')
-    || normalized === 'goi co ban'
-  ) {
-    return 'GROUP_BASE';
-  }
-
-  return '';
-}
-
-const GROUP_PLAN_NAME_FALLBACKS = {
-  GROUP_BASE: {
-    en: 'Group Base',
-    get vi() {
-      return i18nInstance.t('groupWorkspacePage.planNames.groupBase', 'Group Base', { lng: 'vi' });
-    },
-  },
-};
-
-function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t, lang = 'vi' }) {
-  const normalizedLang = String(lang || 'vi').toLowerCase().startsWith('en') ? 'en' : 'vi';
-  const normalizedPlanCode = canonicalPlanNameToken(planCode);
-  const normalizedDisplayName = canonicalPlanNameToken(planDisplayName);
-  const normalizedDisplayNameCompact = normalizedDisplayName.replace(/_/g, '');
-  const inferredDisplayToken = inferGroupPlanTokenFromDisplayName(planDisplayName);
-
-  const keyCandidates = [
-    inferredDisplayToken,
-    normalizedPlanCode,
-    normalizedDisplayName,
-    canonicalPlanNameToken(normalizedDisplayNameCompact),
-  ].filter(Boolean).filter((candidate, index, candidates) => candidates.indexOf(candidate) === index);
-
-  for (const candidate of keyCandidates) {
-    const localized = String(
-      t(`groupWorkspace.header.planNames.${candidate}`, { defaultValue: '' })
-    ).trim();
-
-    if (localized) {
-      return localized;
-    }
-  }
-
-  for (const candidate of keyCandidates) {
-    const fallbackLabel = GROUP_PLAN_NAME_FALLBACKS?.[candidate]?.[normalizedLang] || GROUP_PLAN_NAME_FALLBACKS?.[candidate]?.en;
-    if (fallbackLabel) return fallbackLabel;
-  }
-
-  return String(planDisplayName || planCode || '').trim();
-}
-
-function buildMemberSeatLimitErrorMessage(t, seatSummary) {
-  const limit = Number(seatSummary?.limit);
-  if (!Number.isFinite(limit) || limit <= 0) {
-    return t('groupWorkspacePage.errors.memberSeatLimitUnknown', 'Nhóm đã đạt giới hạn thành viên của gói hiện tại.');
-  }
-
-  const used = Number.isFinite(Number(seatSummary?.usedCount)) ? Number(seatSummary.usedCount) : limit;
-  const pending = Number.isFinite(Number(seatSummary?.pendingCount)) ? Number(seatSummary.pendingCount) : 0;
-  const overLimitBy = Number.isFinite(Number(seatSummary?.overLimitBy)) ? Number(seatSummary.overLimitBy) : 0;
-
-  if (overLimitBy > 0) {
-    return t('groupWorkspacePage.errors.memberSeatLimitExceeded', {
-      used,
-      limit,
-      overLimitBy,
-      defaultValue: `Nhóm đang vượt ${overLimitBy} slot thành viên so với giới hạn ${limit}. Hãy giảm thành viên hoặc hủy lời mời chờ trước khi mời thêm.`,
-    });
-  }
-
-  return t('groupWorkspacePage.errors.memberSeatLimitReached', {
-    used,
-    limit,
-    pending,
-    defaultValue: `Nhóm đã dùng hết ${used}/${limit} slot thành viên. Hãy hủy ${pending > 0 ? 'lời mời chờ hoặc ' : ''}nâng cấp gói trước khi mời thêm.`,
-  });
-}
-
-function shouldTrackInLeaderReviewQueue(status, needReview) {
-  return isProcessingMaterialStatus(status) || Boolean(needReview);
-}
-
-function getPendingMaterialRenderKey(item, prefix = 'pending', fallbackIndex = 0) {
-  const materialId = Number(item?.materialId ?? item?.id ?? 0);
-  if (Number.isInteger(materialId) && materialId > 0) {
-    return `${prefix}:material:${materialId}`;
-  }
-
-  const taskId = String(item?.taskId ?? item?.websocketTaskId ?? item?.progressKey ?? item?.key ?? '').trim();
-  if (taskId) {
-    return `${prefix}:task:${taskId}`;
-  }
-
-  const uploadedAt = String(item?.uploadedAt ?? '').trim();
-  const title = String(item?.title ?? item?.name ?? 'untitled').trim() || 'untitled';
-  return `${prefix}:fallback:${title}:${uploadedAt}:${fallbackIndex}`;
-}
-
-function renderInlineSpinner(className = 'h-10 w-10', borderClassName = 'border-2') {
-  return (
-    <span
-      aria-hidden="true"
-      className={`inline-block shrink-0 animate-spin rounded-full border-current border-r-transparent ${borderClassName} ${className}`}
-    />
-  );
-}
-
-function inferMaterialType(file) {
-  if (file?.type) return file.type;
-  const fileName = String(file?.name || '').toLowerCase();
-  if (fileName.endsWith('.pdf')) return 'application/pdf';
-  if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) return 'application/msword';
-  if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) return 'application/vnd.ms-powerpoint';
-  if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) return 'application/vnd.ms-excel';
-  if (fileName.endsWith('.txt')) return 'text/plain';
-  if (fileName.endsWith('.mp3')) return 'audio/mpeg';
-  if (fileName.endsWith('.mp4')) return 'video/mp4';
-  if (fileName.endsWith('.png')) return 'image/png';
-  if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) return 'image/jpeg';
-  return 'application/octet-stream';
-}
-
-function getFileExtension(fileName) {
-  const normalized = String(fileName || '').trim().toLowerCase();
-  const dotIndex = normalized.lastIndexOf('.');
-  return dotIndex >= 0 ? normalized.slice(dotIndex) : '';
-}
-
-function isSupportedGroupUploadFile(file) {
-  return GROUP_UPLOAD_ACCEPTED_EXTENSIONS.has(getFileExtension(file?.name));
-}
-
-function mapTransportProgressToDisplay(percent) {
-  const normalized = clampPercent(percent);
-  return Math.max(1, Math.min(24, Math.round((normalized / 100) * 24)));
-}
-
-function mapProcessingProgressToDisplay(percent) {
-  const normalized = clampPercent(percent);
-  return Math.max(25, Math.min(99, 25 + Math.round((normalized / 100) * 74)));
-}
-
-function createUploadSessionKey(file) {
-  return `upload:${Date.now()}:${Math.random().toString(36).slice(2, 8)}:${String(file?.name || 'file')}`;
-}
-
-function getRealtimeMaterialId(payload, fallbackTaskId = null, uploads = []) {
-  const directId = Number(
-    payload?.materialId
-    ?? payload?.material_id
-    ?? payload?.data?.materialId
-    ?? payload?.data?.material_id
-    ?? 0
-  );
-  if (Number.isInteger(directId) && directId > 0) return directId;
-
-  if (!fallbackTaskId) return null;
-  const matchedUpload = (uploads || []).find((item) => String(item?.taskId || '') === String(fallbackTaskId));
-  const matchedId = Number(matchedUpload?.materialId ?? 0);
-  return Number.isInteger(matchedId) && matchedId > 0 ? matchedId : null;
-}
-
-function normalizeWorkspaceSourceItem(item, fallbackItem = null) {
-  const materialId = Number(item?.materialId ?? item?.id ?? fallbackItem?.materialId ?? fallbackItem?.id ?? 0);
-  if (!Number.isInteger(materialId) || materialId <= 0) return null;
-
-  const title = item?.title ?? item?.name ?? fallbackItem?.title ?? fallbackItem?.name ?? '';
-  const materialType = item?.materialType ?? item?.type ?? fallbackItem?.materialType ?? fallbackItem?.type ?? '';
-  const uploadedAt = item?.uploadedAt ?? fallbackItem?.uploadedAt ?? null;
-  const status = normalizeMaterialStatus(item?.status ?? fallbackItem?.status);
-
-  return {
-    ...(fallbackItem || {}),
-    ...item,
-    id: materialId,
-    materialId,
-    title,
-    name: title,
-    type: materialType,
-    materialType,
-    uploadedAt,
-    status,
-  };
-}
-
-function buildPendingQueueMessage(status, currentLang, isLeader = false, needReview = true) {
-  const normalized = normalizeMaterialStatus(status);
-  const lng = currentLang === 'en' ? 'en' : 'vi';
-  const t = i18nInstance.t.bind(i18nInstance);
-
-  if (normalized === 'UPLOADING') {
-    return t('groupWorkspacePage.queue.uploading', 'Uploading the file to the server.', { lng });
-  }
-
-  if (normalized === 'PROCESSING' || normalized === 'PENDING' || normalized === 'QUEUED') {
-    return t('groupWorkspacePage.queue.processing', 'AI is checking this material against the group profile.', { lng });
-  }
-
-  if (normalized === 'ACTIVE') {
-    if (isLeader && !needReview) {
-      return t('groupWorkspacePage.queue.activeLeaderNoReview', 'AI finished processing. This material is now in the shared source list.', { lng });
-    }
-
-    return isLeader
-      ? t('groupWorkspacePage.queue.activeLeaderReview', 'AI finished processing. You can approve it for the shared source list now.', { lng })
-      : t('groupWorkspacePage.queue.activeMemberReview', 'AI finished processing. This material is waiting for leader approval.', { lng });
-  }
-
-  if (normalized === 'WARN') {
-    return isLeader
-      ? t('groupWorkspacePage.queue.warnLeader', 'AI found a warning. Review carefully before approving.', { lng })
-      : t('groupWorkspacePage.queue.warnMember', 'AI flagged this material. It is waiting for leader review.', { lng });
-  }
-
-  if (normalized === 'ERROR') {
-    return t('groupWorkspacePage.queue.error', 'The system could not finish processing this material.', { lng });
-  }
-
-  if (normalized === 'REJECT') {
-    return t('groupWorkspacePage.queue.reject', 'The material was rejected for this group workspace.', { lng });
-  }
-
-  return t('groupWorkspacePage.queue.waitingUpdate', 'This material is waiting for an update.', { lng });
-}
-
-function readCurrentUser() {
-  try {
-    const rawUser = window.localStorage.getItem('user');
-    return rawUser ? JSON.parse(rawUser) : null;
-  } catch (error) {
-    console.error('Unable to read current user from storage:', error);
-    return null;
-  }
-}
-
-function getWelcomeStorageKey(workspaceId) {
-  return `${GROUP_WELCOME_STORAGE_PREFIX}:${workspaceId}`;
-}
 
 function GroupWorkspacePage() {
   const queryClient = useQueryClient();
@@ -1150,6 +608,7 @@ function GroupWorkspacePage() {
     currentWorkspace,
     fetchWorkspaceDetail,
     createGroupWorkspace,
+    invalidateWorkspaceDetail,
   } = useWorkspace({ enabled: !isCreating });
 
   const {
@@ -1168,6 +627,7 @@ function GroupWorkspacePage() {
     fetchGroupLogs,
     syncMemberPermissions,
     removeMember,
+    invalidateGroupRealtimeCaches,
   } = useGroup();
 
   const currentWorkspaceFromList = isCreating
@@ -1477,13 +937,13 @@ function GroupWorkspacePage() {
 
   useEffect(() => {
     if (uploadDialogOpen) {
-      void loadUploadSourceDialog();
+      void import('./Components/UploadSourceDialog');
     }
   }, [uploadDialogOpen]);
 
   useEffect(() => {
     if (inviteDialogOpen) {
-      void loadInviteMemberDialog();
+      void import('./group-leader/InviteMemberDialog');
     }
   }, [inviteDialogOpen]);
 
@@ -2692,7 +2152,7 @@ function GroupWorkspacePage() {
     if (eventType === 'MEMBER_REMOVED') {
       setMembers((current) => removeRealtimeMember(current, event));
     } else if (realtimeMember) {
-      setMembers((current) => mergeRealtimeMember(current, realtimeMember));
+      setMembers((current) => mergeRealtimeMember(current, realtimeMember, eventType));
     }
 
     if (Boolean(realtimeMember) && memberPatchOnlyTypes.has(eventType)) {
@@ -2707,6 +2167,15 @@ function GroupWorkspacePage() {
     groupRealtimeRefreshTimerRef.current = globalThis.setTimeout(() => {
       groupRealtimeRefreshTimerRef.current = null;
       const canSkipMemberReload = Boolean(realtimeMember) && memberPatchOnlyTypes.has(eventType);
+
+      // Invalidate toàn bộ fetchQuery cache nội bộ của useGroup (members /
+      // invitations / logs / permissions / dashboard / snapshots) và
+      // workspace detail (memberCount/sourceCount/visibility) trước khi
+      // loadMembers/refetch chạy. Khi user khác trigger thay đổi, leader chỉ
+      // nhận WS — cache local của leader vẫn fresh nên fetchQuery sẽ trả dữ
+      // liệu cũ nếu không invalidate ở đây.
+      invalidateGroupRealtimeCaches?.(resolvedWorkspaceId);
+      invalidateWorkspaceDetail?.(resolvedWorkspaceId);
 
       void fetchGroups();
       void fetchWorkspaceDetail(resolvedWorkspaceId).catch((error) => {
@@ -2735,6 +2204,8 @@ function GroupWorkspacePage() {
     currentUser,
     fetchGroups,
     fetchWorkspaceDetail,
+    invalidateGroupRealtimeCaches,
+    invalidateWorkspaceDetail,
     isCreating,
     loadGroupLogs,
     loadGroupProfile,
@@ -4259,18 +3730,6 @@ function GroupWorkspacePage() {
       ?? welcomePayload?.preLearningRequired
       ?? null,
   };
-  const renderActivityFeed = (compact = false) => (
-    <GroupActivityFeedPanel
-      compact={compact}
-      isDarkMode={isDarkMode}
-      groupLogs={groupLogs}
-      groupLogsLoading={groupLogsLoading}
-      currentUserId={currentUser?.userID}
-      currentLang={currentLang}
-      t={t}
-    />
-  );
-
   const renderPersonalDashboard = () => (
     <GroupPersonalDashboardPanel
       isDarkMode={isDarkMode}
@@ -4390,45 +3849,16 @@ function GroupWorkspacePage() {
     />
   );
 
-  const renderProfileSetupGate = () => (
-    <div className={`relative overflow-hidden rounded-[32px] border p-8 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
-      <div className={`pointer-events-none absolute inset-0 ${
-        isDarkMode
-          ? 'bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.12),transparent_22%),radial-gradient(circle_at_85%_10%,rgba(6,182,212,0.12),transparent_24%)]'
-          : 'bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.08),transparent_22%),radial-gradient(circle_at_85%_10%,rgba(6,182,212,0.08),transparent_24%)]'
-      }`} />
-      <div className="relative mx-auto max-w-3xl text-center">
-        <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] ${isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}`}>
-          {isCheckingMandatoryProfile ? renderInlineSpinner('h-10 w-10') : <ShieldCheck className="h-10 w-10" />}
-        </div>
-        <h2 className={`mt-6 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          {isCheckingMandatoryProfile
-            ? t('groupWorkspacePage.profileGate.checkingTitle', 'Checking the group profile...')
-            : t('groupWorkspacePage.profileGate.completeTitle', 'Complete the group profile before continuing')}
-        </h2>
-        <p className={`mx-auto mt-4 max-w-2xl text-sm leading-7 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-          {isCheckingMandatoryProfile
-            ? t('groupWorkspacePage.profileGate.checkingDescription', 'QuizMate AI is loading the current setup state for this group.')
-            : t('groupWorkspacePage.profileGate.completeDescription', 'The leader must finish the shared group profile first. Until then, inviting members, uploading materials, and using studio tabs stay locked.')}
-        </p>
-        {!isCheckingMandatoryProfile ? (
-          <button
-            type="button"
-            onClick={() => setProfileConfigOpen(true)}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700"
-          >
-            <Sparkles className="h-4 w-4" />
-            {t('groupWorkspacePage.profileGate.continueSetup', 'Continue setup')}
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-
   // ——— RENDER MAIN CONTENT ———
   const renderContent = () => {
     if (shouldForceProfileSetup) {
-      return renderProfileSetupGate();
+      return (
+        <GroupProfileSetupGate
+          isDarkMode={isDarkMode}
+          isCheckingMandatoryProfile={isCheckingMandatoryProfile}
+          onContinueSetup={() => setProfileConfigOpen(true)}
+        />
+      );
     }
 
     switch (activeSection) {
@@ -4565,7 +3995,17 @@ function GroupWorkspacePage() {
         );
 
       case 'notifications':
-        return renderActivityFeed(true);
+        return (
+          <GroupActivityFeedPanel
+            compact
+            isDarkMode={isDarkMode}
+            groupLogs={groupLogs}
+            groupLogsLoading={groupLogsLoading}
+            currentUserId={currentUser?.userID}
+            currentLang={currentLang}
+            t={t}
+          />
+        );
 
       case 'flashcard':
         return <div className="h-full p-2 md:p-3">{renderStudioPanel('flashcard')}</div>;
@@ -4647,26 +4087,7 @@ function GroupWorkspacePage() {
   }, [dismissProfileConfig, shouldForceProfileSetup]);
 
   if (isCreating && isBootstrappingGroup) {
-    return (
-      <div className={`relative flex h-screen items-center justify-center overflow-hidden transition-colors duration-300 ${pageShellClass}`}>
-        <div className={`pointer-events-none absolute inset-0 ${
-          isDarkMode
-            ? 'bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.14),transparent_26%),radial-gradient(circle_at_85%_10%,rgba(245,158,11,0.14),transparent_22%),radial-gradient(circle_at_50%_100%,rgba(56,189,248,0.12),transparent_28%)]'
-            : 'bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_28%),radial-gradient(circle_at_82%_12%,rgba(249,115,22,0.12),transparent_24%),radial-gradient(circle_at_50%_100%,rgba(59,130,246,0.10),transparent_30%)]'
-        }`} />
-        <div className={`relative flex min-w-[320px] flex-col items-center gap-4 rounded-[28px] border px-8 py-10 shadow-2xl ${
-          isDarkMode ? 'border-white/10 bg-[#09131a]/92 text-white' : 'border-white/80 bg-white/92 text-slate-900'
-        }`}>
-          {renderInlineSpinner('h-10 w-10 text-cyan-500')}
-          <div className="text-center">
-            <p className="text-lg font-semibold">{t('groupWorkspace.bootstrap.title')}</p>
-            <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {t('groupWorkspace.bootstrap.description')}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <GroupBootstrapLoading isDarkMode={isDarkMode} pageShellClass={pageShellClass} />;
   }
 
   return (
@@ -4736,124 +4157,67 @@ function GroupWorkspacePage() {
         </main>
       </div>
 
-      {/* Dialogs */}
-      {uploadDialogOpen ? (
-        <React.Suspense fallback={null}>
-          <LazyUploadSourceDialog
-            open={uploadDialogOpen}
-            onOpenChange={setUploadDialogOpen}
-            isDarkMode={isDarkMode}
-            onUploadFiles={handleUploadFiles}
-            workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
-            onSuggestedImported={() => refreshGroupMaterialViews({ silent: true })}
-            planEntitlements={planEntitlements}
-          />
-        </React.Suspense>
-      ) : null}
-
-      {phaseGenerateDialogOpen ? (
-        <React.Suspense fallback={null}>
-          <LazyRoadmapPhaseGenerateDialog
-            open={phaseGenerateDialogOpen}
-            onOpenChange={setPhaseGenerateDialogOpen}
-            isDarkMode={isDarkMode}
-            materials={sources}
-            defaultSelectedMaterialIds={phaseGenerateDialogDefaultIds}
-            submitting={isSubmittingRoadmapPhaseRequest}
-            onSubmit={handleSubmitRoadmapPhaseDialog}
-          />
-        </React.Suspense>
-      ) : null}
-
-      {inviteDialogOpen ? (
-        <React.Suspense fallback={null}>
-          <LazyInviteMemberDialog
-            open={inviteDialogOpen}
-            onOpenChange={setInviteDialogOpen}
-            onInvite={handleInvite}
-            isDarkMode={isDarkMode}
-            memberSeatLimit={memberSeatSummary.limit}
-            memberSeatUsage={memberSeatSummary.usedCount}
-            memberSeatRemaining={memberSeatSummary.remainingCount}
-            isMemberSeatLimitReached={memberSeatSummary.isAtLimit}
-          />
-        </React.Suspense>
-      ) : null}
-
-      {(profileConfigOpen || shouldForceProfileSetup) ? (
-        <React.Suspense fallback={null}>
-          <LazyGroupWorkspaceProfileConfigDialog
-            open={profileConfigOpen}
-            onOpenChange={handleProfileConfigChange}
-            isDarkMode={isDarkMode}
-            workspaceId={createdGroupWorkspaceId || (!isCreating ? workspaceId : null)}
-            canClose={!shouldForceProfileSetup}
-            onTemporaryClose={shouldForceProfileSetup ? dismissProfileConfig : undefined}
-            onComplete={async () => {
-              try {
-                await handleGroupUpdated();
-              } catch (error) {
-                console.error('Failed to refresh group workspace after profile setup:', error);
-              }
-              setProfileConfigOpen(false);
-              if (location.state?.openProfileConfig) {
-                navigate(`${location.pathname}${location.search}`, { replace: true });
-              }
-              showInfo(t('home.group.setupComplete', t('groupWorkspacePage.setupComplete', 'Group setup complete!')));
-            }}
-          />
-        </React.Suspense>
-      ) : null}
-
-      <WorkspaceOnboardingUpdateGuardDialog
-        open={profileUpdateGuardOpen}
-        onOpenChange={setProfileUpdateGuardOpen}
+      <GroupWorkspaceDialogs
         isDarkMode={isDarkMode}
-        currentLang={currentLang?.startsWith('en') ? 'en' : 'vi'}
-        materialCount={materialCountForGroupProfile}
-        hasLearningData={groupHasLearningData}
-        onDeleteAndContinue={handleDeleteMaterialsForGroupProfileUpdate}
-        deleting={isResettingWorkspaceForProfileUpdate}
+        currentLang={currentLang}
+        uploadDialogOpen={uploadDialogOpen}
+        setUploadDialogOpen={setUploadDialogOpen}
+        uploadDialogWorkspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
+        onUploadFiles={handleUploadFiles}
+        onSuggestedImported={() => refreshGroupMaterialViews({ silent: true })}
+        planEntitlements={planEntitlements}
+        phaseGenerateDialogOpen={phaseGenerateDialogOpen}
+        setPhaseGenerateDialogOpen={setPhaseGenerateDialogOpen}
+        phaseGenerateDialogSources={sources}
+        phaseGenerateDialogDefaultIds={phaseGenerateDialogDefaultIds}
+        isSubmittingRoadmapPhaseRequest={isSubmittingRoadmapPhaseRequest}
+        onSubmitRoadmapPhaseDialog={handleSubmitRoadmapPhaseDialog}
+        inviteDialogOpen={inviteDialogOpen}
+        setInviteDialogOpen={setInviteDialogOpen}
+        onInvite={handleInvite}
+        memberSeatSummary={memberSeatSummary}
+        profileConfigOpen={profileConfigOpen}
+        shouldForceProfileSetup={shouldForceProfileSetup}
+        onProfileConfigChange={handleProfileConfigChange}
+        profileConfigWorkspaceId={createdGroupWorkspaceId || (!isCreating ? workspaceId : null)}
+        onProfileConfigTemporaryClose={dismissProfileConfig}
+        onProfileConfigComplete={async () => {
+          try {
+            await handleGroupUpdated();
+          } catch (error) {
+            console.error('Failed to refresh group workspace after profile setup:', error);
+          }
+          setProfileConfigOpen(false);
+          if (location.state?.openProfileConfig) {
+            navigate(`${location.pathname}${location.search}`, { replace: true });
+          }
+          showInfo(t('home.group.setupComplete', t('groupWorkspacePage.setupComplete', 'Group setup complete!')));
+        }}
+        profileUpdateGuardOpen={profileUpdateGuardOpen}
+        setProfileUpdateGuardOpen={setProfileUpdateGuardOpen}
+        materialCountForGroupProfile={materialCountForGroupProfile}
+        groupHasLearningData={groupHasLearningData}
+        onDeleteMaterialsForGroupProfileUpdate={handleDeleteMaterialsForGroupProfileUpdate}
+        isResettingWorkspaceForProfileUpdate={isResettingWorkspaceForProfileUpdate}
+        groupBuyCreditModalOpen={groupBuyCreditModalOpen}
+        setGroupBuyCreditModalOpen={setGroupBuyCreditModalOpen}
+        onGroupBuyCreditPrimary={handleGroupBuyCreditPrimary}
+        planUpgradeModalOpen={planUpgradeModalOpen}
+        setPlanUpgradeModalOpen={setPlanUpgradeModalOpen}
+        planUpgradeFeatureName={planUpgradeFeatureName}
+        groupPlanUpgradePath={groupPlanUpgradePath}
+        groupPlanUpgradeState={groupPlanUpgradeState}
+        roadmapConfigEditOpen={roadmapConfigEditOpen}
+        setRoadmapConfigEditOpen={setRoadmapConfigEditOpen}
+        roadmapConfigInitialValues={roadmapConfigInitialValues}
+        roadmapConfigDialogMode={roadmapConfigDialogMode}
+        hasExistingRoadmap={Boolean(hasGroupRoadmapConfig && currentRoadmapId)}
+        onSaveRoadmapConfig={handleSaveRoadmapConfig}
+        onSuggestRoadmapConfig={handleSuggestRoadmapConfig}
+        roadmapConfigViewOpen={roadmapConfigViewOpen}
+        setRoadmapConfigViewOpen={setRoadmapConfigViewOpen}
+        effectiveGroupRoadmapConfig={effectiveGroupRoadmapConfig}
       />
-
-      <GroupWorkspaceCreditGateModal
-        open={groupBuyCreditModalOpen}
-        onOpenChange={setGroupBuyCreditModalOpen}
-        isDarkMode={isDarkMode}
-        lang={currentLang}
-        onPrimary={handleGroupBuyCreditPrimary}
-      />
-
-      <PlanUpgradeModal
-        open={planUpgradeModalOpen}
-        onOpenChange={setPlanUpgradeModalOpen}
-        featureName={planUpgradeFeatureName}
-        isDarkMode={isDarkMode}
-        upgradePath={groupPlanUpgradePath}
-        upgradeState={groupPlanUpgradeState}
-      />
-
-      <React.Suspense fallback={null}>
-        <LazyRoadmapConfigEditDialog
-          open={roadmapConfigEditOpen}
-          onOpenChange={setRoadmapConfigEditOpen}
-          isDarkMode={isDarkMode}
-          initialValues={roadmapConfigInitialValues}
-          mode={roadmapConfigDialogMode}
-          hasExistingRoadmap={Boolean(hasGroupRoadmapConfig && currentRoadmapId)}
-          onSave={handleSaveRoadmapConfig}
-          onSuggest={handleSuggestRoadmapConfig}
-        />
-      </React.Suspense>
-
-      <React.Suspense fallback={null}>
-        <LazyRoadmapConfigSummaryDialog
-          open={roadmapConfigViewOpen}
-          onOpenChange={setRoadmapConfigViewOpen}
-          isDarkMode={isDarkMode}
-          values={effectiveGroupRoadmapConfig}
-        />
-      </React.Suspense>
 
     </div>
   );
