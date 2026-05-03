@@ -29,7 +29,6 @@ vi.mock('@/api/StudyProfileAPI', () => ({
     weakAreaSuggestions: [],
     examNameSuggestions: [],
   }),
-  suggestExamTemplates: vi.fn().mockResolvedValue([]),
   validateProfileConsistency: vi.fn().mockResolvedValue({
     redFlag: false,
     isConsistent: true,

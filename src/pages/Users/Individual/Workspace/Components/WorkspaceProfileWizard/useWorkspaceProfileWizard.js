@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generateTemplateSuggestion, getRecommendedRoadmapDays, getRecommendedRoadmapMinutesPerDay } from './mockProfileWizardData';
-import { analyzeKnowledge, suggestProfileFields, suggestExamTemplates, validateProfileConsistency } from '@/api/StudyProfileAPI';
+import { analyzeKnowledge, suggestProfileFields, validateProfileConsistency } from '@/api/StudyProfileAPI';
 import { NO_ROADMAP_FLOW_TOTAL_STEPS, ANALYSIS_DEBOUNCE_MS, FIELD_SUGGESTION_DEBOUNCE_MS, CONSISTENCY_DEBOUNCE_MS, ensureString, normalizeWorkspacePurpose, getReadyLiveFieldValue, createInitialValues, getInitialStep, getTotalStepsForValues, syncRoadmapConfigFields, translateOrFallback, extractDomainSuggestionDetails, buildDomainOptionsFromApi, buildKnowledgeOptionsFromApi, localizeDomainOptions, getSelectedKnowledgeForAi, getSelectedDomainForAi, buildFieldSuggestionPayload, buildConsistencyPayload, shouldRunLiveConsistency, buildConsistencyFingerprint, buildPayload, buildRequestFingerprint, buildStepSnapshot, areStepSnapshotsEqual, createSavedStepSnapshots, buildLiveValidationErrors, canFetchFieldSuggestions, getStudyProfileAnalysisErrorType, validateWorkspaceProfileStep, buildWizardStatus, hasCompleteBasicStepData } from './workspaceProfileWizardUtils';
 export function useWorkspaceProfileWizard({
   open,
@@ -30,8 +30,6 @@ export function useWorkspaceProfileWizard({
   const [knowledgeAnalysis, setKnowledgeAnalysis] = useState(null);
   const [fieldSuggestions, setFieldSuggestions] = useState(null);
   const [fieldSuggestionStatus, setFieldSuggestionStatus] = useState('idle');
-  const [examTemplateSuggestions, setExamTemplateSuggestions] = useState([]);
-  const [examTemplateSuggestionStatus, setExamTemplateSuggestionStatus] = useState('idle');
   const [consistencyResult, setConsistencyResult] = useState(null);
   const [consistencyStatus, setConsistencyStatus] = useState('idle');
   const liveValidationErrors = buildLiveValidationErrors(values, t);
@@ -43,14 +41,11 @@ export function useWorkspaceProfileWizard({
   const analysisAbortRef = useRef(null);
   const fieldSuggestionTimerRef = useRef(null);
   const fieldSuggestionAbortRef = useRef(null);
-  const examTemplateSuggestionTimerRef = useRef(null);
-  const examTemplateSuggestionAbortRef = useRef(null);
   const consistencyTimerRef = useRef(null);
   const consistencyAbortRef = useRef(null);
   const templateTimerRef = useRef(null);
   const analysisFingerprintRef = useRef('');
   const fieldSuggestionFingerprintRef = useRef('');
-  const examTemplateSuggestionFingerprintRef = useRef('');
   const consistencyFingerprintRef = useRef('');
   const wasOpenRef = useRef(false);
   const prevStepRef = useRef(null);
@@ -77,12 +72,10 @@ export function useWorkspaceProfileWizard({
     return () => {
       clearTimeout(analysisTimerRef.current);
       clearTimeout(fieldSuggestionTimerRef.current);
-      clearTimeout(examTemplateSuggestionTimerRef.current);
       clearTimeout(consistencyTimerRef.current);
       clearTimeout(templateTimerRef.current);
       analysisAbortRef.current?.abort();
       fieldSuggestionAbortRef.current?.abort();
-      examTemplateSuggestionAbortRef.current?.abort();
       consistencyAbortRef.current?.abort();
     };
   }, []);
@@ -137,13 +130,10 @@ export function useWorkspaceProfileWizard({
     setKnowledgeAnalysis(null);
     analysisFingerprintRef.current = '';
     fieldSuggestionFingerprintRef.current = '';
-    examTemplateSuggestionFingerprintRef.current = '';
     consistencyFingerprintRef.current = '';
     setAnalysisRetryTick(0);
     setFieldSuggestions(null);
     setFieldSuggestionStatus('idle');
-    setExamTemplateSuggestions([]);
-    setExamTemplateSuggestionStatus('idle');
     setConsistencyResult(null);
     setConsistencyStatus('idle');
     setAnalysisStatus(getReadyLiveFieldValue('knowledgeInput', nextValues.knowledgeInput) ? 'loading' : 'idle');
@@ -303,57 +293,13 @@ export function useWorkspaceProfileWizard({
     },
     []
   );
-  const fetchExamTemplateSuggestions = useCallback(
-    async ({ knowledge, domain }) => {
-      if (!knowledge || !domain) {
-        examTemplateSuggestionFingerprintRef.current = '';
-        setExamTemplateSuggestions([]);
-        setExamTemplateSuggestionStatus('idle');
-        return;
-      }
-      const payload = { knowledge, domain };
-      const fingerprint = buildRequestFingerprint(payload);
-      if (examTemplateSuggestionFingerprintRef.current === fingerprint) {
-        return;
-      }
-      examTemplateSuggestionFingerprintRef.current = fingerprint;
-      examTemplateSuggestionAbortRef.current?.abort();
-      const abortController = new AbortController();
-      examTemplateSuggestionAbortRef.current = abortController;
-      setExamTemplateSuggestionStatus('loading');
-      try {
-        const response = await suggestExamTemplates(payload, { signal: abortController.signal });
-        if (abortController.signal.aborted) return;
-        const result = response?.data?.data ?? response?.data ?? response ?? null;
-        const templates = Array.isArray(result?.templates)
-          ? result.templates
-          : Array.isArray(result?.examTemplateSuggestions)
-            ? result.examTemplateSuggestions
-          : Array.isArray(result)
-            ? result
-            : [];
-        setExamTemplateSuggestions(templates.filter(Boolean));
-        setExamTemplateSuggestionStatus('success');
-      } catch (error) {
-        if (abortController.signal.aborted) return;
-        console.error('[StudyProfile] Exam template suggestion failed:', error);
-        examTemplateSuggestionFingerprintRef.current = '';
-        setExamTemplateSuggestionStatus('error');
-        setExamTemplateSuggestions([]);
-      }
-    },
-    []
-  );
   useEffect(() => {
     if (!open || isReadOnly) return;
     prevStepRef.current = step;
     clearTimeout(fieldSuggestionTimerRef.current);
-    clearTimeout(examTemplateSuggestionTimerRef.current);
     if (step !== 2) {
       fieldSuggestionAbortRef.current?.abort();
-      examTemplateSuggestionAbortRef.current?.abort();
       fieldSuggestionFingerprintRef.current = '';
-      examTemplateSuggestionFingerprintRef.current = '';
       return;
     }
     if (canRequestFieldSuggestion) {
@@ -369,12 +315,8 @@ export function useWorkspaceProfileWizard({
       }
       setFieldSuggestionStatus('idle');
     }
-    examTemplateSuggestionFingerprintRef.current = '';
-    setExamTemplateSuggestions([]);
-    setExamTemplateSuggestionStatus('idle');
     return () => {
       clearTimeout(fieldSuggestionTimerRef.current);
-      clearTimeout(examTemplateSuggestionTimerRef.current);
     };
   }, [
     open,
@@ -506,12 +448,9 @@ export function useWorkspaceProfileWizard({
         setTemplatePreview(null);
         setFieldSuggestions(null);
         setFieldSuggestionStatus('idle');
-        setExamTemplateSuggestions([]);
-        setExamTemplateSuggestionStatus('idle');
         setConsistencyResult(null);
         setConsistencyStatus('idle');
         fieldSuggestionFingerprintRef.current = '';
-        examTemplateSuggestionFingerprintRef.current = '';
         consistencyFingerprintRef.current = '';
         setStep(1);
         globalThis.setTimeout(() => {
@@ -807,16 +746,11 @@ export function useWorkspaceProfileWizard({
     isWaitingForOverallReview,
     t,
   });
-  const workspaceNameSuggestion = typeof (
-    consistencyResult?.workspaceNameSuggestion
+  const rawWorkspaceNameSuggestion = consistencyResult?.workspaceNameSuggestion
     || consistencyResult?.workspaceTitleSuggestion
-    || consistencyResult?.workspaceTitle
-  ) === 'string'
-    ? (
-      consistencyResult?.workspaceNameSuggestion
-      || consistencyResult?.workspaceTitleSuggestion
-      || consistencyResult?.workspaceTitle
-    ).trim()
+    || consistencyResult?.workspaceTitle;
+  const workspaceNameSuggestion = typeof rawWorkspaceNameSuggestion === 'string'
+    ? rawWorkspaceNameSuggestion.trim()
     : '';
   return {
     getSuggestedPublicExams: () => [],
@@ -842,8 +776,6 @@ export function useWorkspaceProfileWizard({
     knowledgeAnalysis,
     fieldSuggestions,
     fieldSuggestionStatus,
-    examTemplateSuggestions,
-    examTemplateSuggestionStatus,
     consistencyResult,
     consistencyStatus,
     workspaceNameSuggestion,
