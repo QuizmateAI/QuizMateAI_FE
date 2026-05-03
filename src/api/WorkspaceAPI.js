@@ -89,9 +89,6 @@ export function normalizeIndividualWorkspaceProfile(profile) {
       profile.recommendedMinutesPerDay
       ?? profile.estimatedMinutesPerDay
       ?? null,
-    templatePrompt: profile.templatePrompt ?? '',
-    templateDurationMinutes: profile.templateDurationMinutes ?? null,
-    templateQuestionCount: profile.templateQuestionCount ?? null,
   };
 }
 
