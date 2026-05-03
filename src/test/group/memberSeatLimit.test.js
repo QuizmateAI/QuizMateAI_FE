@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildGroupMemberSeatSummary,
+  buildMemberSeatLimitErrorMessage,
   normalizePendingInvitationSummary,
   resolveGroupMemberSeatLimit,
 } from '@/pages/Users/Group/utils/memberSeatLimit';
@@ -53,6 +54,40 @@ describe('memberSeatLimit utilities', () => {
     })).toEqual({
       count: 3,
       invitations: [{ id: 1 }, { id: 2 }, { id: 3 }],
+    });
+  });
+
+  describe('buildMemberSeatLimitErrorMessage', () => {
+    // i18next.t supports both t(key, 'default-string') and t(key, { defaultValue }).
+    const echoT = (key, secondArg) => {
+      if (typeof secondArg === 'string') return secondArg;
+      return secondArg?.defaultValue ?? key;
+    };
+
+    it('returns "exceeded" copy when overLimitBy > 0', () => {
+      const msg = buildMemberSeatLimitErrorMessage(echoT, {
+        limit: 5,
+        usedCount: 7,
+        overLimitBy: 2,
+        pendingCount: 1,
+      });
+      expect(msg).toContain('vượt 2');
+      expect(msg).toContain('5');
+    });
+
+    it('returns "reached" copy when at limit (no over)', () => {
+      const msg = buildMemberSeatLimitErrorMessage(echoT, {
+        limit: 5,
+        usedCount: 5,
+        overLimitBy: 0,
+        pendingCount: 0,
+      });
+      expect(msg).toContain('5/5');
+    });
+
+    it('returns generic "unknown" copy when limit is missing/invalid', () => {
+      expect(buildMemberSeatLimitErrorMessage(echoT, {})).toBe('Nhóm đã đạt giới hạn thành viên của gói hiện tại.');
+      expect(buildMemberSeatLimitErrorMessage(echoT, { limit: 0 })).toBe('Nhóm đã đạt giới hạn thành viên của gói hiện tại.');
     });
   });
 });

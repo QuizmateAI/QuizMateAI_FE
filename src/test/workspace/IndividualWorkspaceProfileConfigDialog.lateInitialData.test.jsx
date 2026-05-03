@@ -7,7 +7,6 @@ import IndividualWorkspaceProfileConfigDialog from '@/pages/Users/Individual/Wor
 vi.mock('@/api/StudyProfileAPI', () => ({
   analyzeKnowledge: vi.fn(),
   suggestProfileFields: vi.fn(),
-  suggestExamTemplates: vi.fn(),
   validateProfileConsistency: vi.fn(),
 }));
 

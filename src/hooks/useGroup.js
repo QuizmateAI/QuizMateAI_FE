@@ -144,7 +144,8 @@ export function useGroup(options = {}) {
     return unwrapApiData(res);
   }, [queryClient]);
 
-  // Lấy danh sách thành viên của nhóm
+  // Lấy danh sách thành viên của nhóm. Members fed primarily via WS group
+  // topic — dùng REALTIME để cache là fallback ngắn khi socket reconnect.
   const fetchMembers = useCallback(async (workspaceId, page = 0, size = 50) => (
     queryClient.fetchQuery({
       queryKey: groupMembersKey(workspaceId, page, size),
@@ -153,7 +154,7 @@ export function useGroup(options = {}) {
         const pageData = unwrapApiData(res);
         return Array.isArray(pageData?.content) ? pageData.content : [];
       },
-      staleTime: STALE_TIME.SHORT,
+      staleTime: STALE_TIME.REALTIME,
     })
   ), [queryClient]);
 
@@ -185,7 +186,9 @@ export function useGroup(options = {}) {
     return unwrapApiData(res);
   }, [queryClient]);
 
-  // Lấy danh sách lời mời đang chờ (count + invitations)
+  // Lấy danh sách lời mời đang chờ (count + invitations). Invitations được
+  // fed qua WS group topic (INVITATION_*); dùng REALTIME để cache là fallback
+  // ngắn khi socket reconnect.
   const fetchPendingInvitations = useCallback(async (workspaceId) => (
     queryClient.fetchQuery({
       queryKey: groupInvitationsKey(workspaceId),
@@ -193,7 +196,7 @@ export function useGroup(options = {}) {
         const res = await getPendingInvitationsAPI(workspaceId);
         return unwrapApiData(res) || { count: 0, invitations: [] };
       },
-      staleTime: STALE_TIME.SHORT,
+      staleTime: STALE_TIME.REALTIME,
     })
   ), [queryClient]);
 
@@ -209,7 +212,8 @@ export function useGroup(options = {}) {
     return unwrapApiData(res);
   }, [queryClient]);
 
-  // Lấy activity log của nhóm
+  // Activity log của nhóm — BE phát log đồng thời với mỗi action qua WS;
+  // REALTIME để cache là fallback ngắn.
   const fetchGroupLogs = useCallback(async (workspaceId) => (
     queryClient.fetchQuery({
       queryKey: groupLogsKey(workspaceId),
@@ -218,10 +222,12 @@ export function useGroup(options = {}) {
         const payload = unwrapApiData(res);
         return Array.isArray(payload) ? payload : [];
       },
-      staleTime: STALE_TIME.SHORT,
+      staleTime: STALE_TIME.REALTIME,
     })
   ), [queryClient]);
 
+  // Permissions của user hiện tại — leader có thể thay đổi qua WS event
+  // MEMBER_PERMISSION_UPDATED; REALTIME để cache là fallback ngắn.
   const fetchMyPermissions = useCallback(async (workspaceId) => (
     queryClient.fetchQuery({
       queryKey: groupMyPermissionsKey(workspaceId),
@@ -229,10 +235,11 @@ export function useGroup(options = {}) {
         const res = await getGroupMyPermissionsAPI(workspaceId);
         return unwrapApiData(res);
       },
-      staleTime: STALE_TIME.SHORT,
+      staleTime: STALE_TIME.REALTIME,
     })
   ), [queryClient]);
 
+  // Permissions của 1 member — leader có thể grant/revoke qua WS; REALTIME.
   const fetchMemberPermissions = useCallback(async (workspaceId, memberId) => (
     queryClient.fetchQuery({
       queryKey: groupMemberPermissionsKey(workspaceId, memberId),
@@ -240,7 +247,7 @@ export function useGroup(options = {}) {
         const res = await getGroupMemberPermissionsAPI(workspaceId, memberId);
         return unwrapApiData(res);
       },
-      staleTime: STALE_TIME.SHORT,
+      staleTime: STALE_TIME.REALTIME,
     })
   ), [queryClient]);
 
@@ -406,6 +413,17 @@ export function useGroup(options = {}) {
     queryClient.removeQueries({ queryKey: groupMemberPermissionsKey(workspaceId, memberId) });
   }, [queryClient]);
 
+  // Invalidate toàn bộ cache fetchQuery nội bộ của useGroup cho 1 workspace.
+  // Dùng khi nhận WS event realtime từ user khác (ví dụ: invitee accept lời
+  // mời) — leader chỉ nhận WS chứ không đi qua các mutator của useGroup, nên
+  // cache fetchQuery ở đây (members/invitations/logs/permissions/dashboard/
+  // snapshots, ...) vẫn fresh và trả dữ liệu cũ. Tất cả inner key đều bắt
+  // đầu bằng prefix ['group', workspaceId] nên invalidate prefix là đủ.
+  const invalidateGroupRealtimeCaches = useCallback((workspaceId) => {
+    if (workspaceId == null) return;
+    void queryClient.invalidateQueries({ queryKey: ['group', workspaceId] });
+  }, [queryClient]);
+
   return {
     groups,
     publicGroups,
@@ -441,5 +459,6 @@ export function useGroup(options = {}) {
     compareGroupMemberLearningSnapshots,
     generateGroupMemberLearningSnapshot,
     removeMember,
+    invalidateGroupRealtimeCaches,
   };
 }

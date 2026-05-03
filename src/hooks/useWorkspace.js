@@ -282,6 +282,15 @@ export function useWorkspace(options = {}) {
     await queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
   }, [queryClient]);
 
+  // Invalidate cache chi tiết workspace khi nhận event realtime từ user khác.
+  // BE có thể cập nhật memberCount/sourceCount/visibility trong workspace
+  // entity sau các event group/material — leader chỉ nhận WS, không đi qua
+  // mutator nào nên cache fetchQuery ở đây vẫn fresh và trả dữ liệu cũ.
+  const invalidateWorkspaceDetail = useCallback((workspaceId) => {
+    if (workspaceId == null) return;
+    void queryClient.invalidateQueries({ queryKey: workspaceDetailQueryKey(workspaceId) });
+  }, [queryClient]);
+
   return {
     workspaces,
     currentWorkspace,
@@ -296,6 +305,7 @@ export function useWorkspace(options = {}) {
     createGroupWorkspace,
     editWorkspace,
     removeWorkspace,
+    invalidateWorkspaceDetail,
     changePage,
     changePageSize,
     changeSortMode,
