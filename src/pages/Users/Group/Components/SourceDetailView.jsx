@@ -512,12 +512,6 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
                           {moderationInfo.detectedTopic}
                         </p>
                       )}
-                      {moderationInfo?.type === "WARN" && suitablePercentText && (
-                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">{t("groupSourceDetailView.suitablePercentLabel", "Suitable content percentage: ")}</span>
-                          {suitablePercentText}
-                        </p>
-                      )}
                       {moderationInfo?.type === "WARN" && moderationInfo?.currentLevelDetected && moderationInfo?.targetLevelRequired && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
                           <span className="font-semibold">{t("groupSourceDetailView.currentLevelLabel", "Current material level: ")}</span>
