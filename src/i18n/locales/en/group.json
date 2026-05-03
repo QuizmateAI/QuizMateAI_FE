@@ -2220,7 +2220,6 @@
     "reasonLabel": "Reason: ",
     "suggestionLabel": "Suggestion: ",
     "detectedTopicLabel": "Detected topic of the material: ",
-    "suitablePercentLabel": "Suitable content percentage: ",
     "currentLevelLabel": "Current material level: ",
     "requiredLevelLabel": " | Required level: ",
     "leaderReviewPrompt": "Does the leader want to approve this material for the group?",
