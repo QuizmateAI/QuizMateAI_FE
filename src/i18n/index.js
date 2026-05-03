@@ -38,7 +38,7 @@ const routeNamespaceRules = [
   },
   {
 
-    matches: (pathname) => pathname.startsWith('/policies') || pathname === '/account-suspended',
+    matches: (pathname) => pathname.startsWith('/policies'),
     namespaces: ['common', 'policies', 'landing'],
   },
   {
