@@ -1,7 +1,7 @@
 {
   "policies": {
     "pageTitle": "Policies & Terms",
-    "pageSubtitle": "QuizMate AI is committed to transparency, fairness, and strict enforcement of violations.",
+    "pageSubtitle": "QuizMate AI is committed to transparency, fairness, and addressing misuse consistent with these terms and our operational decisions.",
     "lastUpdated": "Last updated",
     "version": "Version",
     "effectiveDate": "Effective from",
@@ -13,15 +13,15 @@
     "loading": "Loading...",
     "errorLoading": "Failed to load policy. Please try again.",
     "notFound": "Policy not found",
-    "agreeBanner": "By using QuizMate AI, you agree to comply with the policies below. Violations will be enforced according to the rules.",
+    "agreeBanner": "By using QuizMate AI, you agree to comply with the policies below. Violations may result in appropriate measures under these policies and the Terms of Use.",
     "violationWarningTitle": "Important notice",
-    "violationWarningText": "Any cheating, abuse, or distribution of harmful content will be strictly punished according to the rules, from warnings to permanent account bans.",
+    "violationWarningText": "Cheating, abuse, or distributing harmful content harms our community and the service. Depending on severity, accounts may lose access to features or no longer be allowed to sign in, as described in our policies and decided through our review process.",
     "needHelp": "Need help?",
     "contactUs": "Contact us",
     "categories": {
       "TERMS_OF_SERVICE": {
         "title": "Terms of Service",
-        "summary": "General rules for using QuizMate AI: accounts, conduct, violation enforcement.",
+        "summary": "General rules for using QuizMate AI: accounts, conduct, and how violations are addressed.",
         "category": "Terms"
       },
       "PRIVACY_POLICY": {
@@ -56,25 +56,6 @@
       "and": "and",
       "privacyLabel": "Privacy Policy",
       "suffix": "."
-    },
-    "suspended": {
-      "title": "Your account has been suspended",
-      "subtitle": "You have violated QuizMate AI's policies. Please read the reason and ban duration carefully below.",
-      "reasonLabel": "Reason",
-      "issuedAt": "Issued at",
-      "expiresAt": "Expires at",
-      "permanent": "Permanent",
-      "remaining": "Time remaining",
-      "type": {
-        "WARNING": "Warning",
-        "FEATURE_RESTRICTION": "Feature restriction",
-        "TEMPORARY_BAN": "Temporary suspension",
-        "PERMANENT_BAN": "Permanent ban"
-      },
-      "appealCta": "Appeal",
-      "logoutCta": "Sign out",
-      "viewPoliciesCta": "View policies",
-      "appealHint": "If you believe this decision is wrong, please submit an appeal to support@quizmateai.io.vn within 14 days."
     }
   }
 }
