@@ -1252,7 +1252,7 @@
     }
   },
   "aiCosts": {
-    "title": "Chi phí AI",
+    "title": "Chi phí AI người dùng",
     "subtitle": "Tách rõ số người dùng trả, chi phí thực tế và phần lợi nhuận của từng request AI.",
     "scopeNote": "· Chỉ tính tính năng người dùng trả credit. Click vào dòng để xem chi tiết các call AI con.",
     "refresh": "Làm mới",

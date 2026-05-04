@@ -6,6 +6,7 @@ import {
   CreditCard, LogOut,
   PanelLeftClose, Coins, ChevronDown, ChevronRight,
   Settings2, KeyRound, Globe2,
+  PieChart,
 } from 'lucide-react';
 import { Banknote } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -76,6 +77,14 @@ const MENU_SECTIONS = [
         icon: Banknote,
         labelKey: 'sidebar.payments',
         path: '/admin/payments',
+        requiredPerm: 'payment:read',
+        matchPrefix: true,
+      },
+      {
+        icon: PieChart,
+        labelKey: 'sidebar.planPurchases',
+        defaultLabel: 'Báo cáo gói & biên',
+        path: '/admin/plan-purchases',
         requiredPerm: 'payment:read',
         matchPrefix: true,
       },
@@ -251,7 +260,7 @@ function AdminSidebar({ collapsed, onToggle }) {
                         <button
                           key={item.path}
                           onClick={() => navigate(item.path)}
-                          title={collapsed ? t(item.labelKey) : undefined}
+                          title={collapsed ? t(item.labelKey, item.defaultLabel) : undefined}
                           className={cn(
                             "relative w-full flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-colors",
                             collapsed ? "px-0 justify-center" : "px-4",
@@ -268,7 +277,7 @@ function AdminSidebar({ collapsed, onToggle }) {
                             <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r bg-glitter-400" />
                           ) : null}
                           <item.icon className="w-5 h-5 flex-shrink-0" />
-                          {!collapsed && <span>{t(item.labelKey)}</span>}
+                          {!collapsed && <span>{t(item.labelKey, item.defaultLabel)}</span>}
                         </button>
                       );
                     })}

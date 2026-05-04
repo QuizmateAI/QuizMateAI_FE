@@ -45,6 +45,7 @@ const GroupManagement = lazy(() => import('./pages/Admin/GroupManagement'));
 const PlanManagement = lazy(() => import('./pages/Admin/PlanManagement'));
 const CreditPackageManagement = lazy(() => import('./pages/Admin/CreditPackageManagement'));
 const AdminPaymentManagement = lazy(() => import('./pages/Admin/AdminPaymentManagement'));
+const PlanPurchaseReportPage = lazy(() => import('./pages/Admin/PlanPurchaseReportPage'));
 const SystemSettingManagement = lazy(() => import('./pages/Admin/SystemSettingManagement'));
 const AiActionPolicyManagement = lazy(() => import('./pages/Admin/AiActionPolicyManagement'));
 const MyPermissionsPage = lazy(() => import('./pages/Admin/MyPermissionsPage'));
@@ -166,6 +167,7 @@ function MainRoutes() {
                     <Route path="plans" element={<PlanManagement />} />
                     <Route path="credits" element={<CreditPackageManagement />} />
                     <Route path="payments" element={<AdminPaymentManagement />} />
+                    <Route path="plan-purchases" element={<PlanPurchaseReportPage />} />
                     <Route path="system-settings" element={<SystemSettingManagement />} />
                     <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
                     <Route path="policies" element={<PoliciesManagement />} />
@@ -189,6 +191,7 @@ function MainRoutes() {
                     <Route path="plans" element={<PlanManagement />} />
                     <Route path="credits" element={<CreditPackageManagement />} />
                     <Route path="payments" element={<AdminPaymentManagement />} />
+                    <Route path="plan-purchases" element={<PlanPurchaseReportPage />} />
                     <Route path="system-settings" element={<SystemSettingManagement />} />
                     <Route path="my-permissions" element={<MyPermissionsPage />} />
                 </Route>
