@@ -199,7 +199,47 @@
       "deleteConfirm": "Bạn có chắc chắn không?",
       "confirmDelete": "Có, xóa",
       "deleteError": "Xóa nhóm thất bại.",
-      "leaderOnly": "Chỉ trưởng nhóm mới có thể thay đổi cài đặt."
+      "leaderOnly": "Chỉ trưởng nhóm mới có thể thay đổi cài đặt.",
+      "actions": {
+        "title": "Quản lý cấu hình",
+        "subtitle": "Mở từng nhóm cấu hình ở dạng dialog để giữ trang gọn.",
+        "profile": {
+          "title": "Hồ sơ nhóm",
+          "subtitle": "Tên, mục tiêu, knowledge và rules."
+        },
+        "rankingPoints": {
+          "title": "Cấu hình điểm RP",
+          "subtitle": "Tinh chỉnh base + bonus theo từng loại quiz."
+        }
+      },
+      "profileDialog": {
+        "title": "Hồ sơ nhóm",
+        "description": "Tổng quan profile, kiến thức và rules của nhóm. Chỉnh sửa trực tiếp tại đây."
+      },
+      "rankingPoints": {
+        "title": "Cấu hình điểm Ranking (RP)",
+        "description": "Cho phép leader tinh chỉnh base + bonus theo từng accuracy. Để trống ô để dùng giá trị mặc định.",
+        "tier": "Tier",
+        "type": {
+          "regular": "Quiz thường",
+          "roadmap": "Roadmap quiz",
+          "mock": "Mock test"
+        },
+        "row": {
+          "Base": "Base",
+          "BonusPerfect": "Bonus 100%",
+          "BonusHigh": "Bonus 80–99%",
+          "BonusMid": "Bonus 60–79%",
+          "BonusLow": "Bonus <60%"
+        },
+        "fallbackHint": "Bỏ trống ô để dùng giá trị mặc định của hệ thống.",
+        "previewHint": "Bài 100% accuracy sẽ nhận RP này.",
+        "useDefault": "Khôi phục giá trị mặc định cho ô này",
+        "resetAll": "Khôi phục mặc định toàn bộ",
+        "saveSuccess": "Đã lưu cấu hình điểm xếp hạng.",
+        "saveError": "Lưu cấu hình điểm xếp hạng thất bại.",
+        "loadError": "Không tải được cấu hình điểm xếp hạng."
+      }
     }
   },
   "groupProfileConfig": {

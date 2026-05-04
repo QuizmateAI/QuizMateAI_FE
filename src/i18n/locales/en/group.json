@@ -199,7 +199,47 @@
       "deleteConfirm": "Are you absolutely sure?",
       "confirmDelete": "Yes, delete",
       "deleteError": "Failed to delete group.",
-      "leaderOnly": "Only the group leader can modify settings."
+      "leaderOnly": "Only the group leader can modify settings.",
+      "actions": {
+        "title": "Configuration manager",
+        "subtitle": "Open each configuration group as a dialog to keep this page tidy.",
+        "profile": {
+          "title": "Group profile",
+          "subtitle": "Name, goal, knowledge and rules."
+        },
+        "rankingPoints": {
+          "title": "Ranking points config",
+          "subtitle": "Tune base + bonus per quiz type."
+        }
+      },
+      "profileDialog": {
+        "title": "Group profile",
+        "description": "Profile overview, knowledge scope and rules. Edit directly from here."
+      },
+      "rankingPoints": {
+        "title": "Ranking Points (RP) configuration",
+        "description": "Lets the leader tune base + bonus per accuracy tier. Leave a cell empty to fall back to the system default.",
+        "tier": "Tier",
+        "type": {
+          "regular": "Regular quiz",
+          "roadmap": "Roadmap quiz",
+          "mock": "Mock test"
+        },
+        "row": {
+          "Base": "Base",
+          "BonusPerfect": "Bonus 100%",
+          "BonusHigh": "Bonus 80–99%",
+          "BonusMid": "Bonus 60–79%",
+          "BonusLow": "Bonus <60%"
+        },
+        "fallbackHint": "Leave a cell empty to use the system default. The default value shows as placeholder.",
+        "previewHint": "RP earned at 100% accuracy.",
+        "useDefault": "Reset this field to default",
+        "resetAll": "Reset all to defaults",
+        "saveSuccess": "Ranking points configuration saved.",
+        "saveError": "Failed to save ranking points configuration.",
+        "loadError": "Failed to load ranking points configuration."
+      }
     },
     "notifications": {
       "title": "Group Notifications",
