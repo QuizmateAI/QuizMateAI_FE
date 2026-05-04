@@ -111,6 +111,17 @@ export const setLeaderPublishBypass = async (workspaceId, eventId, reason) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/leader-publish-bypass`, { reason });
 };
 
+/**
+ * Leader đổi vai trò: tham gia thi (true) ↔ tự review (false).
+ * BE chặn nếu leader đã xem snapshot và muốn quay lại tham gia thi.
+ */
+export const updateLeaderParticipation = async (workspaceId, eventId, participates) => {
+  return await api.put(
+    `/group/${workspaceId}/challenges/${eventId}/leader-participation`,
+    { participates },
+  );
+};
+
 // ── Question flags (reviewer gửi yêu cầu xem xét câu hỏi) ──────
 
 export const listQuizReviewFlags = async (workspaceId, quizId) => {

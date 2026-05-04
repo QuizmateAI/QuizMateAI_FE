@@ -24,6 +24,10 @@ import ChallengeDetailDialogs from './ChallengeDetailDialogs';
 import ChallengeLeaderboard from './ChallengeLeaderboard';
 import ChallengeTeamScoreboard from './ChallengeTeamScoreboard';
 import ChallengeBracketView from './ChallengeBracketView';
+import CountdownBadge from './challenge/CountdownBadge';
+import ParticipantSlotBar from './challenge/ParticipantSlotBar';
+import InfoTile from './challenge/InfoTile';
+import LeaderRoleSwitcher from './challenge/LeaderRoleSwitcher';
 
 const MATCH_MODE_LABELS = {
   FREE_FOR_ALL: 'Đua cá nhân',
@@ -50,6 +54,7 @@ function ChallengeDetailContent({
   canStart,
   cancelDialogOpen,
   cardCls,
+  cooldownPassed,
   detail,
   displayedRealtimeChallengeQuizPercent,
   editDescription,
@@ -79,6 +84,8 @@ function ChallengeDetailContent({
   handleSaveChallengeEdit,
   handleStartAttempt,
   handleStartChallenge,
+  handleSwitchLeaderToReviewer,
+  handleSwitchLeaderToParticipant,
   handleViewRoundQuiz,
   handleViewSnapshotQuiz,
   isBracketChallenge,
@@ -247,67 +254,124 @@ function ChallengeDetailContent({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className={`rounded-xl p-2 transition-colors ${
-              isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
-            }`}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <Swords className={`h-6 w-6 shrink-0 ${isDarkMode ? 'text-orange-300' : 'text-orange-500'}`} />
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {detail.title}
-              </h2>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                  detail.status === 'LIVE'
-                    ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-200' : 'bg-emerald-100 text-emerald-800')
-                    : detail.status === 'FINISHED'
-                      ? (isDarkMode ? 'bg-slate-600 text-slate-200' : 'bg-gray-200 text-gray-800')
+      {/* Back button on its own line — keep it compact and unobtrusive */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-sm font-medium transition-colors ${
+            isDarkMode ? 'text-slate-300 hover:bg-slate-700/60' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t('challengeDetailView.back', 'Quay lại')}
+        </button>
+      </div>
+
+      {/* Hero header */}
+      <div
+        className={`relative overflow-hidden rounded-2xl p-5 ring-1 ${
+          detail.status === 'LIVE'
+            ? (isDarkMode
+                ? 'bg-gradient-to-br from-slate-800 via-emerald-900/30 to-slate-800 ring-emerald-500/40'
+                : 'bg-gradient-to-br from-white via-emerald-50/60 to-white ring-emerald-300/60')
+            : detail.status === 'CANCELLED'
+              ? (isDarkMode ? 'bg-slate-800/60 ring-rose-500/30' : 'bg-rose-50/30 ring-rose-200/60')
+              : (isDarkMode
+                  ? 'bg-gradient-to-br from-slate-800 via-slate-800 to-orange-900/20 ring-slate-700'
+                  : 'bg-gradient-to-br from-white via-orange-50/40 to-white ring-orange-200/60')
+        }`}
+      >
+        {detail.status === 'LIVE' && (
+          <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-gradient-to-br from-emerald-400/30 to-transparent blur-3xl" />
+        )}
+
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              {detail.status === 'LIVE' ? (
+                <span className="inline-flex animate-pulse items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-emerald-500/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  {t('groupWorkspace.challenge.phase.LIVE', 'Đang diễn ra')}
+                </span>
+              ) : (
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                    detail.status === 'FINISHED'
+                      ? (isDarkMode ? 'bg-slate-700 text-slate-200' : 'bg-slate-200 text-slate-700')
                       : detail.status === 'CANCELLED'
-                        ? (isDarkMode ? 'bg-red-500/20 text-red-200' : 'bg-red-100 text-red-800')
-                        : (isDarkMode ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-100 text-amber-900')
-                }`}
-              >
-                {t(`groupWorkspace.challenge.phase.${detail.status}`, detail.status)}
-              </span>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                isDarkMode ? 'bg-teal-500/15 text-teal-200' : 'bg-teal-50 text-teal-700'
+                        ? (isDarkMode ? 'bg-rose-500/20 text-rose-200' : 'bg-rose-100 text-rose-700')
+                        : (isDarkMode ? 'bg-orange-500/20 text-orange-200' : 'bg-orange-100 text-orange-700')
+                  }`}
+                >
+                  {detail.status === 'FINISHED' && <Trophy className="h-3 w-3" />}
+                  {detail.status === 'SCHEDULED' && <Clock className="h-3 w-3" />}
+                  {t(`groupWorkspace.challenge.phase.${detail.status}`, detail.status)}
+                </span>
+              )}
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
+                isDarkMode ? 'bg-teal-500/10 text-teal-200 ring-teal-500/30' : 'bg-teal-50 text-teal-700 ring-teal-300/50'
               }`}>
                 {MATCH_MODE_LABELS[detail.matchMode] || detail.matchMode || 'Đua cá nhân'}
               </span>
               {!isPublished && (
-                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                  isDarkMode ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-100 text-amber-900'
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
+                  isDarkMode ? 'bg-amber-500/10 text-amber-200 ring-amber-500/40' : 'bg-amber-50 text-amber-700 ring-amber-300/60'
                 }`}>
-                  {t('challengeDetailView.notPublishedBadge', 'Not published')}
+                  {t('challengeDetailView.notPublishedBadge', 'Chưa publish')}
+                </span>
+              )}
+              {detail.registrationMode === 'INVITE_ONLY' && (
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
+                  isDarkMode ? 'bg-violet-500/10 text-violet-200 ring-violet-500/30' : 'bg-violet-50 text-violet-700 ring-violet-300/50'
+                }`}>
+                  {t('groupWorkspace.challenge.list.inviteOnly', 'Chỉ mời')}
                 </span>
               )}
             </div>
+
+            <div className="flex items-start gap-3">
+              <Swords className={`mt-1 h-6 w-6 shrink-0 ${isDarkMode ? 'text-orange-300' : 'text-orange-500'}`} />
+              <h2 className={`text-2xl font-bold leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {detail.title}
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {detail.status === 'SCHEDULED' && detail.startTime && (
+              <CountdownBadge
+                targetTime={detail.startTime}
+                size="lg"
+                isDarkMode={isDarkMode}
+                label={t('groupWorkspace.challenge.list.startsInLabel', 'Còn')}
+              />
+            )}
+            {detail.status === 'LIVE' && detail.endTime && (
+              <CountdownBadge
+                targetTime={detail.endTime}
+                size="lg"
+                isDarkMode={isDarkMode}
+                label={t('groupWorkspace.challenge.list.endsInLabel', 'Kết thúc sau')}
+              />
+            )}
+            {canEditChallengeSchedule && (
+              <button
+                type="button"
+                onClick={openEditDialog}
+                disabled={!!actionLoading}
+                className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                  isDarkMode
+                    ? 'border-slate-600 text-slate-200 hover:bg-slate-800'
+                    : 'border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                {t('groupWorkspace.challenge.editSchedule')}
+              </button>
+            )}
           </div>
         </div>
-        {canEditChallengeSchedule && (
-          <button
-            type="button"
-            onClick={openEditDialog}
-            disabled={!!actionLoading}
-            className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${
-              isDarkMode
-                ? 'border-slate-600 text-slate-200 hover:bg-slate-800'
-                : 'border-gray-200 text-gray-800 hover:bg-gray-50'
-            }`}
-          >
-            <Pencil className="h-4 w-4" />
-            {t('groupWorkspace.challenge.editSchedule')}
-          </button>
-        )}
       </div>
 
       {error && (
@@ -324,33 +388,49 @@ function ChallengeDetailContent({
           </p>
         )}
 
-        <div className={`grid grid-cols-2 gap-4 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 flex-shrink-0" />
-            <div>
-              <div className="text-xs opacity-60">{t('challengeDetailView.startLabel', 'Start')}</div>
-              <div className={isDarkMode ? 'text-white' : 'text-slate-900'}>{formatDateTime(detail.startTime)}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 flex-shrink-0" />
-            <div>
-              <div className="text-xs opacity-60">{t('challengeDetailView.endLabel', 'End')}</div>
-              <div className={isDarkMode ? 'text-white' : 'text-slate-900'}>{formatDateTime(detail.endTime)}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 flex-shrink-0" />
-            <span>{t('challengeDetailView.participantCount', '{{count}} participants', { count: detail.participantCount })}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 flex-shrink-0" />
-            <span>{detail.registrationMode === 'INVITE_ONLY' ? t('challengeDetailView.registrationMode.inviteOnly', 'Invite only') : t('challengeDetailView.registrationMode.public', 'Public')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Swords className="h-4 w-4 flex-shrink-0" />
-            <span>{MATCH_MODE_LABELS[detail.matchMode] || detail.matchMode || 'Đua cá nhân'}</span>
-          </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InfoTile
+            icon={Calendar}
+            label={t('challengeDetailView.startLabel', 'Bắt đầu')}
+            value={formatDateTime(detail.startTime)}
+            tone="cyan"
+            isDarkMode={isDarkMode}
+          />
+          <InfoTile
+            icon={Clock}
+            label={t('challengeDetailView.endLabel', 'Kết thúc')}
+            value={formatDateTime(detail.endTime)}
+            tone="orange"
+            isDarkMode={isDarkMode}
+          />
+          <InfoTile
+            icon={Users}
+            label={t('challengeDetailView.participantsLabel', 'Người tham gia')}
+            value={t('challengeDetailView.participantCount', '{{count}} người tham gia', { count: detail.participantCount || 0 })}
+            tone="emerald"
+            isDarkMode={isDarkMode}
+          >
+            {((detail.capacityLimit ?? detail.bracketSize ?? null) || (detail.participantCount || 0) > 0) && (
+              <div className="mt-2">
+                <ParticipantSlotBar
+                  used={detail.participantCount || 0}
+                  total={detail.capacityLimit ?? detail.bracketSize ?? null}
+                  isDarkMode={isDarkMode}
+                  size="sm"
+                  showLabel={false}
+                />
+              </div>
+            )}
+          </InfoTile>
+          <InfoTile
+            icon={detail.registrationMode === 'INVITE_ONLY' ? Lock : Shield}
+            label={t('challengeDetailView.registrationLabel', 'Đăng ký')}
+            value={detail.registrationMode === 'INVITE_ONLY'
+              ? t('challengeDetailView.registrationMode.inviteOnly', 'Chỉ mời')
+              : t('challengeDetailView.registrationMode.public', 'Công khai')}
+            tone="violet"
+            isDarkMode={isDarkMode}
+          />
         </div>
 
         {isBracketChallenge && bracketRoundQuizPlan.length > 0 && renderBracketRoundQuizPanel()}
@@ -474,52 +554,85 @@ function ChallengeDetailContent({
         )}
 
         {showReviewContributorPanel && (
-          <div className={`mt-4 rounded-xl border px-4 py-3 ${
+          <div className={`mt-4 rounded-2xl border px-5 py-4 ${
             isDarkMode ? 'border-slate-600 bg-slate-700/40' : 'border-gray-100 bg-gray-50'
           }`}>
-            <div className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-              {t('groupWorkspace.challenge.reviewContributorsTitle')}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ring-1 ${
+                  isDarkMode ? 'bg-cyan-500/10 text-cyan-200 ring-cyan-500/30' : 'bg-cyan-50 text-cyan-700 ring-cyan-200/60'
+                }`}>
+                  <Eye className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {t('groupWorkspace.challenge.reviewContributorsTitle')}
+                  </div>
+                  <div className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {(detail.reviewContributors || []).length}/2 reviewer
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+            <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {detail.leaderParticipates
                 ? t('challengeDetailView.reviewerPanel.participatingLeaderHint', 'Leader is joining the challenge, so invite 1 or 2 reviewers here. All reviewers have the same role.')
                 : t('challengeDetailView.reviewerPanel.optionalHint', 'Invite up to 2 reviewers if you want another pair of eyes before publishing. All reviewers have the same role.')}
             </p>
+
+            <LeaderRoleSwitcher
+              detail={detail}
+              isLeader={isLeader}
+              isPublished={isPublished}
+              isDarkMode={isDarkMode}
+              myReviewContributor={myReviewContributor}
+              actionLoading={actionLoading}
+              handleSwitchLeaderToReviewer={handleSwitchLeaderToReviewer}
+              handleSwitchLeaderToParticipant={handleSwitchLeaderToParticipant}
+              t={t}
+            />
+
             {(detail.reviewContributors || []).length > 0 && (
               <ul className="mt-3 flex flex-col gap-2">
-                {(detail.reviewContributors || []).map((c) => (
-                  <li
-                    key={c.userId}
-                    className={`flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 ${
-                      isDarkMode ? 'bg-slate-800/60' : 'bg-white'
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {c.avatar ? (
-                          <img src={c.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
-                        ) : (
-                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                            isDarkMode ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-600'
-                          }`}
-                          >
-                            {(c.fullName || c.username || '?')[0].toUpperCase()}
-                          </div>
-                        )}
-                        <span className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          <UserDisplayName user={c} fallback={`#${c.userId}`} isDarkMode={isDarkMode} />
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          isDarkMode ? 'bg-cyan-500/15 text-cyan-200' : 'bg-cyan-100 text-cyan-800'
-                        }`}>
-                          {t('challengeDetailView.reviewerPanel.reviewerBadge', 'Reviewer')}
-                        </span>
+                {(detail.reviewContributors || []).map((c) => {
+                  const decisionStatus = c.decisionStatus || c.status;
+                  const statusPalette = decisionStatus === 'ACCEPTED'
+                    ? (isDarkMode ? 'bg-emerald-500/15 text-emerald-200 ring-emerald-500/40' : 'bg-emerald-50 text-emerald-700 ring-emerald-300/50')
+                    : decisionStatus === 'DECLINED'
+                      ? (isDarkMode ? 'bg-rose-500/15 text-rose-200 ring-rose-500/40' : 'bg-rose-50 text-rose-700 ring-rose-300/50')
+                      : (isDarkMode ? 'bg-amber-500/15 text-amber-200 ring-amber-500/40' : 'bg-amber-50 text-amber-700 ring-amber-300/50');
+                  return (
+                    <li
+                      key={c.userId}
+                      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                        isDarkMode ? 'border-slate-700/60 bg-slate-800/60' : 'border-slate-200/80 bg-white'
+                      }`}
+                    >
+                      {c.avatar ? (
+                        <img src={c.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white" />
+                      ) : (
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                          isDarkMode ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-600'
+                        }`}
+                        >
+                          {(c.fullName || c.username || '?')[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                            <UserDisplayName user={c} fallback={`#${c.userId}`} isDarkMode={isDarkMode} />
+                          </span>
+                          <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ${
+                            isDarkMode ? 'bg-cyan-500/10 text-cyan-200 ring-cyan-500/30' : 'bg-cyan-50 text-cyan-700 ring-cyan-200/60'
+                          }`}>
+                            {t('challengeDetailView.reviewerPanel.reviewerBadge', 'Reviewer')}
+                          </span>
+                        </div>
+                        <div className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${statusPalette}`}>
+                          {getReviewerStatusCopy(c, t)}
+                        </div>
                       </div>
-                      <p className={`mt-1 pl-9 text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                        {getReviewerStatusCopy(c, t)}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
                       <button
                         type="button"
                         onClick={() => handleRemoveReviewer(c.userId)}
@@ -537,9 +650,9 @@ function ChallengeDetailContent({
                         )}
                         {t('groupWorkspace.challenge.reviewContributorRemove')}
                       </button>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
             <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -667,6 +780,33 @@ function ChallengeDetailContent({
           >
             {t('groupWorkspace.challenge.reviewContributorCannotRegister')}
           </p>
+        )}
+
+        {/* Publish cooldown banner: 3 ngày kể từ lúc tạo */}
+        {showPublishChallengeAction && detail.publishableAt && !cooldownPassed && (
+          <div className={`mt-4 rounded-xl border px-4 py-3 ${
+            isDarkMode ? 'border-amber-500/30 bg-amber-500/10' : 'border-amber-200 bg-amber-50/70'
+          }`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className={`text-sm font-semibold ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
+                  {t('challengeDetailView.publishCooldown.title', 'Đếm ngược tới lúc được publish')}
+                </div>
+                <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-amber-100/85' : 'text-amber-900/80'}`}>
+                  {t(
+                    'challengeDetailView.publishCooldown.hint',
+                    'Mọi challenge đều phải đợi đủ 3 ngày kể từ lúc tạo trước khi được publish. Sau cooldown, nút publish sẽ tự mở.',
+                  )}
+                </p>
+              </div>
+              <CountdownBadge
+                targetTime={detail.publishableAt}
+                size="lg"
+                isDarkMode={isDarkMode}
+                label={t('challengeDetailView.publishCooldown.countdownLabel', 'Mở publish sau')}
+              />
+            </div>
+          </div>
         )}
 
         {/* Actions */}
@@ -884,6 +1024,7 @@ function ChallengeDetailContent({
         handleFinishConfirm={handleFinishConfirm}
         handleSaveChallengeEdit={handleSaveChallengeEdit}
         isDarkMode={isDarkMode}
+        isPublished={isPublished}
         setCancelDialogOpen={setCancelDialogOpen}
         setEditDescription={setEditDescription}
         setEditDialogOpen={setEditDialogOpen}

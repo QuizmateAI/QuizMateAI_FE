@@ -378,6 +378,25 @@ export const getGroupWorkspaceProfile = async (workspaceId) => {
   return response;
 };
 
+/**
+ * Atomic create-and-configure: BE chỉ tạo workspace SAU KHI nhận đủ basic + config.
+ * Nếu user back ngang giữa wizard, không có workspace nào được tạo.
+ */
+export const createGroupWithProfile = async (data) => {
+  const payload = {
+    groupName: trimToNullSafe(data.groupName),
+    rules: trimToNullSafe(data.rules),
+    defaultRoleOnJoin: trimToNullSafe(data.defaultRoleOnJoin),
+    domain: trimToNullSafe(data.domain),
+    knowledge: trimToNullSafe(data.knowledge),
+    roadmapEnabled: Boolean(data.roadmapEnabled),
+    groupLearningGoal: trimToNullSafe(data.groupLearningGoal),
+    examName: trimToNullSafe(data.examName),
+  };
+  const response = await api.post(`/workspace-profile/group/create-with-profile`, payload);
+  return response;
+};
+
 export const saveGroupBasicStep = async (workspaceId, data) => {
   const payload = {
     groupName: trimToNullSafe(data.groupName),
@@ -441,6 +460,41 @@ export const saveGroupRoadmapConfigStep = async (workspaceId, data = {}) => {
 
 export const confirmGroupWorkspaceProfile = async (workspaceId) => {
   const response = await api.post(`/workspace-profile/group/${workspaceId}/steps/confirm`);
+  return response;
+};
+
+// ====== Group Ranking Points Config ======
+
+export const getGroupRankingPointsConfig = async (workspaceId) => {
+  const response = await api.get(`/workspace-profile/group/${workspaceId}/ranking-points`);
+  return response;
+};
+
+const toIntOrNull = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.trunc(n) : null;
+};
+
+export const updateGroupRankingPointsConfig = async (workspaceId, data = {}) => {
+  const payload = {
+    mockBase: toIntOrNull(data.mockBase),
+    mockBonusPerfect: toIntOrNull(data.mockBonusPerfect),
+    mockBonusHigh: toIntOrNull(data.mockBonusHigh),
+    mockBonusMid: toIntOrNull(data.mockBonusMid),
+    mockBonusLow: toIntOrNull(data.mockBonusLow),
+    roadmapBase: toIntOrNull(data.roadmapBase),
+    roadmapBonusPerfect: toIntOrNull(data.roadmapBonusPerfect),
+    roadmapBonusHigh: toIntOrNull(data.roadmapBonusHigh),
+    roadmapBonusMid: toIntOrNull(data.roadmapBonusMid),
+    roadmapBonusLow: toIntOrNull(data.roadmapBonusLow),
+    regularBase: toIntOrNull(data.regularBase),
+    regularBonusPerfect: toIntOrNull(data.regularBonusPerfect),
+    regularBonusHigh: toIntOrNull(data.regularBonusHigh),
+    regularBonusMid: toIntOrNull(data.regularBonusMid),
+    regularBonusLow: toIntOrNull(data.regularBonusLow),
+  };
+  const response = await api.put(`/workspace-profile/group/${workspaceId}/ranking-points`, payload);
   return response;
 };
 

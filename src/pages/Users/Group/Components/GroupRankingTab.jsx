@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { BookMarked, BookOpen, Medal, RefreshCw, Sparkles, Trophy } from "lucide-react";
+import { BookMarked, BookOpen, Crown, Medal, RefreshCw, Sparkles, Trophy } from "lucide-react";
 import { getGroupOverallRanking, getGroupRankingMemberDetail } from "@/api/GroupAPI";
 import UserDisplayName from "@/components/features/users/UserDisplayName";
 import { useTranslation } from "react-i18next";
@@ -59,7 +59,6 @@ function formatPoints(value) {
 
 function PodiumTile({ row, rank, isDarkMode, t }) {
   const podium = PODIUM_STYLES[rank];
-  const border = isDarkMode ? "border-slate-700" : "border-[#BFDBFE]";
   const surface = podium
     ? (isDarkMode ? podium.row.dark : podium.row.light)
     : isDarkMode ? "bg-slate-900/50" : "bg-white";
@@ -70,34 +69,73 @@ function PodiumTile({ row, rank, isDarkMode, t }) {
     ? (isDarkMode ? podium.points.dark : podium.points.light)
     : isDarkMode ? "text-slate-100" : "text-slate-900";
 
+  // Top 1 nổi bật: ring vàng dày, gradient mạnh hơn, avatar to hơn, RP cỡ chữ to hơn
+  const isChamp = rank === 1;
+  const ringClass = isChamp
+    ? (isDarkMode ? "ring-2 ring-yellow-500/50" : "ring-2 ring-yellow-400/70")
+    : rank === 2
+      ? (isDarkMode ? "ring-1 ring-slate-500/40" : "ring-1 ring-slate-300/70")
+      : rank === 3
+        ? (isDarkMode ? "ring-1 ring-amber-600/40" : "ring-1 ring-amber-300/70")
+        : (isDarkMode ? "ring-1 ring-slate-700" : "ring-1 ring-slate-200");
+  const avatarSize = isChamp ? "h-14 w-14 text-base" : "h-12 w-12 text-sm";
+  const RankIcon = isChamp ? Crown : Medal;
+  const rankIconColor = rank === 1
+    ? (isDarkMode ? "text-yellow-300" : "text-yellow-500")
+    : rank === 2
+      ? (isDarkMode ? "text-slate-300" : "text-slate-500")
+      : rank === 3
+        ? (isDarkMode ? "text-amber-400" : "text-amber-600")
+        : (isDarkMode ? "text-slate-400" : "text-slate-500");
+
   return (
     <button
       type="button"
       onClick={() => row?.onOpenDetail?.(row)}
-      className={`group relative overflow-hidden rounded-lg border px-4 py-4 text-left transition-transform duration-300 hover:-translate-y-1 ${border} ${surface}`}
+      className={`group relative overflow-hidden rounded-2xl px-5 py-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${surface} ${ringClass}`}
       style={{ animation: `rankingTileIn 420ms ease-out both`, animationDelay: `${rank * 90}ms` }}
     >
-      {rank === 1 ? (
-        <span className={`pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full ${isDarkMode ? "bg-yellow-400/10" : "bg-yellow-200/35"} animate-[rankingAura_3.8s_ease-in-out_infinite]`} />
+      {isChamp ? (
+        <span className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full ${isDarkMode ? "bg-yellow-400/10" : "bg-yellow-200/45"} animate-[rankingAura_3.8s_ease-in-out_infinite]`} />
       ) : null}
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badgeClass}`}>
+
+      <div className="relative mb-3 flex items-center justify-between gap-3">
+        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${badgeClass}`}>
+          <RankIcon className={`h-3.5 w-3.5 ${rankIconColor}`} />
           {t(`groupWorkspace.ranking.topBadges.${rank}`)}
         </span>
-        <span className={`text-sm font-semibold transition-transform duration-300 group-hover:scale-110 ${pointsClass}`}>
-          {formatPoints(row?.rankingPoints)} RP
+        <span className={`font-black tabular-nums transition-transform duration-300 group-hover:scale-110 ${pointsClass} ${
+          isChamp ? "text-2xl" : "text-xl"
+        }`}>
+          {formatPoints(row?.rankingPoints)}
+          <span className={`ml-1 text-xs font-bold ${pointsClass}`}>RP</span>
         </span>
       </div>
-      <div className="flex items-center gap-3">
+
+      <div className="relative flex items-center gap-3">
         {row?.avatar ? (
-          <img src={row.avatar} alt="" className="h-11 w-11 rounded-full object-cover shrink-0 transition-transform duration-300 group-hover:scale-105" />
+          <img
+            src={row.avatar}
+            alt=""
+            className={`${avatarSize} rounded-full object-cover shrink-0 transition-transform duration-300 group-hover:scale-105 ring-2 ${
+              isDarkMode ? "ring-slate-700" : "ring-white"
+            }`}
+          />
         ) : (
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isDarkMode ? "bg-blue-500/20 text-blue-300" : "bg-[#EFF6FF] text-[#0455BF]"}`}>
+          <div className={`flex ${avatarSize} shrink-0 items-center justify-center rounded-full font-bold ring-2 ${
+            isDarkMode ? "bg-blue-500/20 text-blue-300 ring-slate-700" : "bg-[#EFF6FF] text-[#0455BF] ring-white"
+          }`}>
             {(row?.fullName || "?")[0].toUpperCase()}
           </div>
         )}
         <div className="min-w-0">
-          <UserDisplayName user={row} fallback="?" className={`truncate font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"}`} />
+          <UserDisplayName
+            user={row}
+            fallback="?"
+            className={`block truncate ${isChamp ? "text-base font-bold" : "font-semibold"} ${
+              isDarkMode ? "text-slate-100" : "text-gray-900"
+            }`}
+          />
           {row?.username ? (
             <p className={`truncate text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>@{row.username}</p>
           ) : null}
@@ -327,10 +365,14 @@ function RankingTable({ rows, isDarkMode, t, onOpenDetail }) {
                   className={`border-b last:border-b-0 transition-colors cursor-pointer ${rowBorder} ${rowHover} ${rowHighlight}`}
                 >
                   <td className="px-4 py-3">
-                    {rank <= 3 ? (
-                      <Medal className={`h-5 w-5 ${MEDAL_COLORS[rank - 1]}`} />
+                    {rank === 1 ? (
+                      <Crown className={`h-6 w-6 ${MEDAL_COLORS[0]} drop-shadow-[0_0_4px_rgba(250,204,21,0.5)]`} />
+                    ) : rank <= 3 ? (
+                      <Medal className={`h-6 w-6 ${MEDAL_COLORS[rank - 1]}`} />
                     ) : (
-                      <span className={`text-sm font-medium ${textMuted}`}>{rank}</span>
+                      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full font-mono text-xs font-bold tabular-nums ${
+                        isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"
+                      }`}>{rank}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -355,7 +397,7 @@ function RankingTable({ rows, isDarkMode, t, onOpenDetail }) {
                       </div>
                     </div>
                   </td>
-                  <td className={`px-4 py-3 text-right font-semibold ${pointsClass}`}>
+                  <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums text-base ${pointsClass}`}>
                     {formatPoints(row.rankingPoints)}
                   </td>
                 </tr>
