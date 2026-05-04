@@ -2309,6 +2309,7 @@
         "quiz": "Quiz",
         "flashcard": "Flashcard",
         "mockTest": "Mock test",
+        "quizCollection": "Collections",
         "postLearning": "Post-learning",
         "questionStats": "Stats",
         "profile": "Profile"

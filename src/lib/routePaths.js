@@ -16,6 +16,7 @@ export const WORKSPACE_ROUTE_SEGMENTS = {
   phases: "phases",
   knowledges: "knowledges",
   quizzes: "quizzes",
+  collections: "collections",
   flashcards: "flashcards",
   mockTests: "mock-tests",
   postLearnings: "post-learnings",
@@ -247,6 +248,13 @@ export function buildWorkspaceQuizPath(workspaceId, quizId) {
   return buildWorkspacePath(
     workspaceId,
     `${WORKSPACE_ROUTE_SEGMENTS.quizzes}/${quizId}`,
+  );
+}
+
+export function buildWorkspaceCollectionPath(workspaceId, collectionId) {
+  return buildWorkspacePath(
+    workspaceId,
+    `${WORKSPACE_ROUTE_SEGMENTS.collections}/${collectionId}`,
   );
 }
 

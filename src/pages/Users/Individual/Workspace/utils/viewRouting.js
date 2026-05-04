@@ -5,6 +5,7 @@ const {
 	phases,
 	knowledges,
 	quizzes,
+	collections,
 	flashcards,
 	mockTests,
 	postLearnings,
@@ -16,6 +17,7 @@ export const VIEW_TO_PATH = {
 	roadmap: roadmaps,
 	quiz: quizzes,
 	communityQuiz: `${quizzes}/community`,
+	quizCollection: collections,
 	flashcard: flashcards,
 	mockTest: mockTests,
 	postLearning: postLearnings,
@@ -133,6 +135,11 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 		return { view: "quizDetail", quizId: Number(quizDetailMatch[1]), backTarget: null };
 	}
 
+	const collectionDetailMatch = subPath.match(new RegExp(`^${collections}/(\\d+)$`));
+	if (collectionDetailMatch) {
+		return { view: "quizCollectionDetail", collectionId: Number(collectionDetailMatch[1]), quizId: null, backTarget: null };
+	}
+
 	const mockTestDetailMatch = subPath.match(new RegExp(`^${mockTests}/(\\d+)$`));
 	if (mockTestDetailMatch) {
 		return { view: "mockTestDetail", mockTestId: Number(mockTestDetailMatch[1]), quizId: null, backTarget: null };
@@ -147,7 +154,7 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 	};
 }
 
-export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget, selectedMockTest) {
+export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget, selectedMockTest, selectedCollection) {
 	if (view === "quizDetail" && selectedQuiz?.quizId) {
 		if (quizBackTarget?.view === "roadmap") {
 			const normalizedRoadmapId = Number(quizBackTarget?.roadmapId);
@@ -186,6 +193,10 @@ export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget, se
 
 	if (view === "mockTestDetail" && selectedMockTest?.quizId) {
 		return `${mockTests}/${selectedMockTest.quizId}`;
+	}
+
+	if (view === "quizCollectionDetail" && selectedCollection?.collectionId) {
+		return `${collections}/${selectedCollection.collectionId}`;
 	}
 
 	if (view === "overview") {
