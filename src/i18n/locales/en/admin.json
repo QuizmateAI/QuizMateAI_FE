@@ -1221,7 +1221,7 @@
     }
   },
   "aiCosts": {
-    "title": "AI Costs",
+    "title": "User AI Costs",
     "subtitle": "Separate what the user paid, the actual provider spend, and the margin kept on each AI request.",
     "scopeNote": "· Only user-paid features. Click a row to inspect AI sub-calls.",
     "refresh": "Refresh",

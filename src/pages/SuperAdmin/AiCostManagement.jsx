@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
+import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, HandCoins, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -379,7 +379,7 @@ function AiCostManagement() {
   return (
     <SuperAdminPage className={fontClass}>
       <SuperAdminPageHeader
-        eyebrow="AI Governance"
+        eyebrow={t('sidebarSections.aiUsageCommerce', 'Chi phí & nhật ký AI')}
         title={t('aiCosts.title')}
         description={`${t('aiCosts.subtitle')} ${t('aiCosts.scopeNote', '· Only user-paid features. Click a row to inspect AI sub-calls.')}`}
         actions={(
@@ -398,11 +398,13 @@ function AiCostManagement() {
         )}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <MetricCard label={t('aiCosts.metrics.requests')} value={formatInteger(summary?.requestCount)} icon={DatabaseZap} tone="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.matchedRequestCount)} ${t('aiCosts.metrics.matched')}`} />
         <MetricCard label={t('aiCosts.metrics.revenue')} value={formatVnd(summary?.totalChargedVnd)} icon={Wallet} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.totalChargedCredit)} ${t('aiCosts.metrics.credits')}`} />
+        <MetricCard label={t('aiCosts.metrics.revenueMatched', 'Doanh thu khớp audit')} value={formatVnd(summary?.totalChargedVndMatchedAudit)} icon={Layers} tone="bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300" isDarkMode={isDarkMode} subtext={t('aiCosts.metrics.revenueMatchedHint', 'Trên request có COGS')} />
         <MetricCard label={t('aiCosts.metrics.providerCost')} value={formatVnd(summary?.totalProviderCostVnd)} icon={Coins} tone="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.totalTokens)} ${t('aiCosts.metrics.tokens')}`} />
-        <MetricCard label={t('aiCosts.metrics.profit')} value={formatVnd(summary?.totalProfitVnd)} icon={ArrowUpRight} tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.unmatchedRequestCount)} ${t('aiCosts.metrics.unmatched')}`} />
+        <MetricCard label={t('aiCosts.metrics.profit')} value={formatVnd(summary?.totalProfitVnd)} icon={ArrowUpRight} tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" isDarkMode={isDarkMode} subtext={t('aiCosts.metrics.profitHint', 'Khớp audit − COGS')} />
+        <MetricCard label={t('aiCosts.metrics.subsidy', 'Trợ giá hệ thống')} value={formatVnd(summary?.totalSystemSubsidyVnd)} icon={HandCoins} tone="bg-rose-100 text-rose-800 dark:bg-rose-950/45 dark:text-rose-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.unmatchedRequestCount)} ${t('aiCosts.metrics.unmatched')}`} />
       </div>
 
       <div className={`flex flex-col gap-4 rounded-2xl border p-5 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
@@ -711,6 +713,7 @@ function AiCostManagement() {
                   <p>{t('aiCosts.formula.providerCost')}: <span className="font-semibold">{formatVnd(detailRow.providerCostVnd)}</span></p>
                   <p>{t('aiCosts.formula.providerCostUsd', 'Provider cost (USD)')}: <span className="font-semibold">{formatUsd(detailRow.providerCostUsd)}</span></p>
                   <p>{t('aiCosts.formula.profit')}: <span className={`font-semibold ${isDetailProfitPositive ? 'text-emerald-500' : 'text-rose-500'}`}>{formatVnd(detailRow.profitVnd)}</span></p>
+                  <p>{t('aiCosts.formula.systemSubsidy', 'Trợ giá hệ thống (ước lượng)')}: <span className="font-semibold text-amber-600 dark:text-amber-400">{formatVnd(detailRow.systemSubsidyVnd)}</span></p>
                   <p>{t('aiCosts.formula.tokenPrice')}: <span className="font-semibold">{formatDecimal(detailRow.effectiveTokenPriceVnd)}</span></p>
                 </div>
               </div>

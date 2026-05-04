@@ -47,7 +47,8 @@ const EMPTY_FORM = {
   displayName: '',
   planScope: 'USER',
   planLevel: '0',
-  price: '',
+  creditPrice: '',
+  basePrice: '',
   description: '',
 };
 
@@ -112,6 +113,10 @@ function formatCurrency(value, t, locale) {
   const amount = Number(value) || 0;
   if (amount === 0) return t('subscription.free');
   return `${amount.toLocaleString(locale)} VND`;
+}
+
+function formatMoneyAlways(value, locale) {
+  return `${(Number(value) || 0).toLocaleString(locale)} VND`;
 }
 
 function getScopeLabel(scope, t) {
@@ -308,12 +313,24 @@ function PlanManagement() {
     setEditingPlan(plan);
     // Backend returns USER | WORKSPACE; normalize legacy GROUP_WORKSPACE for dropdown
     const planScope = (plan.planScope === 'GROUP_WORKSPACE' || plan.planScope === 'WORKSPACE') ? 'WORKSPACE' : (plan.planScope || 'USER');
+    const totalFromApi = plan.price != null ? Number(plan.price) : 0;
+    const creditFromApi = plan.creditPriceVnd != null ? Number(plan.creditPriceVnd) : null;
+    const baseFromApi = plan.basePriceVnd != null ? Number(plan.basePriceVnd) : null;
+    let creditPrice = creditFromApi;
+    let basePrice = baseFromApi;
+    if (creditPrice == null || !Number.isFinite(creditPrice)) {
+      creditPrice = Number.isFinite(totalFromApi) ? totalFromApi : 0;
+    }
+    if (basePrice == null || !Number.isFinite(basePrice)) {
+      basePrice = 0;
+    }
     setFormData({
       code: plan.code || '',
       displayName: plan.displayName || '',
       planScope,
       planLevel: plan.planLevel != null ? String(plan.planLevel) : '0',
-      price: plan.price != null ? String(plan.price) : '',
+      creditPrice: String(Math.max(0, Math.round(creditPrice))),
+      basePrice: String(Math.max(0, Math.round(basePrice))),
       description: plan.description || '',
     });
     setEntitlement(plan.entitlement ? { ...EMPTY_ENTITLEMENT, ...plan.entitlement } : { ...EMPTY_ENTITLEMENT });
@@ -440,12 +457,15 @@ function PlanManagement() {
 
     const credits = isDefaultPlanLevel ? 0 : (parseInt(entitlement.planIncludedCredits, 10) || 0);
     const minPrice = credits * creditUnitPrice;
-    const inputPrice = parseInt(formData.price, 10) || 0;
-    const resolvedPrice = isDefaultPlanLevel ? 0 : Math.max(inputPrice, minPrice);
+    const inputCredit = isDefaultPlanLevel ? 0 : (parseInt(formData.creditPrice, 10) || 0);
+    const inputBase = isDefaultPlanLevel ? 0 : (parseInt(formData.basePrice, 10) || 0);
+    const resolvedCredit = isDefaultPlanLevel ? 0 : Math.max(inputCredit, minPrice);
+    const resolvedBase = isDefaultPlanLevel ? 0 : Math.max(0, inputBase);
 
     const payload = {
       displayName: formData.displayName.trim(),
-      price: resolvedPrice,
+      creditPriceVnd: resolvedCredit,
+      basePriceVnd: resolvedBase,
       description: formData.description || '',
       entitlement: {
         ...entitlement,
@@ -469,7 +489,8 @@ function PlanManagement() {
           displayName: formData.displayName.trim(),
           planScope,
           planLevel: formData.planLevel ? parseInt(formData.planLevel, 10) || 0 : 0,
-          price: payload.price,
+          creditPriceVnd: payload.creditPriceVnd,
+          basePriceVnd: payload.basePriceVnd,
           description: payload.description,
           entitlement: payload.entitlement,
           aiModelAssignments: payload.aiModelAssignments,
@@ -591,7 +612,9 @@ function PlanManagement() {
                 <TableHead className="w-[220px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.name')}</TableHead>
                 <TableHead className="w-[90px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.scope', 'Scope')}</TableHead>
                 <TableHead className="w-[80px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.level', 'Level')}</TableHead>
-                <TableHead className="w-[130px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.price')}</TableHead>
+                <TableHead className="w-[160px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">
+                  {t('subscription.table.totalPrice', { defaultValue: 'Giá niêm yết' })}
+                </TableHead>
                 <TableHead className="w-[90px] text-center font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.status')}</TableHead>
                 <TableHead className="w-[130px] text-right font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.actions')}</TableHead>
               </TableRow>

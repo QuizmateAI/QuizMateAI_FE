@@ -217,20 +217,6 @@ function enrichProgressWithActiveTaskShape(payload) {
   };
 }
 
-/**
- * Hook quản lý WebSocket connection cho realtime updates (STOMP over SockJS)
- * @param {Object} options - WebSocket options
- * @param {string} options.workspaceId - ID của workspace cần theo dõi
- * @param {Function} options.onMaterialUploaded - Callback khi có tài liệu mới được upload
- * @param {Function} options.onMaterialDeleted - Callback khi có tài liệu bị xóa
- * @param {Function} options.onMaterialUpdated - Callback khi có tài liệu được cập nhật
- * @param {Function} options.onGroupUpdate - Callback khi có cập nhật thành viên/lời mời/cấu hình group
- * @param {Function} options.onDiscussionUpdate - Callback khi có cập nhật realtime cho discussion trong group
- * @param {Function} options.onProgress - Callback khi có progress update
- * @param {Function} options.onWalletUpdate - Callback khi ví cá nhân thay đổi
- * @param {Function} options.onWorkspaceWalletUpdate - Callback khi ví workspace/group thay đổi
- * @param {boolean} options.enabled - Bật/tắt WebSocket connection (mặc định: true)
- */
 export function useWebSocket({
   workspaceId,
   onMaterialUploaded,
