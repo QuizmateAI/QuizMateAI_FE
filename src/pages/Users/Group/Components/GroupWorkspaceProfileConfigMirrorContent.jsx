@@ -135,6 +135,9 @@ function GroupWorkspaceProfileConfigMirrorContent({
   setRules,
   setShowProfileConfirm,
   setStep,
+  showExitConfirm,
+  setShowExitConfirm,
+  handleConfirmExit,
   shellClass,
   showProfileConfirm,
   statusNotice,
@@ -462,38 +465,6 @@ function GroupWorkspaceProfileConfigMirrorContent({
               <section className={cn('rounded-2xl border p-6', panelClass)}>
                 <div className={cn('mb-6 h-1 w-16 rounded-full', accentBarClass)} />
                 <div className="space-y-8">
-                  <div className={cn('border-b pb-8', sectionDividerClass)}>
-                    <div className="max-w-2xl space-y-1.5">
-                      <p className={fieldEyebrowClass}>{t('groupProfileConfig.stepTwo.modePrompt')}</p>
-                      <p className="text-base font-semibold">
-                        {t('groupProfileConfig.stepTwo.learningMode')} <span className="text-rose-500">*</span>
-                      </p>
-                      <p className={cn('text-sm leading-6', mutedClass)}>
-                        {t('groupProfileConfig.stepTwo.workflow.modeDescription')}
-                      </p>
-                    </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {LEARNING_MODES.map((item) => (
-                        <ChoiceCard
-                          key={item.value}
-                          active={learningMode === item.value}
-                          onClick={() => {
-                            setLearningMode(item.value);
-                            setErrors((prev) => ({ ...prev, learningMode: undefined }));
-                          }}
-                          icon={item.icon}
-                          title={t(item.labelKey, item.labelFallback)}
-                          description={item.value === 'STUDY_NEW'
-                            ? t('groupProfileConfig.stepTwo.studyNewDescription')
-                            : t('groupProfileConfig.stepTwo.reviewDescription')}
-                          disabled={loading || submitting}
-                          isDarkMode={isDarkMode}
-                        />
-                      ))}
-                    </div>
-                    <FieldError message={errors.learningMode} />
-                  </div>
-
                   <div className={cn('border-b pb-8', sectionDividerClass)}>
                     <div className="max-w-2xl space-y-1.5">
                       <label className="text-base font-semibold">{t('groupProfileConfig.stepTwo.knowledgeLabel')} <span className="text-rose-500">*</span></label>
@@ -907,6 +878,49 @@ function GroupWorkspaceProfileConfigMirrorContent({
           </div>
         </DialogFooter>
       </DialogContent>
+
+      {/* Exit confirm: chặn user thoát ngang khi onboarding chưa xong */}
+      <Dialog open={!!showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <DialogContent
+          hideClose
+          className={cn(
+            'sm:max-w-md rounded-2xl border p-0 overflow-hidden',
+            isDarkMode ? 'border-amber-500/30 bg-slate-900 text-white' : 'border-amber-200 bg-white text-slate-900',
+          )}
+        >
+          <div className={cn(
+            'border-b px-6 py-4',
+            isDarkMode ? 'border-amber-500/20 bg-amber-500/10' : 'border-amber-200/60 bg-amber-50/70',
+          )}>
+            <h3 className={cn('text-base font-bold', isDarkMode ? 'text-amber-100' : 'text-amber-900')}>
+              {translateOrFallback('groupWorkspaceProfileConfigMirror.exitConfirm.title', 'Thoát mà chưa lưu cấu hình?')}
+            </h3>
+            <p className={cn('mt-1 text-sm leading-relaxed', isDarkMode ? 'text-amber-100/85' : 'text-amber-900/80')}>
+              {translateOrFallback(
+                'groupWorkspaceProfileConfigMirror.exitConfirm.description',
+                'Bạn chưa hoàn tất bước 2 nên dữ liệu nhập sẽ không được lưu. Bạn có chắc muốn thoát?',
+              )}
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-2 px-6 py-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowExitConfirm(false)}
+              className={isDarkMode ? 'border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800' : ''}
+            >
+              {translateOrFallback('groupWorkspaceProfileConfigMirror.exitConfirm.stay', 'Tiếp tục cấu hình')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmExit}
+              className="bg-rose-500 text-white hover:bg-rose-600"
+            >
+              {translateOrFallback('groupWorkspaceProfileConfigMirror.exitConfirm.exit', 'Thoát luôn')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

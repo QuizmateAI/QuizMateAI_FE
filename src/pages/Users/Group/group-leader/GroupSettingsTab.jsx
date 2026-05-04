@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { updateWorkspace } from '@/api/WorkspaceAPI';
 import { toggleVisibility as apiToggleVisibility, deleteGroup as apiDeleteGroup } from '@/api/GroupAPI';
-import GroupProfileOverviewPanel from '../Components/GroupProfileOverviewPanel';
+import GroupSettingsActionsCard from '../Components/GroupSettingsActionsCard';
 
 function GroupSettingsTab({
   isDarkMode,
@@ -184,6 +184,17 @@ function GroupSettingsTab({
     setErrorMsg('');
   }, [group]);
 
+  const renderActionsCard = (variant) => (
+    <GroupSettingsActionsCard
+      group={group}
+      isLeader={isLeader}
+      isDarkMode={isDarkMode}
+      onOpenProfileConfig={onOpenProfileConfig}
+      profileEditLocked={profileEditLocked}
+      variant={variant}
+    />
+  );
+
   if (compactMode) {
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
@@ -292,14 +303,7 @@ function GroupSettingsTab({
           </section>
         )}
 
-        <GroupProfileOverviewPanel
-          group={group}
-          isDarkMode={isDarkMode}
-          isLeader={isLeader}
-          compact
-          onOpenProfileConfig={onOpenProfileConfig}
-          profileEditLocked={profileEditLocked}
-        />
+        {renderActionsCard('compact')}
 
         {isLeader ? (
           <section className={`rounded-2xl border p-5 ${isDarkMode ? 'border-red-400/20 bg-red-500/10 text-white' : 'border-red-200 bg-red-50/80 text-slate-900'}`}>
@@ -487,13 +491,7 @@ function GroupSettingsTab({
         </div>
       </section>
 
-      <GroupProfileOverviewPanel
-        group={group}
-        isDarkMode={isDarkMode}
-        isLeader={isLeader}
-        onOpenProfileConfig={onOpenProfileConfig}
-        profileEditLocked={profileEditLocked}
-      />
+      {renderActionsCard('full')}
 
       {/* Group Visibility Card – full mode */}
       {isLeader && (

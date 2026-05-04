@@ -7,6 +7,7 @@ import i18nInstance from '@/i18n';
 import { analyzeKnowledge, suggestProfileFields } from '@/api/StudyProfileAPI';
 import {
   confirmGroupWorkspaceProfile,
+  createGroupWithProfile,
   getGroupWorkspaceProfile,
   normalizeGroupWorkspaceProfile,
   saveGroupBasicStep,
@@ -233,6 +234,7 @@ function GroupWorkspaceProfileConfigMirror({
   const [statusNotice, setStatusNotice] = useState('');
   const [errors, setErrors] = useState({});
   const [showProfileConfirm, setShowProfileConfirm] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isPostOnboardingEdit, setIsPostOnboardingEdit] = useState(false);
 
   const [groupName, setGroupName] = useState('');
@@ -247,7 +249,7 @@ function GroupWorkspaceProfileConfigMirror({
   const [groupGoalSuggestions, setGroupGoalSuggestions] = useState([]);
   const [goalSuggestionStatus, setGoalSuggestionStatus] = useState('idle');
   const [goalSuggestionMessage, setGoalSuggestionMessage] = useState('');
-  const [learningMode, setLearningMode] = useState('');
+  const [learningMode, setLearningMode] = useState('STUDY_NEW');
   const [groupLearningGoal, setGroupLearningGoal] = useState('');
   const analysisTimerRef = useRef(null);
   const analysisAbortRef = useRef(null);
@@ -338,16 +340,11 @@ function GroupWorkspaceProfileConfigMirror({
       value: domain.trim() || t('groupProfileConfig.stepTwo.ready.pending'),
     },
     {
-      label: t('groupProfileConfig.stepTwo.ready.mode'),
-      ready: Boolean(learningMode),
-      value: summary.mode,
-    },
-    {
       label: t('groupProfileConfig.stepTwo.groupGoal'),
       ready: Boolean(groupLearningGoal.trim()),
       value: groupLearningGoal.trim() || t('groupProfileConfig.stepTwo.ready.pending'),
     },
-  ]), [domain, groupLearningGoal, knowledge, learningMode, summary.mode, t]);
+  ]), [domain, groupLearningGoal, knowledge, t]);
 
   const stepOnePreviewItems = useMemo(() => ([
     {
@@ -374,7 +371,6 @@ function GroupWorkspaceProfileConfigMirror({
   const canFinishStepTwo = Boolean(
     knowledge.trim()
     && domain.trim()
-    && learningMode
     && groupLearningGoal.trim()
   );
   const finishLabel = isPostOnboardingEdit
@@ -407,7 +403,6 @@ function GroupWorkspaceProfileConfigMirror({
         items: [
           { id: 'knowledge', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.knowledgeLabel', 'Shared knowledge scope'), value: knowledge.trim() || emptyLabel },
           { id: 'domain', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.domainLabel', 'Domain'), value: domain.trim() || emptyLabel },
-          { id: 'mode', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.modeLabel', 'Learning mode'), value: summary.mode || emptyLabel },
         ],
       },
       {
@@ -426,9 +421,7 @@ function GroupWorkspaceProfileConfigMirror({
     groupLearningGoal,
     groupName,
     knowledge,
-    learningMode,
     rules,
-    summary.mode,
     t,
   ]);
 
@@ -444,7 +437,7 @@ function GroupWorkspaceProfileConfigMirror({
         const response = await getGroupWorkspaceProfile(workspaceId);
         const profile = normalizeGroupWorkspaceProfile(extractApiData(response));
         if (cancelled || !profile) return;
-        const normalizedLearningMode = normalizeGroupLearningMode(profile.learningMode);
+        const normalizedLearningMode = normalizeGroupLearningMode(profile.learningMode) || 'STUDY_NEW';
         const nextIsPostOnboardingEdit = Boolean(profile.onboardingCompleted);
         setGroupName(normalizeGroupNameValue(profile.groupName));
         setRules(profile.rules || '');
@@ -668,7 +661,6 @@ function GroupWorkspaceProfileConfigMirror({
         nextErrors.domain = t('groupProfileConfig.validation.domain');
       }
     }
-    if (!learningMode) nextErrors.learningMode = t('groupProfileConfig.validation.learningMode');
     if (!groupLearningGoal.trim()) nextErrors.groupLearningGoal = t('groupProfileConfig.validation.groupGoal');
     setErrors((prev) => ({ ...prev, ...nextErrors }));
     if (Object.keys(nextErrors).length > 0) {
@@ -691,8 +683,18 @@ function GroupWorkspaceProfileConfigMirror({
     return Object.keys(nextErrors).length === 0;
   };
 
+  // Create-mode: không có workspaceId → wizard giữ data cục bộ, BE chỉ được gọi
+  // duy nhất khi user xác nhận xong bước 2 (atomic create-with-profile).
+  const isCreateMode = !workspaceId;
+
   const handleNext = async () => {
-    if (!workspaceId || loading || submitting || !validateStepOne()) return;
+    if (loading || submitting || !validateStepOne()) return;
+    if (isCreateMode) {
+      // Tạm trữ trong state, chưa gọi BE → không tạo workspace orphan
+      setStep(2);
+      setMaxUnlockedStep(2);
+      return;
+    }
     setSubmitting(true);
     setSaveError('');
     setStatusNotice('');
@@ -709,7 +711,7 @@ function GroupWorkspaceProfileConfigMirror({
 
   const handleConfirmSubmit = async () => {
     if (!validateStepTwo()) return;
-    if (!workspaceId || loading || submitting) {
+    if (loading || submitting) {
       return;
     }
     setSubmitting(true);
@@ -725,7 +727,37 @@ function GroupWorkspaceProfileConfigMirror({
         examName: null,
       };
 
-      if (isPostOnboardingEdit) {
+      let createdWorkspaceId = workspaceId;
+
+      if (isCreateMode) {
+        // Atomic create: BE tạo workspace + lưu basic + config + confirm trong 1 transaction.
+        // Nếu fail (validation, server error) → workspace không bao giờ được tạo.
+        const createResp = await createGroupWithProfile({
+          groupName,
+          rules,
+          defaultRoleOnJoin: 'MEMBER',
+          ...payload,
+        });
+        const created = createResp?.data?.data ?? createResp?.data ?? {};
+        createdWorkspaceId = created.workspaceId ?? created.id ?? null;
+        // Sau khi có workspaceId, gọi roadmap-config suggest + save (best-effort, fail silent)
+        if (payload.roadmapEnabled && createdWorkspaceId) {
+          try {
+            const suggestResponse = await suggestGroupRoadmapConfig(createdWorkspaceId);
+            const suggestion = suggestResponse?.data?.data ?? suggestResponse?.data ?? {};
+            await saveGroupRoadmapConfigStep(createdWorkspaceId, {
+              knowledgeLoad: suggestion.knowledgeLoad,
+              adaptationMode: suggestion.adaptationMode,
+              speedMode: suggestion.speedMode,
+              estimatedTotalDays: suggestion.estimatedTotalDays,
+              estimatedMinutesPerDay: suggestion.estimatedMinutesPerDay,
+              preLearningRequired: suggestion.preLearningRequired,
+            });
+          } catch (roadmapError) {
+            console.warn('[GroupProfile] roadmap-config suggest/save failed', roadmapError);
+          }
+        }
+      } else if (isPostOnboardingEdit) {
         await updateGroupConfigStep(workspaceId, payload);
       } else {
         await saveGroupConfigStep(workspaceId, payload);
@@ -757,7 +789,8 @@ function GroupWorkspaceProfileConfigMirror({
           : t('groupProfileConfig.messages.completed')
       );
       if (onComplete) {
-        await Promise.resolve(onComplete());
+        // Pass createdWorkspaceId nếu mới tạo, để parent biết navigate đi đâu
+        await Promise.resolve(onComplete(createdWorkspaceId));
       } else {
         onOpenChange(false);
       }
@@ -769,8 +802,15 @@ function GroupWorkspaceProfileConfigMirror({
     }
   };
 
+  // Onboarding chưa xong → cần confirm trước khi thoát để user không nhầm thoát mất dữ liệu
+  const requiresExitConfirm = !isPostOnboardingEdit;
+
   const handleDialogOpenChange = (nextOpen) => {
     if (!canClose && !nextOpen) return;
+    if (!nextOpen && requiresExitConfirm) {
+      setShowExitConfirm(true);
+      return;
+    }
     onOpenChange(nextOpen);
   };
 
@@ -785,6 +825,16 @@ function GroupWorkspaceProfileConfigMirror({
       return;
     }
 
+    if (requiresExitConfirm) {
+      setShowExitConfirm(true);
+      return;
+    }
+
+    onOpenChange(false);
+  };
+
+  const handleConfirmExit = () => {
+    setShowExitConfirm(false);
     onOpenChange(false);
   };
 
@@ -869,6 +919,9 @@ function GroupWorkspaceProfileConfigMirror({
       setRules={setRules}
       setShowProfileConfirm={setShowProfileConfirm}
       setStep={setStep}
+      showExitConfirm={showExitConfirm}
+      setShowExitConfirm={setShowExitConfirm}
+      handleConfirmExit={handleConfirmExit}
       shellClass={shellClass}
       showProfileConfirm={showProfileConfirm}
       statusNotice={statusNotice}
