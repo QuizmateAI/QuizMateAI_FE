@@ -190,17 +190,21 @@ function PlanFormWizard({
     });
 
     setFormData((prev) => {
-      if (String(prev.price ?? '') === '0') return prev;
-      return { ...prev, price: '0' };
+      const c = String(prev.creditPrice ?? '');
+      const b = String(prev.basePrice ?? '');
+      if (c === '0' && b === '0') return prev;
+      return { ...prev, creditPrice: '0', basePrice: '0' };
     });
   }, [isDefaultPlanLevel, setEntitlement, setFormData]);
 
   const includedCredits = Number(entitlement.planIncludedCredits) || 0;
   const minPrice = includedCredits * creditUnitPrice;
-  const currentPrice = Number(formData.price) || 0;
-  const effectivePrice = Math.max(currentPrice, minPrice);
-  const hasCustomPrice = currentPrice > minPrice;
-  const willAutoRaisePrice = currentPrice > 0 && currentPrice < minPrice;
+  const currentCreditPrice = Number(formData.creditPrice) || 0;
+  const currentBasePrice = Number(formData.basePrice) || 0;
+  const effectiveCreditPrice = Math.max(currentCreditPrice, minPrice);
+  const effectiveTotalPrice = effectiveCreditPrice + currentBasePrice;
+  const hasCustomCreditPrice = currentCreditPrice > minPrice;
+  const willAutoRaiseCredit = currentCreditPrice > 0 && currentCreditPrice < minPrice;
 
   useEffect(() => {
     if (!hasGroupInheritance || editingPlan) return;
@@ -228,31 +232,35 @@ function PlanFormWizard({
     setEntitlement((prev) => ({ ...prev, planIncludedCredits: nextCreditsValue }));
 
     if (nextCreditsValue === '') {
-      setFormData((prev) => ({ ...prev, price: '' }));
+      setFormData((prev) => ({ ...prev, creditPrice: '' }));
       return;
     }
 
     const parsedCredits = Number(nextCreditsValue);
     if (!Number.isFinite(parsedCredits)) return;
 
-    const inferredPrice = Math.max(0, Math.floor(parsedCredits * creditUnitPrice));
-    setFormData((prev) => ({ ...prev, price: String(inferredPrice) }));
+    const inferredCredit = Math.max(0, Math.floor(parsedCredits * creditUnitPrice));
+    setFormData((prev) => ({ ...prev, creditPrice: String(inferredCredit) }));
   };
 
-  const handlePriceChange = (event) => {
-    const nextPriceValue = event.target.value;
-    setFormData((prev) => ({ ...prev, price: nextPriceValue }));
+  const handleCreditPriceChange = (event) => {
+    const nextValue = event.target.value;
+    setFormData((prev) => ({ ...prev, creditPrice: nextValue }));
 
-    if (nextPriceValue === '') {
+    if (nextValue === '') {
       setEntitlement((prev) => ({ ...prev, planIncludedCredits: '' }));
       return;
     }
 
-    const parsedPrice = Number(nextPriceValue);
-    if (!Number.isFinite(parsedPrice) || creditUnitPrice <= 0) return;
+    const parsedCredit = Number(nextValue);
+    if (!Number.isFinite(parsedCredit) || creditUnitPrice <= 0) return;
 
-    const inferredCredits = Math.max(0, Math.floor(parsedPrice / creditUnitPrice));
+    const inferredCredits = Math.max(0, Math.floor(parsedCredit / creditUnitPrice));
     setEntitlement((prev) => ({ ...prev, planIncludedCredits: String(inferredCredits) }));
+  };
+
+  const handleBasePriceChange = (event) => {
+    setFormData((prev) => ({ ...prev, basePrice: event.target.value }));
   };
 
   const getIndividualPlanLimitError = () => {
@@ -352,8 +360,9 @@ function PlanFormWizard({
       assignedOverrideCount={assignedOverrideCount}
       availableAiModels={availableAiModels}
       aiModelAssignments={aiModelAssignments}
-      currentPrice={currentPrice}
-      effectivePrice={effectivePrice}
+      currentCreditPrice={currentCreditPrice}
+      currentBasePrice={currentBasePrice}
+      effectiveTotalPrice={effectiveTotalPrice}
       enabledFeatures={enabledFeatures}
       entitlement={entitlement}
       entitlementToggles={entitlementToggles}
@@ -363,8 +372,9 @@ function PlanFormWizard({
       getScopeLabel={getScopeLabel}
       formatCurrency={formatCurrency}
       handleIncludedCreditsChange={handleIncludedCreditsChange}
-      handlePriceChange={handlePriceChange}
-      hasCustomPrice={hasCustomPrice}
+      handleCreditPriceChange={handleCreditPriceChange}
+      handleBasePriceChange={handleBasePriceChange}
+      hasCustomCreditPrice={hasCustomCreditPrice}
       hasGroupInheritance={hasGroupInheritance}
       highestActiveUserPlanEntitlement={highestActiveUserPlanEntitlement}
       includedCredits={includedCredits}
@@ -386,7 +396,7 @@ function PlanFormWizard({
       showPlanLevel={showPlanLevel}
       t={t}
       textareaCls={textareaCls}
-      willAutoRaisePrice={willAutoRaisePrice}
+      willAutoRaiseCredit={willAutoRaiseCredit}
     />
   );
 
@@ -532,7 +542,7 @@ function PlanFormWizard({
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   {[
-                    { label: t('subscription.table.price', 'Price'), value: formatCurrency(effectivePrice, t, locale), icon: Coins },
+                    { label: t('subscription.wizard.sidebar.totalListPrice', { defaultValue: 'Giá niêm yết' }), value: formatCurrency(effectiveTotalPrice, t, locale), icon: Coins },
                     { label: 'Scope', value: getScopeLabel(formData.planScope, t), icon: formData.planScope === 'WORKSPACE' ? Users : User },
                   ].map((item) => {
                     const Icon = item.icon;
