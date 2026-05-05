@@ -364,6 +364,14 @@ export const refreshAttemptAssessment = async (attemptId) => {
   return response;
 };
 
+// Cảnh báo trước khi nộp bài: nếu attempt là lần đầu của user có feature AI assessment
+// và tỷ lệ trả lời chưa đủ ngưỡng → trả shouldWarnNotAssessed=true để FE hiện cảnh báo
+// "Nộp bây giờ sẽ không được AI đánh giá".
+export const getAttemptAssessmentWarning = async (attemptId) => {
+  const response = await api.get(`/quiz-attempts/${attemptId}/assessment-warning`);
+  return response;
+};
+
 export const getActiveTask = async () => {
   const response = await api.get('/v1/quiz/active-task');
   return response;
@@ -435,6 +443,8 @@ export const QUESTION_TYPE_ID_MAP = {
   3: 'shortAnswer',
   4: 'trueFalse',
   5: 'fillBlank',
+  6: 'matching',
+  7: 'imageBased',
 };
 
 // Map difficulty frontend sang backend
