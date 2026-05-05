@@ -31,6 +31,13 @@ function startOfMonth(date) {
   return next;
 }
 
+function startOfYear(date) {
+  const next = new Date(date);
+  next.setMonth(0, 1);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
 const PRESETS = [
   {
     id: 'today',
@@ -68,6 +75,15 @@ const PRESETS = [
     compute: () => {
       const now = new Date();
       return { from: formatDateTimeLocal(startOfMonth(now)), to: formatDateTimeLocal(now) };
+    },
+  },
+  {
+    id: 'thisYear',
+    labelKey: 'common.dateRange.thisYear',
+    defaultLabel: 'Năm nay',
+    compute: () => {
+      const now = new Date();
+      return { from: formatDateTimeLocal(startOfYear(now)), to: formatDateTimeLocal(now) };
     },
   },
 ];

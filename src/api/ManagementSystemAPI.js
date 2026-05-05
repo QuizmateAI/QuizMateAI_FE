@@ -112,6 +112,46 @@ export const getPlanPurchaseBuyers = async (planCatalogId, { from, to, page = 0,
   return response;
 };
 
+/** Lấy toàn bộ version history của 1 plan code (mới → cũ, gồm cả historical). Cần plan:write. */
+export const getPlanVersionHistory = async (code) => {
+  if (!code) throw new Error('Plan code is required');
+  const response = await api.get(`/plan-catalog/${encodeURIComponent(code)}/history`);
+  return response;
+};
+
+/** Thống kê mua credit (USER_CREDIT + WORKSPACE_CREDIT) gom theo credit_package, COMPLETED. Cần payment:read. */
+export const getCreditPurchaseSummary = async ({ from, to } = {}) => {
+  const params = new URLSearchParams();
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const q = params.toString();
+  const response = await api.get(`/management/stats/credit-purchases${q ? `?${q}` : ''}`);
+  return response;
+};
+
+/** Danh sách người mua của 1 credit package (omit packageId = custom credit). Cần payment:read. */
+export const getCreditPurchaseBuyers = async ({ packageId, from, to, page = 0, size = 20 } = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  if (packageId != null) params.append('packageId', String(packageId));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const response = await api.get(`/management/stats/credit-purchases/buyers?${params.toString()}`);
+  return response;
+};
+
+/** Time-series doanh thu daily/weekly/monthly tách theo PaymentTargetType + growth %. Cần payment:read. */
+export const getRevenueTimeseries = async ({ from, to, bucket = 'DAY' } = {}) => {
+  const params = new URLSearchParams();
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  if (bucket) params.append('bucket', String(bucket));
+  const q = params.toString();
+  const response = await api.get(`/management/stats/revenue-timeseries${q ? `?${q}` : ''}`);
+  return response;
+};
+
 export const listRoles = async () => {
   const response = await api.get('/rbac/system/roles');
   return response;

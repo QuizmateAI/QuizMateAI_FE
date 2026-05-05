@@ -183,15 +183,15 @@ function getStatusBadgeClass(status, isDarkMode) {
 
 function MetricCard({ label, value, icon: Icon, tone, isDarkMode, subtext }) {
   return (
-    <div className={`rounded-2xl border p-5 transition-colors ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-      <div className="flex items-start justify-between gap-4">
+    <div className={`rounded-xl border p-3.5 transition-colors ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'}`}>
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
-          <p className={`mt-2 text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
-          {subtext ? <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p> : null}
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{label}</p>
+          <p className={`mt-1.5 text-lg font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
+          {subtext ? <p className={`mt-0.5 text-[11px] leading-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p> : null}
         </div>
-        <div className={`rounded-2xl p-3 ${tone}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`shrink-0 rounded-lg p-2 ${tone}`}>
+          <Icon className="h-4 w-4" />
         </div>
       </div>
     </div>
@@ -398,7 +398,7 @@ function AiCostManagement() {
         )}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricCard label={t('aiCosts.metrics.requests')} value={formatInteger(summary?.requestCount)} icon={DatabaseZap} tone="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.matchedRequestCount)} ${t('aiCosts.metrics.matched')}`} />
         <MetricCard label={t('aiCosts.metrics.revenue')} value={formatVnd(summary?.totalChargedVnd)} icon={Wallet} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.totalChargedCredit)} ${t('aiCosts.metrics.credits')}`} />
         <MetricCard label={t('aiCosts.metrics.revenueMatched', 'Doanh thu khớp audit')} value={formatVnd(summary?.totalChargedVndMatchedAudit)} icon={Layers} tone="bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300" isDarkMode={isDarkMode} subtext={t('aiCosts.metrics.revenueMatchedHint', 'Trên request có COGS')} />
