@@ -138,6 +138,39 @@ function getValueFormat(key = '') {
 
 const SYSTEM_SETTINGS_QUERY_KEY = ['admin', 'systemSettings'];
 
+// Friendly title cho từng setting key — hiển thị trên UI thay cho code-style key.
+// Key kỹ thuật vẫn được giữ trong tooltip để dev/admin tra cứu khi cần.
+const SETTING_TITLES = {
+  'credit.unit_price_vnd': 'Đơn giá 1 credit',
+  'credit.custom_min_units': 'Số credit tối thiểu khi mua lẻ',
+  'workspace.quiz.assessment.min_answered_percent': 'Tỷ lệ trả lời tối thiểu để AI đánh giá',
+  'workspace.group.slot_unit_price_vnd': 'Đơn giá slot thành viên nhóm',
+  'workspace.group.free_member_slot_limit': 'Slot thành viên miễn phí mặc định',
+  'workspace.group.max_slots_per_workspace': 'Slot thành viên tối đa / nhóm',
+  'user.plan.duration_in_days': 'Thời hạn gói cá nhân (ngày)',
+  'workspace.plan.duration_in_days': 'Thời hạn gói nhóm (ngày)',
+  'user.welcome_credit_units': 'Credit chào mừng cho user mới',
+  'learning.pre_pass_score_percent': 'Điểm pass Pre-learning (%)',
+  'learning.post_pass_score_percent': 'Điểm pass Post-learning (%)',
+  'quiz.max_questions_per_quiz': 'Số câu hỏi tối đa / quiz',
+  'mock_test.max_saved_templates_per_user': 'Số template tối đa / user',
+  'community.max_comment_length': 'Độ dài tối đa của comment',
+  'community.max_links_per_comment': 'Số link tối đa / comment',
+};
+
+/**
+ * Trả về title friendly cho 1 setting key. Fallback: humanize key (vd "user.welcome_credit_units"
+ * → "User welcome credit units") nếu chưa có mapping. Cập nhật SETTING_TITLES khi thêm key mới.
+ */
+function getSettingTitle(key = '') {
+  if (SETTING_TITLES[key]) return SETTING_TITLES[key];
+  return key
+    .split('.')
+    .pop()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function getSettingCategory(key = '') {
   if (
     key.startsWith('credit.')
@@ -599,13 +632,12 @@ function SystemSettingManagement() {
 
                         <div className="min-w-0 space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <code className={cn(
-                              'inline-flex max-w-full rounded-md border px-2.5 py-1 font-mono text-[11px] font-semibold',
-                              dk ? 'border-slate-700 bg-slate-950 text-cyan-200' : 'border-slate-200 bg-slate-50 text-cyan-700'
-                            )}
+                            <h3
+                              className={cn('truncate text-sm font-bold', strongTextClass)}
+                              title={setting.key}
                             >
-                              {setting.key}
-                            </code>
+                              {getSettingTitle(setting.key)}
+                            </h3>
                             <Badge variant="outline" className={cn('rounded-full border px-2.5 py-1 text-[11px] font-semibold', categoryMeta.chipClass)}>
                               {t(`systemSettings.categories.${setting.category}`)}
                             </Badge>
@@ -719,13 +751,12 @@ function SystemSettingManagement() {
 
                             <div className="min-w-0 space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
-                                <code className={cn(
-                                  'inline-flex max-w-full rounded-md border px-2.5 py-1 font-mono text-[11px] font-semibold',
-                                  dk ? 'border-slate-700 bg-slate-950 text-cyan-200' : 'border-slate-200 bg-slate-50 text-cyan-700'
-                                )}
+                                <h3
+                                  className={cn('truncate text-sm font-bold', strongTextClass)}
+                                  title={setting.key}
                                 >
-                                  {setting.key}
-                                </code>
+                                  {getSettingTitle(setting.key)}
+                                </h3>
                                 <Badge variant="outline" className={cn('rounded-full border px-2.5 py-1 text-[11px] font-semibold', categoryMeta.chipClass)}>
                                   {t(`systemSettings.categories.${setting.category}`)}
                                 </Badge>
@@ -845,6 +876,7 @@ function SystemSettingManagement() {
         getFormatLabel={getFormatLabel}
         getInputHint={getInputHint}
         getValueFormat={getValueFormat}
+        getSettingTitle={getSettingTitle}
         categoryMeta={editSetting ? (CATEGORY_META[editSetting.category] || CATEGORY_META.other) : CATEGORY_META.other}
       />
     </div>

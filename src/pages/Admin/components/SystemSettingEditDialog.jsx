@@ -28,6 +28,7 @@ export default function SystemSettingEditDialog({
   getFormatLabel,
   getInputHint,
   getValueFormat,
+  getSettingTitle,
   categoryMeta,
 }) {
   const subtlePanelClass = isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80';
@@ -50,12 +51,9 @@ export default function SystemSettingEditDialog({
             <div className="space-y-5">
               <div className={cn('rounded-xl border px-4 py-4', subtlePanelClass)}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <code className={cn(
-                    'inline-flex rounded-md border px-2.5 py-1 font-mono text-[11px] font-semibold',
-                    isDarkMode ? 'border-slate-700 bg-slate-950 text-cyan-200' : 'border-slate-200 bg-white text-cyan-700'
-                  )}>
-                    {setting.key}
-                  </code>
+                  <h3 className={cn('text-sm font-bold', strongTextClass)} title={setting.key}>
+                    {getSettingTitle ? getSettingTitle(setting.key) : setting.key}
+                  </h3>
                   <Badge
                     variant="outline"
                     className={cn('rounded-full border px-2.5 py-1 text-[11px] font-semibold', categoryMeta.chipClass)}
@@ -72,6 +70,9 @@ export default function SystemSettingEditDialog({
                     {getFormatLabel(setting.key)}
                   </Badge>
                 </div>
+                <p className={cn('mt-1 font-mono text-[10px]', mutedTextClass)} title="Setting key (technical)">
+                  {setting.key}
+                </p>
 
                 {setting.description && (
                   <div className={cn(
