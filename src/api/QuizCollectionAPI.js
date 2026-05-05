@@ -79,3 +79,15 @@ export const startQuizCollectionRandomPractice = async (
   );
   return response;
 };
+
+export const startQuizCollectionAdvancedPractice = async (
+  collectionId,
+  payload,
+  { isCompanionMode = false, isPracticeMode = true } = {},
+) => {
+  const response = await api.post(
+    `/quiz-collections/${collectionId}/advanced-practice:start?isCompanionMode=${isCompanionMode}&isPracticeMode=${isPracticeMode}`,
+    payload,
+  );
+  return response;
+};

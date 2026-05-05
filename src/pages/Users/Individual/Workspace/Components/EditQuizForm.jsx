@@ -640,7 +640,9 @@ function EditQuizForm({
                 </select>
               )}
               {(q.type === "fillBlank" || q.type === "shortAnswer") && (
-                <input className={inputCls} placeholder={t("workspace.quiz.correctAnswer")} value={q.correctAnswer || ""}
+                <input className={inputCls} placeholder={q.type === "shortAnswer"
+                  ? t("workspace.quiz.expectedAnswer", "Expected answer")
+                  : t("workspace.quiz.correctAnswer")} value={q.correctAnswer || ""}
                   onChange={(e) => updateQuestionField(qIdx, "correctAnswer", e.target.value)} />
               )}
             </div>
