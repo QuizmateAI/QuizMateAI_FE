@@ -705,8 +705,13 @@ function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEd
             {quiz?.overallDifficulty && (
               <InfoChip icon={BarChart3} label={t("mockTestForms.common.overallDifficulty", "Overall difficulty")} value={t(`mockTestForms.common.difficulty${quiz.overallDifficulty.charAt(0) + quiz.overallDifficulty.slice(1).toLowerCase()}`, quiz.overallDifficulty.toLowerCase())} isDarkMode={isDarkMode} />
             )}
-            {quiz?.passScore != null && (
-              <InfoChip icon={Target} label={t("mockTestForms.common.passingScore", "Passing score")} value={quiz.passScore} isDarkMode={isDarkMode} />
+            {Number(quiz?.passScore) > 0 && (
+              <InfoChip
+                icon={Target}
+                label={t("mockTestForms.common.passingScore", "Passing score")}
+                value={Number(quiz?.maxScore) > 0 ? `${quiz.passScore} / ${quiz.maxScore}` : `${quiz.passScore}`}
+                isDarkMode={isDarkMode}
+              />
             )}
             {quiz?.maxAttempt != null && (
               <InfoChip icon={Hash} label={t("mockTestForms.common.maxAttempt", "Max attempts")} value={quiz.maxAttempt} isDarkMode={isDarkMode} />
