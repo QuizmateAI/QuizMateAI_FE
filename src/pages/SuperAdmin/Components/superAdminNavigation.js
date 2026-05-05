@@ -65,9 +65,24 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
     ],
   },
   {
+    id: 'revenue-reports',
+    labelKey: 'sidebarSections.revenueReports',
+    defaultLabel: 'Báo cáo doanh thu',
+    items: [
+      {
+        id: 'plan-purchases',
+        labelKey: 'sidebar.planPurchases',
+        defaultLabel: 'Báo cáo gói trả phí',
+        icon: PieChart,
+        to: '/super-admin/plan-purchases',
+        matchPrefix: true,
+      },
+    ],
+  },
+  {
     id: 'commerce',
     labelKey: 'sidebarSections.commerce',
-    defaultLabel: 'Commerce',
+    defaultLabel: 'Quản lý thương mại',
     items: [
       {
         id: 'plans',
@@ -88,25 +103,17 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
       {
         id: 'payments',
         labelKey: 'sidebar.payments',
-        defaultLabel: 'Payments',
+        defaultLabel: 'Lịch sử giao dịch',
         icon: Banknote,
         to: '/super-admin/payments',
-        matchPrefix: true,
-      },
-      {
-        id: 'plan-purchases',
-        labelKey: 'sidebar.planPurchases',
-        defaultLabel: 'Báo cáo gói & biên',
-        icon: PieChart,
-        to: '/super-admin/plan-purchases',
         matchPrefix: true,
       },
     ],
   },
   {
-    id: 'ai-usage-commerce',
-    labelKey: 'sidebarSections.aiUsageCommerce',
-    defaultLabel: 'Chi phí & nhật ký AI',
+    id: 'ai-system',
+    labelKey: 'sidebarSections.aiSystemLogs',
+    defaultLabel: 'Hệ thống AI',
     items: [
       {
         id: 'ai-costs',

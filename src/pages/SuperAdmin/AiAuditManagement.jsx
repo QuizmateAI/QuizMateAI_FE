@@ -15,6 +15,8 @@ import {
   KeyRound,
   Layers,
   RefreshCw,
+  Search,
+  SlidersHorizontal,
   Sparkles,
   UserRound,
   Wallet,
@@ -25,9 +27,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -273,26 +278,26 @@ function getAuthToken() {
 
 function MetricCard({ icon: Icon, label, value, tone, isDarkMode, subtext }) {
   return (
-    <Card className={`rounded-3xl border shadow-sm transition-colors ${
+    <Card className={`rounded-xl border shadow-sm transition-colors ${
       isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'
     }`}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-5">
-          <div className="min-w-0">
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+      <CardContent className="p-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
               {label}
             </p>
-            <p className={`mt-3 text-[1.85rem] font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            <p className={`mt-1.5 truncate text-lg font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {value}
             </p>
             {subtext ? (
-              <p className={`mt-2 text-xs leading-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              <p className={`mt-0.5 line-clamp-2 text-[11px] leading-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                 {subtext}
               </p>
             ) : null}
           </div>
-          <div className={`shrink-0 rounded-2xl p-3 ${tone}`}>
-            <Icon className="h-5 w-5" />
+          <div className={`shrink-0 rounded-lg p-2 ${tone}`}>
+            <Icon className="h-4 w-4" />
           </div>
         </div>
       </CardContent>
@@ -313,6 +318,10 @@ function AiAuditManagement() {
   const tableStroke = isDarkMode ? 'border-slate-700' : 'border-slate-300';
 
   const [filters, setFilters] = useState(createEmptyAuditFilters);
+  // Draft filters for the advanced filter dialog. User edits draft, click Apply → commit to filters.
+  // Pattern same as AiCostManagement để giữ UX nhất quán.
+  const [draftFilters, setDraftFilters] = useState(createEmptyAuditFilters);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(null);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [page, setPage] = useState(0);
@@ -494,6 +503,32 @@ function AiAuditManagement() {
     setPage(0);
   };
 
+  // Filter Dialog handlers — sync draft với filters khi mở dialog, commit về filters khi Apply.
+  const handleOpenFilterDialog = () => {
+    setDraftFilters({ ...filters });
+    setIsFilterDialogOpen(true);
+  };
+  const handleDraftFilterChange = (field, value) => {
+    setDraftFilters((prev) => ({ ...prev, [field]: value }));
+  };
+  const handleApplyFilters = () => {
+    setFilters({ ...draftFilters });
+    setPage(0);
+    setIsFilterDialogOpen(false);
+  };
+  const handleResetFilters = () => {
+    const cleared = createEmptyAuditFilters();
+    setDraftFilters(cleared);
+    setFilters(cleared);
+    setPage(0);
+  };
+
+  // Đếm số filter đang active (trừ from/to vì DateRangeChips quản lý riêng).
+  const activeFilterCount = useMemo(() => {
+    const exclude = new Set(['from', 'to']);
+    return Object.entries(filters).filter(([k, v]) => !exclude.has(k) && v !== '' && v != null).length;
+  }, [filters]);
+
   const openAuditDetail = async (auditId) => {
     setSelectedAuditId(auditId);
     setIsDetailOpen(true);
@@ -570,7 +605,7 @@ function AiAuditManagement() {
         )}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
           icon={Activity}
           label={t('aiAudit.metrics.totalRequests', 'Total requests')}
@@ -639,8 +674,135 @@ function AiAuditManagement() {
             onChange={handleDateRangeChipChange}
             isDarkMode={isDarkMode}
           />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleOpenFilterDialog}
+            className={`rounded-xl ${isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}`}
+          >
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            {t('aiAudit.filters.open', 'Bộ lọc')}
+            {activeFilterCount > 0 ? (
+              <span className={`ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+                isDarkMode ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
         </div>
       </div>
+
+      {/* Advanced filter dialog — pattern giống AiCostManagement */}
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent className={`sm:max-w-4xl ${isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : 'bg-white'}`}>
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? 'text-white' : 'text-slate-900'}>
+              {t('aiAudit.filters.dialogTitle', 'Lọc nhật ký AI')}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
+              {t('aiAudit.filters.dialogDescription', 'Lọc theo người dùng, provider, status, category, feature key, task ID hoặc khoảng thời gian.')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.taskId', 'Task ID')}</Label>
+              <Input
+                value={draftFilters.taskId}
+                onChange={(e) => handleDraftFilterChange('taskId', e.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="task-..."
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.email', 'Email người dùng')}</Label>
+              <Input
+                value={draftFilters.actorEmail}
+                onChange={(e) => handleDraftFilterChange('actorEmail', e.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="user@example.com"
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.featureKey', 'Feature key')}</Label>
+              <Input
+                value={draftFilters.featureKey}
+                onChange={(e) => handleDraftFilterChange('featureKey', e.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="QUIZ_GENERATE..."
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.provider', 'Provider')}</Label>
+              <select
+                value={draftFilters.provider}
+                onChange={(e) => handleDraftFilterChange('provider', e.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiAudit.filters.allProviders', 'Tất cả provider')}</option>
+                <option value="OPENAI">OPENAI</option>
+                <option value="GEMINI">GEMINI</option>
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.status', 'Trạng thái')}</Label>
+              <select
+                value={draftFilters.status}
+                onChange={(e) => handleDraftFilterChange('status', e.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiAudit.filters.allStatuses', 'Tất cả trạng thái')}</option>
+                <option value="SUCCESS">SUCCESS</option>
+                <option value="FAILED">FAILED</option>
+                <option value="TIMEOUT">TIMEOUT</option>
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.category', 'Phân loại')}</Label>
+              <select
+                value={draftFilters.category}
+                onChange={(e) => handleDraftFilterChange('category', e.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiAudit.filters.allCategories', 'Tất cả')}</option>
+                <option value="SYSTEM">SYSTEM</option>
+                <option value="PLAN_BASED">PLAN_BASED</option>
+              </select>
+            </div>
+            <div className="lg:col-span-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.from', 'Từ')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={draftFilters.from}
+                  onChange={(e) => handleDraftFilterChange('from', e.target.value)}
+                  className={`mt-1.5 w-full ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                />
+              </div>
+              <div>
+                <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.to', 'Đến')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={draftFilters.to}
+                  onChange={(e) => handleDraftFilterChange('to', e.target.value)}
+                  className={`mt-1.5 w-full ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={handleResetFilters}>
+              {t('aiAudit.filters.clear', 'Xóa lọc')}
+            </Button>
+            <Button onClick={handleApplyFilters}>
+              <Search className="mr-2 h-4 w-4" />
+              {t('aiAudit.filters.apply', 'Áp dụng')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-100 px-4 py-3 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
