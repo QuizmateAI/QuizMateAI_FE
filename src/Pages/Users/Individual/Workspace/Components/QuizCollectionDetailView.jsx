@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Search,
   Shuffle,
+  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -46,6 +47,7 @@ import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { buildQuizAttemptPath } from "@/lib/routePaths";
 import { cn } from "@/lib/utils";
+import { getQuizDifficultyLabel, getQuizQuestionTypeLabel, QUESTION_TYPE_LABEL_FALLBACKS } from "@/lib/quizQuestionTypes";
 
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
@@ -55,15 +57,9 @@ function formatShortDate(dateStr) {
 }
 
 function resolveQuestionTypeLabel(question, t) {
-  const raw = String(question?.questionType || question?.questionTypeName || "").trim();
-  if (raw) return raw;
-  const questionTypeId = Number(question?.questionTypeId);
-  if (questionTypeId === 1) return t("workspace.quizCollection.questionTypes.single", "Single choice");
-  if (questionTypeId === 2) return t("workspace.quizCollection.questionTypes.multi", "Multiple choice");
-  if (questionTypeId === 3) return t("workspace.quizCollection.questionTypes.short", "Short answer");
-  if (questionTypeId === 4) return t("workspace.quizCollection.questionTypes.trueFalse", "True/False");
-  if (questionTypeId === 5) return t("workspace.quizCollection.questionTypes.fillBlank", "Fill blank");
-  return t("quizListView.cards.notAvailable", "N/A");
+  const normalizedType = String(question?.questionType || question?.questionTypeName || "").toUpperCase();
+  const fallbackLabel = QUESTION_TYPE_LABEL_FALLBACKS[normalizedType] || normalizedType || "N/A";
+  return getQuizQuestionTypeLabel(normalizedType, t) || fallbackLabel;
 }
 
 function getQuestionCatalogId(question) {
@@ -75,6 +71,7 @@ function QuizCollectionDetailView({
   workspaceId,
   collection,
   onBack,
+  onStartAdvancedPractice,
   onUpdated,
   onDeleted,
 }) {
@@ -201,6 +198,7 @@ function QuizCollectionDetailView({
       const quizId = Number(quiz?.quizId ?? quiz?.id);
       if (!Number.isInteger(quizId) || quizId <= 0) return false;
       if (quizId === practiceQuizId) return false;
+      if (quiz?.myAttempted !== true) return false;
       if (quiz?.collectionBacking === true) return false;
       if (Number(quiz?.roadmapId) > 0 || Number(quiz?.phaseId) > 0 || Number(quiz?.knowledgeId) > 0) return false;
       if (deferredQuizSearch) {
@@ -261,7 +259,7 @@ function QuizCollectionDetailView({
         status: currentCollection?.status || "ACTIVE",
       });
       const updated = unwrapApiData(response);
-      showSuccess(t("workspace.quizCollection.updateSuccess", "Đã cập nhật bộ sưu tập."));
+      showSuccess(t("quizCollection.updateSuccess", "Đã cập nhật bộ sưu tập."));
       setEditOpen(false);
       onUpdated?.(updated);
       await refetchCollection();
@@ -277,7 +275,7 @@ function QuizCollectionDetailView({
     setDeleting(true);
     try {
       await deleteQuizCollection(collectionId);
-      showSuccess(t("workspace.quizCollection.deleteSuccess", "Đã xóa bộ sưu tập."));
+      showSuccess(t("quizCollection.deleteSuccess", "Đã xóa bộ sưu tập."));
       setDeleteOpen(false);
       onDeleted?.(currentCollection);
     } catch (error) {
@@ -293,7 +291,7 @@ function QuizCollectionDetailView({
     try {
       const response = await importQuizzesToCollection(collectionId, selectedQuizIds);
       const updated = unwrapApiData(response);
-      showSuccess(t("workspace.quizCollection.importQuizSuccess", "Đã import quiz vào bộ sưu tập."));
+      showSuccess(t("quizCollection.importQuizSuccess", "Đã import quiz vào bộ sưu tập."));
       setSelectedQuizIds([]);
       onUpdated?.(updated);
       await refreshAll();
@@ -310,7 +308,7 @@ function QuizCollectionDetailView({
     try {
       const response = await importQuestionsToCollection(collectionId, selectedQuestionIds);
       const updated = unwrapApiData(response);
-      showSuccess(t("workspace.quizCollection.importQuestionSuccess", "Đã import câu hỏi vào bộ sưu tập."));
+      showSuccess(t("quizCollection.importQuestionSuccess", "Đã import câu hỏi vào bộ sưu tập."));
       setSelectedQuestionIds([]);
       onUpdated?.(updated || currentCollection);
       await refreshAll();
@@ -327,7 +325,7 @@ function QuizCollectionDetailView({
     setDeletingQuestionId(normalizedQuestionId);
     try {
       await deleteQuizCollectionQuestion(collectionId, normalizedQuestionId);
-      showSuccess(t("workspace.quizCollection.deleteQuestionSuccess", "Đã xóa câu hỏi khỏi bộ sưu tập."));
+      showSuccess(t("quizCollection.deleteQuestionSuccess", "Đã xóa câu hỏi khỏi bộ sưu tập."));
       await refreshAll();
     } catch (error) {
       showError(getErrorMessage(t, error));
@@ -339,7 +337,7 @@ function QuizCollectionDetailView({
   const navigateToPractice = (attempt, fallbackQuizId) => {
     const nextQuizId = Number(attempt?.quizId ?? fallbackQuizId);
     if (!Number.isInteger(nextQuizId) || nextQuizId <= 0) {
-      throw new Error(t("workspace.quizCollection.startMissingQuiz", "Không xác định được quiz luyện tập."));
+      throw new Error(t("quizCollection.startMissingQuiz", "Không xác định được quiz luyện tập."));
     }
     navigate(buildQuizAttemptPath("practice", nextQuizId), {
       state: {
@@ -371,7 +369,7 @@ function QuizCollectionDetailView({
     if (!Number.isInteger(count) || count <= 0) {
       showError(
         t(
-          "workspace.quizCollection.randomCountInvalid",
+          "quizCollection.randomCountInvalid",
           "Số câu ngẫu nhiên phải là số nguyên dương.",
         ),
       );
@@ -380,7 +378,7 @@ function QuizCollectionDetailView({
     if (count > totalQuestion) {
       showError(
         t(
-          "workspace.quizCollection.randomCountTooLarge",
+          "quizCollection.randomCountTooLarge",
           "Không được nhập quá số câu hỏi đã import.",
         ),
       );
@@ -437,10 +435,10 @@ function QuizCollectionDetailView({
             </button>
             <div className="min-w-0">
               <h2 className={cn("truncate text-xl font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-                {currentCollection?.title || t("workspace.quizCollection.fallbackTitle", "Bộ sưu tập")}
+                {currentCollection?.title || t("quizCollection.fallbackTitle", "Bộ sưu tập")}
               </h2>
               <p className={cn("mt-0.5 line-clamp-1 text-sm", mutedTextClass)}>
-                {currentCollection?.description || t("workspace.quizCollection.detailHint", "Gom quiz và câu hỏi để luyện tập lại theo nhu cầu.")}
+                {currentCollection?.description || t("quizCollection.detailHint", "Group quizzes and questions for targeted review.")}
               </p>
             </div>
           </div>
@@ -451,11 +449,11 @@ function QuizCollectionDetailView({
             </Button>
             <Button type="button" variant="outline" className="h-9 rounded-full px-3" onClick={handleOpenEdit}>
               <Pencil className="mr-2 h-4 w-4" />
-              <span>{t("workspace.quiz.detail.edit", "Chỉnh sửa")}</span>
+              <span>{t("quizCollection.editAction", "Edit")}</span>
             </Button>
             <Button type="button" variant="outline" className="h-9 rounded-full px-3 text-red-600" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
-              <span>{t("workspace.quizCollection.delete", "Xóa bộ sưu tập")}</span>
+              <span>{t("quizCollection.delete", "Delete collection")}</span>
             </Button>
           </div>
         </div>
@@ -464,10 +462,10 @@ function QuizCollectionDetailView({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="grid gap-3 md:grid-cols-4">
           {[
-            { icon: FileQuestion, label: t("quizListView.cards.questions", "Questions"), value: totalQuestion },
-            { icon: Layers3, label: t("workspace.quizCollection.sourceQuizCount", "Quiz nguồn"), value: sourceQuizCount },
-            { icon: BookOpenCheck, label: t("workspace.quizCollection.maxScore", "Tổng điểm"), value: maxScore || "-" },
-            { icon: Clock, label: t("workspace.quizCollection.updatedAt", "Cập nhật"), value: formatShortDate(currentCollection?.updatedAt || currentCollection?.createdAt) || "-" },
+            { icon: FileQuestion, label: t("quizCollection.questions", "Questions"), value: totalQuestion },
+            { icon: Layers3, label: t("quizCollection.sourceQuizCount", "Source quizzes"), value: sourceQuizCount },
+            { icon: BookOpenCheck, label: t("quizCollection.maxScore", "Max score"), value: maxScore || "-" },
+            { icon: Clock, label: t("quizCollection.updatedAt", "Updated"), value: formatShortDate(currentCollection?.updatedAt || currentCollection?.createdAt) || "-" },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -486,16 +484,20 @@ function QuizCollectionDetailView({
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h3 className={cn("text-base font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-                {t("workspace.quizCollection.practiceTitle", "Luyện tập bộ sưu tập")}
+                {t("quizCollection.practiceTitle", "Practice this collection")}
               </h3>
               <p className={cn("mt-1 text-sm", mutedTextClass)}>
-                {t("workspace.quizCollection.practiceHint", "Làm toàn bộ bộ sưu tập hoặc tạo phiên ngẫu nhiên theo số câu mong muốn.")}
+                {t("quizCollection.practiceHint", "Practice the full collection or create a random session with your desired question count.")}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" onClick={handleStartAll} disabled={startingAll || totalQuestion <= 0} className="h-10 rounded-full bg-blue-600 px-4 text-white hover:bg-blue-700 disabled:opacity-50">
                 {startingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                {t("workspace.quizCollection.practiceAll", "Luyện tập tất cả")}
+                {t("quizCollection.practiceAll", "Practice all")}
+              </Button>
+              <Button type="button" onClick={() => onStartAdvancedPractice?.(currentCollection)} disabled={totalQuestion <= 0} className="h-10 rounded-full bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-50">
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                {t("quizCollection.advancedPractice", "Advanced practice")}
               </Button>
               <div className={cn("flex items-center gap-2 rounded-full border px-2 py-1", isDarkMode ? "border-slate-700 bg-slate-950" : "border-slate-200 bg-slate-50")}>
                 <input
@@ -530,7 +532,7 @@ function QuizCollectionDetailView({
                 />
                 <Button type="button" variant="outline" onClick={handleStartRandom} disabled={startingRandom || totalQuestion <= 0} className="h-8 rounded-full px-3">
                   {startingRandom ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shuffle className="mr-2 h-4 w-4" />}
-                  {t("workspace.quizCollection.practiceRandom", "Ngẫu nhiên")}
+                  {t("quizCollection.practiceRandom", "Random")}
                 </Button>
               </div>
             </div>
@@ -539,9 +541,9 @@ function QuizCollectionDetailView({
 
         <div className={cn("mt-4 flex flex-wrap items-center gap-4 border-b", isDarkMode ? "border-slate-800" : "border-slate-200")}>
           {[
-            { key: "questions", label: t("workspace.quizCollection.tabs.questions", "Câu hỏi") },
-            { key: "importQuiz", label: t("workspace.quizCollection.tabs.importQuiz", "Import quiz") },
-            { key: "importQuestion", label: t("workspace.quizCollection.tabs.importQuestion", "Import câu hỏi") },
+            { key: "questions", label: t("quizCollection.tabs.questions", "Questions") },
+            { key: "importQuiz", label: t("quizCollection.tabs.importQuiz", "Import quiz") },
+            { key: "importQuestion", label: t("quizCollection.tabs.importQuestion", "Import questions") },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -571,7 +573,7 @@ function QuizCollectionDetailView({
               <div className={cn("flex min-h-[240px] flex-col items-center justify-center rounded-2xl border px-6 text-center", isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-white")}>
                 <Import className={cn("mb-3 h-10 w-10", isDarkMode ? "text-slate-600" : "text-slate-300")} />
                 <p className={cn("text-sm", mutedTextClass)}>
-                  {t("workspace.quizCollection.noQuestions", "Bộ sưu tập chưa có câu hỏi. Hãy import quiz hoặc import câu hỏi để bắt đầu.")}
+                  {t("quizCollection.noQuestions", "Bộ sưu tập chưa có câu hỏi. Hãy import quiz hoặc import câu hỏi để bắt đầu.")}
                 </p>
               </div>
             ) : (
@@ -589,17 +591,17 @@ function QuizCollectionDetailView({
                           </span>
                           {question?.difficulty ? (
                             <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", isDarkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-50 text-amber-700")}>
-                              {question.difficulty}
+                              {getQuizDifficultyLabel(question.difficulty, t)}
                             </span>
                           ) : null}
                         </div>
                         <p className={cn("line-clamp-3 text-sm leading-6", isDarkMode ? "text-slate-200" : "text-slate-800")}>
-                          {question?.content || t("workspace.quizCollection.emptyQuestionContent", "Câu hỏi chưa có nội dung")}
+                          {question?.content || t("quizCollection.emptyQuestionContent", "Question content is empty")}
                         </p>
                         <p className={cn("mt-2 text-xs", mutedTextClass)}>
-                          {t("workspace.quizCollection.answerCount", "{{count}} đáp án", { count: Number(question?.answerCount ?? 0) || 0 })}
+                          {t("quizCollection.answerCount", "{{count}} answers", { count: Number(question?.answerCount ?? 0) || 0 })}
                           {" · "}
-                          {t("workspace.quizCollection.score", "{{score}} điểm", { score: Number(question?.score ?? 0) || 0 })}
+                          {t("quizCollection.score", "{{score}} points", { score: Number(question?.score ?? 0) || 0 })}
                         </p>
                       </div>
                       <Button
@@ -629,14 +631,14 @@ function QuizCollectionDetailView({
               selectedCount={selectedQuizIds.length}
               onImport={handleImportQuizzes}
               importing={importingQuiz}
-              importLabel={t("workspace.quizCollection.importSelectedQuiz", "Import quiz đã chọn")}
-              placeholder={t("workspace.quizCollection.searchQuizPlaceholder", "Tìm quiz để import...")}
+              importLabel={t("quizCollection.importSelectedQuiz", "Import selected quizzes")}
+              placeholder={t("quizCollection.searchQuizPlaceholder", "Search quizzes to import...")}
             />
             <div className="mt-3 space-y-2">
               {loadingWorkspaceQuizzes ? (
                 <div className="flex min-h-[220px] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-slate-400" /></div>
               ) : importableQuizzes.length === 0 ? (
-                <EmptyImportState isDarkMode={isDarkMode} text={t("workspace.quizCollection.noImportableQuiz", "Không có quiz phù hợp để import.")} />
+                <EmptyImportState isDarkMode={isDarkMode} text={t("quizCollection.noImportableQuiz", "No eligible quizzes available for import.")} />
               ) : importableQuizzes.map((quiz) => {
                 const quizId = Number(quiz?.quizId ?? quiz?.id);
                 const checked = selectedQuizIds.includes(quizId);
@@ -651,7 +653,7 @@ function QuizCollectionDetailView({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{quiz?.title || t("quizListView.cards.noTitle", "-")}</p>
                       <p className={cn("mt-1 text-xs", checked ? "text-blue-700" : mutedTextClass)}>
-                        {Number(quiz?.totalQuestion ?? quiz?.questionCount ?? 0) || 0} {t("quizListView.cards.questions", "Questions")}
+                        {Number(quiz?.totalQuestion ?? quiz?.questionCount ?? 0) || 0} {t("quizCollection.questions", "Questions")}
                       </p>
                     </div>
                   </button>
@@ -670,14 +672,14 @@ function QuizCollectionDetailView({
               selectedCount={selectedQuestionIds.length}
               onImport={handleImportQuestions}
               importing={importingQuestion}
-              importLabel={t("workspace.quizCollection.importSelectedQuestion", "Import câu hỏi đã chọn")}
-              placeholder={t("workspace.quizCollection.searchQuestionPlaceholder", "Tìm nội dung câu hỏi...")}
+              importLabel={t("quizCollection.importSelectedQuestion", "Import selected questions")}
+              placeholder={t("quizCollection.searchQuestionPlaceholder", "Search question content...")}
             />
             <div className="mt-3 space-y-2">
               {loadingQuestionCatalog ? (
                 <div className="flex min-h-[220px] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-slate-400" /></div>
               ) : importableQuestions.length === 0 ? (
-                <EmptyImportState isDarkMode={isDarkMode} text={t("workspace.quizCollection.noImportableQuestion", "Không có câu hỏi phù hợp để import.")} />
+                <EmptyImportState isDarkMode={isDarkMode} text={t("quizCollection.noImportableQuestion", "No eligible questions available for import.")} />
               ) : importableQuestions.slice(0, 80).map((question) => {
                 const questionId = getQuestionCatalogId(question);
                 const checked = selectedQuestionIds.includes(questionId);
@@ -690,9 +692,9 @@ function QuizCollectionDetailView({
                   >
                     <SelectionBox checked={checked} />
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-semibold">{question?.content || t("workspace.quizCollection.emptyQuestionContent", "Câu hỏi chưa có nội dung")}</p>
+                      <p className="line-clamp-2 text-sm font-semibold">{question?.content || t("quizCollection.emptyQuestionContent", "Question content is empty")}</p>
                       <p className={cn("mt-1 text-xs", checked ? "text-blue-700" : mutedTextClass)}>
-                        {question?.quizTitle || question?.sourceQuizTitle || t("workspace.quizCollection.unknownSourceQuiz", "Quiz nguồn")}
+                        {question?.quizTitle || question?.sourceQuizTitle || t("quizCollection.unknownSourceQuiz", "Source quiz")}
                       </p>
                     </div>
                   </button>
@@ -706,21 +708,21 @@ function QuizCollectionDetailView({
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quizCollection.edit", "Chỉnh sửa bộ sưu tập")}</DialogTitle>
-            <DialogDescription>{t("workspace.quizCollection.editDescription", "Cập nhật tên và mô tả hiển thị.")}</DialogDescription>
+            <DialogTitle>{t("quizCollection.edit", "Edit collection")}</DialogTitle>
+            <DialogDescription>{t("quizCollection.editDescription", "Update the displayed name and description.")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <input
               value={editTitle}
               onChange={(event) => setEditTitle(event.target.value)}
               className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400"
-              placeholder={t("workspace.quizCollection.title", "Tên bộ sưu tập")}
+              placeholder={t("quizCollection.title", "Collection name")}
             />
             <textarea
               value={editDescription}
               onChange={(event) => setEditDescription(event.target.value)}
               className="min-h-[92px] w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
-              placeholder={t("workspace.quizCollection.description", "Mô tả")}
+              placeholder={t("quizCollection.description", "Description")}
             />
           </div>
           <DialogFooter>
@@ -736,8 +738,8 @@ function QuizCollectionDetailView({
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quizCollection.delete", "Xóa bộ sưu tập")}</DialogTitle>
-            <DialogDescription>{t("workspace.quizCollection.deleteConfirm", "Bộ sưu tập và quiz luyện tập phía sau sẽ được xóa khỏi danh sách.")}</DialogDescription>
+            <DialogTitle>{t("quizCollection.delete", "Delete collection")}</DialogTitle>
+            <DialogDescription>{t("quizCollection.deleteConfirm", "The collection and its generated practice quiz will be removed from the list.")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>{t("workspace.quiz.close", "Close")}</Button>

@@ -865,7 +865,7 @@ function WorkspacePage() {
       new RegExp(`^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+(?:/${workspaceKnowledgesPath}/\\d+)?/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath);
 
     const isMockTestDeepLink = new RegExp(`^${workspaceMockTestsPath}/\\d+$`).test(currentSubPath);
-    const isCollectionDeepLink = new RegExp(`^${workspaceCollectionsPath}/\\d+$`).test(currentSubPath);
+    const isCollectionDeepLink = new RegExp(`^${workspaceCollectionsPath}/\\d+(?:/advanced-practice)?$`).test(currentSubPath);
 
     const isQuizDetailView =
       activeView === "quizDetail" || activeView === "editQuiz";
@@ -895,7 +895,11 @@ function WorkspacePage() {
       if (Number.isInteger(routeMockTestId) && routeMockTestId > 0 && currentMockTestId !== routeMockTestId) return;
     }
 
-    if (isCollectionDeepLink && activeView === "quizCollectionDetail") {
+    if (
+      isCollectionDeepLink &&
+      (activeView === "quizCollectionDetail" ||
+        activeView === "quizCollectionAdvancedPractice")
+    ) {
       const { collectionId: routeCollectionId } = resolveWorkspaceViewFromSubPath(currentSubPath);
       const currentCollectionId = Number(selectedCollection?.collectionId);
       if (Number.isInteger(routeCollectionId) && routeCollectionId > 0 && currentCollectionId !== routeCollectionId) return;
@@ -1993,7 +1997,8 @@ function WorkspacePage() {
 
       if (
         actionKey !== "quizCollection" &&
-        actionKey !== "quizCollectionDetail"
+        actionKey !== "quizCollectionDetail" &&
+        actionKey !== "quizCollectionAdvancedPractice"
       ) {
         setSelectedCollection(null);
       }
@@ -2439,6 +2444,7 @@ function WorkspacePage() {
       createManualFlashcard: "flashcard",
       quizDetail: "quiz",
       quizCollectionDetail: "quizCollection",
+      quizCollectionAdvancedPractice: "quizCollectionDetail",
       editQuiz: "quizDetail",
       flashcardDetail: "flashcard",
       createMockTest: "mockTest",

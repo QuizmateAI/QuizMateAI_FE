@@ -140,6 +140,11 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 		return { view: "quizCollectionDetail", collectionId: Number(collectionDetailMatch[1]), quizId: null, backTarget: null };
 	}
 
+	const collectionAdvancedPracticeMatch = subPath.match(new RegExp(`^${collections}/(\\d+)/advanced-practice$`));
+	if (collectionAdvancedPracticeMatch) {
+		return { view: "quizCollectionAdvancedPractice", collectionId: Number(collectionAdvancedPracticeMatch[1]), quizId: null, backTarget: null };
+	}
+
 	const mockTestDetailMatch = subPath.match(new RegExp(`^${mockTests}/(\\d+)$`));
 	if (mockTestDetailMatch) {
 		return { view: "mockTestDetail", mockTestId: Number(mockTestDetailMatch[1]), quizId: null, backTarget: null };
@@ -197,6 +202,10 @@ export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget, se
 
 	if (view === "quizCollectionDetail" && selectedCollection?.collectionId) {
 		return `${collections}/${selectedCollection.collectionId}`;
+	}
+
+	if (view === "quizCollectionAdvancedPractice" && selectedCollection?.collectionId) {
+		return `${collections}/${selectedCollection.collectionId}/advanced-practice`;
 	}
 
 	if (view === "overview") {

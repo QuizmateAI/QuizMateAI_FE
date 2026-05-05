@@ -100,6 +100,8 @@ function QuizCollectionListView({
     queryKey: ["workspace-quiz-collections", normalizedWorkspaceId],
     enabled: normalizedWorkspaceId > 0,
     queryFn: async () => normalizeCollectionList(await getQuizCollectionsByWorkspace(normalizedWorkspaceId)),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const filteredCollections = useMemo(
@@ -133,7 +135,7 @@ function QuizCollectionListView({
         description: createDescription.trim(),
       });
       const created = unwrapApiData(response);
-      showSuccess(t("workspace.quizCollection.createSuccess", "Đã tạo bộ sưu tập."));
+      showSuccess(t("quizCollection.createSuccess", "Đã tạo bộ sưu tập."));
       setCreateOpen(false);
       setCreateTitle("");
       setCreateDescription("");
@@ -155,7 +157,7 @@ function QuizCollectionListView({
     setDeletingId(collectionId);
     try {
       await deleteQuizCollection(collectionId);
-      showSuccess(t("workspace.quizCollection.deleteSuccess", "Đã xóa bộ sưu tập."));
+      showSuccess(t("quizCollection.deleteSuccess", "Đã xóa bộ sưu tập."));
       setDeleteTarget(null);
       await refetch();
       onCollectionDeleted?.(deleteTarget);
@@ -227,7 +229,7 @@ function QuizCollectionListView({
               className="h-11 rounded-full bg-blue-600 px-5 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="mr-2 h-4 w-4" />
-              {t("workspace.quizCollection.create", "Tạo bộ sưu tập")}
+              {t("quizCollection.create", "Create collection")}
             </Button>
           ) : null}
         </div>
@@ -242,7 +244,7 @@ function QuizCollectionListView({
           <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
             <Archive className={cn("mb-3 h-12 w-12", isDarkMode ? "text-slate-600" : "text-slate-300")} />
             <p className={cn("text-sm", mutedTextClass)}>
-              {t("workspace.quizCollection.empty", "Chưa có bộ sưu tập nào. Tạo một bộ để gom quiz và câu hỏi cần ôn.")}
+              {t("quizCollection.empty", "No collections yet. Create one to gather quizzes and questions for review.")}
             </p>
             {!hideCreateButton ? (
               <Button
@@ -252,7 +254,7 @@ function QuizCollectionListView({
                 className="mt-4 h-10 rounded-full bg-blue-600 px-4 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                <span className="text-sm">{t("workspace.quizCollection.create", "Tạo bộ sưu tập")}</span>
+                <span className="text-sm">{t("quizCollection.create", "Create collection")}</span>
               </Button>
             ) : null}
           </div>
@@ -272,6 +274,7 @@ function QuizCollectionListView({
                 const questionCount = resolveCollectionQuestionCount(collection);
                 const sourceQuizCount = Number(collection?.sourceQuizCount ?? 0) || 0;
                 const createdAtLabel = formatShortDate(collection?.createdAt || collection?.updatedAt);
+                const description = String(collection?.description || "").trim();
 
                 return (
                   <article
@@ -297,6 +300,9 @@ function QuizCollectionListView({
                         <h3 className={cn("line-clamp-2 min-h-[3.5rem] text-[21px] font-semibold leading-snug", isDarkMode ? "text-slate-100" : "text-slate-950")}>
                           {collection?.title || t("quizListView.cards.noTitle", "-")}
                         </h3>
+                        <p className={cn("mt-1 line-clamp-1 min-h-[1.25rem] text-sm", mutedTextClass)}>
+                          {description || t("quizCollection.descriptionPlaceholder", "Add a short note about the review goal...")}
+                        </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2" onClick={(event) => event.stopPropagation()}>
                         <DropdownMenu>
@@ -320,7 +326,7 @@ function QuizCollectionListView({
                               className={cn("cursor-pointer", isDarkMode ? "text-red-300 focus:text-red-200" : "text-red-600 focus:text-red-600")}
                             >
                               {deletingId === collectionId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                              <span>{t("workspace.quizCollection.delete", "Xóa bộ sưu tập")}</span>
+                              <span>{t("quizCollection.delete", "Delete collection")}</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -330,7 +336,7 @@ function QuizCollectionListView({
                     <div className={cn("mt-4 flex items-center justify-between gap-3 text-[13px]", isDarkMode ? "text-slate-300" : "text-slate-800")}>
                       <div className="flex min-w-0 items-center gap-2">
                         <span className={cn("text-[11px] font-semibold uppercase tracking-[0.12em]", isDarkMode ? "text-slate-500" : "text-slate-400")}>
-                          {t("quizListView.cards.questions", "Questions")}
+                          {t("quizCollection.questions", "Questions")}
                         </span>
                         <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                       </div>
@@ -340,10 +346,10 @@ function QuizCollectionListView({
                     </div>
 
                     <div className={cn("mt-auto flex items-end justify-between gap-3 border-t pt-3", isDarkMode ? "mt-4 border-slate-800" : "mt-4 border-slate-200/80")}>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className={cn("inline-flex items-center gap-1.5 text-sm font-semibold", isDarkMode ? "text-blue-300" : "text-blue-700")}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-3">
+                        <div className={cn("inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold", isDarkMode ? "text-blue-300" : "text-blue-700")}>
                           <Layers3 className="h-3.5 w-3.5" />
-                          <span>{sourceQuizCount} {t("workspace.quizCollection.sourceShort", "quiz nguồn")}</span>
+                          <span className="truncate whitespace-nowrap">{sourceQuizCount} {t("quizCollection.sourceShort", "source quizzes")}</span>
                         </div>
                       </div>
                       <div className={cn("flex flex-wrap items-center justify-end gap-2 text-xs font-semibold", isDarkMode ? "text-slate-400" : "text-slate-600")}>
@@ -389,28 +395,28 @@ function QuizCollectionListView({
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quizCollection.create", "Tạo bộ sưu tập")}</DialogTitle>
+            <DialogTitle>{t("quizCollection.create", "Create collection")}</DialogTitle>
             <DialogDescription>
-              {t("workspace.quizCollection.createDescription", "Gom quiz và câu hỏi thành một bộ luyện tập riêng.")}
+              {t("quizCollection.createDescription", "Group quizzes and questions into a custom practice collection.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <label className="block space-y-1.5">
-              <span className="text-sm font-semibold">{t("workspace.quizCollection.title", "Tên bộ sưu tập")}</span>
+              <span className="text-sm font-semibold">{t("quizCollection.title", "Collection name")}</span>
               <input
                 value={createTitle}
                 onChange={(event) => setCreateTitle(event.target.value)}
                 className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-400"
-                placeholder={t("workspace.quizCollection.titlePlaceholder", "Ví dụ: Ôn tập chương OOP")}
+                placeholder={t("quizCollection.titlePlaceholder", "Example: OOP chapter review")}
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-sm font-semibold">{t("workspace.quizCollection.description", "Mô tả")}</span>
+              <span className="text-sm font-semibold">{t("quizCollection.description", "Description")}</span>
               <textarea
                 value={createDescription}
                 onChange={(event) => setCreateDescription(event.target.value)}
                 className="min-h-[92px] w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
-                placeholder={t("workspace.quizCollection.descriptionPlaceholder", "Ghi chú ngắn về mục tiêu ôn tập...")}
+                placeholder={t("quizCollection.descriptionPlaceholder", "Add a short note about the review goal...")}
               />
             </label>
           </div>
@@ -420,7 +426,7 @@ function QuizCollectionListView({
             </Button>
             <Button type="button" onClick={handleCreate} disabled={creating || !createTitle.trim()} className="bg-blue-600 text-white hover:bg-blue-700">
               {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("workspace.quizCollection.create", "Tạo bộ sưu tập")}
+              {t("quizCollection.create", "Create collection")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -434,13 +440,13 @@ function QuizCollectionListView({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quizCollection.delete", "Xóa bộ sưu tập")}</DialogTitle>
+            <DialogTitle>{t("quizCollection.delete", "Delete collection")}</DialogTitle>
             <DialogDescription className="space-y-2">
               <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
                 {deleteTarget?.title}
               </span>
               <span className="block">
-                {t("workspace.quizCollection.deleteConfirm", "Bộ sưu tập và quiz luyện tập phía sau sẽ được xóa khỏi danh sách.")}
+                {t("quizCollection.deleteConfirm", "The collection and its generated practice quiz will be removed from the list.")}
               </span>
             </DialogDescription>
           </DialogHeader>

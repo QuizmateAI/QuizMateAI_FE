@@ -118,6 +118,9 @@ function GroupQuizReviewPanel({
 
   const renderAnswers = (question, answers) => {
     const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
+    const textAnswerLabel = typeName === "shortAnswer"
+      ? t("workspace.quiz.expectedAnswerLabel", "Expected answer")
+      : t("workspace.quiz.correctAnswerLabel", "Correct answer");
     const correctTextAnswers = (answers || [])
       .filter((ans) => ans?.isCorrect)
       .map((ans) => (typeof ans?.content === "string" ? ans.content.trim() : ""))
@@ -139,7 +142,7 @@ function GroupQuizReviewPanel({
               isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
             }`}
           >
-            {t("workspace.quiz.correctAnswerLabel", "Correct answer")}
+            {textAnswerLabel}
           </span>
           <span className={`flex-1 ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
             {textAnswersToDisplay.length ? (
