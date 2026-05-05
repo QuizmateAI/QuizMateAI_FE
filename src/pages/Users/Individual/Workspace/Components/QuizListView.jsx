@@ -1687,26 +1687,29 @@ function QuizListView({
                   ) : null}
 
                   <div className="mt-auto">
-                    <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
-                      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
-                          <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
-                        </div>
-                        {shouldShowResultSummary ? (
+                    {/* Khi đang processing: ẩn hàng câu hỏi + kết quả vì progress bar đã chiếm chỗ
+                        và để thông tin không bị đẩy xuống thiếu chiều cao đồng đều giữa các card. */}
+                    {!isProcessing ? (
+                      <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{resultSummaryLabel}</span>
-                            <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                            <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                           </div>
-                        ) : null}
-                        {shouldShowInlineStatusBadge ? (
-                          <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
-                            {statusLabel}
-                          </span>
-                        ) : null}
+                          {shouldShowResultSummary ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{resultSummaryLabel}</span>
+                              <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            </div>
+                          ) : null}
+                          {shouldShowInlineStatusBadge ? (
+                            <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                              {statusLabel}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-
-                    </div>
+                    ) : null}
 
                     <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
                       <div className="flex min-w-0 flex-wrap items-center gap-3">

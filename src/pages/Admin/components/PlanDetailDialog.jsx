@@ -4,6 +4,10 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 
+function formatVndAmount(value, locale) {
+  return `${(Number(value) || 0).toLocaleString(locale)} VND`;
+}
+
 export default function PlanDetailDialog({
   open,
   onOpenChange,
@@ -57,9 +61,23 @@ export default function PlanDetailDialog({
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {[
-                  { label: t('subscription.table.price'), value: formatCurrency(plan.price, t, locale), color: dk ? 'text-emerald-400' : 'text-emerald-600' },
+                  {
+                    label: t('subscription.wizard.review.totalListPrice', { defaultValue: 'Tổng niêm yết' }),
+                    value: formatCurrency(plan.price, t, locale),
+                    color: dk ? 'text-emerald-400' : 'text-emerald-600',
+                  },
+                  {
+                    label: t('subscription.wizard.entitlement.creditPriceLabel', { defaultValue: 'Giá phần credit' }),
+                    value: formatVndAmount(plan.creditPriceVnd ?? plan.price, locale),
+                    color: dk ? 'text-slate-200' : 'text-slate-800',
+                  },
+                  {
+                    label: t('subscription.wizard.entitlement.basePriceLabel', { defaultValue: 'Giá gốc' }),
+                    value: formatVndAmount(plan.basePriceVnd ?? 0, locale),
+                    color: dk ? 'text-slate-200' : 'text-slate-800',
+                  },
                   { label: t('subscription.table.scope', 'Scope'), value: getScopeLabel(plan.planScope, t), color: dk ? 'text-blue-400' : 'text-blue-600' },
                   { label: t('subscription.table.level', 'Level'), value: plan.planLevel ?? '-', color: dk ? 'text-amber-400' : 'text-amber-600' },
                 ].map((item) => (

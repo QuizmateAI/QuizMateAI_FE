@@ -19,7 +19,6 @@ const MODE_TABS = [
   { key: 'ALL', labelKey: 'groupWorkspace.challenge.modes.all', fallback: 'All' },
   { key: 'FREE_FOR_ALL', labelKey: 'groupWorkspace.challenge.modes.freeForAll', fallback: 'Free-for-all' },
   { key: 'TEAM_BATTLE', labelKey: 'groupWorkspace.challenge.modes.teamBattle', fallback: 'Team battle' },
-  { key: 'SOLO_BRACKET', labelKey: 'groupWorkspace.challenge.modes.soloBracket', fallback: '1v1 bracket' },
 ];
 
 export default function ChallengeTab({

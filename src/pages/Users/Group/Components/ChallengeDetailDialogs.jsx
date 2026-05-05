@@ -27,6 +27,7 @@ function ChallengeDetailDialogs({
   handleFinishConfirm,
   handleSaveChallengeEdit,
   isDarkMode,
+  isPublished,
   setCancelDialogOpen,
   setEditDescription,
   setEditDialogOpen,
@@ -58,6 +59,16 @@ function ChallengeDetailDialogs({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-1">
+            {isPublished && (
+              <div className={`rounded-lg border px-3 py-2 text-xs leading-relaxed ${
+                isDarkMode ? 'border-amber-500/30 bg-amber-500/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-900'
+              }`}>
+                {t(
+                  'challengeDetailView.editDialog.postponeOnlyHint',
+                  'Challenge đã publish — bạn chỉ có thể LÙI lịch (giờ bắt đầu mới phải sau giờ bắt đầu cũ), không kéo về sớm.',
+                )}
+              </div>
+            )}
             <div>
               <label className={`mb-1 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                 {t('groupWorkspace.challenge.editTitleLabel')}
