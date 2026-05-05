@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, RefreshCw, Plus, Edit2, Trash2, Eye,
+  Search, RefreshCw, Plus, Edit2, Trash2, Eye, History,
   Package, Zap, Coins,
   ToggleLeft, ToggleRight, Users, User,
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
@@ -29,7 +29,7 @@ import PlanFormWizard from '@/pages/Admin/components/PlanFormWizard';
 import PlanDetailDialog from '@/pages/Admin/components/PlanDetailDialog';
 import {
   getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus, getAiModels, getPlanById,
-  getAllSystemSettings,
+  getAllSystemSettings, getPlanVersionHistory,
 } from '@/api/ManagementSystemAPI';
 import {
   AI_MODEL_GROUP_OPTIONS,
@@ -161,6 +161,10 @@ function PlanManagement() {
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailPlan, setDetailPlan] = useState(null);
+  // Version history state — code đang xem + list versions
+  const [historyCode, setHistoryCode] = useState(null);
+  const [historyData, setHistoryData] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const editingPlanRef = useRef(null);
   const stompClientRef = useRef(null);
 
@@ -507,6 +511,27 @@ function PlanManagement() {
 
   const confirmDelete = (plan) => { setDeletingPlan(plan); setIsDeleteOpen(true); };
 
+  // Mở dialog lịch sử version cho 1 plan code (BE trả mới → cũ).
+  const openVersionHistory = async (plan) => {
+    if (!plan?.code) return;
+    setHistoryCode(plan.code);
+    setHistoryData([]);
+    setHistoryLoading(true);
+    try {
+      const response = await getPlanVersionHistory(plan.code);
+      const list = extractApiData(response);
+      setHistoryData(Array.isArray(list) ? list : []);
+    } catch (err) {
+      showError(getFriendlyError(err, 'subscription.fetchError'));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  const closeVersionHistory = () => {
+    setHistoryCode(null);
+    setHistoryData([]);
+  };
+
   const handleDelete = () => {
     if (!deletingPlan) return;
     deletePlanMutation.mutate({ id: deletingPlan.planCatalogId });
@@ -639,7 +664,19 @@ function PlanManagement() {
                         }
                       </div>
                       <div>
-                        <p className={`font-bold text-[15px] ${dk ? 'text-white' : 'text-slate-900'}`}>{plan.displayName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className={`font-bold text-[15px] ${dk ? 'text-white' : 'text-slate-900'}`}>{plan.displayName}</p>
+                          {Number.isFinite(Number(plan.version)) ? (
+                            <span
+                              title={t('subscription.versionTip', 'Số version, tăng mỗi lần admin cập nhật gói trả phí')}
+                              className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wide tabular-nums ${
+                                dk ? 'bg-indigo-500/15 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                              }`}
+                            >
+                              {`v${plan.version}`}
+                            </span>
+                          ) : null}
+                        </div>
                         <p className={`text-xs font-medium ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{plan.description}</p>
                       </div>
                     </div>
@@ -675,6 +712,11 @@ function PlanManagement() {
                     <div className="flex items-center justify-end gap-0.5">
                       {[
                         { icon: Eye, color: dk ? 'text-blue-400 hover:bg-blue-500/10' : 'text-blue-500 hover:bg-blue-50', action: () => { setDetailPlan(plan); setIsDetailOpen(true); }, tip: t('subscription.viewDetail') },
+                        // History button — chỉ paid plan (level >= 1) mới có version history;
+                        // default plan (level 0) update in-place, không tạo version mới.
+                        ...((plan.planLevel ?? 0) >= 1 ? [
+                          { icon: History, color: dk ? 'text-violet-400 hover:bg-violet-500/10' : 'text-violet-500 hover:bg-violet-50', action: () => openVersionHistory(plan), tip: t('subscription.versionHistory', 'Lịch sử version') },
+                        ] : []),
                         ...(canWrite ? [
                           { icon: isActive(plan.status) ? ToggleRight : ToggleLeft, color: isActive(plan.status) ? (dk ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-500 hover:bg-emerald-50') : (dk ? 'text-slate-500 hover:bg-white/5' : 'text-slate-400 hover:bg-slate-50'), action: () => handleToggleStatus(plan), tip: t('subscription.actions.toggleStatus', 'Toggle status') },
                           { icon: plan.editable === false ? Lock : Edit2, color: plan.editable === false ? (dk ? 'text-slate-500 hover:bg-white/5' : 'text-slate-400 hover:bg-slate-50') : (dk ? 'text-amber-400 hover:bg-amber-500/10' : 'text-amber-500 hover:bg-amber-50'), action: () => openEditForm(plan), tip: plan.editable === false ? getPlanEditLockedReason(plan) : t('subscription.edit') },
@@ -753,6 +795,98 @@ function PlanManagement() {
         aiModelGroupOptions={AI_MODEL_GROUP_OPTIONS}
         getAssignedModelForPlan={getAssignedModelForPlan}
       />
+
+      {/* ──── Version History Dialog ──── */}
+      <Dialog open={historyCode != null} onOpenChange={(open) => { if (!open) closeVersionHistory(); }}>
+        <DialogContent className={`max-w-3xl max-h-[85vh] overflow-y-auto ${dk ? 'bg-[#0f1629] border-white/[0.08] text-white' : ''}`}>
+          <DialogHeader>
+            <DialogTitle className={dk ? 'text-white' : ''}>
+              {t('subscription.versionHistoryTitle', 'Lịch sử version')}: {historyCode}
+            </DialogTitle>
+            <DialogDescription>
+              {t('subscription.versionHistoryDesc', 'Mỗi lần admin update plan trả phí sẽ tạo 1 version mới. Bản cũ giữ lại để user đã mua không bị ảnh hưởng.')}
+            </DialogDescription>
+          </DialogHeader>
+          {historyLoading ? (
+            <div className="py-8 text-center"><ListSpinner /></div>
+          ) : historyData.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500">
+              {t('subscription.versionHistoryEmpty', 'Chưa có dữ liệu lịch sử.')}
+            </p>
+          ) : (
+            <div className="space-y-2 py-2">
+              {historyData.map((v, idx) => {
+                const isFirst = idx === 0;
+                const current = v.isCurrent === true;
+                return (
+                  <div
+                    key={v.planCatalogId}
+                    className={`relative rounded-xl border p-4 ${
+                      current
+                        ? (dk ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-indigo-300 bg-indigo-50/40')
+                        : (dk ? 'border-white/10 bg-white/[0.02]' : 'border-slate-200 bg-slate-50/60')
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-sm font-black tabular-nums ${
+                          current
+                            ? (dk ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700')
+                            : (dk ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600')
+                        }`}>
+                          v{v.version}
+                        </span>
+                        {current ? (
+                          <span className={`text-[11px] font-bold uppercase tracking-wider ${dk ? 'text-indigo-300' : 'text-indigo-700'}`}>
+                            {t('subscription.versionCurrent', 'Đang bán')}
+                          </span>
+                        ) : (
+                          <span className={`text-[11px] font-semibold ${dk ? 'text-slate-500' : 'text-slate-500'}`}>
+                            {isFirst ? '' : t('subscription.versionSuperseded', 'Đã bị thay')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold tabular-nums ${dk ? 'text-white' : 'text-slate-900'}`}>
+                          {formatCurrency(v.price, t, locale)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 grid gap-1.5 text-xs sm:grid-cols-2">
+                      <div className={dk ? 'text-slate-400' : 'text-slate-600'}>
+                        <span className="font-semibold">{t('subscription.detail.displayName', 'Tên hiển thị')}:</span> {v.displayName}
+                      </div>
+                      <div className={dk ? 'text-slate-400' : 'text-slate-600'}>
+                        <span className="font-semibold">{t('subscription.table.status', 'Trạng thái')}:</span> {v.status}
+                      </div>
+                      {v.previousVersionId ? (
+                        <div className={dk ? 'text-slate-500' : 'text-slate-500'}>
+                          <span className="font-semibold">{t('subscription.versionPrevious', 'Version trước')}:</span> #{v.previousVersionId}
+                        </div>
+                      ) : null}
+                      {v.entitlement?.planIncludedCredits != null ? (
+                        <div className={dk ? 'text-slate-400' : 'text-slate-600'}>
+                          <span className="font-semibold">{t('subscription.detail.planIncludedCredits', 'Credit kèm')}:</span> {v.entitlement.planIncludedCredits}
+                        </div>
+                      ) : null}
+                    </div>
+                    {v.description ? (
+                      <p className={`mt-2 text-xs italic ${dk ? 'text-slate-500' : 'text-slate-500'}`}>
+                        {v.description}
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={closeVersionHistory} className={dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}>
+              {t('common.close', 'Đóng')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

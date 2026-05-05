@@ -1,388 +1,224 @@
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowRight,
-  Bot,
-  Download,
-  ShieldCheck,
-  Users,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { useDarkMode } from '@/hooks/useDarkMode';
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import {
+  AlertTriangle,
+  Banknote,
+  Coins,
+  CreditCard,
+  Crown,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import ListSpinner from '@/components/ui/ListSpinner';
+import { useDarkMode } from '@/hooks/useDarkMode';
+import { getPlanPurchaseSummary, getRevenueTimeseries } from '@/api/ManagementSystemAPI';
+import {
+  SuperAdminMetricCard,
   SuperAdminPage,
   SuperAdminPageHeader,
   SuperAdminPanel,
-  SuperAdminSelectButton,
+  SuperAdminTabs,
 } from './Components/SuperAdminSurface';
-import SuperAdminRecentPayments from './Components/SuperAdminRecentPayments';
-import {
-  getAdminPayments,
-  getAllCreditPackages,
-  getAllPlans,
-  getSystemOverviewStats,
-} from '@/api/ManagementSystemAPI';
+import DateRangeChips from './Components/DateRangeChips';
 
-function unwrapPayload(response) {
-  return response?.data ?? response ?? null;
+function extractData(res) {
+  return res?.data?.data ?? res?.data ?? res ?? null;
 }
 
-function safeNumber(value) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+function formatVnd(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return `${Math.round(n).toLocaleString('vi-VN')} ₫`;
 }
 
-function normalizeText(value) {
-  if (value == null) return '';
-  const trimmed = String(value).trim();
-  const lowered = trimmed.toLowerCase();
-  if (!trimmed || lowered === 'null' || lowered === 'undefined') return '';
-  return trimmed;
+function formatCompactVnd(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n === 0) return '0 ₫';
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(1)} tỷ ₫`;
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)} tr ₫`;
+  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(0)}k ₫`;
+  return `${sign}${abs} ₫`;
 }
 
-function formatEnumLabel(value) {
-  const normalized = normalizeText(value);
-  if (!normalized) return '-';
-  return normalized.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+function formatPct(value) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+  const n = Number(value);
+  return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`;
 }
 
-function getPaymentStatus(payment) {
-  return String(payment?.paymentStatus || payment?.status || '').toUpperCase();
+function formatInt(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toLocaleString('vi-VN') : '—';
 }
 
-function getPaymentTimestamp(payment) {
-  return normalizeText(payment?.paidAt || payment?.createdAt || payment?.updatedAt || payment?.expiresAt);
+function buildIso(daysAgo) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString();
 }
 
-function formatDateTime(value, locale) {
-  const normalized = normalizeText(value);
-  if (!normalized) return '-';
-
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return normalized;
-
-  return new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
-
-function formatCurrency(value, locale, compact = false) {
-  const amount = safeNumber(value);
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: 'VND',
-    notation: compact ? 'compact' : 'standard',
-    maximumFractionDigits: compact ? 1 : 0,
-  }).format(amount);
-}
-
-function formatNumber(value, locale, compact = false) {
-  return new Intl.NumberFormat(locale, {
-    notation: compact ? 'compact' : 'standard',
-    maximumFractionDigits: compact ? 1 : 0,
-  }).format(safeNumber(value));
-}
-
-function startOfDay(date) {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function startOfWeek(date) {
-  const next = startOfDay(date);
-  const day = next.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  next.setDate(next.getDate() + diff);
-  return next;
-}
-
-function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addDays(date, amount) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + amount);
-  return next;
-}
-
-function addMonths(date, amount) {
-  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
-}
-
-function isDateWithinWindow(date, start, end) {
-  const point = startOfDay(date);
-  return point >= start && point <= end;
-}
-
-function escapeCsvValue(value) {
-  const raw = value == null ? '' : String(value);
-  return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
-}
-
-function buildTrailingRevenueSeries(payments, locale, view) {
-  const today = startOfDay(new Date());
-  const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
-  const shortDayFormatter = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
-  const fullDayFormatter = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
-
-  if (view === 'month') {
-    const rangeStart = addMonths(startOfMonth(today), -11);
-    const points = [];
-    let cursor = new Date(rangeStart);
-
-    while (cursor <= today) {
-      const periodStart = new Date(cursor);
-      const rawEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
-      const periodEnd = rawEnd > today ? today : rawEnd;
-
-      points.push({
-        key: `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`,
-        label: monthFormatter.format(periodStart),
-        total: payments.reduce((sum, payment) => {
-          const rawTime = getPaymentTimestamp(payment);
-          if (!rawTime) return sum;
-
-          const paymentDate = new Date(rawTime);
-          if (Number.isNaN(paymentDate.getTime())) return sum;
-
-          return isDateWithinWindow(paymentDate, periodStart, periodEnd)
-            ? sum + safeNumber(payment?.amount)
-            : sum;
-        }, 0),
-        count: payments.reduce((sum, payment) => {
-          const rawTime = getPaymentTimestamp(payment);
-          if (!rawTime) return sum;
-
-          const paymentDate = new Date(rawTime);
-          if (Number.isNaN(paymentDate.getTime())) return sum;
-
-          return isDateWithinWindow(paymentDate, periodStart, periodEnd) ? sum + 1 : sum;
-        }, 0),
-        tooltipLabel: `${monthFormatter.format(periodStart)} ${periodStart.getFullYear()}`,
-      });
-
-      cursor = addMonths(cursor, 1);
-    }
-
-    return {
-      label: 'Last 12 months',
-      start: rangeStart,
-      end: today,
-      points,
-    };
-  }
-
-  if (view === 'week') {
-    const rangeStart = addDays(startOfWeek(today), -77);
-    const points = [];
-    let cursor = new Date(rangeStart);
-
-    while (cursor <= today) {
-      const periodStart = new Date(cursor);
-      const rawEnd = addDays(periodStart, 6);
-      const periodEnd = rawEnd > today ? today : rawEnd;
-
-      points.push({
-        key: periodStart.toISOString().slice(0, 10),
-        label: shortDayFormatter.format(periodStart),
-        total: payments.reduce((sum, payment) => {
-          const rawTime = getPaymentTimestamp(payment);
-          if (!rawTime) return sum;
-
-          const paymentDate = new Date(rawTime);
-          if (Number.isNaN(paymentDate.getTime())) return sum;
-
-          return isDateWithinWindow(paymentDate, periodStart, periodEnd)
-            ? sum + safeNumber(payment?.amount)
-            : sum;
-        }, 0),
-        count: payments.reduce((sum, payment) => {
-          const rawTime = getPaymentTimestamp(payment);
-          if (!rawTime) return sum;
-
-          const paymentDate = new Date(rawTime);
-          if (Number.isNaN(paymentDate.getTime())) return sum;
-
-          return isDateWithinWindow(paymentDate, periodStart, periodEnd) ? sum + 1 : sum;
-        }, 0),
-        tooltipLabel: `${fullDayFormatter.format(periodStart)} - ${fullDayFormatter.format(periodEnd)}`,
-      });
-
-      cursor = addDays(cursor, 7);
-    }
-
-    return {
-      label: 'Last 12 weeks',
-      start: rangeStart,
-      end: today,
-      points,
-    };
-  }
-
-  const rangeStart = addDays(today, -29);
-  const points = [];
-  let cursor = new Date(rangeStart);
-
-  while (cursor <= today) {
-    const periodStart = new Date(cursor);
-    const label = shortDayFormatter.format(periodStart);
-
-    points.push({
-      key: periodStart.toISOString().slice(0, 10),
-      label,
-      total: payments.reduce((sum, payment) => {
-        const rawTime = getPaymentTimestamp(payment);
-        if (!rawTime) return sum;
-
-        const paymentDate = new Date(rawTime);
-        if (Number.isNaN(paymentDate.getTime())) return sum;
-
-        return isDateWithinWindow(paymentDate, periodStart, periodStart)
-          ? sum + safeNumber(payment?.amount)
-          : sum;
-      }, 0),
-      count: payments.reduce((sum, payment) => {
-        const rawTime = getPaymentTimestamp(payment);
-        if (!rawTime) return sum;
-
-        const paymentDate = new Date(rawTime);
-        if (Number.isNaN(paymentDate.getTime())) return sum;
-
-        return isDateWithinWindow(paymentDate, periodStart, periodStart) ? sum + 1 : sum;
-      }, 0),
-      tooltipLabel: label,
-    });
-
-    cursor = addDays(cursor, 1);
-  }
-
-  return {
-    label: 'Last 30 days',
-    start: rangeStart,
-    end: today,
-    points,
-  };
-}
-
-function SurfaceCard({ title, description, action, className, contentClassName, children }) {
+function GrowthBadge({ value, isDarkMode, label }) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
+  const n = Number(value);
+  const positive = n >= 0;
+  const Icon = positive ? TrendingUp : TrendingDown;
   return (
-    <SuperAdminPanel
-      title={title}
-      description={description}
-      action={action}
-      className={className}
-      contentClassName={contentClassName ?? 'px-6 py-5'}
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+        positive
+          ? (isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700')
+          : (isDarkMode ? 'bg-rose-500/15 text-rose-300' : 'bg-rose-100 text-rose-700')
+      }`}
     >
-      {children}
-    </SuperAdminPanel>
+      <Icon className="h-3 w-3" />
+      {formatPct(n)}
+      {label ? <span className="font-normal opacity-70">· {label}</span> : null}
+    </span>
   );
 }
 
-function ChartTabs({ active, onChange, darkMode, t }) {
-  const tabs = [
-    { id: 'day', label: t('dashboard.chartDay', { defaultValue: 'Day' }) },
-    { id: 'week', label: t('dashboard.chartWeek', { defaultValue: 'Week' }) },
-    { id: 'month', label: t('dashboard.chartMonth', { defaultValue: 'Month' }) },
-  ];
-
+function SourceCard({ icon: Icon, label, total, points, color, isDarkMode, growthPct }) {
   return (
     <div
-      className={cn(
-        'inline-flex items-center rounded-2xl p-1',
-        darkMode ? 'bg-slate-900' : 'bg-slate-100',
-      )}
+      className={`rounded-2xl border p-4 ${
+        isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
+      }`}
     >
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={cn(
-            'rounded-[14px] px-3 py-1.5 text-sm font-semibold transition-colors',
-            active === tab.id
-              ? darkMode
-                ? 'bg-slate-950 text-white shadow-sm'
-                : 'bg-white text-slate-900 shadow-sm'
-              : darkMode
-                ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
-                : 'text-slate-500 hover:bg-white/80 hover:text-slate-900',
-          )}
-        >
-          {tab.label}
-        </button>
-      ))}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+          <p className={`mt-1.5 text-xl font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {formatVnd(total)}
+          </p>
+          <div className="mt-1">
+            <GrowthBadge value={growthPct} isDarkMode={isDarkMode} />
+          </div>
+        </div>
+        <div className="shrink-0 rounded-xl p-2" style={{ background: `${color}20`, color }}>
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      <div className="mt-2 h-12">
+        {points && points.length > 1 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={points} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`grad-dash-${label}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Tooltip
+                contentStyle={{
+                  background: isDarkMode ? '#0f172a' : '#fff',
+                  border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`,
+                  borderRadius: 8,
+                  fontSize: 11,
+                  padding: '4px 8px',
+                }}
+                formatter={(v) => [formatVnd(v), label]}
+                labelStyle={{ display: 'none' }}
+              />
+              <Area type="monotone" dataKey="value" stroke={color} strokeWidth={1.5} fill={`url(#grad-dash-${label})`} />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className={`flex h-full items-center justify-center text-[10px] ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>
+            Chưa đủ data
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function PaymentStatusRow({ label, count, width, colorClass, darkMode }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <span className={cn('h-2.5 w-2.5 rounded-full', colorClass)} />
-          <span className={cn('text-sm font-medium', darkMode ? 'text-slate-200' : 'text-slate-700')}>
-            {label}
-          </span>
-        </div>
-        <span className={cn('text-sm font-semibold tabular-nums', darkMode ? 'text-white' : 'text-slate-900')}>
-          {count}
-        </span>
-      </div>
+const TARGET_KEYS = {
+  USER_PLAN: 'userPlanVnd',
+  WORKSPACE_PLAN: 'workspacePlanVnd',
+  USER_CREDIT: 'userCreditVnd',
+  WORKSPACE_CREDIT: 'workspaceCreditVnd',
+  WORKSPACE_SLOT: 'workspaceSlotVnd',
+};
 
-      <div className={cn('h-2 overflow-hidden rounded-full', darkMode ? 'bg-slate-800' : 'bg-slate-100')}>
-        <div
-          className={cn('h-full rounded-full transition-[width]', colorClass)}
-          style={{ width: `${width}%` }}
-        />
-      </div>
-    </div>
-  );
+// Meta cho stacked area chart trong section "Phân tích chi tiết". Mỗi target type 1 màu + label.
+const TARGET_TYPE_META = {
+  USER_PLAN: { color: '#0ea5e9', dataKey: 'userPlanVnd', labelKey: 'revenue.legend.userPlan', label: 'Gói cá nhân' },
+  WORKSPACE_PLAN: { color: '#8b5cf6', dataKey: 'workspacePlanVnd', labelKey: 'revenue.legend.workspacePlan', label: 'Gói nhóm' },
+  USER_CREDIT: { color: '#10b981', dataKey: 'userCreditVnd', labelKey: 'revenue.legend.userCredit', label: 'Credit cá nhân' },
+  WORKSPACE_CREDIT: { color: '#14b8a6', dataKey: 'workspaceCreditVnd', labelKey: 'revenue.legend.workspaceCredit', label: 'Credit nhóm' },
+  WORKSPACE_SLOT: { color: '#f59e0b', dataKey: 'workspaceSlotVnd', labelKey: 'revenue.legend.workspaceSlot', label: 'Slot nhóm' },
+};
+
+const DETAIL_TABS = [
+  { id: 'overview', labelKey: 'revenue.tab.overview', label: 'Tổng quan', types: ['USER_PLAN', 'WORKSPACE_PLAN', 'USER_CREDIT', 'WORKSPACE_CREDIT', 'WORKSPACE_SLOT'] },
+  { id: 'subscription', labelKey: 'revenue.tab.subscription', label: 'Subscription', types: ['USER_PLAN', 'WORKSPACE_PLAN'] },
+  { id: 'credit', labelKey: 'revenue.tab.credit', label: 'Credit', types: ['USER_CREDIT', 'WORKSPACE_CREDIT'] },
+  { id: 'slots', labelKey: 'revenue.tab.slots', label: 'Slot nhóm', types: ['WORKSPACE_SLOT'] },
+];
+
+function toApiIso(dateStr) {
+  if (!dateStr) return undefined;
+  const d = new Date(dateStr);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 }
 
-function QuickActionButton({ icon: Icon, title, description, onClick, darkMode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'group flex w-full items-center justify-between rounded-[20px] border px-4 py-4 text-left transition-colors',
-        darkMode
-          ? 'border-slate-800 bg-slate-950/70 hover:bg-slate-900'
-          : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100/80',
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className={cn(
-            'flex h-11 w-11 items-center justify-center rounded-2xl',
-            darkMode ? 'bg-slate-900 text-slate-200' : 'bg-white text-slate-600 shadow-sm',
-          )}
-        >
-          <Icon className="h-4.5 w-4.5" />
-        </div>
+function pickPointsForTypes(points, types) {
+  if (!Array.isArray(points)) return [];
+  return points.map((p) => {
+    const filtered = { bucket: p.bucket, transactionCount: p.transactionCount };
+    let subtotal = 0;
+    types.forEach((type) => {
+      const meta = TARGET_TYPE_META[type];
+      const v = Number(p[meta.dataKey]) || 0;
+      filtered[meta.dataKey] = v;
+      subtotal += v;
+    });
+    filtered.totalVnd = subtotal;
+    return filtered;
+  });
+}
 
+function ChartCard({ title, subtitle, summary, children, isDarkMode }) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 ${
+        isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
+      }`}
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className={cn('text-sm font-semibold', darkMode ? 'text-white' : 'text-slate-950')}>
-            {title}
-          </p>
-          <p className={cn('mt-1 text-xs', darkMode ? 'text-slate-400' : 'text-slate-500')}>
-            {description}
-          </p>
+          <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{title}</h3>
+          {subtitle ? (
+            <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{subtitle}</p>
+          ) : null}
         </div>
+        {summary ? (
+          <p className={`text-right text-xs tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{summary}</p>
+        ) : null}
       </div>
-
-      <ArrowRight className={cn('h-4 w-4 transition-transform group-hover:translate-x-0.5', darkMode ? 'text-slate-500' : 'text-slate-400')} />
-    </button>
+      {children}
+    </div>
   );
 }
 
@@ -391,408 +227,557 @@ function SuperAdminDashboard() {
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
-  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
 
-  const [chartView, setChartView] = useState('day');
+  // Bucket: DAY (default) / WEEK / MONTH — quyết định grouping của time-series
+  const [bucket, setBucket] = useState('DAY');
+  // Date range — default rỗng = 30 ngày gần nhất qua buildIso fallback. User có thể override
+  // qua DateRangeChips để chọn khoảng tùy ý.
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  // Active tab cho section "Phân tích chi tiết" (overview / subscription / credit / slots).
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const { data: queryData, error: queryError } = useQuery({
-    queryKey: ['superAdmin', 'dashboard'],
-    queryFn: async () => {
-      const [overviewResult, plansResult, creditPackagesResult, paymentsResult] = await Promise.allSettled([
-        getSystemOverviewStats(),
-        getAllPlans(),
-        getAllCreditPackages(),
-        getAdminPayments({ page: 0, size: 150 }),
-      ]);
+  const tsParams = useMemo(() => {
+    const fromIso = toApiIso(from) ?? buildIso(30);
+    const toIso = toApiIso(to) ?? new Date().toISOString();
+    return { from: fromIso, to: toIso, bucket };
+  }, [from, to, bucket]);
 
-      const data = {
-        systemOverview: null,
-        plans: [],
-        creditPackages: [],
-        payments: [],
-        paymentTotal: 0,
-      };
-      const issues = [];
+  const planParams = useMemo(() => {
+    const fromIso = toApiIso(from) ?? buildIso(30);
+    const toIso = toApiIso(to) ?? new Date().toISOString();
+    return { from: fromIso, to: toIso };
+  }, [from, to]);
 
-      if (overviewResult.status === 'fulfilled') {
-        data.systemOverview = unwrapPayload(overviewResult.value) || {};
-      } else {
-        issues.push('system-overview');
-      }
-
-      if (plansResult.status === 'fulfilled') {
-        data.plans = Array.isArray(unwrapPayload(plansResult.value)) ? unwrapPayload(plansResult.value) : [];
-      } else {
-        issues.push('plans');
-      }
-
-      if (creditPackagesResult.status === 'fulfilled') {
-        data.creditPackages = Array.isArray(unwrapPayload(creditPackagesResult.value)) ? unwrapPayload(creditPackagesResult.value) : [];
-      } else {
-        issues.push('credit-packages');
-      }
-
-      if (paymentsResult.status === 'fulfilled') {
-        const payload = unwrapPayload(paymentsResult.value) || {};
-        data.payments = Array.isArray(payload.content) ? payload.content : [];
-        data.paymentTotal = safeNumber(payload.totalElements || data.payments.length);
-      } else {
-        issues.push('payments');
-      }
-
-      // Throw only when every section failed → React Query surfaces it as `error`.
-      if (!data.systemOverview && issues.length === 4) {
-        throw new Error('dashboard-all-failed');
-      }
-
-      return { data, issues };
-    },
+  const tsQuery = useQuery({
+    queryKey: ['superAdmin', 'dashboard', 'ts', tsParams],
+    queryFn: async () => extractData(await getRevenueTimeseries(tsParams)),
+    staleTime: 30_000,
   });
 
-  const dashboardData = queryData?.data ?? {
-    systemOverview: null,
-    plans: [],
-    creditPackages: [],
-    payments: [],
-    paymentTotal: 0,
-  };
-  const loadIssues = queryData?.issues ?? [];
-  const error = queryError
-    ? t('dashboard.loadError', { defaultValue: 'Unable to load dashboard data.' })
-    : '';
+  const planQuery = useQuery({
+    queryKey: ['superAdmin', 'dashboard', 'plans', planParams],
+    queryFn: async () => extractData(await getPlanPurchaseSummary(planParams)),
+    staleTime: 30_000,
+  });
 
-  const systemOverview = dashboardData.systemOverview || {};
-  const payments = dashboardData.payments;
-  const totalPayments = safeNumber(dashboardData.paymentTotal || payments.length);
-  const totalAccounts = safeNumber(systemOverview.totalUsers || systemOverview.userCount);
+  const data = tsQuery.data;
+  const planSummary = planQuery.data;
 
-  const completedPayments = payments.filter((payment) => getPaymentStatus(payment) === 'COMPLETED');
-  const pendingPayments = payments.filter((payment) => getPaymentStatus(payment) === 'PENDING');
-  const failedPayments = payments.filter((payment) => getPaymentStatus(payment) === 'FAILED');
-  const cancelledPayments = payments.filter((payment) => getPaymentStatus(payment) === 'CANCELLED');
+  const points = data?.points ?? [];
+  const totals = data?.totals ?? null;
+  const growthPct = data?.growthPct ?? null;
 
-  const chartWindow = buildTrailingRevenueSeries(completedPayments, locale, chartView);
-  const revenueSeries = chartWindow.points;
-  const chartMaxRevenue = Math.max(...revenueSeries.map((point) => point.total), 0);
-  const chartWindowRevenue = revenueSeries.reduce((sum, point) => sum + point.total, 0);
-  const chartWindowOrders = revenueSeries.reduce((sum, point) => sum + point.count, 0);
-  const peakRevenuePoint = revenueSeries.reduce(
-    (largest, point) => (point.total > largest.total ? point : largest),
-    { key: '', label: '-', total: 0, count: 0, tooltipLabel: '-' },
+  const sourceData = useMemo(() => {
+    const buildSeries = (key) => points.map((p) => ({ bucket: p.bucket, value: Number(p[key]) || 0 }));
+    return {
+      subscription: {
+        total: (Number(totals?.userPlanVnd) || 0) + (Number(totals?.workspacePlanVnd) || 0),
+        points: points.map((p) => ({
+          bucket: p.bucket,
+          value: (Number(p.userPlanVnd) || 0) + (Number(p.workspacePlanVnd) || 0),
+        })),
+      },
+      credit: {
+        total: (Number(totals?.userCreditVnd) || 0) + (Number(totals?.workspaceCreditVnd) || 0),
+        points: points.map((p) => ({
+          bucket: p.bucket,
+          value: (Number(p.userCreditVnd) || 0) + (Number(p.workspaceCreditVnd) || 0),
+        })),
+      },
+      slot: {
+        total: Number(totals?.workspaceSlotVnd) || 0,
+        points: buildSeries(TARGET_KEYS.WORKSPACE_SLOT),
+      },
+    };
+  }, [points, totals]);
+
+  // Active tab data cho phân tích chi tiết
+  const activeTabConfig = DETAIL_TABS.find((tab) => tab.id === activeTab) || DETAIL_TABS[0];
+  const detailFilteredPoints = useMemo(
+    () => pickPointsForTypes(points, activeTabConfig.types),
+    [points, activeTabConfig.types],
   );
+  const detailTabTotal = useMemo(() => {
+    if (!totals) return 0;
+    return activeTabConfig.types.reduce((acc, type) => {
+      const meta = TARGET_TYPE_META[type];
+      return acc + (Number(totals[meta.dataKey]) || 0);
+    }, 0);
+  }, [totals, activeTabConfig.types]);
 
-  const selectedWindowPayments = payments.filter((payment) => {
-    const rawTime = getPaymentTimestamp(payment);
-    if (!rawTime) return false;
+  // Top 3 plans theo doanh thu
+  const topPlans = useMemo(() => {
+    const list = planSummary?.plans ?? [];
+    return [...list]
+      .filter((row) => Number(row.revenueVnd) > 0)
+      .sort((a, b) => Number(b.revenueVnd) - Number(a.revenueVnd))
+      .slice(0, 3);
+  }, [planSummary]);
 
-    const paymentDate = new Date(rawTime);
-    if (Number.isNaN(paymentDate.getTime())) return false;
-
-    return isDateWithinWindow(paymentDate, chartWindow.start, chartWindow.end);
-  });
-
-  const recentTransactions = [...payments]
-    .sort(
-      (left, right) =>
-        new Date(getPaymentTimestamp(right) || 0).getTime() - new Date(getPaymentTimestamp(left) || 0).getTime(),
-    )
-    .slice(0, 4);
-
-  const statusMeta = {
-    COMPLETED: {
-      label: t('adminPayments.status.COMPLETED', { defaultValue: 'Completed' }),
-      dotClass: 'bg-emerald-500',
-      textClass: isDarkMode ? 'text-emerald-300' : 'text-emerald-700',
-      barClass: 'bg-emerald-500',
-      count: selectedWindowPayments.filter((payment) => getPaymentStatus(payment) === 'COMPLETED').length,
-    },
-    PENDING: {
-      label: t('adminPayments.status.PENDING', { defaultValue: 'Pending' }),
-      dotClass: 'bg-amber-400',
-      textClass: isDarkMode ? 'text-amber-300' : 'text-amber-700',
-      barClass: 'bg-amber-400',
-      count: selectedWindowPayments.filter((payment) => getPaymentStatus(payment) === 'PENDING').length,
-    },
-    FAILED: {
-      label: t('adminPayments.status.FAILED', { defaultValue: 'Failed' }),
-      dotClass: 'bg-rose-500',
-      textClass: isDarkMode ? 'text-rose-300' : 'text-rose-700',
-      barClass: 'bg-rose-500',
-      count: selectedWindowPayments.filter((payment) => getPaymentStatus(payment) === 'FAILED').length,
-    },
-    CANCELLED: {
-      label: t('adminPayments.status.CANCELLED', { defaultValue: 'Cancelled' }),
-      dotClass: isDarkMode ? 'bg-slate-500' : 'bg-slate-400',
-      textClass: isDarkMode ? 'text-slate-300' : 'text-slate-600',
-      barClass: isDarkMode ? 'bg-slate-500' : 'bg-slate-400',
-      count: selectedWindowPayments.filter((payment) => getPaymentStatus(payment) === 'CANCELLED').length,
-    },
-  };
-
-  const paymentStatusRows = Object.entries(statusMeta).map(([key, value]) => ({
-    key,
-    ...value,
-    width: selectedWindowPayments.length > 0 ? Math.round((value.count / selectedWindowPayments.length) * 100) : 0,
-  }));
-
-  const quickActions = [
-    {
-      title: t('dashboard.manageUsers', { defaultValue: 'Manage Users' }),
-      description: t('dashboard.manageUsersDesc', {
-        count: formatNumber(totalAccounts, locale),
-        defaultValue: '{{count}} members on platform',
-      }),
-      icon: Users,
-      onClick: () => navigate('/super-admin/users'),
-    },
-    {
-      title: t('dashboard.rolesAndAccess', { defaultValue: 'Roles & Access' }),
-      description: t('dashboard.rolesAndAccessDesc', {
-        defaultValue: 'Review RBAC and admin access',
-      }),
-      icon: ShieldCheck,
-      onClick: () => navigate('/super-admin/rbac'),
-    },
-    {
-      title: t('dashboard.aiModelsAction', { defaultValue: 'AI Models' }),
-      description: t('dashboard.aiModelsActionDesc', {
-        defaultValue: 'Configure provider catalogs and model health',
-      }),
-      icon: Bot,
-      onClick: () => navigate('/super-admin/ai-models'),
-    },
-  ];
-
-  const handleExport = () => {
-    const header = ['Order ID', 'Payment ID', 'User ID', 'Amount VND', 'Status', 'Target Type', 'Method', 'Timestamp'];
-    const rows = selectedWindowPayments.map((payment) => ([
-      normalizeText(payment?.orderId),
-      payment?.paymentId ?? '',
-      payment?.userId ?? '',
-      safeNumber(payment?.amount),
-      getPaymentStatus(payment),
-      formatEnumLabel(payment?.paymentTargetType),
-      formatEnumLabel(payment?.paymentMethod),
-      getPaymentTimestamp(payment),
-    ].map(escapeCsvValue).join(',')));
-
-    const csvContent = [header.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const dateLabel = new Date().toISOString().slice(0, 10);
-
-    link.href = downloadUrl;
-    link.setAttribute('download', `super-admin-dashboard-${dateLabel}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
-  };
+  // Health alerts: drop > 30%, dry run 7 ngày, low volume
+  const healthAlerts = useMemo(() => {
+    const alerts = [];
+    if (growthPct !== null && Number(growthPct) < -30) {
+      alerts.push({
+        level: 'danger',
+        icon: TrendingDown,
+        text: t('dashboard.b.alert.drop', 'Doanh thu giảm mạnh ({{pct}}) so với khoảng trước', { pct: formatPct(growthPct) }),
+      });
+    }
+    const last7 = points.slice(-7);
+    const last7Sum = last7.reduce((acc, p) => acc + (Number(p.totalVnd) || 0), 0);
+    if (points.length >= 7 && last7Sum === 0) {
+      alerts.push({
+        level: 'warning',
+        icon: AlertTriangle,
+        text: t('dashboard.b.alert.dryRun', '7 ngày gần nhất không có giao dịch nào'),
+      });
+    }
+    const tx = Number(totals?.transactionCount) || 0;
+    if (points.length >= 14 && tx > 0 && tx < 5) {
+      alerts.push({
+        level: 'warning',
+        icon: AlertTriangle,
+        text: t('dashboard.b.alert.lowVolume', 'Volume thấp: chỉ {{n}} giao dịch trong 30 ngày', { n: tx }),
+      });
+    }
+    return alerts;
+  }, [growthPct, points, totals, t]);
 
   return (
-    <SuperAdminPage className={cn(fontClass, 'gap-6 pb-10')}>
+    <SuperAdminPage className={cn(fontClass, 'gap-5 pb-10')}>
       <SuperAdminPageHeader
         title={t('dashboard.overviewTitle', { defaultValue: 'Overview' })}
         description={t('dashboard.description', {
           defaultValue: 'Platform health, usage and revenue at a glance.',
         })}
         actions={(
-          <>
-            <SuperAdminSelectButton
-              label={t('dashboard.range', { defaultValue: 'Range' })}
-              value={t(`dashboard.rangeLabel.${chartView}`, { defaultValue: chartWindow.label })}
-            />
-            <Button
-              type="button"
-              onClick={handleExport}
-              className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]"
-            >
-              <Download className="h-4 w-4" />
-              {t('common.export', { defaultValue: 'Export' })}
-            </Button>
-          </>
+          <div
+            className={`inline-flex items-center gap-1 rounded-2xl border p-1 ${
+              isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
+            }`}
+            role="tablist"
+            aria-label="Chart bucket"
+          >
+            {[
+              { id: 'DAY', label: t('dashboard.chartDay', 'Theo ngày') },
+              { id: 'WEEK', label: t('dashboard.chartWeek', 'Theo tuần') },
+              { id: 'MONTH', label: t('dashboard.chartMonth', 'Theo tháng') },
+            ].map((opt) => {
+              const active = bucket === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setBucket(opt.id)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    active
+                      ? 'bg-[#0455BF] text-white'
+                      : isDarkMode
+                        ? 'text-slate-400 hover:bg-slate-800'
+                        : 'text-slate-500 hover:bg-slate-100'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         )}
       />
 
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
-          {error}
-        </div>
-      ) : null}
+      {/* Date range filter — áp dụng cho mọi chart trên page (replaces page-level chip
+          từ trang Doanh thu & Tăng trưởng cũ đã được merge vào đây) */}
+      <SuperAdminPanel contentClassName="px-4 py-3">
+        <DateRangeChips
+          value={{ from, to }}
+          onChange={({ from: f, to: tw }) => { setFrom(f || ''); setTo(tw || ''); }}
+          isDarkMode={isDarkMode}
+        />
+      </SuperAdminPanel>
 
-      {loadIssues.length > 0 && !error ? (
-        <div
-          className={cn(
-            'rounded-2xl border px-4 py-3 text-sm',
-            isDarkMode ? 'border-amber-900/60 bg-amber-950/30 text-amber-200' : 'border-amber-200 bg-amber-50 text-amber-700',
-          )}
-        >
-          {t('dashboard.partialData', { defaultValue: 'Some dashboard sections are showing partial data.' })}
-        </div>
-      ) : null}
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_320px]">
-        <SurfaceCard
-          title={t('dashboard.revenueChartTitle', { defaultValue: 'Revenue' })}
-          description={t('dashboard.revenueChartDesc', { defaultValue: 'Completed transactions, VND' })}
-          action={<ChartTabs active={chartView} onChange={setChartView} darkMode={isDarkMode} t={t} />}
-          contentClassName="px-5 py-5"
-        >
-          {revenueSeries.some((point) => point.total > 0) ? (
-            <>
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className={cn('rounded-[22px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950/80' : 'border-slate-200 bg-slate-50/70')}>
-                  <p className={cn('text-xs font-semibold uppercase tracking-[0.16em]', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
-                    {t('dashboard.revenueWindowMetric', { defaultValue: 'Window Revenue' })}
-                  </p>
-                  <p className={cn('mt-3 text-2xl font-black tracking-[-0.04em]', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                    {formatCurrency(chartWindowRevenue, locale, true)}
-                  </p>
-                </div>
-
-                <div className={cn('rounded-[22px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950/80' : 'border-slate-200 bg-slate-50/70')}>
-                  <p className={cn('text-xs font-semibold uppercase tracking-[0.16em]', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
-                    {t('dashboard.ordersLabel', { defaultValue: 'Orders' })}
-                  </p>
-                  <p className={cn('mt-3 text-2xl font-black tracking-[-0.04em]', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                    {formatNumber(chartWindowOrders, locale)}
-                  </p>
-                </div>
-
-                <div className={cn('rounded-[22px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950/80' : 'border-slate-200 bg-slate-50/70')}>
-                  <p className={cn('text-xs font-semibold uppercase tracking-[0.16em]', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
-                    {t('dashboard.peakPeriodLabel', { defaultValue: 'Peak Period' })}
-                  </p>
-                  <p className={cn('mt-3 text-2xl font-black tracking-[-0.04em]', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                    {peakRevenuePoint.tooltipLabel}
-                  </p>
-                  <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
-                    {formatCurrency(peakRevenuePoint.total, locale, true)}
-                  </p>
+      {tsQuery.isLoading ? (
+        <ListSpinner />
+      ) : (
+        <>
+          {/* Hero KPI: Tổng doanh thu + growth */}
+          <div
+            className={`rounded-3xl border p-6 ${
+              isDarkMode ? 'border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950' : 'border-slate-200 bg-gradient-to-br from-white to-slate-50'
+            }`}
+          >
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  {t('dashboard.b.hero.label', 'Tổng doanh thu · 30 ngày gần nhất')}
+                </p>
+                <p className={`mt-2 text-4xl font-black tracking-[-0.03em] ${isDarkMode ? 'text-white' : 'text-slate-950'}`}>
+                  {formatVnd(totals?.totalVnd)}
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <GrowthBadge value={growthPct} isDarkMode={isDarkMode} label={t('revenue.kpi.vsPrev', 'so với khoảng trước')} />
+                  <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {formatInt(totals?.transactionCount)} {t('revenue.kpi.txCount', 'giao dịch')}
+                  </span>
                 </div>
               </div>
+              {/* CTA "Vào trang Doanh thu & Tăng trưởng" đã bỏ vì page đó đã merge vào dashboard này. */}
+            </div>
+          </div>
 
-              <div className="mt-6 overflow-x-auto">
-                <div className={cn('min-w-[720px] rounded-[26px] border px-4 pb-4 pt-6', isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/55')}>
-                  <div className="flex h-[280px] items-end gap-2">
-                    {revenueSeries.map((point, index) => {
-                      const height = point.total > 0 && chartMaxRevenue > 0
-                        ? Math.max(18, Math.round((point.total / chartMaxRevenue) * 210))
-                        : 10;
-                      const shouldShowLabel = chartView === 'day'
-                        ? index === 0 || index === 7 || index === 14 || index === 21 || index === revenueSeries.length - 1
-                        : true;
+          {/* Sources: Subscription / Credit / Slot — mỗi card có sparkline */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <SourceCard
+              icon={CreditCard}
+              label={t('revenue.kpi.subscription', 'Gói trả phí (Subscription)')}
+              total={sourceData.subscription.total}
+              points={sourceData.subscription.points}
+              color="#10b981"
+              isDarkMode={isDarkMode}
+            />
+            <SourceCard
+              icon={Coins}
+              label={t('revenue.kpi.credit', 'Mua thêm Credit')}
+              total={sourceData.credit.total}
+              points={sourceData.credit.points}
+              color="#f59e0b"
+              isDarkMode={isDarkMode}
+            />
+            <SourceCard
+              icon={Banknote}
+              label={t('revenue.kpi.slot', 'Slot nhóm')}
+              total={sourceData.slot.total}
+              points={sourceData.slot.points}
+              color="#8b5cf6"
+              isDarkMode={isDarkMode}
+            />
+          </div>
 
-                      return (
-                        <div key={point.key} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
-                          <div className="flex h-[236px] w-full items-end">
-                            <div
-                              className={cn(
-                                'w-full rounded-t-[10px] transition-all',
-                                isDarkMode ? 'bg-[#63A7FF]' : 'bg-[#4D83D6]',
-                              )}
-                              style={{ height: `${height}px` }}
-                              title={`${point.tooltipLabel}: ${formatCurrency(point.total, locale)} · ${point.count} ${t('dashboard.ordersLabel', { defaultValue: 'orders' })}`}
-                            />
-                          </div>
-                          <span className={cn('text-[10px] font-medium', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
-                            {shouldShowLabel ? point.label : ''}
+          {/* Phân tích chi tiết — merged từ trang Doanh thu & Tăng trưởng cũ.
+              Tabs: Tổng quan / Subscription / Credit / Slot. Mỗi tab show stacked area + line tổng. */}
+          <div className="space-y-3">
+            <SuperAdminTabs
+              tabs={DETAIL_TABS.map((tab) => ({ id: tab.id, label: t(tab.labelKey, tab.label) }))}
+              active={activeTab}
+              onChange={setActiveTab}
+            />
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ChartCard
+                isDarkMode={isDarkMode}
+                title={t('dashboard.detail.stacked', 'Cơ cấu doanh thu theo loại')}
+                subtitle={t('dashboard.detail.stackedHint', 'Stacked area: từng loại payment cộng lại theo bucket.')}
+                summary={formatVnd(detailTabTotal)}
+              >
+                {detailFilteredPoints.length === 0 ? (
+                  <p className="py-12 text-center text-sm text-slate-500">{t('revenue.chartEmpty', 'Không có dữ liệu cho khoảng này.')}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={detailFilteredPoints} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                      <defs>
+                        {activeTabConfig.types.map((type) => {
+                          const meta = TARGET_TYPE_META[type];
+                          return (
+                            <linearGradient key={type} id={`grad-detail-${type}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={meta.color} stopOpacity={0.55} />
+                              <stop offset="100%" stopColor={meta.color} stopOpacity={0.05} />
+                            </linearGradient>
+                          );
+                        })}
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} vertical={false} />
+                      <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: isDarkMode ? '#94a3b8' : '#475569' }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(v) => formatCompactVnd(v)} tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={60} />
+                      <Tooltip
+                        contentStyle={{ background: isDarkMode ? '#0f172a' : '#fff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, borderRadius: 12, fontSize: 12 }}
+                        cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
+                        labelStyle={{ color: isDarkMode ? '#e2e8f0' : '#0f172a', fontWeight: 600 }}
+                        formatter={(value, name) => [formatVnd(value), name]}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle" iconSize={8} />
+                      {activeTabConfig.types.map((type) => {
+                        const meta = TARGET_TYPE_META[type];
+                        return (
+                          <Area
+                            key={type}
+                            type="monotone"
+                            dataKey={meta.dataKey}
+                            stackId="rev"
+                            stroke={meta.color}
+                            strokeWidth={2}
+                            fill={`url(#grad-detail-${type})`}
+                            name={t(meta.labelKey, meta.label)}
+                          />
+                        );
+                      })}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+
+              <ChartCard
+                isDarkMode={isDarkMode}
+                title={t('dashboard.detail.totalLine', 'Đường tổng doanh thu')}
+                subtitle={t('dashboard.detail.totalLineHint', 'Quan sát xu hướng tăng/giảm theo bucket đã chọn.')}
+                summary={formatVnd(detailTabTotal)}
+              >
+                {detailFilteredPoints.length === 0 ? (
+                  <p className="py-12 text-center text-sm text-slate-500">{t('revenue.chartEmpty', 'Không có dữ liệu cho khoảng này.')}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={detailFilteredPoints} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} vertical={false} />
+                      <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: isDarkMode ? '#94a3b8' : '#475569' }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(v) => formatCompactVnd(v)} tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={60} />
+                      <Tooltip
+                        contentStyle={{ background: isDarkMode ? '#0f172a' : '#fff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, borderRadius: 12, fontSize: 12 }}
+                        cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
+                        labelStyle={{ color: isDarkMode ? '#e2e8f0' : '#0f172a', fontWeight: 600 }}
+                        formatter={(value) => [formatVnd(value), t('revenue.legend.total', 'Tổng')]}
+                      />
+                      <Line type="monotone" dataKey="totalVnd" stroke="#0455BF" strokeWidth={2.5} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+
+              <ChartCard
+                isDarkMode={isDarkMode}
+                title={t('dashboard.detail.txCount', 'Số giao dịch theo bucket')}
+                subtitle={t('dashboard.detail.txCountHint', 'Đếm payment COMPLETED — phản ánh tần suất.')}
+                summary={`${formatInt(totals?.transactionCount)} ${t('revenue.kpi.txCount', 'giao dịch')}`}
+              >
+                {detailFilteredPoints.length === 0 ? (
+                  <p className="py-12 text-center text-sm text-slate-500">{t('revenue.chartEmpty', 'Không có dữ liệu.')}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={detailFilteredPoints} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} vertical={false} />
+                      <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: isDarkMode ? '#94a3b8' : '#475569' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={40} />
+                      <Tooltip
+                        contentStyle={{ background: isDarkMode ? '#0f172a' : '#fff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, borderRadius: 8, fontSize: 11 }}
+                        cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
+                        formatter={(value) => [formatInt(value), t('revenue.legend.transactions', 'Giao dịch')]}
+                      />
+                      <Bar dataKey="transactionCount" fill="#94a3b8" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+
+              <ChartCard
+                isDarkMode={isDarkMode}
+                title={t('dashboard.detail.breakdown', 'Cơ cấu theo loại payment')}
+                subtitle={t('dashboard.detail.breakdownHint', 'Tỉ trọng từng loại trên tổng doanh thu của tab.')}
+                summary={formatVnd(detailTabTotal)}
+              >
+                <div className="space-y-3 py-2">
+                  {activeTabConfig.types.map((type) => {
+                    const meta = TARGET_TYPE_META[type];
+                    const value = Number(totals?.[meta.dataKey]) || 0;
+                    const pct = detailTabTotal > 0 ? (value / detailTabTotal) * 100 : 0;
+                    return (
+                      <div key={type}>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-2 font-semibold">
+                            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: meta.color }} />
+                            {t(meta.labelKey, meta.label)}
+                          </span>
+                          <span className={`tabular-nums ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {formatVnd(value)} <span className="text-slate-400">({pct.toFixed(1)}%)</span>
                           </span>
                         </div>
-                      );
-                    })}
+                        <div className={`mt-1 h-2 overflow-hidden rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, pct)}%`, background: meta.color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ChartCard>
+            </div>
+          </div>
+
+          {/* Top plans + Health alerts */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <SuperAdminPanel
+              title={(
+                <span className="flex items-center gap-2">
+                  <Crown className="h-4 w-4 text-amber-500" />
+                  {t('dashboard.b.topPlans.title', 'Top gói có doanh thu cao nhất')}
+                </span>
+              )}
+              description={t('dashboard.b.topPlans.desc', '30 ngày gần nhất · click để xem người mua')}
+              contentClassName="px-0 py-0"
+            >
+              {planQuery.isLoading ? (
+                <div className="px-6 py-8"><ListSpinner /></div>
+              ) : topPlans.length === 0 ? (
+                <p className="px-6 py-8 text-sm text-slate-500">
+                  {t('dashboard.b.topPlans.empty', 'Chưa có gói nào bán được trong 30 ngày.')}
+                </p>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {topPlans.map((row, idx) => {
+                    const totalRev = Number(planSummary?.totalRevenueVnd) || 1;
+                    const pct = (Number(row.revenueVnd) / totalRev) * 100;
+                    const isCurrent = row.planIsCurrent !== false;
+                    return (
+                      <button
+                        key={row.planCatalogId}
+                        type="button"
+                        onClick={() => navigate('/super-admin/plan-purchases')}
+                        className={`flex w-full items-center gap-4 px-6 py-3 text-left transition-colors ${
+                          isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-black ${
+                          idx === 0
+                            ? (isDarkMode ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700')
+                            : idx === 1
+                              ? (isDarkMode ? 'bg-slate-500/20 text-slate-300' : 'bg-slate-200 text-slate-700')
+                              : (isDarkMode ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-700')
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                              {row.planDisplayName || row.planCode}
+                            </span>
+                            {Number.isFinite(Number(row.planVersion)) ? (
+                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                isCurrent
+                                  ? (isDarkMode ? 'bg-indigo-500/15 text-indigo-300' : 'bg-indigo-100 text-indigo-700')
+                                  : (isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500')
+                              }`}>
+                                v{row.planVersion}{isCurrent ? '' : ' · cũ'}
+                              </span>
+                            ) : null}
+                            <span className={`text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                              · {row.planScope}
+                            </span>
+                          </div>
+                          <div className={`mt-1 h-1.5 overflow-hidden rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+                              style={{ width: `${Math.min(100, pct)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className={`font-bold tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                            {formatCompactVnd(row.revenueVnd)}
+                          </p>
+                          <p className={`text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {row.purchaseCount} lượt · {pct.toFixed(1)}%
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </SuperAdminPanel>
+
+            <SuperAdminPanel
+              title={(
+                <span className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  {t('dashboard.b.alerts.title', 'Cảnh báo & sức khoẻ')}
+                </span>
+              )}
+              description={t('dashboard.b.alerts.desc', 'Tự phát hiện bất thường trong 30 ngày')}
+            >
+              {healthAlerts.length === 0 ? (
+                <div className={`flex items-center gap-3 rounded-xl border-2 border-dashed p-4 ${
+                  isDarkMode ? 'border-emerald-800/50 bg-emerald-950/20' : 'border-emerald-200 bg-emerald-50/50'
+                }`}>
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                    isDarkMode ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    ✓
+                  </span>
+                  <div>
+                    <p className={`text-sm font-semibold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                      {t('dashboard.b.alerts.healthy', 'Mọi thứ ổn')}
+                    </p>
+                    <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                      {t('dashboard.b.alerts.healthyDesc', 'Không phát hiện bất thường lớn')}
+                    </p>
                   </div>
                 </div>
-              </div>
-            </>
-          ) : (
-            <div
-              className={cn(
-                'rounded-[24px] border border-dashed px-4 py-14 text-center text-sm',
-                isDarkMode ? 'border-slate-800 bg-slate-900/60 text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-500',
+              ) : (
+                <div className="space-y-2">
+                  {healthAlerts.map((a, idx) => {
+                    const Icon = a.icon;
+                    const danger = a.level === 'danger';
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-start gap-3 rounded-xl border p-3 ${
+                          danger
+                            ? (isDarkMode ? 'border-rose-800 bg-rose-950/40' : 'border-rose-200 bg-rose-50')
+                            : (isDarkMode ? 'border-amber-800 bg-amber-950/40' : 'border-amber-200 bg-amber-50')
+                        }`}
+                      >
+                        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${
+                          danger
+                            ? (isDarkMode ? 'text-rose-300' : 'text-rose-600')
+                            : (isDarkMode ? 'text-amber-300' : 'text-amber-700')
+                        }`} />
+                        <p className={`text-sm ${
+                          danger
+                            ? (isDarkMode ? 'text-rose-200' : 'text-rose-800')
+                            : (isDarkMode ? 'text-amber-200' : 'text-amber-800')
+                        }`}>
+                          {a.text}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-            >
-              {t('dashboard.emptyRevenueWindow', { defaultValue: 'No completed payments were found for this range.' })}
-            </div>
-          )}
-        </SurfaceCard>
-
-        <SurfaceCard
-          title={t('dashboard.paymentStatusTitle', { defaultValue: 'Payment Status' })}
-          description={t('dashboard.paymentStatusDesc', { defaultValue: 'Distribution for the selected range' })}
-          contentClassName="px-5 py-5"
-        >
-          <div className="space-y-5">
-            {paymentStatusRows.map((item) => (
-              <PaymentStatusRow
-                key={item.key}
-                label={item.label}
-                count={formatNumber(item.count, locale)}
-                width={item.width}
-                colorClass={item.barClass}
-                darkMode={isDarkMode}
-              />
-            ))}
+            </SuperAdminPanel>
           </div>
 
-          <div className={cn('mt-6 flex items-center justify-between border-t pt-4 text-sm', isDarkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500')}>
-            <span>
-              {t('dashboard.totalSelectedRange', {
-                label: t(`dashboard.rangeLabel.${chartView}`, { defaultValue: chartWindow.label }),
-                defaultValue: 'Total · {{label}}',
-              })}
-            </span>
-            <span className={cn('font-semibold tabular-nums', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {formatNumber(selectedWindowPayments.length, locale)}
-            </span>
+          {/* Footer KPIs nhỏ */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <SuperAdminMetricCard
+              isDarkMode={isDarkMode}
+              tone="blue"
+              icon={Wallet}
+              label={t('revenue.kpi.txCount', 'Số giao dịch')}
+              value={formatInt(totals?.transactionCount)}
+            />
+            <SuperAdminMetricCard
+              isDarkMode={isDarkMode}
+              tone="emerald"
+              icon={CreditCard}
+              label={t('revenue.kpi.subscription', 'Subscription')}
+              value={formatCompactVnd(sourceData.subscription.total)}
+            />
+            <SuperAdminMetricCard
+              isDarkMode={isDarkMode}
+              tone="amber"
+              icon={Coins}
+              label={t('revenue.kpi.credit', 'Credit topup')}
+              value={formatCompactVnd(sourceData.credit.total)}
+            />
+            <SuperAdminMetricCard
+              isDarkMode={isDarkMode}
+              tone="slate"
+              icon={Banknote}
+              label={t('revenue.kpi.slot', 'Slot nhóm')}
+              value={formatCompactVnd(sourceData.slot.total)}
+            />
           </div>
-        </SurfaceCard>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <SurfaceCard
-          title={t('dashboard.quickActionsTitle', { defaultValue: 'Quick actions' })}
-          description={t('dashboard.quickActionsDesc', { defaultValue: 'Fast routes into the main admin workflows.' })}
-          contentClassName="px-5 py-5"
-        >
-          <div className="space-y-3">
-            {quickActions.map((action) => (
-              <QuickActionButton
-                key={action.title}
-                icon={action.icon}
-                title={action.title}
-                description={action.description}
-                onClick={action.onClick}
-                darkMode={isDarkMode}
-              />
-            ))}
-          </div>
-        </SurfaceCard>
-
-        <SurfaceCard
-          title={t('dashboard.recentPaymentsTitle', { defaultValue: 'Recent payments' })}
-          action={(
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => navigate('/super-admin/payments')}
-              className={cn('rounded-2xl px-3', isDarkMode ? 'text-slate-200 hover:bg-slate-900' : 'text-[#0455BF] hover:bg-[#EEF4FF]')}
-            >
-              {t('common.viewAll', { defaultValue: 'View all' })}
-            </Button>
-          )}
-          contentClassName="px-5 py-4"
-        >
-          <SuperAdminRecentPayments
-            payments={recentTransactions}
-            statusMeta={statusMeta}
-            locale={locale}
-            darkMode={isDarkMode}
-            t={t}
-          />
-        </SurfaceCard>
-      </div>
+        </>
+      )}
     </SuperAdminPage>
   );
 }
