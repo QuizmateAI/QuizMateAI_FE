@@ -258,26 +258,32 @@ function PlanFormWizardStepContent({
         )}
 
         <div className={cn('mt-6 grid gap-4', isWorkspace ? 'md:grid-cols-2' : 'md:grid-cols-3')}>
-          {(!isWorkspace
-            ? [
-              {
+          {(() => {
+            // USER scope: 3 input (maxIndividualWorkspace + maxMaterialInWorkspace + planIncludedCredits)
+            // WORKSPACE scope: 2 input (maxMaterialInWorkspace + planIncludedCredits)
+            //   — bỏ maxIndividualWorkspace vì group workspace không có sub-workspace.
+            //   — vẫn giữ material count vì BE validate field này cho mọi scope (xem
+            //     PlanCatalogService.validateCreateEntitlementLimits).
+            const fields = [];
+            if (!isWorkspace) {
+              fields.push({
                 key: 'maxIndividualWorkspace',
                 label: `${t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace')} *`,
                 hint: t('subscription.wizard.entitlement.maxIndividualWorkspaceHint', 'Maximum number of individual workspaces allowed by this plan.'),
-              },
-              {
-                key: 'maxMaterialInWorkspace',
-                label: `${t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')} *`,
-                hint: t('subscription.wizard.entitlement.maxMaterialInWorkspaceHint', 'Material limit inside each workspace.'),
-              },
-              {
-                key: 'planIncludedCredits',
-                label: `${t('subscription.detail.planIncludedCredits', 'Included credits')} *`,
-                hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
-              },
-            ]
-            : []
-          ).map((field) => (
+              });
+            }
+            fields.push({
+              key: 'maxMaterialInWorkspace',
+              label: `${t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')} *`,
+              hint: t('subscription.wizard.entitlement.maxMaterialInWorkspaceHint', 'Material limit inside each workspace.'),
+            });
+            fields.push({
+              key: 'planIncludedCredits',
+              label: `${t('subscription.detail.planIncludedCredits', 'Included credits')} *`,
+              hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
+            });
+            return fields;
+          })().map((field) => (
             <div
               key={field.key}
               className={cn(
