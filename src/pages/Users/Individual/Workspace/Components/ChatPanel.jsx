@@ -22,6 +22,9 @@ const LazyCommunityQuizExplorerView = React.lazy(() => import("./CommunityQuizEx
 const LazyQuizDetailView = React.lazy(() => import("./QuizDetailView"));
 const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyManualQuizWizard = React.lazy(() => import("./ManualQuizWizard"));
+const LazyQuizCollectionListView = React.lazy(() => import("./QuizCollectionListView"));
+const LazyQuizCollectionDetailView = React.lazy(() => import("./QuizCollectionDetailView"));
+const LazyQuizCollectionAdvancedPracticeConfigView = React.lazy(() => import("./QuizCollectionAdvancedPracticeConfigView"));
 const LazyFlashcardListView = React.lazy(() => import("./FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("./FlashcardDetailView"));
 const LazyManualFlashcardEditor = React.lazy(() => import("./ManualFlashcardEditor"));
@@ -96,6 +99,11 @@ function ChatPanel({
   onEditQuiz,
   onSaveQuiz,
   onCreateSimilarQuiz,
+  selectedCollection = null,
+  onViewCollection,
+  onCollectionCreated,
+  onCollectionUpdated,
+  onCollectionDeleted,
   selectedFlashcard = null,
   onViewFlashcard,
   onDeleteFlashcard,
@@ -133,6 +141,7 @@ function ChatPanel({
   shouldDisableFlashcard = false,
   shouldDisableRoadmap = false,
   shouldDisableCreateQuiz = false,
+  shouldDisableCreateCollection = false,
   shouldDisableCreateFlashcard = false,
   shouldDisableCreateMockTest = false,
   progressTracking = null,
@@ -326,6 +335,42 @@ function ChatPanel({
             onBackToQuiz={() => onChangeView?.("quiz")}
           />
         );
+      case "quizCollection":
+        return (
+          <LazyQuizCollectionListView
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            onNavigateHome={onNavigateHome}
+            onViewCollection={onViewCollection}
+            onCollectionCreated={onCollectionCreated}
+            onCollectionDeleted={onCollectionDeleted}
+            disableCreate={shouldDisableCreateCollection}
+          />
+        );
+      case "quizCollectionDetail":
+        return selectedCollection ? (
+          <LazyQuizCollectionDetailView
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            collection={selectedCollection}
+            onBack={onBack}
+            onStartAdvancedPractice={(nextCollection) => {
+              onViewCollection?.(nextCollection || selectedCollection);
+              onChangeView?.("quizCollectionAdvancedPractice");
+            }}
+            onUpdated={onCollectionUpdated}
+            onDeleted={onCollectionDeleted}
+          />
+        ) : null;
+      case "quizCollectionAdvancedPractice":
+        return selectedCollection ? (
+          <LazyQuizCollectionAdvancedPracticeConfigView
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            collection={selectedCollection}
+            onBack={onBack}
+          />
+        ) : null;
       case "flashcard":
         return (
           <LazyFlashcardListView
@@ -558,6 +603,9 @@ function ChatPanel({
     "roadmap",
     "quiz",
     "communityQuiz",
+    "quizCollection",
+    "quizCollectionDetail",
+    "quizCollectionAdvancedPractice",
     "editQuiz",
     "flashcard",
     "mockTest",
