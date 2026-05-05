@@ -844,7 +844,7 @@
       "totalTime": "Thời gian tổng",
       "perQuestion": "Thời gian mỗi câu",
       "timeDuration": "Thời gian (phút)",
-      "passingScore": "Điểm đậu (0-10)",
+      "passingScore": "Điểm đậu",
       "maxAttempt": "Số lần tối đa",
       "intent": "Mục đích Quiz",
       "overallDifficulty": "Độ khó tổng thể",
@@ -1494,7 +1494,9 @@
         "unansweredListMore": "và còn nữa...",
         "allQuestionsCompleted": "Tất cả câu hỏi đã hoàn thành.",
         "navigationLocked": "Đang trong bài thi, không thể quay lại hoặc chuyển trang.",
-        "starting": "Đang bắt đầu"
+        "starting": "Đang bắt đầu",
+        "assessmentWarningTitle": "Nộp bây giờ sẽ không được AI đánh giá",
+        "assessmentWarningDescription": "Đây là lần làm chính thức đầu tiên của bạn. Cần trả lời tối thiểu {{min}}% câu hỏi để AI tạo đánh giá. Hiện tại bạn mới trả lời {{current}}%. Nộp ngay sẽ mất luôn cơ hội nhận đánh giá AI cho bài quiz này."
       },
       "mockTestExam": {
         "confirmStartTitle": "Bắt đầu mocktest?",

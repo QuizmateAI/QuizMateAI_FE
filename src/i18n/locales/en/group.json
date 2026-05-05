@@ -1597,7 +1597,7 @@
       "button": "Feedback"
     },
     "card": {
-      "aiLabel": "QUIZMATE AI",
+      "aiLabel": "AI",
       "manualLabel": "Manual quiz",
       "timeDuration": "Duration",
       "overallDifficulty": "Difficulty",
