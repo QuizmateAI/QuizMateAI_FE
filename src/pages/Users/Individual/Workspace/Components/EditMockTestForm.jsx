@@ -477,7 +477,9 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
                 </select>
               )}
               {(q.type === "fillBlank" || q.type === "shortAnswer") && (
-                <input className={inputCls} placeholder={t("mockTestForms.common.correctAnswer", "Correct answer")} value={q.correctAnswer || ""}
+                <input className={inputCls} placeholder={q.type === "shortAnswer"
+                  ? t("workspace.quiz.expectedAnswer", "Expected answer")
+                  : t("mockTestForms.common.correctAnswer", "Correct answer")} value={q.correctAnswer || ""}
                   onChange={(e) => updateQuestionField(qIdx, "correctAnswer", e.target.value)} />
               )}
             </div>

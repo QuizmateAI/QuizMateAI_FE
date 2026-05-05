@@ -51,6 +51,7 @@ import {
   getQuizzesByScope,
   shareQuizToCommunity,
 } from "@/api/QuizAPI";
+import { getQuizCollectionsByWorkspace } from "@/api/QuizCollectionAPI";
 import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/utils/getErrorMessage";
@@ -106,6 +107,7 @@ const {
   phases: workspacePhasesPath,
   knowledges: workspaceKnowledgesPath,
   quizzes: workspaceQuizzesPath,
+  collections: workspaceCollectionsPath,
   mockTests: workspaceMockTestsPath,
   postLearnings: workspacePostLearningsPath,
 } = WORKSPACE_ROUTE_SEGMENTS;
@@ -288,6 +290,16 @@ function WorkspacePage() {
   // Selected quiz state for detail and edit flows
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [quizBackTarget, setQuizBackTarget] = useState(null);
+  const [selectedCollection, setSelectedCollection] = useState(() => {
+    if (!workspaceId) return null;
+    const prefix = buildWorkspacePath(workspaceId);
+    if (location.pathname.startsWith(prefix)) {
+      const subPath = location.pathname.slice(prefix.length).replace(/^\/+/, "");
+      const { collectionId } = resolveWorkspaceViewFromSubPath(subPath);
+      if (collectionId) return { collectionId };
+    }
+    return null;
+  });
   // Selected flashcard state for detail flow
   const [selectedFlashcard, setSelectedFlashcard] = useState(null);
   // Selected mock-test state for detail and edit flows
@@ -320,6 +332,9 @@ function WorkspacePage() {
   const [hasExistingWorkspaceMockTest, setHasExistingWorkspaceMockTest] =
     useState(false);
   const [totalMockTestCount, setTotalMockTestCount] = useState(0);
+  const [hasExistingQuizCollection, setHasExistingQuizCollection] =
+    useState(false);
+  const [totalQuizCollectionCount, setTotalQuizCollectionCount] = useState(0);
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
     return new RegExp(
@@ -468,6 +483,8 @@ function WorkspacePage() {
       setTotalFlashcardCount(0);
       setHasExistingWorkspaceMockTest(false);
       setTotalMockTestCount(0);
+      setHasExistingQuizCollection(false);
+      setTotalQuizCollectionCount(0);
       return;
     }
 
@@ -477,9 +494,10 @@ function WorkspacePage() {
 
     const syncExistingWorkspaceContent = async () => {
       try {
-        const [quizResponse, flashcardResponse] = await Promise.all([
+        const [quizResponse, flashcardResponse, collectionResponse] = await Promise.all([
           getQuizzesByScope("WORKSPACE", Number(workspaceId)),
           getFlashcardsByScope("WORKSPACE", Number(workspaceId)),
+          getQuizCollectionsByWorkspace(Number(workspaceId)),
         ]);
 
         if (cancelled) return;
@@ -504,6 +522,9 @@ function WorkspacePage() {
         const workspaceFlashcards = Array.isArray(flashcardResponse?.data)
           ? flashcardResponse.data
           : [];
+        const workspaceCollections = Array.isArray(collectionResponse?.data)
+          ? collectionResponse.data
+          : [];
 
         const completedCount = workspaceQuizzes.filter((quiz) => {
           if (quiz?.myAttempted === true) return true;
@@ -524,6 +545,8 @@ function WorkspacePage() {
         setTotalFlashcardCount(workspaceFlashcards.length);
         setHasExistingWorkspaceMockTest(mockTestCount > 0);
         setTotalMockTestCount(mockTestCount);
+        setHasExistingQuizCollection(workspaceCollections.length > 0);
+        setTotalQuizCollectionCount(workspaceCollections.length);
       } catch (error) {
         if (!cancelled) {
           console.error(
@@ -574,7 +597,10 @@ function WorkspacePage() {
     !hasAtLeastOneActiveSource && !hasExistingWorkspaceFlashcard;
   const shouldDisableMockTest =
     !hasAtLeastOneActiveSource && !hasExistingWorkspaceMockTest;
+  const shouldDisableQuizCollection =
+    !hasAtLeastOneActiveSource && !hasExistingQuizCollection;
   const shouldDisableCreateQuiz = !hasAtLeastOneActiveSource;
+  const shouldDisableCreateCollection = !hasAtLeastOneActiveSource;
   const shouldDisableCreateFlashcard = !hasAtLeastOneActiveSource;
   const shouldDisableCreateMockTest =
     !hasAtLeastOneActiveSource ||
@@ -609,6 +635,7 @@ function WorkspacePage() {
 
   const hasWorkspaceLearningDataAtRisk =
     hasExistingWorkspaceQuiz ||
+    hasExistingQuizCollection ||
     hasExistingWorkspaceFlashcard ||
     hasRoadmapPhases ||
     Boolean(extractRoadmapIdFromProfile(workspaceProfile));
@@ -666,6 +693,7 @@ function WorkspacePage() {
     const {
       view: mappedView,
       quizId,
+      collectionId,
       mockTestId,
       backTarget,
       phaseId: mappedPhaseId,
@@ -777,6 +805,13 @@ function WorkspacePage() {
       });
     }
 
+    if (collectionId) {
+      setSelectedCollection((prev) => {
+        if (prev?.collectionId === collectionId) return prev;
+        return { collectionId };
+      });
+    }
+
     if (mockTestId) {
       setSelectedMockTest((prev) => {
         if (prev?.quizId === mockTestId) return prev;
@@ -795,6 +830,7 @@ function WorkspacePage() {
       selectedQuiz,
       quizBackTarget,
       selectedMockTest,
+      selectedCollection,
     );
 
     if (activeView === "roadmap") {
@@ -829,6 +865,7 @@ function WorkspacePage() {
       new RegExp(`^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+(?:/${workspaceKnowledgesPath}/\\d+)?/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath);
 
     const isMockTestDeepLink = new RegExp(`^${workspaceMockTestsPath}/\\d+$`).test(currentSubPath);
+    const isCollectionDeepLink = new RegExp(`^${workspaceCollectionsPath}/\\d+(?:/advanced-practice)?$`).test(currentSubPath);
 
     const isQuizDetailView =
       activeView === "quizDetail" || activeView === "editQuiz";
@@ -858,6 +895,16 @@ function WorkspacePage() {
       if (Number.isInteger(routeMockTestId) && routeMockTestId > 0 && currentMockTestId !== routeMockTestId) return;
     }
 
+    if (
+      isCollectionDeepLink &&
+      (activeView === "quizCollectionDetail" ||
+        activeView === "quizCollectionAdvancedPractice")
+    ) {
+      const { collectionId: routeCollectionId } = resolveWorkspaceViewFromSubPath(currentSubPath);
+      const currentCollectionId = Number(selectedCollection?.collectionId);
+      if (Number.isInteger(routeCollectionId) && routeCollectionId > 0 && currentCollectionId !== routeCollectionId) return;
+    }
+
     if (currentSubPath === mappedPath) return;
 
     navigate(buildWorkspacePath(workspaceId, mappedPath), { replace: true });
@@ -868,6 +915,7 @@ function WorkspacePage() {
     quizBackTarget,
     selectedQuiz,
     selectedMockTest,
+    selectedCollection,
     selectedRoadmapPhaseId,
     selectedRoadmapKnowledgeId,
     roadmapAiRoadmapId,
@@ -1898,6 +1946,10 @@ function WorkspacePage() {
         return;
       }
 
+      if (actionKey === "quizCollection" && shouldDisableQuizCollection) {
+        return;
+      }
+
       // Plan-gated actions: show upgrade modal instead of navigating
 
       if (
@@ -1918,6 +1970,7 @@ function WorkspacePage() {
         sources: "sources",
         roadmap: "roadmap",
         quiz: "quiz",
+        quizCollection: "quizCollection",
         flashcard: "flashcard",
         mockTest: "mockTest",
         postLearning: "postLearning",
@@ -1942,6 +1995,14 @@ function WorkspacePage() {
         setQuizBackTarget(null);
       }
 
+      if (
+        actionKey !== "quizCollection" &&
+        actionKey !== "quizCollectionDetail" &&
+        actionKey !== "quizCollectionAdvancedPractice"
+      ) {
+        setSelectedCollection(null);
+      }
+
       if (actionKey !== "roadmap") {
         setSelectedRoadmapPhaseId(null);
         setSelectedRoadmapKnowledgeId(null);
@@ -1951,6 +2012,7 @@ function WorkspacePage() {
       activeView,
       addAccessHistory,
       shouldDisableRoadmapForStudio,
+      shouldDisableQuizCollection,
       planEntitlements.hasWorkspaceAnalytics,
     ],
   );
@@ -2135,6 +2197,37 @@ function WorkspacePage() {
     setSelectedQuiz((prev) => ({ ...prev, ...updatedQuiz }));
 
     setActiveView("quizDetail");
+  }, []);
+
+  const handleViewCollection = useCallback((nextCollection) => {
+    setSelectedCollection(nextCollection);
+    setActiveView("quizCollectionDetail");
+  }, []);
+
+  const handleCollectionCreated = useCallback((createdCollection) => {
+    if (createdCollection?.collectionId) {
+      setSelectedCollection(createdCollection);
+    }
+    setHasExistingQuizCollection(true);
+    setTotalQuizCollectionCount((current) => current + 1);
+  }, []);
+
+  const handleCollectionUpdated = useCallback((updatedCollection) => {
+    if (updatedCollection?.collectionId) {
+      setSelectedCollection((prev) => ({ ...prev, ...updatedCollection }));
+    }
+    setHasExistingQuizCollection(true);
+    setTotalQuizCollectionCount((current) => Math.max(1, current));
+  }, []);
+
+  const handleCollectionDeleted = useCallback(() => {
+    setSelectedCollection(null);
+    setActiveView("quizCollection");
+    setTotalQuizCollectionCount((current) => {
+      const nextTotal = Math.max(0, current - 1);
+      setHasExistingQuizCollection(nextTotal > 0);
+      return nextTotal;
+    });
   }, []);
 
   // Handle flashcard creation callback after the API flow finishes
@@ -2350,6 +2443,8 @@ function WorkspacePage() {
       createFlashcard: "flashcard",
       createManualFlashcard: "flashcard",
       quizDetail: "quiz",
+      quizCollectionDetail: "quizCollection",
+      quizCollectionAdvancedPractice: "quizCollectionDetail",
       editQuiz: "quizDetail",
       flashcardDetail: "flashcard",
       createMockTest: "mockTest",
@@ -2376,6 +2471,10 @@ function WorkspacePage() {
 
     if (nextView !== "mockTestDetail" && nextView !== "editMockTest") {
       setSelectedMockTest(null);
+    }
+
+    if (nextView !== "quizCollectionDetail") {
+      setSelectedCollection(null);
     }
 
     setActiveView(nextView);
@@ -2560,6 +2659,11 @@ function WorkspacePage() {
     onSaveQuiz: handleSaveQuiz,
     onCreateSimilarQuiz: handleCreateSimilarQuiz,
     onShareQuiz: handleShareQuiz,
+    selectedCollection,
+    onViewCollection: handleViewCollection,
+    onCollectionCreated: handleCollectionCreated,
+    onCollectionUpdated: handleCollectionUpdated,
+    onCollectionDeleted: handleCollectionDeleted,
     selectedFlashcard,
     onViewFlashcard: handleViewFlashcard,
     onDeleteFlashcard: handleDeleteFlashcard,
@@ -2572,9 +2676,11 @@ function WorkspacePage() {
     onRemoveMultiple: handleRemoveMultipleSources,
     onSourceUpdated: handleSourceUpdated,
     shouldDisableQuiz,
+    shouldDisableQuizCollection,
     shouldDisableFlashcard,
     shouldDisableRoadmap: shouldDisableRoadmapForStudio,
     shouldDisableCreateQuiz,
+    shouldDisableCreateCollection,
     shouldDisableCreateFlashcard,
     shouldDisableCreateMockTest,
     progressTracking,
@@ -2604,12 +2710,14 @@ function WorkspacePage() {
     quiz: shouldDisableQuiz,
     flashcard: shouldDisableFlashcard,
     mockTest: shouldDisableMockTest,
+    quizCollection: shouldDisableQuizCollection,
     questionStats: !planEntitlements.hasWorkspaceAnalytics,
   }), [
     shouldDisableRoadmapForStudio,
     shouldDisableQuiz,
     shouldDisableFlashcard,
     shouldDisableMockTest,
+    shouldDisableQuizCollection,
     planEntitlements.hasWorkspaceAnalytics,
   ]);
   const personalSidebarBadgeMap = useMemo(() => ({
@@ -2617,7 +2725,8 @@ function WorkspacePage() {
     quiz: totalQuizCount || undefined,
     flashcard: totalFlashcardCount || undefined,
     mockTest: totalMockTestCount || undefined,
-  }), [sources.length, totalQuizCount, totalFlashcardCount, totalMockTestCount]);
+    quizCollection: totalQuizCollectionCount || undefined,
+  }), [sources.length, totalQuizCount, totalFlashcardCount, totalMockTestCount, totalQuizCollectionCount]);
   const handleCloseMobileSidebar = useCallback(() => {
     setIsMobileSidebarOpen(false);
   }, []);

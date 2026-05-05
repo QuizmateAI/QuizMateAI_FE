@@ -127,6 +127,7 @@ const QuestionCard = memo(function QuestionCard({
   const { t } = useTranslation();
   const isMultiple = question.type === 'MULTIPLE_CHOICE';
   const isTextQuestion = question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK';
+  const isShortAnswerQuestion = question.type === 'SHORT_ANSWER';
   const isMatchingQuestion = question.type === 'MATCHING';
   const isReviewRevealed = showResult || reviewState?.revealed === true;
   const isExplanationRevealed = showExplanation || reviewState?.revealed === true;
@@ -184,6 +185,9 @@ const QuestionCard = memo(function QuestionCard({
   const questionContent = question?.content;
   const questionDisplayText = useMemo(() => getQuestionDisplayText(questionContent), [questionContent]);
   const isPendingGrading = gradingStatus === 'PENDING';
+  const textAnswerLabel = isShortAnswerQuestion
+    ? t('workspace.quiz.expectedAnswerLabel', 'Expected answer')
+    : t('workspace.quiz.correctAnswerLabel', 'Correct answer');
   const showFlagToggle = !isReviewRevealed && typeof onToggleFlag === 'function';
   const correctAnswerIds = Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
     ? reviewState.correctAnswerIds
@@ -459,7 +463,7 @@ const QuestionCard = memo(function QuestionCard({
                 : (
                   <p>
                     <span className="font-semibold">
-                      {t('workspace.quiz.correctAnswerLabel', 'Correct answer')}:
+                      {textAnswerLabel}:
                     </span>{' '}
                     {correctTextAnswers.length ? (
                       <MixedMathText>{correctTextAnswers.join(' / ')}</MixedMathText>

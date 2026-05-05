@@ -1,5 +1,6 @@
 import React, { memo, useEffect, useRef, useState } from "react";
 import {
+  Archive,
   BarChart3,
   CreditCard,
   Files,
@@ -41,6 +42,7 @@ const NAV_ITEMS = [
   { key: "quiz", icon: GraduationCap },
   { key: "flashcard", icon: CreditCard },
   { key: "mockTest", icon: NotebookTabs },
+  { key: "quizCollection", icon: Archive },
   { key: "questionStats", icon: BarChart3 },
 ];
 
