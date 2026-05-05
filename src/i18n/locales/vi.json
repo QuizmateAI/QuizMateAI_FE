@@ -2575,7 +2575,7 @@
       "totalTime": "Thời gian tổng",
       "perQuestion": "Thời gian mỗi câu",
       "timeDuration": "Thời gian (phút)",
-      "passingScore": "Điểm đậu (0-10)",
+      "passingScore": "Điểm đậu",
       "maxAttempt": "Số lần tối đa",
       "intent": "Mục đích Quiz",
       "overallDifficulty": "Độ khó tổng thể",

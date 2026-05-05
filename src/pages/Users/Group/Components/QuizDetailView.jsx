@@ -1170,8 +1170,8 @@ function QuizDetailView({
                 {effectiveQuiz?.overallDifficulty && (
                   <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${effectiveQuiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} />
                 )}
-                {effectiveQuiz?.passScore != null && (
-                  <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={effectiveQuiz.passScore} isDarkMode={isDarkMode} />
+                {Number(effectiveQuiz?.passScore) > 0 && (
+                  <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={`${effectiveQuiz.passScore}%`} isDarkMode={isDarkMode} />
                 )}
                 {effectiveQuiz?.maxAttempt != null && (
                   <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={effectiveQuiz.maxAttempt} isDarkMode={isDarkMode} />
