@@ -73,6 +73,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const [memberSearch, setMemberSearch] = useState('');
   /** Leader tham gia thi — một suất, sau ACTIVE không xem trước đề */
   const [leaderParticipates, setLeaderParticipates] = useState(false);
+  /** Cửa sổ đăng ký giữa publish → start (phút). Default 60'. */
+  const [minRegistrationLeadMinutes, setMinRegistrationLeadMinutes] = useState(60);
 
   // Fetch quizzes
   const { data: quizzes = [], isLoading: quizzesLoading } = useQuery({
@@ -265,6 +267,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
             : (hasCapacityLimit ? normalizedCapacity : null),
         bracketSize: matchMode === 'SOLO_BRACKET' ? selectedBracketSize : null,
         blitzSource: matchMode === 'SOLO_BRACKET' ? 'QUIZ_SUBSET' : null,
+        minRegistrationLeadMinutes: Number(minRegistrationLeadMinutes) || 60,
       });
       onCreated(response?.data, { draftEditorMode: getChallengeDraftEditorMode(sourceMode) });
     } catch (err) {
@@ -676,6 +679,35 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               onEndTimeChange={setEndTime}
               validationIssues={schedIssues}
             />
+
+            <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`mb-1 text-sm font-medium ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>
+                {t('createChallengeWizard.schedule.leadLabel', 'Cửa sổ đăng ký (publish → start)')}
+              </div>
+              <div className={`mb-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                {t(
+                  'createChallengeWizard.schedule.leadHint',
+                  'Sau khi publish, member có ít nhất bao nhiêu thời gian để đăng ký trước khi challenge bắt đầu. Lưu ý: từ lúc tạo đến lúc publish có cooldown 3 ngày, nên start phải đặt ≥ 3 ngày + cửa sổ này.',
+                )}
+              </div>
+              <select
+                value={String(minRegistrationLeadMinutes)}
+                onChange={(e) => setMinRegistrationLeadMinutes(Number(e.target.value))}
+                className={`w-full rounded-xl border px-3 py-2 text-sm ${
+                  isDarkMode ? 'border-slate-600 bg-slate-800 text-white' : 'border-gray-200 bg-white text-slate-900'
+                }`}
+              >
+                <option value="30">{t('createChallengeWizard.schedule.lead30', '30 phút')}</option>
+                <option value="60">{t('createChallengeWizard.schedule.lead60', '1 tiếng')}</option>
+                <option value="180">{t('createChallengeWizard.schedule.lead180', '3 tiếng')}</option>
+                <option value="360">{t('createChallengeWizard.schedule.lead360', '6 tiếng')}</option>
+                <option value="720">{t('createChallengeWizard.schedule.lead720', '12 tiếng')}</option>
+                <option value="1440">{t('createChallengeWizard.schedule.lead1440', '1 ngày')}</option>
+                <option value="2880">{t('createChallengeWizard.schedule.lead2880', '2 ngày')}</option>
+                <option value="4320">{t('createChallengeWizard.schedule.lead4320', '3 ngày')}</option>
+                <option value="10080">{t('createChallengeWizard.schedule.lead10080', '7 ngày')}</option>
+              </select>
+            </div>
 
             <label
               className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${

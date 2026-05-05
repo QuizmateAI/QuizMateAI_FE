@@ -1,5 +1,7 @@
 import api from './api';
 
+const CLIENT_TYPE = 'WEB';
+
 /** Lấy thông tin plan theo ID (planCatalogId) — dùng cho trang thanh toán */
 export const getPlanById = (planId) => {
   return api.get(`/plan-catalog/${planId}`);
@@ -7,59 +9,61 @@ export const getPlanById = (planId) => {
 
 export const createMomoPayment = (planId, workspaceId = null, extraSlotCount = 0) => {
   if (workspaceId) {
-    const params = { planId };
+    const params = { planId, clientType: CLIENT_TYPE };
     if (extraSlotCount > 0) params.extraSlotCount = extraSlotCount;
     return api.post(`/momo/create-workspace/${workspaceId}`, null, { params });
   }
-  return api.post(`/momo/create/${planId}`);
+  return api.post(`/momo/create/${planId}`, null, { params: { clientType: CLIENT_TYPE } });
 };
 
 export const createVnPayPayment = (planId, workspaceId = null, extraSlotCount = 0) => {
   if (workspaceId) {
-    const params = { planId };
+    const params = { planId, clientType: CLIENT_TYPE };
     if (extraSlotCount > 0) params.extraSlotCount = extraSlotCount;
     return api.post(`/vnpay/create-workspace/${workspaceId}`, null, { params });
   }
-  return api.post(`/vnpay/create/${planId}`);
+  return api.post(`/vnpay/create/${planId}`, null, { params: { clientType: CLIENT_TYPE } });
 };
 
 // Credit wallet payments
 export const createMomoCreditPayment = (creditPackageId, workspaceId = null) => {
-  const params = workspaceId ? { workspaceId } : {};
+  const params = { clientType: CLIENT_TYPE };
+  if (workspaceId) params.workspaceId = workspaceId;
   return api.post(`/momo/create-credit/${creditPackageId}`, null, { params });
 };
 
 export const createVnPayCreditPayment = (creditPackageId, workspaceId = null) => {
-  const params = workspaceId ? { workspaceId } : {};
+  const params = { clientType: CLIENT_TYPE };
+  if (workspaceId) params.workspaceId = workspaceId;
   return api.post(`/vnpay/create-credit/${creditPackageId}`, null, { params });
 };
 
 // Custom credit purchase (user-typed amount, ≥ system-defined minimum)
 export const createMomoCustomCreditPayment = (creditUnits, workspaceId = null) => {
-  const params = { creditUnits };
+  const params = { creditUnits, clientType: CLIENT_TYPE };
   if (workspaceId) params.workspaceId = workspaceId;
   return api.post('/momo/create-custom-credit', null, { params });
 };
 
 export const createVnPayCustomCreditPayment = (creditUnits, workspaceId = null) => {
-  const params = { creditUnits };
+  const params = { creditUnits, clientType: CLIENT_TYPE };
   if (workspaceId) params.workspaceId = workspaceId;
   return api.post('/vnpay/create-custom-credit', null, { params });
 };
 
 export const createStripeCustomCreditPayment = (creditUnits, workspaceId = null) => {
-  const params = { creditUnits };
+  const params = { creditUnits, clientType: CLIENT_TYPE };
   if (workspaceId) params.workspaceId = workspaceId;
   return api.post('/stripe/create-custom-credit', null, { params });
 };
 
 export const createStripePayment = (planId, workspaceId = null, extraSlotCount = 0) => {
   if (workspaceId) {
-    const params = { planId };
+    const params = { planId, clientType: CLIENT_TYPE };
     if (extraSlotCount > 0) params.extraSlotCount = extraSlotCount;
     return api.post(`/stripe/create-workspace/${workspaceId}`, null, { params });
   }
-  return api.post(`/stripe/create/${planId}`);
+  return api.post(`/stripe/create/${planId}`, null, { params: { clientType: CLIENT_TYPE } });
 };
 
 /** Lấy thông tin slot của group workspace (dành cho leader) — hiển thị khi chọn mua thêm slot. */
@@ -68,7 +72,7 @@ export const getWorkspaceSlotInfo = (workspaceId) => {
 };
 
 export const createStripeCreditPayment = (creditPackageId, workspaceId = null) => {
-  const params = workspaceId ? { workspaceId } : {};
+  const params = { clientType: CLIENT_TYPE };
+  if (workspaceId) params.workspaceId = workspaceId;
   return api.post(`/stripe/create-credit/${creditPackageId}`, null, { params });
 };
-

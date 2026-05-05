@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  ChevronLeft,
+  ChevronRight,
   Crown,
   ExternalLink,
   FolderOpen,
@@ -177,6 +179,27 @@ function UserGroup({
       })
     : groups;
 
+  const PAGE_SIZE = isList ? 10 : 12;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredGroups.length / PAGE_SIZE));
+  // Reset về trang 1 khi search/view-mode đổi (pattern "adjust state while rendering"
+  // theo React docs để tránh cascading renders trong effect).
+  const [prevResetKey, setPrevResetKey] = useState(`${searchQuery}|${isList}`);
+  const currentResetKey = `${searchQuery}|${isList}`;
+  if (prevResetKey !== currentResetKey) {
+    setPrevResetKey(currentResetKey);
+    setPage(1);
+  }
+  // Khi groups bị xoá → kẹp page hiện tại trong khoảng hợp lệ ngay khi render
+  const effectivePage = Math.min(Math.max(1, page), totalPages);
+  if (effectivePage !== page) {
+    setPage(effectivePage);
+  }
+  const paginatedGroups = useMemo(
+    () => filteredGroups.slice((effectivePage - 1) * PAGE_SIZE, effectivePage * PAGE_SIZE),
+    [filteredGroups, effectivePage, PAGE_SIZE],
+  );
+
   const handleNavigateGroup = (group) => {
     navigate(buildGroupWorkspacePath(group.workspaceId));
   };
@@ -234,7 +257,7 @@ function UserGroup({
               </div>
             )}
 
-            {filteredGroups.map((group) => {
+            {paginatedGroups.map((group) => {
               const normalizedRole = getNormalizedRole(group.memberRole);
               const theme = ROLE_THEMES[normalizedRole];
               const RoleIcon = theme.Icon;
@@ -422,6 +445,45 @@ function UserGroup({
           })}
         </div>
       )}
+
+      {filteredGroups.length > PAGE_SIZE ? (
+        <div className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 text-sm ${
+          isDarkMode ? "border-slate-800 bg-slate-900 text-slate-300" : "border-gray-200 bg-white text-gray-600"
+        }`}>
+          <span className="font-mono tabular-nums text-xs">
+            {(effectivePage - 1) * PAGE_SIZE + 1}
+            {"–"}
+            {Math.min(effectivePage * PAGE_SIZE, filteredGroups.length)} / {filteredGroups.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={effectivePage <= 1}
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
+              }`}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className={`px-3 font-mono text-xs font-bold tabular-nums ${isDarkMode ? "text-slate-200" : "text-gray-900"}`}>
+              {effectivePage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={effectivePage >= totalPages}
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
+              }`}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

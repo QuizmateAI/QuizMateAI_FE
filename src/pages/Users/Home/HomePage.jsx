@@ -38,6 +38,7 @@ const LazyEditWorkspaceDialog = lazy(() => import("@/pages/Users/Home/Components
 const LazyDeleteWorkspaceDialog = lazy(() => import("@/pages/Users/Home/Components/DeleteWorkspaceDialog"));
 const LazyUserProfilePopover = lazy(() => import("@/components/features/users/UserProfilePopover"));
 const LazyQuickProfileConfigDialog = lazy(() => import("@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"));
+const LazyGroupWorkspaceCreateWizard = lazy(() => import("@/pages/Users/Group/Components/GroupWorkspaceProfileConfigDialog"));
 
 function formatNumber(value, locale) {
   try {
@@ -204,6 +205,8 @@ function HomePage() {
   // chạy song song. Các bước onboarding tiếp theo chạy trong cùng dialog; chỉ navigate sau confirm.
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const quickCreatePromiseRef = useRef(null);
+  // Group-create wizard: chạy LOCAL (không tạo workspace tới khi xong bước 2)
+  const [groupCreateOpen, setGroupCreateOpen] = useState(false);
   const quickCreateCompletedRef = useRef(false);
   const queryClient = useQueryClient();
   const settingsRef = useRef(null);
@@ -228,7 +231,6 @@ function HomePage() {
     loading,
     pagination,
     createWorkspace,
-    createGroupWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,
@@ -349,21 +351,19 @@ function HomePage() {
     });
   };
 
-  // Nhảy thẳng vào trang group workspace mới
-  const handleOpenCreateGroup = async () => {
-    setCreatingWorkspaceKind('group');
-    try {
-      preloadGroupWorkspaceCreateFlow();
-      showSuccess(t('home.group.creating') || 'Đang tạo group workspace...');
-      const newGroupWorkspace = await createGroupWorkspace({ title: null });
-      if (!newGroupWorkspace?.workspaceId) {
-        throw new Error(t('home.group.createError') || 'Không thể tạo group workspace');
-      }
-      navigate(buildGroupWorkspacePath(newGroupWorkspace.workspaceId), { state: { openProfileConfig: true } });
-    } catch (err) {
-      setCreatingWorkspaceKind(null);
-      showError(err?.message || t('home.group.createError') || 'Không thể tạo group workspace');
-    }
+  // Mở wizard tạo group LOCAL: chỉ gọi BE create-with-profile khi user xong bước 2.
+  // Trước đây flow là create empty workspace ngay → navigate. Đổi sang defer-create
+  // để tránh orphan workspace nếu user back ngang.
+  const handleOpenCreateGroup = () => {
+    preloadGroupWorkspaceCreateFlow();
+    setGroupCreateOpen(true);
+  };
+
+  const handleGroupCreateComplete = async (createdWorkspaceId) => {
+    setGroupCreateOpen(false);
+    if (!createdWorkspaceId) return;
+    showSuccess(t('home.group.created') || 'Đã tạo group workspace');
+    navigate(buildGroupWorkspacePath(createdWorkspaceId));
   };
 
   // Mở dialog sửa workspace
@@ -597,6 +597,17 @@ function HomePage() {
           />
         </Suspense>
       ) : null}
+      {groupCreateOpen ? (
+        <Suspense fallback={<CreatingWorkspaceOverlay isDarkMode={isDarkMode} label={t('home.group.creating') || 'Đang tạo group workspace...'} />}>
+          <LazyGroupWorkspaceCreateWizard
+            open={groupCreateOpen}
+            onOpenChange={setGroupCreateOpen}
+            isDarkMode={isDarkMode}
+            workspaceId={null}
+            onComplete={handleGroupCreateComplete}
+          />
+        </Suspense>
+      ) : null}
       <div className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950/90 backdrop-blur-sm' : 'bg-white/90 backdrop-blur-sm'}`}>
       {/* Header - giống NotebookLM */}
       <header className={`flex justify-between items-center px-20 ${fontClass} ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
@@ -715,17 +726,17 @@ function HomePage() {
             <div className={`flex items-center gap-1 rounded-full p-1 border ${
               isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-gray-50 border-gray-200'
             }`}>
-              <button 
+              <button
                 onClick={() => handleTabChange('workspace')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                  activeTab === 'workspace' 
+                  activeTab === 'workspace'
                     ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
                     : isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {t('home.tabs.workspace')}
               </button>
-              <button 
+              <button
                 onClick={() => handleTabChange('group')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === 'group'
@@ -735,24 +746,19 @@ function HomePage() {
               >
                 {t('home.tabs.group')}
               </button>
+              <button
+                type="button"
+                onClick={handleOpenCommunity}
+                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                  activeTab === 'community'
+                    ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
+                    : isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Sparkles className="h-4 w-4" />
+                {t('home.actions.openGroupCommunity')}
+              </button>
             </div>
-
-            <Button
-              type="button"
-              onClick={handleOpenCommunity}
-              className={`h-10 rounded-full px-4 ${
-                activeTab === 'community'
-                  ? isDarkMode
-                    ? 'bg-slate-800 text-blue-300'
-                    : 'bg-blue-50 text-blue-700'
-                  : isDarkMode
-                    ? 'border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800'
-                    : 'border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              {t('home.actions.openGroupCommunity')}
-            </Button>
           </div>
 
           {/* Right: Search, Sort & View Mode */}
