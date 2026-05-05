@@ -34,7 +34,7 @@ import {
   distributeConfigValues,
   distributeCustomDifficultyEvenly,
   distributeDifficultyValues,
-} from "./CreateQuizFormParts/createQuizForm.utils";
+} from "@/pages/Users/Individual/Workspace/Components/CreateQuizFormParts/createQuizForm.utils";
 import {
   getBloomSkillLabel,
   getQuizDifficultyLabel,
