@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Coins, History, PlugZap, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronRight, Coins, History, PlugZap, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +28,7 @@ import {
   getAiModels,
   getAiProviderHealth,
   getAiProviderHealthHistory,
+  getAllSystemSettings,
   testAiProviderConnection,
 } from '@/api/ManagementSystemAPI';
 import { AI_PROVIDER_OPTIONS, filterSupportedAiModels, getAiModelGroupLabel } from '@/lib/aiModelCatalog';
@@ -123,6 +124,60 @@ function formatCheckedAt(value) {
   } catch {
     return String(value);
   }
+}
+
+// Default threshold — sẽ override bởi system setting `ai.latency.ok_max_ms` và `ai.latency.slow_max_ms`.
+const DEFAULT_LATENCY_OK_MAX = 800;
+const DEFAULT_LATENCY_SLOW_MAX = 1500;
+
+function getLatencyTier(latencyMs, okMax = DEFAULT_LATENCY_OK_MAX, slowMax = DEFAULT_LATENCY_SLOW_MAX) {
+  if (latencyMs == null) return null;
+  if (latencyMs < okMax) return 'OK';
+  if (latencyMs <= slowMax) return 'SLOW';
+  return 'ABNORMAL';
+}
+
+function getLatencyTierBadgeClass(tier, isDarkMode) {
+  if (tier === 'OK') {
+    return isDarkMode
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  }
+  if (tier === 'SLOW') {
+    return isDarkMode
+      ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+      : 'border-amber-200 bg-amber-50 text-amber-700';
+  }
+  if (tier === 'ABNORMAL') {
+    return isDarkMode
+      ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+      : 'border-rose-200 bg-rose-50 text-rose-700';
+  }
+  return isDarkMode
+    ? 'border-slate-700 bg-slate-900 text-slate-400'
+    : 'border-slate-200 bg-slate-50 text-slate-500';
+}
+
+function getLatencyTierLabel(tier, t) {
+  if (tier === 'OK') return t('aiProviders.latency.ok', { defaultValue: 'OK' });
+  if (tier === 'SLOW') return t('aiProviders.latency.slow', { defaultValue: 'Chậm' });
+  if (tier === 'ABNORMAL') return t('aiProviders.latency.abnormal', { defaultValue: 'Bất thường' });
+  return '-';
+}
+
+function LatencyBadge({ latencyMs, isDarkMode, t, okMax, slowMax }) {
+  if (latencyMs == null) return <span className="text-slate-400">-</span>;
+  const tier = getLatencyTier(latencyMs, okMax, slowMax);
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${getLatencyTierBadgeClass(tier, isDarkMode)}`}
+      title={getLatencyTierLabel(tier, t)}
+    >
+      <span className="font-semibold">{latencyMs} ms</span>
+      <span className="opacity-70">·</span>
+      <span>{getLatencyTierLabel(tier, t)}</span>
+    </span>
+  );
 }
 
 function getModelStatusLabel(status, t) {
@@ -224,6 +279,17 @@ function AiProvidersOverview() {
   const [historyEntries, setHistoryEntries] = useState([]);
   const [historyHours, setHistoryHours] = useState(24);
   const [historyLoading, setHistoryLoading] = useState(false);
+  // Set<groupKey> các session đang expand. Default tất cả collapsed.
+  const [expandedSessions, setExpandedSessions] = useState(() => new Set());
+
+  const toggleSession = (groupKey) => {
+    setExpandedSessions((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  };
 
   const {
     data,
@@ -262,6 +328,58 @@ function AiProvidersOverview() {
   const models = useMemo(() => data?.models ?? [], [data?.models]);
   const healthMap = useMemo(() => data?.healthMap ?? {}, [data?.healthMap]);
   const costSummaryMap = useMemo(() => data?.costSummaryMap ?? {}, [data?.costSummaryMap]);
+
+  // Latency tier thresholds từ system settings (admin tune được, không cần đẩy code).
+  const { data: latencyThresholds = { okMax: DEFAULT_LATENCY_OK_MAX, slowMax: DEFAULT_LATENCY_SLOW_MAX } } = useQuery({
+    queryKey: ['superAdmin', 'aiLatencyThresholds'],
+    queryFn: async () => {
+      try {
+        const response = await getAllSystemSettings();
+        const settings = extractData(response);
+        const list = Array.isArray(settings) ? settings : [];
+        const find = (key) => list.find((s) => s.key === key)?.currentValue ?? list.find((s) => s.key === key)?.value;
+        const okMax = Number(find('ai.latency.ok_max_ms')) || DEFAULT_LATENCY_OK_MAX;
+        const slowMax = Number(find('ai.latency.slow_max_ms')) || DEFAULT_LATENCY_SLOW_MAX;
+        return { okMax, slowMax };
+      } catch {
+        return { okMax: DEFAULT_LATENCY_OK_MAX, slowMax: DEFAULT_LATENCY_SLOW_MAX };
+      }
+    },
+    staleTime: 5 * 60_000, // 5 min cache — admin ít khi đổi threshold
+  });
+
+  // Group history rows theo testSessionId. Row legacy (chưa có sessionId) fallback bằng
+  // cặp checkedAt+checkedByEmail — đủ unique vì BE persist mọi key trong batch dùng
+  // cùng LocalDateTime.now() instance.
+  const groupedHistory = useMemo(() => {
+    const groups = [];
+    const indexMap = new Map();
+    for (const entry of historyEntries) {
+      const groupKey = entry.testSessionId
+        ? `s:${entry.testSessionId}`
+        : `t:${entry.checkedAt ?? ''}|${entry.checkedByEmail ?? ''}`;
+      let idx = indexMap.get(groupKey);
+      if (idx === undefined) {
+        idx = groups.length;
+        indexMap.set(groupKey, idx);
+        groups.push({ groupKey, entries: [] });
+      }
+      groups[idx].entries.push(entry);
+    }
+    return groups.map((group) => {
+      const head = group.entries[0];
+      const validCount = group.entries.filter(
+        (entry) => String(entry.status).toUpperCase() === 'VALID'
+      ).length;
+      return {
+        ...group,
+        checkedAt: head?.checkedAt,
+        checkedByEmail: head?.checkedByEmail,
+        validCount,
+        totalCount: group.entries.length,
+      };
+    });
+  }, [historyEntries]);
 
   useEffect(() => {
     if (queryError) {
@@ -628,7 +746,9 @@ function AiProvidersOverview() {
                               {getKeyStatusLabel(key.status, t)}
                             </Badge>
                           </TableCell>
-                          <TableCell>{key.latencyMs != null ? `${key.latencyMs} ms` : '-'}</TableCell>
+                          <TableCell>
+                            <LatencyBadge latencyMs={key.latencyMs} isDarkMode={isDarkMode} t={t} okMax={latencyThresholds.okMax} slowMax={latencyThresholds.slowMax} />
+                          </TableCell>
                           <TableCell className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{key.errorMessage ?? '-'}</TableCell>
                         </TableRow>
                       ))}
@@ -674,31 +794,88 @@ function AiProvidersOverview() {
               {t('aiProviders.history.noData', { defaultValue: 'No test history in this time window.' })}
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border">
+            <div className="max-h-[60vh] overflow-y-auto overflow-x-auto rounded-2xl border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('aiProviders.history.checkedAt', { defaultValue: 'Time' })}</TableHead>
+                    <TableHead className="w-10">{/* indent col cho detail row */}</TableHead>
                     <TableHead>{t('aiProviders.keys.key', { defaultValue: 'API Key' })}</TableHead>
                     <TableHead>{t('aiProviders.keys.status', { defaultValue: 'Status' })}</TableHead>
                     <TableHead>{t('aiProviders.keys.latency', { defaultValue: 'Latency' })}</TableHead>
-                    <TableHead>{t('aiProviders.history.checkedBy', { defaultValue: 'Tested by' })}</TableHead>
+                    <TableHead>{t('aiProviders.keys.error', { defaultValue: 'Error' })}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {historyEntries.map((entry) => (
-                    <TableRow key={entry.healthCheckId}>
-                      <TableCell className="text-xs">{formatCheckedAt(entry.checkedAt)}</TableCell>
-                      <TableCell className="font-mono text-xs">{entry.maskedKey ?? '-'}</TableCell>
-                      <TableCell>
-                        <Badge className={`border ${getKeyStatusBadgeClass(entry.status, isDarkMode)}`}>
-                          {getKeyStatusLabel(entry.status, t)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{entry.latencyMs != null ? `${entry.latencyMs} ms` : '-'}</TableCell>
-                      <TableCell className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{entry.checkedByEmail ?? '-'}</TableCell>
-                    </TableRow>
-                  ))}
+                  {groupedHistory.map((group) => {
+                    const summaryTone =
+                      group.validCount === group.totalCount
+                        ? 'VALID'
+                        : group.validCount === 0
+                        ? 'INVALID'
+                        : 'RATE_LIMITED';
+                    const isExpanded = expandedSessions.has(group.groupKey);
+                    return (
+                      <Fragment key={group.groupKey}>
+                        <TableRow
+                          className={`cursor-pointer transition-colors ${
+                            isDarkMode
+                              ? 'bg-slate-900/40 hover:bg-slate-900/70'
+                              : 'bg-slate-50 hover:bg-slate-100'
+                          }`}
+                          onClick={() => toggleSession(group.groupKey)}
+                          role="button"
+                          aria-expanded={isExpanded}
+                        >
+                          <TableCell colSpan={5} className="py-2">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {isExpanded ? (
+                                  <ChevronDown className={`h-4 w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                                ) : (
+                                  <ChevronRight className={`h-4 w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                                )}
+                                <span className="font-semibold">{formatCheckedAt(group.checkedAt)}</span>
+                                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
+                                  {group.checkedByEmail ?? '-'}
+                                </span>
+                                <span className={`text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                  {t('aiProviders.history.keyCount', {
+                                    defaultValue: '{{count}} keys',
+                                    count: group.totalCount,
+                                  })}
+                                </span>
+                              </div>
+                              <Badge className={`border ${getKeyStatusBadgeClass(summaryTone, isDarkMode)}`}>
+                                {t('aiProviders.history.groupSummary', {
+                                  defaultValue: '{{valid}}/{{total}} hợp lệ',
+                                  valid: group.validCount,
+                                  total: group.totalCount,
+                                })}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded &&
+                          group.entries.map((entry) => (
+                            <TableRow key={entry.healthCheckId}>
+                              <TableCell className={`pl-6 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>↳</TableCell>
+                              <TableCell className="font-mono text-xs">{entry.maskedKey ?? '-'}</TableCell>
+                              <TableCell>
+                                <Badge className={`border ${getKeyStatusBadgeClass(entry.status, isDarkMode)}`}>
+                                  {getKeyStatusLabel(entry.status, t)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <LatencyBadge latencyMs={entry.latencyMs} isDarkMode={isDarkMode} t={t} okMax={latencyThresholds.okMax} slowMax={latencyThresholds.slowMax} />
+                              </TableCell>
+                              <TableCell className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {entry.errorMessage ?? '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
