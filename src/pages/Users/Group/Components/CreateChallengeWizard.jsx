@@ -687,7 +687,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               <div className={`mb-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                 {t(
                   'createChallengeWizard.schedule.leadHint',
-                  'Sau khi publish, member có ít nhất bao nhiêu thời gian để đăng ký trước khi challenge bắt đầu. Lưu ý: từ lúc tạo đến lúc publish có cooldown 3 ngày, nên start phải đặt ≥ 3 ngày + cửa sổ này.',
+                  'Sau khi publish, member có ít nhất bao nhiêu thời gian để đăng ký trước khi challenge bắt đầu.',
                 )}
               </div>
               <select

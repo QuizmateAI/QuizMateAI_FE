@@ -33,6 +33,9 @@ import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/utils/apiResponse";
 import MixedMathText from "@/components/math/MixedMathText";
 import { getContentDisplayText, getContentImageList } from "@/lib/questionContentMedia";
+import FlashcardModePicker from "./flashcard-modes/FlashcardModePicker";
+import FlashcardQuizMode from "./flashcard-modes/FlashcardQuizMode";
+import { shuffleArray } from "./flashcard-modes/flashcardShuffle";
 
 function FlashcardFace({
   accentClassName,
@@ -115,6 +118,9 @@ function FlashcardDetailView({
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [studyMode, setStudyMode] = useState("flip");
+  const [shuffleSeed, setShuffleSeed] = useState(0);
+  const [shuffleSwap, setShuffleSwap] = useState(false);
 
   const invalidateFlashcardList = useCallback(async () => {
     const normalizedContextId = Number(contextId) || 0;
@@ -143,7 +149,22 @@ function FlashcardDetailView({
     fetchDetail();
   }, [fetchDetail]);
 
-  const activeItem = useMemo(() => items[activeIndex] || null, [activeIndex, items]);
+  // Shuffle mode: thứ tự thẻ + chiều front/back được tính lại mỗi khi user nhấn Shuffle.
+  // Quiz mode: dùng items gốc (FlashcardQuizMode tự shuffle bên trong).
+  const displayItems = useMemo(() => {
+    if (studyMode !== "shuffle") return items;
+    if (!Array.isArray(items) || items.length === 0) return items;
+    // shuffleSeed buộc useMemo tính lại; logic ở dưới giữ thuần (shallow copy + swap).
+    const shuffled = shuffleArray(items);
+    if (!shuffleSwap) return shuffled;
+    return shuffled.map((item) => ({
+      ...item,
+      frontContent: item.backContent,
+      backContent: item.frontContent,
+    }));
+  }, [items, studyMode, shuffleSeed, shuffleSwap]);
+
+  const activeItem = useMemo(() => displayItems[activeIndex] || null, [activeIndex, displayItems]);
   const activeFrontDisplayText = useMemo(
     () => getContentDisplayText(activeItem?.frontContent || ""),
     [activeItem?.frontContent],
@@ -160,6 +181,12 @@ function FlashcardDetailView({
     () => getContentImageList(activeItem?.backContent || ""),
     [activeItem?.backContent],
   );
+
+  // Reset điều hướng khi đổi mode hoặc reshuffle
+  useEffect(() => {
+    setActiveIndex(0);
+    setFlipped(false);
+  }, [studyMode, shuffleSeed, shuffleSwap]);
   const inputCls = "w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-400 dark:focus:border-emerald-500";
   const detailStatus = String(detail?.status || flashcard?.status || "").toUpperCase();
   const canMutateContent = !hideEditButton && detailStatus === "ACTIVE";
@@ -475,86 +502,118 @@ function FlashcardDetailView({
       </div>
 
       <div className="mt-8 flex w-full max-w-3xl shrink-0 flex-col items-center self-center">
-        <div className="mb-6 flex h-[320px] w-full items-center justify-center sm:h-[360px] lg:h-[400px] [perspective:1000px]">
-          {activeItem ? (
-            <div
-              key={activeItem.flashcardItemId}
-              className={`relative h-full w-full ${
-                slideDir === "next" 
-                  ? "animate-in fade-in slide-in-from-right-8 duration-200" 
-                  : slideDir === "prev" 
-                  ? "animate-in fade-in slide-in-from-left-8 duration-200" 
-                  : "animate-in fade-in zoom-in-95 duration-200"
-              }`}
-            >
-              <div
-                className={`relative h-full w-full cursor-pointer transition-transform duration-300 [transform-style:preserve-3d] ${flipped ? '[transform:rotateX(180deg)]' : ''}`}
-                onClick={() => setFlipped((prev) => !prev)}
+        <div className="mb-5 flex w-full flex-wrap items-center justify-between gap-3">
+          <FlashcardModePicker value={studyMode} onChange={setStudyMode} disabled={items.length === 0} />
+          {studyMode === "shuffle" ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShuffleSwap((prev) => !prev)}
+                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                <FlashcardFace
-                  accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm [backface-visibility:hidden] dark:border-slate-800 dark:bg-slate-900 sm:p-8"
-                  content={activeFrontDisplayText}
-                  images={activeFrontImages}
-                  fontClass={fontClass}
-                  hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
-                  hintClassName="text-center text-sm text-slate-400 dark:text-slate-500"
-                  label={t("workspace.flashcard.frontContent")}
-                  labelClassName="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"
-                  textClassName="text-slate-950 dark:text-white"
-                />
-
-                <FlashcardFace
-                  accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-emerald-300 bg-emerald-50 p-6 shadow-sm [backface-visibility:hidden] [transform:rotateX(180deg)] dark:border-emerald-900/50 dark:bg-emerald-950/20 sm:p-8"
-                  content={activeBackDisplayText}
-                  images={activeBackImages}
-                  fontClass={fontClass}
-                  hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
-                  hintClassName="text-center text-sm text-emerald-600/70 dark:text-emerald-500/70"
-                  label={t("workspace.flashcard.backContent")}
-                  labelClassName="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-600/70 dark:text-emerald-500/70"
-                  textClassName="text-emerald-950 dark:text-emerald-400"
-                />
-              </div>
+                {shuffleSwap
+                  ? t("workspace.flashcard.modes.shuffle.showFront", "Show front first")
+                  : t("workspace.flashcard.modes.shuffle.showBack", "Show back first")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShuffleSeed((seed) => seed + 1)}
+                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                {t("workspace.flashcard.modes.shuffle.reshuffle", "Reshuffle")}
+              </button>
             </div>
-          ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center rounded-[28px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-center">
-              <CreditCard className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
-              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{t("workspace.flashcard.noItems")}</p>
-            </div>
-          )}
+          ) : null}
         </div>
 
-        {items.length > 0 ? (
-          <div className="mb-10 flex items-center justify-center gap-6">
-            <button
-              type="button"
-              onClick={() => {
-                setSlideDir("prev");
-                setActiveIndex((prev) => Math.max(0, prev - 1));
-                setFlipped(false);
-              }}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-900 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-              disabled={activeIndex === 0}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <span className={`text-base font-medium text-slate-600 dark:text-slate-300 ${fontClass}`}>
-              {activeIndex + 1} / {items.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setSlideDir("next");
-                setActiveIndex((prev) => Math.min(items.length - 1, prev + 1));
-                setFlipped(false);
-              }}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-900 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-              disabled={activeIndex >= items.length - 1}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
+        {studyMode === "quiz" ? (
+          <div className="w-full">
+            <FlashcardQuizMode items={items} fontClass={fontClass} />
           </div>
-        ) : null}
+        ) : (
+          <>
+            <div className="mb-6 flex h-[320px] w-full items-center justify-center sm:h-[360px] lg:h-[400px] [perspective:1000px]">
+              {activeItem ? (
+                <div
+                  key={`${studyMode}-${shuffleSeed}-${activeItem.flashcardItemId}`}
+                  className={`relative h-full w-full ${
+                    slideDir === "next"
+                      ? "animate-in fade-in slide-in-from-right-8 duration-200"
+                      : slideDir === "prev"
+                      ? "animate-in fade-in slide-in-from-left-8 duration-200"
+                      : "animate-in fade-in zoom-in-95 duration-200"
+                  }`}
+                >
+                  <div
+                    className={`relative h-full w-full cursor-pointer transition-transform duration-300 [transform-style:preserve-3d] ${flipped ? '[transform:rotateX(180deg)]' : ''}`}
+                    onClick={() => setFlipped((prev) => !prev)}
+                  >
+                    <FlashcardFace
+                      accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm [backface-visibility:hidden] dark:border-slate-800 dark:bg-slate-900 sm:p-8"
+                      content={activeFrontDisplayText}
+                      images={activeFrontImages}
+                      fontClass={fontClass}
+                      hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
+                      hintClassName="text-center text-sm text-slate-400 dark:text-slate-500"
+                      label={t("workspace.flashcard.frontContent")}
+                      labelClassName="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"
+                      textClassName="text-slate-950 dark:text-white"
+                    />
+
+                    <FlashcardFace
+                      accentClassName="absolute inset-0 h-full w-full overflow-hidden rounded-[28px] border border-emerald-300 bg-emerald-50 p-6 shadow-sm [backface-visibility:hidden] [transform:rotateX(180deg)] dark:border-emerald-900/50 dark:bg-emerald-950/20 sm:p-8"
+                      content={activeBackDisplayText}
+                      images={activeBackImages}
+                      fontClass={fontClass}
+                      hint={t("workspace.flashcard.tapToFlip", "Click to flip this card")}
+                      hintClassName="text-center text-sm text-emerald-600/70 dark:text-emerald-500/70"
+                      label={t("workspace.flashcard.backContent")}
+                      labelClassName="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-600/70 dark:text-emerald-500/70"
+                      textClassName="text-emerald-950 dark:text-emerald-400"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center rounded-[28px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-center">
+                  <CreditCard className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{t("workspace.flashcard.noItems")}</p>
+                </div>
+              )}
+            </div>
+
+            {displayItems.length > 0 ? (
+              <div className="mb-10 flex items-center justify-center gap-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSlideDir("prev");
+                    setActiveIndex((prev) => Math.max(0, prev - 1));
+                    setFlipped(false);
+                  }}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-900 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                  disabled={activeIndex === 0}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <span className={`text-base font-medium text-slate-600 dark:text-slate-300 ${fontClass}`}>
+                  {activeIndex + 1} / {displayItems.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSlideDir("next");
+                    setActiveIndex((prev) => Math.min(displayItems.length - 1, prev + 1));
+                    setFlipped(false);
+                  }}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-900 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                  disabled={activeIndex >= displayItems.length - 1}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            ) : null}
+          </>
+        )}
 
         <div className="w-full border-t border-slate-200 dark:border-slate-800 pb-4 pt-8">
           <p className={`mb-6 text-lg font-semibold text-slate-950 dark:text-white ${fontClass}`}>

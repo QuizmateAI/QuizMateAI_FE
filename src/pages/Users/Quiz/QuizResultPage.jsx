@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles, BookOpen, ChevronDown, ChevronRight, Award } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles, BookOpen, ChevronDown, ChevronRight, Award, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import DirectFeedbackButton from '@/components/feedback/DirectFeedbackButton';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
 import CommunityQuizFeedbackDialog from '@/pages/Users/Quiz/components/CommunityQuizFeedbackDialog';
+import QuizToFlashcardDialog from '@/pages/Users/Quiz/components/QuizToFlashcardDialog';
 import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, refreshAttemptAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
@@ -218,6 +219,7 @@ export default function QuizResultPage() {
   const [knowledgeGenerationHydrated, setKnowledgeGenerationHydrated] = useState(false);
   const [expandedReviewSections, setExpandedReviewSections] = useState({});
   const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
+  const [quizToFlashcardOpen, setQuizToFlashcardOpen] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
@@ -1692,6 +1694,16 @@ handleBack,
               <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[180px] gap-2" disabled={reviewQuestions.length === 0}>
                 <Eye className="w-4 h-4" /> {t('quizResultPage.reviewAnswers', 'Review Answers')}
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setQuizToFlashcardOpen(true)}
+                disabled={reviewQuestions.length === 0}
+                className="min-w-[200px] gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                {t('quizResultPage.toFlashcard.action', 'Convert to flashcards')}
+              </Button>
               {hasQuizIdForBack ? (
                 <DirectFeedbackButton
                   targetType="QUIZ"
@@ -1938,6 +1950,14 @@ handleBack,
           </>
         )}
       </div>
+
+      <QuizToFlashcardDialog
+        open={quizToFlashcardOpen}
+        onOpenChange={setQuizToFlashcardOpen}
+        quizTitle={quizDetails?.title || quizRawDetails?.title || result?.quizTitle}
+        reviewQuestions={reviewQuestions}
+        defaultWorkspaceId={normalizedWorkspaceId}
+      />
 
       <CommunityQuizFeedbackDialog
         open={communityFeedbackOpen}
