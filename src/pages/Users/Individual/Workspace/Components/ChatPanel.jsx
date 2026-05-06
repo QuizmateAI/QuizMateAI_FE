@@ -22,9 +22,9 @@ const LazyCommunityQuizExplorerView = React.lazy(() => import("./CommunityQuizEx
 const LazyQuizDetailView = React.lazy(() => import("./QuizDetailView"));
 const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyManualQuizWizard = React.lazy(() => import("./ManualQuizWizard"));
-const LazyQuizCollectionListView = React.lazy(() => import("../../../../../Pages/Users/Individual/Workspace/Components/QuizCollectionListView"));
-const LazyQuizCollectionDetailView = React.lazy(() => import("../../../../../Pages/Users/Individual/Workspace/Components/QuizCollectionDetailView"));
-const LazyQuizCollectionAdvancedPracticeConfigView = React.lazy(() => import("../../../../../Pages/Users/Individual/Workspace/Components/QuizCollectionAdvancedPracticeConfigView"));
+const LazyQuizCollectionListView = React.lazy(() => import("./QuizCollectionListView"));
+const LazyQuizCollectionDetailView = React.lazy(() => import("./QuizCollectionDetailView"));
+const LazyQuizCollectionAdvancedPracticeConfigView = React.lazy(() => import("./QuizCollectionAdvancedPracticeConfigView"));
 const LazyFlashcardListView = React.lazy(() => import("./FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("./FlashcardDetailView"));
 const LazyManualFlashcardEditor = React.lazy(() => import("./ManualFlashcardEditor"));
