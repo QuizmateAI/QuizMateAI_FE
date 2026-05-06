@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ArrowLeft, BadgeCheck, Loader2, Rocket, Sparkles, PenLine } from "lucide-react";
+import { AlertCircle, ArrowLeft, BadgeCheck, ClipboardPaste, Loader2, Rocket, Sparkles, PenLine } from "lucide-react";
 import ManualQuizWizard from "../ManualQuizWizard";
+import ManualQuizPasteImportPanel from "../ManualQuizPasteImportPanel";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { QUESTION_TYPE_LABEL_FALLBACKS } from "./createQuizForm.constants";
@@ -77,15 +78,19 @@ function CreateQuizForm({
   const normalizedExistingQuizId = Number(existingQuizId);
   const hasExistingQuizTarget = Number.isInteger(normalizedExistingQuizId) && normalizedExistingQuizId > 0;
   const normalizedInitialModeValue = String(initialMode || "").toLowerCase();
-  const normalizedInitialMode = normalizedInitialModeValue === "ai" || normalizedInitialModeValue === "manual"
+  const normalizedInitialMode = ["ai", "manual", "paste"].includes(normalizedInitialModeValue)
     ? normalizedInitialModeValue
     : null;
 
-  // Tab: "ai" | "manual" — nhớ lựa chọn qua localStorage
+  // Tab: "ai" | "manual" | "paste" — nhớ lựa chọn qua localStorage
   const [mode, setMode] = useState(() => {
     if (normalizedInitialMode) return normalizedInitialMode;
     if (hasExistingQuizTarget) return "manual";
-    try { return localStorage.getItem("createQuizMode") || "ai"; } catch { return "ai"; }
+    try {
+      const stored = localStorage.getItem("createQuizMode");
+      if (["ai", "manual", "paste"].includes(stored)) return stored;
+      return "ai";
+    } catch { return "ai"; }
   });
 
   const handleModeChange = useCallback((next) => {
@@ -343,6 +348,7 @@ function CreateQuizForm({
           {[
             { key: "ai", label: "QuizMate AI", Icon: Sparkles },
             { key: "manual", label: "Thủ công", Icon: PenLine },
+            { key: "paste", label: "Dán JSON", Icon: ClipboardPaste },
           ].map(({ key, label, Icon }) => (
             <button
               key={key}
@@ -375,6 +381,17 @@ function CreateQuizForm({
             onCreateQuiz={onCreateQuiz}
             onSaveQuiz={onCreateQuiz}
             onBack={onBack}
+            isDarkMode={isDarkMode}
+          />
+        </div>
+      )}
+
+      {/* Paste-from-third-party-AI mode */}
+      {mode === "paste" && (
+        <div className="flex-1 overflow-hidden">
+          <ManualQuizPasteImportPanel
+            workspaceId={defaultContextId}
+            onCreateQuiz={onCreateQuiz}
             isDarkMode={isDarkMode}
           />
         </div>
