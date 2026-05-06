@@ -1,7 +1,17 @@
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import QuizResultPage from '@/pages/Users/Quiz/QuizResultPage';
+
+function renderWithQueryClient(ui) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  );
+}
 
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();
@@ -166,7 +176,7 @@ describe('QuizResultPage', () => {
       .mockResolvedValue({ data: buildAttemptResult() });
     mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
 
-    render(<QuizResultPage />);
+    renderWithQueryClient(<QuizResultPage />);
 
     for (let index = 0; index < 4; index += 1) {
       await act(async () => {
@@ -245,7 +255,7 @@ describe('QuizResultPage', () => {
       },
     });
 
-    render(<QuizResultPage />);
+    renderWithQueryClient(<QuizResultPage />);
 
     expect(await screen.findByText('Bạn đang làm tốt phần task response nhưng còn lặp lỗi cohesion.')).toBeInTheDocument();
     expect(screen.queryByText('Đề xuất tiếp theo')).not.toBeInTheDocument();
@@ -265,7 +275,7 @@ describe('QuizResultPage', () => {
     mockGetAttemptResult.mockResolvedValue({ data: buildAttemptResult() });
     mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
 
-    render(<QuizResultPage />);
+    renderWithQueryClient(<QuizResultPage />);
 
     expect(await screen.findByTestId('quiz-header')).toHaveTextContent('Bai kiem tra 60 cau');
     await waitFor(() => expect(mockGetAttemptAssessment).toHaveBeenCalledWith('62'));
@@ -284,7 +294,7 @@ describe('QuizResultPage', () => {
     });
     mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
 
-    render(<QuizResultPage />);
+    renderWithQueryClient(<QuizResultPage />);
 
     expect(await screen.findByText('Score')).toBeInTheDocument();
     expect(screen.getByText('8/20')).toBeInTheDocument();
@@ -329,7 +339,7 @@ describe('QuizResultPage', () => {
       }),
     });
 
-    render(<QuizResultPage />);
+    renderWithQueryClient(<QuizResultPage />);
 
     expect(await screen.findByRole('heading', { name: 'Review Answers' })).toBeInTheDocument();
     expect(screen.getByText('Click a number to jump straight to that question.')).toBeInTheDocument();

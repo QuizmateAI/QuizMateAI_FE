@@ -805,22 +805,14 @@ export default function ChallengeDetailView({
     );
   const showPublishChallengeAction =
     isLeader && detail.status === 'SCHEDULED' && !isPublished && (isBracketChallenge || hasSnapshotQuiz);
-  const publishableAtMs = detail.publishableAt ? new Date(detail.publishableAt).getTime() : null;
-  const cooldownPassed = publishableAtMs == null || publishableAtMs <= Date.now();
   const canPublishChallenge =
     showPublishChallengeAction
     && snapshotStatusKeyRaw === 'ACTIVE'
     && effectiveChallengePublishReady
-    && new Date(detail.startTime).getTime() > Date.now()
-    && cooldownPassed;
+    && new Date(detail.startTime).getTime() > Date.now();
   const publishRequirementHint = !showPublishChallengeAction
     ? ''
-    : !cooldownPassed
-        ? t(
-            'challengeDetailView.publishHints.cooldown',
-            'Challenge mới tạo, phải đợi đủ 3 ngày kể từ lúc tạo mới publish được. Đếm ngược ở header.',
-          )
-        : hasBackendRoundQuizPlan && !bracketRoundQuizReady
+    : hasBackendRoundQuizPlan && !bracketRoundQuizReady
         ? `Đấu cúp cần đủ đề chính thức cho từng vòng. Hiện đã sẵn sàng ${bracketRoundReadyCount}/${bracketRoundQuizPlan.length} vòng.`
             : !hasSnapshotQuizContent
               ? t('challengeDetailView.publishHints.needDraftQuizContent', 'The leader must compose the match content first.')
@@ -934,7 +926,6 @@ export default function ChallengeDetailView({
       handleRemoveReviewer={handleRemoveReviewer}
       handleSwitchLeaderToReviewer={handleSwitchLeaderToReviewer}
       handleSwitchLeaderToParticipant={handleSwitchLeaderToParticipant}
-      cooldownPassed={cooldownPassed}
       handleSaveChallengeEdit={handleSaveChallengeEdit}
       handleStartAttempt={handleStartAttempt}
       handleStartChallenge={handleStartChallenge}
