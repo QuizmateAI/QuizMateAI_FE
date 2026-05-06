@@ -1842,7 +1842,31 @@
           "activateSuccess": "Đã kích hoạt bộ flashcard \"{{name}}\"."
         }
       },
-      "untitled": "Flashcard không có tiêu đề"
+      "untitled": "Flashcard không có tiêu đề",
+      "modes": {
+        "label": "Chế độ học",
+        "picker": {
+          "flip": "Lật thẻ",
+          "quiz": "Trắc nghiệm",
+          "shuffle": "Trộn thẻ"
+        },
+        "quiz": {
+          "questionLabel": "Câu hỏi",
+          "progress": "Thẻ {{current}} / {{total}}",
+          "score": "Điểm: {{correct}}/{{answered}}",
+          "next": "Tiếp",
+          "finish": "Xem kết quả",
+          "finishedLabel": "Đã xong vòng học",
+          "accuracy": "Độ chính xác: {{accuracy}}%",
+          "restart": "Học lại",
+          "notEnoughItems": "Chế độ Trắc nghiệm cần ít nhất 2 thẻ. Hãy thêm thẻ để chơi."
+        },
+        "shuffle": {
+          "showFront": "Hiện mặt trước trước",
+          "showBack": "Hiện mặt sau trước",
+          "reshuffle": "Trộn lại"
+        }
+      }
     },
     "phase": {
       "fallbackName": "Giai đoạn #{{id}}"
@@ -2743,7 +2767,25 @@
     "total": "Tổng",
     "wrong": "Sai",
     "pending": "Đang chờ",
-    "questionFallback": "Câu hỏi {{index}}"
+    "questionFallback": "Câu hỏi {{index}}",
+    "toFlashcard": {
+      "action": "Chuyển thành flashcard",
+      "title": "Chuyển bài quiz thành flashcard",
+      "description": "Tạo bộ flashcard từ lượt làm bài này. Mỗi câu hỏi trở thành một thẻ với đáp án đúng ở mặt sau.",
+      "summary": "{{ready}} / {{total}} câu sẵn sàng để chuyển.",
+      "skippedHint": "{{count}} câu bị bỏ qua (thiếu nội dung câu hỏi hoặc đáp án đúng).",
+      "nameLabel": "Tên bộ flashcard",
+      "namePlaceholder": "Nhập tên bộ flashcard",
+      "workspaceLabel": "Lưu vào workspace",
+      "workspaceLoading": "Đang tải danh sách workspace...",
+      "workspaceEmpty": "Bạn chưa có workspace nào. Hãy tạo workspace trước khi tạo flashcard.",
+      "cancel": "Hủy",
+      "submit": "Tạo flashcard",
+      "createSuccess": "Đã tạo bộ flashcard \"{{name}}\" với {{count}} thẻ.",
+      "createFail": "Không tạo được bộ flashcard. Vui lòng thử lại.",
+      "defaultNameFallback": "Quiz flashcards",
+      "defaultNameSuffix": " — Flashcards"
+    }
   },
   "workspaceProfileStepUpload": {
     "title": "Tải tài liệu và kiểm tra độ phù hợp",

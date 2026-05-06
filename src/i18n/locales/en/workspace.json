@@ -1873,7 +1873,31 @@
           "activateSuccess": "Flashcard set \"{{name}}\" activated."
         }
       },
-      "untitled": "Untitled flashcard"
+      "untitled": "Untitled flashcard",
+      "modes": {
+        "label": "Study mode",
+        "picker": {
+          "flip": "Flip",
+          "quiz": "Quiz",
+          "shuffle": "Shuffle"
+        },
+        "quiz": {
+          "questionLabel": "Question",
+          "progress": "Card {{current}} / {{total}}",
+          "score": "Score: {{correct}}/{{answered}}",
+          "next": "Next",
+          "finish": "See result",
+          "finishedLabel": "Round complete",
+          "accuracy": "Accuracy: {{accuracy}}%",
+          "restart": "Play again",
+          "notEnoughItems": "Quiz mode needs at least 2 cards. Add more cards to play."
+        },
+        "shuffle": {
+          "showFront": "Show front first",
+          "showBack": "Show back first",
+          "reshuffle": "Reshuffle"
+        }
+      }
     },
     "phase": {
       "fallbackName": "Phase #{{id}}"
@@ -2820,7 +2844,25 @@
     "total": "Total",
     "wrong": "Wrong",
     "pending": "Pending",
-    "questionFallback": "Question {{index}}"
+    "questionFallback": "Question {{index}}",
+    "toFlashcard": {
+      "action": "Convert to flashcards",
+      "title": "Convert quiz into flashcards",
+      "description": "Generate a flashcard set from this attempt. Each question becomes a card with the correct answer on the back.",
+      "summary": "{{ready}} of {{total}} questions ready to convert.",
+      "skippedHint": "{{count}} questions were skipped (missing question text or correct answer).",
+      "nameLabel": "Flashcard set name",
+      "namePlaceholder": "Enter flashcard set name",
+      "workspaceLabel": "Save to workspace",
+      "workspaceLoading": "Loading your workspaces...",
+      "workspaceEmpty": "You do not have any workspaces. Create one before generating flashcards.",
+      "cancel": "Cancel",
+      "submit": "Create flashcards",
+      "createSuccess": "Created flashcard set \"{{name}}\" with {{count}} cards.",
+      "createFail": "Could not create flashcard set. Please try again.",
+      "defaultNameFallback": "Quiz flashcards",
+      "defaultNameSuffix": " — Flashcards"
+    }
   },
   "workspaceProfileStepUpload": {
     "title": "Upload materials and review their fit",

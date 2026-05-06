@@ -54,7 +54,6 @@ function ChallengeDetailContent({
   canStart,
   cancelDialogOpen,
   cardCls,
-  cooldownPassed,
   detail,
   displayedRealtimeChallengeQuizPercent,
   editDescription,
@@ -780,33 +779,6 @@ function ChallengeDetailContent({
           >
             {t('groupWorkspace.challenge.reviewContributorCannotRegister')}
           </p>
-        )}
-
-        {/* Publish cooldown banner: 3 ngày kể từ lúc tạo */}
-        {showPublishChallengeAction && detail.publishableAt && !cooldownPassed && (
-          <div className={`mt-4 rounded-xl border px-4 py-3 ${
-            isDarkMode ? 'border-amber-500/30 bg-amber-500/10' : 'border-amber-200 bg-amber-50/70'
-          }`}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className={`text-sm font-semibold ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
-                  {t('challengeDetailView.publishCooldown.title', 'Đếm ngược tới lúc được publish')}
-                </div>
-                <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-amber-100/85' : 'text-amber-900/80'}`}>
-                  {t(
-                    'challengeDetailView.publishCooldown.hint',
-                    'Mọi challenge đều phải đợi đủ 3 ngày kể từ lúc tạo trước khi được publish. Sau cooldown, nút publish sẽ tự mở.',
-                  )}
-                </p>
-              </div>
-              <CountdownBadge
-                targetTime={detail.publishableAt}
-                size="lg"
-                isDarkMode={isDarkMode}
-                label={t('challengeDetailView.publishCooldown.countdownLabel', 'Mở publish sau')}
-              />
-            </div>
-          </div>
         )}
 
         {/* Actions */}

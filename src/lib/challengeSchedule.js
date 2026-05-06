@@ -1,8 +1,8 @@
 /** Wall-clock local schedule helpers for group challenges (đồng bộ BE LocalDateTime). */
 
 export const CHALLENGE_MIN_LEAD_DAYS = 0;
-export const CHALLENGE_MIN_DURATION_HOURS = 0;
-export const CHALLENGE_MIN_DURATION_MINUTES = 30;
+export const CHALLENGE_MIN_DURATION_HOURS = 3;
+export const CHALLENGE_MIN_DURATION_MINUTES = CHALLENGE_MIN_DURATION_HOURS * 60;
 
 export function pad2(n) {
   return String(n).padStart(2, '0');
@@ -25,13 +25,13 @@ export function defaultStartParts() {
   return { dateStr: toDateInputValue(d), timeStr: toTimeInputValue(d) };
 }
 
-/** Kết thúc = bắt đầu + 90 phút. */
+/** Kết thúc = bắt đầu + min duration (3 tiếng). */
 export function defaultEndPartsFromStart(dateStr, timeStr) {
   const ms = parseLocalDateTimeToMs(dateStr, timeStr);
   if (!Number.isFinite(ms)) {
     return defaultStartParts();
   }
-  const d = new Date(ms + 90 * 60 * 1000);
+  const d = new Date(ms + CHALLENGE_MIN_DURATION_MINUTES * 60 * 1000);
   return { dateStr: toDateInputValue(d), timeStr: toTimeInputValue(d) };
 }
 
