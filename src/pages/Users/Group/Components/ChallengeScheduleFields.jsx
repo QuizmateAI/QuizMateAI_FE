@@ -1,7 +1,7 @@
 import { Calendar, Clock } from 'lucide-react';
 import i18n from '@/i18n';
 import {
-  CHALLENGE_MIN_DURATION_MINUTES,
+  CHALLENGE_MIN_DURATION_HOURS,
   minDateStringPlusDays,
 } from '@/lib/challengeSchedule';
 
@@ -30,8 +30,8 @@ export default function ChallengeScheduleFields({
     <div className="flex flex-col gap-4">
       <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
         {t('challengeScheduleFields.helper', {
-          defaultValue: 'Only choose future times. The window from start to end must be at least {{minutes}} minutes; bracket matches need a longer window depending on the number of rounds.',
-          minutes: CHALLENGE_MIN_DURATION_MINUTES,
+          defaultValue: 'Only choose future times. The window from start to end must be at least {{hours}} hours; bracket matches need a longer window depending on the number of rounds.',
+          hours: CHALLENGE_MIN_DURATION_HOURS,
         })}
       </p>
 
@@ -109,8 +109,8 @@ export default function ChallengeScheduleFields({
       {validationIssues.includes('shortWindow') && (
         <p className="text-xs text-red-500">
           {t('challengeScheduleFields.errors.shortWindow', {
-            defaultValue: 'The window from start to end must be at least {{minutes}} minutes.',
-            minutes: CHALLENGE_MIN_DURATION_MINUTES,
+            defaultValue: 'The window from start to end must be at least {{hours}} hours.',
+            hours: CHALLENGE_MIN_DURATION_HOURS,
           })}
         </p>
       )}
