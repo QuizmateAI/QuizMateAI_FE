@@ -585,3 +585,20 @@ export const updateManualQuizBulk = async (quizId, payload) => {
   const response = await api.put(`/quiz/${quizId}/manual:update-bulk`, payload);
   return response;
 };
+
+// ==================== MANUAL QUIZ — PASTE IMPORT ====================
+// User copy prompt sang ChatGPT/NotebookLM → AI sinh JSON → user dán JSON vào hệ thống.
+// QuizMateAI KHÔNG dùng AI để verify nội dung; user chịu trách nhiệm về tính chính xác.
+
+// Lấy prompt template phù hợp với gói của user (basic vs advance)
+export const getPasteImportPromptTemplate = async () => {
+  const response = await api.get('/quiz/manual:paste-prompt-template');
+  return response;
+};
+
+// Tạo quiz thủ công từ JSON đã được sinh bởi bên thứ 3
+// payload shape khớp ManualQuizPasteImportRequest — questionType là tên enum (vd "SINGLE_CHOICE")
+export const createQuizFromPaste = async (payload) => {
+  const response = await api.post('/quiz/manual:create-from-paste', payload);
+  return response;
+};
