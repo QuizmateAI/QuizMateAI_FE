@@ -206,7 +206,7 @@ function WorkspacePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { showError, showSuccess } = useToast();
+  const { showError, showSuccess, showWarning } = useToast();
   const queryClient = useQueryClient();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const planEntitlements = usePlanEntitlements();
@@ -1938,28 +1938,40 @@ function WorkspacePage() {
     (actionKey) => {
       setIsMobileSidebarOpen(false);
 
-      if (actionKey === activeView) {
+      // Plan-gated: roadmap khi gói không có quyền tạo roadmap.
+      if (actionKey === "roadmap" && canCreateRoadmap === false) {
+        setPlanUpgradeFeatureName(t("workspace.shell.featureNames.roadmap"));
+        setPlanUpgradeModalOpen(true);
         return;
       }
 
-      if (actionKey === "roadmap" && shouldDisableRoadmapForStudio) {
-        return;
-      }
-
-      if (actionKey === "quizCollection" && shouldDisableQuizCollection) {
-        return;
-      }
-
-      // Plan-gated actions: show upgrade modal instead of navigating
-
+      // Plan-gated: thống kê workspace.
       if (
         actionKey === "questionStats" &&
         !planEntitlements.hasWorkspaceAnalytics
       ) {
-        setPlanUpgradeFeatureName("Thống kê workspace");
-
+        setPlanUpgradeFeatureName(t("workspace.shell.featureNames.questionStats"));
         setPlanUpgradeModalOpen(true);
+        return;
+      }
 
+      // Source-gated: yêu cầu tài liệu trước khi mở các khu vực phụ thuộc sources.
+      const requiresSources = (
+        (actionKey === "roadmap" && shouldDisableRoadmapForStudio) ||
+        (actionKey === "quiz" && shouldDisableQuiz) ||
+        (actionKey === "flashcard" && shouldDisableFlashcard) ||
+        (actionKey === "mockTest" && shouldDisableMockTest) ||
+        (actionKey === "quizCollection" && shouldDisableQuizCollection)
+      );
+      if (requiresSources) {
+        showWarning(t("workspace.shell.lockToast.sources"));
+        if (activeView !== "sources") {
+          setActiveView("sources");
+        }
+        return;
+      }
+
+      if (actionKey === activeView) {
         return;
       }
 
@@ -2011,9 +2023,15 @@ function WorkspacePage() {
     [
       activeView,
       addAccessHistory,
+      canCreateRoadmap,
       shouldDisableRoadmapForStudio,
+      shouldDisableQuiz,
+      shouldDisableFlashcard,
+      shouldDisableMockTest,
       shouldDisableQuizCollection,
       planEntitlements.hasWorkspaceAnalytics,
+      showWarning,
+      t,
     ],
   );
 
@@ -2720,6 +2738,28 @@ function WorkspacePage() {
     shouldDisableQuizCollection,
     planEntitlements.hasWorkspaceAnalytics,
   ]);
+  // Phân biệt lý do khoá: "plan" cần nâng cấp gói, "sources" cần tải tài liệu.
+  // Roadmap có cả 2 trường hợp → ưu tiên "plan" khi user chưa có quyền tạo roadmap.
+  const personalSidebarLockReasonMap = useMemo(() => ({
+    roadmap: !canCreateRoadmap
+      ? "plan"
+      : shouldDisableRoadmapForStudio
+        ? "sources"
+        : undefined,
+    quiz: shouldDisableQuiz ? "sources" : undefined,
+    flashcard: shouldDisableFlashcard ? "sources" : undefined,
+    mockTest: shouldDisableMockTest ? "sources" : undefined,
+    quizCollection: shouldDisableQuizCollection ? "sources" : undefined,
+    questionStats: !planEntitlements.hasWorkspaceAnalytics ? "plan" : undefined,
+  }), [
+    canCreateRoadmap,
+    shouldDisableRoadmapForStudio,
+    shouldDisableQuiz,
+    shouldDisableFlashcard,
+    shouldDisableMockTest,
+    shouldDisableQuizCollection,
+    planEntitlements.hasWorkspaceAnalytics,
+  ]);
   const personalSidebarBadgeMap = useMemo(() => ({
     sources: sources.length || undefined,
     quiz: totalQuizCount || undefined,
@@ -2753,6 +2793,7 @@ function WorkspacePage() {
           wsConnected={wsConnected}
           walletRefreshToken={walletRealtimeTick}
           disabledMap={personalSidebarDisabledMap}
+          lockReasonMap={personalSidebarLockReasonMap}
           badgeMap={personalSidebarBadgeMap}
           isMobile={isMobileViewport}
           mobileOpen={isMobileSidebarOpen}
