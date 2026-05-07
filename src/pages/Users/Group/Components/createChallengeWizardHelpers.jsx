@@ -18,7 +18,7 @@ export function isQuizEligibleForChallengeSource(quiz) {
 }
 
 export const STEPS = [
-  { key: 'mode', labelKey: 'createChallengeWizard.steps.mode', labelFallback: 'Mode' },
+  { key: 'mode', labelKey: 'createChallengeWizard.steps.setup', labelFallback: 'Setup' },
   { key: 'quiz', labelKey: 'createChallengeWizard.steps.quiz', labelFallback: 'Select content' },
   { key: 'schedule', labelKey: 'createChallengeWizard.steps.schedule', labelFallback: 'Schedule' },
   { key: 'registration', labelKey: 'createChallengeWizard.steps.registration', labelFallback: 'Registration' },
@@ -55,9 +55,12 @@ export const MATCH_MODE_OPTIONS = [
 export const TEAM_COUNT = 2;
 export const BRACKET_SIZE_OPTIONS = [4, 8, 16, 32];
 const ENABLE_SOLO_BRACKET_MODE = false;
-export const AVAILABLE_MATCH_MODE_OPTIONS = MATCH_MODE_OPTIONS.filter(
-  (option) => ENABLE_SOLO_BRACKET_MODE || option.key !== 'SOLO_BRACKET',
-);
+const ENABLE_TEAM_BATTLE_MODE = false;
+export const AVAILABLE_MATCH_MODE_OPTIONS = MATCH_MODE_OPTIONS.filter((option) => {
+  if (!ENABLE_SOLO_BRACKET_MODE && option.key === 'SOLO_BRACKET') return false;
+  if (!ENABLE_TEAM_BATTLE_MODE && option.key === 'TEAM_BATTLE') return false;
+  return true;
+});
 
 export const CHALLENGE_SOURCE_MODES = {
   EXISTING_SNAPSHOT: 'EXISTING_SNAPSHOT',

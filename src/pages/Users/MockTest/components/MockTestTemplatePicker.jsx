@@ -39,8 +39,13 @@ export function MockTestTemplatePicker({
   savingTemplateId,
   workspaceMaterials,
   isDarkMode = false,
+  formLanguage = null,
 }) {
-  const { t } = useTranslation();
+  const { t: defaultT, i18n } = useTranslation();
+  const t = useMemo(() => {
+    if (!formLanguage || formLanguage === i18n.language) return defaultT;
+    return i18n.getFixedT(formLanguage);
+  }, [defaultT, formLanguage, i18n]);
   const materialNameMap = useMemo(() => buildMaterialNameMap(workspaceMaterials), [workspaceMaterials]);
 
   if (!Array.isArray(options) || options.length === 0) return null;

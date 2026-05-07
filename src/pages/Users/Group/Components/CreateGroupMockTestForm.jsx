@@ -18,6 +18,7 @@ import { useMockTestStructureSuggestion } from "@/pages/Users/MockTest/hooks/use
 import { MockTestStructureEditor, validateMockTestStructure } from "@/pages/Users/MockTest/components/MockTestStructureEditor";
 import { MockTestScoringEditor } from "@/pages/Users/MockTest/components/MockTestScoringEditor";
 import { MockTestTemplatePicker } from "@/pages/Users/MockTest/components/MockTestTemplatePicker";
+import { preloadNamespaces } from "@/i18n";
 import {
   buildMockTestCustomScoring,
   countLeafQuestions,
@@ -210,6 +211,16 @@ export default function CreateGroupMockTestForm({
   const [sections, setSections] = useState([]);
   const [topNotice, setTopNotice] = useState("");
   const [examLanguage, setExamLanguage] = useState("");
+  // Form labels follow examLanguage (AI-detected) so chrome stays consistent with
+  // the AI-generated section names. Only `vi`/`en` are bundled — others fall back to UI locale.
+  const formLanguage = useMemo(() => {
+    const candidate = String(examLanguage || "").trim().toLowerCase();
+    return candidate === "en" || candidate === "vi" ? candidate : null;
+  }, [examLanguage]);
+  useEffect(() => {
+    if (!formLanguage || formLanguage === i18n.language) return;
+    preloadNamespaces(["workspace"], formLanguage).catch(() => {});
+  }, [formLanguage, i18n.language]);
   const [scoring, setScoring] = useState(() => normalizeMockTestScoring());
   const [matchedTemplate, setMatchedTemplate] = useState(null);
   const [error, setError] = useState("");
@@ -685,12 +696,14 @@ export default function CreateGroupMockTestForm({
               selectedTemplateId={matchedTemplate?.mockTestTemplateId}
               onSelect={handleSelectTemplate}
               isDarkMode={isDarkMode}
+              formLanguage={formLanguage}
             />
             <MockTestScoringEditor
               sections={sections}
               scoring={scoring}
               onChange={setScoring}
               isDarkMode={isDarkMode}
+              formLanguage={formLanguage}
             />
             <MockTestStructureEditor
               sections={sections}
