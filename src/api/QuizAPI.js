@@ -76,14 +76,8 @@ export const cloneCommunityQuizToWorkspace = async (quizId, workspaceId, metadat
   if (metadata?.recommendationRequestId) {
     params.set('recommendationRequestId', metadata.recommendationRequestId);
   }
-  if (metadata?.recommendationBucket) {
-    params.set('recommendationBucket', metadata.recommendationBucket);
-  }
   if (Number.isInteger(Number(metadata?.recommendationRank)) && Number(metadata.recommendationRank) > 0) {
     params.set('recommendationRank', Number(metadata.recommendationRank));
-  }
-  if (Number.isFinite(Number(metadata?.recommendationScore))) {
-    params.set('recommendationScore', Number(metadata.recommendationScore));
   }
 
   const response = await api.post(`/quiz/${quizId}/clone-to-workspace?${params.toString()}`);
