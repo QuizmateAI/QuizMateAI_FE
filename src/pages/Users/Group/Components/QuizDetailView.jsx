@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star, Pencil,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare, Eye, Lock, Copy,
+  Share2, UserPlus, MessageSquare, Eye, Lock, Copy, Shuffle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logSwallowed } from "@/utils/logSwallowed";
@@ -23,6 +23,7 @@ import {
   getGroupQuizHistory,
   publishGroupQuiz, setGroupQuizAudience,
   duplicateQuiz,
+  updateQuizShuffleEnabled,
 } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 import { recordQuizReviewView } from "@/api/ChallengeAPI";
@@ -212,6 +213,8 @@ function QuizDetailView({
   const [starringId, setStarringId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(quiz?.status || "DRAFT");
   const [quizMeta, setQuizMeta] = useState(null);
+  const [shuffleEnabled, setShuffleEnabled] = useState(Boolean(quiz?.shuffleEnabled));
+  const [shuffleSaving, setShuffleSaving] = useState(false);
   
   // Tab states
   const [activeTab, setActiveTab] = useState("overview"); // overview, review (group), questions, history
@@ -257,6 +260,36 @@ function QuizDetailView({
   useEffect(() => {
     setCurrentStatus(quizMeta?.status || quiz?.status || "DRAFT");
   }, [quizMeta?.status, quiz?.status]);
+
+  useEffect(() => {
+    if (typeof quizMeta?.shuffleEnabled === "boolean") {
+      setShuffleEnabled(quizMeta.shuffleEnabled);
+    } else if (typeof quiz?.shuffleEnabled === "boolean") {
+      setShuffleEnabled(quiz.shuffleEnabled);
+    }
+  }, [quiz?.shuffleEnabled, quizMeta?.shuffleEnabled]);
+
+  const handleToggleShuffle = useCallback(async () => {
+    const quizIdLocal = quiz?.quizId;
+    if (!quizIdLocal || shuffleSaving) return;
+    const next = !shuffleEnabled;
+    setShuffleSaving(true);
+    setShuffleEnabled(next);
+    try {
+      const res = await updateQuizShuffleEnabled(quizIdLocal, next);
+      const updated = unwrapApiData(res) || {};
+      setQuizMeta((prev) => ({ ...(prev || {}), ...updated, shuffleEnabled: next }));
+    } catch (err) {
+      setShuffleEnabled(!next);
+      window.alert(
+        err?.response?.data?.message
+        || err?.message
+        || t("workspace.quiz.detail.shuffleUpdateFailed", "Không thể cập nhật chế độ shuffle."),
+      );
+    } finally {
+      setShuffleSaving(false);
+    }
+  }, [quiz?.quizId, shuffleEnabled, shuffleSaving, t]);
 
   useEffect(() => {
     setHistory([]);
@@ -1181,6 +1214,42 @@ function QuizDetailView({
                   <InfoChip icon={BookOpen} label={t("workspace.quiz.tabs.questions", "Questions")} value={sections.reduce((acc, s) => acc + (questionsMap[s.sectionId]?.length || 0), 0)} isDarkMode={isDarkMode} />
                 )}
               </div>
+
+              {canEditQuiz && !challengeSnapshotReviewMode && (
+                <div className={`mb-4 flex items-center justify-between rounded-lg border px-4 py-3 ${
+                  isDarkMode ? "border-slate-700 bg-slate-900/40" : "border-slate-200 bg-white"
+                }`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Shuffle className={`h-5 w-5 shrink-0 ${isDarkMode ? "text-indigo-300" : "text-indigo-600"}`} />
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                        {t("workspace.quiz.detail.shuffleTitle", "Trộn thứ tự câu hỏi & đáp án")}
+                      </p>
+                      <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                        {t("workspace.quiz.detail.shuffleDescription", "Khi bật, mỗi lần làm bài câu hỏi và đáp án sẽ hiển thị theo thứ tự ngẫu nhiên khác nhau.")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleShuffle}
+                    disabled={shuffleSaving}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                      shuffleEnabled
+                        ? (isDarkMode ? "bg-indigo-500" : "bg-indigo-600")
+                        : (isDarkMode ? "bg-slate-700" : "bg-slate-300")
+                    } ${shuffleSaving ? "opacity-60 cursor-not-allowed" : ""}`}
+                    aria-pressed={shuffleEnabled}
+                    aria-label={t("workspace.quiz.detail.shuffleToggleAria", "Bật/tắt shuffle")}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                        shuffleEnabled ? "translate-x-5" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
 
               {/* Action Buttons in Overview — quiz challenge snapshot: không làm bài từ đây */}
               {isActiveQuiz && !isChallengeSnapshotReview && !fairPlayRestricts && (

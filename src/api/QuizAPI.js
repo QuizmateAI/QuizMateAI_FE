@@ -204,8 +204,17 @@ export const deleteAnswer = async (answerId) => {
 // Truyền options.attemptView=true khi user đang làm bài để BE ẩn isCorrect/explanation
 // đối với mock test (chống leak đáp án qua DevTools).
 export const getQuizFull = async (quizId, options = {}) => {
-  const params = options.attemptView ? { attemptView: true } : undefined;
-  const response = await api.get(`/quiz/${quizId}/full`, params ? { params } : undefined);
+  const params = {};
+  if (options.attemptView) params.attemptView = true;
+  if (options.attemptId != null) params.attemptId = options.attemptId;
+  const hasParams = Object.keys(params).length > 0;
+  const response = await api.get(`/quiz/${quizId}/full`, hasParams ? { params } : undefined);
+  return response;
+};
+
+// Bật/tắt shuffle thứ tự câu hỏi & đáp án cho quiz. Chỉ creator được phép.
+export const updateQuizShuffleEnabled = async (quizId, enabled) => {
+  const response = await api.patch(`/quiz/${quizId}/shuffle`, { enabled });
   return response;
 };
 
@@ -240,9 +249,11 @@ function buildQuizFullFromParts(quiz, sections = [], questionsBySection = new Ma
 // Lấy full quiz cho luồng review/attempt-context. Mặc định KHÔNG ẩn đáp án —
 // dùng cho result page hoặc edit. ExamQuizPage trong khi đang làm bài
 // nên dùng getQuizFullForAttemptInProgress để BE ẩn isCorrect/explanation.
-export const getQuizFullForAttempt = async (quizId) => {
+// Truyền attemptId để áp thứ tự shuffle đã lưu cho attempt đó (giúp result page
+// hiển thị câu hỏi/đáp án đúng thứ tự user đã thấy lúc làm bài).
+export const getQuizFullForAttempt = async (quizId, attemptId) => {
   try {
-    return await getQuizFull(quizId);
+    return await getQuizFull(quizId, attemptId != null ? { attemptId } : {});
   } catch (error) {
     if (Number(error?.statusCode) !== 409) {
       throw error;
@@ -310,10 +321,11 @@ export const getQuizFullForAttempt = async (quizId) => {
 
 // Variant cho ExamQuizPage / MockTestExamPage khi user ĐANG làm bài.
 // Truyền attemptView=true để BE ẩn isCorrect/explanation cho mock test
-// (chống leak đáp án qua DevTools). Không có fallback section-by-section
-// vì khi đang làm bài quiz không thể fallback an toàn — trả lỗi để user retry.
-export const getQuizFullForAttemptInProgress = async (quizId) => {
-  return await getQuizFull(quizId, { attemptView: true });
+// (chống leak đáp án qua DevTools). Truyền attemptId để áp thứ tự shuffle
+// đã lưu cho attempt đó (nếu quiz bật shuffleEnabled). Không có fallback
+// section-by-section vì khi đang làm bài quiz không thể fallback an toàn — trả lỗi để user retry.
+export const getQuizFullForAttemptInProgress = async (quizId, attemptId) => {
+  return await getQuizFull(quizId, { attemptView: true, attemptId });
 };
 
 // Tạo attempt mới hoặc trả lại attempt chưa hoàn thành

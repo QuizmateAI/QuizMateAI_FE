@@ -1384,7 +1384,11 @@
           "tooltip": "Tạo bản nháp sao chép (không kèm phân phối và lịch sử làm bài) để chỉnh sửa",
           "toastSuccess": "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
           "toastError": "Không thể sao chép quiz."
-        }
+        },
+        "shuffleTitle": "Trộn thứ tự câu hỏi & đáp án",
+        "shuffleDescription": "Khi bật, mỗi lần làm bài câu hỏi và đáp án sẽ hiển thị theo thứ tự ngẫu nhiên khác nhau.",
+        "shuffleToggleAria": "Bật/tắt trộn thứ tự",
+        "shuffleUpdateFailed": "Không thể cập nhật chế độ trộn thứ tự."
       },
       "edit": {
         "title": "Chỉnh sửa Quiz",

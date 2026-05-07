@@ -80,9 +80,9 @@ export default function MockTestExamPage() {
   const autoStartTriggeredRef = useRef(false);
 
   const { data: quiz = null, isLoading } = useQuery({
-    queryKey: ['mocktest-full', quizId],
+    queryKey: ['mocktest-full', quizId, attemptId],
     queryFn: async () => {
-      const res = await getQuizFullForAttemptInProgress(quizId);
+      const res = await getQuizFullForAttemptInProgress(quizId, attemptId);
       return normalizeQuizData(res.data);
     },
     enabled: Boolean(quizId),

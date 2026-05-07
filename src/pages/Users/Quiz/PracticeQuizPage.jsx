@@ -310,9 +310,9 @@ export default function PracticeQuizPage() {
     data: quiz = null,
     isLoading: loading,
   } = useQuery({
-    queryKey: ['quiz-full', quizId],
+    queryKey: ['quiz-full', quizId, attemptId],
     queryFn: async () => {
-      const res = await getQuizFullForAttempt(quizId);
+      const res = await getQuizFullForAttempt(quizId, attemptId);
       return normalizeQuizData(res.data);
     },
     enabled: Boolean(quizId),

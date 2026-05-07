@@ -384,7 +384,7 @@ export default function QuizResultPage() {
 
         if (attemptResult?.quizId) {
           try {
-            const quizRes = await getQuizFullForAttempt(attemptResult.quizId);
+            const quizRes = await getQuizFullForAttempt(attemptResult.quizId, attemptResult.attemptId);
             if (cancelled) return;
             setQuizRawDetails(quizRes.data || null);
             setQuizDetails(normalizeQuizData(quizRes.data));

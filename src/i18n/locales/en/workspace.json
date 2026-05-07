@@ -1382,7 +1382,11 @@
           "tooltip": "Create a fresh draft copy (without distribution or attempt history) so you can edit it",
           "toastSuccess": "Quiz duplicated to a new MANUAL draft. You can edit it now.",
           "toastError": "Failed to duplicate the quiz."
-        }
+        },
+        "shuffleTitle": "Shuffle question & answer order",
+        "shuffleDescription": "When enabled, every attempt displays questions and answers in a different random order.",
+        "shuffleToggleAria": "Toggle shuffle",
+        "shuffleUpdateFailed": "Failed to update shuffle setting."
       },
       "edit": {
         "title": "Edit Quiz",
