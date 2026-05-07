@@ -1203,6 +1203,14 @@ handleBack,
     ? reviewQuestions.filter((question) => question?.isCorrect === true).length
     : Number(result.correctQuestion ?? 0);
   const passScore = result.passScore != null ? Number(result.passScore) : null;
+  // Quiz có "scoring" thực sự khi tồn tại điểm theo từng câu hoặc score đã chấm > 0.
+  // BE set maxScore=100 mặc định cho AI quiz nhưng question.score=null → calculatedScore luôn 0,
+  // nên chỉ dựa vào maxScore sẽ hiển thị "Score 0/100" gây hiểu nhầm.
+  const totalQuestionScore = reviewQuestions.reduce(
+    (sum, q) => sum + (Number(q?.questionScore) || 0),
+    0,
+  );
+  const hasScoring = totalQuestionScore > 0 || Number(result.score) > 0;
   const accuracyPercent = totalQuestion > 0
     ? (correctQuestion / totalQuestion) * 100
     : null;
@@ -1515,9 +1523,8 @@ handleBack,
             </h1>
 
             <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-white/70 bg-white/45 p-4 shadow-inner shadow-white/60 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/25 dark:shadow-slate-950/20">
-              {/* Score display — score card chỉ hiện khi quiz có cấu trúc điểm (maxScore > 0) */}
+              {/* Score display — score card chỉ hiện khi quiz có cấu trúc điểm thực (per-question score > 0) */}
               {(() => {
-                const hasScoring = Number(result.maxScore) > 0;
                 const gridCols = hasScoring ? 'xl:grid-cols-5' : 'xl:grid-cols-4';
                 return (
                   <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${gridCols} max-w-4xl mx-auto`}>
@@ -1539,7 +1546,11 @@ handleBack,
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
                 <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
-                {result.passScore != null && <span className="rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-300">{t('quizResultPage.passScore', 'Pass Score')}: {result.passScore}</span>}
+                {result.passScore != null && (
+                  <span className="rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-300">
+                    {t('quizResultPage.passScore', 'Pass Score')}: {hasScoring ? result.passScore : `${result.passScore}%`}
+                  </span>
+                )}
               </div>
             </div>
 
