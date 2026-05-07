@@ -211,9 +211,10 @@ function PricingNumberField({
 function FormulaPreview({ policy, isDarkMode, t, compact = false, labels = null }) {
   const isFixed = policy.costMode === 'FIXED';
   const unitLabel = t(`aiActionPolicy.costModeUnit.${policy.costMode}`, policy.costMode);
+  const creditUnit = t('aiActionPolicy.creditUnit', 'credit');
   const formulaLine = isFixed
-    ? `${policy.baseCreditCost ?? 0} QMC`
-    : `${policy.baseCreditCost ?? 0} + ${policy.unitCreditCost ?? 0} x ceil(${unitLabel} / ${policy.unitSize ?? 1}) QMC`;
+    ? `${policy.baseCreditCost ?? 0} ${creditUnit}`
+    : `${policy.baseCreditCost ?? 0} + ${policy.unitCreditCost ?? 0} x ceil(${unitLabel} / ${policy.unitSize ?? 1}) ${creditUnit}`;
   const baseLabel = labels?.baseCostLabel || t('aiActionPolicy.baseCost');
   const unitCostLabel = labels?.unitCostLabel || t('aiActionPolicy.unitCost');
   const unitSizeLabel = labels?.unitSizeLabel || t('aiActionPolicy.unitSize');
@@ -247,13 +248,13 @@ function FormulaPreview({ policy, isDarkMode, t, compact = false, labels = null 
       </p>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className={`rounded-lg px-3 py-2 font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'}`}>
-          {baseLabel}: {policy.baseCreditCost ?? 0} QMC
+          {baseLabel}: {policy.baseCreditCost ?? 0} {creditUnit}
         </span>
         {!isFixed && (
           <>
             <span className={isDarkMode ? 'text-slate-500' : 'text-gray-400'}>+</span>
             <span className={`rounded-lg px-3 py-2 font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'}`}>
-              {unitCostLabel}: {policy.unitCreditCost ?? 0} QMC
+              {unitCostLabel}: {policy.unitCreditCost ?? 0} {creditUnit}
             </span>
             <span className={isDarkMode ? 'text-slate-500' : 'text-gray-400'}>/</span>
             <span className={`rounded-lg px-3 py-2 font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'}`}>
@@ -514,6 +515,7 @@ export default function AiActionPolicyManagement() {
   const editUnitLabel = form.costMode
     ? t(`aiActionPolicy.costModeUnit.${form.costMode}`, '')
     : '';
+  const creditUnitLabel = t('aiActionPolicy.creditUnit', 'credit');
 
   return (
     <SuperAdminPage className={`${fontClass} ${dk ? 'text-white' : 'text-gray-900'}`}>
@@ -680,7 +682,7 @@ export default function AiActionPolicyManagement() {
                     label={editLabels?.baseCostLabel || t('aiActionPolicy.baseCost')}
                     value={form.baseCreditCost}
                     onChange={handleWholeNumberChange('baseCreditCost')}
-                    suffix="QMC"
+                    suffix={creditUnitLabel}
                     isDarkMode={dk}
                   />
                   <PricingNumberField
@@ -688,7 +690,7 @@ export default function AiActionPolicyManagement() {
                     value={form.unitCreditCost}
                     onChange={handleWholeNumberChange('unitCreditCost')}
                     disabled={form.costMode === 'FIXED'}
-                    suffix="QMC"
+                    suffix={creditUnitLabel}
                     isDarkMode={dk}
                   />
                   <PricingNumberField

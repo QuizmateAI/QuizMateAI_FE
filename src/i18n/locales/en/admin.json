@@ -186,8 +186,9 @@
     "formulaPatternVariable": "Total cost = base cost + unit cost x ceil(applied metric / unit size)",
     "metricFixedUsage": "Fixed charge per usage",
     "metricByUnit": "Based on {{unit}} count",
-    "explanationFixed": "{{baseLabel}} is currently {{base}} QMC for each usage.",
-    "explanationVariable": "{{baseLabel}} is {{base}} QMC, {{unitLabelName}} is {{unit}} QMC, and {{sizeLabel}} is {{size}}. The system charges based on {{metric}}.",
+    "creditUnit": "credit",
+    "explanationFixed": "{{baseLabel}} is currently {{base}} credit for each usage.",
+    "explanationVariable": "{{baseLabel}} is {{base}} credit, {{unitLabelName}} is {{unit}} credit, and {{sizeLabel}} is {{size}}. The system charges based on {{metric}}.",
     "active": "Active",
     "statusActive": "Active",
     "statusInactive": "Inactive",
@@ -204,14 +205,14 @@
     "updateSuccess": "Policy updated successfully",
     "descriptionPlaceholder": "Policy description...",
     "unitField": "Unit",
-    "baseCost": "Base cost",
-    "unitCost": "Unit cost",
-    "unitSize": "Unit size",
+    "baseCost": "Base fee",
+    "unitCost": "Cost per unit",
+    "unitSize": "Items per unit",
     "formula": "Cost formula",
     "formulaResult": "Cost =",
     "formulaCeil": "round up",
     "formulaFixedNote": "fixed per usage",
-    "formulaSummary": "Each usage costs {{base}} QMC flat, plus {{unit}} QMC for every {{size}} {{mode}}. Partial units are rounded up.",
+    "formulaSummary": "Each usage costs {{base}} credit flat, plus {{unit}} credit for every {{size}} {{mode}}. Partial units are rounded up.",
     "costMode": {
       "label": "Cost mode",
       "FIXED": "Fixed",
@@ -234,83 +235,84 @@
       "generateQuiz": {
         "title": "Generate Quiz",
         "description": "Credit charged when generating a quiz with AI, based on total question count.",
-        "unitCost": "Cost per question",
+        "baseCost": "Base fee per quiz",
+        "unitCost": "Cost per unit",
         "unitSize": "Questions per unit",
         "metric": "Total generated question count"
       },
       "generateFlashcards": {
         "title": "Generate Flashcards",
         "description": "Credit charged when generating flashcards with AI, based on total card count.",
-        "baseCost": "Flashcard set fee",
-        "unitCost": "Cost per card",
+        "baseCost": "Base fee per set",
+        "unitCost": "Cost per unit",
         "unitSize": "Cards per unit",
         "metric": "Total generated flashcard count"
       },
       "generateMockTest": {
         "title": "Generate Mock Test",
         "description": "Credit charged when generating a mock test with AI, based on total question count.",
-        "baseCost": "Mock test setup fee",
-        "unitCost": "Cost per question",
+        "baseCost": "Base fee per mock test",
+        "unitCost": "Cost per unit",
         "unitSize": "Questions per unit",
         "metric": "Total question count in the mock test"
       },
       "previewQuizStructure": {
         "title": "Preview Quiz Structure",
         "description": "Credit charged each time AI drafts a quiz structure preview before quiz generation.",
-        "baseCost": "Cost per preview",
+        "baseCost": "Fee per preview",
         "metric": "Each quiz structure preview request"
       },
       "generateRoadmapQuiz": {
         "title": "Generate quiz in roadmap",
         "description": "Credit charged when generating a roadmap knowledge quiz, based on question count.",
-        "baseCost": "Setup fee",
-        "unitCost": "Cost per question",
+        "baseCost": "Base fee per quiz",
+        "unitCost": "Cost per unit",
         "unitSize": "Questions per unit",
         "metric": "Total roadmap quiz question count"
       },
       "analyzeStudyProfileKnowledge": {
         "title": "Analyze Study Profile Knowledge",
         "description": "Credit charged each time AI analyzes the study profile knowledge input.",
-        "baseCost": "Cost per analysis",
+        "baseCost": "Fee per analysis",
         "metric": "Each knowledge analysis request"
       },
       "suggestStudyProfileFields": {
         "title": "Suggest Study Profile Fields",
         "description": "Credit charged each time AI suggests study profile fields.",
-        "baseCost": "Cost per suggestion",
+        "baseCost": "Fee per suggestion",
         "metric": "Each field suggestion request"
       },
       "suggestStudyProfileExamTemplates": {
         "title": "Suggest Study Profile Exam Templates",
         "description": "Credit charged each time AI suggests or generates study profile exam templates.",
-        "baseCost": "Cost per suggestion",
+        "baseCost": "Fee per suggestion",
         "metric": "Each exam template suggestion request"
       },
       "validateStudyProfileConsistency": {
         "title": "Validate Study Profile Consistency",
         "description": "Credit charged each time AI validates study profile consistency.",
-        "baseCost": "Cost per validation",
+        "baseCost": "Fee per validation",
         "metric": "Each consistency validation request"
       },
       "processPdf": {
         "title": "Process PDF",
         "description": "Credit charged for PDF processing, based on total page count.",
         "baseCost": "Base fee per file",
-        "unitCost": "Cost per page",
+        "unitCost": "Cost per unit",
         "unitSize": "Pages per unit",
         "metric": "Total PDF page count"
       },
       "processImage": {
         "title": "Process Image",
         "description": "Credit charged for image processing, fixed cost per upload.",
-        "baseCost": "Cost per image",
+        "baseCost": "Fee per image",
         "metric": "Each uploaded image"
       },
       "processText": {
         "title": "Process Text",
         "description": "Credit charged for plain text processing, based on total word count.",
         "baseCost": "Base fee per file",
-        "unitCost": "Cost per 1,000 words",
+        "unitCost": "Cost per unit",
         "unitSize": "Words per unit",
         "metric": "Total text word count"
       },
@@ -318,7 +320,7 @@
         "title": "Process Word",
         "description": "Credit charged for Word document processing, based on total word count.",
         "baseCost": "Base fee per file",
-        "unitCost": "Cost per 1,000 words",
+        "unitCost": "Cost per unit",
         "unitSize": "Words per unit",
         "metric": "Total Word document word count"
       },
@@ -326,7 +328,7 @@
         "title": "Process Excel",
         "description": "Credit charged for Excel processing, based on populated cell count.",
         "baseCost": "Base fee per file",
-        "unitCost": "Cost per cell group",
+        "unitCost": "Cost per unit",
         "unitSize": "Cells per unit",
         "metric": "Total populated cell count"
       },
@@ -334,7 +336,7 @@
         "title": "Process PowerPoint",
         "description": "Credit charged for PowerPoint processing, based on slide count.",
         "baseCost": "Base fee per file",
-        "unitCost": "Cost per slide",
+        "unitCost": "Cost per unit",
         "unitSize": "Slides per unit",
         "metric": "Total slide count"
       },
@@ -342,7 +344,7 @@
         "title": "Process Audio",
         "description": "Credit charged for audio processing, based on duration in seconds.",
         "baseCost": "Base fee per file",
-        "unitCost": "Cost per minute",
+        "unitCost": "Cost per unit",
         "unitSize": "Seconds per unit",
         "metric": "Total audio duration in seconds"
       },
@@ -350,7 +352,7 @@
         "title": "Process Video",
         "description": "Credit charged for video processing, based on duration in seconds.",
         "baseCost": "Base fee per file",
-        "unitCost": "Cost per minute",
+        "unitCost": "Cost per unit",
         "unitSize": "Seconds per unit",
         "metric": "Total video duration in seconds"
       }
