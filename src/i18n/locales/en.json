@@ -3684,6 +3684,18 @@
       "title": "Mock Test",
       "workspaceLabel": "Workspace",
       "desc": "Create a mock test based on your documents.",
+      "progress": {
+        "cacheHit": "Loaded instantly from cache",
+        "aiGenerating": "AI is analyzing and generating content",
+        "normalizing": "Normalizing structure & scoring",
+        "ragRetrieved": "Document read complete, calling AI",
+        "parallelGenerating": "Generating sections in parallel to reduce wait time",
+        "completed": "Complete"
+      },
+      "fastPreview": {
+        "label": "Fast preview (parallel mode)",
+        "hint": "Generate quiz from template with per-section parallel — ~50-65% faster for multi-section templates."
+      },
       "allRoadmapsCovered": "All roadmaps already have a mock test.",
       "createTitle": "Create Mock Test",
       "createDesc": "Create a comprehensive test covering an entire roadmap.",
