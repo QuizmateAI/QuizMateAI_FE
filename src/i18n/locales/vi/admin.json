@@ -186,8 +186,9 @@
     "formulaPatternVariable": "Tổng phí = phí cơ bản + phí đơn vị x ceil(chỉ số áp dụng / kích thước đơn vị)",
     "metricFixedUsage": "Tính cố định cho mỗi lần sử dụng",
     "metricByUnit": "Theo số {{unit}}",
-    "explanationFixed": "{{baseLabel}} đang áp dụng là {{base}} QMC cho mỗi lần dùng.",
-    "explanationVariable": "{{baseLabel}} là {{base}} QMC, {{unitLabelName}} là {{unit}} QMC và {{sizeLabel}} là {{size}}. Hệ thống tính dựa trên {{metric}}.",
+    "creditUnit": "credit",
+    "explanationFixed": "{{baseLabel}} đang áp dụng là {{base}} credit cho mỗi lần dùng.",
+    "explanationVariable": "{{baseLabel}} là {{base}} credit, {{unitLabelName}} là {{unit}} credit và {{sizeLabel}} là {{size}}. Hệ thống tính dựa trên {{metric}}.",
     "active": "Kích hoạt",
     "statusActive": "Đang hoạt động",
     "statusInactive": "Đã tắt",
@@ -204,14 +205,14 @@
     "updateSuccess": "Cập nhật chính sách thành công",
     "descriptionPlaceholder": "Mô tả chính sách...",
     "unitField": "Đơn vị",
-    "baseCost": "Chi phí cơ bản",
-    "unitCost": "Chi phí mỗi đơn vị",
-    "unitSize": "Kích thước đơn vị",
+    "baseCost": "Phí cơ bản",
+    "unitCost": "Phí mỗi đơn vị",
+    "unitSize": "Số lượng / đơn vị",
     "formula": "Công thức tính phí",
     "formulaResult": "Chi phí =",
     "formulaCeil": "làm tròn lên",
     "formulaFixedNote": "cố định mỗi lần sử dụng",
-    "formulaSummary": "Mỗi lần sử dụng tốn {{base}} QMC cố định, cộng thêm {{unit}} QMC cho mỗi {{size}} {{mode}}. Phần lẻ được làm tròn lên.",
+    "formulaSummary": "Mỗi lần sử dụng tốn {{base}} credit cố định, cộng thêm {{unit}} credit cho mỗi {{size}} {{mode}}. Phần lẻ được làm tròn lên.",
     "costMode": {
       "label": "Cách tính phí",
       "FIXED": "Cố định",
@@ -234,24 +235,24 @@
       "generateQuiz": {
         "title": "Tạo bài kiểm tra",
         "description": "Tính phí khi tạo bài kiểm tra bằng AI, dựa trên tổng số câu hỏi được tạo.",
-        "baseCost": "Phí khởi tạo quiz",
-        "unitCost": "Phí mỗi câu hỏi",
+        "baseCost": "Phí cơ bản mỗi quiz",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số câu / đơn vị",
         "metric": "Tổng số câu hỏi được tạo"
       },
       "generateFlashcards": {
         "title": "Tạo thẻ ghi nhớ",
         "description": "Tính phí khi tạo bộ thẻ ghi nhớ bằng AI, dựa trên tổng số thẻ được tạo.",
-        "baseCost": "Phí khởi tạo bộ thẻ",
-        "unitCost": "Phí mỗi thẻ",
+        "baseCost": "Phí cơ bản mỗi bộ",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số thẻ / đơn vị",
         "metric": "Tổng số thẻ được tạo"
       },
       "generateMockTest": {
         "title": "Tạo đề thi thử",
         "description": "Tính phí khi tạo đề thi thử bằng AI, dựa trên tổng số câu hỏi trong đề.",
-        "baseCost": "Phí khởi tạo đề thi",
-        "unitCost": "Phí mỗi câu hỏi",
+        "baseCost": "Phí cơ bản mỗi đề",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số câu / đơn vị",
         "metric": "Tổng số câu hỏi trong đề"
       },
@@ -264,8 +265,8 @@
       "generateRoadmapQuiz": {
         "title": "Generate quiz in roadmap",
         "description": "Tính phí khi tạo bài kiểm tra kiến thức lộ trình, dựa trên tổng số câu hỏi.",
-        "baseCost": "Phí khởi tạo",
-        "unitCost": "Phí mỗi câu hỏi",
+        "baseCost": "Phí cơ bản mỗi quiz",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số câu / đơn vị",
         "metric": "Tổng số câu hỏi của quiz lộ trình"
       },
@@ -297,7 +298,7 @@
         "title": "Xử lý PDF",
         "description": "Tính phí xử lý tài liệu PDF, dựa trên tổng số trang.",
         "baseCost": "Phí cơ bản mỗi file",
-        "unitCost": "Phí mỗi trang",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số trang / đơn vị",
         "metric": "Tổng số trang của tài liệu PDF"
       },
@@ -311,7 +312,7 @@
         "title": "Xử lý văn bản",
         "description": "Tính phí xử lý văn bản thuần, dựa trên tổng số từ.",
         "baseCost": "Phí cơ bản mỗi file",
-        "unitCost": "Phí mỗi 1.000 từ",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số từ / đơn vị",
         "metric": "Tổng số từ của văn bản"
       },
@@ -319,7 +320,7 @@
         "title": "Xử lý Word",
         "description": "Tính phí xử lý tài liệu Word, dựa trên tổng số từ.",
         "baseCost": "Phí cơ bản mỗi file",
-        "unitCost": "Phí mỗi 1.000 từ",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số từ / đơn vị",
         "metric": "Tổng số từ của tài liệu Word"
       },
@@ -327,7 +328,7 @@
         "title": "Xử lý Excel",
         "description": "Tính phí xử lý bảng tính Excel, dựa trên tổng số ô có dữ liệu.",
         "baseCost": "Phí cơ bản mỗi file",
-        "unitCost": "Phí mỗi nhóm ô",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số ô / đơn vị",
         "metric": "Tổng số ô có dữ liệu"
       },
@@ -335,7 +336,7 @@
         "title": "Xử lý PowerPoint",
         "description": "Tính phí xử lý slide PowerPoint, dựa trên tổng số trang slide.",
         "baseCost": "Phí cơ bản mỗi file",
-        "unitCost": "Phí mỗi slide",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số slide / đơn vị",
         "metric": "Tổng số slide của tài liệu"
       },
@@ -343,7 +344,7 @@
         "title": "Xử lý âm thanh",
         "description": "Tính phí xử lý file âm thanh, dựa trên thời lượng (giây).",
         "baseCost": "Phí cơ bản mỗi file",
-        "unitCost": "Phí mỗi phút",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số giây / đơn vị",
         "metric": "Tổng thời lượng âm thanh theo giây"
       },
@@ -351,7 +352,7 @@
         "title": "Xử lý video",
         "description": "Tính phí xử lý video, dựa trên thời lượng (giây).",
         "baseCost": "Phí cơ bản mỗi file",
-        "unitCost": "Phí mỗi phút",
+        "unitCost": "Phí mỗi đơn vị",
         "unitSize": "Số giây / đơn vị",
         "metric": "Tổng thời lượng video theo giây"
       }
