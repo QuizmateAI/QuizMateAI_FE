@@ -19,14 +19,22 @@ import {
  *   - Total points + passing score (absolute & %)
  *   - Per-section breakdown: leaf-count, points, %, per-question points, optional section pass
  *   - Linked logic: change total → re-distribute section points; change section → recompute total.
+ *
+ * `formLanguage` (optional): khi truyền vao thi labels render theo language do
+ * thay vi UI locale — dung khi mocktest content sinh boi AI o ngon ngu khac UI.
  */
 export function MockTestScoringEditor({
   sections,
   scoring,
   onChange,
   isDarkMode = false,
+  formLanguage = null,
 }) {
-  const { t } = useTranslation();
+  const { t: defaultT, i18n } = useTranslation();
+  const t = useMemo(() => {
+    if (!formLanguage || formLanguage === i18n.language) return defaultT;
+    return i18n.getFixedT(formLanguage);
+  }, [defaultT, formLanguage, i18n]);
   const totalQuestions = useMemo(() => countLeafQuestions(sections), [sections]);
   const normalized = useMemo(
     () => normalizeMockTestScoring(scoring, totalQuestions),

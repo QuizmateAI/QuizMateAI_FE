@@ -2506,10 +2506,13 @@ function WorkspacePage() {
 
   // Return to the mock-test list after creation succeeds
 
-  const handleCreateMockTest = useCallback(async () => {
+  const handleCreateMockTest = useCallback(async (data) => {
+    if (data) {
+      trackQuizGenerationStart(data);
+    }
     invalidateMockTestQueries();
     setActiveView("mockTest");
-  }, [invalidateMockTestQueries]);
+  }, [invalidateMockTestQueries, trackQuizGenerationStart]);
 
   const handleCreatePostLearning = useCallback(async (payload) => {
     const quizId = Number(payload?.quizId);

@@ -399,6 +399,9 @@ function ChatPanel({
             contextType="WORKSPACE"
             contextId={workspaceId}
             disableCreate={shouldDisableCreateMockTest}
+            progressTracking={progressTracking}
+            quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+            quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
           />
         );
       case "postLearning":
@@ -548,6 +551,9 @@ function ChatPanel({
             contextType="WORKSPACE"
             contextId={workspaceId}
             disableCreate={shouldDisableCreateMockTest}
+            progressTracking={progressTracking}
+            quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+            quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
           />
         ) : (
           <LazyCreateMockTestForm

@@ -3536,14 +3536,17 @@ function GroupWorkspacePage() {
     return unwrapApiData(response);
   }, [resolvedWorkspaceId, workspaceId, t]);
 
-  const handleCreateMockTest = useCallback(async () => {
+  const handleCreateMockTest = useCallback(async (data) => {
     if (!canCreateMockTest) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateMockTest', 'Member cannot create mock tests.'));
       return;
     }
+    if (data) {
+      trackQuizGenerationStart(data);
+    }
     invalidateMockTestQueries();
     setActiveView('mockTest');
-  }, [canCreateMockTest, invalidateMockTestQueries, showInfo, t]);
+  }, [canCreateMockTest, invalidateMockTestQueries, showInfo, t, trackQuizGenerationStart]);
   const handleViewMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('mockTestDetail'); }, []);
   const handleEditMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('editMockTest'); }, []);
   const handleSaveMockTest = useCallback((updatedMt) => { setSelectedMockTest((p) => ({ ...p, ...updatedMt })); setActiveView('mockTestDetail'); }, []);
