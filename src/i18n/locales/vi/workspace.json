@@ -2287,6 +2287,21 @@
         "questionStats": "Thống kê",
         "profile": "Hồ sơ"
       },
+      "lockTooltip": {
+        "sources": "Hãy tải tài liệu lên để sử dụng tính năng này",
+        "plan": "Tính năng VIP — nâng cấp gói để mở khóa"
+      },
+      "lockBadge": {
+        "sources": "Cần tài liệu",
+        "plan": "Tính năng VIP"
+      },
+      "lockToast": {
+        "sources": "Vui lòng tải tài liệu lên trước khi sử dụng tính năng này."
+      },
+      "featureNames": {
+        "roadmap": "Lộ trình học tập",
+        "questionStats": "Thống kê workspace"
+      },
       "groups": {
         "workspace": "Workspace",
         "outputs": "Đầu ra"

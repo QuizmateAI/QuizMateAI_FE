@@ -2344,6 +2344,21 @@
         "questionStats": "Stats",
         "profile": "Profile"
       },
+      "lockTooltip": {
+        "sources": "Upload material to use this feature",
+        "plan": "Premium feature — upgrade your plan to unlock"
+      },
+      "lockBadge": {
+        "sources": "Material required",
+        "plan": "Premium feature"
+      },
+      "lockToast": {
+        "sources": "Please upload material before using this feature."
+      },
+      "featureNames": {
+        "roadmap": "Learning roadmap",
+        "questionStats": "Workspace analytics"
+      },
       "groups": {
         "workspace": "Workspace",
         "outputs": "Outputs"
