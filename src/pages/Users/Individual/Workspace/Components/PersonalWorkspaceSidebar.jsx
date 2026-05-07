@@ -3,9 +3,11 @@ import {
   Archive,
   BarChart3,
   CreditCard,
+  Crown,
   Files,
   GraduationCap,
   Home,
+  Lock,
   Moon,
   NotebookTabs,
   Pencil,
@@ -71,6 +73,7 @@ function PersonalWorkspaceSidebar({
   onToggleDarkMode,
   onEditWorkspace,
   disabledMap = {},
+  lockReasonMap = {},
   badgeMap = {},
   mobileOpen = false,
   onCloseMobile,
@@ -147,12 +150,11 @@ function PersonalWorkspaceSidebar({
   );
 
   const handleNavigate = (key) => {
-    if (disabledMap[key]) return;
-    if (key === activeView) return;
+    if (key === activeView && !disabledMap[key]) return;
 
     onNavigate?.(key);
 
-    if (isMobile) {
+    if (isMobile && !disabledMap[key]) {
       onCloseMobile?.();
     }
   };
@@ -192,53 +194,107 @@ function PersonalWorkspaceSidebar({
     const isDisabled = Boolean(disabledMap[item.key]);
     const badgeValue = badgeMap[item.key];
     const label = t(`workspace.shell.nav.${item.key}`, item.key);
+    const lockReason = lockReasonMap[item.key];
+    const isPlanLocked = isDisabled && lockReason === "plan";
+    const isSourcesLocked = isDisabled && lockReason === "sources";
+    const tooltipText = isPlanLocked
+      ? t("workspace.shell.lockTooltip.plan", "Nâng cấp gói để mở khóa tính năng này")
+      : isSourcesLocked
+        ? t("workspace.shell.lockTooltip.sources", "Hãy tải tài liệu lên để sử dụng tính năng này")
+        : "";
 
     return (
-      <button
-        key={item.key}
-        type="button"
-        onClick={() => handleNavigate(item.key)}
-        disabled={isDisabled}
-        aria-current={isActive ? "page" : undefined}
-        className={cn(
-          "flex w-full items-center gap-2 rounded-[16px] border px-2.5 py-2 text-left transition-[background-color,border-color,color,box-shadow] duration-200 ease-out",
-          isDisabled
-            ? isDarkMode
-              ? "cursor-not-allowed border-slate-700 bg-slate-800/70 text-slate-500"
-              : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
-            : isActive
-              ? "border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]"
-              : isDarkMode
-                ? "border-transparent bg-slate-900 text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white"
-                : "border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
-        )}
-      >
-        <span
+      <div key={item.key} className="group relative">
+        <button
+          type="button"
+          onClick={() => handleNavigate(item.key)}
+          aria-current={isActive ? "page" : undefined}
+          aria-disabled={isDisabled || undefined}
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
-            isActive
-              ? "border-blue-500 bg-blue-500 text-white"
-              : isDarkMode
-                ? "border-slate-700 bg-slate-800 text-slate-300"
-                : "border-slate-200 bg-white text-slate-600",
+            "flex w-full items-center gap-2 rounded-[16px] border px-2.5 py-2 text-left transition-[background-color,border-color,color,box-shadow] duration-200 ease-out",
+            isDisabled
+              ? isDarkMode
+                ? "cursor-pointer border-slate-700 bg-slate-800/70 text-slate-500 hover:border-slate-600 hover:bg-slate-800"
+                : "cursor-pointer border-slate-200 bg-slate-100 text-slate-400 hover:border-slate-300 hover:bg-slate-200/70"
+              : isActive
+                ? "border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]"
+                : isDarkMode
+                  ? "border-transparent bg-slate-900 text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white"
+                  : "border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
           )}
         >
-          <Icon className="h-4 w-4" />
-        </span>
-
-        <span className={cn("min-w-0 flex-1 truncate text-[14px] font-semibold", fontClass)}>
-          {label}
-        </span>
-
-        {badgeValue ? (
-          <span className={cn(
-            "inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition-colors duration-200 ease-out",
-            isActive ? "bg-white text-blue-700" : isDarkMode ? "bg-slate-200 text-slate-900" : "bg-slate-900 text-white",
-          )}>
-            {badgeValue}
+          <span
+            className={cn(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
+              isDisabled
+                ? isDarkMode
+                  ? "border-slate-700 bg-slate-900 text-slate-500"
+                  : "border-slate-200 bg-white text-slate-400"
+                : isActive
+                  ? "border-blue-500 bg-blue-500 text-white"
+                  : isDarkMode
+                    ? "border-slate-700 bg-slate-800 text-slate-300"
+                    : "border-slate-200 bg-white text-slate-600",
+            )}
+          >
+            <Icon className="h-4 w-4" />
           </span>
+
+          <span className={cn("min-w-0 flex-1 truncate text-[14px] font-semibold", fontClass)}>
+            {label}
+          </span>
+
+          {isPlanLocked ? (
+            <span
+              className={cn(
+                "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                isDarkMode
+                  ? "bg-amber-500/20 text-amber-300"
+                  : "bg-amber-100 text-amber-600",
+              )}
+              aria-label={t("workspace.shell.lockBadge.plan", "Tính năng VIP")}
+            >
+              <Crown className="h-3 w-3" />
+            </span>
+          ) : isSourcesLocked ? (
+            <span
+              className={cn(
+                "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                isDarkMode
+                  ? "bg-slate-700 text-slate-300"
+                  : "bg-slate-200 text-slate-500",
+              )}
+              aria-label={t("workspace.shell.lockBadge.sources", "Cần tài liệu")}
+            >
+              <Lock className="h-3 w-3" />
+            </span>
+          ) : null}
+
+          {!isDisabled && badgeValue ? (
+            <span className={cn(
+              "inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition-colors duration-200 ease-out",
+              isActive ? "bg-white text-blue-700" : isDarkMode ? "bg-slate-200 text-slate-900" : "bg-slate-900 text-white",
+            )}>
+              {badgeValue}
+            </span>
+          ) : null}
+        </button>
+
+        {tooltipText ? (
+          <div
+            role="tooltip"
+            className={cn(
+              "pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 w-max max-w-[220px] -translate-x-1/2 translate-y-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium leading-tight opacity-0 shadow-lg transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100",
+              isDarkMode
+                ? "bg-slate-100 text-slate-900"
+                : "bg-slate-900 text-white",
+              fontClass,
+            )}
+          >
+            {tooltipText}
+          </div>
         ) : null}
-      </button>
+      </div>
     );
   };
 

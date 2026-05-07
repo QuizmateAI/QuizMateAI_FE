@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   BarChart3,
   Clock3,
-  Compass,
   Download,
   Eye,
   Globe2,
@@ -43,48 +42,6 @@ function formatDifficulty(value, t) {
   return t(`workspace.quiz.difficultyLevels.${normalized}`, normalized);
 }
 
-const TIER_ORDER = ["TOP_MATCH", "RELATED", "EXPLORE"];
-
-const TIER_META = {
-  TOP_MATCH: {
-    labelKey: "workspace.quiz.communityExplorer.tier.topMatch",
-    defaultLabel: "Khớp nhất với workspace",
-    description: "Trùng domain, roadmap hoặc điểm yếu đang học",
-    icon: Sparkles,
-    badgeClassName: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300",
-    cardAccent: "border-emerald-300 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/10",
-  },
-  RELATED: {
-    labelKey: "workspace.quiz.communityExplorer.tier.related",
-    defaultLabel: "Liên quan",
-    description: "Có chung topic / bloom / độ khó với thói quen học",
-    icon: Target,
-    badgeClassName: "bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-300",
-    cardAccent: "border-sky-200 bg-sky-50/30 dark:border-sky-800/70 dark:bg-sky-950/10",
-  },
-  EXPLORE: {
-    labelKey: "workspace.quiz.communityExplorer.tier.explore",
-    defaultLabel: "Khám phá thêm",
-    description: "Gần về ngữ nghĩa, thử nếu bạn muốn mở rộng",
-    icon: Compass,
-    badgeClassName: "bg-violet-100 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
-    cardAccent: "border-violet-200 bg-violet-50/30 dark:border-violet-800/70 dark:bg-violet-950/10",
-  },
-};
-
-function groupItemsByTier(items) {
-  const groups = {
-    TOP_MATCH: [],
-    RELATED: [],
-    EXPLORE: [],
-  };
-  items.forEach((item, index) => {
-    const tier = TIER_META[item?.relevanceTier] ? item.relevanceTier : "EXPLORE";
-    groups[tier].push({ ...item, recommendationRank: index + 1 });
-  });
-  return groups;
-}
-
 function CommunityQuizCard({
   item,
   cloningQuizId,
@@ -97,35 +54,18 @@ function CommunityQuizCard({
   const duration = normalizeDurationMinutes(item?.duration);
   const difficultyLabel = formatDifficulty(item?.overallDifficulty, t);
   const cloneCount = Number(item?.communityCloneCount) || 0;
-  const reasons = Array.isArray(item?.reasons) ? item.reasons.slice(0, 2) : [];
   const topics = Array.isArray(item?.matchedTopics) ? item.matchedTopics.slice(0, 3) : [];
-  const tierMeta = TIER_META[item?.relevanceTier] || TIER_META.EXPLORE;
-  const TierIcon = tierMeta.icon;
   const isCloning = Number(cloningQuizId) === Number(item?.quizId);
 
   return (
     <article
       className={`rounded-2xl border p-4 shadow-sm transition-colors ${
-        isDarkMode ? "border-slate-800 bg-slate-900/80" : tierMeta.cardAccent || "border-slate-200 bg-white"
+        isDarkMode ? "border-slate-800 bg-slate-900/80" : "border-slate-200 bg-white"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${tierMeta.badgeClassName}`}>
-              <TierIcon className="h-3.5 w-3.5" />
-              {t(tierMeta.labelKey, tierMeta.defaultLabel)}
-            </span>
-            {Number.isFinite(Number(item?.recommendationScore)) ? (
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"
-              }`}>
-                {Math.round(Number(item.recommendationScore))} pts
-              </span>
-            ) : null}
-          </div>
-
-          <p className={`mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
+          <p className={`text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
             {item?.title || t("workspace.quiz.communityRecommendations.defaultQuizTitle", "Community quiz")}
           </p>
 
@@ -158,19 +98,6 @@ function CommunityQuizCard({
               </span>
             ) : null}
           </div>
-
-          {reasons.length > 0 ? (
-            <div className="mt-3 space-y-2">
-              {reasons.map((reason) => (
-                <div key={reason} className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
-                  <p className={`text-sm leading-relaxed ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
-                    {reason}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
 
           {topics.length > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -277,12 +204,12 @@ export default function CommunityQuizExplorerView({
   }, [recommendationData]);
 
   const filteredItems = React.useMemo(() => {
-    if (!searchQuery.trim()) return allItems;
-    const query = searchQuery.trim().toLowerCase();
-    return allItems.filter((item) => String(item?.title || "").toLowerCase().includes(query));
+    const base = !searchQuery.trim()
+      ? allItems
+      : allItems.filter((item) => String(item?.title || "").toLowerCase().includes(searchQuery.trim().toLowerCase()));
+    return base.map((item, index) => ({ ...item, recommendationRank: index + 1 }));
   }, [allItems, searchQuery]);
 
-  const groupedItems = React.useMemo(() => groupItemsByTier(filteredItems), [filteredItems]);
   const communityHidden = Boolean(recommendationData?.communityHidden);
 
   const emitRecommendationEvents = React.useCallback(async (events) => {
@@ -315,9 +242,7 @@ export default function CommunityQuizExplorerView({
     void emitRecommendationEvents(visibleItems.map((item, index) => ({
       eventType: "IMPRESSION",
       quizId: item.quizId,
-      recommendationBucket: item.relevanceTier,
       recommendationRank: index + 1,
-      recommendationScore: item.recommendationScore,
     })));
   }, [emitRecommendationEvents, filteredItems, loggedImpressionRequestIds, recommendationData?.requestId]);
 
@@ -333,16 +258,12 @@ export default function CommunityQuizExplorerView({
       await emitRecommendationEvents([{
         eventType: "CLONE_CLICK",
         quizId,
-        recommendationBucket: item?.relevanceTier,
         recommendationRank: item?.recommendationRank,
-        recommendationScore: item?.recommendationScore,
       }]);
 
       await cloneCommunityQuizToWorkspace(quizId, normalizedWorkspaceId, {
         recommendationRequestId: recommendationData?.requestId,
-        recommendationBucket: item?.relevanceTier,
         recommendationRank: item?.recommendationRank,
-        recommendationScore: item?.recommendationScore,
       });
 
       showSuccess(t("workspace.quiz.communityRecommendations.cloneSuccess", "Quiz cloned into this workspace."));
@@ -440,21 +361,6 @@ export default function CommunityQuizExplorerView({
                 }`}
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {TIER_ORDER.map((tierKey) => {
-                const count = groupedItems[tierKey]?.length || 0;
-                const meta = TIER_META[tierKey];
-                if (count === 0) return null;
-                return (
-                  <span
-                    key={tierKey}
-                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${meta.badgeClassName}`}
-                  >
-                    {t(meta.labelKey, meta.defaultLabel)}: {count}
-                  </span>
-                );
-              })}
-            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -475,40 +381,19 @@ export default function CommunityQuizExplorerView({
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {TIER_ORDER.map((tierKey) => {
-                  const items = groupedItems[tierKey] || [];
-                  if (items.length === 0) return null;
-                  const meta = TIER_META[tierKey];
-                  const TierIcon = meta.icon;
-                  return (
-                    <section key={tierKey}>
-                      <div className="mb-3 flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClassName}`}>
-                          <TierIcon className="h-3.5 w-3.5" />
-                          {t(meta.labelKey, meta.defaultLabel)}
-                        </span>
-                        <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                          {meta.description}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                        {items.map((item) => (
-                          <CommunityQuizCard
-                            key={item.quizId}
-                            item={item}
-                            cloningQuizId={cloningQuizId}
-                            onClone={handleClone}
-                            onPreview={setSelectedQuizItem}
-                            isDarkMode={isDarkMode}
-                            fontClass={fontClass}
-                            t={t}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                {filteredItems.map((item) => (
+                  <CommunityQuizCard
+                    key={item.quizId}
+                    item={item}
+                    cloningQuizId={cloningQuizId}
+                    onClone={handleClone}
+                    onPreview={setSelectedQuizItem}
+                    isDarkMode={isDarkMode}
+                    fontClass={fontClass}
+                    t={t}
+                  />
+                ))}
               </div>
             )}
           </div>

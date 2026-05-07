@@ -79,6 +79,37 @@ export const generateMockTestV2 = async (payload) => {
   return response;
 };
 
+/**
+ * POST /api/mocktest/generate-from-template — Fast preview path.
+ *
+ * Per-section parallel sinh quiz tu MockTestTemplate da chon (Python:
+ * /ai/generate-quiz-from-mocktest-template). Latency giam ~50-65% cho
+ * template >=3 sections so voi /generate (sequential).
+ *
+ * KHONG persist DB — chi tra raw AI response (sections + questions). Dung cho:
+ * - Preview truoc khi commit save qua /generate.
+ * - A/B testing parallel vs sequential generation.
+ *
+ * Payload shape (khop GenerateQuizFromMockTestTemplateRequestSchema o Python):
+ *   {
+ *     taskId, userId, workspaceId,
+ *     template: <MaterialMockTestTemplateSchema>,
+ *     materialIds: number[],
+ *     outputLanguage: string,
+ *     workspaceProfile?: {...},
+ *     questionTypes: [{ questionTypeId, name }, ...],
+ *     bloomSkills: [{ bloomId, bloomName }, ...],
+ *   }
+ *
+ * Response: { sections: [...], description: string }
+ */
+export const generateQuizFromMockTestTemplate = async (payload) => {
+  const response = await api.post('/mocktest/generate-from-template', payload, {
+    timeout: 180000, // 3 min — per-section parallel typically ~10-20s
+  });
+  return response;
+};
+
 // ---------- USER PROMPTS ----------
 
 /** GET /api/mocktest/my-prompts — list prompts saved by current user. */

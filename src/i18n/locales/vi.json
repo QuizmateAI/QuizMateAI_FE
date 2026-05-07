@@ -3595,6 +3595,18 @@
       "title": "Mock Test",
       "workspaceLabel": "Không gian",
       "desc": "Tạo bài kiểm tra mô phỏng dựa trên tài liệu.",
+      "progress": {
+        "cacheHit": "Đã tải nhanh từ bộ nhớ đệm",
+        "aiGenerating": "AI đang phân tích và sinh nội dung",
+        "normalizing": "Đang chuẩn hóa cấu trúc & điểm",
+        "ragRetrieved": "Đã đọc xong tài liệu, đang gọi AI",
+        "parallelGenerating": "Đang sinh các phần song song để giảm thời gian chờ",
+        "completed": "Hoàn tất"
+      },
+      "fastPreview": {
+        "label": "Tạo nhanh (chế độ song song)",
+        "hint": "Sinh quiz từ template với per-section parallel — nhanh hơn ~50-65% cho template nhiều phần."
+      },
       "allRoadmapsCovered": "Tất cả các lộ trình đã có mock test.",
       "createTitle": "Tạo Mock Test",
       "createDesc": "Tạo bài kiểm tra tổng hợp bao phủ toàn bộ lộ trình.",
