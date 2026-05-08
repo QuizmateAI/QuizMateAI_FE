@@ -1325,10 +1325,13 @@ function QuizDetailView({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                        Trộn thứ tự câu hỏi & đáp án
+                        {t("workspace.quiz.detail.shuffleTitle", "Trộn thứ tự câu hỏi & đáp án")}
                       </p>
                       <p className={`mt-1 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                        Khi bật, mỗi lần làm bài câu hỏi và đáp án sẽ hiển thị theo thứ tự ngẫu nhiên khác nhau.
+                        {t(
+                          "workspace.quiz.detail.shuffleDescription",
+                          "Khi bật, mỗi lần làm bài câu hỏi và đáp án sẽ hiển thị theo thứ tự ngẫu nhiên khác nhau.",
+                        )}
                       </p>
                     </div>
                     <Switch

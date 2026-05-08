@@ -1358,6 +1358,8 @@
         "confirmActivateQuiz": "Confirm & activate",
         "activateConfirm": "Activate this quiz? Once activated, users can start taking it. You can still edit it freely until the first attempt exists.",
         "activateFailed": "Could not activate the quiz.",
+        "shuffleTitle": "Shuffle question and answer order",
+        "shuffleDescription": "When enabled, each attempt shows questions and answers in a different random order.",
         "createdAt": "Created",
         "updatedAt": "Updated",
         "loadingDetail": "Loading quiz details...",

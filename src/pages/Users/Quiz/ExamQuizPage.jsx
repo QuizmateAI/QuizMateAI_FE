@@ -58,11 +58,14 @@ export default function ExamQuizPage() {
     data: quiz = null,
     isLoading: loading,
   } = useQuery({
-    queryKey: ['quiz-full', quizId],
+    queryKey: ['quiz-full', quizId, attemptId],
     queryFn: async () => {
       // Khi đang làm bài: dùng variant attempt-in-progress để BE ẩn đáp án
       // cho MOCK_TEST. Result page vẫn dùng getQuizFullForAttempt thường.
-      const res = await getQuizFullForAttemptInProgress(quizId);
+      const res = await getQuizFullForAttemptInProgress(
+        quizId,
+        attemptId ? { attemptId } : undefined,
+      );
       return normalizeQuizData(res.data);
     },
     enabled: Boolean(quizId),
