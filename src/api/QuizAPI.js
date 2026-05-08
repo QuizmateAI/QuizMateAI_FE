@@ -76,14 +76,8 @@ export const cloneCommunityQuizToWorkspace = async (quizId, workspaceId, metadat
   if (metadata?.recommendationRequestId) {
     params.set('recommendationRequestId', metadata.recommendationRequestId);
   }
-  if (metadata?.recommendationBucket) {
-    params.set('recommendationBucket', metadata.recommendationBucket);
-  }
   if (Number.isInteger(Number(metadata?.recommendationRank)) && Number(metadata.recommendationRank) > 0) {
     params.set('recommendationRank', Number(metadata.recommendationRank));
-  }
-  if (Number.isFinite(Number(metadata?.recommendationScore))) {
-    params.set('recommendationScore', Number(metadata.recommendationScore));
   }
 
   const response = await api.post(`/quiz/${quizId}/clone-to-workspace?${params.toString()}`);
@@ -364,6 +358,14 @@ export const refreshAttemptAssessment = async (attemptId) => {
   return response;
 };
 
+// Cảnh báo trước khi nộp bài: nếu attempt là lần đầu của user có feature AI assessment
+// và tỷ lệ trả lời chưa đủ ngưỡng → trả shouldWarnNotAssessed=true để FE hiện cảnh báo
+// "Nộp bây giờ sẽ không được AI đánh giá".
+export const getAttemptAssessmentWarning = async (attemptId) => {
+  const response = await api.get(`/quiz-attempts/${attemptId}/assessment-warning`);
+  return response;
+};
+
 export const getActiveTask = async () => {
   const response = await api.get('/v1/quiz/active-task');
   return response;
@@ -435,6 +437,8 @@ export const QUESTION_TYPE_ID_MAP = {
   3: 'shortAnswer',
   4: 'trueFalse',
   5: 'fillBlank',
+  6: 'matching',
+  7: 'imageBased',
 };
 
 // Map difficulty frontend sang backend
@@ -583,5 +587,22 @@ export const importQuestionsToQuiz = async (quizId, { targetSectionId, sourceQue
 // Bulk update toàn bộ nội dung manual quiz (full-state replace, BE tự diff add/update/delete)
 export const updateManualQuizBulk = async (quizId, payload) => {
   const response = await api.put(`/quiz/${quizId}/manual:update-bulk`, payload);
+  return response;
+};
+
+// ==================== MANUAL QUIZ — PASTE IMPORT ====================
+// User copy prompt sang ChatGPT/NotebookLM → AI sinh JSON → user dán JSON vào hệ thống.
+// QuizMateAI KHÔNG dùng AI để verify nội dung; user chịu trách nhiệm về tính chính xác.
+
+// Lấy prompt template phù hợp với gói của user (basic vs advance)
+export const getPasteImportPromptTemplate = async () => {
+  const response = await api.get('/quiz/manual:paste-prompt-template');
+  return response;
+};
+
+// Tạo quiz thủ công từ JSON đã được sinh bởi bên thứ 3
+// payload shape khớp ManualQuizPasteImportRequest — questionType là tên enum (vd "SINGLE_CHOICE")
+export const createQuizFromPaste = async (payload) => {
+  const response = await api.post('/quiz/manual:create-from-paste', payload);
   return response;
 };

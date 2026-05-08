@@ -92,6 +92,66 @@ export const getSystemOverviewStats = async () => {
   return response;
 };
 
+/** Thống kê mua gói (COMPLETED) + ước lời sau COGS AI theo plan (cùng khoảng lọc). Cần payment:read. */
+export const getPlanPurchaseSummary = async ({ from, to } = {}) => {
+  const params = new URLSearchParams();
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const q = params.toString();
+  const response = await api.get(`/management/stats/plan-purchases${q ? `?${q}` : ''}`);
+  return response;
+};
+
+export const getPlanPurchaseBuyers = async (planCatalogId, { from, to, page = 0, size = 20 } = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const response = await api.get(`/management/stats/plan-purchases/${planCatalogId}/buyers?${params.toString()}`);
+  return response;
+};
+
+/** Lấy toàn bộ version history của 1 plan code (mới → cũ, gồm cả historical). Cần plan:write. */
+export const getPlanVersionHistory = async (code) => {
+  if (!code) throw new Error('Plan code is required');
+  const response = await api.get(`/plan-catalog/${encodeURIComponent(code)}/history`);
+  return response;
+};
+
+/** Thống kê mua credit (USER_CREDIT + WORKSPACE_CREDIT) gom theo credit_package, COMPLETED. Cần payment:read. */
+export const getCreditPurchaseSummary = async ({ from, to } = {}) => {
+  const params = new URLSearchParams();
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const q = params.toString();
+  const response = await api.get(`/management/stats/credit-purchases${q ? `?${q}` : ''}`);
+  return response;
+};
+
+/** Danh sách người mua của 1 credit package (omit packageId = custom credit). Cần payment:read. */
+export const getCreditPurchaseBuyers = async ({ packageId, from, to, page = 0, size = 20 } = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  if (packageId != null) params.append('packageId', String(packageId));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const response = await api.get(`/management/stats/credit-purchases/buyers?${params.toString()}`);
+  return response;
+};
+
+/** Time-series doanh thu daily/weekly/monthly tách theo PaymentTargetType + growth %. Cần payment:read. */
+export const getRevenueTimeseries = async ({ from, to, bucket = 'DAY' } = {}) => {
+  const params = new URLSearchParams();
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  if (bucket) params.append('bucket', String(bucket));
+  const q = params.toString();
+  const response = await api.get(`/management/stats/revenue-timeseries${q ? `?${q}` : ''}`);
+  return response;
+};
+
 export const listRoles = async () => {
   const response = await api.get('/rbac/system/roles');
   return response;
@@ -226,10 +286,14 @@ export const getAiAuditLogs = async ({
   provider,
   featureKey,
   actorUserId,
+  actorEmail,
+  planCatalogId,
   taskId,
   status,
   from,
   to,
+  category,
+  expand,
   page = 0,
   size = 20,
 } = {}) => {
@@ -239,11 +303,46 @@ export const getAiAuditLogs = async ({
   if (provider) params.append('provider', String(provider));
   if (featureKey) params.append('featureKey', String(featureKey));
   if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
+  if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
   if (taskId) params.append('taskId', String(taskId));
   if (status) params.append('status', String(status));
   if (from) params.append('from', String(from));
   if (to) params.append('to', String(to));
+  if (category) params.append('category', String(category));
+  if (expand) params.append('expand', 'true');
   const response = await api.get(`/management/ai-audit/logs?${params.toString()}`);
+  return response;
+};
+
+export const getAiAuditSummary = async ({
+  provider,
+  featureKey,
+  actorUserId,
+  actorEmail,
+  planCatalogId,
+  status,
+  from,
+  to,
+  category,
+} = {}) => {
+  const params = new URLSearchParams();
+  if (provider) params.append('provider', String(provider));
+  if (featureKey) params.append('featureKey', String(featureKey));
+  if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
+  if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
+  if (status) params.append('status', String(status));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  if (category) params.append('category', String(category));
+  const queryString = params.toString();
+  const response = await api.get(`/management/ai-audit/summary${queryString ? `?${queryString}` : ''}`);
+  return response;
+};
+
+export const getAiFeatureCatalog = async () => {
+  const response = await api.get('/management/ai-feature-catalog');
   return response;
 };
 
@@ -317,6 +416,7 @@ export const deleteAiModel = async (id) => {
 export const getAiCostRequests = async ({
   taskId,
   actorUserId,
+  actorEmail,
   chargedWorkspaceId,
   chargedUserId,
   planCatalogId,
@@ -334,6 +434,7 @@ export const getAiCostRequests = async ({
   params.append('size', String(size));
   if (taskId) params.append('taskId', String(taskId));
   if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
   if (chargedWorkspaceId != null && chargedWorkspaceId !== '') params.append('chargedWorkspaceId', String(chargedWorkspaceId));
   if (chargedUserId != null && chargedUserId !== '') params.append('chargedUserId', String(chargedUserId));
   if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
@@ -350,6 +451,7 @@ export const getAiCostRequests = async ({
 export const getAiCostSummary = async ({
   taskId,
   actorUserId,
+  actorEmail,
   chargedWorkspaceId,
   chargedUserId,
   planCatalogId,
@@ -363,6 +465,7 @@ export const getAiCostSummary = async ({
   const params = new URLSearchParams();
   if (taskId) params.append('taskId', String(taskId));
   if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (actorEmail) params.append('actorEmail', String(actorEmail));
   if (chargedWorkspaceId != null && chargedWorkspaceId !== '') params.append('chargedWorkspaceId', String(chargedWorkspaceId));
   if (chargedUserId != null && chargedUserId !== '') params.append('chargedUserId', String(chargedUserId));
   if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));

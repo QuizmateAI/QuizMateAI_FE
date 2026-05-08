@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, FileQuestion, Loader2, Star } from 'lucide-react';
+import { AlertTriangle, BookOpen, CheckCircle2, ChevronDown, ChevronRight, FileQuestion, Loader2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -11,7 +11,7 @@ import QuestionNavPanel from './components/QuestionNavPanel';
 import ExamPerQuestion from './components/ExamPerQuestion';
 import QuizHeader from './components/QuizHeader';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
-import { getQuizFullForAttemptInProgress, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
+import { getAttemptAssessmentWarning, getQuizFullForAttemptInProgress, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
 import { buildQuestionSectionPathMap, buildSubmitPayload, collectAllSectionKeys, countSectionQuestions, getAttemptRemainingSeconds, getSectionChildren, getSectionKey, getSectionSharedContext, getSectionTitle, hasAnswerValue, isQuestionGroupSection, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/utils/quizAttemptTracker';
@@ -44,6 +44,7 @@ export default function ExamQuizPage() {
   const [flaggedQuestionIds, setFlaggedQuestionIds] = useState([]);
   const [confirmStartOpen, setConfirmStartOpen] = useState(() => !shouldAutoStart);
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+  const [assessmentWarning, setAssessmentWarning] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedMockSections, setExpandedMockSections] = useState({});
   const itemsPerPage = 20;
@@ -383,10 +384,20 @@ export default function ExamQuizPage() {
     navigate(returnToQuizPath, { replace: true });
   }, [navigate, returnToQuizPath]);
 
-  const handleOpenSubmitConfirm = useCallback(() => {
+  const handleOpenSubmitConfirm = useCallback(async () => {
     if (isSubmitted) return;
     setConfirmSubmitOpen(true);
-  }, [isSubmitted]);
+    setAssessmentWarning(null);
+    if (!attemptId) return;
+    try {
+      const res = await getAttemptAssessmentWarning(attemptId);
+      // axios response interceptor đã unwrap: res chính là body JSON (ApiResponse), res.data là payload.
+      setAssessmentWarning(res?.data || null);
+    } catch {
+      // Không hiện cảnh báo nếu BE lỗi — không chặn submit flow.
+      setAssessmentWarning(null);
+    }
+  }, [attemptId, isSubmitted]);
 
   const handleConfirmSubmit = useCallback(async () => {
     setConfirmSubmitOpen(false);
@@ -943,6 +954,27 @@ export default function ExamQuizPage() {
                 <CheckCircle2 className="h-4 w-4" />
                 {t('workspace.quiz.examActions.allQuestionsCompleted', 'All questions are completed.')}
               </div>
+            </div>
+          )}
+          {assessmentWarning?.shouldWarnNotAssessed && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800/70 dark:bg-rose-950/20 dark:text-rose-200">
+              <div className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="h-4 w-4" />
+                {t(
+                  'workspace.quiz.examActions.assessmentWarningTitle',
+                  'Nộp bây giờ sẽ không được AI đánh giá',
+                )}
+              </div>
+              <p className="mt-2 leading-6">
+                {t(
+                  'workspace.quiz.examActions.assessmentWarningDescription',
+                  'Đây là lần làm chính thức đầu tiên của bạn. Cần trả lời tối thiểu {{min}}% câu hỏi để AI tạo đánh giá. Hiện tại bạn mới trả lời {{current}}%. Nộp ngay sẽ mất luôn cơ hội nhận đánh giá AI cho bài quiz này.',
+                  {
+                    min: assessmentWarning.minAnsweredPercent ?? '',
+                    current: Math.round(assessmentWarning.currentAnsweredPercent ?? 0),
+                  },
+                )}
+              </p>
             </div>
           )}
           <DialogFooter className="gap-2 sm:justify-end">

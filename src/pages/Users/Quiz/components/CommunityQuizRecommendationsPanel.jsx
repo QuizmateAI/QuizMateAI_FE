@@ -27,50 +27,17 @@ function formatDifficulty(value, t) {
   return t(`workspace.quiz.difficultyLevels.${normalized}`, normalized);
 }
 
-const BUCKET_META = {
-  buildFoundation: {
-    labelKey: 'workspace.quiz.communityRecommendations.bucket.buildFoundation',
-    defaultLabel: 'Tiếp tục làm quen',
-    badgeClassName: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300',
-  },
-  fixWeakAreas: {
-    labelKey: 'workspace.quiz.communityRecommendations.bucket.fixWeakAreas',
-    defaultLabel: 'Củng cố điểm yếu',
-    badgeClassName: 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300',
-  },
-  continueLearningPath: {
-    labelKey: 'workspace.quiz.communityRecommendations.bucket.continueLearningPath',
-    defaultLabel: 'Đi tiếp lộ trình',
-    badgeClassName: 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-300',
-  },
-  challengeYourself: {
-    labelKey: 'workspace.quiz.communityRecommendations.bucket.challengeYourself',
-    defaultLabel: 'Tăng độ khó',
-    badgeClassName: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
-  },
-};
-
 function flattenRecommendations(data) {
-  const merged = [
-    ...(Array.isArray(data?.buildFoundation) ? data.buildFoundation.map((item) => ({ ...item, bucketKey: 'buildFoundation' })) : []),
-    ...(Array.isArray(data?.fixWeakAreas) ? data.fixWeakAreas.map((item) => ({ ...item, bucketKey: 'fixWeakAreas' })) : []),
-    ...(Array.isArray(data?.continueLearningPath) ? data.continueLearningPath.map((item) => ({ ...item, bucketKey: 'continueLearningPath' })) : []),
-    ...(Array.isArray(data?.challengeYourself) ? data.challengeYourself.map((item) => ({ ...item, bucketKey: 'challengeYourself' })) : []),
-  ];
-
+  const items = Array.isArray(data?.items) ? data.items : [];
   const deduped = new Map();
-  merged.forEach((item) => {
+  items.forEach((item) => {
     const quizId = Number(item?.quizId);
     if (!Number.isInteger(quizId) || quizId <= 0) return;
-
-    const existing = deduped.get(quizId);
-    if (!existing || Number(item?.recommendationScore || 0) > Number(existing?.recommendationScore || 0)) {
+    if (!deduped.has(quizId)) {
       deduped.set(quizId, item);
     }
   });
-
-  return Array.from(deduped.values())
-    .sort((left, right) => Number(right?.recommendationScore || 0) - Number(left?.recommendationScore || 0));
+  return Array.from(deduped.values());
 }
 
 function RecommendationCard({
@@ -85,9 +52,7 @@ function RecommendationCard({
   const duration = normalizeDurationMinutes(item?.duration);
   const difficultyLabel = formatDifficulty(item?.overallDifficulty, t);
   const cloneCount = Number(item?.communityCloneCount) || 0;
-  const reasons = Array.isArray(item?.reasons) ? item.reasons.slice(0, 2) : [];
   const topics = Array.isArray(item?.matchedTopics) ? item.matchedTopics.slice(0, 2) : [];
-  const meta = BUCKET_META[item?.bucketKey] || BUCKET_META.fixWeakAreas;
   const isCloning = Number(cloningQuizId) === Number(item?.quizId);
 
   return (
@@ -100,13 +65,7 @@ function RecommendationCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.badgeClassName}`}>
-              {t(meta.labelKey, meta.defaultLabel)}
-            </span>
-          </div>
-
-          <p className={`mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
+          <p className={`text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
             {item?.title || t('workspace.quiz.communityRecommendations.defaultQuizTitle', 'Community quiz')}
           </p>
 
@@ -126,19 +85,6 @@ function RecommendationCard({
               </span>
             ) : null}
           </div>
-
-          {reasons.length > 0 ? (
-            <div className="mt-3 space-y-2">
-              {reasons.map((reason) => (
-                <div key={reason} className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
-                  <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'} ${fontClass}`}>
-                    {reason}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
 
           {topics.length > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -278,9 +224,7 @@ export default function CommunityQuizRecommendationsPanel({
       await emitRecommendationEvents(recommendations.map((item) => ({
         eventType: 'IMPRESSION',
         quizId: item.quizId,
-        recommendationBucket: item.bucketKey,
         recommendationRank: item.recommendationRank,
-        recommendationScore: item.recommendationScore,
       })));
       if (typeof onAnalyticsChanged === 'function') {
         onAnalyticsChanged();
@@ -300,15 +244,11 @@ export default function CommunityQuizRecommendationsPanel({
       await emitRecommendationEvents([{
         eventType: 'CLONE_CLICK',
         quizId,
-        recommendationBucket: item?.bucketKey,
         recommendationRank: item?.recommendationRank,
-        recommendationScore: item?.recommendationScore,
       }]);
       await cloneCommunityQuizToWorkspace(quizId, normalizedWorkspaceId, {
         recommendationRequestId: data?.requestId,
-        recommendationBucket: item?.bucketKey,
         recommendationRank: item?.recommendationRank,
-        recommendationScore: item?.recommendationScore,
       });
       showSuccess(t('workspace.quiz.communityRecommendations.cloneSuccess', 'Quiz cloned into this workspace.'));
       setSelectedQuizItem(null);

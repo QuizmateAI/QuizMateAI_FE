@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AcceptInvitationPage from '@/pages/Users/Group/AcceptInvitationPage';
 import { acceptInvitation, previewInvitation } from '@/api/GroupAPI';
+import { __resetForTests, setAccessToken } from '@/utils/tokenStorage';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -82,6 +83,7 @@ describe('AcceptInvitationPage', () => {
     mockToken = 'invite-token';
     window.localStorage.clear();
     window.sessionStorage.clear();
+    __resetForTests();
   });
 
   it('shows invalid invitation state when token is missing', async () => {
@@ -108,7 +110,7 @@ describe('AcceptInvitationPage', () => {
   });
 
   it('accepts the invitation for the matching account and redirects to the group workspace', async () => {
-    window.localStorage.setItem('accessToken', createMockJwt('member@example.com'));
+    setAccessToken(createMockJwt('member@example.com'));
     window.localStorage.setItem('user', JSON.stringify({
       userID: 5,
       username: 'member',
@@ -141,7 +143,7 @@ describe('AcceptInvitationPage', () => {
   });
 
   it('shows mismatch state when the stored user email differs from the JWT email', async () => {
-    window.localStorage.setItem('accessToken', createMockJwt('ngoctbse183713@fpt.edu.vn'));
+    setAccessToken(createMockJwt('ngoctbse183713@fpt.edu.vn'));
     window.localStorage.setItem('user', JSON.stringify({
       userID: 5,
       username: 'member',

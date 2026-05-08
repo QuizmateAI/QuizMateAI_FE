@@ -399,36 +399,38 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       case 0: // Match mode
         return (
           <div className="flex flex-col gap-4">
-            <div className={`grid gap-3 ${AVAILABLE_MATCH_MODE_OPTIONS.length > 2 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-              {AVAILABLE_MATCH_MODE_OPTIONS.map((opt) => {
-                const Icon = opt.icon;
-                const active = matchMode === opt.key;
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setMatchMode(opt.key)}
-                    className={`flex min-h-[156px] flex-col gap-3 rounded-xl border p-4 text-left transition-all sm:p-5 ${
-                      active
-                        ? (isDarkMode ? 'border-teal-400 bg-teal-500/10' : 'border-teal-500 bg-teal-50')
-                        : (isDarkMode ? 'border-slate-700 bg-slate-800/60 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300')
-                    }`}
-                  >
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                      active
-                        ? (isDarkMode ? 'bg-teal-500 text-white' : 'bg-teal-600 text-white')
-                        : (isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600')
-                    }`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t(opt.labelKey, opt.labelFallback)}</div>
-                      <div className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t(opt.descKey, opt.descFallback)}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            {AVAILABLE_MATCH_MODE_OPTIONS.length > 1 && (
+              <div className={`grid gap-3 ${AVAILABLE_MATCH_MODE_OPTIONS.length > 2 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                {AVAILABLE_MATCH_MODE_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  const active = matchMode === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setMatchMode(opt.key)}
+                      className={`flex min-h-[156px] flex-col gap-3 rounded-xl border p-4 text-left transition-all sm:p-5 ${
+                        active
+                          ? (isDarkMode ? 'border-teal-400 bg-teal-500/10' : 'border-teal-500 bg-teal-50')
+                          : (isDarkMode ? 'border-slate-700 bg-slate-800/60 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300')
+                      }`}
+                    >
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                        active
+                          ? (isDarkMode ? 'bg-teal-500 text-white' : 'bg-teal-600 text-white')
+                          : (isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600')
+                      }`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t(opt.labelKey, opt.labelFallback)}</div>
+                        <div className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t(opt.descKey, opt.descFallback)}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {renderModeConfig()}
           </div>
         );

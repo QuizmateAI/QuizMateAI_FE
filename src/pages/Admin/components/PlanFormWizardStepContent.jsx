@@ -23,8 +23,9 @@ function PlanFormWizardStepContent({
   assignedOverrideCount,
   availableAiModels,
   aiModelAssignments,
-  currentPrice,
-  effectivePrice,
+  currentCreditPrice,
+  currentBasePrice,
+  effectiveTotalPrice,
   enabledFeatures,
   entitlement,
   entitlementToggles,
@@ -34,8 +35,9 @@ function PlanFormWizardStepContent({
   getScopeLabel,
   formatCurrency,
   handleIncludedCreditsChange,
-  handlePriceChange,
-  hasCustomPrice,
+  handleCreditPriceChange,
+  handleBasePriceChange,
+  hasCustomCreditPrice,
   hasGroupInheritance,
   highestActiveUserPlanEntitlement,
   includedCredits,
@@ -57,7 +59,7 @@ function PlanFormWizardStepContent({
   showPlanLevel,
   t,
   textareaCls,
-  willAutoRaisePrice,
+  willAutoRaiseCredit,
 }) {
   const renderStepHeader = (Icon, title, description, accentClass) => (
     <div className="flex items-start gap-4">
@@ -256,26 +258,32 @@ function PlanFormWizardStepContent({
         )}
 
         <div className={cn('mt-6 grid gap-4', isWorkspace ? 'md:grid-cols-2' : 'md:grid-cols-3')}>
-          {(!isWorkspace
-            ? [
-              {
+          {(() => {
+            // USER scope: 3 input (maxIndividualWorkspace + maxMaterialInWorkspace + planIncludedCredits)
+            // WORKSPACE scope: 2 input (maxMaterialInWorkspace + planIncludedCredits)
+            //   — bỏ maxIndividualWorkspace vì group workspace không có sub-workspace.
+            //   — vẫn giữ material count vì BE validate field này cho mọi scope (xem
+            //     PlanCatalogService.validateCreateEntitlementLimits).
+            const fields = [];
+            if (!isWorkspace) {
+              fields.push({
                 key: 'maxIndividualWorkspace',
                 label: `${t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace')} *`,
                 hint: t('subscription.wizard.entitlement.maxIndividualWorkspaceHint', 'Maximum number of individual workspaces allowed by this plan.'),
-              },
-              {
-                key: 'maxMaterialInWorkspace',
-                label: `${t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')} *`,
-                hint: t('subscription.wizard.entitlement.maxMaterialInWorkspaceHint', 'Material limit inside each workspace.'),
-              },
-              {
-                key: 'planIncludedCredits',
-                label: `${t('subscription.detail.planIncludedCredits', 'Included credits')} *`,
-                hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
-              },
-            ]
-            : []
-          ).map((field) => (
+              });
+            }
+            fields.push({
+              key: 'maxMaterialInWorkspace',
+              label: `${t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')} *`,
+              hint: t('subscription.wizard.entitlement.maxMaterialInWorkspaceHint', 'Material limit inside each workspace.'),
+            });
+            fields.push({
+              key: 'planIncludedCredits',
+              label: `${t('subscription.detail.planIncludedCredits', 'Included credits')} *`,
+              hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
+            });
+            return fields;
+          })().map((field) => (
             <div
               key={field.key}
               className={cn(
@@ -300,64 +308,114 @@ function PlanFormWizardStepContent({
           ))}
         </div>
 
-        <div
-          className={cn(
-            'mt-4 rounded-[24px] border p-4',
-            isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
-          )}
-        >
-          <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
-            {t('subscription.table.price', 'Price')} *
-          </Label>
-          <Input
-            type="number"
-            min="0"
-            disabled={isDefaultPlanLevel}
-            required={requireIndividualPlanLimits}
-            value={formData.price}
-            onChange={handlePriceChange}
-            placeholder={String(minPrice)}
-            className={cn(inputCls, 'h-10')}
-          />
-
-          <div className="mt-4 grid gap-2 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className={mutedCls}>{t('subscription.wizard.entitlement.inferredFloor', 'Credit-based floor')}</span>
-              <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                {formatCurrency(minPrice, t, locale)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className={mutedCls}>{t('subscription.detail.planIncludedCredits', 'Included credits')}</span>
-              <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                {includedCredits.toLocaleString(locale)}
-              </span>
-            </div>
-            {hasCustomPrice ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>{t('subscription.wizard.entitlement.currentStoredPrice', 'Current selling price')}</span>
-                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                  {formatCurrency(currentPrice, t, locale)}
-                </span>
-              </div>
-            ) : null}
-          </div>
-
-          <p className={cn('mt-3 text-xs leading-5', mutedCls)}>
-            {t(
-              'subscription.wizard.entitlement.priceDerivedHint',
-              'Edit included credits to infer the floor price, or edit price to infer how many credits the plan includes. The saved price can never be lower than the credit-based floor.'
-            )}
-          </p>
-          {willAutoRaisePrice ? (
-            <p className={cn('mt-2 text-xs font-semibold', 'text-amber-500')}>
-              {t(
-                'subscription.wizard.entitlement.priceAutoRaiseHint',
-                'The current saved price is below the new floor and will be raised automatically when you save.'
+        {(() => {
+          const creditUnitPrice = includedCredits > 0 ? minPrice / includedCredits : 0;
+          const creditPremium = hasCustomCreditPrice ? Math.max(0, currentCreditPrice - minPrice) : 0;
+          const strongTextCls = isDarkMode ? 'text-white' : 'text-slate-900';
+          const dividerCls = isDarkMode ? 'border-white/10' : 'border-slate-200';
+          return (
+            <div
+              className={cn(
+                'mt-4 rounded-[24px] border p-5',
+                isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
               )}
-            </p>
-          ) : null}
-        </div>
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className={cn('text-xs font-semibold uppercase tracking-wide', mutedCls)}>
+                    {t('subscription.wizard.entitlement.pricingBlockTitle', { defaultValue: 'Giá bán' })}
+                  </p>
+                  <p className={cn('text-[11px] mt-0.5', mutedCls)}>
+                    {t('subscription.wizard.entitlement.totalListPrice', { defaultValue: 'Tổng niêm yết (VND)' })}
+                  </p>
+                </div>
+                <p className={cn('text-2xl font-bold tabular-nums', strongTextCls)}>
+                  {formatCurrency(effectiveTotalPrice, t, locale)}
+                </p>
+              </div>
+
+              <div className={cn('mt-5 grid gap-4 md:grid-cols-2 border-t pt-5', dividerCls)}>
+                <div>
+                  <Label className={cn('text-xs font-semibold', strongTextCls)}>
+                    {t('subscription.wizard.entitlement.creditPriceLabel', { defaultValue: 'Phần credit' })} *
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    disabled={isDefaultPlanLevel}
+                    required={requireIndividualPlanLimits}
+                    value={formData.creditPrice}
+                    onChange={handleCreditPriceChange}
+                    placeholder={String(minPrice)}
+                    className={cn(inputCls, 'mt-1.5 h-10 tabular-nums')}
+                  />
+                  <p className={cn('mt-1.5 text-[11px] tabular-nums', mutedCls)}>
+                    {creditPremium > 0
+                      ? t('subscription.wizard.entitlement.creditPriceAboveFloor', {
+                          defaultValue: '≥ sàn {{floor}} (+{{premium}} so với sàn)',
+                          floor: formatCurrency(minPrice, t, locale),
+                          premium: formatCurrency(creditPremium, t, locale),
+                        })
+                      : t('subscription.wizard.entitlement.creditPriceAtFloor', {
+                          defaultValue: 'Đúng sàn theo {{count}} credit đi kèm',
+                          count: includedCredits.toLocaleString(locale),
+                        })}
+                  </p>
+                </div>
+                <div>
+                  <Label className={cn('text-xs font-semibold', strongTextCls)}>
+                    {t('subscription.wizard.entitlement.basePriceLabel', { defaultValue: 'Giá gốc' })} *
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    disabled={isDefaultPlanLevel}
+                    required={requireIndividualPlanLimits}
+                    value={formData.basePrice}
+                    onChange={handleBasePriceChange}
+                    placeholder="0"
+                    className={cn(inputCls, 'mt-1.5 h-10 tabular-nums')}
+                  />
+                  <p className={cn('mt-1.5 text-[11px]', mutedCls)}>
+                    {t(
+                      'subscription.wizard.entitlement.basePriceHint',
+                      'Phí nền tảng cộng thêm vào tổng — không quy đổi credit.'
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {includedCredits > 0 ? (
+                <div className={cn('mt-4 border-t pt-3', dividerCls)}>
+                  <div className={cn('flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12px] tabular-nums', mutedCls)}>
+                    <span className="font-semibold uppercase tracking-wide text-[10px]">
+                      {t('subscription.wizard.entitlement.floorFormulaLabel', { defaultValue: 'Sàn credit' })}
+                    </span>
+                    <span>
+                      {t('subscription.wizard.entitlement.floorFormulaBody', {
+                        defaultValue: '{{credits}} credit × {{unit}}/credit',
+                        credits: includedCredits.toLocaleString(locale),
+                        unit: formatCurrency(creditUnitPrice, t, locale),
+                      })}
+                    </span>
+                    <span className={cn('ml-auto font-semibold', strongTextCls)}>
+                      = {formatCurrency(minPrice, t, locale)}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              {willAutoRaiseCredit ? (
+                <p className="mt-3 text-[12px] font-semibold text-amber-500">
+                  {t(
+                    'subscription.wizard.entitlement.creditAutoRaiseHint',
+                    'Phần credit hiện thấp hơn sàn mới và sẽ được nâng tự động khi lưu.'
+                  )}
+                </p>
+              ) : null}
+            </div>
+          );
+        })()}
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -623,8 +681,16 @@ function PlanFormWizardStepContent({
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{getScopeLabel(formData.planScope, t)}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>{t('subscription.table.price', 'Price')}</span>
-                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(effectivePrice, t, locale)}</span>
+                <span className={mutedCls}>{t('subscription.wizard.review.totalListPrice', { defaultValue: 'Tổng niêm yết' })}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(effectiveTotalPrice, t, locale)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className={mutedCls}>{t('subscription.wizard.entitlement.creditPriceLabel', { defaultValue: 'Giá phần credit' })}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(currentCreditPrice, t, locale)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className={mutedCls}>{t('subscription.wizard.entitlement.basePriceLabel', { defaultValue: 'Giá gốc' })}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(currentBasePrice, t, locale)}</span>
               </div>
               {showPlanLevel ? (
                 <div className="flex items-center justify-between gap-3">

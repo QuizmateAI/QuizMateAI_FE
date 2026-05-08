@@ -844,7 +844,7 @@
       "totalTime": "Thời gian tổng",
       "perQuestion": "Thời gian mỗi câu",
       "timeDuration": "Thời gian (phút)",
-      "passingScore": "Điểm đậu (0-10)",
+      "passingScore": "Điểm đậu",
       "maxAttempt": "Số lần tối đa",
       "intent": "Mục đích Quiz",
       "overallDifficulty": "Độ khó tổng thể",
@@ -906,6 +906,8 @@
       "addAnswer": "Thêm đáp án",
       "correctAnswer": "Đáp án đúng",
       "correctAnswerLabel": "Đáp án đúng",
+      "expectedAnswer": "Đáp án mong đợi",
+      "expectedAnswerLabel": "Đáp án mong đợi",
       "deleteQuiz": "Xóa quiz",
       "actionButtons": {
         "practice": "Luyện tập",
@@ -1313,7 +1315,9 @@
         "timeMinutes": "Thời gian (phút)",
         "enableTimerMode": "Bật chế độ hẹn giờ",
         "examType": "Hình thức kiểm tra",
+        "examTypeTimedShort": "Kiểm tra theo thời gian tổng",
         "examTypeTimed": "Kiểm tra theo giới hạn thời gian tổng",
+        "examTypeSequentialShort": "Kiểm tra theo từng câu",
         "examTypeSequential": "Kiểm tra theo từng câu (tuần tự)",
         "examTypeHintTimed": "Người học có thể xem toàn bộ câu hỏi, quay lại câu trước, và chỉ nộp 1 lần khi kết thúc.",
         "examTypeHintSequential": "Người học chỉ thấy 1 câu tại 1 thời điểm, không quay lại câu trước. Hết giờ sẽ tự chuyển câu.",
@@ -1494,7 +1498,9 @@
         "unansweredListMore": "và còn nữa...",
         "allQuestionsCompleted": "Tất cả câu hỏi đã hoàn thành.",
         "navigationLocked": "Đang trong bài thi, không thể quay lại hoặc chuyển trang.",
-        "starting": "Đang bắt đầu"
+        "starting": "Đang bắt đầu",
+        "assessmentWarningTitle": "Nộp bây giờ sẽ không được AI đánh giá",
+        "assessmentWarningDescription": "Đây là lần làm chính thức đầu tiên của bạn. Cần trả lời tối thiểu {{min}}% câu hỏi để AI tạo đánh giá. Hiện tại bạn mới trả lời {{current}}%. Nộp ngay sẽ mất luôn cơ hội nhận đánh giá AI cho bài quiz này."
       },
       "mockTestExam": {
         "confirmStartTitle": "Bắt đầu mocktest?",
@@ -1836,7 +1842,31 @@
           "activateSuccess": "Đã kích hoạt bộ flashcard \"{{name}}\"."
         }
       },
-      "untitled": "Flashcard không có tiêu đề"
+      "untitled": "Flashcard không có tiêu đề",
+      "modes": {
+        "label": "Chế độ học",
+        "picker": {
+          "flip": "Lật thẻ",
+          "quiz": "Trắc nghiệm",
+          "shuffle": "Trộn thẻ"
+        },
+        "quiz": {
+          "questionLabel": "Câu hỏi",
+          "progress": "Thẻ {{current}} / {{total}}",
+          "score": "Điểm: {{correct}}/{{answered}}",
+          "next": "Tiếp",
+          "finish": "Xem kết quả",
+          "finishedLabel": "Đã xong vòng học",
+          "accuracy": "Độ chính xác: {{accuracy}}%",
+          "restart": "Học lại",
+          "notEnoughItems": "Chế độ Trắc nghiệm cần ít nhất 2 thẻ. Hãy thêm thẻ để chơi."
+        },
+        "shuffle": {
+          "showFront": "Hiện mặt trước trước",
+          "showBack": "Hiện mặt sau trước",
+          "reshuffle": "Trộn lại"
+        }
+      }
     },
     "phase": {
       "fallbackName": "Giai đoạn #{{id}}"
@@ -1875,6 +1905,18 @@
       "updateConfirmAction": "Xác nhận cập nhật",
       "daysUnit": "ngày",
       "minutesPerDayUnit": "phút/ngày",
+      "phaseSummary": {
+        "title": "Tốc độ học phase",
+        "pace": {
+          "FAST": "Học nhanh hơn kế hoạch",
+          "ON_TRACK": "Bám sát kế hoạch",
+          "SLOW": "Chậm hơn kế hoạch",
+          "UNKNOWN": "Chưa đủ dữ liệu"
+        },
+        "daysProgress": "Đã học {{actual}} ngày / dự kiến {{estimated}} ngày",
+        "deltaEarly": "Hoàn thành sớm {{count}} ngày so với kế hoạch",
+        "deltaLate": "Trễ {{count}} ngày so với kế hoạch"
+      },
       "tabManual": "Tạo thủ công",
       "tabAI": "Tạo bằng AI",
       "aiOnlyTitle": "AI sẽ tự dựng Lộ trình hoàn chỉnh cho bạn",
@@ -2240,9 +2282,25 @@
         "quiz": "Bài kiểm tra",
         "flashcard": "Thẻ ghi nhớ",
         "mockTest": "Đề thi thử",
+        "quizCollection": "Bộ sưu tập",
         "postLearning": "Sau học",
         "questionStats": "Thống kê",
         "profile": "Hồ sơ"
+      },
+      "lockTooltip": {
+        "sources": "Hãy tải tài liệu lên để sử dụng tính năng này",
+        "plan": "Tính năng VIP — nâng cấp gói để mở khóa"
+      },
+      "lockBadge": {
+        "sources": "Cần tài liệu",
+        "plan": "Tính năng VIP"
+      },
+      "lockToast": {
+        "sources": "Vui lòng tải tài liệu lên trước khi sử dụng tính năng này."
+      },
+      "featureNames": {
+        "roadmap": "Lộ trình học tập",
+        "questionStats": "Thống kê workspace"
       },
       "groups": {
         "workspace": "Workspace",
@@ -2421,6 +2479,75 @@
       "next": "Trang tiếp",
       "page": "Trang"
     }
+  },
+  "quizCollection": {
+    "create": "Tạo bộ sưu tập",
+    "createDescription": "Gom quiz và câu hỏi thành một bộ luyện tập riêng.",
+    "createSuccess": "Đã tạo bộ sưu tập.",
+    "title": "Tên bộ sưu tập",
+    "titlePlaceholder": "Ví dụ: Ôn tập chương OOP",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Ghi chú ngắn về mục tiêu ôn tập...",
+    "edit": "Chỉnh sửa bộ sưu tập",
+    "editAction": "Chỉnh sửa",
+    "editDescription": "Cập nhật tên và mô tả hiển thị.",
+    "updateSuccess": "Đã cập nhật bộ sưu tập.",
+    "delete": "Xóa bộ sưu tập",
+    "deleteConfirm": "Bộ sưu tập và quiz luyện tập phía sau sẽ được xóa khỏi danh sách.",
+    "deleteSuccess": "Đã xóa bộ sưu tập.",
+    "empty": "Chưa có bộ sưu tập nào. Tạo một bộ để gom quiz và câu hỏi cần ôn.",
+    "detailHint": "Gom quiz và câu hỏi để luyện tập lại theo nhu cầu.",
+    "sourceShort": "quiz nguồn",
+    "sourceQuizCount": "Quiz nguồn",
+    "maxScore": "Tổng điểm",
+    "updatedAt": "Cập nhật",
+    "practiceTitle": "Luyện tập bộ sưu tập",
+    "practiceHint": "Làm toàn bộ bộ sưu tập hoặc tạo phiên ngẫu nhiên theo số câu mong muốn.",
+    "practiceAll": "Luyện tập tất cả",
+    "practiceRandom": "Ngẫu nhiên",
+    "tabs": {
+      "questions": "Câu hỏi",
+      "importQuiz": "Import quiz",
+      "importQuestion": "Import câu hỏi"
+    },
+    "importQuizSuccess": "Đã import quiz vào bộ sưu tập.",
+    "importQuestionSuccess": "Đã import câu hỏi vào bộ sưu tập.",
+    "deleteQuestionSuccess": "Đã xóa câu hỏi khỏi bộ sưu tập.",
+    "emptyQuestionContent": "Câu hỏi chưa có nội dung",
+    "answerCount": "{{count}} đáp án",
+    "score": "{{score}} điểm",
+    "importSelectedQuiz": "Import quiz đã chọn",
+    "searchQuizPlaceholder": "Tìm quiz để import...",
+    "noImportableQuiz": "Không có quiz phù hợp để import.",
+    "importSelectedQuestion": "Import câu hỏi đã chọn",
+    "searchQuestionPlaceholder": "Tìm nội dung câu hỏi...",
+    "noImportableQuestion": "Không có câu hỏi phù hợp để import.",
+    "unknownSourceQuiz": "Quiz nguồn",
+    "randomCountInvalid": "Số câu ngẫu nhiên phải là số nguyên dương.",
+    "randomCountTooLarge": "Không được nhập quá số câu hỏi đã import.",
+    "advancedPractice": "Luyện tập nâng cao",
+    "fallbackTitle": "Bộ sưu tập",
+    "advancedSubtitle": "Tùy biến phiên luyện tập",
+    "advancedHero": "Chọn đúng phần cần ôn, đúng mức độ cần luyện.",
+    "advancedHeroHint": "Hệ thống sẽ tạo một quiz session mới từ các câu hỏi trong bộ sưu tập theo cấu hình bên dưới.",
+    "questions": "Câu hỏi",
+    "selectedPool": "Phù hợp",
+    "bloom": "Bloom",
+    "questionType": "Loại câu",
+    "practiceSequentialHint": "Chế độ này sẽ tạo session không giới hạn tổng thời gian.",
+    "bloomInfoInline": "Bloom được dùng để điều chỉnh mức độ từ ghi nhớ đến vận dụng, phân tích và đánh giá.",
+    "advancedPreview": "Nguồn lọc hiện có {{pool}} câu, yêu cầu {{requested}} câu.",
+    "startAdvanced": "Bắt đầu luyện tập",
+    "advancedNotEnough": "Bộ sưu tập chưa đủ câu hỏi cho cấu hình này.",
+    "startMissingQuiz": "Không xác định được quiz luyện tập.",
+    "noQuestions": "Bộ sưu tập chưa có câu hỏi. Hãy import quiz hoặc import câu hỏi để bắt đầu.",
+    "questionTypeRequired": "Hãy chọn ít nhất một loại câu hỏi.",
+    "bloomRequired": "Hãy chọn ít nhất một mức Bloom.",
+    "advancedNotEnoughFiltered": "Bộ lọc hiện chỉ có {{count}} câu phù hợp. Hãy giảm số câu hoặc bổ sung câu hỏi.",
+    "advancedDifficultyShortage": "Chưa đủ câu theo tỷ lệ độ khó {{difficulty}}. Hãy chỉnh tỷ lệ hoặc import thêm câu.",
+    "advancedBloomShortage": "Chưa đủ câu theo Bloom {{bloom}}. Hãy chỉnh tỷ lệ hoặc import thêm câu.",
+    "advancedReady": "Sẵn sàng tạo phiên luyện tập với {{count}} câu.",
+    "noSelectionYet": "Chưa chọn mục nào."
   },
   "quizDetailView": {
     "tabs": {
@@ -2655,7 +2782,25 @@
     "total": "Tổng",
     "wrong": "Sai",
     "pending": "Đang chờ",
-    "questionFallback": "Câu hỏi {{index}}"
+    "questionFallback": "Câu hỏi {{index}}",
+    "toFlashcard": {
+      "action": "Chuyển thành flashcard",
+      "title": "Chuyển bài quiz thành flashcard",
+      "description": "Tạo bộ flashcard từ lượt làm bài này. Mỗi câu hỏi trở thành một thẻ với đáp án đúng ở mặt sau.",
+      "summary": "{{ready}} / {{total}} câu sẵn sàng để chuyển.",
+      "skippedHint": "{{count}} câu bị bỏ qua (thiếu nội dung câu hỏi hoặc đáp án đúng).",
+      "nameLabel": "Tên bộ flashcard",
+      "namePlaceholder": "Nhập tên bộ flashcard",
+      "workspaceLabel": "Lưu vào workspace",
+      "workspaceLoading": "Đang tải danh sách workspace...",
+      "workspaceEmpty": "Bạn chưa có workspace nào. Hãy tạo workspace trước khi tạo flashcard.",
+      "cancel": "Hủy",
+      "submit": "Tạo flashcard",
+      "createSuccess": "Đã tạo bộ flashcard \"{{name}}\" với {{count}} thẻ.",
+      "createFail": "Không tạo được bộ flashcard. Vui lòng thử lại.",
+      "defaultNameFallback": "Quiz flashcards",
+      "defaultNameSuffix": " — Flashcards"
+    }
   },
   "workspaceProfileStepUpload": {
     "title": "Tải tài liệu và kiểm tra độ phù hợp",
@@ -2807,7 +2952,6 @@
     "labelReason": "Lý do: ",
     "labelSuggestion": "Gợi ý: ",
     "labelDetectedTopic": "Chủ đề phát hiện của tài liệu: ",
-    "labelSuitablePercent": "Phần trăm nội dung phù hợp: ",
     "labelCurrentLevel": "Mức hiện tại của tài liệu: ",
     "labelTargetLevel": " | Mức yêu cầu: ",
     "reviewPrompt": "Có duyệt tài liệu này không?",
@@ -2954,6 +3098,7 @@
       "regenerate": "Sinh lại",
       "requestingSuggestion": "Đang gợi ý...",
       "requestSuggestion": "Lấy gợi ý cấu trúc",
+      "manualDesign": "Tự thiết kế",
       "creatingExam": "Đang tạo mock test...",
       "createExam": "Tạo mock test",
       "generatingTitle": "Đang sinh câu hỏi cho mock test...",
@@ -3044,13 +3189,25 @@
       "columnQuestionType": "Loại câu",
       "columnBloom": "Mức Bloom",
       "columnQuantity": "Số câu",
+      "columnScorePerQ": "Điểm/câu",
+      "columnRowTotal": "Điểm tổ hợp",
       "emptyStructure": "Chưa có tổ hợp nào. Bấm \"Thêm tổ hợp\" để bắt đầu.",
       "addCombination": "Thêm tổ hợp",
+      "allCombinationsUsed": "Tất cả tổ hợp Độ khó × Bloom đã được dùng. Chỉnh số câu hoặc xóa tổ hợp để thêm tổ hợp khác.",
       "subSectionCount": "Sub-section ({{count}})",
       "addSubSection": "Thêm sub-section",
       "totalLeafLabel": "Tổng số câu: ",
       "addSection": "Thêm section",
       "emptySections": "Chưa có section nào. Bấm \"Thêm section\" hoặc dùng gợi ý AI để bắt đầu.",
+      "useScoringToggle": "Dùng cấu trúc điểm",
+      "totalQuizScoreLabel": "Tổng điểm tối đa:",
+      "sectionMaxScoreLabel": "Tổng điểm section",
+      "sectionMaxScoreHint": "Chỉnh tổng sẽ chia đều phần còn lại cho các tổ hợp chưa khoá. Tổ hợp đã khoá giữ nguyên điểm.",
+      "sectionTotalShort": "Tổng",
+      "lockRowHint": "Tự động — bấm để khoá điểm tổ hợp này, không bị ảnh hưởng khi chia điểm tự động.",
+      "unlockRowHint": "Đã khoá — bấm để mở khoá, cho phép chia điểm tự động ghi đè.",
+      "lockedSumExceeds": "Tổng điểm các tổ hợp đã khoá = {{locked}}, vượt quá điểm tổng section. Mở khoá 1 tổ hợp hoặc tăng điểm section.",
+      "allRowsLocked": "Tất cả tổ hợp đã khoá — không thể phân bổ lại tổng điểm. Mở khoá ít nhất 1 tổ hợp.",
       "validation": {
         "sectionMissingName": "Section thiếu tên.",
         "descriptionTooShort": "Mô tả quá ngắn (tối thiểu {{min}} ký tự).",

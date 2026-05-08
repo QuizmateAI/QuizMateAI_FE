@@ -56,6 +56,46 @@ function clampPercent(value) {
   return Math.max(0, Math.min(100, Number(value) || 0));
 }
 
+function resolveMockTestQuizId(mockTest) {
+  return Number(mockTest?.quizId ?? mockTest?.id ?? 0) || 0;
+}
+
+function resolveMockTestGenerationTaskId(mockTest, quizGenerationTaskByQuizId) {
+  if (mockTest?.websocketTaskId) return mockTest.websocketTaskId;
+  if (mockTest?.taskId) return mockTest.taskId;
+  const quizId = resolveMockTestQuizId(mockTest);
+  if (quizId > 0) {
+    return quizGenerationTaskByQuizId?.[quizId] ?? null;
+  }
+  return null;
+}
+
+function resolveMockTestProcessingPercent(mockTest, progressTracking, quizGenerationTaskByQuizId, quizGenerationProgressByQuizId) {
+  const quizId = resolveMockTestQuizId(mockTest);
+  const directPercent = clampPercent(
+    mockTest?.percent
+    ?? mockTest?.progressPercent
+    ?? mockTest?.processingPercent
+    ?? mockTest?.generationProgressPercent
+    ?? mockTest?.progress?.percent
+    ?? mockTest?.progress?.progressPercent
+    ?? 0,
+  );
+  const storedPercent = quizId > 0
+    ? clampPercent(quizGenerationProgressByQuizId?.[quizId] ?? 0)
+    : 0;
+  const taskId = resolveMockTestGenerationTaskId(mockTest, quizGenerationTaskByQuizId);
+  const trackedPercent = taskId
+    ? clampPercent(
+      progressTracking?.getTaskProgress?.(taskId)
+      ?? progressTracking?.progressByTaskId?.[taskId]
+      ?? 0,
+    )
+    : 0;
+
+  return Math.max(directPercent, storedPercent, trackedPercent);
+}
+
 function resolveMockQuestionCount(mockTest) {
   return Number(mockTest?.questionCount ?? mockTest?.totalQuestion ?? mockTest?.totalQuestions ?? 0) || 0;
 }
@@ -93,6 +133,9 @@ function MockTestListView({
   contextId,
   disableCreate = false,
   hideCreateButton = false,
+  progressTracking = null,
+  quizGenerationTaskByQuizId = null,
+  quizGenerationProgressByQuizId = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -296,14 +339,11 @@ function MockTestListView({
                   ? `${durationInMinutes} ${t("quizListView.cards.minutesShort", "min")}`
                   : null;
                 const createdAtLabel = formatShortDate(mockTest?.createdAt || mockTest?.updatedAt);
-                const processingPercent = clampPercent(
-                  mockTest?.percent
-                  ?? mockTest?.progressPercent
-                  ?? mockTest?.processingPercent
-                  ?? mockTest?.generationProgressPercent
-                  ?? mockTest?.progress?.percent
-                  ?? mockTest?.progress?.progressPercent
-                  ?? 0,
+                const processingPercent = resolveMockTestProcessingPercent(
+                  mockTest,
+                  progressTracking,
+                  quizGenerationTaskByQuizId,
+                  quizGenerationProgressByQuizId,
                 );
                 const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
 
@@ -393,7 +433,7 @@ function MockTestListView({
                             {t("quizListView.cards.processing", "Generating quiz")}
                           </p>
                           <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                            {processingPercent}%
+                            {Math.round(processingPercent)}%
                           </span>
                         </div>
                         <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>

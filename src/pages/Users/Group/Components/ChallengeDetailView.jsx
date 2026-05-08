@@ -19,6 +19,7 @@ import {
   batchInviteQuizReviewers, startChallenge,
   acceptQuizReviewInvitation,
   declineQuizReviewInvitation,
+  updateLeaderParticipation,
 } from '../../../../api/ChallengeAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
@@ -335,6 +336,16 @@ export default function ChallengeDetailView({
 
   const handlePublishChallenge = () => handleAction(
     () => publishChallenge(workspaceId, eventId), 'publish');
+
+  const handleSwitchLeaderToReviewer = () => handleAction(
+    () => updateLeaderParticipation(workspaceId, eventId, false),
+    'leaderSelfReview',
+  );
+
+  const handleSwitchLeaderToParticipant = () => handleAction(
+    () => updateLeaderParticipation(workspaceId, eventId, true),
+    'leaderRejoin',
+  );
 
   const handleStartChallenge = () => handleAction(
     () => startChallenge(workspaceId, eventId), 'manualStart');
@@ -787,7 +798,11 @@ export default function ChallengeDetailView({
 
   const canEditChallengeSchedule =
     isLeader && detail.status === 'SCHEDULED'
-    && new Date(detail.startTime).getTime() > Date.now() + 60 * 60 * 1000;
+    && (
+      // Khi đã publish, leader chỉ được lùi → bỏ gate "1h trước"
+      isPublished
+      || new Date(detail.startTime).getTime() > Date.now() + 60 * 60 * 1000
+    );
   const showPublishChallengeAction =
     isLeader && detail.status === 'SCHEDULED' && !isPublished && (isBracketChallenge || hasSnapshotQuiz);
   const canPublishChallenge =
@@ -909,6 +924,8 @@ export default function ChallengeDetailView({
       handlePublishChallenge={handlePublishChallenge}
       handleRegister={handleRegister}
       handleRemoveReviewer={handleRemoveReviewer}
+      handleSwitchLeaderToReviewer={handleSwitchLeaderToReviewer}
+      handleSwitchLeaderToParticipant={handleSwitchLeaderToParticipant}
       handleSaveChallengeEdit={handleSaveChallengeEdit}
       handleStartAttempt={handleStartAttempt}
       handleStartChallenge={handleStartChallenge}

@@ -847,7 +847,7 @@
       "totalTime": "Total time",
       "perQuestion": "Per question",
       "timeDuration": "Duration (minutes)",
-      "passingScore": "Passing score (0-10)",
+      "passingScore": "Passing score",
       "maxAttempt": "Max attempts",
       "intent": "Quiz Intent",
       "overallDifficulty": "Overall Difficulty",
@@ -909,6 +909,8 @@
       "addAnswer": "Add answer",
       "correctAnswer": "Correct answer",
       "correctAnswerLabel": "Correct answer",
+      "expectedAnswer": "Expected answer",
+      "expectedAnswerLabel": "Expected answer",
       "deleteQuiz": "Delete quiz",
       "actionButtons": {
         "practice": "Practice",
@@ -919,7 +921,7 @@
       "processingProgressLabel": "Creating quiz",
       "processingProgressHint": "The system is generating questions and configuring the quiz.",
       "cardQuestionUnit": "questions",
-      "cardAiLabel": "QUIZMATE AI",
+      "cardAiLabel": "AI",
       "cardManualLabel": "Manual Quiz",
       "cardResultLabel": "Result",
       "communityPublic": "Public",
@@ -1311,7 +1313,9 @@
         "timeMinutes": "Time (Minutes)",
         "enableTimerMode": "Enable Timer Mode",
         "examType": "Exam type",
+        "examTypeTimedShort": "Timed exam",
         "examTypeTimed": "Timed Exam (global timer, free navigation)",
+        "examTypeSequentialShort": "Sequential timed exam",
         "examTypeSequential": "Sequential Timed Exam (per-question timer, locked order)",
         "examTypeHintTimed": "Learners can review all questions, go back to previous ones, and submit once at the end.",
         "examTypeHintSequential": "Learners see one question at a time and cannot return to previous questions. Timeout moves to next automatically.",
@@ -1496,7 +1500,9 @@
         "unansweredListMore": "and more...",
         "allQuestionsCompleted": "All questions are completed.",
         "navigationLocked": "You are in an active exam, so going back or changing pages is disabled.",
-        "starting": "Starting"
+        "starting": "Starting",
+        "assessmentWarningTitle": "Submitting now will skip the AI assessment",
+        "assessmentWarningDescription": "This is your first official attempt. You need to answer at least {{min}}% of the questions for the AI to generate an assessment. You have answered only {{current}}% so far. Submitting now means this quiz will permanently miss its AI assessment."
       },
       "mockTestExam": {
         "confirmStartTitle": "Start the mock test?",
@@ -1867,7 +1873,31 @@
           "activateSuccess": "Flashcard set \"{{name}}\" activated."
         }
       },
-      "untitled": "Untitled flashcard"
+      "untitled": "Untitled flashcard",
+      "modes": {
+        "label": "Study mode",
+        "picker": {
+          "flip": "Flip",
+          "quiz": "Quiz",
+          "shuffle": "Shuffle"
+        },
+        "quiz": {
+          "questionLabel": "Question",
+          "progress": "Card {{current}} / {{total}}",
+          "score": "Score: {{correct}}/{{answered}}",
+          "next": "Next",
+          "finish": "See result",
+          "finishedLabel": "Round complete",
+          "accuracy": "Accuracy: {{accuracy}}%",
+          "restart": "Play again",
+          "notEnoughItems": "Quiz mode needs at least 2 cards. Add more cards to play."
+        },
+        "shuffle": {
+          "showFront": "Show front first",
+          "showBack": "Show back first",
+          "reshuffle": "Reshuffle"
+        }
+      }
     },
     "phase": {
       "fallbackName": "Phase #{{id}}"
@@ -1906,6 +1936,18 @@
       "updateConfirmAction": "Confirm update",
       "daysUnit": "days",
       "minutesPerDayUnit": "minutes/day",
+      "phaseSummary": {
+        "title": "Phase learning pace",
+        "pace": {
+          "FAST": "Faster than planned",
+          "ON_TRACK": "On track with plan",
+          "SLOW": "Slower than planned",
+          "UNKNOWN": "Not enough data"
+        },
+        "daysProgress": "Studied {{actual}} day(s) / planned {{estimated}} day(s)",
+        "deltaEarly": "Finished {{count}} day(s) earlier than planned",
+        "deltaLate": "{{count}} day(s) behind plan"
+      },
       "tabManual": "Manual",
       "tabAI": "AI Generate",
       "aiOnlyTitle": "AI builds the roadmap for you",
@@ -2297,9 +2339,25 @@
         "quiz": "Quiz",
         "flashcard": "Flashcard",
         "mockTest": "Mock test",
+        "quizCollection": "Collections",
         "postLearning": "Post-learning",
         "questionStats": "Stats",
         "profile": "Profile"
+      },
+      "lockTooltip": {
+        "sources": "Upload material to use this feature",
+        "plan": "Premium feature — upgrade your plan to unlock"
+      },
+      "lockBadge": {
+        "sources": "Material required",
+        "plan": "Premium feature"
+      },
+      "lockToast": {
+        "sources": "Please upload material before using this feature."
+      },
+      "featureNames": {
+        "roadmap": "Learning roadmap",
+        "questionStats": "Workspace analytics"
       },
       "groups": {
         "workspace": "Workspace",
@@ -2478,6 +2536,75 @@
       "next": "Next",
       "page": "Page"
     }
+  },
+  "quizCollection": {
+    "create": "Create collection",
+    "createDescription": "Group quizzes and questions into a custom practice collection.",
+    "createSuccess": "Collection created.",
+    "title": "Collection name",
+    "titlePlaceholder": "Example: OOP chapter review",
+    "description": "Description",
+    "descriptionPlaceholder": "Add a short note about the review goal...",
+    "edit": "Edit collection",
+    "editAction": "Edit",
+    "editDescription": "Update the displayed name and description.",
+    "updateSuccess": "Collection updated.",
+    "delete": "Delete collection",
+    "deleteConfirm": "The collection and its generated practice quiz will be removed from the list.",
+    "deleteSuccess": "Collection deleted.",
+    "empty": "No collections yet. Create one to gather quizzes and questions for review.",
+    "detailHint": "Group quizzes and questions for targeted review.",
+    "sourceShort": "source quizzes",
+    "sourceQuizCount": "Source quizzes",
+    "maxScore": "Max score",
+    "updatedAt": "Updated",
+    "practiceTitle": "Practice this collection",
+    "practiceHint": "Practice the full collection or create a random session with your desired question count.",
+    "practiceAll": "Practice all",
+    "practiceRandom": "Random",
+    "tabs": {
+      "questions": "Questions",
+      "importQuiz": "Import quiz",
+      "importQuestion": "Import questions"
+    },
+    "importQuizSuccess": "Quizzes imported into the collection.",
+    "importQuestionSuccess": "Questions imported into the collection.",
+    "deleteQuestionSuccess": "Question removed from the collection.",
+    "emptyQuestionContent": "Question content is empty",
+    "answerCount": "{{count}} answers",
+    "score": "{{score}} points",
+    "importSelectedQuiz": "Import selected quizzes",
+    "searchQuizPlaceholder": "Search quizzes to import...",
+    "noImportableQuiz": "No eligible quizzes available for import.",
+    "importSelectedQuestion": "Import selected questions",
+    "searchQuestionPlaceholder": "Search question content...",
+    "noImportableQuestion": "No eligible questions available for import.",
+    "unknownSourceQuiz": "Source quiz",
+    "randomCountInvalid": "The random question count must be a positive integer.",
+    "randomCountTooLarge": "The value cannot exceed the number of imported questions.",
+    "advancedPractice": "Advanced practice",
+    "fallbackTitle": "Collection",
+    "advancedSubtitle": "Customize practice session",
+    "advancedHero": "Pick the right scope to review and the right level to train.",
+    "advancedHeroHint": "The system will create a new quiz session from questions in this collection based on the configuration below.",
+    "questions": "Questions",
+    "selectedPool": "Matched",
+    "bloom": "Bloom",
+    "questionType": "Question type",
+    "practiceSequentialHint": "This mode creates a session without an overall time limit.",
+    "bloomInfoInline": "Bloom helps you tune the cognitive level from remembering to applying, analyzing, and evaluating.",
+    "advancedPreview": "The filtered pool currently has {{pool}} questions, with {{requested}} requested.",
+    "startAdvanced": "Start practice",
+    "advancedNotEnough": "This collection does not have enough questions for the current configuration.",
+    "startMissingQuiz": "Could not determine the generated practice quiz.",
+    "noQuestions": "This collection does not have any questions yet. Import a quiz or questions to get started.",
+    "questionTypeRequired": "Please select at least one question type.",
+    "bloomRequired": "Please select at least one Bloom level.",
+    "advancedNotEnoughFiltered": "The current filter only matches {{count}} questions. Reduce the question count or add more questions.",
+    "advancedDifficultyShortage": "Not enough questions for the {{difficulty}} difficulty ratio. Adjust the ratio or import more questions.",
+    "advancedBloomShortage": "Not enough questions for Bloom {{bloom}}. Adjust the ratio or import more questions.",
+    "advancedReady": "Ready to create a practice session with {{count}} questions.",
+    "noSelectionYet": "Nothing selected yet."
   },
   "quizDetailView": {
     "tabs": {
@@ -2732,7 +2859,25 @@
     "total": "Total",
     "wrong": "Wrong",
     "pending": "Pending",
-    "questionFallback": "Question {{index}}"
+    "questionFallback": "Question {{index}}",
+    "toFlashcard": {
+      "action": "Convert to flashcards",
+      "title": "Convert quiz into flashcards",
+      "description": "Generate a flashcard set from this attempt. Each question becomes a card with the correct answer on the back.",
+      "summary": "{{ready}} of {{total}} questions ready to convert.",
+      "skippedHint": "{{count}} questions were skipped (missing question text or correct answer).",
+      "nameLabel": "Flashcard set name",
+      "namePlaceholder": "Enter flashcard set name",
+      "workspaceLabel": "Save to workspace",
+      "workspaceLoading": "Loading your workspaces...",
+      "workspaceEmpty": "You do not have any workspaces. Create one before generating flashcards.",
+      "cancel": "Cancel",
+      "submit": "Create flashcards",
+      "createSuccess": "Created flashcard set \"{{name}}\" with {{count}} cards.",
+      "createFail": "Could not create flashcard set. Please try again.",
+      "defaultNameFallback": "Quiz flashcards",
+      "defaultNameSuffix": " — Flashcards"
+    }
   },
   "workspaceProfileStepUpload": {
     "title": "Upload materials and review their fit",
@@ -2884,7 +3029,6 @@
     "labelReason": "Reason: ",
     "labelSuggestion": "Suggestion: ",
     "labelDetectedTopic": "Detected topic of the document: ",
-    "labelSuitablePercent": "Percentage of suitable content: ",
     "labelCurrentLevel": "Current level of the document: ",
     "labelTargetLevel": " | Required level: ",
     "reviewPrompt": "Do you want to approve this document?",
@@ -3031,6 +3175,7 @@
       "regenerate": "Regenerate",
       "requestingSuggestion": "Generating suggestion...",
       "requestSuggestion": "Get structure suggestion",
+      "manualDesign": "Design manually",
       "creatingExam": "Creating mock test...",
       "createExam": "Create mock test",
       "generatingTitle": "Generating questions for your mock test...",
@@ -3121,13 +3266,25 @@
       "columnQuestionType": "Question type",
       "columnBloom": "Bloom level",
       "columnQuantity": "Quantity",
+      "columnScorePerQ": "Score / question",
+      "columnRowTotal": "Row total",
       "emptyStructure": "No structure rows yet. Click \"Add combination\" to start.",
       "addCombination": "Add combination",
+      "allCombinationsUsed": "All difficulty × Bloom combinations are in use. Adjust quantity or remove a row to add a different combination.",
       "subSectionCount": "Sub-sections ({{count}})",
       "addSubSection": "Add sub-section",
       "totalLeafLabel": "Total leaf questions: ",
       "addSection": "Add section",
       "emptySections": "No sections yet. Click \"Add section\" or use AI suggestions to start.",
+      "useScoringToggle": "Use scoring structure",
+      "totalQuizScoreLabel": "Total max score:",
+      "sectionMaxScoreLabel": "Section total score",
+      "sectionMaxScoreHint": "Editing distributes the remainder evenly across unlocked rows. Locked rows keep their score.",
+      "sectionTotalShort": "Total",
+      "lockRowHint": "Auto — click to lock this score so distribute does not change it.",
+      "unlockRowHint": "Locked — click to unlock and let auto-distribute reset this row.",
+      "lockedSumExceeds": "Locked rows sum to {{locked}}, which already exceeds the section target. Unlock a row or increase the section score.",
+      "allRowsLocked": "All rows are locked — section total cannot be redistributed. Unlock at least one row first.",
       "validation": {
         "sectionMissingName": "Section name is required.",
         "descriptionTooShort": "Description is too short (minimum {{min}} characters).",

@@ -205,7 +205,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       case "flashcard":
         return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onCreateManualFlashcard={canCreateFlashcard ? () => onChangeView?.("createManualFlashcard") : undefined} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateFlashcard} disableCreate={!canCreateFlashcard} />;
       case "mockTest":
-        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateMockTest} disableCreate={!canCreateMockTest || !planEntitlements?.hasAdvanceQuizConfig} />;
+        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateMockTest} disableCreate={!canCreateMockTest || !planEntitlements?.hasAdvanceQuizConfig} quizGenerationTaskByQuizId={quizGenerationTaskByQuizId} quizGenerationProgressByQuizId={quizGenerationProgressByQuizId} />;
       case "ranking":
         return <LazyGroupRankingTab workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "postLearning":
@@ -476,7 +476,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
         ) : null;
       case "createMockTest":
         return !canCreateMockTest || !planEntitlements?.hasAdvanceQuizConfig
-          ? <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateMockTest} disableCreate />
+          ? <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateMockTest} disableCreate quizGenerationTaskByQuizId={quizGenerationTaskByQuizId} quizGenerationProgressByQuizId={quizGenerationProgressByQuizId} />
           : <LazyCreateGroupMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "createPostLearning":
         return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;

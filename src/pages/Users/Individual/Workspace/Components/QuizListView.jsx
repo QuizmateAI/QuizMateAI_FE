@@ -1070,6 +1070,10 @@ function QuizListView({
         key={resolvedQuizId}
         onClick={() => {
           if (isInteractionBlocked) return;
+          if (normalizedStatus === "ACTIVE" && !myAttempted) {
+            setExamStartQuiz(quiz);
+            return;
+          }
           onViewQuiz?.(quiz);
         }}
         className={`overflow-hidden rounded-[26px] border shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${
@@ -1196,7 +1200,7 @@ function QuizListView({
                       {t("quizListView.cards.processing", "Generating quiz")}
                     </span>
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                      {processingPercent}%
+                      {Math.round(processingPercent)}%
                     </span>
                   </div>
                   <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
@@ -1569,12 +1573,20 @@ function QuizListView({
                   tabIndex={isInteractionBlocked ? -1 : 0}
                   onClick={() => {
                     if (isInteractionBlocked) return;
+                    if (normalizedStatus === "ACTIVE" && !myAttempted) {
+                      setExamStartQuiz(quiz);
+                      return;
+                    }
                     onViewQuiz?.(quiz);
                   }}
                   onKeyDown={(event) => {
                     if (isInteractionBlocked) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
+                      if (normalizedStatus === "ACTIVE" && !myAttempted) {
+                        setExamStartQuiz(quiz);
+                        return;
+                      }
                       onViewQuiz?.(quiz);
                     }
                   }}
@@ -1666,7 +1678,7 @@ function QuizListView({
                   {isProcessing ? (
                     <div className="mt-4">
                       <div className="flex items-center justify-end gap-3">
-                        <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
+                        <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{Math.round(processingPercent)}%</span>
                       </div>
                       <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
                         <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
@@ -1675,26 +1687,29 @@ function QuizListView({
                   ) : null}
 
                   <div className="mt-auto">
-                    <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
-                      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
-                          <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
-                        </div>
-                        {shouldShowResultSummary ? (
+                    {/* Khi đang processing: ẩn hàng câu hỏi + kết quả vì progress bar đã chiếm chỗ
+                        và để thông tin không bị đẩy xuống thiếu chiều cao đồng đều giữa các card. */}
+                    {!isProcessing ? (
+                      <div className={`mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{resultSummaryLabel}</span>
-                            <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                            <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                           </div>
-                        ) : null}
-                        {shouldShowInlineStatusBadge ? (
-                          <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
-                            {statusLabel}
-                          </span>
-                        ) : null}
+                          {shouldShowResultSummary ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{resultSummaryLabel}</span>
+                              <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
+                            </div>
+                          ) : null}
+                          {shouldShowInlineStatusBadge ? (
+                            <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                              {statusLabel}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-
-                    </div>
+                    ) : null}
 
                     <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
                       <div className="flex min-w-0 flex-wrap items-center gap-3">

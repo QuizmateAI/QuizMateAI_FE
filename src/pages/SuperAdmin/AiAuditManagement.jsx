@@ -10,23 +10,29 @@ import {
   Bot,
   Braces,
   CalendarClock,
+  ChevronDown,
+  Coins,
   KeyRound,
+  Layers,
   RefreshCw,
   Search,
-  ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
   UserRound,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -37,7 +43,9 @@ import {
 } from '@/components/ui/table';
 import ListSpinner from '@/components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAiAuditLogs } from '@/api/ManagementSystemAPI';
+import { getAiAuditLogs, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
+import TokenBreakdownCell from './Components/TokenBreakdownCell';
+import DateRangeChips from './Components/DateRangeChips';
 import AdminPagination from '@/pages/Admin/components/AdminPagination';
 import { getWebSocketUrl } from '@/lib/websocketUrl';
 import {
@@ -45,8 +53,6 @@ import {
   SuperAdminPageHeader,
 } from './Components/SuperAdminSurface';
 
-const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
-const STATUS_OPTIONS = ['', 'PROCESSING', 'SUCCESS', 'ERROR'];
 const AUDIT_METRICS_PAGE_SIZE = 200;
 const EMPTY_AUDIT_METRICS = {
   requestCount: 0,
@@ -54,13 +60,16 @@ const EMPTY_AUDIT_METRICS = {
   promptTokens: 0,
   completionTokens: 0,
   thoughtTokens: 0,
-  errorCount: 0,
+  systemCostVnd: 0,
+  planCostVnd: 0,
+  totalProviderCostVnd: 0,
 };
 
 const FEATURE_LABEL_KEYS = {
   GENERATE_FLASHCARDS: 'aiAudit.features.GENERATE_FLASHCARDS',
   GENERATE_QUIZ: 'aiAudit.features.GENERATE_QUIZ',
   EVALUATE_SHORT_ANSWER: 'aiAudit.features.EVALUATE_SHORT_ANSWER',
+  COMPANION_: 'aiAudit.features.COMPANION_GROUP',
   COMPANION_INTERPRET: 'aiAudit.features.COMPANION_INTERPRET',
   COMPANION_TRANSCRIBE: 'aiAudit.features.COMPANION_TRANSCRIBE',
   COMPANION_TTS: 'aiAudit.features.COMPANION_TTS',
@@ -71,12 +80,19 @@ const FEATURE_LABEL_KEYS = {
   WORKSPACE_QUIZ_ASSESSMENT: 'aiAudit.features.WORKSPACE_QUIZ_ASSESSMENT',
   PHASE_PRE_LEARNING_ASSESSMENT: 'aiAudit.features.PHASE_PRE_LEARNING_ASSESSMENT',
   PHASE_POST_LEARNING_ASSESSMENT: 'aiAudit.features.PHASE_POST_LEARNING_ASSESSMENT',
-  PHASE_PROGRESS_REVIEW: 'aiAudit.features.PHASE_PROGRESS_REVIEW',
   RAG_ASK: 'aiAudit.features.RAG_ASK',
   CONTENT_MODERATION: 'aiAudit.features.CONTENT_MODERATION',
   GEMINI_VISION_OCR: 'aiAudit.features.GEMINI_VISION_OCR',
   GEMINI_PDF_FILE_OCR: 'aiAudit.features.GEMINI_PDF_FILE_OCR',
   GEMINI_VIDEO_FILE_ANALYSIS: 'aiAudit.features.GEMINI_VIDEO_FILE_ANALYSIS',
+  MATERIAL_TOPIC_EXTRACTION: 'aiAudit.features.MATERIAL_TOPIC_EXTRACTION',
+  ANALYZE_STUDY_PROFILE_KNOWLEDGE: 'aiAudit.features.ANALYZE_STUDY_PROFILE_KNOWLEDGE',
+  SUGGEST_STUDY_PROFILE_FIELDS: 'aiAudit.features.SUGGEST_STUDY_PROFILE_FIELDS',
+  SUGGEST_WORKSPACE_NAME: 'aiAudit.features.SUGGEST_WORKSPACE_NAME',
+  VALIDATE_STUDY_PROFILE_CONSISTENCY: 'aiAudit.features.VALIDATE_STUDY_PROFILE_CONSISTENCY',
+  PREVIEW_QUIZ_STRUCTURE: 'aiAudit.features.PREVIEW_QUIZ_STRUCTURE',
+  SUGGEST_MOCK_TEST_STRUCTURE: 'aiAudit.features.SUGGEST_MOCK_TEST_STRUCTURE',
+  ROADMAP_REVIEW: 'aiAudit.features.ROADMAP_REVIEW',
 };
 
 function formatDateTime(value, locale) {
@@ -109,14 +125,18 @@ function toMetricNumber(value) {
 
 function buildAuditMetricsFromEntries(entries = []) {
   return entries.reduce((accumulator, entry) => {
+    const providerCost = toMetricNumber(entry?.providerCostVnd);
     accumulator.requestCount += 1;
     accumulator.totalTokens += toMetricNumber(entry?.totalTokens);
     accumulator.promptTokens += toMetricNumber(entry?.promptTokens);
     accumulator.completionTokens += toMetricNumber(entry?.completionTokens);
     accumulator.thoughtTokens += toMetricNumber(entry?.thoughtTokens);
+    accumulator.totalProviderCostVnd += providerCost;
 
-    if (String(entry?.status || '').toUpperCase() === 'ERROR') {
-      accumulator.errorCount += 1;
+    if (String(entry?.category || '').toUpperCase() === 'PLAN_BASED') {
+      accumulator.planCostVnd += providerCost;
+    } else {
+      accumulator.systemCostVnd += providerCost;
     }
 
     return accumulator;
@@ -131,14 +151,18 @@ function normalizeAuditMetrics(payload) {
   const promptTokens = payload.promptTokens ?? payload.totalPromptTokens ?? payload.inputTokens;
   const completionTokens = payload.completionTokens ?? payload.totalCompletionTokens ?? payload.outputTokens;
   const thoughtTokens = payload.thoughtTokens ?? payload.totalThoughtTokens;
-  const errorCount = payload.errorCount ?? payload.totalErrors ?? payload.failedCount;
+  const systemCostVnd = payload.systemCostVnd ?? payload.totalSystemCostVnd;
+  const planCostVnd = payload.planCostVnd ?? payload.totalPlanCostVnd;
+  const totalProviderCostVnd = payload.totalProviderCostVnd ?? payload.providerCostVnd;
 
   if (
     totalTokens === undefined
     && promptTokens === undefined
     && completionTokens === undefined
     && thoughtTokens === undefined
-    && errorCount === undefined
+    && systemCostVnd === undefined
+    && planCostVnd === undefined
+    && totalProviderCostVnd === undefined
   ) {
     return null;
   }
@@ -149,7 +173,9 @@ function normalizeAuditMetrics(payload) {
     promptTokens: toMetricNumber(promptTokens),
     completionTokens: toMetricNumber(completionTokens),
     thoughtTokens: toMetricNumber(thoughtTokens),
-    errorCount: toMetricNumber(errorCount),
+    systemCostVnd: toMetricNumber(systemCostVnd),
+    planCostVnd: toMetricNumber(planCostVnd),
+    totalProviderCostVnd: toMetricNumber(totalProviderCostVnd),
   };
 }
 
@@ -160,6 +186,33 @@ function extractAuditMetrics(pageData) {
     || normalizeAuditMetrics(pageData?.totals)
     || normalizeAuditMetrics(pageData)
   );
+}
+
+function formatVndValue(value, locale) {
+  return `${Number(value || 0).toLocaleString(locale, { maximumFractionDigits: 0 })} VND`;
+}
+
+function formatExchangeRate(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  return Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 6 });
+}
+
+function extractData(response) {
+  return response?.data?.data ?? response?.data ?? response ?? null;
+}
+
+function createEmptyAuditFilters() {
+  return {
+    provider: '',
+    featureKey: '',
+    actorEmail: '',
+    planCatalogId: '',
+    taskId: '',
+    status: '',
+    from: '',
+    to: '',
+    category: '',
+  };
 }
 
 function prettifyPreview(value, emptyText) {
@@ -225,26 +278,26 @@ function getAuthToken() {
 
 function MetricCard({ icon: Icon, label, value, tone, isDarkMode, subtext }) {
   return (
-    <Card className={`border transition-colors ${
-      isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+    <Card className={`rounded-xl border shadow-sm transition-colors ${
+      isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'
     }`}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+      <CardContent className="p-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
               {label}
             </p>
-            <p className={`mt-2 text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            <p className={`mt-1.5 truncate text-lg font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {value}
             </p>
             {subtext ? (
-              <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              <p className={`mt-0.5 line-clamp-2 text-[11px] leading-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                 {subtext}
               </p>
             ) : null}
           </div>
-          <div className={`rounded-2xl p-3 ${tone}`}>
-            <Icon className="h-5 w-5" />
+          <div className={`shrink-0 rounded-lg p-2 ${tone}`}>
+            <Icon className="h-4 w-4" />
           </div>
         </div>
       </CardContent>
@@ -262,31 +315,35 @@ function AiAuditManagement() {
   const queryClient = useQueryClient();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+  const tableStroke = isDarkMode ? 'border-slate-700' : 'border-slate-300';
 
-  const [filters, setFilters] = useState({
-    provider: '',
-    featureKey: '',
-    actorUserId: '',
-    taskId: '',
-    status: '',
-    from: '',
-    to: '',
-  });
+  const [filters, setFilters] = useState(createEmptyAuditFilters);
+  // Draft filters for the advanced filter dialog. User edits draft, click Apply → commit to filters.
+  // Pattern same as AiCostManagement để giữ UX nhất quán.
+  const [draftFilters, setDraftFilters] = useState(createEmptyAuditFilters);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [selectedAuditId, setSelectedAuditId] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [expandedRows, setExpandedRows] = useState([]);
+  const [expandedSelectedIndex, setExpandedSelectedIndex] = useState(-1);
+  const [isExpanding, setIsExpanding] = useState(false);
   const stompClientRef = useRef(null);
   const refreshTimeoutRef = useRef(null);
 
   const buildAuditQuery = (activeFilters) => ({
     provider: activeFilters.provider || undefined,
     featureKey: activeFilters.featureKey || undefined,
-    actorUserId: activeFilters.actorUserId || undefined,
+    actorEmail: activeFilters.actorEmail || undefined,
+    planCatalogId: activeFilters.planCatalogId || undefined,
     taskId: activeFilters.taskId || undefined,
     status: activeFilters.status || undefined,
     from: activeFilters.from ? new Date(activeFilters.from).toISOString() : undefined,
     to: activeFilters.to ? new Date(activeFilters.to).toISOString() : undefined,
+    category: activeFilters.category || undefined,
   });
 
   const auditLogsQuery = useQuery({
@@ -351,11 +408,28 @@ function AiAuditManagement() {
   });
   const metrics = metricsQuery.data ?? EMPTY_AUDIT_METRICS;
 
+  const invalidateAuditData = () => {
+    queryClient.invalidateQueries({ queryKey: AI_AUDIT_LOGS_KEY });
+    queryClient.invalidateQueries({ queryKey: AI_AUDIT_METRICS_KEY });
+  };
+
+  const fetchExchangeRate = async () => {
+    setExchangeRateLoading(true);
+    try {
+      setExchangeRate(extractData(await getUsdVndExchangeRate()));
+    } finally {
+      setExchangeRateLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExchangeRate();
+  }, []);
+
   // Drop selectedAuditId if no longer in current page
   useEffect(() => {
     if (!selectedAuditId) return;
     if (!auditLogs.some((entry) => entry.auditId === selectedAuditId)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync derived selection with current page
       setSelectedAuditId(null);
     }
   }, [auditLogs, selectedAuditId]);
@@ -363,13 +437,15 @@ function AiAuditManagement() {
   // Apply ?taskId= from URL
   useEffect(() => {
     const taskId = String(searchParams.get('taskId') || '').trim();
-    if (!taskId || taskId === filters.taskId) {
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync URL param into filter state
-    setFilters((prev) => ({ ...prev, taskId }));
+    setFilters((prev) => {
+      if (taskId === String(prev.taskId || '').trim()) return prev;
+      return { ...prev, taskId };
+    });
+  }, [searchParams]);
+
+  useEffect(() => {
     setPage(0);
-  }, [searchParams, filters.taskId]);
+  }, [filters.taskId]);
 
   useEffect(() => {
     const websocketUrl = getWebSocketUrl();
@@ -417,57 +493,126 @@ function AiAuditManagement() {
     [auditLogs, selectedAuditId]
   );
 
-  const totalAverageTokens = metrics.requestCount > 0 ? Math.round(metrics.totalTokens / metrics.requestCount) : 0;
+  const totalRequestsForDisplay = metrics.requestCount || pageInfo.totalElements || 0;
+  const totalAverageTokens = totalRequestsForDisplay > 0
+    ? Math.round(metrics.totalTokens / totalRequestsForDisplay)
+    : 0;
 
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
+  const handleDateRangeChipChange = ({ from, to }) => {
+    setFilters((prev) => ({ ...prev, from, to }));
+    setPage(0);
   };
 
+  // Filter Dialog handlers — sync draft với filters khi mở dialog, commit về filters khi Apply.
+  const handleOpenFilterDialog = () => {
+    setDraftFilters({ ...filters });
+    setIsFilterDialogOpen(true);
+  };
+  const handleDraftFilterChange = (field, value) => {
+    setDraftFilters((prev) => ({ ...prev, [field]: value }));
+  };
   const handleApplyFilters = () => {
+    setFilters({ ...draftFilters });
     setPage(0);
+    setIsFilterDialogOpen(false);
   };
-
   const handleResetFilters = () => {
-    setFilters({
-      provider: '',
-      featureKey: '',
-      actorUserId: '',
-      taskId: '',
-      status: '',
-      from: '',
-      to: '',
-    });
+    const cleared = createEmptyAuditFilters();
+    setDraftFilters(cleared);
+    setFilters(cleared);
     setPage(0);
   };
 
-  const openAuditDetail = (auditId) => {
+  // Đếm số filter đang active (trừ from/to vì DateRangeChips quản lý riêng).
+  const activeFilterCount = useMemo(() => {
+    const exclude = new Set(['from', 'to']);
+    return Object.entries(filters).filter(([k, v]) => !exclude.has(k) && v !== '' && v != null).length;
+  }, [filters]);
+
+  const openAuditDetail = async (auditId) => {
     setSelectedAuditId(auditId);
     setIsDetailOpen(true);
+    setExpandedRows([]);
+    setExpandedSelectedIndex(-1);
+
+    const entry = auditLogs.find((row) => row.auditId === auditId);
+    const callCount = Number(entry?.callCount || 1);
+    if (!entry || callCount <= 1 || !entry.taskId) {
+      return;
+    }
+
+    setIsExpanding(true);
+    try {
+      const response = await getAiAuditLogs({
+        taskId: entry.taskId,
+        expand: true,
+        page: 0,
+        size: Math.max(callCount, 50),
+      });
+      const pageData = response?.data ?? response ?? {};
+      const rows = Array.isArray(pageData?.content) ? pageData.content : [];
+      setExpandedRows(rows);
+      setExpandedSelectedIndex(-1);
+    } catch {
+      setExpandedRows([]);
+    } finally {
+      setIsExpanding(false);
+    }
   };
 
-  const selectedFeatureLabel = selectedAudit
-    ? getFeatureLabel(t, selectedAudit.featureKey)
-    : '-';
+  const closeAuditDetail = (open) => {
+    setIsDetailOpen(open);
+    if (!open) {
+      setExpandedRows([]);
+      setExpandedSelectedIndex(-1);
+    }
+  };
+
+  const selectedSubRow = (
+    expandedRows.length > 0
+    && expandedSelectedIndex >= 0
+    && expandedSelectedIndex < expandedRows.length
+  )
+    ? expandedRows[expandedSelectedIndex]
+    : null;
+
 
   return (
-    <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
+    <SuperAdminPage className={`gap-6 animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
-        eyebrow="AI Governance"
-        title={t('aiAudit.title', 'AI Audit')}
+        eyebrow={t('sidebarSections.aiUsageCommerce', 'Chi phí & nhật ký AI')}
+        title={t('aiAudit.title.v2', { defaultValue: 'Nhật ký AI hệ thống' })}
         description={t(
-          'aiAudit.description',
-          'Track AI requests, token usage, models, statuses, and open detailed traces when needed.'
+          'aiAudit.description.v2',
+          'Theo dõi lượt gọi AI, token, model và trạng thái. Dùng chọn nhanh khoảng thời gian bên dưới; lọc nâng cao đã gỡ để tránh chồng chéo UI.',
+        )}
+        actions={(
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              invalidateAuditData();
+              fetchExchangeRate();
+            }}
+            disabled={isLoading || exchangeRateLoading}
+            className="h-10 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            aria-label={t('common.refresh')}
+            title={t('common.refresh')}
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         )}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard
           icon={Activity}
           label={t('aiAudit.metrics.totalRequests', 'Total requests')}
-          value={formatTokenValue(pageInfo.totalElements, locale)}
+          value={formatTokenValue(totalRequestsForDisplay, locale)}
           tone="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.totalRequestsHint', 'Based on the current filters')}
+          subtext={t('aiAudit.metrics.totalRequestsHint', 'System + plan-based features only')}
         />
         <MetricCard
           icon={Sparkles}
@@ -483,123 +628,181 @@ function AiAuditManagement() {
           })}
         />
         <MetricCard
-          icon={Bot}
-          label={t('aiAudit.metrics.averageTokens', 'Avg tokens / request')}
-          value={formatTokenValue(totalAverageTokens, locale)}
-          tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+          icon={Coins}
+          label={t('aiAudit.metrics.systemCost', 'System cost')}
+          value={formatVndValue(metrics.systemCostVnd, locale)}
+          tone="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.averageTokensHint', 'Calculated from all matching requests')}
+          subtext={t('aiAudit.metrics.systemCostHint', 'Provider cost of system features')}
         />
         <MetricCard
-          icon={ShieldAlert}
-          label={t('aiAudit.metrics.errors', 'Errors')}
-          value={formatTokenValue(metrics.errorCount, locale)}
-          tone="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+          icon={Wallet}
+          label={t('aiAudit.metrics.planCost', 'Plan cost')}
+          value={formatVndValue(metrics.planCostVnd, locale)}
+          tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.errorsHint', 'Errored requests matching the current filters')}
+          subtext={t('aiAudit.metrics.planCostHint', 'Provider cost of plan-based features. Avg {{avg}} tokens/request', {
+            avg: formatTokenValue(totalAverageTokens, locale),
+          })}
         />
       </div>
 
-      <Card className={`border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-        <CardHeader className="pb-4">
-          <CardTitle className={`text-lg ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            {t('aiAudit.filters.title', 'AI audit filters')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="audit-filter-grid grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <select
-              value={filters.provider}
-              onChange={(event) => handleFilterChange('provider', event.target.value)}
-              className={`h-11 w-full min-w-0 rounded-xl border px-3 text-sm ${
-                isDarkMode
-                  ? 'bg-slate-800 border-slate-700 text-slate-200'
-                  : 'bg-white border-slate-200 text-slate-900'
-              }`}
-            >
-              <option value="">{t('aiAudit.filters.allProviders', 'All providers')}</option>
-              {PROVIDER_OPTIONS.filter(Boolean).map((provider) => (
-                <option key={provider} value={provider}>
-                  {provider}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.status}
-              onChange={(event) => handleFilterChange('status', event.target.value)}
-              className={`h-11 w-full min-w-0 rounded-xl border px-3 text-sm ${
-                isDarkMode
-                  ? 'bg-slate-800 border-slate-700 text-slate-200'
-                  : 'bg-white border-slate-200 text-slate-900'
-              }`}
-            >
-              <option value="">{t('aiAudit.filters.allStatuses', 'All statuses')}</option>
-              {STATUS_OPTIONS.filter(Boolean).map((status) => (
-                <option key={status} value={status}>
-                  {getStatusLabel(t, status)}
-                </option>
-              ))}
-            </select>
-            <Input
-              value={filters.featureKey}
-              onChange={(event) => handleFilterChange('featureKey', event.target.value)}
-              placeholder={t('aiAudit.filters.featureKeyPlaceholder', 'Feature key')}
-              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-            />
-            <Input
-              value={filters.actorUserId}
-              onChange={(event) => handleFilterChange('actorUserId', event.target.value)}
-              placeholder={t('aiAudit.filters.userIdPlaceholder', 'User ID')}
-              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-            />
-          </div>
+      <div className={`flex flex-col gap-5 rounded-3xl border p-6 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200/80 bg-white shadow-sm'}`}>
+        <div className="min-w-0">
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.exchangeRate.title', 'Tỷ giá USD/VND hiện tại')}</p>
+          <p className={`mt-3 text-[1.85rem] font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatExchangeRate(exchangeRate?.rate)}</p>
+          <p className={`mt-2 text-xs leading-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            {(exchangeRate?.source || t('aiCosts.exchangeRate.unknown', 'Không rõ nguồn'))}
+            {exchangeRate?.fetchedAt ? ` • ${formatDateTime(exchangeRate.fetchedAt, locale)}` : ''}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => fetchExchangeRate()}
+            disabled={exchangeRateLoading}
+            className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+            aria-label={t('aiCosts.exchangeRate.refresh', 'Làm mới tỷ giá')}
+            title={t('aiCosts.exchangeRate.refresh', 'Làm mới tỷ giá')}
+          >
+            <RefreshCw className={`h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
+          </Button>
+          <DateRangeChips
+            value={{ from: filters.from, to: filters.to }}
+            onChange={handleDateRangeChipChange}
+            isDarkMode={isDarkMode}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleOpenFilterDialog}
+            className={`rounded-xl ${isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}`}
+          >
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            {t('aiAudit.filters.open', 'Bộ lọc')}
+            {activeFilterCount > 0 ? (
+              <span className={`ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+                isDarkMode ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
+        </div>
+      </div>
 
-          <div className="audit-filter-grid grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Input
-              value={filters.taskId}
-              onChange={(event) => handleFilterChange('taskId', event.target.value)}
-              placeholder={t('aiAudit.filters.taskIdPlaceholder', 'Task ID')}
-              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-            />
-            <Input
-              type="datetime-local"
-              value={filters.from}
-              onChange={(event) => handleFilterChange('from', event.target.value)}
-              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-            />
-            <Input
-              type="datetime-local"
-              value={filters.to}
-              onChange={(event) => handleFilterChange('to', event.target.value)}
-              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-            />
-            <div className="flex min-h-11 min-w-0 flex-wrap items-center justify-end gap-2 sm:justify-start xl:justify-end">
-              <Button variant="outline" onClick={handleResetFilters} className="rounded-xl">
-                {t('aiAudit.filters.reset', 'Reset filters')}
-              </Button>
-              <Button onClick={handleApplyFilters} className="rounded-xl bg-blue-600 hover:bg-blue-700">
-                <Search className="mr-2 h-4 w-4" />
-                {t('aiAudit.filters.apply', 'Apply filters')}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: AI_AUDIT_LOGS_KEY });
-                  queryClient.invalidateQueries({ queryKey: AI_AUDIT_METRICS_KEY });
-                }}
-                disabled={auditLogsQuery.isFetching}
-                className="rounded-xl"
-                aria-label={t('common.refresh')}
-                title={t('common.refresh')}
+      {/* Advanced filter dialog — pattern giống AiCostManagement */}
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent className={`sm:max-w-4xl ${isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : 'bg-white'}`}>
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? 'text-white' : 'text-slate-900'}>
+              {t('aiAudit.filters.dialogTitle', 'Lọc nhật ký AI')}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
+              {t('aiAudit.filters.dialogDescription', 'Lọc theo người dùng, provider, status, category, feature key, task ID hoặc khoảng thời gian.')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.taskId', 'Task ID')}</Label>
+              <Input
+                value={draftFilters.taskId}
+                onChange={(e) => handleDraftFilterChange('taskId', e.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="task-..."
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.email', 'Email người dùng')}</Label>
+              <Input
+                value={draftFilters.actorEmail}
+                onChange={(e) => handleDraftFilterChange('actorEmail', e.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="user@example.com"
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.featureKey', 'Feature key')}</Label>
+              <Input
+                value={draftFilters.featureKey}
+                onChange={(e) => handleDraftFilterChange('featureKey', e.target.value)}
+                className={`mt-1.5 ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white placeholder:text-slate-500' : ''}`}
+                placeholder="QUIZ_GENERATE..."
+              />
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.provider', 'Provider')}</Label>
+              <select
+                value={draftFilters.provider}
+                onChange={(e) => handleDraftFilterChange('provider', e.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
               >
-                <RefreshCw className={`h-4 w-4 ${auditLogsQuery.isFetching ? 'animate-spin' : ''}`} />
-              </Button>
+                <option value="">{t('aiAudit.filters.allProviders', 'Tất cả provider')}</option>
+                <option value="OPENAI">OPENAI</option>
+                <option value="GEMINI">GEMINI</option>
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.status', 'Trạng thái')}</Label>
+              <select
+                value={draftFilters.status}
+                onChange={(e) => handleDraftFilterChange('status', e.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiAudit.filters.allStatuses', 'Tất cả trạng thái')}</option>
+                <option value="SUCCESS">SUCCESS</option>
+                <option value="FAILED">FAILED</option>
+                <option value="TIMEOUT">TIMEOUT</option>
+              </select>
+            </div>
+            <div>
+              <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.category', 'Phân loại')}</Label>
+              <select
+                value={draftFilters.category}
+                onChange={(e) => handleDraftFilterChange('category', e.target.value)}
+                className={`mt-1.5 h-10 w-full rounded-lg border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
+              >
+                <option value="">{t('aiAudit.filters.allCategories', 'Tất cả')}</option>
+                <option value="SYSTEM">SYSTEM</option>
+                <option value="PLAN_BASED">PLAN_BASED</option>
+              </select>
+            </div>
+            <div className="lg:col-span-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.from', 'Từ')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={draftFilters.from}
+                  onChange={(e) => handleDraftFilterChange('from', e.target.value)}
+                  className={`mt-1.5 w-full ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                />
+              </div>
+              <div>
+                <Label className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('aiAudit.filters.to', 'Đến')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={draftFilters.to}
+                  onChange={(e) => handleDraftFilterChange('to', e.target.value)}
+                  className={`mt-1.5 w-full ${isDarkMode ? 'border-slate-700 bg-slate-950 text-white' : ''}`}
+                />
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={handleResetFilters}>
+              {t('aiAudit.filters.clear', 'Xóa lọc')}
+            </Button>
+            <Button onClick={handleApplyFilters}>
+              <Search className="mr-2 h-4 w-4" />
+              {t('aiAudit.filters.apply', 'Áp dụng')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-100 px-4 py-3 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
@@ -607,24 +810,25 @@ function AiAuditManagement() {
         </div>
       ) : null}
 
-      <Card className={`border overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className={`text-lg ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+      <Card className={`rounded-3xl border shadow-sm overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}>
+        <CardHeader className="px-6 pt-6 pb-5">
+          <CardTitle className={`text-lg font-bold tracking-[-0.02em] ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
             {t('aiAudit.table.title', 'AI request list')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="min-w-[980px]">
-              <TableHeader className={isDarkMode ? 'bg-slate-950/40' : 'bg-slate-50/60'}>
-                <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                  <TableHead className="w-[220px]">{t('aiAudit.table.actor', 'Actor')}</TableHead>
-                  <TableHead className="w-[180px]">{t('aiAudit.table.feature', 'Feature')}</TableHead>
-                  <TableHead className="w-[120px]">{t('aiAudit.table.tokens', 'Tokens')}</TableHead>
-                  <TableHead className="w-[140px]">{t('aiAudit.table.model', 'Model')}</TableHead>
-                  <TableHead className="w-[120px]">{t('aiAudit.table.provider', 'Provider')}</TableHead>
-                  <TableHead className="w-[140px]">{t('aiAudit.table.status', 'Request status')}</TableHead>
-                  <TableHead className="w-[180px]">{t('aiAudit.table.createdAt', 'Created')}</TableHead>
+            <Table className="min-w-[1460px]">
+              <TableHeader className={isDarkMode ? 'bg-slate-950/40' : 'bg-slate-50/70'}>
+                <TableRow className={`border-b ${tableStroke}`}>
+                  <TableHead className={`w-[220px] px-6 py-4 border-r ${tableStroke} text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.actor', 'Actor')}</TableHead>
+                  <TableHead className={`w-[180px] px-4 py-4 border-r ${tableStroke} text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.feature', 'Feature')}</TableHead>
+                  <TableHead className={`w-[260px] px-4 py-4 border-r ${tableStroke} text-center text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.tokens', 'Tokens')}</TableHead>
+                  <TableHead className={`w-[150px] px-4 py-4 border-r ${tableStroke} text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.systemCost', 'System cost')}</TableHead>
+                  <TableHead className={`w-[140px] px-4 py-4 border-r ${tableStroke} text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.model', 'Model')}</TableHead>
+                  <TableHead className={`w-[130px] px-4 py-4 border-r ${tableStroke} text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.provider', 'Provider')}</TableHead>
+                  <TableHead className={`w-[160px] px-4 py-4 border-r ${tableStroke} text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.status', 'Request status')}</TableHead>
+                  <TableHead className={`w-[200px] px-6 py-4 text-[13px] font-semibold whitespace-nowrap ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{t('aiAudit.table.createdAt', 'Created')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -634,11 +838,11 @@ function AiAuditManagement() {
                     <TableRow
                       key={entry.auditId}
                       onClick={() => openAuditDetail(entry.auditId)}
-                      className={`cursor-pointer border-b border-slate-100 transition-colors dark:border-slate-800 ${
-                        isDarkMode ? 'hover:bg-slate-800/60' : 'hover:bg-blue-50/60'
+                      className={`cursor-pointer border-b transition-colors ${tableStroke} ${
+                        isDarkMode ? 'bg-slate-900 hover:bg-slate-800/60' : 'bg-white hover:bg-blue-50/60'
                       }`}
                     >
-                      <TableCell>
+                      <TableCell className={`px-6 py-5 align-middle border-r ${tableStroke}`}>
                         <div className="space-y-1">
                           <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                             {actorName}
@@ -648,7 +852,7 @@ function AiAuditManagement() {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className={`px-4 py-5 align-middle border-r ${tableStroke}`}>
                         <div className="space-y-1">
                           <p className={`font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                             {getFeatureLabel(t, entry.featureKey)}
@@ -658,23 +862,26 @@ function AiAuditManagement() {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell className={`font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                        {formatTokenValue(entry.totalTokens, locale)}
+                      <TableCell className={`px-4 py-5 text-center align-middle border-r ${tableStroke}`}>
+                        <TokenBreakdownCell row={entry} isDarkMode={isDarkMode} />
                       </TableCell>
-                      <TableCell className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                      <TableCell className={`px-4 py-5 align-middle border-r text-sm whitespace-nowrap ${tableStroke} ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                        {formatVndValue(entry.providerCostVnd, locale)}
+                      </TableCell>
+                      <TableCell className={`px-4 py-5 align-middle border-r text-sm whitespace-nowrap ${tableStroke} ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                         {entry.modelName || '-'}
                       </TableCell>
-                      <TableCell>
-                        <Badge className={`border-none ${getProviderBadgeClass(entry.provider)}`}>
+                      <TableCell className={`px-4 py-5 align-middle border-r whitespace-nowrap ${tableStroke}`}>
+                        <Badge className={`border-none whitespace-nowrap ${getProviderBadgeClass(entry.provider)}`}>
                           {entry.provider || '-'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge className={`border-none ${getStatusBadgeClass(entry.status)}`}>
+                      <TableCell className={`px-4 py-5 align-middle border-r whitespace-nowrap ${tableStroke}`}>
+                        <Badge className={`border-none whitespace-nowrap ${getStatusBadgeClass(entry.status)}`}>
                           {getStatusLabel(t, entry.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <TableCell className={`px-6 py-5 align-middle text-sm whitespace-nowrap ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {formatDateTime(entry.createdAt, locale)}
                       </TableCell>
                     </TableRow>
@@ -682,14 +889,14 @@ function AiAuditManagement() {
                 })}
                 {!isLoading && auditLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-16 text-center text-slate-400">
+                    <TableCell colSpan={8} className="py-20 text-center text-sm text-slate-400">
                       {t('aiAudit.table.empty', 'No AI audit logs match the current filters.')}
                     </TableCell>
                   </TableRow>
                 ) : null}
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center">
+                    <TableCell colSpan={8} className="py-14 text-center">
                       <ListSpinner variant="table" />
                     </TableCell>
                   </TableRow>
@@ -712,7 +919,7 @@ function AiAuditManagement() {
         </CardContent>
       </Card>
 
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+      <Dialog open={isDetailOpen} onOpenChange={closeAuditDetail}>
         <DialogContent
           className={`max-w-5xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white'}`}
         >
@@ -724,6 +931,12 @@ function AiAuditManagement() {
 
           {selectedAudit ? (
             <div className="space-y-5">
+              {isExpanding ? (
+                <div className="flex items-center justify-center py-3">
+                  <ListSpinner variant="table" />
+                </div>
+              ) : null}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                   <div className="flex items-center gap-2 text-sm font-semibold">
@@ -766,7 +979,7 @@ function AiAuditManagement() {
                     {t('aiAudit.detail.featureAndModel', 'Feature and model')}
                   </div>
                   <p className={`mt-3 font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                    {selectedFeatureLabel}
+                    {getFeatureLabel(t, selectedAudit.featureKey)}
                   </p>
                   <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {selectedAudit.featureKey}
@@ -790,9 +1003,19 @@ function AiAuditManagement() {
               </div>
 
               <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <Activity className="h-4 w-4 text-rose-500" />
-                  {t('aiAudit.detail.tokens', 'Tokens')}
+                <div className="flex items-center justify-between gap-2 text-sm font-semibold">
+                  <span className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-rose-500" />
+                    {Number(selectedAudit.callCount || 1) > 1
+                      ? t('aiAudit.detail.tokensTotal', 'Total tokens (whole session)')
+                      : t('aiAudit.detail.tokens', 'Tokens')}
+                  </span>
+                  {Number(selectedAudit.callCount || 1) > 1 ? (
+                    <Badge className="border-none bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                      <Layers className="mr-1 h-3 w-3" />
+                      {t('aiAudit.table.callCount', '{{count}} calls', { count: Number(selectedAudit.callCount || 1) })}
+                    </Badge>
+                  ) : null}
                 </div>
                 <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                   <div>
@@ -820,6 +1043,17 @@ function AiAuditManagement() {
                     </p>
                   </div>
                 </div>
+                <div className={`mt-3 flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${
+                  isDarkMode ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-white'
+                }`}>
+                  <span className={`flex items-center gap-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <Coins className="h-4 w-4 text-amber-500" />
+                    {t('aiAudit.detail.systemCost', 'System cost (provider)')}
+                  </span>
+                  <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {formatVndValue(selectedAudit.providerCostVnd, locale)}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 text-sm">
@@ -832,41 +1066,161 @@ function AiAuditManagement() {
                 </div>
               </div>
 
-              {selectedAudit.errorMessage ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-100 p-4 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
-                  <p className="font-semibold">{t('aiAudit.detail.error', 'Error')}</p>
-                  <p className="mt-2 whitespace-pre-wrap break-words">{selectedAudit.errorMessage}</p>
+              {expandedRows.length > 0 ? (
+                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <Layers className="h-4 w-4 text-indigo-500" />
+                      {t('aiAudit.detail.callsHeader', '{{count}} AI calls in this session', {
+                        count: expandedRows.length,
+                      })}
+                    </div>
+                    <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {t('aiAudit.detail.callsHint', 'Click a call to view its input / output')}
+                    </span>
+                  </div>
+                  <div className="space-y-1 max-h-[260px] overflow-y-auto pr-1">
+                    {expandedRows.map((row, idx) => {
+                      const isActive = idx === expandedSelectedIndex;
+                      return (
+                        <button
+                          key={row.auditId}
+                          type="button"
+                          onClick={() => setExpandedSelectedIndex(isActive ? -1 : idx)}
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                            isActive
+                              ? (isDarkMode ? 'border-indigo-500 bg-indigo-900/30' : 'border-indigo-300 bg-indigo-50')
+                              : (isDarkMode ? 'border-slate-800 hover:bg-slate-800/60' : 'border-slate-200 hover:bg-slate-100')
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="font-mono text-xs opacity-80">#{idx + 1}</span>
+                            <span className="font-medium">{formatDateTime(row.createdAt, locale)}</span>
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <Badge className={`border-none ${getStatusBadgeClass(row.status)}`}>
+                              {getStatusLabel(t, row.status)}
+                            </Badge>
+                            <span className="text-xs opacity-70">
+                              {formatTokenValue(row.totalTokens, locale)} {t('aiAudit.detail.tokensSuffix', 'tokens')}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
 
-              <div className="space-y-4">
-                <div>
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                    <Braces className="h-4 w-4 text-blue-500" />
-                    {t('aiAudit.detail.requestPreview', 'Input')}
+              {(() => {
+                const isMultiCall = expandedRows.length > 0;
+                const callForDetail = selectedSubRow ?? (isMultiCall ? null : selectedAudit);
+                if (!callForDetail) {
+                  return (
+                    <div className={`rounded-2xl border-2 border-dashed p-10 text-center text-sm ${
+                      isDarkMode ? 'border-slate-700 text-slate-400 bg-slate-950/30' : 'border-slate-300 text-slate-500 bg-slate-50/60'
+                    }`}>
+                      <Layers className="mx-auto mb-2 h-6 w-6 opacity-60" />
+                      {t('aiAudit.detail.selectCallHint', 'Click a call above to view its input, output, and per-call tokens.')}
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-4">
+                    {selectedSubRow != null ? (
+                      <div className={`rounded-2xl border p-4 ${
+                        isDarkMode ? 'border-indigo-700/60 bg-indigo-950/30' : 'border-indigo-300 bg-indigo-50/60'
+                      }`}>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 text-sm font-semibold">
+                            <ChevronDown className="h-4 w-4 text-indigo-500" />
+                            <span className={isDarkMode ? 'text-indigo-300' : 'text-indigo-700'}>
+                              {t('aiAudit.detail.callDetailHeader', 'Detail of call #{{index}}', { index: expandedSelectedIndex + 1 })}
+                            </span>
+                            <Badge className={`border-none ${getStatusBadgeClass(callForDetail.status)}`}>
+                              {getStatusLabel(t, callForDetail.status)}
+                            </Badge>
+                          </div>
+                          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {formatDateTime(callForDetail.createdAt, locale)}
+                          </span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                          <div>
+                            <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.inputTokens', 'Input')}</p>
+                            <p className={`mt-1 text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                              {formatTokenValue(callForDetail.promptTokens, locale)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.thoughtTokens', 'Thought')}</p>
+                            <p className={`mt-1 text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                              {formatOptionalTokenValue(callForDetail.thoughtTokens, locale)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.outputTokens', 'Output')}</p>
+                            <p className={`mt-1 text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                              {formatTokenValue(callForDetail.completionTokens, locale)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.totalTokens', 'Total')}</p>
+                            <p className={`mt-1 text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                              {formatTokenValue(callForDetail.totalTokens, locale)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className={`mt-3 flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${
+                          isDarkMode ? 'border-indigo-700/40 bg-indigo-950/40' : 'border-indigo-200 bg-white'
+                        }`}>
+                          <span className={`flex items-center gap-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <Coins className="h-4 w-4 text-amber-500" />
+                            {t('aiAudit.detail.systemCost', 'System cost (provider)')}
+                          </span>
+                          <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                            {formatVndValue(callForDetail.providerCostVnd, locale)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {callForDetail.errorMessage ? (
+                      <div className="rounded-2xl border border-rose-200 bg-rose-100 p-4 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
+                        <p className="font-semibold">{t('aiAudit.detail.error', 'Error')}</p>
+                        <p className="mt-2 whitespace-pre-wrap break-words">{callForDetail.errorMessage}</p>
+                      </div>
+                    ) : null}
+
+                    <div>
+                      <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                        <Braces className="h-4 w-4 text-blue-500" />
+                        {t('aiAudit.detail.requestPreview', 'Input')}
+                      </div>
+                      <pre className={`max-h-[320px] overflow-auto rounded-2xl border p-4 text-xs leading-6 whitespace-pre-wrap break-words ${
+                        isDarkMode
+                          ? 'border-slate-800 bg-slate-950 text-slate-200'
+                          : 'border-slate-200 bg-slate-50 text-slate-700'
+                      }`}>
+                        {prettifyPreview(callForDetail.requestPreview, t('aiAudit.detail.noPreview', 'No data available'))}
+                      </pre>
+                    </div>
+                    <div>
+                      <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                        <Braces className="h-4 w-4 text-emerald-500" />
+                        {t('aiAudit.detail.responsePreview', 'Output')}
+                      </div>
+                      <pre className={`max-h-[320px] overflow-auto rounded-2xl border p-4 text-xs leading-6 whitespace-pre-wrap break-words ${
+                        isDarkMode
+                          ? 'border-slate-800 bg-slate-950 text-slate-200'
+                          : 'border-slate-200 bg-slate-50 text-slate-700'
+                      }`}>
+                        {prettifyPreview(callForDetail.responsePreview, t('aiAudit.detail.noPreview', 'No data available'))}
+                      </pre>
+                    </div>
                   </div>
-                  <pre className={`max-h-[320px] overflow-auto rounded-2xl border p-4 text-xs leading-6 whitespace-pre-wrap break-words ${
-                    isDarkMode
-                      ? 'border-slate-800 bg-slate-950 text-slate-200'
-                      : 'border-slate-200 bg-slate-50 text-slate-700'
-                  }`}>
-                    {prettifyPreview(selectedAudit.requestPreview, t('aiAudit.detail.noPreview', 'No data available'))}
-                  </pre>
-                </div>
-                <div>
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                    <Braces className="h-4 w-4 text-emerald-500" />
-                    {t('aiAudit.detail.responsePreview', 'Output')}
-                  </div>
-                  <pre className={`max-h-[320px] overflow-auto rounded-2xl border p-4 text-xs leading-6 whitespace-pre-wrap break-words ${
-                    isDarkMode
-                      ? 'border-slate-800 bg-slate-950 text-slate-200'
-                      : 'border-slate-200 bg-slate-50 text-slate-700'
-                  }`}>
-                    {prettifyPreview(selectedAudit.responsePreview, t('aiAudit.detail.noPreview', 'No data available'))}
-                  </pre>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           ) : (
             <div className={`rounded-2xl border border-dashed p-10 text-center ${

@@ -90,3 +90,30 @@ export function buildGroupMemberSeatSummary({
     isOverLimit: limit != null && usedCount > limit,
   };
 }
+
+export function buildMemberSeatLimitErrorMessage(t, seatSummary) {
+  const limit = Number(seatSummary?.limit);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return t('groupWorkspacePage.errors.memberSeatLimitUnknown', 'Nhóm đã đạt giới hạn thành viên của gói hiện tại.');
+  }
+
+  const used = Number.isFinite(Number(seatSummary?.usedCount)) ? Number(seatSummary.usedCount) : limit;
+  const pending = Number.isFinite(Number(seatSummary?.pendingCount)) ? Number(seatSummary.pendingCount) : 0;
+  const overLimitBy = Number.isFinite(Number(seatSummary?.overLimitBy)) ? Number(seatSummary.overLimitBy) : 0;
+
+  if (overLimitBy > 0) {
+    return t('groupWorkspacePage.errors.memberSeatLimitExceeded', {
+      used,
+      limit,
+      overLimitBy,
+      defaultValue: `Nhóm đang vượt ${overLimitBy} slot thành viên so với giới hạn ${limit}. Hãy giảm thành viên hoặc hủy lời mời chờ trước khi mời thêm.`,
+    });
+  }
+
+  return t('groupWorkspacePage.errors.memberSeatLimitReached', {
+    used,
+    limit,
+    pending,
+    defaultValue: `Nhóm đã dùng hết ${used}/${limit} slot thành viên. Hãy hủy ${pending > 0 ? 'lời mời chờ hoặc ' : ''}nâng cấp gói trước khi mời thêm.`,
+  });
+}

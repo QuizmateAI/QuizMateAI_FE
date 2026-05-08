@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrapApiData } from '@/utils/apiResponse';
+import { STALE_TIME } from '@/lib/queryClient';
 import {
   getMyJoinedGroups,
   getPublicGroups as getPublicGroupsAPI,
@@ -35,6 +36,28 @@ import {
 
 const GROUPS_QUERY_KEY = ['groups'];
 const PUBLIC_GROUPS_QUERY_KEY = ['groups', 'public'];
+
+// Per-group cache keys. Imperative fetch* helpers below route through
+// queryClient.fetchQuery using these keys, so repeated calls within
+// staleTime serve from cache instead of re-hitting the API. Mutations on
+// the same workspace invalidate the matching prefix.
+const groupMembersKey = (workspaceId, page, size) => ['group', workspaceId, 'members', page, size];
+const groupMembersPrefix = (workspaceId) => ['group', workspaceId, 'members'];
+const groupInvitationsKey = (workspaceId) => ['group', workspaceId, 'invitations'];
+const groupLogsKey = (workspaceId) => ['group', workspaceId, 'logs'];
+const groupMyPermissionsKey = (workspaceId) => ['group', workspaceId, 'myPermissions'];
+const groupMemberPermissionsKey = (workspaceId, memberId) => ['group', workspaceId, 'memberPermissions', memberId];
+const groupDashboardKey = (workspaceId) => ['group', workspaceId, 'dashboard'];
+const groupMemberDashboardCardsKey = (workspaceId, page, size) => ['group', workspaceId, 'memberDashboardCards', page, size];
+const groupMemberDashboardDetailKey = (workspaceId, memberId, attemptMode) => ['group', workspaceId, 'memberDashboardDetail', memberId, attemptMode];
+const groupSnapshotsPrefix = (workspaceId) => ['group', workspaceId, 'snapshots'];
+const groupSnapshotsSummaryKey = (workspaceId, options) => ['group', workspaceId, 'snapshots', 'summary', options];
+const groupSnapshotsLatestKey = (workspaceId, options) => ['group', workspaceId, 'snapshots', 'latest', options];
+const groupSnapshotsRankingKey = (workspaceId, options) => ['group', workspaceId, 'snapshots', 'ranking', options];
+const memberSnapshotLatestKey = (workspaceId, memberId, options) => ['group', workspaceId, 'snapshots', 'member', memberId, 'latest', options];
+const memberSnapshotListKey = (workspaceId, memberId, options) => ['group', workspaceId, 'snapshots', 'member', memberId, 'list', options];
+const memberSnapshotTrendKey = (workspaceId, memberId, options) => ['group', workspaceId, 'snapshots', 'member', memberId, 'trend', options];
+const memberSnapshotCompareKey = (workspaceId, memberId, fromId, toId) => ['group', workspaceId, 'snapshots', 'member', memberId, 'compare', fromId, toId];
 
 const emptyPage = (size = 20) => ({
   content: [],
@@ -79,6 +102,10 @@ export function useGroup(options = {}) {
         : [];
     },
     enabled,
+    // Group membership/role changes propagate over WebSocket; keep cache short
+    // so the UI rebinds quickly when invalidate isn't fired (e.g. role updated
+    // by another leader while this tab was idle).
+    staleTime: STALE_TIME.REALTIME,
   });
 
   const {
@@ -94,6 +121,9 @@ export function useGroup(options = {}) {
       return Array.isArray(rawGroups) ? rawGroups : [];
     },
     enabled: publicEnabled,
+    // Public group catalog is semi-static: new groups appear infrequently. SHORT
+    // gives a fresh listing for users hopping between the discover and joined tabs.
+    staleTime: STALE_TIME.SHORT,
   });
 
   const error = queryError?.message || publicGroupsQueryError?.message || null;
@@ -114,160 +144,285 @@ export function useGroup(options = {}) {
     return unwrapApiData(res);
   }, [queryClient]);
 
-  // Lấy danh sách thành viên của nhóm
-  const fetchMembers = useCallback(async (workspaceId, page = 0, size = 50) => {
-    const res = await getGroupMembersAPI(workspaceId, page, size);
-    const pageData = unwrapApiData(res);
-    return Array.isArray(pageData?.content) ? pageData.content : [];
-  }, []);
+  // Lấy danh sách thành viên của nhóm. Members fed primarily via WS group
+  // topic — dùng REALTIME để cache là fallback ngắn khi socket reconnect.
+  const fetchMembers = useCallback(async (workspaceId, page = 0, size = 50) => (
+    queryClient.fetchQuery({
+      queryKey: groupMembersKey(workspaceId, page, size),
+      queryFn: async () => {
+        const res = await getGroupMembersAPI(workspaceId, page, size);
+        const pageData = unwrapApiData(res);
+        return Array.isArray(pageData?.content) ? pageData.content : [];
+      },
+      staleTime: STALE_TIME.REALTIME,
+    })
+  ), [queryClient]);
 
   // Cấp quyền upload cho thành viên
   const grantUpload = useCallback(async (workspaceId, memberId) => {
     await grantUploadAPI(workspaceId, memberId);
-  }, []);
+    void queryClient.invalidateQueries({ queryKey: groupMembersPrefix(workspaceId) });
+    void queryClient.invalidateQueries({ queryKey: groupMemberPermissionsKey(workspaceId, memberId) });
+  }, [queryClient]);
 
   // Thu hồi quyền upload
   const revokeUpload = useCallback(async (workspaceId, memberId) => {
     await revokeUploadAPI(workspaceId, memberId);
-  }, []);
+    void queryClient.invalidateQueries({ queryKey: groupMembersPrefix(workspaceId) });
+    void queryClient.invalidateQueries({ queryKey: groupMemberPermissionsKey(workspaceId, memberId) });
+  }, [queryClient]);
 
   // Cập nhật vai trò thành viên
   const updateMemberRole = useCallback(async (workspaceId, memberId, roleName) => {
     await updateMemberRoleAPI(workspaceId, memberId, roleName);
-  }, []);
+    void queryClient.invalidateQueries({ queryKey: groupMembersPrefix(workspaceId) });
+    void queryClient.invalidateQueries({ queryKey: groupMemberPermissionsKey(workspaceId, memberId) });
+  }, [queryClient]);
 
   // Mời thành viên bằng email
   const inviteMember = useCallback(async (workspaceId, email) => {
     const res = await inviteMemberAPI(workspaceId, email);
+    void queryClient.invalidateQueries({ queryKey: groupInvitationsKey(workspaceId) });
     return unwrapApiData(res);
-  }, []);
+  }, [queryClient]);
 
-  // Lấy danh sách lời mời đang chờ (count + invitations)
-  const fetchPendingInvitations = useCallback(async (workspaceId) => {
-    const res = await getPendingInvitationsAPI(workspaceId);
-    return unwrapApiData(res) || { count: 0, invitations: [] };
-  }, []);
+  // Lấy danh sách lời mời đang chờ (count + invitations). Invitations được
+  // fed qua WS group topic (INVITATION_*); dùng REALTIME để cache là fallback
+  // ngắn khi socket reconnect.
+  const fetchPendingInvitations = useCallback(async (workspaceId) => (
+    queryClient.fetchQuery({
+      queryKey: groupInvitationsKey(workspaceId),
+      queryFn: async () => {
+        const res = await getPendingInvitationsAPI(workspaceId);
+        return unwrapApiData(res) || { count: 0, invitations: [] };
+      },
+      staleTime: STALE_TIME.REALTIME,
+    })
+  ), [queryClient]);
 
   const cancelInvitation = useCallback(async (workspaceId, invitationId) => {
     const res = await cancelInvitationAPI(workspaceId, invitationId);
+    void queryClient.invalidateQueries({ queryKey: groupInvitationsKey(workspaceId) });
     return unwrapApiData(res);
-  }, []);
+  }, [queryClient]);
 
   const resendInvitation = useCallback(async (workspaceId, invitationId, email) => {
     const res = await resendInvitationAPI(workspaceId, invitationId, email);
+    void queryClient.invalidateQueries({ queryKey: groupInvitationsKey(workspaceId) });
     return unwrapApiData(res);
-  }, []);
+  }, [queryClient]);
 
-  // Lấy activity log của nhóm
-  const fetchGroupLogs = useCallback(async (workspaceId) => {
-    const res = await getGroupLogsAPI(workspaceId);
-    const payload = unwrapApiData(res);
-    return Array.isArray(payload) ? payload : [];
-  }, []);
+  // Activity log của nhóm — BE phát log đồng thời với mỗi action qua WS;
+  // REALTIME để cache là fallback ngắn.
+  const fetchGroupLogs = useCallback(async (workspaceId) => (
+    queryClient.fetchQuery({
+      queryKey: groupLogsKey(workspaceId),
+      queryFn: async () => {
+        const res = await getGroupLogsAPI(workspaceId);
+        const payload = unwrapApiData(res);
+        return Array.isArray(payload) ? payload : [];
+      },
+      staleTime: STALE_TIME.REALTIME,
+    })
+  ), [queryClient]);
 
-  const fetchMyPermissions = useCallback(async (workspaceId) => {
-    const res = await getGroupMyPermissionsAPI(workspaceId);
-    return unwrapApiData(res);
-  }, []);
+  // Permissions của user hiện tại — leader có thể thay đổi qua WS event
+  // MEMBER_PERMISSION_UPDATED; REALTIME để cache là fallback ngắn.
+  const fetchMyPermissions = useCallback(async (workspaceId) => (
+    queryClient.fetchQuery({
+      queryKey: groupMyPermissionsKey(workspaceId),
+      queryFn: async () => {
+        const res = await getGroupMyPermissionsAPI(workspaceId);
+        return unwrapApiData(res);
+      },
+      staleTime: STALE_TIME.REALTIME,
+    })
+  ), [queryClient]);
 
-  const fetchMemberPermissions = useCallback(async (workspaceId, memberId) => {
-    const res = await getGroupMemberPermissionsAPI(workspaceId, memberId);
-    return unwrapApiData(res);
-  }, []);
+  // Permissions của 1 member — leader có thể grant/revoke qua WS; REALTIME.
+  const fetchMemberPermissions = useCallback(async (workspaceId, memberId) => (
+    queryClient.fetchQuery({
+      queryKey: groupMemberPermissionsKey(workspaceId, memberId),
+      queryFn: async () => {
+        const res = await getGroupMemberPermissionsAPI(workspaceId, memberId);
+        return unwrapApiData(res);
+      },
+      staleTime: STALE_TIME.REALTIME,
+    })
+  ), [queryClient]);
 
   const syncMemberPermissions = useCallback(async (workspaceId, memberId, permissionCodes = []) => {
     const res = await syncGroupMemberPermissionsAPI(workspaceId, memberId, permissionCodes);
+    void queryClient.invalidateQueries({ queryKey: groupMemberPermissionsKey(workspaceId, memberId) });
     return unwrapApiData(res);
-  }, []);
+  }, [queryClient]);
 
-  const fetchGroupDashboardSummary = useCallback(async (workspaceId) => {
-    const res = await getGroupDashboardSummaryAPI(workspaceId);
-    return unwrapApiData(res);
-  }, []);
+  const fetchGroupDashboardSummary = useCallback(async (workspaceId) => (
+    queryClient.fetchQuery({
+      queryKey: groupDashboardKey(workspaceId),
+      queryFn: async () => {
+        const res = await getGroupDashboardSummaryAPI(workspaceId);
+        return unwrapApiData(res);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const fetchMemberDashboardCards = useCallback(async (workspaceId, page = 0, size = 8) => {
-    const res = await getMemberDashboardCardsAPI(workspaceId, page, size);
-    const pageData = unwrapApiData(res);
-    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
-      return pageData;
-    }
-    return {
-      content: [],
-      totalElements: 0,
-      totalPages: 0,
-      page: 0,
-      size,
-      first: true,
-      last: true,
-    };
-  }, []);
+  const fetchMemberDashboardCards = useCallback(async (workspaceId, page = 0, size = 8) => (
+    queryClient.fetchQuery({
+      queryKey: groupMemberDashboardCardsKey(workspaceId, page, size),
+      queryFn: async () => {
+        const res = await getMemberDashboardCardsAPI(workspaceId, page, size);
+        const pageData = unwrapApiData(res);
+        if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+          return pageData;
+        }
+        return {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          page: 0,
+          size,
+          first: true,
+          last: true,
+        };
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const fetchMemberDashboardDetail = useCallback(async (workspaceId, memberId, attemptMode = 'ALL') => {
-    const res = await getMemberDashboardDetailAPI(workspaceId, memberId, attemptMode);
-    return unwrapApiData(res);
-  }, []);
+  const fetchMemberDashboardDetail = useCallback(async (workspaceId, memberId, attemptMode = 'ALL') => (
+    queryClient.fetchQuery({
+      queryKey: groupMemberDashboardDetailKey(workspaceId, memberId, attemptMode),
+      queryFn: async () => {
+        const res = await getMemberDashboardDetailAPI(workspaceId, memberId, attemptMode);
+        return unwrapApiData(res);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const fetchGroupLearningSnapshotsSummary = useCallback(async (workspaceId, options = {}) => {
-    const res = await getGroupLearningSnapshotsSummaryAPI(workspaceId, options);
-    return unwrapApiData(res);
-  }, []);
+  const fetchGroupLearningSnapshotsSummary = useCallback(async (workspaceId, options = {}) => (
+    queryClient.fetchQuery({
+      queryKey: groupSnapshotsSummaryKey(workspaceId, options),
+      queryFn: async () => {
+        const res = await getGroupLearningSnapshotsSummaryAPI(workspaceId, options);
+        return unwrapApiData(res);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const fetchGroupLearningSnapshotsLatest = useCallback(async (workspaceId, options = {}) => {
-    const res = await getGroupLearningSnapshotsLatestAPI(workspaceId, options);
-    const pageData = unwrapApiData(res);
-    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
-      return pageData;
-    }
-    return emptyPage(options?.size);
-  }, []);
+  const fetchGroupLearningSnapshotsLatest = useCallback(async (workspaceId, options = {}) => (
+    queryClient.fetchQuery({
+      queryKey: groupSnapshotsLatestKey(workspaceId, options),
+      queryFn: async () => {
+        const res = await getGroupLearningSnapshotsLatestAPI(workspaceId, options);
+        const pageData = unwrapApiData(res);
+        if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+          return pageData;
+        }
+        return emptyPage(options?.size);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const fetchGroupLearningSnapshotsRanking = useCallback(async (workspaceId, options = {}) => {
-    const res = await getGroupLearningSnapshotsRankingAPI(workspaceId, options);
-    const pageData = unwrapApiData(res);
-    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
-      return pageData;
-    }
-    return emptyPage(options?.size);
-  }, []);
+  const fetchGroupLearningSnapshotsRanking = useCallback(async (workspaceId, options = {}) => (
+    queryClient.fetchQuery({
+      queryKey: groupSnapshotsRankingKey(workspaceId, options),
+      queryFn: async () => {
+        const res = await getGroupLearningSnapshotsRankingAPI(workspaceId, options);
+        const pageData = unwrapApiData(res);
+        if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+          return pageData;
+        }
+        return emptyPage(options?.size);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
   const generateGroupLearningSnapshots = useCallback(async (workspaceId, data = {}) => {
     const res = await generateGroupLearningSnapshotsAPI(workspaceId, data);
+    void queryClient.invalidateQueries({ queryKey: groupSnapshotsPrefix(workspaceId) });
     return unwrapApiData(res);
-  }, []);
+  }, [queryClient]);
 
-  const fetchGroupMemberLearningSnapshotLatest = useCallback(async (workspaceId, workspaceMemberId, options = {}) => {
-    const res = await getGroupMemberLearningSnapshotLatestAPI(workspaceId, workspaceMemberId, options);
-    return unwrapApiData(res);
-  }, []);
+  const fetchGroupMemberLearningSnapshotLatest = useCallback(async (workspaceId, workspaceMemberId, options = {}) => (
+    queryClient.fetchQuery({
+      queryKey: memberSnapshotLatestKey(workspaceId, workspaceMemberId, options),
+      queryFn: async () => {
+        const res = await getGroupMemberLearningSnapshotLatestAPI(workspaceId, workspaceMemberId, options);
+        return unwrapApiData(res);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const fetchGroupMemberLearningSnapshots = useCallback(async (workspaceId, workspaceMemberId, options = {}) => {
-    const res = await getGroupMemberLearningSnapshotsAPI(workspaceId, workspaceMemberId, options);
-    const pageData = unwrapApiData(res);
-    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
-      return pageData;
-    }
-    return emptyPage(options?.size);
-  }, []);
+  const fetchGroupMemberLearningSnapshots = useCallback(async (workspaceId, workspaceMemberId, options = {}) => (
+    queryClient.fetchQuery({
+      queryKey: memberSnapshotListKey(workspaceId, workspaceMemberId, options),
+      queryFn: async () => {
+        const res = await getGroupMemberLearningSnapshotsAPI(workspaceId, workspaceMemberId, options);
+        const pageData = unwrapApiData(res);
+        if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+          return pageData;
+        }
+        return emptyPage(options?.size);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const fetchGroupMemberLearningSnapshotTrend = useCallback(async (workspaceId, workspaceMemberId, options = {}) => {
-    const res = await getGroupMemberLearningSnapshotTrendAPI(workspaceId, workspaceMemberId, options);
-    return unwrapApiData(res);
-  }, []);
+  const fetchGroupMemberLearningSnapshotTrend = useCallback(async (workspaceId, workspaceMemberId, options = {}) => (
+    queryClient.fetchQuery({
+      queryKey: memberSnapshotTrendKey(workspaceId, workspaceMemberId, options),
+      queryFn: async () => {
+        const res = await getGroupMemberLearningSnapshotTrendAPI(workspaceId, workspaceMemberId, options);
+        return unwrapApiData(res);
+      },
+      staleTime: STALE_TIME.SHORT,
+    })
+  ), [queryClient]);
 
-  const compareGroupMemberLearningSnapshots = useCallback(async (workspaceId, workspaceMemberId, fromSnapshotId, toSnapshotId) => {
-    const res = await compareGroupMemberLearningSnapshotsAPI(workspaceId, workspaceMemberId, fromSnapshotId, toSnapshotId);
-    return unwrapApiData(res);
-  }, []);
+  const compareGroupMemberLearningSnapshots = useCallback(async (workspaceId, workspaceMemberId, fromSnapshotId, toSnapshotId) => (
+    queryClient.fetchQuery({
+      queryKey: memberSnapshotCompareKey(workspaceId, workspaceMemberId, fromSnapshotId, toSnapshotId),
+      queryFn: async () => {
+        const res = await compareGroupMemberLearningSnapshotsAPI(workspaceId, workspaceMemberId, fromSnapshotId, toSnapshotId);
+        return unwrapApiData(res);
+      },
+      // Compare results are deterministic for a (from, to) pair → cache longer.
+      staleTime: STALE_TIME.STATIC,
+    })
+  ), [queryClient]);
 
   const generateGroupMemberLearningSnapshot = useCallback(async (workspaceId, workspaceMemberId, data = {}) => {
     const res = await generateGroupMemberLearningSnapshotAPI(workspaceId, workspaceMemberId, data);
+    // A new member snapshot can shift group-level aggregates (ranking/summary)
+    // → invalidate the whole snapshots subtree for this group.
+    void queryClient.invalidateQueries({ queryKey: groupSnapshotsPrefix(workspaceId) });
     return unwrapApiData(res);
-  }, []);
+  }, [queryClient]);
 
   // Xóa thành viên khỏi nhóm
   const removeMember = useCallback(async (workspaceId, memberId) => {
     await removeMemberAPI(workspaceId, memberId);
-  }, []);
+    void queryClient.invalidateQueries({ queryKey: groupMembersPrefix(workspaceId) });
+    queryClient.removeQueries({ queryKey: groupMemberPermissionsKey(workspaceId, memberId) });
+  }, [queryClient]);
+
+  // Invalidate toàn bộ cache fetchQuery nội bộ của useGroup cho 1 workspace.
+  // Dùng khi nhận WS event realtime từ user khác (ví dụ: invitee accept lời
+  // mời) — leader chỉ nhận WS chứ không đi qua các mutator của useGroup, nên
+  // cache fetchQuery ở đây (members/invitations/logs/permissions/dashboard/
+  // snapshots, ...) vẫn fresh và trả dữ liệu cũ. Tất cả inner key đều bắt
+  // đầu bằng prefix ['group', workspaceId] nên invalidate prefix là đủ.
+  const invalidateGroupRealtimeCaches = useCallback((workspaceId) => {
+    if (workspaceId == null) return;
+    void queryClient.invalidateQueries({ queryKey: ['group', workspaceId] });
+  }, [queryClient]);
 
   return {
     groups,
@@ -304,5 +459,6 @@ export function useGroup(options = {}) {
     compareGroupMemberLearningSnapshots,
     generateGroupMemberLearningSnapshot,
     removeMember,
+    invalidateGroupRealtimeCaches,
   };
 }

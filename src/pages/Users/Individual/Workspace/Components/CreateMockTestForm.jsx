@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, ClipboardList, ArrowLeft, RefreshCw, Rocket, Sparkles, ChevronLeft, BookmarkPlus, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { preloadNamespaces } from "@/i18n";
 import { generateMockTest, getBloomSkills } from "@/api/AIAPI";
 import { Checkbox } from "@/components/ui/checkbox";
 import useWorkspaceMaterialSelection from "./useWorkspaceMaterialSelection";
@@ -91,6 +92,17 @@ function CreateMockTestForm({
   const [aiSections, setAiSections] = useState([]);
   const [aiTopNotice, setAiTopNotice] = useState("");
   const [examLanguage, setExamLanguage] = useState("");
+  // Resolve the form's display language from the AI-detected exam language so labels
+  // align with the AI-generated section names. Falls back to UI locale when examLanguage
+  // is empty or not bundled in the FE locales catalog.
+  const formLanguage = useMemo(() => {
+    const candidate = String(examLanguage || "").trim().toLowerCase();
+    return candidate === "en" || candidate === "vi" ? candidate : null;
+  }, [examLanguage]);
+  useEffect(() => {
+    if (!formLanguage || formLanguage === i18n.language) return;
+    preloadNamespaces(["workspace"], formLanguage).catch(() => {});
+  }, [formLanguage, i18n.language]);
   const [scoring, setScoring] = useState(() => normalizeMockTestScoring());
   // Template metadata after suggestion (display only).
   const [matchedTemplate, setMatchedTemplate] = useState(null);
@@ -635,12 +647,14 @@ function CreateMockTestForm({
               savingTemplateId={savingTemplateId}
               workspaceMaterials={normalizedSources}
               isDarkMode={isDarkMode}
+              formLanguage={formLanguage}
             />
             <MockTestScoringEditor
               sections={aiSections}
               scoring={scoring}
               onChange={setScoring}
               isDarkMode={isDarkMode}
+              formLanguage={formLanguage}
             />
             <MockTestStructureEditor
               sections={aiSections}

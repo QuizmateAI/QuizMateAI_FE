@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles, BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles, BookOpen, ChevronDown, ChevronRight, Award, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import DirectFeedbackButton from '@/components/feedback/DirectFeedbackButton';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
 import CommunityQuizFeedbackDialog from '@/pages/Users/Quiz/components/CommunityQuizFeedbackDialog';
+import QuizToFlashcardDialog from '@/pages/Users/Quiz/components/QuizToFlashcardDialog';
 import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, refreshAttemptAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
@@ -218,6 +219,7 @@ export default function QuizResultPage() {
   const [knowledgeGenerationHydrated, setKnowledgeGenerationHydrated] = useState(false);
   const [expandedReviewSections, setExpandedReviewSections] = useState({});
   const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
+  const [quizToFlashcardOpen, setQuizToFlashcardOpen] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
@@ -1201,6 +1203,14 @@ handleBack,
     ? reviewQuestions.filter((question) => question?.isCorrect === true).length
     : Number(result.correctQuestion ?? 0);
   const passScore = result.passScore != null ? Number(result.passScore) : null;
+  // Quiz có "scoring" thực sự khi tồn tại điểm theo từng câu hoặc score đã chấm > 0.
+  // BE set maxScore=100 mặc định cho AI quiz nhưng question.score=null → calculatedScore luôn 0,
+  // nên chỉ dựa vào maxScore sẽ hiển thị "Score 0/100" gây hiểu nhầm.
+  const totalQuestionScore = reviewQuestions.reduce(
+    (sum, q) => sum + (Number(q?.questionScore) || 0),
+    0,
+  );
+  const hasScoring = totalQuestionScore > 0 || Number(result.score) > 0;
   const accuracyPercent = totalQuestion > 0
     ? (correctQuestion / totalQuestion) * 100
     : null;
@@ -1513,18 +1523,46 @@ handleBack,
             </h1>
 
             <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-white/70 bg-white/45 p-4 shadow-inner shadow-white/60 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/25 dark:shadow-slate-950/20">
-              {/* Score display */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 max-w-4xl mx-auto">
-                <ScoreStat label={t('quizResultPage.accuracy', 'Accuracy')} value={accuracyValue} icon={BarChart3} />
-                <ScoreStat label={t('quizResultPage.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
-                <ScoreStat label={t('quizResultPage.answered', 'Answered')} value={answeredValue} icon={Eye} />
-                <ScoreStat label={t('quizResultPage.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
-              </div>
+              {/* Score display — score card chỉ hiện khi quiz có cấu trúc điểm (maxScore > 0).
+                  Mock test ẩn "Accuracy" vì điểm tuyệt đối (Score) đã là metric chính,
+                  accuracy lặp với Correct và gây nhiễu khi user nhìn kết quả. */}
+              {(() => {
+                const hasScoring = Number(result.maxScore) > 0;
+                const showAccuracy = !isMockTestResult;
+                const visibleCount = (hasScoring ? 1 : 0) + (showAccuracy ? 1 : 0) + 3; // correct, answered, time
+                const gridCols = visibleCount === 5
+                  ? 'xl:grid-cols-5'
+                  : visibleCount === 4
+                  ? 'xl:grid-cols-4'
+                  : 'xl:grid-cols-3';
+                return (
+                  <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${gridCols} max-w-4xl mx-auto`}>
+                    {hasScoring && (
+                      <ScoreStat
+                        label={t('quizResultPage.score', 'Score')}
+                        value={`${round2Display(result.score ?? 0)}/${round2Display(result.maxScore)}`}
+                        icon={Award}
+                        variant="amber"
+                      />
+                    )}
+                    {showAccuracy && (
+                      <ScoreStat label={t('quizResultPage.accuracy', 'Accuracy')} value={accuracyValue} icon={BarChart3} variant="violet" />
+                    )}
+                    <ScoreStat label={t('quizResultPage.correct', 'Correct')} value={correctValue} icon={CheckCircle2} variant="emerald" />
+                    <ScoreStat label={t('quizResultPage.answered', 'Answered')} value={answeredValue} icon={Eye} variant="sky" />
+                    <ScoreStat label={t('quizResultPage.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} variant="rose" />
+                  </div>
+                );
+              })()}
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
                 <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
-                {result.passScore != null && <span className="rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-300">{t('quizResultPage.passScore', 'Pass Score')}: {result.passScore}</span>}
+                {result.passScore != null && (
+                  <span className="rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-300">
+                    {t('quizResultPage.passScore', 'Pass Score')}: {hasScoring ? result.passScore : `${result.passScore}%`}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1678,6 +1716,16 @@ handleBack,
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[180px] gap-2" disabled={reviewQuestions.length === 0}>
                 <Eye className="w-4 h-4" /> {t('quizResultPage.reviewAnswers', 'Review Answers')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setQuizToFlashcardOpen(true)}
+                disabled={reviewQuestions.length === 0}
+                className="min-w-[200px] gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                {t('quizResultPage.toFlashcard.action', 'Convert to flashcards')}
               </Button>
               {hasQuizIdForBack ? (
                 <DirectFeedbackButton
@@ -1926,6 +1974,14 @@ handleBack,
         )}
       </div>
 
+      <QuizToFlashcardDialog
+        open={quizToFlashcardOpen}
+        onOpenChange={setQuizToFlashcardOpen}
+        quizTitle={quizDetails?.title || quizRawDetails?.title || result?.quizTitle}
+        reviewQuestions={reviewQuestions}
+        defaultWorkspaceId={normalizedWorkspaceId}
+      />
+
       <CommunityQuizFeedbackDialog
         open={communityFeedbackOpen}
         onOpenChange={setCommunityFeedbackOpen}
@@ -1947,16 +2003,72 @@ handleBack,
   );
 }
 
-function ScoreStat({ label, value, icon: Icon }) {
+// Format số điểm: integer hiển thị nguyên, decimal làm tròn 2 chữ số (tránh 3.333333).
+function round2Display(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0';
+  if (Number.isInteger(n)) return String(n);
+  return (Math.round(n * 100) / 100).toString();
+}
+
+// Each variant maps to a tailwind palette so the stat cards look distinct at a glance.
+// Use SCORE_STAT_VARIANTS keys: amber (score), violet (accuracy), emerald (correct), sky (answered), rose (time).
+const SCORE_STAT_VARIANTS = {
+  amber: {
+    card: 'border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-amber-900/10 dark:border-amber-700/70 dark:bg-gradient-to-br dark:from-amber-950/40 dark:to-yellow-950/30 dark:shadow-amber-950/30',
+    icon: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+    label: 'text-amber-700 dark:text-amber-300',
+    value: 'text-amber-800 dark:text-amber-100',
+  },
+  violet: {
+    card: 'border-violet-300 bg-gradient-to-br from-violet-50 to-purple-50 shadow-violet-900/10 dark:border-violet-700/70 dark:bg-gradient-to-br dark:from-violet-950/40 dark:to-purple-950/30 dark:shadow-violet-950/30',
+    icon: 'bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300',
+    label: 'text-violet-700 dark:text-violet-300',
+    value: 'text-violet-800 dark:text-violet-100',
+  },
+  emerald: {
+    card: 'border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-emerald-900/10 dark:border-emerald-700/70 dark:bg-gradient-to-br dark:from-emerald-950/40 dark:to-teal-950/30 dark:shadow-emerald-950/30',
+    icon: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+    label: 'text-emerald-700 dark:text-emerald-300',
+    value: 'text-emerald-800 dark:text-emerald-100',
+  },
+  sky: {
+    card: 'border-sky-300 bg-gradient-to-br from-sky-50 to-cyan-50 shadow-sky-900/10 dark:border-sky-700/70 dark:bg-gradient-to-br dark:from-sky-950/40 dark:to-cyan-950/30 dark:shadow-sky-950/30',
+    icon: 'bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300',
+    label: 'text-sky-700 dark:text-sky-300',
+    value: 'text-sky-800 dark:text-sky-100',
+  },
+  rose: {
+    card: 'border-rose-300 bg-gradient-to-br from-rose-50 to-pink-50 shadow-rose-900/10 dark:border-rose-700/70 dark:bg-gradient-to-br dark:from-rose-950/40 dark:to-pink-950/30 dark:shadow-rose-950/30',
+    icon: 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300',
+    label: 'text-rose-700 dark:text-rose-300',
+    value: 'text-rose-800 dark:text-rose-100',
+  },
+  slate: {
+    card: 'border-slate-300/95 bg-white shadow-slate-900/5 dark:border-slate-700/80 dark:bg-slate-900/80 dark:shadow-slate-950/20',
+    icon: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+    label: 'text-slate-500 dark:text-slate-400',
+    value: 'text-slate-800 dark:text-slate-100',
+  },
+};
+
+function ScoreStat({ label, value, icon: Icon, variant = 'slate' }) {
+  const palette = SCORE_STAT_VARIANTS[variant] || SCORE_STAT_VARIANTS.slate;
   return (
-    <div className="flex flex-col items-center rounded-2xl border-2 border-slate-300/95 bg-white p-5 shadow-md shadow-slate-900/5 dark:border-slate-700/80 dark:bg-slate-900/80 dark:shadow-slate-950/20">
+    <div className={cn(
+      'flex flex-col items-center rounded-2xl border-2 p-5 shadow-md transition-transform hover:-translate-y-0.5',
+      palette.card,
+    )}>
       {Icon && (
-        <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        <div className={cn(
+          'mb-2 flex h-9 w-9 items-center justify-center rounded-full',
+          palette.icon,
+        )}>
           <Icon className="h-4.5 w-4.5" />
         </div>
       )}
-      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
-      <span className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{value}</span>
+      <span className={cn('text-xs font-medium', palette.label)}>{label}</span>
+      <span className={cn('mt-1 text-lg font-bold', palette.value)}>{value}</span>
     </div>
   );
 }

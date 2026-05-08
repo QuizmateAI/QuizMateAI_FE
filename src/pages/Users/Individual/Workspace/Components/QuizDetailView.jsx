@@ -347,33 +347,34 @@ function QuizDetailView({
     const requestPromise = (async () => {
       let nextQuizMeta = null;
       let nextStatus = quiz?.status || "DRAFT";
-      let nextSections = [];
-      let nextExpandedSections = {};
-      let nextQuestionsMap = {};
       let nextAnswersMap = {};
 
-      // Luôn đồng bộ metadata/status mới nhất để tránh giữ trạng thái cũ từ prop.
-      try {
-        const fullRes = await getQuizFull(quiz.quizId);
-        if (fullRes?.data) {
-          nextQuizMeta = fullRes.data;
-          nextStatus = fullRes.data.status || nextStatus;
-        }
-      } catch (fullErr) {
-        console.error("Lỗi khi tải metadata quiz:", fullErr);
+      // Bước 1: chạy song song metadata + sections (chúng độc lập với nhau).
+      const [fullSettled, sectSettled] = await Promise.allSettled([
+        getQuizFull(quiz.quizId),
+        getSectionsByQuiz(quiz.quizId),
+      ]);
+
+      if (fullSettled.status === "fulfilled" && fullSettled.value?.data) {
+        nextQuizMeta = fullSettled.value.data;
+        nextStatus = fullSettled.value.data.status || nextStatus;
+      } else if (fullSettled.status === "rejected") {
+        console.error("Lỗi khi tải metadata quiz:", fullSettled.reason);
       }
 
-      // Bước 1: Lấy sections
-      const sectRes = await getSectionsByQuiz(quiz.quizId);
-      const sectionList = sectRes.data || [];
-      nextSections = sectionList;
-
-      // Tự động mở rộng section đầu tiên
-      if (sectionList.length > 0) {
-        nextExpandedSections = { [sectionList[0].sectionId]: true };
+      const sectionList = sectSettled.status === "fulfilled"
+        ? (sectSettled.value?.data || [])
+        : [];
+      if (sectSettled.status === "rejected") {
+        console.error("Lỗi khi tải sections:", sectSettled.reason);
       }
 
-      // Bước 2: Lấy questions cho mỗi section
+      const nextSections = sectionList;
+      const nextExpandedSections = sectionList.length > 0
+        ? { [sectionList[0].sectionId]: true }
+        : {};
+
+      // Bước 2: Lấy questions cho mỗi section (parallel).
       const sectionQuestionEntries = await Promise.all(
         sectionList.map(async (section) => {
           try {
@@ -386,11 +387,22 @@ function QuizDetailView({
         })
       );
 
+      const nextQuestionsMap = {};
       sectionQuestionEntries.forEach(([sectionId, questions]) => {
         nextQuestionsMap[sectionId] = questions;
       });
 
-      // Chỉ lấy đáp án sau khi user đã hoàn thành bài để tránh lộ đáp án sớm.
+      // Render sớm: cho user thấy đề ngay khi có sections + questions, đáp án nạp ở background.
+      if (detailRequestRunRef.current === runId) {
+        setQuizMeta(nextQuizMeta);
+        setCurrentStatus(nextStatus);
+        setSections(nextSections);
+        setExpandedSections(nextExpandedSections);
+        setQuestionsMap(nextQuestionsMap);
+        setLoading(false);
+      }
+
+      // Bước 3: Đáp án — chỉ tải khi đã hoàn thành bài, chạy nền.
       if (canViewAnswers) {
         const allQuestions = sectionQuestionEntries.flatMap(([, questions]) => questions || []);
         const answerEntries = await Promise.all(
@@ -408,6 +420,10 @@ function QuizDetailView({
         answerEntries.forEach(([questionId, answers]) => {
           nextAnswersMap[questionId] = answers;
         });
+
+        if (detailRequestRunRef.current === runId) {
+          setAnswersMap(nextAnswersMap);
+        }
       }
 
       return {
@@ -819,7 +835,7 @@ function QuizDetailView({
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
   const sourceTypeLabel = String(effectiveQuiz?.createVia || "").toUpperCase() === "AI"
-    ? t("workspace.quiz.cardAiLabel", "QUIZMATE AI")
+    ? t("workspace.quiz.cardAiLabel", "AI")
     : t("workspace.quiz.cardManualLabel", "Manual Quiz");
   const overviewIntentLabel = effectiveQuiz?.quizIntent
     ? t(`workspace.quiz.intentLabels.${effectiveQuiz.quizIntent}`, effectiveQuiz.quizIntent)
@@ -1218,8 +1234,8 @@ function QuizDetailView({
                 {effectiveQuiz?.overallDifficulty && (
                   <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${effectiveQuiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} />
                 )}
-                {effectiveQuiz?.passScore != null && (
-                  <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={effectiveQuiz.passScore} isDarkMode={isDarkMode} />
+                {Number(effectiveQuiz?.passScore) > 0 && (
+                  <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={`${effectiveQuiz.passScore}%`} isDarkMode={isDarkMode} />
                 )}
                 {effectiveQuiz?.maxAttempt != null && (
                   <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={effectiveQuiz.maxAttempt} isDarkMode={isDarkMode} />
@@ -1382,6 +1398,9 @@ function QuizDetailView({
                         const questionDisplayText = getQuestionDisplayText(question.content);
                         const isQExpanded = expandedQuestions[question.questionId];
                         const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
+                        const textAnswerLabel = typeName === "shortAnswer"
+                          ? t("workspace.quiz.expectedAnswerLabel", "Expected answer")
+                          : t("workspace.quiz.correctAnswerLabel", "Correct answer");
 
                         return (
                           <div key={question.questionId} data-question-id={question.questionId} className={`px-4 py-3 ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
@@ -1457,7 +1476,7 @@ function QuizDetailView({
                                             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${
                                               isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
                                             }`}>
-                                              {t("workspace.quiz.correctAnswerLabel", "Correct answer")}
+                                              {textAnswerLabel}
                                             </span>
                                             <span className={`flex-1 ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
                                               {textAnswersToDisplay.length ? (

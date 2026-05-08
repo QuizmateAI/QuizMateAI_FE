@@ -3,14 +3,16 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/pages/Route/protectedRoute';
+import { __resetForTests, setAccessToken } from '@/utils/tokenStorage';
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    __resetForTests();
   });
 
   it('TC-S01: redirects a USER away from the super-admin route', () => {
-    window.localStorage.setItem('accessToken', 'token');
+    setAccessToken('token');
     window.localStorage.setItem('user', JSON.stringify({ role: 'USER', email: 'user@example.com' }));
 
     render(
