@@ -562,31 +562,6 @@ function GroupMemberStatsContent({
                   </div>
                 </div>
 
-                <div className={cn('mt-4 rounded-[18px] border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/10' : 'border-slate-200 bg-white')}>
-                  <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                    {tt('groupWorkspace.memberStats.learningDiagnosis.weakTopicTitle', 'Topic/knowledge cần ôn', 'Topics/knowledge to review')}
-                  </p>
-                  {weakFocus.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {weakFocus.map((topic) => (
-                        <span key={topic} className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700')}>
-                          {topic}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
-                      {tt('groupWorkspace.memberStats.learningDiagnosis.noWeakTopic', 'Chưa thấy topic yếu nổi bật trong snapshot hiện tại.', 'No standout weak topic appears in the current snapshot.')}
-                    </p>
-                  )}
-                  <p className={cn('mt-3 text-sm leading-6', mutedClass)}>
-                    {tt(
-                      'groupWorkspace.memberStats.learningDiagnosis.privateAssignHint',
-                      'Nếu member sai nhiều ở topic này, hãy giao quiz mức dễ hơn để ôn lại. Quiz giao từ đây chỉ gán riêng member này, không đưa vào quiz chung của nhóm.',
-                      'If this member misses these topics often, assign an easier review quiz. Quizzes assigned here are private to this member and are not added to the shared group quiz list.',
-                    )}
-                  </p>
-                </div>
               </div>
 
 
@@ -685,6 +660,96 @@ function GroupMemberStatsContent({
                 })}
               </DialogDescription>
             </DialogHeader>
+
+            {/* Snapshot summary để leader chọn quiz phù hợp */}
+            {(() => {
+              const avgPercent = recentAverageRatio != null ? Math.round(recentAverageRatio * 100) : null;
+              const bestPercent = bestAttemptResult?.ratio != null ? Math.round(bestAttemptResult.ratio * 100) : null;
+              const weakPercent = weakestAttemptResult?.ratio != null ? Math.round(weakestAttemptResult.ratio * 100) : null;
+              let suggestion;
+              if (avgPercent == null) {
+                suggestion = tt(
+                  'groupWorkspace.memberStats.assignDialog.suggestNoData',
+                  'Chưa đủ dữ liệu — chọn 1 quiz cơ bản để bắt đầu đo năng lực.',
+                  'Not enough data — pick a basic quiz to start measuring.',
+                );
+              } else if (avgPercent < 55) {
+                suggestion = tt(
+                  'groupWorkspace.memberStats.assignDialog.suggestEasy',
+                  'KQ gần đây thấp — nên giao quiz mức dễ hơn để ôn lại nền tảng.',
+                  'Recent results are low — assign an easier quiz to rebuild fundamentals.',
+                );
+              } else if (avgPercent >= 75) {
+                suggestion = tt(
+                  'groupWorkspace.memberStats.assignDialog.suggestHard',
+                  'Member đang ổn — có thể giao quiz nâng cao để thử thách.',
+                  'Member is doing well — try a harder quiz for a challenge.',
+                );
+              } else {
+                suggestion = tt(
+                  'groupWorkspace.memberStats.assignDialog.suggestSame',
+                  'Đang ở mức trung bình — giao quiz cùng cấp độ để củng cố.',
+                  'At a mid level — assign a same-level quiz to consolidate.',
+                );
+              }
+              return (
+                <div className={cn(
+                  'rounded-xl border px-3 py-3 text-xs',
+                  isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50',
+                )}>
+                  <p className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+                    {tt('groupWorkspace.memberStats.assignDialog.snapshotTitle', 'Snapshot member', 'Member snapshot')}
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <p className={cn('text-[10px]', mutedClass)}>
+                        {tt('groupWorkspace.memberStats.assignDialog.recentLabel', 'KQ TB gần đây', 'Recent avg')}
+                      </p>
+                      <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {avgPercent != null ? `${avgPercent}%` : '—'}
+                      </p>
+                      <p className={cn('mt-0.5 text-[10px] leading-snug', mutedClass)}>{recentStatusLabel}</p>
+                    </div>
+                    <div>
+                      <p className={cn('text-[10px]', mutedClass)}>
+                        {tt('groupWorkspace.memberStats.assignDialog.attemptCountLabel', 'Số lượt làm', 'Attempts')}
+                      </p>
+                      <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {attemptResultRows.length}
+                      </p>
+                      <p className={cn('mt-0.5 text-[10px] leading-snug', mutedClass)}>
+                        {tt('groupWorkspace.memberStats.assignDialog.attemptCountHint', 'gần đây nhất', 'most recent')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={cn('text-[10px]', mutedClass)}>
+                        {tt('groupWorkspace.memberStats.assignDialog.bestLabel', 'Quiz tốt nhất', 'Best quiz')}
+                      </p>
+                      <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-emerald-200' : 'text-emerald-700')} title={bestAttemptResult?.quizTitle || ''}>
+                        {bestAttemptResult?.quizTitle || '—'}
+                      </p>
+                      <p className={cn('mt-0.5 text-[10px]', mutedClass)}>
+                        {bestPercent != null ? `${bestPercent}%` : ''}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={cn('text-[10px]', mutedClass)}>
+                        {tt('groupWorkspace.memberStats.assignDialog.weakLabel', 'Quiz yếu nhất', 'Weakest quiz')}
+                      </p>
+                      <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-rose-200' : 'text-rose-700')} title={weakestAttemptResult?.quizTitle || ''}>
+                        {weakestAttemptResult?.quizTitle || '—'}
+                      </p>
+                      <p className={cn('mt-0.5 text-[10px]', mutedClass)}>
+                        {weakPercent != null ? `${weakPercent}%` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <p className={cn('mt-3 rounded-lg px-2 py-1.5 text-[11px] leading-snug', isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-800')}>
+                    💡 {suggestion}
+                  </p>
+                </div>
+              );
+            })()}
 
             {quizzesQuery.isLoading ? (
               <ListSpinner variant="inline" />

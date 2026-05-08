@@ -158,7 +158,25 @@ export const setQuizReviewCompleteOk = async (workspaceId, quizId, acknowledged 
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-complete-ok`, { acknowledged });
 };
 
-/** Leader/reviewer đã nhận lời: xóa câu hỏi khỏi snapshot quiz trước publish */
-export const deleteQuestionFromSnapshot = async (workspaceId, quizId, questionId) => {
-  return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/questions/${questionId}`);
+/** Leader/reviewer đã nhận lời: xóa câu hỏi khỏi snapshot quiz trước publish — yêu cầu note ≥ 5 ký tự */
+export const deleteQuestionFromSnapshot = async (workspaceId, quizId, questionId, note) => {
+  return await api.delete(
+    `/group/${workspaceId}/quiz-review-contributors/${quizId}/questions/${questionId}`,
+    { data: { note } },
+  );
+};
+
+/** Reviewer raise concern "đề chưa ổn" — note ≥ 10 ký tự bắt buộc. Leader sẽ thấy report. */
+export const raiseSnapshotConcern = async (workspaceId, quizId, note) => {
+  return await api.post(
+    `/group/${workspaceId}/quiz-review-contributors/${quizId}/concern`,
+    { note },
+  );
+};
+
+/** Reviewer rút lại concern của mình (không truyền reviewerUserId), hoặc leader resolve concern của reviewer khác. */
+export const clearSnapshotConcern = async (workspaceId, quizId, reviewerUserId = null) => {
+  const path = `/group/${workspaceId}/quiz-review-contributors/${quizId}/concern/clear`;
+  const url = reviewerUserId ? `${path}?reviewerUserId=${reviewerUserId}` : path;
+  return await api.post(url);
 };

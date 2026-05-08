@@ -533,7 +533,7 @@ export function useWorkspaceProfileWizard({
       return nextErrors;
     });
   }
-  function selectPublicExam(examId) {
+  function selectPublicExam(_examId) {
     // Removed
   }
   function generateTemplatePreviewAsync() {

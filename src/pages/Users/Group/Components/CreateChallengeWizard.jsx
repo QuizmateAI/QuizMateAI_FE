@@ -4,12 +4,14 @@ import { useTranslation } from 'react-i18next';
 import {
   X, ChevronRight, ChevronLeft, Check, Clock, Users,
   FileText, Loader2, Search, Shield,
-  ListChecks,
+  ListChecks, Swords, Trophy, Lightbulb, Timer,
 } from 'lucide-react';
 import { getQuizzesByScope } from '../../../../api/QuizAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { createChallenge } from '../../../../api/ChallengeAPI';
 import {
+  bumpEndIfTooClose,
+  clampStartToFutureParts,
   combineToBackendPayload,
   defaultEndPartsFromStart,
   defaultStartParts,
@@ -372,24 +374,93 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     }
 
     return (
-      <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
-        <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          {t('createChallengeWizard.schedule.personalConfigTitle', 'Free-for-all configuration')}
+      <div className="flex flex-col gap-4">
+        {/* Mô tả mode */}
+        <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
+          <div className="flex items-start gap-3">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isDarkMode ? 'bg-teal-500/20 text-teal-200' : 'bg-teal-100 text-teal-700'}`}>
+              <Swords className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {t('createChallengeWizard.schedule.personalConfigTitle', 'Đua cá nhân')}
+              </div>
+              <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                {t(
+                  'createChallengeWizard.schedule.personalConfigDesc',
+                  'Mọi người làm cùng một đề trong cửa sổ thời gian. Bảng xếp hạng tự xếp theo điểm và thời gian hoàn thành.',
+                )}
+              </p>
+            </div>
+          </div>
+          <label className="mt-4 flex flex-col gap-1 md:max-w-xs">
+            <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t('createChallengeWizard.schedule.personalCapacityLabel', 'Giới hạn người tham gia')}</span>
+            <input
+              type="number"
+              min={1}
+              value={capacityLimit}
+              onChange={(e) => setCapacityLimit(e.target.value)}
+              placeholder={t('createChallengeWizard.schedule.personalCapacityPlaceholder', 'Để trống = không giới hạn')}
+              className={inputCls}
+            />
+            <span className={`text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+              {t('createChallengeWizard.schedule.personalCapacityHint', 'Tối đa số member được ghi danh. Bỏ trống để mở cho tất cả.')}
+            </span>
+          </label>
+          {modeConfigIssue ? (
+            <p className="mt-3 text-xs font-medium text-red-500">{modeConfigIssue}</p>
+          ) : null}
         </div>
-        <label className="mt-3 flex flex-col gap-1 md:max-w-xs">
-          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{t('createChallengeWizard.schedule.personalCapacityLabel', 'Participant limit')}</span>
-          <input
-            type="number"
-            min={1}
-            value={capacityLimit}
-            onChange={(e) => setCapacityLimit(e.target.value)}
-            placeholder={t('createChallengeWizard.schedule.personalCapacityPlaceholder', 'Unlimited')}
-            className={inputCls}
-          />
-        </label>
-        {modeConfigIssue ? (
-          <p className="mt-3 text-xs font-medium text-red-500">{modeConfigIssue}</p>
-        ) : null}
+
+        {/* Quick rules - 3 cards giải thích nhanh */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className={`rounded-xl border p-3 ${isDarkMode ? 'border-slate-700 bg-slate-800/30' : 'border-gray-200 bg-white'}`}>
+            <div className="flex items-center gap-2">
+              <Timer className={`h-4 w-4 ${isDarkMode ? 'text-cyan-300' : 'text-cyan-600'}`} />
+              <p className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {t('createChallengeWizard.schedule.ruleDurationTitle', 'Thời lượng tối thiểu')}
+              </p>
+            </div>
+            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+              {t('createChallengeWizard.schedule.ruleDurationDesc', 'Cửa sổ từ bắt đầu → kết thúc tối thiểu 3 tiếng.')}
+            </p>
+          </div>
+          <div className={`rounded-xl border p-3 ${isDarkMode ? 'border-slate-700 bg-slate-800/30' : 'border-gray-200 bg-white'}`}>
+            <div className="flex items-center gap-2">
+              <Trophy className={`h-4 w-4 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
+              <p className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {t('createChallengeWizard.schedule.ruleRankingTitle', 'Xếp hạng tự động')}
+              </p>
+            </div>
+            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+              {t('createChallengeWizard.schedule.ruleRankingDesc', 'Member xếp theo điểm, hòa điểm thì xét thời gian nộp.')}
+            </p>
+          </div>
+          <div className={`rounded-xl border p-3 ${isDarkMode ? 'border-slate-700 bg-slate-800/30' : 'border-gray-200 bg-white'}`}>
+            <div className="flex items-center gap-2">
+              <Users className={`h-4 w-4 ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`} />
+              <p className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {t('createChallengeWizard.schedule.ruleLeaderTitle', 'Leader linh hoạt')}
+              </p>
+            </div>
+            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+              {t('createChallengeWizard.schedule.ruleLeaderDesc', 'Có thể tham gia thi hoặc tự review trước khi publish.')}
+            </p>
+          </div>
+        </div>
+
+        {/* Tip box */}
+        <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? 'border-amber-500/30 bg-amber-500/10' : 'border-amber-200 bg-amber-50/70'}`}>
+          <div className="flex items-start gap-2">
+            <Lightbulb className={`mt-0.5 h-4 w-4 shrink-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
+            <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-amber-100/85' : 'text-amber-900/80'}`}>
+              {t(
+                'createChallengeWizard.schedule.personalTip',
+                'Mẹo: chừa cửa sổ rộng để member ở nhiều múi giờ kịp tham gia. Có thể publish ngay sau khi tạo để member đăng ký sớm.',
+              )}
+            </p>
+          </div>
+        </div>
       </div>
     );
   };
@@ -625,10 +696,16 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
 
       case 2: // Schedule
         { const schedIssues = getScheduleValidationIssues(startDate, startTime, endDate, endTime);
-        const bumpEndToWindow = (dStr, tStr) => {
-          const next = defaultEndPartsFromStart(dStr, tStr);
-          setEndDate(next.dateStr);
-          setEndTime(next.timeStr);
+        // Khi user thay đổi start: clamp về future + smart bump end (chỉ bump nếu cần)
+        const applyStartChange = (newDate, newTime) => {
+          const safeStart = clampStartToFutureParts(newDate, newTime);
+          setStartDate(safeStart.dateStr);
+          setStartTime(safeStart.timeStr);
+          const nextEnd = bumpEndIfTooClose(safeStart.dateStr, safeStart.timeStr, endDate, endTime);
+          if (nextEnd.dateStr !== endDate || nextEnd.timeStr !== endTime) {
+            setEndDate(nextEnd.dateStr);
+            setEndTime(nextEnd.timeStr);
+          }
         };
         return (
           <div className="flex flex-col gap-4">
@@ -666,14 +743,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               startTime={startTime}
               endDate={endDate}
               endTime={endTime}
-              onStartDateChange={(v) => {
-                setStartDate(v);
-                bumpEndToWindow(v, startTime);
-              }}
-              onStartTimeChange={(v) => {
-                setStartTime(v);
-                bumpEndToWindow(startDate, v);
-              }}
+              onStartDateChange={(v) => applyStartChange(v, startTime)}
+              onStartTimeChange={(v) => applyStartChange(startDate, v)}
               onEndDateChange={setEndDate}
               onEndTimeChange={setEndTime}
               validationIssues={schedIssues}

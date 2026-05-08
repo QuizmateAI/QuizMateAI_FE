@@ -33,10 +33,6 @@ export function useSavedMockTestTemplates({ enabled = true, workspaceId } = {}) 
   const [savingTemplateId, setSavingTemplateId] = useState(null);
   const [derivedFromMap, setDerivedFromMap] = useState(new Map());
 
-  // Hook chi active khi enabled VA co workspaceId. Tra empty list khi missing
-  // workspaceId de khong pha UI (FE chua pass du context).
-  const effectiveEnabled = Boolean(enabled && workspaceId);
-
   const refetch = useCallback(async () => {
     if (!effectiveEnabled) {
       setTemplates([]);
@@ -67,8 +63,8 @@ export function useSavedMockTestTemplates({ enabled = true, workspaceId } = {}) 
   }, [effectiveEnabled, refetch]);
 
   /**
-   * Save a template snapshot. Caller PHAI dam bao payload co workspaceId
-   * (build helpers da inject no). Hook check o runtime de fail-fast neu thieu.
+   * Save a template snapshot. If the snapshot is from an AI-suggested template,
+   * pass derivedFromTemplateId so we can mark it as "saved" in the suggestion UI.
    */
   const save = useCallback(async (payload) => {
     if (!payload?.workspaceId) {
