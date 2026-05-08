@@ -112,15 +112,28 @@ export const generateQuizFromMockTestTemplate = async (payload) => {
 
 // ---------- USER PROMPTS ----------
 
-/** GET /api/mocktest/my-prompts — list prompts saved by current user. */
-export const listMyMockTestPrompts = async () => {
-  const response = await api.get('/mocktest/my-prompts');
+/**
+ * GET /api/mocktest/my-prompts?workspaceId=<id>
+ * BE V2026_05_15+ yeu cau workspaceId (per-workspace scoping).
+ */
+export const listMyMockTestPrompts = async (workspaceId) => {
+  if (workspaceId == null) {
+    throw new Error('workspaceId is required for listMyMockTestPrompts');
+  }
+  const response = await api.get('/mocktest/my-prompts', { params: { workspaceId } });
   return response;
 };
 
-/** POST /api/mocktest/my-prompts — save prompt for reuse (max 50/user). */
-export const saveMockTestPrompt = async ({ name, promptText, derivedFromTemplateId }) => {
+/**
+ * POST /api/mocktest/my-prompts — save prompt cho reuse (max 50/workspace).
+ * BE V2026_05_15+ yeu cau workspaceId trong body.
+ */
+export const saveMockTestPrompt = async ({ workspaceId, name, promptText, derivedFromTemplateId }) => {
+  if (workspaceId == null) {
+    throw new Error('workspaceId is required for saveMockTestPrompt');
+  }
   const response = await api.post('/mocktest/my-prompts', {
+    workspaceId,
     name,
     promptText,
     derivedFromTemplateId,
@@ -128,7 +141,7 @@ export const saveMockTestPrompt = async ({ name, promptText, derivedFromTemplate
   return response;
 };
 
-/** DELETE /api/mocktest/my-prompts/{id} */
+/** DELETE /api/mocktest/my-prompts/{id} — owner check + workspace membership BE-side. */
 export const deleteMockTestPrompt = async (promptId) => {
   const response = await api.delete(`/mocktest/my-prompts/${promptId}`);
   return response;
@@ -136,9 +149,16 @@ export const deleteMockTestPrompt = async (promptId) => {
 
 // ---------- SAVED TEMPLATES (PRIVATE owned by user) ----------
 
-/** GET /api/mocktest/my-templates — list saved templates of current user. */
-export const listMySavedMockTestTemplates = async () => {
-  const response = await api.get('/mocktest/my-templates');
+/**
+ * GET /api/mocktest/my-templates?workspaceId=<id>
+ * BE V2026_05_14+ yeu cau workspaceId (per-workspace scoping).
+ * Tra ve templates user da save trong workspace + legacy NULL rows (backward compat).
+ */
+export const listMySavedMockTestTemplates = async (workspaceId) => {
+  if (workspaceId == null) {
+    throw new Error('workspaceId is required for listMySavedMockTestTemplates');
+  }
+  const response = await api.get('/mocktest/my-templates', { params: { workspaceId } });
   return response;
 };
 
@@ -148,8 +168,14 @@ export const getMySavedMockTestTemplate = async (templateId) => {
   return response;
 };
 
-/** POST /api/mocktest/my-templates — save user-edited template (max 100/user). */
+/**
+ * POST /api/mocktest/my-templates — save user-edited template (max 100/workspace).
+ * Payload PHAI co `workspaceId` (BE V2026_05_14+).
+ */
 export const saveMockTestTemplate = async (payload) => {
+  if (payload?.workspaceId == null) {
+    throw new Error('workspaceId is required in saveMockTestTemplate payload');
+  }
   const response = await api.post('/mocktest/my-templates', payload);
   return response;
 };
