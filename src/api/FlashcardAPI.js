@@ -1,20 +1,37 @@
 import api from './api';
 
+/**
+ * Append optional `search` (FTS flashcard_set_name + card front/back) — chỉ khi trim không rỗng.
+ *
+ * @param {string} path
+ * @param {string | undefined} search
+ */
+function appendOptionalFlashcardSearchQuery(path, search) {
+  const trimmed = typeof search === 'string' ? search.trim() : '';
+  if (!trimmed) return path;
+  const q = new URLSearchParams();
+  q.set('search', trimmed);
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}${q.toString()}`;
+}
+
 // Lấy danh sách flashcard set theo contextType và scopeId
-export const getFlashcardsByScope = async (contextType, scopeId) => {
+export const getFlashcardsByScope = async (contextType, scopeId, { search } = {}) => {
   let url = '';
-  if (contextType === 'WORKSPACE' || contextType === 'GROUP') url = `/flashcards/getByWorkspace/${scopeId}`;
-  else if (contextType === 'ROADMAP') url = `/flashcards/getByRoadmap/${scopeId}`;
+  if (contextType === 'WORKSPACE' || contextType === 'GROUP') {
+    url = appendOptionalFlashcardSearchQuery(`/flashcards/getByWorkspace/${scopeId}`, search);
+  } else if (contextType === 'ROADMAP') url = `/flashcards/getByRoadmap/${scopeId}`;
   else if (contextType === 'PHASE') url = `/flashcards/getByPhase/${scopeId}`;
   else if (contextType === 'KNOWLEDGE') url = `/flashcards/getByKnowledge/${scopeId}`;
-  
+
   if (url) return await api.get(url);
   throw new Error('Invalid contextType');
 };
 
 // Lấy danh sách flashcard set của user đang đăng nhập
-export const getFlashcardsByUser = async () => {
-  const response = await api.get('/flashcards/getByUser');
+export const getFlashcardsByUser = async ({ search } = {}) => {
+  const url = appendOptionalFlashcardSearchQuery('/flashcards/getByUser', search);
+  const response = await api.get(url);
   return response;
 };
 
@@ -113,5 +130,11 @@ export const createManualFlashcardBulk = async (payload) => {
 // payload: { flashcardSetName, items: [{ flashcardItemId?, frontContent, backContent }, ...], activate?: boolean }
 export const updateManualFlashcardBulk = async (flashcardSetId, payload) => {
   const response = await api.put(`/flashcards/${flashcardSetId}/manual:update-bulk`, payload);
+  return response;
+};
+
+// Prompt template cho luồng dán JSON flashcard (gói / policy — tương tự quiz).
+export const getFlashcardPasteImportPromptTemplate = async () => {
+  const response = await api.get('/flashcards/manual:paste-prompt-template');
   return response;
 };

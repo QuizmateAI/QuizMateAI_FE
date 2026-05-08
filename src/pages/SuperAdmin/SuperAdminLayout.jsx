@@ -7,13 +7,14 @@ import SuperAdminChangePasswordDialog from './Components/SuperAdminChangePasswor
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 import { getSuperAdminPageMeta } from './Components/superAdminNavigation';
+import { cycleAppLanguage, getBaseAppLanguage } from '@/utils/appSupportedLanguages';
 
 function SuperAdminLayoutContent() {
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const currentLang = i18n.language;
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = getBaseAppLanguage(currentLang) === 'en' ? 'font-poppins' : 'font-sans';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -21,7 +22,7 @@ function SuperAdminLayoutContent() {
   const meta = getSuperAdminPageMeta(location.pathname, t);
 
   const toggleLanguage = () => {
-    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+    void i18n.changeLanguage(cycleAppLanguage(currentLang));
   };
 
   useEffect(() => {

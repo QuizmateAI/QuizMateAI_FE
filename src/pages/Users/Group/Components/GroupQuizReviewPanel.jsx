@@ -2,7 +2,8 @@ import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, BookOpen, CheckCircle2, ClipboardCheck, Loader2, RotateCcw, Timer, BadgeCheck, Trash2 } from "lucide-react";
-import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
+import { QUESTION_TYPE_ID_MAP, deleteQuestion } from "@/api/QuizAPI";
+import { getCurrentUser } from "@/api/Authentication";
 import {
   clearSnapshotConcern,
   deleteQuestionFromSnapshot,
@@ -10,7 +11,10 @@ import {
   raiseSnapshotConcern,
   setQuizReviewCompleteOk,
 } from "@/api/ChallengeAPI";
-import MixedMathText from "@/components/math/MixedMathText";
+import {
+  appendGroupQuizQuestionDeletion,
+  loadGroupQuizQuestionDeletionLog,
+} from "@/utils/groupQuizQuestionDeletionLog";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +24,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import MixedMathText from "@/components/math/MixedMathText";
+import { getContentDisplayText } from "@/lib/questionContentMedia";
 
 const BLOOM_KEYS = ["remember", "understand", "apply", "analyze", "evaluate"];
 
@@ -27,6 +33,11 @@ function getBloomKey(bloomId) {
   const n = Number(bloomId);
   if (!Number.isInteger(n) || n < 1) return "remember";
   return BLOOM_KEYS[n - 1] || "remember";
+}
+
+function previewQuestionSnippet(content) {
+  const raw = typeof content === 'string' ? content : String(content || '');
+  return String(getContentDisplayText(raw) || raw).trim().slice(0, 320);
 }
 
 function GroupQuizReviewPanel({
@@ -39,6 +50,8 @@ function GroupQuizReviewPanel({
   workspaceId,
   isLeader = false,
   isReviewer = false,
+  /** Xó đề trong challenge snapshot / reviewer vs quiz nhóm thường */
+  challengeSnapshotReviewMode = false,
   onQuestionDeleted,
 }) {
   const { t } = useTranslation();
@@ -56,7 +69,9 @@ function GroupQuizReviewPanel({
   const [concernDraftNote, setConcernDraftNote] = useState("");
   const [concernSubmitting, setConcernSubmitting] = useState(false);
   const [concernError, setConcernError] = useState("");
+  const [deletionLog, setDeletionLog] = useState([]);
 
+  const useChallengeDeletionApi = Boolean(challengeSnapshotReviewMode || isReviewer);
   const canInteract = isLeader || isReviewer;
   const canDeleteQuestions = isLeader || isReviewer;
   // Concern đang mở (chưa được resolve)
@@ -82,6 +97,16 @@ function GroupQuizReviewPanel({
   useEffect(() => {
     fetchMyReviewRow();
   }, [fetchMyReviewRow]);
+
+  useEffect(() => {
+    const ws = Number(workspaceId);
+    const qid = Number(quizId);
+    if (!Number.isFinite(ws) || !Number.isFinite(qid)) {
+      setDeletionLog([]);
+      return;
+    }
+    setDeletionLog(loadGroupQuizQuestionDeletionLog(ws, qid));
+  }, [workspaceId, quizId]);
 
   const invalidateChallengeCaches = useCallback(() => {
     queryClient.invalidateQueries({
@@ -111,10 +136,25 @@ function GroupQuizReviewPanel({
     const questionId = pendingDeleteQuestion?.questionId;
     if (!questionId || !workspaceId || !quizId || !canDeleteQuestions) return;
     if (!deleteNote || deleteNote.trim().length < 5) return;
+    const noteTrim = deleteNote.trim();
     setDeleteLoadingQuestionId(questionId);
     try {
-      await deleteQuestionFromSnapshot(workspaceId, quizId, questionId, deleteNote.trim());
-      invalidateChallengeCaches();
+      if (useChallengeDeletionApi) {
+        await deleteQuestionFromSnapshot(workspaceId, quizId, questionId, noteTrim);
+        invalidateChallengeCaches();
+      } else {
+        await deleteQuestion(questionId, noteTrim);
+        const actor = getCurrentUser();
+        const actorLabel = String(actor?.fullName || actor?.username || actor?.email || "").trim();
+        appendGroupQuizQuestionDeletion(workspaceId, quizId, {
+          questionId,
+          questionPreview: previewQuestionSnippet(pendingDeleteQuestion?.content),
+          note: noteTrim,
+          deletedAt: new Date().toISOString(),
+          actorLabel,
+        });
+        setDeletionLog(loadGroupQuizQuestionDeletionLog(workspaceId, quizId));
+      }
       setPendingDeleteQuestion(null);
       setDeleteNote("");
       await onQuestionDeleted?.();
@@ -123,7 +163,16 @@ function GroupQuizReviewPanel({
     } finally {
       setDeleteLoadingQuestionId(null);
     }
-  }, [pendingDeleteQuestion, workspaceId, quizId, canDeleteQuestions, deleteNote, invalidateChallengeCaches, onQuestionDeleted]);
+  }, [
+    pendingDeleteQuestion,
+    workspaceId,
+    quizId,
+    canDeleteQuestions,
+    deleteNote,
+    invalidateChallengeCaches,
+    onQuestionDeleted,
+    useChallengeDeletionApi,
+  ]);
 
   const submitConcern = useCallback(async () => {
     if (!quizId || !workspaceId || !isReviewer) return;
@@ -351,17 +400,68 @@ function GroupQuizReviewPanel({
       >
         <ClipboardCheck className={`mt-0.5 h-5 w-5 shrink-0 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
         <p className={`text-sm leading-relaxed ${isDarkMode ? "text-blue-100" : "text-blue-950"}`}>
-          {canInteract
-            ? t(
-                "workspace.quiz.detail.reviewHintCheckTab",
-                "Xem từng câu. Khi cả đề đã ổn, xác nhận ở cuối trang (nếu bạn là reviewer được mời).",
-              )
-            : t(
-                "workspace.quiz.detail.reviewHint",
-                "Each card shows question type, difficulty, cognitive level, and all answer options. Correct options are highlighted.",
-              )}
+          {!canInteract ? (
+            t(
+              "workspace.quiz.detail.reviewHint",
+              "Each card shows question type, difficulty, cognitive level, and all answer options. Correct options are highlighted.",
+            )
+          ) : isReviewer ? (
+            t(
+              "workspace.quiz.detail.reviewHintChallengeReviewer",
+              "Xem từng câu. Khi cả đề đã ổn, xác nhận ở cuối trang (bạn là reviewer được mời cho challenge).",
+            )
+          ) : challengeSnapshotReviewMode ? (
+            t(
+              "workspace.quiz.detail.reviewHintChallengeLeader",
+              "Đây là đề thuộc challenge: xem từng câu và đáp án, chỉnh Compose nếu cần, Publish khi sẵn sàng — khác với quiz chia sẻ thường trong nhóm.",
+            )
+          ) : (
+            t(
+              "workspace.quiz.detail.reviewHintGroupQuizDraft",
+              "Quiz nhóm đang nháp: xem từng câu và đáp án để rà soát trước khi xuất bản cho thành viên.",
+            )
+          )}
         </p>
       </div>
+
+      {!useChallengeDeletionApi && deletionLog.length > 0 ? (
+        <div
+          className={`rounded-xl border px-4 py-3 ${
+            isDarkMode ? "border-amber-900/40 bg-amber-950/20" : "border-amber-200 bg-amber-50/90"
+          }`}
+        >
+          <p className={`text-xs font-bold uppercase tracking-wide ${isDarkMode ? "text-amber-200" : "text-amber-900"}`}>
+            {t("workspace.quiz.detail.questionDeletionLogTitle", "Nhật ký đã xóa (quiz nhóm)")}
+          </p>
+          <p className={`mt-1 text-[11px] ${isDarkMode ? "text-amber-100/80" : "text-amber-900/80"}`}>
+            {t(
+              "workspace.quiz.detail.questionDeletionLogHint",
+              "Lưu trên trình duyệt này để leader theo dõi. Backend ghi log đầy đủ sẽ thay thế khi có API.",
+            )}
+          </p>
+          <ul className="mt-3 space-y-2">
+            {deletionLog.map((entry) => (
+              <li
+                key={`${entry.questionId}-${entry.deletedAt}`}
+                className={`rounded-lg border px-3 py-2 text-xs ${
+                  isDarkMode ? "border-slate-700 bg-slate-900/60 text-slate-200" : "border-slate-200 bg-white text-slate-800"
+                }`}
+              >
+                <p className="font-semibold text-[11px] text-slate-500 dark:text-slate-400">
+                  {new Date(entry.deletedAt).toLocaleString()}
+                  {entry.actorLabel ? ` · ${entry.actorLabel}` : ""}
+                </p>
+                {entry.questionPreview ? (
+                  <p className="mt-1 line-clamp-2 font-medium">{entry.questionPreview}</p>
+                ) : null}
+                <p className={`mt-1 italic ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                  {t("workspace.quiz.detail.questionDeletionLogReason", { defaultValue: "Lý do: {{note}}", note: entry.note })}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {flatItems.map((item, globalIdx) => {
         const { section, sIdx, question } = item;
@@ -648,13 +748,23 @@ function GroupQuizReviewPanel({
         >
           <DialogHeader>
             <DialogTitle className={isDarkMode ? "text-white" : ""}>
-              {t("workspace.quiz.reviewDeleteQuestionConfirmTitle", "Xóa câu hỏi này?")}
+              {t(
+                useChallengeDeletionApi
+                  ? "workspace.quiz.reviewDeleteQuestionConfirmTitleChallenge"
+                  : "workspace.quiz.reviewDeleteQuestionConfirmTitleQuiz",
+                { defaultValue: "Xóa câu hỏi này?" },
+              )}
             </DialogTitle>
             <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
-              {t(
-                "workspace.quiz.reviewDeleteQuestionConfirmDescription",
-                "Câu hỏi sẽ bị xóa khỏi đề challenge. Hãy ghi chú lý do để leader / co-reviewer biết.",
-              )}
+              {useChallengeDeletionApi
+                ? t(
+                  "workspace.quiz.reviewDeleteQuestionConfirmDescriptionChallenge",
+                  { defaultValue: "Câu hỏi sẽ bị xóa khỏi đề challenge. Hãy ghi chú lý do để leader / co-reviewer biết." },
+                )
+                : t(
+                  "workspace.quiz.reviewDeleteQuestionConfirmDescriptionQuiz",
+                  { defaultValue: "Câu hỏi sẽ bị xóa khỏi quiz nhóm (bản nháp). Hãy ghi lý do để leader và thành viên phối hợp theo dõi." },
+                )}
             </DialogDescription>
           </DialogHeader>
           {pendingDeleteQuestion?.content ? (

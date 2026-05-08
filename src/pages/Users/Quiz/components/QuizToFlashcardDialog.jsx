@@ -26,7 +26,9 @@ export default function QuizToFlashcardDialog({
   open,
   onOpenChange,
   quizTitle,
-  reviewQuestions,
+  reviewQuestions = [],
+  presetItems = null,
+  linkedQuizId = null,
   defaultWorkspaceId,
   onCreated,
 }) {
@@ -37,11 +39,15 @@ export default function QuizToFlashcardDialog({
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const { items, skippedCount } = useMemo(
-    () => buildFlashcardItemsFromAttempt(reviewQuestions),
-    [reviewQuestions],
-  );
-  const totalQuestions = Array.isArray(reviewQuestions) ? reviewQuestions.length : 0;
+  const { items, skippedCount } = useMemo(() => {
+    if (Array.isArray(presetItems) && presetItems.length > 0) {
+      return { items: presetItems, skippedCount: 0 };
+    }
+    return buildFlashcardItemsFromAttempt(reviewQuestions);
+  }, [presetItems, reviewQuestions]);
+  const totalQuestions = Array.isArray(presetItems) && presetItems.length > 0
+    ? presetItems.length
+    : (Array.isArray(reviewQuestions) ? reviewQuestions.length : 0);
 
   // Workspace của flashcard set luôn = workspace của quiz (không cho chọn workspace khác)
   const workspaceId = useMemo(() => {
@@ -66,12 +72,17 @@ export default function QuizToFlashcardDialog({
     if (!canSubmit) return;
     setCreating(true);
     try {
-      const response = await createManualFlashcardBulk({
+      const body = {
         workspaceId,
         flashcardSetName: trimmedName,
         items,
         activate: true,
-      });
+      };
+      const qid = Number(linkedQuizId);
+      if (Number.isInteger(qid) && qid > 0) {
+        body.sourceQuizId = qid;
+      }
+      const response = await createManualFlashcardBulk(body);
       const payload = unwrapApiData(response);
       const flashcardSetId = Number(payload?.flashcardSetId ?? payload?.id) || null;
 
@@ -83,6 +94,7 @@ export default function QuizToFlashcardDialog({
 
       // Invalidate list để các view khác refetch
       queryClient.invalidateQueries({ queryKey: ['workspace-flashcards', 'WORKSPACE', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-flashcards', 'GROUP', workspaceId] });
 
       onOpenChange?.(false);
       onCreated?.({ flashcardSetId, workspaceId });
@@ -107,6 +119,7 @@ export default function QuizToFlashcardDialog({
     t,
     trimmedName,
     workspaceId,
+    linkedQuizId,
   ]);
 
   return (

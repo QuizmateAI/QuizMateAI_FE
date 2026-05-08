@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Globe, Sun, Moon } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 
@@ -11,12 +16,11 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const currentLang = i18n.language?.startsWith('en') ? 'en' : 'vi';
+  const currentLang = getBaseAppLanguage(i18n.language);
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
   const toggleLanguage = () => {
-    const newLang = currentLang === 'vi' ? 'en' : 'vi';
-    i18n.changeLanguage(newLang);
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
   };
 
   return (
@@ -74,7 +78,7 @@ const Navbar = () => {
             }`}
           >
             <Globe className="w-4 h-4" />
-            <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+            <span>{appLanguageShortLabel(i18n.language)}</span>
           </button>
           <Button
             variant="ghost"

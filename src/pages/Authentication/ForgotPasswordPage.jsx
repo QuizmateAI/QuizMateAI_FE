@@ -9,6 +9,11 @@ import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import AuthIllustration from '@/components/ui/AuthIllustration';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -19,11 +24,11 @@ const ForgotPasswordPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const currentLang = i18n.language?.startsWith('en') ? 'en' : 'vi';
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const baseLang = getBaseAppLanguage(i18n.language);
+  const fontClass = baseLang === 'en' ? 'font-poppins' : 'font-sans';
 
   const toggleLanguage = () => {
-    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
   };
 
   const handleSubmit = async (e) => {
@@ -110,7 +115,7 @@ const ForgotPasswordPage = () => {
             }`}
           >
             <Globe className="w-4 h-4" />
-            <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+            <span>{appLanguageShortLabel(i18n.language)}</span>
           </button>
         </div>
       </header>

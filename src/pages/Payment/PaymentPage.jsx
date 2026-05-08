@@ -15,6 +15,11 @@ import UserProfilePopover from '@/components/features/users/UserProfilePopover';
 import { getPlanById, getWorkspaceSlotInfo } from '@/api/PaymentAPI';
 import { useGroup } from '@/hooks/useGroup';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 
 /** Chuẩn hóa plan-catalog API response sang format PlanInfoCard / PaymentSidebar / PlanDetails */
 function mapPlanCatalogToPaymentPlan(raw) {
@@ -57,7 +62,7 @@ export default function PaymentPage() {
   const { t, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = getBaseAppLanguage(i18n.language) === 'en' ? 'font-poppins' : 'font-sans';
   const currentLang = i18n.language;
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -75,9 +80,7 @@ export default function PaymentPage() {
   const leaderGroups = groups.filter((g) => g.memberRole === 'LEADER');
 
   const toggleLanguage = () => {
-    const newLang = currentLang === 'vi' ? 'en' : 'vi';
-    i18n.changeLanguage(newLang);
-    localStorage.setItem('app_language', newLang);
+    void i18n.changeLanguage(cycleAppLanguage(currentLang));
   };
 
   useEffect(() => {
@@ -249,7 +252,7 @@ export default function PaymentPage() {
                       {t('common.language')}
                     </span>
                     <span className={`text-xs font-semibold ${fontClass}`}>
-                      {currentLang === 'vi' ? 'VI' : 'EN'}
+                      {appLanguageShortLabel(currentLang)}
                     </span>
                   </button>
                   <button

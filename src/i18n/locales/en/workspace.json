@@ -628,6 +628,133 @@
       "createTitle": "Create Quiz",
       "createDesc": "Create a quiz for your workspace.",
       "challengeDraftDesc": "Draft the challenge match: set the name, difficulty, timing, questions, and answers.",
+      "createMode": {
+        "ai": "QuizMate AI",
+        "manual": "Manual",
+        "paste": "Paste JSON"
+      },
+      "pasteImport": {
+        "step1": {
+          "title": "Step 1 — Copy the prompt into your AI tool",
+          "description": "Copy the prompt below into ChatGPT, NotebookLM, or another AI tool. After it returns JSON, copy that JSON and paste it into Step 2.",
+          "copy": "Copy prompt",
+          "copied": "Copied",
+          "doNotEditPrompt": "Do not change the prompt framework, field names, or sample JSON structure — only fill in content where instructed. Editing the schema causes JSON that does not match the app and will be rejected."
+        },
+        "step2": {
+          "title": "Step 2 — Paste JSON here",
+          "description": "Paste the full JSON from the third-party AI. Only the schema from the prompt is accepted; invalid payloads are rejected.",
+          "uploadHint": "Paste directly, or use \"Load JSON file\" to read a .json file into the editor. The app checks field names, types, and each question against the schema before submit.",
+          "uploadButton": "Load JSON file",
+          "uploadTitle": "Choose a .json file on your device",
+          "fileLoaded": "Loaded contents from \"{{name}}\".",
+          "fileReadError": "Could not read the file. Try a UTF-8 .json file or paste manually.",
+          "tabs": { "edit": "Edit", "preview": "Preview" },
+          "format": "Format",
+          "formatHint": "Pretty-print JSON (2-space indent).",
+          "copy": "Copy JSON",
+          "copied": "Copied",
+          "placeholder": "{ \"title\": \"...\", \"sections\": [ ... ] }",
+          "parsedOk": "JSON OK — \"{{title}}\", questions: {{count}}.",
+          "validationTitle": "JSON does not match the schema or has invalid fields:",
+          "validationTitleFriendly": "Fix the following issues (line numbers match the left column in the editor):",
+          "lineBadge": "Line {{line}}",
+          "validationMore": "… and {{count}} more issues."
+        },
+        "errors": {
+          "jsonSyntax": "JSON has a syntax error (brackets, commas, or an unclosed string). Fix from the top of the file or use Format when the JSON is otherwise valid. Details: {{message}}",
+          "notObject": "The entire content must be one JSON object `{ ... }`, not an array `[...]` or a single primitive.",
+          "missingSections": "Missing a non-empty \"sections\" array. Add a sections array like in the prompt.",
+          "missingTitle": "Missing quiz title (\"title\") or it is empty. Add a line like \"title\": \"…\" matching the prompt sample.",
+          "loadTemplate": "Could not load the prompt template.",
+          "copyFailed": "Copy failed. Select text and copy manually."
+        },
+        "validation": {
+          "unknownRootKeys": "Some root-level field names are not in the system template (they may be ignored): {{keys}}. Remove them or rename to match the prompt.",
+          "titleTooLong": "Quiz title (title) is too long: maximum {{max}} characters.",
+          "timerModeRequired": "Missing \"timerMode\": set true for a whole-quiz timer (with duration), or false for per-question timing.",
+          "timerModeType": "\"timerMode\" must be true or false (boolean in JSON), not a word like “true” as plain text or 0/1.",
+          "durationWhenQuizTimer": "With whole-quiz timing (timerMode: true), set duration to seconds ≥ 1 for the entire quiz.",
+          "quizIntentInvalid": "quizIntent is not valid. Use one of: PRE_LEARNING, POST_LEARNING, REVIEW, MOCK_TEST (uppercase, underscores). Current value: \"{{value}}\".",
+          "quizIntentType": "quizIntent, if present, must be a string — for example \"REVIEW\".",
+          "difficultyInvalid": "overallDifficulty is not valid. Use: EASY, MEDIUM, HARD, or CUSTOM. Current value: \"{{value}}\".",
+          "difficultyType": "overallDifficulty, if present, must be a string — for example \"MEDIUM\".",
+          "noQuestions": "sections does not contain any questions yet. Each section needs at least one object in its questions array.",
+          "tooManyQuestions": "This quiz has {{count}} questions — over the limit of {{max}} per quiz. Split some into another quiz.",
+          "sectionInvalid": "{{path}}: invalid section.",
+          "sectionNoQuestions": "{{path}}.questions: each section needs at least one question.",
+          "questionInvalid": "{{path}}: invalid question.",
+          "questionContentEmpty": "{{path}}.content: cannot be empty.",
+          "questionTypeMissing": "{{path}}.questionType: required (e.g. SINGLE_CHOICE).",
+          "questionTypeType": "{{path}}.questionType: must be an enum name string.",
+          "questionTypeUnknown": "{{path}}.questionType \"{{value}}\" is invalid. Check spelling (e.g. SINGLE_CHOICE).",
+          "imagedNotInPaste": "{{path}}: IMAGED_BASED is not supported in paste JSON (images require upload).",
+          "questionTypePlan": "{{path}}: type {{type}} is not allowed for your current plan template. Allowed: {{allowed}}.",
+          "questionDurationPerQuestion": "{{path}}.duration: when timerMode=false, each question needs duration > 0 (seconds).",
+          "answersRequired": "{{path}}.answers: at least one answer required.",
+          "answerInvalid": "{{path}}: invalid answer.",
+          "answerIsCorrect": "{{path}}.isCorrect: required true/false.",
+          "answerContentBlank": "{{path}}.content: cannot be empty for type {{type}}.",
+          "matchingJsonInvalid": "Invalid matching JSON: {{message}}",
+          "matchingOneAnswer": "{{path}}.answers: MATCHING requires exactly one answer object with pairs.",
+          "matchingCorrectFlag": "{{path}}.isCorrect: MATCHING answer must be isCorrect=true.",
+          "matchingPairsMin": "{{path}}: MATCHING needs at least 2 leftKey/rightKey pairs (matchingPairs or JSON in content).",
+          "matchingPairIncomplete": "{{path}}: pair [{{index}}] missing leftKey or rightKey.",
+          "matchingDupLeft": "{{path}}: duplicate leftKey \"{{left}}\".",
+          "singleMinAnswers": "{{path}}.answers: SINGLE_CHOICE needs ≥ 2 answers.",
+          "singleOneCorrect": "{{path}}.answers: SINGLE_CHOICE needs exactly one isCorrect=true.",
+          "multiMinAnswers": "{{path}}.answers: MULTIPLE_CHOICE needs ≥ 2 answers.",
+          "multiSomeCorrect": "{{path}}.answers: MULTIPLE_CHOICE needs ≥ one correct answer.",
+          "tfTwoAnswers": "{{path}}.answers: TRUE_FALSE needs exactly 2 answers.",
+          "tfOneCorrect": "{{path}}.answers: TRUE_FALSE needs exactly one correct answer.",
+          "shortAnswerSample": "{{path}}.answers: {{type}} needs at least one sample with isCorrect=true and non-empty content.",
+          "sectionInvalidUser": "Section {{section}} in \"sections\" is invalid (null or not an object). Fix it to match the `{ ... }` sample in the prompt.",
+          "sectionNoQuestionsUser": "Section {{section}} has no \"questions\" array or it is empty. Each section needs at least one question.",
+          "questionInvalidUser": "This question block is the wrong shape (not `{ … }`). Compare again with the prompt sample.",
+          "questionContentEmptyUser": "Question text (content) is empty. Enter the full question.",
+          "questionTypeMissingUser": "Missing question type (questionType). Add something like \"SINGLE_CHOICE\" as in the prompt.",
+          "questionTypeTypeUser": "questionType must be a quoted string, for example \"TRUE_FALSE\".",
+          "questionTypeUnknownHint": "Type \"{{value}}\" is not valid. For true/false questions use \"{{suggest}}\" from the prompt (not YES_NO or similar).",
+          "questionTypeUnknownUser": "Type \"{{value}}\" is not recognized. Open the prompt and copy the exact name (e.g. SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE…).",
+          "imagedNotInPasteUser": "Image questions (IMAGED_BASED) cannot be created via paste JSON. Create the quiz manually in the app to upload images.",
+          "questionTypePlanUser": "Type {{type}} is not allowed for your current prompt/plan. Your plan supports: {{allowed}}.",
+          "questionDurationUser": "Per-question timing: each question needs duration as seconds > 0.",
+          "answersRequiredUser": "No answers yet (answers). Each question needs an array of options like in the sample.",
+          "answerInvalidUser": "This answer row is the wrong shape. Each answer must be an object with content and isCorrect.",
+          "answerIsCorrectUser": "Missing isCorrect or it is not true/false. Mark the correct answer with isCorrect: true.",
+          "answerContentBlankUser": "Answer text is empty — for type {{type}} each choice needs text in \"content\".",
+          "matchingOneAnswerUser": "Matching (MATCHING): answers must contain exactly one object that holds the leftKey/rightKey pairs.",
+          "matchingCorrectFlagUser": "For MATCHING, set isCorrect: true on the answer row that contains the pairs.",
+          "matchingPairsMinUser": "MATCHING needs at least 2 pairs (leftKey and rightKey), or a pairs JSON in content.",
+          "matchingPairIncompleteUser": "Pair {{index}} is missing leftKey or rightKey.",
+          "matchingDupLeftUser": "Duplicate leftKey \"{{left}}\" in the same MATCHING question.",
+          "singleMinAnswersUser": "Single-choice needs at least 2 options.",
+          "singleOneCorrectUser": "Need exactly one answer with isCorrect: true (and the rest false).",
+          "multiMinAnswersUser": "Multiple-choice needs at least 2 options.",
+          "multiSomeCorrectUser": "Need at least one correct answer (isCorrect: true).",
+          "tfTwoAnswersUser": "True/false needs exactly 2 options (usually two content lines).",
+          "tfOneCorrectUser": "True/false needs exactly one correct option (isCorrect: true).",
+          "shortAnswerSampleUser": "Need at least one sample answer with isCorrect: true and non-empty content for grading ({{type}})."
+        },
+        "disclaimer": {
+          "heading": "Note: content is produced by a third party.",
+          "body": "QuizMateAI does not moderate and does not use AI to verify question/answer/explanation quality in this JSON. You are responsible for accuracy and rights."
+        },
+        "actions": { "saving": "Saving...", "create": "Create quiz from JSON" },
+        "toasts": {
+          "success": "Quiz \"{{title}}\" saved as draft!",
+          "error": "Could not create quiz from pasted JSON."
+        },
+        "confirmDialog": {
+          "title": "Confirm creating quiz from JSON",
+          "body": "You confirm this quiz content was produced by a third-party AI tool (ChatGPT, NotebookLM, …). QuizMateAI does not verify accuracy and is not responsible for errors, copyright, or inappropriate content.",
+          "confirm": "I understand, create quiz"
+        },
+        "validationUser": {
+          "refQuestion": "Section {{section}}, question {{question}}: {{body}}",
+          "refAnswer": "Section {{section}}, question {{question}}, option {{answer}}: {{body}}"
+        }
+      },
       "manualWizard": {
         "header": {
           "createTitle": "Create manual quiz",
@@ -1456,6 +1583,7 @@
       "header": {
         "english": "English",
         "vietnamese": "Tiếng Việt",
+        "japanese": "Japanese",
         "fontBeVietnamPro": "Be Vietnam Pro",
         "fontPoppins": "Poppins",
         "fontNunito": "Nunito",
@@ -1765,6 +1893,7 @@
         "termPercent": "Term Percent"
       },
       "create": "Create Flashcard",
+      "listSearchPlaceholder": "Search flashcards (set name or card content)...",
       "creating": "Creating...",
       "cancel": "Cancel",
       "generateAI": "Generate with AI",
@@ -1832,6 +1961,38 @@
         "aiDesc": "Generate flashcards from a material",
         "manual": "Create manually",
         "manualDesc": "Enter each card yourself"
+      },
+      "pasteImport": {
+        "step1": {
+          "title": "Step 1 — Prompt for your AI tool",
+          "description": "Copy the prompt below into ChatGPT / NotebookLM / another AI tool. Ask it to return only JSON matching the schema. Then paste that JSON in Step 2.",
+          "copy": "Copy prompt",
+          "copied": "Copied",
+          "doNotEditPrompt": "Do not change field names or sample structure in the prompt—only add your topic, language, or content where indicated.",
+          "offlineHint": "Could not load the server prompt—using the built-in default. You can still copy and generate JSON."
+        },
+        "step2": {
+          "title": "Step 2 — Paste flashcard JSON",
+          "description": "Paste JSON from the AI (or load a .json file). We validate the schema before applying to your draft.",
+          "uploadButton": "Load JSON file",
+          "fileLoaded": "Loaded contents from \"{{name}}\".",
+          "fileReadError": "Could not read the file. Try a UTF-8 .json file or paste manually."
+        },
+        "fallbackPromptBody": "You generate flashcard data for QuizMate AI.\nReturn ONLY one valid JSON object—no markdown, no extra text—with this schema:\n\n{\n  \"flashcardSetName\": \"Set name (optional)\",\n  \"items\": [\n    { \"frontContent\": \"Front 1\", \"backContent\": \"Back 1\" },\n    { \"frontContent\": \"…\", \"backContent\": \"…\" }\n  ]\n}\n\nRules:\n- Keys \"front\" / \"back\" are allowed instead of frontContent / backContent.\n- Each card must have both sides; no empty strings.\n- \"items\" (or \"cards\") must be a non-empty array.\n\nThe user will add topic, language, count, and difficulty at the end of their message. Produce JSON that matches their request.\nReturn only JSON.",
+        "errors": {
+          "loadTemplate": "Could not load the prompt from the server.",
+          "copyFailed": "Could not copy. Select and copy manually.",
+          "notObject": "JSON must be an object.",
+          "missingItems": "JSON must include a non-empty \"items\" (or \"cards\") array.",
+          "noValidPairs": "No valid pairs—each card needs frontContent/front and backContent/back.",
+          "syntax": "Invalid JSON: {{message}}"
+        },
+        "title": "Paste flashcard JSON",
+        "hint": "Schema: optional flashcardSetName; items: [{ frontContent, backContent }]. front/back keys allowed.",
+        "placeholder": "{ \"flashcardSetName\": \"…\", \"items\": [ … ] }",
+        "ready": "Valid — \"{{name}}\", {{count}} cards.",
+        "apply": "Apply to draft",
+        "defaultName": "Flashcards from JSON"
       },
       "manualEditor": {
         "createTitle": "Create flashcard set",
@@ -2148,6 +2309,7 @@
       "start": "Start Mock Test",
       "completeAllPhases": "Complete all post-learning tests and phases to unlock the final mock test.",
       "noItems": "No mock tests yet.",
+      "listSearchPlaceholder": "Search mock tests by title or description...",
       "savedTemplatesButton": "Saved templates",
       "savedTemplatesTitle": "Saved templates library",
       "validation": {
@@ -2340,7 +2502,13 @@
         "sources": "Sources",
         "roadmap": "Roadmap",
         "quiz": "Quiz",
+        "quizAi": "AI quiz",
+        "quizManual": "Manual quiz",
+        "quizFromJson": "Import from JSON",
         "flashcard": "Flashcard",
+        "flashcardAi": "AI flashcard",
+        "flashcardManual": "Manual flashcard",
+        "flashcardFromJson": "Import from JSON",
         "mockTest": "Mock test",
         "quizCollection": "Collections",
         "postLearning": "Post-learning",
@@ -2415,7 +2583,7 @@
   },
   "quizListView": {
     "header": {
-      "searchPlaceholder": "Search quiz by title...",
+      "searchPlaceholder": "Search quiz by title or description...",
       "create": "Create",
       "createQuiz": "Create quiz",
       "community": "Community Quiz",
@@ -2429,6 +2597,38 @@
       "pickMemberPlaceholder": "All assigned quizzes",
       "memberFallback": "User {{id}}",
       "loadingMembers": "Loading members..."
+    },
+    "intentFilterBar": {
+      "label": "Purpose",
+      "allLearning": "All learning quizzes",
+      "mockTestNote": "Timed mock exams are listed under Mock test in the sidebar."
+    },
+    "workspaceFilterBar": {
+      "open": "Filters"
+    },
+    "workspaceFilterDialog": {
+      "title": "Filter quizzes",
+      "subtitle": "These filters apply to the quiz list already loaded in this view.",
+      "questionMin": "Min questions",
+      "questionMax": "Max questions",
+      "attempt": "Attempts",
+      "attemptAny": "Any",
+      "attempted": "Attempted",
+      "notAttempted": "Not attempted",
+      "difficulty": "Difficulty",
+      "difficultyAny": "Any",
+      "bloom": "Bloom level",
+      "bloomAny": "Any",
+      "bloomHint": "Matches only when the quiz payload includes Bloom metadata (some items may omit it).",
+      "durationMin": "Min duration (minutes)",
+      "durationMax": "Max duration (minutes)",
+      "timerMode": "Timer mode",
+      "timerAny": "Any",
+      "timerTotal": "Total time limit",
+      "timerPerQuestion": "Per question",
+      "clearAll": "Clear all filters",
+      "cancel": "Cancel",
+      "apply": "Apply"
     },
     "bulkActions": {
       "selectAll": "Select all",

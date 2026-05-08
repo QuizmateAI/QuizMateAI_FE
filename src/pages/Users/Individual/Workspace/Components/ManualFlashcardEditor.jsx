@@ -9,6 +9,7 @@ import {
   getFlashcardDetail,
   updateManualFlashcardBulk,
 } from "@/api/FlashcardAPI";
+import ManualFlashcardPasteImportPanel from "./ManualFlashcardPasteImportPanel";
 import { unwrapApiData } from "@/utils/apiResponse";
 
 const MAX_ITEMS = 200;
@@ -62,6 +63,13 @@ function ManualFlashcardEditor({
   onSaved,
   onActivated,
   onBack,
+  /**
+   * Giống Create Quiz: nguồn vào sidebar / workspace.
+   * null — thủ công + khối dán JSON (mặc định).
+   * manual — chỉ nhập tay (ẩn dán JSON).
+   * paste — chỉ màn dán JSON trước, sau khi áp dụng mới xem/sửa thẻ.
+   */
+  manualEntryMode = null,
 }) {
   const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
@@ -69,6 +77,12 @@ function ManualFlashcardEditor({
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const isEditMode = Boolean(editingSetId);
+  const normalizedManualEntry = manualEntryMode === "manual" || manualEntryMode === "paste"
+    ? manualEntryMode
+    : null;
+  const [pasteImportPhase, setPasteImportPhase] = useState(
+    () => !isEditMode && normalizedManualEntry === "paste",
+  );
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [activating, setActivating] = useState(false);
@@ -296,6 +310,24 @@ function ManualFlashcardEditor({
     scheduleAutoSave();
   }, [scheduleAutoSave]);
 
+  const handleJsonPasteApply = useCallback(({ flashcardSetName: jsonName, items: jsonItems }) => {
+    const capped = (jsonItems || []).slice(0, MAX_ITEMS);
+    const mapped = capped.map((row) => ({
+      localId: makeLocalId(),
+      flashcardItemId: null,
+      frontContent: String(row.frontContent || "").slice(0, MAX_FRONT_LENGTH),
+      backContent: String(row.backContent || "").slice(0, MAX_BACK_LENGTH),
+    }));
+    setSetName((prev) => (
+      String(prev || "").trim()
+        ? String(prev).slice(0, MAX_SET_NAME_LENGTH)
+        : String(jsonName || "").slice(0, MAX_SET_NAME_LENGTH)
+    ));
+    setItems(mapped.length > 0 ? mapped : [createEmptyItem()]);
+    setPasteImportPhase(false);
+    window.setTimeout(() => scheduleAutoSave(), 0);
+  }, [scheduleAutoSave]);
+
   /** Manual Save Draft: flush pending, save ngay (với toast). */
   const handleManualSaveDraft = useCallback(async () => {
     cancelPendingAutoSave();
@@ -458,7 +490,13 @@ function ManualFlashcardEditor({
     }
   })();
 
-  const disableActions = saving || activating;
+  const disableActions = saving || activating || (!isEditMode && normalizedManualEntry === "paste" && pasteImportPhase);
+
+  const shouldShowPasteImportPanel =
+    !isEditMode
+    && normalizedManualEntry !== "manual"
+    && (normalizedManualEntry == null || pasteImportPhase);
+  const pasteOnlyLayout = !isEditMode && normalizedManualEntry === "paste" && pasteImportPhase;
 
   return (
     <div className={`flex h-full flex-col ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
@@ -467,7 +505,7 @@ function ManualFlashcardEditor({
         <button
           type="button"
           onClick={handleBack}
-          disabled={disableActions}
+          disabled={saving || activating}
           className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50 ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"}`}
           title={t("workspace.flashcard.manualEditor.back", "Quay lại")}
         >
@@ -527,30 +565,48 @@ function ManualFlashcardEditor({
 
       {/* Body */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5">
-        {/* Set name */}
-        <div className="mb-5">
-          <label className={`mb-1.5 block text-xs font-semibold uppercase tracking-wide ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-            {t("workspace.flashcard.manualEditor.setNameLabel", "Tên bộ flashcard")}
-            <span className={`ml-1 text-[10px] font-normal ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-              ({t("workspace.flashcard.manualEditor.setNameOptional", "không bắt buộc")})
-            </span>
-          </label>
-          <input
-            type="text"
-            value={setName}
-            onChange={(event) => handleSetNameChange(event.target.value)}
-            maxLength={MAX_SET_NAME_LENGTH}
-            placeholder={t("workspace.flashcard.manualEditor.setNamePlaceholder", "VD: Từ vựng chương 1")}
-            className={`w-full rounded-2xl border px-4 py-2.5 text-sm outline-none transition-colors ${fontClass} ${
-              isDarkMode
-                ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400"
-                : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-emerald-400"
-            }`}
+        {pasteOnlyLayout ? (
+          <ManualFlashcardPasteImportPanel
+            isDarkMode={isDarkMode}
+            disabled={disableActions}
+            onApply={handleJsonPasteApply}
           />
-        </div>
+        ) : (
+          <>
+            {/* Set name */}
+            <div className="mb-5">
+              <label className={`mb-1.5 block text-xs font-semibold uppercase tracking-wide ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                {t("workspace.flashcard.manualEditor.setNameLabel", "Tên bộ flashcard")}
+                <span className={`ml-1 text-[10px] font-normal ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                  ({t("workspace.flashcard.manualEditor.setNameOptional", "không bắt buộc")})
+                </span>
+              </label>
+              <input
+                type="text"
+                value={setName}
+                onChange={(event) => handleSetNameChange(event.target.value)}
+                maxLength={MAX_SET_NAME_LENGTH}
+                placeholder={t("workspace.flashcard.manualEditor.setNamePlaceholder", "VD: Từ vựng chương 1")}
+                className={`w-full rounded-2xl border px-4 py-2.5 text-sm outline-none transition-colors ${fontClass} ${
+                  isDarkMode
+                    ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400"
+                    : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-emerald-400"
+                }`}
+              />
+            </div>
 
-        {/* Items list */}
-        <div className="space-y-3">
+            {shouldShowPasteImportPanel ? (
+              <div className="mb-5">
+                <ManualFlashcardPasteImportPanel
+                  isDarkMode={isDarkMode}
+                  disabled={disableActions}
+                  onApply={handleJsonPasteApply}
+                />
+              </div>
+            ) : null}
+
+            {/* Items list */}
+            <div className="space-y-3">
           {items.map((item, idx) => (
             <div
               key={item.localId}
@@ -614,32 +670,34 @@ function ManualFlashcardEditor({
           ))}
         </div>
 
-        <div className="mt-4 flex justify-center">
-          <button
-            type="button"
-            onClick={handleAddItem}
-            disabled={items.length >= MAX_ITEMS}
-            className={`flex items-center gap-2 rounded-xl border-2 border-dashed px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-40 ${
-              isDarkMode
-                ? "border-slate-700 text-slate-400 hover:border-emerald-500 hover:text-emerald-300"
-                : "border-slate-200 text-slate-500 hover:border-emerald-400 hover:text-emerald-600"
-            }`}
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t("workspace.flashcard.manualEditor.addItem", "Thêm thẻ")}</span>
-            {items.length >= MAX_ITEMS && (
-              <span className="text-xs text-rose-400">
-                {t("workspace.flashcard.manualEditor.maxReached", { max: MAX_ITEMS, defaultValue: `(đã đạt tối đa ${MAX_ITEMS})` })}
-              </span>
-            )}
-          </button>
-        </div>
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={handleAddItem}
+                disabled={items.length >= MAX_ITEMS}
+                className={`flex items-center gap-2 rounded-xl border-2 border-dashed px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-40 ${
+                  isDarkMode
+                    ? "border-slate-700 text-slate-400 hover:border-emerald-500 hover:text-emerald-300"
+                    : "border-slate-200 text-slate-500 hover:border-emerald-400 hover:text-emerald-600"
+                }`}
+              >
+                <Plus className="h-4 w-4" />
+                <span>{t("workspace.flashcard.manualEditor.addItem", "Thêm thẻ")}</span>
+                {items.length >= MAX_ITEMS && (
+                  <span className="text-xs text-rose-400">
+                    {t("workspace.flashcard.manualEditor.maxReached", { max: MAX_ITEMS, defaultValue: `(đã đạt tối đa ${MAX_ITEMS})` })}
+                  </span>
+                )}
+              </button>
+            </div>
 
-        {canActivate && activateValidationError ? (
-          <p className={`mt-3 text-center text-xs ${isDarkMode ? "text-amber-300" : "text-amber-600"}`}>
-            {t("workspace.flashcard.manualEditor.activateHint", "Để Tạo flashcard: ")}{activateValidationError}
-          </p>
-        ) : null}
+            {canActivate && activateValidationError ? (
+              <p className={`mt-3 text-center text-xs ${isDarkMode ? "text-amber-300" : "text-amber-600"}`}>
+                {t("workspace.flashcard.manualEditor.activateHint", "Để Tạo flashcard: ")}{activateValidationError}
+              </p>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   );

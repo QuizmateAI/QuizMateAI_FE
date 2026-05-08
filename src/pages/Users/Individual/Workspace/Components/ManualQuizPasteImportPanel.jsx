@@ -10,6 +10,7 @@ import {
   Info,
   Loader2,
   Sparkles,
+  Upload,
   Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,16 +29,16 @@ import {
   getPasteImportPromptTemplate,
 } from "@/api/QuizAPI";
 import { cn } from "@/lib/utils";
+import { validateQuizPasteImportJson } from "@/utils/validateQuizPasteImportJson";
 
 /**
  * Paste-import quiz flow:
  *   1. Hiển thị prompt template (BE trả về theo gói: basic vs advance).
  *   2. User copy → dán sang ChatGPT/NotebookLM/... → AI sinh JSON.
- *   3. User dán JSON vào textarea, FE pre-validate cú pháp + key bắt buộc.
+ *   3. User dán JSON vào textarea, FE kiểm tra schema + hiển thị lỗi kèm số dòng (ước lượng).
  *   4. Nhấn "Tạo quiz" → modal disclaimer (nội dung do bên thứ 3 tạo) → confirm → POST.
  *
- * BE đã làm full plan-gating + shape validation; FE chỉ chặn lỗi cú pháp JSON sớm
- * để user khỏi mất round-trip. Mọi error kỹ thuật đến từ BE đều surface qua toast.
+ * BE vẫn là chốt cuối; FE giảm round-trip và giúp người dùng tìm vị trí sửa nhanh.
  */
 
 // Tokenize a JSON.stringify output into spans for syntax highlighting.
@@ -135,6 +136,66 @@ function JsonPreview({ source, isDarkMode }) {
   );
 }
 
+function JsonPasteTextarea({
+  value,
+  onChange,
+  placeholder,
+  isDarkMode,
+  minRows = 12,
+}) {
+  const taRef = useRef(null);
+  const gutterRef = useRef(null);
+  const lineCount = useMemo(
+    () => Math.max(minRows, String(value).split(/\r?\n/).length),
+    [value, minRows],
+  );
+  const lineNums = useMemo(
+    () => Array.from({ length: lineCount }, (_, i) => String(i + 1)).join("\n"),
+    [lineCount],
+  );
+
+  const syncScroll = useCallback(() => {
+    const ta = taRef.current;
+    const g = gutterRef.current;
+    if (ta && g) {
+      g.scrollTop = ta.scrollTop;
+    }
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "flex max-h-[28rem] min-h-[12rem] overflow-hidden rounded-md border",
+        isDarkMode ? "border-slate-700" : "border-gray-300",
+      )}
+    >
+      <div
+        ref={gutterRef}
+        className={cn(
+          "max-h-[28rem] min-h-[12rem] w-11 shrink-0 overflow-y-auto py-2 pl-2 pr-1 font-mono text-[12px] leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          isDarkMode ? "border-r border-slate-700 bg-slate-900/80 text-slate-500" : "border-r border-gray-200 bg-gray-50 text-gray-400",
+        )}
+        aria-hidden="true"
+      >
+        <pre className="m-0 text-right tabular-nums">{lineNums}</pre>
+      </div>
+      <textarea
+        ref={taRef}
+        value={value}
+        onChange={onChange}
+        onScroll={syncScroll}
+        placeholder={placeholder}
+        spellCheck={false}
+        rows={minRows}
+        className={cn(
+          "max-h-[28rem] min-h-[12rem] flex-1 resize-y overflow-y-auto border-0 py-2 pr-3 pl-2 font-mono text-[12px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-inset focus:ring-blue-500",
+          isDarkMode ? "bg-slate-950 text-slate-100 placeholder:text-slate-500" : "bg-white text-gray-900 placeholder:text-gray-400",
+        )}
+      />
+    </div>
+  );
+}
+
 function ManualQuizPasteImportPanel({
   workspaceId,
   onCreateQuiz,
@@ -155,47 +216,17 @@ function ManualQuizPasteImportPanel({
   const [viewMode, setViewMode] = useState("edit"); // "edit" | "preview"
   const copyTimerRef = useRef(null);
   const jsonCopyTimerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  // Local pre-validate — chỉ cú pháp + bắt buộc cấp 1. Phần còn lại để BE.
-  const localValidation = useMemo(() => {
-    const trimmed = (jsonText || "").trim();
-    if (!trimmed) return { ok: false, parsed: null, error: null };
-    let parsed;
-    try {
-      parsed = JSON.parse(trimmed);
-    } catch (err) {
-      return {
-        ok: false,
-        parsed: null,
-        error: t(
-          "workspace.quiz.pasteImport.errors.jsonSyntax",
-          { message: err?.message || "không xác định", defaultValue: `JSON sai cú pháp: ${err?.message || "không xác định"}` },
-        ),
-      };
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return {
-        ok: false,
-        parsed: null,
-        error: t("workspace.quiz.pasteImport.errors.notObject", { defaultValue: "JSON phải là một object." }),
-      };
-    }
-    if (!Array.isArray(parsed.sections) || parsed.sections.length === 0) {
-      return {
-        ok: false,
-        parsed,
-        error: t("workspace.quiz.pasteImport.errors.missingSections", { defaultValue: "JSON thiếu trường \"sections\" hoặc rỗng." }),
-      };
-    }
-    if (typeof parsed.title !== "string" || !parsed.title.trim()) {
-      return {
-        ok: false,
-        parsed,
-        error: t("workspace.quiz.pasteImport.errors.missingTitle", { defaultValue: "JSON thiếu trường \"title\"." }),
-      };
-    }
-    return { ok: true, parsed, error: null };
-  }, [jsonText, t]);
+  const localValidation = useMemo(
+    () =>
+      validateQuizPasteImportJson(jsonText, {
+        t,
+        templateKey: template?.key ?? null,
+        maxQuestions: 100,
+      }),
+    [jsonText, t, template?.key],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -212,7 +243,7 @@ function ManualQuizPasteImportPanel({
         setTemplateError(
           err?.message
             || err?.data?.message
-            || t("workspace.quiz.pasteImport.errors.loadTemplate", { defaultValue: "Không tải được prompt template." }),
+            || t("workspace.quiz.pasteImport.errors.loadTemplate"),
         );
       })
       .finally(() => {
@@ -231,19 +262,19 @@ function ManualQuizPasteImportPanel({
 
   // Drop preview when JSON parse becomes invalid — nothing safe to render.
   useEffect(() => {
-    if (!localValidation.parsed && viewMode === "preview") {
-      setViewMode("edit");
+    if (!localValidation.ok || localValidation.empty) {
+      if (viewMode === "preview") setViewMode("edit");
     }
-  }, [localValidation.parsed, viewMode]);
+  }, [localValidation.ok, localValidation.empty, viewMode]);
 
   const formattedJson = useMemo(() => {
-    if (!localValidation.parsed) return "";
+    if (!localValidation.ok || !localValidation.parsed) return "";
     try {
       return JSON.stringify(localValidation.parsed, null, 2);
     } catch {
       return "";
     }
-  }, [localValidation.parsed]);
+  }, [localValidation.ok, localValidation.parsed]);
 
   const handleFormatJson = useCallback(() => {
     if (!formattedJson) return;
@@ -259,7 +290,7 @@ function ManualQuizPasteImportPanel({
       jsonCopyTimerRef.current = setTimeout(() => setJsonCopyDone(false), 2000);
     } catch {
       showWarning(
-        t("workspace.quiz.pasteImport.errors.copyFailed", { defaultValue: "Không sao chép được. Hãy chọn và copy thủ công." }),
+        t("workspace.quiz.pasteImport.errors.copyFailed"),
       );
     }
   }, [formattedJson, showWarning, t]);
@@ -273,28 +304,57 @@ function ManualQuizPasteImportPanel({
       copyTimerRef.current = setTimeout(() => setCopyDone(false), 2000);
     } catch {
       showWarning(
-        t("workspace.quiz.pasteImport.errors.copyFailed", { defaultValue: "Không sao chép được. Hãy chọn và copy thủ công." }),
+        t("workspace.quiz.pasteImport.errors.copyFailed"),
       );
     }
   }, [template, showWarning, t]);
 
   const handleAskSave = useCallback(() => {
-    if (!localValidation.ok) return;
+    if (!localValidation.ok || localValidation.empty) return;
     setDisclaimerOpen(true);
-  }, [localValidation.ok]);
+  }, [localValidation.ok, localValidation.empty]);
+
+  const handlePickJsonFile = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleJsonFileChange = useCallback(
+    (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = typeof reader.result === "string" ? reader.result : "";
+        setJsonText(text);
+        showSuccess(
+          t("workspace.quiz.pasteImport.step2.fileLoaded", {
+            name: file.name,
+          }),
+        );
+      };
+      reader.onerror = () => {
+        showError(
+          t("workspace.quiz.pasteImport.step2.fileReadError"),
+        );
+      };
+      reader.readAsText(file, "UTF-8");
+    },
+    [showError, showSuccess, t],
+  );
 
   const handleConfirmSave = useCallback(async () => {
-    if (!localValidation.ok || !workspaceId || submitting) return;
+    if (!localValidation.ok || localValidation.empty || !workspaceId || submitting) return;
     setSubmitting(true);
     try {
-      const payload = { ...localValidation.parsed, workspaceId };
+      const { workspaceId: _ignored, ...rest } = localValidation.parsed || {};
+      const payload = { ...rest, workspaceId };
       const res = await createQuizFromPaste(payload);
       const created = unwrapApiData(res);
       const title = created?.title || localValidation.parsed?.title || "";
       showSuccess(
         t("workspace.quiz.pasteImport.toasts.success", {
           title,
-          defaultValue: `Đã tạo quiz "${title}" ở trạng thái bản nháp!`,
         }),
       );
       setDisclaimerOpen(false);
@@ -303,7 +363,7 @@ function ManualQuizPasteImportPanel({
     } catch (err) {
       const msg = err?.message
         || err?.data?.message
-        || t("workspace.quiz.pasteImport.toasts.error", { defaultValue: "Có lỗi khi tạo quiz từ JSON đã dán." });
+        || t("workspace.quiz.pasteImport.toasts.error");
       showError(msg);
     } finally {
       setSubmitting(false);
@@ -326,12 +386,10 @@ function ManualQuizPasteImportPanel({
             <Sparkles className={cn("mt-0.5 h-5 w-5", isDarkMode ? "text-blue-400" : "text-blue-600")} />
             <div className="flex-1">
               <h3 className={cn("text-sm font-semibold", headingText)}>
-                {t("workspace.quiz.pasteImport.step1.title", { defaultValue: "Bước 1 — Lấy prompt và dán sang công cụ AI" })}
+                {t("workspace.quiz.pasteImport.step1.title")}
               </h3>
               <p className={cn("mt-0.5 text-xs", subtleText)}>
-                {t("workspace.quiz.pasteImport.step1.description", {
-                  defaultValue: "Copy prompt dưới đây, dán vào ChatGPT / NotebookLM / công cụ AI khác. Sau khi AI sinh JSON, copy lại JSON đó và dán vào ô ở Bước 2.",
-                })}
+                {t("workspace.quiz.pasteImport.step1.description")}
               </p>
             </div>
             <Button
@@ -345,15 +403,27 @@ function ManualQuizPasteImportPanel({
               {copyDone ? (
                 <>
                   <Check className="h-4 w-4" />
-                  {t("workspace.quiz.pasteImport.step1.copied", { defaultValue: "Đã copy" })}
+                  {t("workspace.quiz.pasteImport.step1.copied")}
                 </>
               ) : (
                 <>
                   <Copy className="h-4 w-4" />
-                  {t("workspace.quiz.pasteImport.step1.copy", { defaultValue: "Copy prompt" })}
+                  {t("workspace.quiz.pasteImport.step1.copy")}
                 </>
               )}
             </Button>
+          </div>
+
+          <div
+            className={cn(
+              "mb-3 flex items-start gap-2 rounded-md border px-3 py-2 text-xs",
+              isDarkMode ? "border-sky-900/50 bg-sky-950/25 text-sky-200" : "border-sky-200 bg-sky-50 text-sky-950",
+            )}
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {t("workspace.quiz.pasteImport.step1.doNotEditPrompt")}
+            </span>
           </div>
 
           {templateLoading ? (
@@ -383,15 +453,24 @@ function ManualQuizPasteImportPanel({
             <ClipboardPaste className={cn("mt-0.5 h-5 w-5", isDarkMode ? "text-blue-400" : "text-blue-600")} />
             <div className="flex-1">
               <h3 className={cn("text-sm font-semibold", headingText)}>
-                {t("workspace.quiz.pasteImport.step2.title", { defaultValue: "Bước 2 — Dán JSON vào đây" })}
+                {t("workspace.quiz.pasteImport.step2.title")}
               </h3>
               <p className={cn("mt-0.5 text-xs", subtleText)}>
-                {t("workspace.quiz.pasteImport.step2.description", {
-                  defaultValue: "Dán nguyên JSON do AI bên thứ 3 sinh. Hệ thống chỉ chấp nhận đúng schema trong prompt; sai sẽ bị reject.",
-                })}
+                {t("workspace.quiz.pasteImport.step2.description")}
+              </p>
+              <p className={cn("mt-1.5 text-xs", subtleText)}>
+                {t("workspace.quiz.pasteImport.step2.uploadHint")}
               </p>
             </div>
           </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="sr-only"
+            onChange={handleJsonFileChange}
+          />
 
           <div
             className={cn(
@@ -411,7 +490,7 @@ function ManualQuizPasteImportPanel({
                 )}
               >
                 <Code2 className="h-3.5 w-3.5" />
-                {t("workspace.quiz.pasteImport.step2.tabs.edit", { defaultValue: "Soạn thảo" })}
+                {t("workspace.quiz.pasteImport.step2.tabs.edit")}
               </button>
               <button
                 type="button"
@@ -426,22 +505,34 @@ function ManualQuizPasteImportPanel({
                 )}
               >
                 <Eye className="h-3.5 w-3.5" />
-                {t("workspace.quiz.pasteImport.step2.tabs.preview", { defaultValue: "Xem trước" })}
+                {t("workspace.quiz.pasteImport.step2.tabs.preview")}
               </button>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handlePickJsonFile}
+                title={t("workspace.quiz.pasteImport.step2.uploadTitle")}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition",
+                  isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-200",
+                )}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {t("workspace.quiz.pasteImport.step2.uploadButton")}
+              </button>
               <button
                 type="button"
                 onClick={handleFormatJson}
                 disabled={!formattedJson || jsonText === formattedJson}
-                title={t("workspace.quiz.pasteImport.step2.formatHint", { defaultValue: "Định dạng theo chuẩn JSON (thụt 2 dấu cách)." })}
+                title={t("workspace.quiz.pasteImport.step2.formatHint")}
                 className={cn(
                   "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40",
                   isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-200",
                 )}
               >
                 <Wand2 className="h-3.5 w-3.5" />
-                {t("workspace.quiz.pasteImport.step2.format", { defaultValue: "Định dạng" })}
+                {t("workspace.quiz.pasteImport.step2.format")}
               </button>
               {viewMode === "preview" && (
                 <button
@@ -455,30 +546,26 @@ function ManualQuizPasteImportPanel({
                 >
                   {jsonCopyDone ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                   {jsonCopyDone
-                    ? t("workspace.quiz.pasteImport.step2.copied", { defaultValue: "Đã copy" })
-                    : t("workspace.quiz.pasteImport.step2.copy", { defaultValue: "Copy JSON" })}
+                    ? t("workspace.quiz.pasteImport.step2.copied")
+                    : t("workspace.quiz.pasteImport.step2.copy")}
                 </button>
               )}
             </div>
           </div>
 
           {viewMode === "edit" ? (
-            <textarea
+            <JsonPasteTextarea
               value={jsonText}
               onChange={(e) => setJsonText(e.target.value)}
-              placeholder={t("workspace.quiz.pasteImport.step2.placeholder", { defaultValue: '{ "title": "...", "sections": [ ... ] }' })}
-              rows={12}
-              spellCheck={false}
-              className={cn(
-                "w-full resize-y rounded-md border px-3 py-2 font-mono text-[12px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500",
-                isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500" : "border-gray-300 bg-white text-gray-900 placeholder:text-gray-400",
-              )}
+              placeholder={t("workspace.quiz.pasteImport.step2.placeholder")}
+              isDarkMode={isDarkMode}
+              minRows={12}
             />
           ) : (
             <JsonPreview source={formattedJson} isDarkMode={isDarkMode} />
           )}
 
-          {jsonText.trim() && !localValidation.ok && localValidation.error && (
+          {jsonText.trim() && !localValidation.empty && localValidation.errors?.length > 0 && (
             <div
               className={cn(
                 "mt-2 flex items-start gap-2 rounded-md border px-3 py-2 text-xs",
@@ -486,11 +573,65 @@ function ManualQuizPasteImportPanel({
               )}
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{localValidation.error}</span>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium leading-snug">
+                  {t("workspace.quiz.pasteImport.step2.validationTitleFriendly")}
+                </p>
+                <ul className="mt-2 space-y-2">
+                  {(localValidation.errors || []).slice(0, 14).map((item, i) => {
+                    const text = typeof item === "string" ? item : item.text;
+                    const line = typeof item === "object" && item && item.line != null ? item.line : null;
+                    return (
+                      <li key={i} className="break-words border-l-2 border-amber-400/50 pl-2.5">
+                        <div className="flex flex-wrap items-start gap-2">
+                          {line != null && (
+                            <span
+                              className={cn(
+                                "mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold",
+                                isDarkMode ? "bg-amber-900/40 text-amber-200" : "bg-amber-100 text-amber-900",
+                              )}
+                            >
+                              {t("workspace.quiz.pasteImport.step2.lineBadge", {
+                                line,
+                              })}
+                            </span>
+                          )}
+                          <span className="min-w-0 flex-1 leading-relaxed">{text}</span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {(localValidation.errors || []).length > 14 && (
+                  <p className="mt-1.5 opacity-90">
+                    {t("workspace.quiz.pasteImport.step2.validationMore", {
+                      count: localValidation.errors.length - 14,
+                    })}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          {localValidation.ok && (
+          {jsonText.trim() && !localValidation.empty && localValidation.warnings?.length > 0 && (
+            <div
+              className={cn(
+                "mt-2 flex items-start gap-2 rounded-md border px-3 py-2 text-xs",
+                isDarkMode ? "border-sky-900/50 bg-sky-950/25 text-sky-200" : "border-sky-200 bg-sky-50 text-sky-950",
+              )}
+            >
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <ul className="mt-1 space-y-1.5">
+                {(localValidation.warnings || []).map((w, i) => (
+                  <li key={i} className="break-words border-l-2 border-sky-400/40 pl-2.5">
+                    {typeof w === "string" ? w : w.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {localValidation.ok && !localValidation.empty && (
             <div
               className={cn(
                 "mt-2 flex items-start gap-2 rounded-md border px-3 py-2 text-xs",
@@ -507,7 +648,6 @@ function ManualQuizPasteImportPanel({
                       0,
                     )
                     : 0,
-                  defaultValue: `JSON OK — "${localValidation.parsed?.title}", tổng số câu: {{count}}.`,
                 })}
               </span>
             </div>
@@ -525,11 +665,9 @@ function ManualQuizPasteImportPanel({
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <strong className="font-semibold">
-                {t("workspace.quiz.pasteImport.disclaimer.heading", { defaultValue: "Lưu ý: nội dung do bên thứ 3 sinh ra." })}
+                {t("workspace.quiz.pasteImport.disclaimer.heading")}
               </strong>{" "}
-              {t("workspace.quiz.pasteImport.disclaimer.body", {
-                defaultValue: "QuizMateAI KHÔNG kiểm duyệt và KHÔNG dùng AI để xác minh chất lượng câu hỏi/đáp án/giải thích trong JSON này. Bạn chịu trách nhiệm về tính chính xác và bản quyền của nội dung.",
-              })}
+              {t("workspace.quiz.pasteImport.disclaimer.body")}
             </div>
           </div>
         </section>
@@ -540,15 +678,15 @@ function ManualQuizPasteImportPanel({
         <Button
           type="button"
           onClick={handleAskSave}
-          disabled={!localValidation.ok || submitting || !workspaceId}
+          disabled={!localValidation.ok || localValidation.empty || submitting || !workspaceId}
         >
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {t("workspace.quiz.pasteImport.actions.saving", { defaultValue: "Đang lưu..." })}
+              {t("workspace.quiz.pasteImport.actions.saving")}
             </>
           ) : (
-            t("workspace.quiz.pasteImport.actions.create", { defaultValue: "Tạo quiz từ JSON" })
+            t("workspace.quiz.pasteImport.actions.create")
           )}
         </Button>
       </div>
@@ -558,12 +696,10 @@ function ManualQuizPasteImportPanel({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {t("workspace.quiz.pasteImport.confirmDialog.title", { defaultValue: "Xác nhận tạo quiz từ JSON" })}
+              {t("workspace.quiz.pasteImport.confirmDialog.title")}
             </DialogTitle>
             <DialogDescription className="pt-2 text-sm">
-              {t("workspace.quiz.pasteImport.confirmDialog.body", {
-                defaultValue: "Bạn xác nhận đã đọc và đồng ý: nội dung quiz này do công cụ AI bên thứ 3 (ChatGPT / NotebookLM / ...) sinh ra. QuizMateAI KHÔNG xác minh tính chính xác và KHÔNG chịu trách nhiệm về sai sót, vi phạm bản quyền hoặc nội dung không phù hợp.",
-              })}
+              {t("workspace.quiz.pasteImport.confirmDialog.body")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
@@ -573,16 +709,16 @@ function ManualQuizPasteImportPanel({
               onClick={() => setDisclaimerOpen(false)}
               disabled={submitting}
             >
-              {t("common.cancel", { defaultValue: "Huỷ" })}
+              {t("common.cancel")}
             </Button>
             <Button type="button" onClick={handleConfirmSave} disabled={submitting}>
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {t("workspace.quiz.pasteImport.actions.saving", { defaultValue: "Đang lưu..." })}
+                  {t("workspace.quiz.pasteImport.actions.saving")}
                 </>
               ) : (
-                t("workspace.quiz.pasteImport.confirmDialog.confirm", { defaultValue: "Tôi hiểu, tạo quiz" })
+                t("workspace.quiz.pasteImport.confirmDialog.confirm")
               )}
             </Button>
           </DialogFooter>

@@ -2,16 +2,37 @@ import api from './api';
 
 // ==================== QUIZ ====================
 
+/** @typedef {'PRE_LEARNING'|'POST_LEARNING'|'REVIEW'|'MOCK_TEST'} QuizIntent */
+
+/**
+ * Append optional `search` (Postgres FTS) — chỉ set khi chuỗi trim không rỗng.
+ *
+ * @param {string} path
+ * @param {string | undefined} search
+ */
+function appendOptionalSearchQuery(path, search) {
+  const trimmed = typeof search === 'string' ? search.trim() : '';
+  if (!trimmed) return path;
+  const q = new URLSearchParams();
+  q.set('search', trimmed);
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}${q.toString()}`;
+}
+
 // Lấy danh sách quiz theo contextType và scopeId.
-// Optional: truyền quizIntent (vd "MOCK_TEST") để BE filter — hiện chỉ hỗ trợ cho WORKSPACE/GROUP;
-// các scope khác (ROADMAP/PHASE/KNOWLEDGE) FE tự filter client-side.
-export const getQuizzesByScope = async (contextType, scopeId, { quizIntent } = {}) => {
+// Optional `quizIntent` (vd "MOCK_TEST"): BE — path `/intent/{intent}` hoặc query trên workspace (ưu tiên giữ path tương thích).
+// Optional `search`: FTS title + description (WORKSPACE/GROUP + getByUser).
+// các scope khác (ROADMAP/PHASE/KNOWLEDGE) không gửi search (BE chưa ghi trong API list); FE có thể tự lọc.
+export const getQuizzesByScope = async (contextType, scopeId, { quizIntent, search } = {}) => {
   let url = '';
   // Group workspace dùng cùng endpoint danh sách theo workspaceId
   if (contextType === 'WORKSPACE' || contextType === 'GROUP') {
+    const intentSeg = quizIntent ? encodeURIComponent(String(quizIntent)) : '';
     url = quizIntent
-      ? `/quiz/getByWorkspace/${scopeId}/intent/${quizIntent}`
+      ? `/quiz/getByWorkspace/${scopeId}/intent/${intentSeg}`
       : `/quiz/getByWorkspace/${scopeId}`;
+    url = appendOptionalSearchQuery(url, search);
+    // có thể bổ sung quizIntent dạng query trên URL gốc; hiện giữ `/intent/` khi có intent
   } else if (contextType === 'ROADMAP') url = `/quiz/getByRoadmap/${scopeId}`;
   else if (contextType === 'PHASE') url = `/quiz/getByPhase/${scopeId}`;
   else if (contextType === 'KNOWLEDGE') url = `/quiz/getByKnowledge/${scopeId}`;
@@ -32,8 +53,9 @@ export const getQuizzesByScope = async (contextType, scopeId, { quizIntent } = {
 };
 
 // Lấy danh sách quiz của user đang đăng nhập
-export const getQuizzesByUser = async () => {
-  const response = await api.get('/quiz/getByUser');
+export const getQuizzesByUser = async ({ search } = {}) => {
+  const url = appendOptionalSearchQuery('/quiz/getByUser', search);
+  const response = await api.get(url);
   return response;
 };
 
@@ -165,9 +187,12 @@ export const updateQuestion = async (questionId, data) => {
   return response;
 };
 
-// Xóa câu hỏi
-export const deleteQuestion = async (questionId) => {
-  const response = await api.delete(`/questions/${questionId}`);
+// Xóa câu hỏi (optional note — BE có thể ghi audit; FE gửi trong body DELETE)
+export const deleteQuestion = async (questionId, note) => {
+  const config = typeof note === 'string' && note.trim().length > 0
+    ? { data: { note: note.trim() } }
+    : undefined;
+  const response = await api.delete(`/questions/${questionId}`, config);
   return response;
 };
 

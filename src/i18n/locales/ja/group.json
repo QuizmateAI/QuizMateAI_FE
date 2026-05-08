@@ -143,6 +143,10 @@
             "label": "対象者を割り当て",
             "description": "クイズにアクセスできるメンバーを選択します。"
           },
+          "CONVERT_QUIZ_TO_FLASHCARD": {
+            "label": "クイズをフラッシュカードへ変換",
+            "description": "クイズ詳細から正答を使ってフラッシュカードを一度だけ作成。"
+          },
           "CREATE_FLASHCARD": {
             "label": "フラッシュカードを作成",
             "description": "フラッシュカードセットを作成・更新します。"
@@ -415,7 +419,13 @@
         "documents": "ドキュメント",
         "roadmap": "ロードマップ",
         "quiz": "クイズ",
+        "quizAi": "AIクイズ",
+        "quizManual": "手動クイズ",
+        "quizFromJson": "JSONから作成",
         "flashcard": "フラッシュカード",
+        "flashcardAi": "AIフラッシュカード",
+        "flashcardManual": "手動フラッシュカード",
+        "flashcardFromJson": "JSONから作成",
         "mockTest": "模擬試験",
         "challenge": "チャレンジ",
         "ranking": "ランキング",

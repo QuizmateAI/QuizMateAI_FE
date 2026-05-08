@@ -31,6 +31,12 @@ import {
   suggestIndividualRoadmapConfig,
 } from '@/api/WorkspaceAPI';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getAppNumberLocale,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 
 const LazyUserGroup = lazy(() => import("@/pages/Users/Home/Components/UserGroup"));
 const LazyCommunityGroupBoard = lazy(() => import("@/pages/Users/Home/Components/CommunityGroupBoard"));
@@ -256,12 +262,11 @@ function HomePage() {
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
 
 
-  const currentLang = i18n.language;
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
-  const walletLocale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+  const baseLang = getBaseAppLanguage(i18n.language);
+  const fontClass = baseLang === 'en' ? 'font-poppins' : 'font-sans';
+  const walletLocale = getAppNumberLocale(i18n.language);
   const toggleLanguage = () => {
-    const newLang = currentLang === 'vi' ? 'en' : 'vi';
-    i18n.changeLanguage(newLang);
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
   };
 
   // Mở dialog step-1 tức thì trên HomePage, BE create chạy song song trong nền.
@@ -685,7 +690,7 @@ function HomePage() {
                     {t('common.language')}
                   </span>
                   <span className={`text-xs font-semibold ${fontClass}`}>
-                    {currentLang === 'vi' ? 'VI' : 'EN'}
+                    {appLanguageShortLabel(i18n.language)}
                   </span>
                 </button>
                 <button

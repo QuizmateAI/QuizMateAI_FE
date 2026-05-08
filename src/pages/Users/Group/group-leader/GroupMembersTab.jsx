@@ -46,6 +46,7 @@ const GROUP_PERMISSION_SECTIONS = [
       { code: 'CREATE_QUIZ' },
       { code: 'PUBLISH_QUIZ' },
       { code: 'ASSIGN_QUIZ_AUDIENCE' },
+      { code: 'CONVERT_QUIZ_TO_FLASHCARD' },
       { code: 'CREATE_FLASHCARD' },
       { code: 'CREATE_MOCK_TEST' },
       { code: 'CREATE_ROADMAP' },

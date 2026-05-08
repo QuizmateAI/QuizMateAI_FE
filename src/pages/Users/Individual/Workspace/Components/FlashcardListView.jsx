@@ -1,10 +1,11 @@
-import React, { startTransition, useDeferredValue, useMemo, useState } from "react";
+import React, { startTransition, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
+  ClipboardPaste,
   Clock3,
   CreditCard,
   FolderOpen,
@@ -22,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import HomeButton from "@/components/ui/HomeButton";
 import { getFlashcardsByScope, getFlashcardsByUser } from "@/api/FlashcardAPI";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { flashcardMatchesStudioSubFilter } from "@/utils/workspaceStudioListFilters";
 
 const DEFAULT_ITEMS_PER_PAGE = 8;
 const PAGE_SIZE_OPTIONS = [8, 12, 16];
@@ -108,25 +111,31 @@ function FlashcardListView({
   contextId,
   disableCreate = false,
   hideCreateButton = false,
+  studioSubFilter = null,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_ITEMS_PER_PAGE);
-  const deferredSearch = useDeferredValue(searchQuery.trim().toLowerCase());
+  const debouncedSearchTrim = useDebouncedValue(searchQuery.trim(), 400);
+
+  const studioSubKey = String(studioSubFilter || "").toLowerCase();
+  const studioCreateLocked =
+    studioSubKey === "ai" || studioSubKey === "manual" || studioSubKey === "paste";
 
   const {
     data: flashcards = [],
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["workspace-flashcards", contextType, Number(contextId) || 0],
+    queryKey: ["workspace-flashcards", contextType, Number(contextId) || 0, debouncedSearchTrim],
     queryFn: async () => {
       const hasScope = !!contextType && Number(contextId) > 0;
+      const searchOpt = debouncedSearchTrim ? debouncedSearchTrim : undefined;
       const response = hasScope
-        ? await getFlashcardsByScope(contextType, Number(contextId))
-        : await getFlashcardsByUser();
+        ? await getFlashcardsByScope(contextType, Number(contextId), { search: searchOpt })
+        : await getFlashcardsByUser({ search: searchOpt });
       return response?.data || [];
     },
     refetchInterval: ({ state }) => {
@@ -137,31 +146,56 @@ function FlashcardListView({
     refetchIntervalInBackground: false,
   });
 
-  const filtered = useMemo(
-    () =>
-      (flashcards || []).filter((item) =>
-        deferredSearch
-          ? String(item?.flashcardSetName || "").toLowerCase().includes(deferredSearch)
-          : true,
-      ),
-    [deferredSearch, flashcards],
-  );
+  const list = useMemo(() => {
+    const raw = flashcards || [];
+    const f = String(studioSubFilter || "").toLowerCase();
+    if (f !== "ai" && f !== "manual" && f !== "paste") return raw;
+    return raw.filter((item) => flashcardMatchesStudioSubFilter(item, f));
+  }, [flashcards, studioSubFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
   const effectivePage = Math.min(page, totalPages);
 
   const paginatedFlashcards = useMemo(() => {
     const start = (effectivePage - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [effectivePage, filtered, pageSize]);
+    return list.slice(start, start + pageSize);
+  }, [effectivePage, list, pageSize]);
 
-  const showPaginationFooter = filtered.length > 0;
-  const showPageNavigation = filtered.length > pageSize;
+  const showPaginationFooter = list.length > 0;
+  const showPageNavigation = list.length > pageSize;
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
   const renderCreateFlashcardAction = ({
     label = t("workspace.listView.create"),
     className = "h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50",
   } = {}) => {
+    if (studioCreateLocked) {
+      const map = {
+        ai: {
+          onClick: () => onCreateFlashcard?.(),
+          Icon: Sparkles,
+          defaultLabel: t("workspace.flashcard.createMenu.ai", "Tạo bằng AI"),
+        },
+        manual: {
+          onClick: () => onCreateManualFlashcard?.(),
+          Icon: PenLine,
+          defaultLabel: t("workspace.flashcard.createMenu.manual", "Tạo thủ công"),
+        },
+        paste: {
+          onClick: () => onCreateManualFlashcard?.(),
+          Icon: ClipboardPaste,
+          defaultLabel: t("workspace.shell.nav.flashcardFromJson", "Tạo từ JSON"),
+        },
+      };
+      const cfg = map[studioSubKey];
+      const Icon = cfg.Icon;
+      return (
+        <Button type="button" disabled={disableCreate} onClick={cfg.onClick} className={className}>
+          <Icon className="mr-2 h-4 w-4" />
+          <span className="text-sm">{label || cfg.defaultLabel}</span>
+        </Button>
+      );
+    }
+
     if (typeof onCreateManualFlashcard === "function") {
       return (
         <DropdownMenu>
@@ -239,7 +273,7 @@ function FlashcardListView({
                   setPage(1);
                 });
               }}
-              placeholder={t("workspace.listView.searchPlaceholder")}
+              placeholder={t("workspace.flashcard.listSearchPlaceholder")}
               className={`h-11 w-full rounded-full border py-3 pl-10 pr-10 text-sm outline-none transition-colors ${
                 isDarkMode
                   ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400"
@@ -272,7 +306,12 @@ function FlashcardListView({
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
           {!hideCreateButton ? (
-            typeof onCreateManualFlashcard === "function" ? (
+            studioCreateLocked ? (
+              renderCreateFlashcardAction({
+                label: t("workspace.listView.create"),
+                className: "h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50",
+              })
+            ) : typeof onCreateManualFlashcard === "function" ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -347,7 +386,7 @@ function FlashcardListView({
               })
             ) : null}
           </div>
-        ) : !filtered.length ? (
+        ) : !list.length ? (
           <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
             <FolderOpen className={`mb-3 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.listView.noResults")}</p>
@@ -501,7 +540,7 @@ function FlashcardListView({
                   {t("workspace.listView.pagination.pageInfo", {
                     page: effectivePage,
                     totalPages,
-                    count: filtered.length,
+                    count: list.length,
                   })}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">

@@ -82,6 +82,18 @@ function CreateQuizForm({
     ? normalizedInitialModeValue
     : null;
 
+  /** Khi vào từ sidebar (AI / thủ công / JSON) hoặc chỉnh sửa bản nháp — chỉ hiện một form, không hiện cả bộ tab chuyển chế độ. */
+  const showModeSwitcher = !normalizedInitialMode && !hasExistingQuizTarget;
+
+  const modeSwitcherMeta = useMemo(
+    () => ({
+      ai: { label: t("workspace.quiz.createMode.ai", { defaultValue: "QuizMate AI" }), Icon: Sparkles },
+      manual: { label: t("workspace.quiz.createMode.manual", { defaultValue: "Manual" }), Icon: PenLine },
+      paste: { label: t("workspace.quiz.createMode.paste", { defaultValue: "Paste JSON" }), Icon: ClipboardPaste },
+    }),
+    [t],
+  );
+
   // Tab: "ai" | "manual" | "paste" — nhớ lựa chọn qua localStorage
   const [mode, setMode] = useState(() => {
     if (normalizedInitialMode) return normalizedInitialMode;
@@ -300,6 +312,8 @@ function CreateQuizForm({
     ? `${aiDurationMetaBaseClass} border-cyan-500/30 bg-cyan-500/10 text-cyan-200`
     : `${aiDurationMetaBaseClass} border-blue-200 bg-blue-50 text-blue-700`;
 
+  const { label: activeModeLabel, Icon: ActiveModeIcon } = modeSwitcherMeta[mode] || modeSwitcherMeta.ai;
+
   return (
     <div id="create-quiz-header" className="flex h-full flex-col scroll-mt-20">
       {/* Header — gộp tabs vào 1 row, bỏ dòng tabs riêng */}
@@ -323,32 +337,40 @@ function CreateQuizForm({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Mode toggle pills — inline right side */}
-        <div className={`flex items-center rounded-lg p-0.5 gap-0.5 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
-          {[
-            { key: "ai", label: "QuizMate AI", Icon: Sparkles },
-            { key: "manual", label: "Thủ công", Icon: PenLine },
-            { key: "paste", label: "Dán JSON", Icon: ClipboardPaste },
-          ].map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => handleModeChange(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                mode === key
-                  ? isDarkMode
-                    ? "bg-slate-700 text-blue-400 shadow-sm"
-                    : "bg-white text-blue-600 shadow-sm"
-                  : isDarkMode
-                    ? "text-slate-400 hover:text-slate-200"
-                    : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
+        {showModeSwitcher ? (
+          <div className={`flex items-center rounded-lg p-0.5 gap-0.5 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
+            {Object.entries(modeSwitcherMeta).map(([key, { label, Icon }]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleModeChange(key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                  mode === key
+                    ? isDarkMode
+                      ? "bg-slate-700 text-blue-400 shadow-sm"
+                      : "bg-white text-blue-600 shadow-sm"
+                    : isDarkMode
+                      ? "text-slate-400 hover:text-slate-200"
+                      : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div
+            className={`flex max-w-[min(100%,14rem)] shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
+              isDarkMode
+                ? "border-slate-600 bg-slate-800/80 text-slate-200"
+                : "border-gray-200 bg-white text-gray-800 shadow-sm"
+            } ${fontClass}`}
+          >
+            <ActiveModeIcon className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+            <span className="truncate">{activeModeLabel}</span>
+          </div>
+        )}
       </div>
 
       {/* Manual mode — full height wizard */}

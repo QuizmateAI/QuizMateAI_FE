@@ -34,6 +34,12 @@ import {
 } from '@/lib/routePaths';
 import { FailureScreen, ProcessingScreen, SuccessScreen } from './components/PaymentResultStates';
 import { downloadPaymentInvoice } from './utils/paymentInvoice';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getAppNumberLocale,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 
 const PAYMENT_POLL_DELAY_MS = 1500;
 const PAYMENT_POLL_MAX_ATTEMPTS = 6;
@@ -44,13 +50,13 @@ function normalizeAmount(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-function formatPaymentDateTime(value, lang) {
+function formatPaymentDateTime(value, language) {
   if (!value) return '';
 
   const rawTime = String(value);
   const date = /^\d+$/.test(rawTime) ? new Date(Number(rawTime)) : new Date(rawTime);
   if (Number.isNaN(date.getTime())) return rawTime;
-  return date.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US');
+  return date.toLocaleString(getAppNumberLocale(language));
 }
 
 function formatPaymentMethod(value) {
@@ -86,11 +92,12 @@ export default function PaymentResultPage() {
   const [resolvedCreditPackage, setResolvedCreditPackage] = useState(null);
   const settingsRef = useRef(null);
   const currentLang = i18n.language;
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const baseLang = getBaseAppLanguage(currentLang);
+  const fontClass = baseLang === 'en' ? 'font-poppins' : 'font-sans';
   const plansPath = buildPlansPath();
 
   const toggleLanguage = () => {
-    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+    void i18n.changeLanguage(cycleAppLanguage(currentLang));
   };
 
   useEffect(() => {
@@ -279,7 +286,7 @@ export default function PaymentResultPage() {
     if (!activePlanSummary?.endDate) return '';
 
     try {
-      return new Intl.DateTimeFormat(currentLang === 'vi' ? 'vi-VN' : 'en-US', {
+      return new Intl.DateTimeFormat(getAppNumberLocale(currentLang), {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -310,7 +317,7 @@ export default function PaymentResultPage() {
 
     const totalCredits = Number(resolvedCreditPackage?.baseCredit || 0) + Number(resolvedCreditPackage?.bonusCredit || 0);
     if (totalCredits > 0) {
-      const formattedCredits = new Intl.NumberFormat(currentLang === 'vi' ? 'vi-VN' : 'en-US').format(totalCredits);
+      const formattedCredits = new Intl.NumberFormat(getAppNumberLocale(currentLang)).format(totalCredits);
       return `${formattedCredits} ${t('wallet.creditsUnit', { defaultValue: currentLang === 'vi' ? 'credit' : 'credits' })}`;
     }
 
@@ -339,7 +346,7 @@ export default function PaymentResultPage() {
     && String(pendingPurchase?.planType || '').toUpperCase() === 'GROUP'
     && Boolean(pendingPurchase?.workspaceId);
 
-  const resultLang = currentLang === 'en' ? 'en' : 'vi';
+  const resultLang = baseLang;
   const paymentMethodLabel = useMemo(() => {
     const rawMethod = activePaymentRecord?.paymentMethod
       || activePaymentRecord?.gateway
@@ -524,7 +531,7 @@ export default function PaymentResultPage() {
               }`}>
                 <button type="button" onClick={toggleLanguage} className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}>
                   <span className={`flex items-center gap-2 ${fontClass}`}><Globe className="w-4 h-4" />{t('common.language')}</span>
-                  <span className={`text-xs font-semibold ${fontClass}`}>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+                  <span className={`text-xs font-semibold ${fontClass}`}>{appLanguageShortLabel(currentLang)}</span>
                 </button>
                 <button type="button" onClick={toggleDarkMode} className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}>
                   <span className={`flex items-center gap-2 ${fontClass}`}>{isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}{t('common.theme')}</span>

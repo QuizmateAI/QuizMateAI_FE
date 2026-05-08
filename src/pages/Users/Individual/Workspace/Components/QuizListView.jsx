@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, startTransition } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical, Check, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical, Check, Users, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -23,6 +24,15 @@ import {
   extractWorkspaceIdFromPath,
   isWorkspaceRoadmapsPath,
 } from "@/lib/routePaths";
+import {
+  countActiveWorkspaceQuizAdvFilters,
+  createDefaultWorkspaceQuizAdvFilters,
+  normalizeWorkspaceQuizAdvFilters,
+  quizPassesWorkspaceQuizAdvFilters,
+} from "@/utils/workspaceQuizListAdvancedFilters";
+import { quizMatchesStudioSubFilter } from "@/utils/workspaceStudioListFilters";
+import QuizWorkspaceAdvancedFilterDialog from "@/pages/Users/Individual/Workspace/Components/QuizWorkspaceAdvancedFilterDialog";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
   const workspaceId = extractWorkspaceIdFromPath(pathname);
@@ -288,6 +298,8 @@ function QuizListView({
   progressTracking = null,
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
+  /** Sidebar AI / manual / JSON — lọc danh sách workspace */
+  studioSubFilter = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -295,7 +307,8 @@ function QuizListView({
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
-  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const searchTrimmedLive = searchQuery.trim();
+  const debouncedSearchTrim = useDebouncedValue(searchTrimmedLive, 400);
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -318,6 +331,13 @@ function QuizListView({
   const [bulkAssignSaving, setBulkAssignSaving] = useState(false);
   const [bulkAudienceMode, setBulkAudienceMode] = useState("ALL_MEMBERS");
   const [bulkSelectedAudienceUserIds, setBulkSelectedAudienceUserIds] = useState([]);
+  const [workspaceAdvFilters, setWorkspaceAdvFilters] = useState(() => createDefaultWorkspaceQuizAdvFilters());
+  const [workspaceAdvFilterDialogOpen, setWorkspaceAdvFilterDialogOpen] = useState(false);
+  const workspaceAdvFiltersDigest = useMemo(() => JSON.stringify(workspaceAdvFilters), [workspaceAdvFilters]);
+  const workspaceAdvFiltersActiveCount = useMemo(
+    () => countActiveWorkspaceQuizAdvFilters(workspaceAdvFilters),
+    [workspaceAdvFilters],
+  );
   const fetchGuardRef = useRef({
     inFlight: false,
     lastKey: "",
@@ -364,10 +384,40 @@ function QuizListView({
     [intentFilter],
   );
 
+  const normalizedListContextType = useMemo(
+    () => String(contextType || "").toUpperCase(),
+    [contextType],
+  );
+  const isQuizListServerSearchScope = normalizedListContextType === "WORKSPACE"
+    || normalizedListContextType === "GROUP";
+
+  /** Roadmap/group panel khóa intent từ ngoài — ẩn thanh chip trên workspace. */
+  const hasParentIntentConstraint = Boolean(
+    Array.isArray(intentFilter) && intentFilter.length > 0,
+  );
+  const showWorkspaceQuizAdvancedFilterChrome = !embedded && isQuizListServerSearchScope && !hasParentIntentConstraint;
+
+  /** Gọi BE `/intent/:intent` khi panel cha truyền đúng một intent (roadmap). Bộ lọc nâng cao không đặt quizIntent. */
+  const quizIntentApiParam = useMemo(() => {
+    if (!isQuizListServerSearchScope) return undefined;
+    if (Array.isArray(intentFilter) && intentFilter.length === 1) {
+      const v = String(intentFilter[0] ?? "").trim();
+      return v || undefined;
+    }
+    return undefined;
+  }, [
+    intentFilter,
+    isQuizListServerSearchScope,
+  ]);
+
   useEffect(() => {
     setHasResolvedInitialFetch(false);
     setFetchError(null);
   }, [contextId, contextType, intentFilterKey]);
+
+  useEffect(() => {
+    setWorkspaceAdvFilters(createDefaultWorkspaceQuizAdvFilters());
+  }, [contextId, contextType]);
 
   useEffect(() => {
     if (!isGroupQuizList || !contextId || !canFilterGroupAssignees) {
@@ -407,7 +457,7 @@ function QuizListView({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [deferredSearchQuery, appliedGroupFilters, groupMemberUserId]);
+  }, [debouncedSearchTrim, appliedGroupFilters, groupMemberUserId, workspaceAdvFiltersDigest]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -473,7 +523,10 @@ function QuizListView({
       return;
     }
 
-    const requestKey = `${String(contextType || "").toUpperCase()}:${Number(scopeId) || scopeId}:${intentFilterKey}`;
+    const ct = String(contextType || "").toUpperCase();
+    const serverSearchKey = isQuizListServerSearchScope ? debouncedSearchTrim : "";
+    const intentApiKey = quizIntentApiParam || "";
+    const requestKey = `${ct}:${Number(scopeId) || scopeId}:${intentFilterKey}:${serverSearchKey}:${intentApiKey}`;
     const now = Date.now();
     const isDuplicateBurst = silent
       && fetchGuardRef.current.lastKey === requestKey
@@ -489,7 +542,13 @@ function QuizListView({
 
     if (!silent) setLoading(true);
     try {
-      const res = await getQuizzesByScope(contextType, scopeId);
+      const scopeOpts = {
+        ...(quizIntentApiParam ? { quizIntent: quizIntentApiParam } : {}),
+        ...(isQuizListServerSearchScope && debouncedSearchTrim ? { search: debouncedSearchTrim } : {}),
+      };
+      const res = Object.keys(scopeOpts).length > 0
+        ? await getQuizzesByScope(contextType, scopeId, scopeOpts)
+        : await getQuizzesByScope(contextType, scopeId);
       let incoming = res.data || [];
 
       // Quiz list view chỉ hiển thị quiz thường — mock test có view riêng (MockTestListView).
@@ -523,7 +582,16 @@ function QuizListView({
         setHasResolvedInitialFetch(true);
       }
     }
-  }, [contextId, contextType, includeRoadmapLinkedQuizzes, intentFilter, intentFilterKey]);
+  }, [
+    contextId,
+    contextType,
+    includeRoadmapLinkedQuizzes,
+    intentFilter,
+    intentFilterKey,
+    debouncedSearchTrim,
+    isQuizListServerSearchScope,
+    quizIntentApiParam,
+  ]);
 
   fetchQuizzesRef.current = fetchQuizzes;
 
@@ -696,9 +764,19 @@ function QuizListView({
   // Lọc quiz theo trạng thái và tìm kiếm
   const filtered = useMemo(() => {
     let items = quizzes;
-    if (deferredSearchQuery.trim()) {
-      const query = deferredSearchQuery.toLowerCase();
-      items = items.filter((q) => q.title?.toLowerCase().includes(query));
+    if (!isQuizListServerSearchScope && debouncedSearchTrim) {
+      const query = debouncedSearchTrim.toLowerCase();
+      items = items.filter(
+        (q) => q.title?.toLowerCase().includes(query)
+          || String(q?.description || "").toLowerCase().includes(query),
+      );
+    }
+    if (showWorkspaceQuizAdvancedFilterChrome) {
+      items = items.filter((q) => quizPassesWorkspaceQuizAdvFilters(q, workspaceAdvFilters));
+    }
+    const normalizedStudioSub = String(studioSubFilter || "").toLowerCase();
+    if (normalizedStudioSub === "ai" || normalizedStudioSub === "manual" || normalizedStudioSub === "paste") {
+      items = items.filter((q) => quizMatchesStudioSubFilter(q, normalizedStudioSub));
     }
     if (isGroupQuizList) {
       if (!canFilterGroupAssignees) {
@@ -748,12 +826,16 @@ function QuizListView({
     return items;
   }, [
     quizzes,
-    deferredSearchQuery,
+    debouncedSearchTrim,
+    isQuizListServerSearchScope,
+    showWorkspaceQuizAdvancedFilterChrome,
+    workspaceAdvFilters,
     isGroupQuizList,
     appliedGroupFilters,
     canFilterGroupAssignees,
     currentGroupUserId,
     groupMemberUserId,
+    studioSubFilter,
   ]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / quizPageSize));
@@ -1159,6 +1241,35 @@ function QuizListView({
                     ) : null}
                   </div>
                 </div>
+                {showWorkspaceQuizAdvancedFilterChrome ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => startTransition(() => setWorkspaceAdvFilterDialogOpen(true))}
+                    title={t(
+                      "quizListView.intentFilterBar.mockTestNote",
+                      "Mock tests stay under Mock test on the sidebar.",
+                    )}
+                    className={`h-11 shrink-0 rounded-full border px-4 ${
+                      isDarkMode
+                        ? "border-slate-600 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                        : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    <span className="text-sm font-semibold">{t("quizListView.workspaceFilterBar.open", "Filters")}</span>
+                    {workspaceAdvFiltersActiveCount > 0 ? (
+                      <Badge
+                        variant="secondary"
+                        className={`ml-2 min-w-[22px] justify-center px-1.5 ${
+                          isDarkMode ? "border-slate-600 bg-violet-600 text-white" : "border-violet-200 bg-violet-600 text-white"
+                        }`}
+                      >
+                        {workspaceAdvFiltersActiveCount}
+                      </Badge>
+                    ) : null}
+                  </Button>
+                ) : null}
               </div>
 
               {isGroupQuizList ? (
@@ -1294,7 +1405,9 @@ function QuizListView({
                 >
                   <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </Button>
-                {String(contextType || "").toUpperCase() === "WORKSPACE" && typeof onOpenCommunityQuiz === "function" ? (
+                {String(contextType || "").toUpperCase() === "WORKSPACE"
+                  && typeof onOpenCommunityQuiz === "function"
+                  && String(studioSubFilter || "").toLowerCase() === "ai" ? (
                   <Button
                     variant="outline"
                     onClick={onOpenCommunityQuiz}
@@ -1320,6 +1433,18 @@ function QuizListView({
           </div>
 
         </div>
+      ) : null}
+
+      {showWorkspaceQuizAdvancedFilterChrome ? (
+        <QuizWorkspaceAdvancedFilterDialog
+          open={workspaceAdvFilterDialogOpen}
+          onOpenChange={setWorkspaceAdvFilterDialogOpen}
+          digest={workspaceAdvFiltersDigest}
+          appliedFiltersSnapshot={workspaceAdvFilters}
+          onApply={(next) => setWorkspaceAdvFilters(normalizeWorkspaceQuizAdvFilters(next))}
+          isDarkMode={isDarkMode}
+          t={t}
+        />
       ) : null}
 
       {/* Danh sách quiz */}
@@ -1604,34 +1729,36 @@ function QuizListView({
                       </div>
                     ) : null}
 
-                    <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
-                      <div className="flex min-w-0 flex-wrap items-center gap-3">
-                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
-                          <BarChart3 className="h-3.5 w-3.5" />
-                          <span>{difficultyLabel}</span>
-                        </div>
-                        {durationLabel ? (
-                          <div className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
-                            <Timer className="h-3.5 w-3.5" />
-                            <span>{durationLabel}</span>
+                    {!isProcessing ? (
+                      <div className={`mt-4 flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-start sm:justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                        <div className="flex min-w-0 flex-wrap items-center gap-3">
+                          <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
+                            <BarChart3 className="h-3.5 w-3.5" />
+                            <span>{difficultyLabel}</span>
                           </div>
-                        ) : null}
+                          {durationLabel ? (
+                            <div className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                              <Timer className="h-3.5 w-3.5" />
+                              <span>{durationLabel}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className={`flex flex-wrap items-center justify-start gap-2 text-[11px] font-semibold sm:justify-end ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                          {!shouldHideRoadmapVisibility ? (
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                              {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                              <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
+                            </span>
+                          ) : null}
+                          {createdAtLabel ? (
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span className="whitespace-nowrap">{createdAtLabel}</span>
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className={`flex flex-wrap items-center justify-start gap-2 text-[11px] font-semibold sm:justify-end ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                        {!shouldHideRoadmapVisibility ? (
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                            {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                            <span>{isCommunityShared ? t("quizListView.visibility.public", "Public") : t("quizListView.visibility.private", "Private")}</span>
-                          </span>
-                        ) : null}
-                        {createdAtLabel ? (
-                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span className="whitespace-nowrap">{createdAtLabel}</span>
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
+                    ) : null}
                   </div>
                 </article>
               );

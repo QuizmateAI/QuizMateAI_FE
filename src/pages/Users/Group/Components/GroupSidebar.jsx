@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -25,14 +25,24 @@ import {
 import { cn } from '@/lib/utils';
 import VietnamFlag from '@/assets/Viet_nam.png';
 import EnglishFlag from '@/assets/UK_flag.svg';
+import JapanFlag from '@/assets/Japan_flag.svg';
+import { getBaseAppLanguage, appLanguageShortLabel } from '@/utils/appSupportedLanguages';
 
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard },
   { id: 'personalDashboard', icon: LayoutDashboard },
   { id: 'documents', icon: FolderOpen },
   { id: 'roadmap', icon: Map },
-  { id: 'quiz', icon: PenLine },
-  { id: 'flashcard', icon: BookOpen },
+  {
+    id: 'quiz',
+    icon: PenLine,
+    children: [{ id: 'quizAi' }, { id: 'quizManual' }, { id: 'quizFromJson' }],
+  },
+  {
+    id: 'flashcard',
+    icon: BookOpen,
+    children: [{ id: 'flashcardAi' }, { id: 'flashcardManual' }, { id: 'flashcardFromJson' }],
+  },
   { id: 'mockTest', icon: ClipboardList },
   { id: 'challenge', icon: Swords },
   { id: 'ranking', icon: BarChart3 },
@@ -48,6 +58,10 @@ function GroupSidebar({
   isDarkMode = false,
   activeSection = 'dashboard',
   onSectionChange,
+  /** Khi chọn mục con (AI / thủ công / JSON) trong nhánh Quiz hoặc Flashcard */
+  onStudioSubAction,
+  /** activeView từ studio (createQuiz, quiz, …) — để mở rộng đúng nhánh */
+  studioActiveView = null,
   groupName = '',
   wsConnected = false,
   memberCount = 0,
@@ -66,7 +80,8 @@ function GroupSidebar({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const sidebarLang = getBaseAppLanguage(currentLang || i18n.language);
+  const fontClass = sidebarLang === 'en' ? 'font-poppins' : 'font-sans';
   const isMember = String(role || '').toUpperCase() === 'MEMBER';
   const isCollapsed = !isMobile && collapsed;
   const displayGroupName = groupName || t('groupWorkspace.shell.defaultGroupName');
@@ -88,6 +103,31 @@ function GroupSidebar({
     if (isMobile) {
       onCloseMobile?.();
     }
+  };
+
+  const quizBranchBusy = useMemo(
+    () =>
+      ['quiz', 'createQuiz', 'editQuiz', 'quizDetail'].includes(String(studioActiveView || '')),
+    [studioActiveView],
+  );
+  const flashcardBranchBusy = useMemo(
+    () =>
+      ['flashcard', 'createFlashcard', 'createManualFlashcard', 'flashcardDetail'].includes(
+        String(studioActiveView || ''),
+      ),
+    [studioActiveView],
+  );
+
+  const handleChildNavigate = (parentId, childId) => {
+    if (disabledMap?.[parentId]) return;
+    if (typeof onStudioSubAction === 'function') {
+      onStudioSubAction({ parentId, childId });
+      if (isMobile) {
+        onCloseMobile?.();
+      }
+      return;
+    }
+    handleNavigate(parentId);
   };
 
   const asideClassName = cn(
@@ -196,66 +236,155 @@ function GroupSidebar({
               const isActive = resolvedActiveSection === item.id;
               const isDisabled = Boolean(disabledMap?.[item.id]);
               const badgeValue = badgeMap?.[item.id];
+              const childList = Array.isArray(item.children) ? item.children : [];
+              const hasChildren = childList.length > 0;
+              const subNavOpen =
+                !isCollapsed
+                && (resolvedActiveSection === item.id
+                  || (item.id === 'quiz' && quizBranchBusy)
+                  || (item.id === 'flashcard' && flashcardBranchBusy));
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleNavigate(item.id)}
-                  disabled={isDisabled}
-                  aria-current={isActive ? 'page' : undefined}
-                  title={isCollapsed ? t(`groupWorkspace.shell.nav.${item.id}`) : undefined}
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-[16px] border py-2 text-left transition-[background-color,border-color,color,box-shadow] duration-200 ease-out',
-                    isCollapsed ? 'justify-center px-1.5' : 'px-2.5',
-                    isDisabled
-                      ? isDarkMode
-                        ? 'cursor-not-allowed border-slate-700 bg-slate-800/70 text-slate-500'
-                        : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300'
-                      : isActive
-                        ? 'border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]'
-                        : isDarkMode
-                          ? 'border-transparent bg-slate-900 text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white'
-                          : 'border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900',
-                  )}
-                >
-                  <span
+              if (!hasChildren) {
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleNavigate(item.id)}
+                    disabled={isDisabled}
+                    aria-current={isActive ? 'page' : undefined}
+                    title={isCollapsed ? t(`groupWorkspace.shell.nav.${item.id}`) : undefined}
                     className={cn(
-                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out',
-                      isActive
-                        ? 'border-blue-500 bg-blue-500 text-white'
-                        : isDarkMode
-                          ? 'border-slate-700 bg-slate-800 text-slate-300'
-                          : 'border-slate-200 bg-white text-slate-600',
+                      'relative flex w-full items-center gap-2 rounded-[16px] border py-2 text-left transition-[background-color,border-color,color,box-shadow] duration-200 ease-out',
+                      isCollapsed ? 'justify-center px-1.5' : 'px-2.5',
+                      isDisabled
+                        ? isDarkMode
+                          ? 'cursor-not-allowed border-slate-700 bg-slate-800/70 text-slate-500'
+                          : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300'
+                        : isActive
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]'
+                          : isDarkMode
+                            ? 'border-transparent bg-slate-900 text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white'
+                            : 'border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900',
                     )}
                   >
-                    <Icon className="h-4 w-4" />
-                  </span>
-
-                  {!isCollapsed ? (
-                  <span className={cn('min-w-0 flex-1 truncate text-[14px] font-semibold', fontClass)}>
-                    {t(`groupWorkspace.shell.nav.${item.id}`)}
-                  </span>
-                  ) : null}
-
-                  {badgeValue && !isCollapsed ? (
                     <span
                       className={cn(
-                        'inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition-colors duration-200 ease-out',
-                        isActive ? 'bg-white text-blue-700' : isDarkMode ? 'bg-slate-200 text-slate-900' : 'bg-slate-900 text-white',
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out',
+                        isActive
+                          ? 'border-blue-500 bg-blue-500 text-white'
+                          : isDarkMode
+                            ? 'border-slate-700 bg-slate-800 text-slate-300'
+                            : 'border-slate-200 bg-white text-slate-600',
                       )}
                     >
-                      {badgeValue}
+                      <Icon className="h-4 w-4" />
                     </span>
-                  ) : badgeValue && isCollapsed ? (
-                    <span
+
+                    {!isCollapsed ? (
+                      <span className={cn('min-w-0 flex-1 truncate text-[14px] font-semibold', fontClass)}>
+                        {t(`groupWorkspace.shell.nav.${item.id}`)}
+                      </span>
+                    ) : null}
+
+                    {badgeValue && !isCollapsed ? (
+                      <span
+                        className={cn(
+                          'inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition-colors duration-200 ease-out',
+                          isActive ? 'bg-white text-blue-700' : isDarkMode ? 'bg-slate-200 text-slate-900' : 'bg-slate-900 text-white',
+                        )}
+                      >
+                        {badgeValue}
+                      </span>
+                    ) : badgeValue && isCollapsed ? (
+                      <span
+                        className={cn(
+                          'absolute right-1 top-1 h-2 w-2 rounded-full',
+                          isActive ? 'bg-white' : isDarkMode ? 'bg-slate-200' : 'bg-slate-900',
+                        )}
+                      />
+                    ) : null}
+                  </button>
+                );
+              }
+
+              return (
+                <div key={item.id} className="space-y-0.5">
+                  <div
+                    className={cn(
+                      'w-full rounded-[16px] border transition-[background-color,border-color,color,box-shadow] duration-200 ease-out',
+                      isCollapsed ? 'border-transparent' : isActive
+                        ? 'border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]'
+                        : isDarkMode
+                          ? 'border-transparent bg-slate-900 text-slate-300'
+                          : 'border-transparent bg-white text-slate-600',
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate(item.id)}
+                      disabled={isDisabled}
+                      aria-current={isActive && String(studioActiveView || '') === item.id ? 'page' : undefined}
+                      title={isCollapsed ? t(`groupWorkspace.shell.nav.${item.id}`) : undefined}
                       className={cn(
-                        'absolute ml-7 mt-[-22px] h-2 w-2 rounded-full',
-                        isActive ? 'bg-white' : isDarkMode ? 'bg-slate-200' : 'bg-slate-900',
+                        'relative flex min-w-0 flex-1 items-center gap-2 py-2 text-left',
+                        isCollapsed ? 'justify-center px-1.5' : 'px-2.5',
+                        isDisabled && 'cursor-not-allowed opacity-60',
                       )}
-                    />
-                  ) : null}
-                </button>
+                    >
+                      <span
+                        className={cn(
+                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out',
+                          isActive
+                            ? 'border-blue-500 bg-blue-500 text-white'
+                            : isDarkMode
+                              ? 'border-slate-700 bg-slate-800 text-slate-300'
+                              : 'border-slate-200 bg-white text-slate-600',
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      {!isCollapsed ? (
+                        <span className={cn('min-w-0 flex-1 truncate text-[14px] font-semibold', fontClass)}>
+                          {t(`groupWorkspace.shell.nav.${item.id}`)}
+                        </span>
+                      ) : null}
+                      {badgeValue && !isCollapsed ? (
+                        <span
+                          className={cn(
+                            'mr-1 inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition-colors duration-200 ease-out',
+                            isActive ? 'bg-white text-blue-700' : isDarkMode ? 'bg-slate-200 text-slate-900' : 'bg-slate-900 text-white',
+                          )}
+                        >
+                          {badgeValue}
+                        </span>
+                      ) : null}
+                    </button>
+                  </div>
+
+                  {subNavOpen
+                    ? (
+                      <div className={cn('space-y-0.5 border-l-2 py-0.5 ml-4 pl-2', isDarkMode ? 'border-slate-700' : 'border-slate-200')}>
+                        {childList.map((child) => (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() => handleChildNavigate(item.id, child.id)}
+                            disabled={isDisabled}
+                            className={cn(
+                              'flex w-full items-center rounded-xl px-2 py-1.5 text-left text-[13px] font-medium transition-colors',
+                              isDarkMode
+                                ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                              isDisabled && 'cursor-not-allowed opacity-50',
+                            )}
+                          >
+                            <span className={cn('truncate', fontClass)}>{t(`groupWorkspace.shell.nav.${child.id}`)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                    : null}
+                </div>
               );
             })}
           </div>
@@ -275,10 +404,16 @@ function GroupSidebar({
               )}
               aria-label={t('common.switchLanguage')}
             >
-              {currentLang === 'vi' ? (
+              {sidebarLang === 'vi' ? (
                 <img
                   src={VietnamFlag}
                   alt={t('common.languageVietnamese')}
+                  className="h-4 w-4 rounded-sm object-cover"
+                />
+              ) : sidebarLang === 'ja' ? (
+                <img
+                  src={JapanFlag}
+                  alt={t('common.languageJapanese')}
                   className="h-4 w-4 rounded-sm object-cover"
                 />
               ) : (
@@ -289,7 +424,7 @@ function GroupSidebar({
                 />
               )}
               <span className={cn('text-[13px] font-semibold uppercase', fontClass)}>
-                {currentLang === 'vi' ? 'VI' : 'EN'}
+                {appLanguageShortLabel(currentLang || i18n.language)}
               </span>
             </button>
 

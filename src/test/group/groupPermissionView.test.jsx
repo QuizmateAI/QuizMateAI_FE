@@ -22,6 +22,7 @@ describe('groupPermissionView', () => {
 
     expect(result.canCreateQuiz).toBe(false);
     expect(result.canCreateFlashcard).toBe(true);
+    expect(result.canConvertQuizToFlashcard).toBe(false);
     expect(result.canCreateMockTest).toBe(false);
     expect(result.canCreateRoadmap).toBe(false);
     expect(result.canCreateChallenge).toBe(false);
@@ -42,6 +43,7 @@ describe('groupPermissionView', () => {
 
     expect(result.canCreateQuiz).toBe(true);
     expect(result.canCreateFlashcard).toBe(true);
+    expect(result.canConvertQuizToFlashcard).toBe(false);
     expect(result.canCreateContent).toBe(true);
     expect(result.canUploadSource).toBe(true);
     expect(result.canManageMembers).toBe(false);

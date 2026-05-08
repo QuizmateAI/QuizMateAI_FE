@@ -11,9 +11,11 @@ export function resolveGroupUiPermissions({
   fallbackCanCreateChallenge = fallbackCanCreateContent,
   fallbackCanPublishQuiz = false,
   fallbackCanAssignQuizAudience = false,
+  fallbackCanConvertQuizToFlashcard = false,
 } = {}) {
   const canCreateQuiz = myGroupPermissions?.canCreateQuiz ?? fallbackCanCreateQuiz;
   const canCreateFlashcard = myGroupPermissions?.canCreateFlashcard ?? fallbackCanCreateFlashcard;
+  const canConvertQuizToFlashcard = myGroupPermissions?.canConvertQuizToFlashcard ?? fallbackCanConvertQuizToFlashcard;
   const canCreateMockTest = myGroupPermissions?.canCreateMockTest ?? fallbackCanCreateMockTest;
   const canCreateRoadmap = myGroupPermissions?.canCreateRoadmap ?? fallbackCanCreateRoadmap;
   const canCreateChallenge = myGroupPermissions?.canCreateChallenge ?? fallbackCanCreateChallenge;
@@ -28,6 +30,7 @@ export function resolveGroupUiPermissions({
   return {
     canCreateQuiz,
     canCreateFlashcard,
+    canConvertQuizToFlashcard,
     canCreateMockTest,
     canCreateRoadmap,
     canCreateChallenge,
