@@ -9,6 +9,7 @@ export const QUESTION_TYPE_LABEL_FALLBACKS = {
 };
 
 export const DIFFICULTY_LABEL_FALLBACKS = {
+  BALANCE: "Balance",
   EASY: "Easy",
   MEDIUM: "Medium",
   HARD: "Hard",

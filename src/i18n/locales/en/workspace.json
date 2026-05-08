@@ -955,7 +955,13 @@
         "easy": "Easy",
         "medium": "Medium",
         "hard": "Hard",
-        "custom": "Custom "
+        "custom": "Custom ",
+        "balance": "Balanced"
+      },
+      "advancedDifficultyPresets": {
+        "BALANCED": "Balanced",
+        "EASY_FOCUS": "Easy focus",
+        "HARD_FOCUS": "Hard focus"
       },
       "bloomLevels": {
         "remember": "Remember",
