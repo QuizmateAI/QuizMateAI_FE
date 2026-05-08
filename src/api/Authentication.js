@@ -4,6 +4,11 @@ import { normalizeUserProfile } from '@/utils/userProfile';
 import { queryClient } from '@/lib/queryClient';
 import { clearPlanPurchaseState } from '@/utils/planPurchaseState';
 import {
+  clearCurrentUser,
+  getCurrentUser as getCurrentUserFromStorage,
+  setCurrentUser,
+} from '@/lib/currentUser';
+import {
   clearTokens,
   getAccessToken,
   hasAccessToken,
@@ -67,11 +72,7 @@ function notifyAuthChanged(type) {
 
 function clearAuthState() {
     clearTokens();
-    try {
-        localStorage.removeItem('user');
-    } catch {
-        /* storage disabled */
-    }
+    clearCurrentUser();
     clearUserCache();
     clearPlanPurchaseState();
     queryClient.clear();
@@ -95,11 +96,7 @@ export const login = async (credentials) => {
     if (response.statusCode === 200 || response.statusCode === 0) {
         const { accessToken, userID, username, role, email, authProvider } = response.data;
         setTokens({ accessToken });
-        try {
-            localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
-        } catch {
-            /* storage disabled — user info available from server next refetch */
-        }
+        setCurrentUser({ userID, username, role, email, authProvider });
         // Cache profile + subscription từ BE (lần load sau chỉ verify token)
         saveLoginDataToCache(response.data);
         notifyAuthChanged('login');
@@ -142,11 +139,7 @@ export const googleLogin = async (idToken) => {
     if (response.statusCode === 200 || response.statusCode === 0) {
         const { accessToken, userID, username, role, email, authProvider } = response.data;
         setTokens({ accessToken });
-        try {
-            localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
-        } catch {
-            /* storage disabled */
-        }
+        setCurrentUser({ userID, username, role, email, authProvider });
         saveLoginDataToCache(response.data);
         notifyAuthChanged('login');
     }
@@ -279,12 +272,14 @@ export const logout = () => {
 };
 
 /**
- * Lấy thông tin user hiện tại từ localStorage
+ * Lấy thông tin user hiện tại từ snapshot client-side.
+ * Delegate sang src/lib/currentUser.js để cả app dùng chung 1 nguồn,
+ * có guard JSON.parse và subscription trong cùng tab.
+ *
  * @returns {Object|null} Thông tin user hoặc null nếu chưa đăng nhập
  */
 export const getCurrentUser = () => {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    return getCurrentUserFromStorage();
 };
 
 /**

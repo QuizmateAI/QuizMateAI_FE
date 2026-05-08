@@ -14,6 +14,7 @@ import {
 import { acceptInvitation, previewInvitation } from '@/api/GroupAPI';
 import { logout } from '@/api/Authentication';
 import { getAccessToken } from '@/utils/tokenStorage';
+import { getCurrentUser } from '@/lib/currentUser';
 import { unwrapApiData } from '@/utils/apiResponse';
 import { useToast } from '@/context/ToastContext';
 import { buildGroupWorkspacePath, withQueryParams } from '@/lib/routePaths';
@@ -22,13 +23,7 @@ import { formatGroupLearningMode } from './utils/groupDisplay';
 const WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 
 function readStoredUser() {
-  try {
-    const rawUser = window.localStorage.getItem('user');
-    return rawUser ? JSON.parse(rawUser) : null;
-  } catch (error) {
-    console.error('Unable to read current user from storage:', error);
-    return null;
-  }
+  return getCurrentUser();
 }
 
 function decodeBase64Url(value) {

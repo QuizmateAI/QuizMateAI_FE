@@ -50,8 +50,9 @@ export default defineConfig([
       /* 2. LOẠI BỎ IMPORT VÀ BIẾN THỪA (CLEAN CODE) */
       'no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
+      // Bật cảnh báo unused vars để CR thấy được, prefix _ để by-pass có chủ ý.
       'unused-imports/no-unused-vars': [
-        'off',
+        'warn',
         {
           vars: 'all',
           varsIgnorePattern: '^_',
@@ -62,15 +63,18 @@ export default defineConfig([
 
       /* 3. ĐẢM BẢO HIỆU SUẤT REACT HOOKS */
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'off',
+      // Bật lại exhaustive-deps ở mức warn để không vỡ build hiện tại nhưng
+      // CR vẫn nhìn thấy stale closure / missing deps. Nâng lên 'error' sau
+      // khi đã dọn các file lớn (xem AGENTS.md).
+      'react-hooks/exhaustive-deps': 'warn',
 
       /* 4. QUY TẮC JSX */
       'react/jsx-no-duplicate-props': 'error',
       'react/self-closing-comp': 'off',
       'react/prop-types': 'off',
 
-      /* 5. CẢNH BÁO CONSOLE KHI DEPLOY */
-      'no-console': 'off',
+      /* 5. CẢNH BÁO CONSOLE KHI DEPLOY (terser drop ở prod build) */
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
 
       /* 6. CHO PHÉP EXPORT HỖN HỢP (hook + component) — pattern phổ biến */
       'react-refresh/only-export-components': 'off',

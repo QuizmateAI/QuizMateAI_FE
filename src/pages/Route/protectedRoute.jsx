@@ -1,20 +1,9 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { getAccessToken } from '@/utils/tokenStorage';
+import { getCurrentUser } from '@/lib/currentUser';
 
-/**
- * Lấy thông tin user từ localStorage
- */
-const getUser = () => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) return null;
-    try {
-        return JSON.parse(userStr);
-    } catch {
-        return null;
-    }
-};
-
+const getUser = () => getCurrentUser();
 const getToken = () => getAccessToken();
 
 /**
