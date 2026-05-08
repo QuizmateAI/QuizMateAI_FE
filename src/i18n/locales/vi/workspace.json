@@ -1126,9 +1126,15 @@
         "updateFeedback": "Cập nhật feedback community",
         "loadError": "Không thể tải quiz community.",
         "commentPlaceholder": "Bình luận công khai để mọi người cùng thấy.",
+        "replyPlaceholder": "Viết phản hồi",
         "commentSuccess": "Đã gửi bình luận community.",
         "commentError": "Không thể gửi bình luận community.",
         "cloneAction": "Clone vào workspace"
+      },
+      "pasteImport": {
+        "step2": {
+          "placeholder": "{ \"title\": \"...\", \"sections\": [ ... ] }"
+        }
       },
       "communityFeedback": {
         "title": "Đánh giá quiz community",
@@ -1259,7 +1265,9 @@
         "selectedMaterialsCount": "Đang sử dụng {{count}} tài liệu được chọn từ Sources panel.",
         "noSelectedMaterials": "Xin hãy chọn tài liệu mà bạn muốn sử dụng",
         "workspaceMaterialsEmpty": "Chưa có tài liệu trong không gian này. Hãy thêm từ panel Sources.",
+        "loadingMaterials": "Đang tải tài liệu...",
         "materialSelectedBadge": "Đã chọn",
+        "materialsLoading": "Đang tải danh sách tài liệu...",
         "materialsSelectedSummary": "Đã chọn {{selected}}/{{total}}",
         "subTopicLabel": "Chủ đề gợi ý (tuỳ chọn)",
         "subTopicLoading": "Đang tải chủ đề...",
@@ -2052,6 +2060,7 @@
       "createRoadmapButton": "Tạo roadmap",
       "emptyRoadmapTitle": "Chào mừng đến với lộ trình",
       "emptyRoadmapDescription": "Tạo giai đoạn bằng AI để bắt đầu lộ trình học từ các tài liệu đã chọn.",
+      "generatingKnowledge": "Vui lòng chờ trong khi AI tạo kiến thức cho giai đoạn này...",
       "loading": {
         "title": "Đang tải lộ trình",
         "description": "Vui lòng chờ trong khi AI tạo tiêu đề, mô tả và cấu trúc lộ trình."
@@ -2198,6 +2207,9 @@
       "noSourcesYet": "Chưa có nguồn nào. Hãy tải tài liệu để mở roadmap, quiz và flashcard.",
       "activeLabel": "đang hoạt động",
       "readyBadge": "Sẵn sàng",
+      "uploadProgress": {
+        "uploading": "Đang tải lên"
+      },
       "roadmapSnapshotTitle": "Tổng quan roadmap",
       "roadmapSnapshotReady": "Roadmap đã sẵn sàng. Mở để đi theo từng phase.",
       "roadmapSnapshotEmpty": "Chưa có phase nào. Hãy tạo roadmap từ nguồn đã chọn.",
@@ -3299,6 +3311,11 @@
       "replyPlaceholder": "Viết phản hồi",
       "cancelReply": "Hủy",
       "sendReply": "Gửi"
+    },
+    "pasteImport": {
+      "step2": {
+        "placeholder": "{ \"title\": \"...\", \"sections\": [ ... ] }"
+      }
     }
   },
   "editChoiceDialog": {

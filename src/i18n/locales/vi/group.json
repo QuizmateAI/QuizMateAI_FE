@@ -1083,6 +1083,7 @@
       "preLearningRequirement": "Yêu cầu pre-learning",
       "preLearningRequired": "Cần hoàn thành trước khi vào lộ trình học chung.",
       "preLearningOptional": "Không bắt buộc, tùy theo mức độ hiện tại của bạn.",
+      "learningSnapshotLoading": "Đang tải tổng quan học tập của bạn...",
       "peopleTitle": "Những người trong nhóm này",
       "peopleDescription": "Một cái nhìn nhanh để thành viên biết mình đang học cùng ai.",
       "youBadge": "Bạn"
@@ -2209,6 +2210,7 @@
     },
     "input": {
       "placeholder": "Viết bình luận… Dùng / để tag câu hỏi · Enter để gửi",
+      "replyPlaceholder": "Trả lời {{name}}… Nhấn Enter để gửi",
       "footerPrefix": "Enter gửi · Shift+Enter xuống hàng ·",
       "leaderCanDelete": "Leader có thể xóa mọi bình luận",
       "memberCanDelete": "Chỉ có thể xóa bình luận của bạn"
@@ -2255,6 +2257,9 @@
         "image": "Ảnh",
         "sticker": "Sticker"
       }
+    },
+    "reply": {
+      "placeholder": "Trả lời {{name}}"
     },
     "dialog": {
       "lockedNotice": "Hoàn thành quiz để tham gia thảo luận cho câu hỏi này.",
