@@ -625,6 +625,133 @@
       "createTitle": "Tạo Quiz",
       "createDesc": "Tạo bài kiểm tra cho Không gian.",
       "challengeDraftDesc": "Soạn đề cho challenge: cập nhật tên, độ khó, thời gian, câu hỏi và đáp án.",
+      "createMode": {
+        "ai": "QuizMate AI",
+        "manual": "Thủ công",
+        "paste": "Dán JSON"
+      },
+      "pasteImport": {
+        "step1": {
+          "title": "Bước 1 — Lấy prompt và dán sang công cụ AI",
+          "description": "Copy prompt dưới đây, dán vào ChatGPT / NotebookLM / công cụ AI khác. Sau khi AI sinh JSON, copy lại JSON đó và dán vào ô ở Bước 2.",
+          "copy": "Copy prompt",
+          "copied": "Đã copy",
+          "doNotEditPrompt": "Không tự ý sửa khung prompt, tên trường hay cấu trúc JSON mẫu trong prompt. Chỉ bổ sung nội dung theo chỗ hướng dẫn. Sửa sai schema sẽ khiến JSON lệch so với hệ thống và bị từ chối."
+        },
+        "step2": {
+          "title": "Bước 2 — Dán JSON vào đây",
+          "description": "Dán nguyên JSON do AI bên thứ 3 sinh. Hệ thống chỉ chấp nhận đúng schema trong prompt; sai sẽ bị reject.",
+          "uploadHint": "Bạn có thể dán trực tiếp hoặc bấm \"Tải tệp JSON\" để đưa nội dung file vào ô soạn thảo. Hệ thống tự kiểm tra tên trường, kiểu dữ liệu và từng câu hỏi so với schema trước khi gửi.",
+          "uploadButton": "Tải tệp JSON",
+          "uploadTitle": "Chọn tệp .json trên máy",
+          "fileLoaded": "Đã tải nội dung từ \"{{name}}\".",
+          "fileReadError": "Không đọc được tệp. Hãy thử tệp .json UTF-8 hoặc dán nội dung thủ công.",
+          "tabs": { "edit": "Soạn thảo", "preview": "Xem trước" },
+          "format": "Định dạng",
+          "formatHint": "Định dạng theo chuẩn JSON (thụt 2 dấu cách).",
+          "copy": "Copy JSON",
+          "copied": "Đã copy",
+          "placeholder": "{ \"title\": \"...\", \"sections\": [ ... ] }",
+          "parsedOk": "JSON OK — \"{{title}}\", tổng số câu: {{count}}.",
+          "validationTitle": "JSON chưa khớp schema hoặc có trường sai:",
+          "validationTitleFriendly": "Cần chỉnh lại JSON — tra theo số dòng ở cột bên trái ô soạn thảo:",
+          "lineBadge": "Dòng {{line}}",
+          "validationMore": "… và {{count}} lỗi khác."
+        },
+        "errors": {
+          "jsonSyntax": "JSON bị lỗi cú pháp (dấu ngoặc/phẩy hoặc chuỗi chưa đóng). Hãy sửa từ đầu file hoặc dùng nút Định dạng nếu JSON hợp lệ. Chi tiết: {{message}}",
+          "notObject": "Toàn bộ nội dung phải là một object JSON `{ ... }`, không phải mảng `[...]` hay một giá trị đơn.",
+          "missingSections": "Chưa có danh sách phần thi (\"sections\") hoặc đang rỗng. JSON cần mảng sections giống trong prompt.",
+          "missingTitle": "Chưa có tiêu đề quiz (\"title\") hoặc đang để trống. Thêm một dòng \"title\": \"…\" giống mẫu trong prompt.",
+          "loadTemplate": "Không tải được prompt template.",
+          "copyFailed": "Không sao chép được. Hãy chọn và copy thủ công."
+        },
+        "validation": {
+          "unknownRootKeys": "Có tên trường ở đầu file không nằm trong mẫu hệ thống (có thể bị bỏ qua): {{keys}}. Nên xóa hoặc đổi đúng như trong prompt.",
+          "titleTooLong": "Tiêu đề quiz (title) quá dài: tối đa {{max}} ký tự.",
+          "timerModeRequired": "Thiếu \"timerMode\": đặt true nếu tính giờ cả bài (kèm duration), hoặc false nếu tính giờ từng câu.",
+          "timerModeType": "\"timerMode\" phải là đúng hoặc sai (true/false trong JSON), không dùng chữ \"đúng\" hay số 0/1.",
+          "durationWhenQuizTimer": "Bạn chọn tính giờ cả bài (timerMode: true) nên cần số giây duration ≥ 1 cho cả quiz.",
+          "quizIntentInvalid": "Mục đích quiz (quizIntent) không đúng. Chỉ dùng một trong: PRE_LEARNING, POST_LEARNING, REVIEW, MOCK_TEST (viết hoa, gạch dưới). Giá trị hiện tại: \"{{value}}\".",
+          "quizIntentType": "quizIntent (nếu có) phải là chuỗi — ví dụ \"REVIEW\".",
+          "difficultyInvalid": "Độ khó chung (overallDifficulty) không đúng. Dùng: EASY, MEDIUM, HARD hoặc CUSTOM. Giá trị hiện tại: \"{{value}}\".",
+          "difficultyType": "overallDifficulty (nếu có) phải là chuỗi — ví dụ \"MEDIUM\".",
+          "noQuestions": "Trong sections chưa có câu hỏi nào. Mỗi phần cần ít nhất một object trong mảng questions.",
+          "tooManyQuestions": "Quiz có {{count}} câu — vượt giới hạn {{max}} câu mỗi quiz. Hãy tách bớt sang bài khác.",
+          "sectionInvalid": "{{path}}: section không hợp lệ.",
+          "sectionNoQuestions": "{{path}}.questions: mỗi section phải có ít nhất 1 câu hỏi.",
+          "questionInvalid": "{{path}}: câu hỏi không hợp lệ.",
+          "questionContentEmpty": "{{path}}.content: không được rỗng.",
+          "questionTypeMissing": "{{path}}.questionType: bắt buộc (vd SINGLE_CHOICE).",
+          "questionTypeType": "{{path}}.questionType: phải là chuỗi tên enum.",
+          "questionTypeUnknown": "{{path}}.questionType \"{{value}}\" không hợp lệ. Kiểm tra đúng chính tả enum (vd SINGLE_CHOICE).",
+          "imagedNotInPaste": "{{path}}: loại IMAGED_BASED không hỗ trợ qua dán JSON (cần upload ảnh).",
+          "questionTypePlan": "{{path}}: loại {{type}} không có trong gói prompt hiện tại. Cho phép: {{allowed}}.",
+          "questionDurationPerQuestion": "{{path}}.duration: khi timerMode=false, mỗi câu cần duration > 0 (giây).",
+          "answersRequired": "{{path}}.answers: phải có ít nhất 1 đáp án.",
+          "answerInvalid": "{{path}}: đáp án không hợp lệ.",
+          "answerIsCorrect": "{{path}}.isCorrect: bắt buộc true/false.",
+          "answerContentBlank": "{{path}}.content: không được rỗng với loại {{type}}.",
+          "matchingJsonInvalid": "JSON ghép cặp không hợp lệ: {{message}}",
+          "matchingOneAnswer": "{{path}}.answers: MATCHING cần đúng 1 phần tử chứa cặp ghép.",
+          "matchingCorrectFlag": "{{path}}.isCorrect: MATCHING cần isCorrect=true.",
+          "matchingPairsMin": "{{path}}: MATCHING cần ít nhất 2 cặp leftKey/rightKey (matchingPairs hoặc content JSON).",
+          "matchingPairIncomplete": "{{path}}: cặp [{{index}}] thiếu leftKey hoặc rightKey.",
+          "matchingDupLeft": "{{path}}: leftKey \"{{left}}\" bị trùng.",
+          "singleMinAnswers": "{{path}}.answers: SINGLE_CHOICE cần ≥ 2 đáp án.",
+          "singleOneCorrect": "{{path}}.answers: SINGLE_CHOICE cần đúng 1 đáp án isCorrect=true.",
+          "multiMinAnswers": "{{path}}.answers: MULTIPLE_CHOICE cần ≥ 2 đáp án.",
+          "multiSomeCorrect": "{{path}}.answers: MULTIPLE_CHOICE cần ≥ 1 đáp án đúng.",
+          "tfTwoAnswers": "{{path}}.answers: TRUE_FALSE cần đúng 2 đáp án.",
+          "tfOneCorrect": "{{path}}.answers: TRUE_FALSE cần đúng 1 đáp án đúng.",
+          "shortAnswerSample": "{{path}}.answers: {{type}} cần ít nhất một đáp án mẫu có isCorrect=true và content không rỗng.",
+          "sectionInvalidUser": "Phần {{section}} trong \"sections\" không hợp lệ (bị null hoặc không phải object). Sửa lại theo đúng mẫu { ... }.",
+          "sectionNoQuestionsUser": "Phần {{section}} chưa có mảng \"questions\" hoặc đang rỗng. Mỗi phần cần ít nhất một câu hỏi.",
+          "questionInvalidUser": "Khối câu hỏi bị sai cấu trúc (không phải { … }). So khớp lại với mẫu trong prompt.",
+          "questionContentEmptyUser": "Nội dung câu hỏi (content) đang trống. Hãy điền câu hỏi đầy đủ.",
+          "questionTypeMissingUser": "Thiếu loại câu (questionType). Thêm ví dụ \"SINGLE_CHOICE\" hoặc đúng loại trong prompt.",
+          "questionTypeTypeUser": "questionType phải là chuỗi trong dấu ngoặc kép, ví dụ \"TRUE_FALSE\".",
+          "questionTypeUnknownHint": "Loại \"{{value}}\" không hợp lệ. Với câu Đúng/Sai hãy dùng đúng \"{{suggest}}\" trong prompt (không dùng YES_NO hoặc tương tự).",
+          "questionTypeUnknownUser": "Loại \"{{value}}\" không có trong danh mục hệ thống. Mở prompt và chép đúng tên (vd SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE…).",
+          "imagedNotInPasteUser": "Câu kèm ảnh (IMAGED_BASED) không tạo được qua dán JSON. Tạo quiz thủ công trong app để tải ảnh.",
+          "questionTypePlanUser": "Loại {{type}} không nằm trong prompt/gói hiện tại. Gói của bạn chỉ hỗ trợ: {{allowed}}.",
+          "questionDurationUser": "Chế độ tính giờ từng câu: mỗi câu cần duration là số giây > 0.",
+          "answersRequiredUser": "Chưa có đáp án (answers). Mỗi câu cần mảng các lựa chọn như trong mẫu.",
+          "answerInvalidUser": "Ô đáp án bị sai cấu trúc. Mỗi đáp án phải là object có content và isCorrect.",
+          "answerIsCorrectUser": "Thiếu isCorrect hoặc không phải true/false. Đánh dấu đáp án đúng bằng isCorrect: true.",
+          "answerContentBlankUser": "Nội dung đáp án đang trống — với loại {{type}} mỗi lựa chọn cần chữ trong \"content\".",
+          "matchingOneAnswerUser": "Câu ghép đôi (MATCHING): trong answers chỉ được một object, bên trong chứa các cặp leftKey/rightKey.",
+          "matchingCorrectFlagUser": "Với MATCHING, đáp án phải có isCorrect: true.",
+          "matchingPairsMinUser": "MATCHING cần ít nhất 2 cặp ghép (leftKey và rightKey), hoặc JSON pairs trong content.",
+          "matchingPairIncompleteUser": "Cặp ghép thứ {{index}} thiếu leftKey hoặc rightKey.",
+          "matchingDupLeftUser": "Không được trùng leftKey \"{{left}}\" trong cùng câu MATCHING.",
+          "singleMinAnswersUser": "Trắc nghiệm một đáp án đúng cần ít nhất 2 lựa chọn.",
+          "singleOneCorrectUser": "Cần đúng một đáp án có isCorrect: true (và các đáp án còn lại là false).",
+          "multiMinAnswersUser": "Trắc nghiệm nhiều đáp án cần ít nhất 2 lựa chọn.",
+          "multiSomeCorrectUser": "Cần ít nhất một đáp án đúng (isCorrect: true).",
+          "tfTwoAnswersUser": "Đúng/Sai cần đúng 2 lựa chọn (thường là hai dòng content).",
+          "tfOneCorrectUser": "Đúng/Sai cần đúng một lựa chọn là đáp án đúng (isCorrect: true).",
+          "shortAnswerSampleUser": "Cần ít nhất một đáp án mẫu có isCorrect: true và nội dung không trống để hệ thống chấm ({{type}})."
+        },
+        "disclaimer": {
+          "heading": "Lưu ý: nội dung do bên thứ 3 sinh ra.",
+          "body": "QuizMateAI KHÔNG kiểm duyệt và KHÔNG dùng AI để xác minh chất lượng câu hỏi/đáp án/giải thích trong JSON này. Bạn chịu trách nhiệm về tính chính xác và bản quyền của nội dung."
+        },
+        "actions": { "saving": "Đang lưu...", "create": "Tạo quiz từ JSON" },
+        "toasts": {
+          "success": "Đã tạo quiz \"{{title}}\" ở trạng thái bản nháp!",
+          "error": "Có lỗi khi tạo quiz từ JSON đã dán."
+        },
+        "confirmDialog": {
+          "title": "Xác nhận tạo quiz từ JSON",
+          "body": "Bạn xác nhận đã đọc và đồng ý: nội dung quiz này do công cụ AI bên thứ 3 (ChatGPT / NotebookLM / ...) sinh ra. QuizMateAI KHÔNG xác minh tính chính xác và KHÔNG chịu trách nhiệm về sai sót, vi phạm bản quyền hoặc nội dung không phù hợp.",
+          "confirm": "Tôi hiểu, tạo quiz"
+        },
+        "validationUser": {
+          "refQuestion": "Phần {{section}}, câu {{question}}: {{body}}",
+          "refAnswer": "Phần {{section}}, câu {{question}}, lựa chọn {{answer}}: {{body}}"
+        }
+      },
       "manualWizard": {
         "header": {
           "createTitle": "Tạo quiz thủ công",
@@ -1462,6 +1589,7 @@
       "header": {
         "english": "Tiếng Anh",
         "vietnamese": "Tiếng Việt",
+        "japanese": "Tiếng Nhật",
         "fontBeVietnamPro": "Be Vietnam Pro",
         "fontPoppins": "Poppins",
         "fontNunito": "Nunito",
@@ -1741,6 +1869,7 @@
         "selectedSingleMaterialCount": "{{count}}/1 tài liệu đã được chọn."
       },
       "create": "Tạo Flashcard",
+      "listSearchPlaceholder": "Tìm flashcard (tên bộ hoặc nội dung thẻ)...",
       "creating": "Đang tạo...",
       "cancel": "Hủy",
       "generateAI": "Tạo bằng AI",
@@ -1807,6 +1936,38 @@
         "aiDesc": "Sinh flashcard từ tài liệu",
         "manual": "Tạo thủ công",
         "manualDesc": "Nhập từng thẻ theo ý bạn"
+      },
+      "pasteImport": {
+        "step1": {
+          "title": "Bước 1 — Prompt cho công cụ AI",
+          "description": "Copy prompt dưới đây, dán vào ChatGPT / NotebookLM / AI khác. Yêu cầu AI chỉ trả về JSON đúng schema. Sau đó copy JSON và dán vào Bước 2.",
+          "copy": "Copy prompt",
+          "copied": "Đã copy",
+          "doNotEditPrompt": "Không tự ý đổi tên trường hoặc cấu trúc mẫu trong prompt. Chỉ bổ sung chủ đề/nội dung theo chỗ hướng dẫn.",
+          "offlineHint": "Không tải được prompt từ máy chủ — đang dùng bản mặc định. Bạn vẫn có thể copy và tạo JSON."
+        },
+        "step2": {
+          "title": "Bước 2 — Dán JSON flashcard",
+          "description": "Dán JSON do AI sinh (hoặc tải file .json). Hệ thống kiểm tra schema trước khi áp dụng vào bản nháp.",
+          "uploadButton": "Tải tệp JSON",
+          "fileLoaded": "Đã tải nội dung từ \"{{name}}\".",
+          "fileReadError": "Không đọc được tệp. Hãy thử .json UTF-8 hoặc dán nội dung thủ công."
+        },
+        "fallbackPromptBody": "Bạn là trợ lý tạo dữ liệu flashcard cho QuizMate AI.\nChỉ trả về MỘT object JSON hợp lệ, không markdown, không text ngoài JSON, đúng schema sau:\n\n{\n  \"flashcardSetName\": \"Tên bộ (tuỳ chọn)\",\n  \"items\": [\n    { \"frontContent\": \"Mặt trước thẻ 1\", \"backContent\": \"Mặt sau thẻ 1\" },\n    { \"frontContent\": \"…\", \"backContent\": \"…\" }\n  ]\n}\n\nQuy tắc:\n- Cho phép dùng key \"front\" / \"back\" thay cho frontContent / backContent.\n- Mỗi thẻ phải có đủ hai mặt, không để chuỗi rỗng.\n- \"items\" (hoặc \"cards\") là mảng, ít nhất 1 phần tử.\n\nCuối prompt, người dùng sẽ bổ sung: chủ đề, ngôn ngữ, độ dài, số thẻ mong muốn. Bạn sinh đúng JSON theo yêu cầu đó.\nTrả lại chỉ JSON.",
+        "errors": {
+          "loadTemplate": "Không tải được prompt từ máy chủ.",
+          "copyFailed": "Không sao chép được. Hãy chọn và copy thủ công.",
+          "notObject": "JSON phải là một object.",
+          "missingItems": "JSON thiếu mảng \"items\" (hoặc \"cards\") hoặc đang rỗng.",
+          "noValidPairs": "Không có cặp nào hợp lệ — mỗi thẻ cần frontContent/front và backContent/back.",
+          "syntax": "JSON sai cú pháp: {{message}}"
+        },
+        "title": "Dán JSON flashcard",
+        "hint": "Schema: flashcardSetName (tuỳ chọn), items: [{ frontContent, backContent }]. Có thể dùng front/back.",
+        "placeholder": "{ \"flashcardSetName\": \"…\", \"items\": [ … ] }",
+        "ready": "Hợp lệ — «{{name}}», {{count}} thẻ.",
+        "apply": "Áp dụng vào bộ nháp",
+        "defaultName": "Flashcard từ JSON"
       },
       "manualEditor": {
         "createTitle": "Tạo bộ flashcard",
@@ -2097,6 +2258,7 @@
       "start": "Bắt đầu Mock Test",
       "completeAllPhases": "Hoàn thành tất cả post-learning và Giai đoạn để mở mock test cuối cùng.",
       "noItems": "Chưa có mock test nào.",
+      "listSearchPlaceholder": "Tìm mock test theo tiêu đề hoặc mô tả...",
       "savedTemplatesButton": "Template đã lưu",
       "savedTemplatesTitle": "Kho template đã lưu",
       "validation": {
@@ -2289,7 +2451,13 @@
         "sources": "Nguồn",
         "roadmap": "Lộ trình",
         "quiz": "Bài kiểm tra",
+        "quizAi": "Quiz AI",
+        "quizManual": "Quiz thủ công",
+        "quizFromJson": "Tạo từ JSON",
         "flashcard": "Thẻ ghi nhớ",
+        "flashcardAi": "Flashcard AI",
+        "flashcardManual": "Flashcard thủ công",
+        "flashcardFromJson": "Tạo từ JSON",
         "mockTest": "Đề thi thử",
         "quizCollection": "Bộ sưu tập",
         "postLearning": "Sau học",
@@ -2364,7 +2532,7 @@
   },
   "quizListView": {
     "header": {
-      "searchPlaceholder": "Tìm kiếm quiz theo tiêu đề...",
+      "searchPlaceholder": "Tìm quiz theo tiêu đề hoặc mô tả...",
       "create": "Tạo mới",
       "createQuiz": "Tạo quiz",
       "community": "Quiz cộng đồng",
@@ -2378,6 +2546,38 @@
       "pickMemberPlaceholder": "Tất cả quiz giao riêng",
       "memberFallback": "User {{id}}",
       "loadingMembers": "Đang tải thành viên..."
+    },
+    "intentFilterBar": {
+      "label": "Mục đích ôn",
+      "allLearning": "Tất cả quiz học",
+      "mockTestNote": "Đề thi thử (mock test) có mục riêng Mock test trên thanh điều hướng."
+    },
+    "workspaceFilterBar": {
+      "open": "Bộ lọc"
+    },
+    "workspaceFilterDialog": {
+      "title": "Lọc danh sách quiz",
+      "subtitle": "Các bộ lọc chỉ áp dụng trên danh sách quiz đã tải trong màn hình này.",
+      "questionMin": "Số câu tối thiểu",
+      "questionMax": "Số câu tối đa",
+      "attempt": "Đã làm chưa",
+      "attemptAny": "Tất cả",
+      "attempted": "Đã làm",
+      "notAttempted": "Chưa làm",
+      "difficulty": "Độ khó",
+      "difficultyAny": "Tất cả",
+      "bloom": "Mức Bloom",
+      "bloomAny": "Tất cả",
+      "bloomHint": "Chỉ khớp nếu quiz có thông tin Bloom (một số bản ghi BE có thể thiếu).",
+      "durationMin": "Thời gian tối thiểu (phút)",
+      "durationMax": "Thời gian tối đa (phút)",
+      "timerMode": "Cách tính giờ",
+      "timerAny": "Tất cả",
+      "timerTotal": "Tổng thời gian bài",
+      "timerPerQuestion": "Theo từng câu",
+      "clearAll": "Xóa tất cả bộ lọc",
+      "cancel": "Hủy",
+      "apply": "Áp dụng"
     },
     "bulkActions": {
       "selectAll": "Chọn tất cả",

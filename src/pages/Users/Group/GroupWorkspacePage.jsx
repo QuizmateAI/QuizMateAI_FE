@@ -66,6 +66,7 @@ import { getQuizzesByScope, deleteQuiz } from '@/api/QuizAPI';
 import { unwrapApiData, unwrapApiList } from '@/utils/apiResponse';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { logSwallowed } from '@/utils/logSwallowed';
+import { cycleAppLanguage } from '@/utils/appSupportedLanguages';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
 import {
@@ -191,6 +192,8 @@ function GroupWorkspacePage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  /** Tab khởi tạo màn Quiz khi mở từ sidebar (AI / thủ công / dán JSON). */
+  const [groupSidebarQuizCreateMode, setGroupSidebarQuizCreateMode] = useState(null);
 
   // Section navigation via URL
   const legacySectionMap = { flashcardQuiz: 'quiz' };
@@ -231,6 +234,7 @@ function GroupWorkspacePage() {
     navigateInstant(buildGroupWorkspaceSectionPath(workspaceId, section, preservedQuery), { replace: true });
 
     // Reset sub-views when changing sections
+    setGroupSidebarQuizCreateMode(null);
     setActiveView(null);
     setSelectedQuiz(null);
     setQuizDetailFromChallengeReview(false);
@@ -838,6 +842,7 @@ function GroupWorkspacePage() {
   const {
     canCreateQuiz,
     canCreateFlashcard,
+    canConvertQuizToFlashcard,
     canCreateMockTest,
     canCreateRoadmap,
     canCreateContent,
@@ -854,6 +859,7 @@ function GroupWorkspacePage() {
     fallbackCanViewMemberDashboard,
     fallbackCanPublishQuiz: isLeader,
     fallbackCanAssignQuizAudience: isLeader,
+    fallbackCanConvertQuizToFlashcard: isLeader,
   });
   const pendingInvitationsQueryKey = useMemo(
     () => ['group-pending-invitations', resolvedWorkspaceId],
@@ -2799,6 +2805,10 @@ function GroupWorkspacePage() {
       setSelectedRoadmapQuizId(null);
     }
 
+    if (actionKey === 'createQuiz') {
+      setGroupSidebarQuizCreateMode(null);
+    }
+
     setActiveView(actionKey);
   }, [
     setActiveSection,
@@ -2812,6 +2822,98 @@ function GroupWorkspacePage() {
     canUploadSource,
     planEntitlements.hasWorkspaceAnalytics,
     t,
+  ]);
+
+  const navigateGroupStudioSubItem = useCallback(({ parentId, childId }) => {
+    if (shouldForceProfileSetup) {
+      showInfo(t('groupWorkspacePage.toast.completeProfileBeforeStudio', 'Complete the group profile before using studio tabs.'));
+      setProfileConfigOpen(true);
+      return;
+    }
+
+    const disabledActionsByRole = {
+      MEMBER: new Set(['dashboard', 'members', 'memberStats', 'wallet', 'settings']),
+      CONTRIBUTOR: new Set(['dashboard', 'wallet', 'settings']),
+      LEADER: new Set([]),
+    };
+    if (disabledActionsByRole[currentRoleKey]?.has(parentId)) {
+      showInfo(t('groupWorkspacePage.toast.featureNotAvailableForRole', 'This feature is not available for your role.'));
+      return;
+    }
+
+    if (parentId === 'quiz' && !canCreateQuiz) {
+      showInfo(t('groupWorkspacePage.toast.memberCannotCreateQuiz', 'Member cannot create quizzes.'));
+      return;
+    }
+
+    if (parentId === 'flashcard' && !canCreateFlashcard) {
+      showInfo(t('groupWorkspacePage.toast.memberCannotCreateFlashcard', 'Member cannot create flashcards.'));
+      return;
+    }
+
+    if (GROUP_SECTIONS_REQUIRE_MATERIALS.has(parentId) && !hasUploadedMaterials) {
+      showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
+      setActiveSection('documents');
+      setActiveView(null);
+      if (canUploadSource) {
+        setUploadDialogOpen(true);
+      }
+      return;
+    }
+
+    if (activeSection === 'roadmap' && parentId !== 'roadmap') {
+      skipNextRoadmapCanonicalizeRef.current = true;
+    }
+
+    const preservedQuery = {};
+    for (const [key, value] of searchParams.entries()) {
+      if (!key || key === 'section') continue;
+      preservedQuery[key] = value;
+    }
+
+    navigateInstant(buildGroupWorkspaceSectionPath(workspaceId, parentId, preservedQuery), { replace: true });
+
+    setSelectedQuiz(null);
+    setQuizDetailFromChallengeReview(false);
+    setSelectedFlashcard(null);
+    setSelectedMockTest(null);
+    setSelectedRoadmapPhaseId(null);
+    setSelectedRoadmapKnowledgeId(null);
+    setSelectedRoadmapQuizId(null);
+
+    if (parentId === 'quiz') {
+      const modeByChild = {
+        quizAi: 'ai',
+        quizManual: 'manual',
+        quizFromJson: 'paste',
+      };
+      const mode = modeByChild[childId] ?? null;
+      setGroupSidebarQuizCreateMode(mode);
+      setActiveView(mode ? 'createQuiz' : 'quiz');
+    } else if (parentId === 'flashcard') {
+      setGroupSidebarQuizCreateMode(null);
+      const viewByChild = {
+        flashcardAi: 'createFlashcard',
+        flashcardManual: 'createManualFlashcard',
+        flashcardFromJson: 'createManualFlashcard',
+      };
+      setActiveView(viewByChild[childId] || 'flashcard');
+    }
+
+    setIsMobileSidebarOpen(false);
+  }, [
+    activeSection,
+    canCreateFlashcard,
+    canCreateQuiz,
+    canUploadSource,
+    currentRoleKey,
+    hasUploadedMaterials,
+    navigateInstant,
+    searchParams,
+    setActiveSection,
+    showInfo,
+    t,
+    workspaceId,
   ]);
 
   const handleDismissWelcome = useCallback(() => {
@@ -3660,8 +3762,7 @@ function GroupWorkspacePage() {
   ]);
 
   const toggleLanguage = () => {
-    const newLang = currentLang === 'vi' ? 'en' : 'vi';
-    i18n.changeLanguage(newLang);
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
   };
 
   const resolvedGroupData = {
@@ -3747,6 +3848,7 @@ function GroupWorkspacePage() {
         activeView: activeView || defaultView,
         readOnly: !canCreateContent,
         canCreateQuiz,
+        canConvertQuizToFlashcard,
         canCreateFlashcard,
         canCreateMockTest,
         canCreateRoadmap,
@@ -3824,6 +3926,7 @@ function GroupWorkspacePage() {
             ? Number(challengeDraftQuizIdParam)
             : null,
         challengeSnapshotReviewMode: quizDetailFromChallengeReview,
+        groupSidebarQuizCreateMode,
       }}
     />
   );
@@ -4078,6 +4181,8 @@ function GroupWorkspacePage() {
             isDarkMode={isDarkMode}
             activeSection={activeSection}
             onSectionChange={setActiveSection}
+            onStudioSubAction={navigateGroupStudioSubItem}
+            studioActiveView={activeView}
             groupName={currentGroupName}
             wsConnected={wsConnected}
             memberCount={members.length}
@@ -4097,6 +4202,8 @@ function GroupWorkspacePage() {
           isDarkMode={isDarkMode}
           activeSection={activeSection}
           onSectionChange={setActiveSection}
+          onStudioSubAction={navigateGroupStudioSubItem}
+          studioActiveView={activeView}
           groupName={currentGroupName}
           wsConnected={wsConnected}
           memberCount={members.length}

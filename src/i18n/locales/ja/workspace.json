@@ -627,6 +627,133 @@
       "createTitle": "クイズを作成",
       "createDesc": "ワークスペース用のクイズを作成します。",
       "challengeDraftDesc": "チャレンジマッチを下書き: 名前、難易度、タイミング、問題、回答を設定。",
+      "createMode": {
+        "ai": "QuizMate AI",
+        "manual": "手動",
+        "paste": "JSONを貼り付け"
+      },
+      "pasteImport": {
+        "step1": {
+          "title": "ステップ1 — プロンプトをAIツールにコピー",
+          "description": "下のプロンプトをChatGPT / NotebookLM などに貼り付けます。AIがJSONを返したら、そのJSONをコピーしてステップ2に貼り付けます。",
+          "copy": "プロンプトをコピー",
+          "copied": "コピーしました",
+          "doNotEditPrompt": "プロンプトの枠・フィールド名・JSONサンプルの構造は変更しないでください。指示がある箇所に内容だけ追記してください。スキーマを変えるとシステムとずれ、拒否されます。"
+        },
+        "step2": {
+          "title": "ステップ2 — JSONをここに貼り付け",
+          "description": "第三者のAIが出力したJSONをそのまま貼り付けます。プロンプトのスキーマのみ受理され、誤りは拒否されます。",
+          "uploadHint": "直接貼り付けるか、「JSONファイルを読み込み」でファイル内容をエディタに載せられます。送信前にフィールド名・型・各設問がスキーマと一致するか確認します。",
+          "uploadButton": "JSONファイルを読み込み",
+          "uploadTitle": "端末から.jsonを選択",
+          "fileLoaded": "「{{name}}」から読み込みました。",
+          "fileReadError": "ファイルを読めませんでした。UTF-8の.jsonを試すか、手動で貼り付けてください。",
+          "tabs": { "edit": "編集", "preview": "プレビュー" },
+          "format": "整形",
+          "formatHint": "JSONを整形（2スペース）。",
+          "copy": "JSONをコピー",
+          "copied": "コピーしました",
+          "placeholder": "{ \"title\": \"...\", \"sections\": [ ... ] }",
+          "parsedOk": "JSON OK — 「{{title}}」、設問数: {{count}}。",
+          "validationTitle": "スキーマと一致しない、または無効なフィールド:",
+          "validationTitleFriendly": "次を修正してください（行番号は編集エリア左列と対応します）:",
+          "lineBadge": "{{line}} 行目",
+          "validationMore": "…他 {{count}} 件。"
+        },
+        "errors": {
+          "jsonSyntax": "JSONの構文エラーです（括弧・カンマ・閉じていない文字列など）。先頭から直すか、他は正しい場合は「整形」を使ってください。詳細: {{message}}",
+          "notObject": "全体はJSONオブジェクト `{ ... }` である必要があります。配列 `[...]` や単一の値にはできません。",
+          "missingSections": "空でない「sections」配列がありません。プロンプトと同様に sections を追加してください。",
+          "missingTitle": "クイズのタイトル（「title」）がないか空です。プロンプトの例に合わせて \"title\": \"…\" を追加してください。",
+          "loadTemplate": "プロンプトテンプレートを読み込めませんでした。",
+          "copyFailed": "コピーに失敗しました。選択して手動でコピーしてください。"
+        },
+        "validation": {
+          "unknownRootKeys": "ルートにシステムの雛形にないフィールド名があります（無視される場合があります）: {{keys}}。削除するか、プロンプトに合わせて名前を直してください。",
+          "titleTooLong": "クイズタイトル（title）が長すぎます。最大{{max}}文字です。",
+          "timerModeRequired": "「timerMode」がありません（boolean）。true＝全体タイマー（duration あり）、false＝設問ごとの計時。",
+          "timerModeType": "「timerMode」はJSONの真偽値 true/false である必要があります（文字列や 0/1 ではありません）。",
+          "durationWhenQuizTimer": "全体タイマー（timerMode: true）の場合、クイズ全体の duration は1秒以上が必要です。",
+          "quizIntentInvalid": "quizIntent が無効です。PRE_LEARNING, POST_LEARNING, REVIEW, MOCK_TEST のいずれか（大文字・アンダースコア）を使ってください。現在の値: \"{{value}}\"。",
+          "quizIntentType": "quizIntent はある場合のみ文字列にしてください（例: \"REVIEW\"）。",
+          "difficultyInvalid": "overallDifficulty が無効です。EASY, MEDIUM, HARD, CUSTOM のいずれかを使ってください。現在の値: \"{{value}}\"。",
+          "difficultyType": "overallDifficulty はある場合のみ文字列にしてください（例: \"MEDIUM\"）。",
+          "noQuestions": "sections にまだ設問がありません。各セクションの questions 配列に少なくとも1つのオブジェクトが必要です。",
+          "tooManyQuestions": "設問数が {{count}} で、上限 {{max}} を超えています。別のクイズに分けてください。",
+          "sectionInvalid": "{{path}}: セクションが無効です。",
+          "sectionNoQuestions": "{{path}}.questions: 各セクションに1問以上必要です。",
+          "questionInvalid": "{{path}}: 設問が無効です。",
+          "questionContentEmpty": "{{path}}.content: 空にできません。",
+          "questionTypeMissing": "{{path}}.questionType: 必須（例: SINGLE_CHOICE）。",
+          "questionTypeType": "{{path}}.questionType: 列挙名の文字列である必要があります。",
+          "questionTypeUnknown": "{{path}}.questionType \"{{value}}\" が無効です。綴りを確認（例: SINGLE_CHOICE）。",
+          "imagedNotInPaste": "{{path}}: IMAGED_BASED は貼り付けJSONでは未対応（画像アップロードが必要）。",
+          "questionTypePlan": "{{path}}: 型 {{type}} は現在のプランのプロンプトでは許可されません。許可: {{allowed}}。",
+          "questionDurationPerQuestion": "{{path}}.duration: timerMode=false のとき、各設問は duration > 0（秒）が必要です。",
+          "answersRequired": "{{path}}.answers: 1件以上必要です。",
+          "answerInvalid": "{{path}}: 回答が無効です。",
+          "answerIsCorrect": "{{path}}.isCorrect: true/false が必要です。",
+          "answerContentBlank": "{{path}}.content: 型 {{type}} では空にできません。",
+          "matchingJsonInvalid": "マッチング用JSONが無効: {{message}}",
+          "matchingOneAnswer": "{{path}}.answers: MATCHING はペアを含む回答オブジェクトを1つだけにしてください。",
+          "matchingCorrectFlag": "{{path}}.isCorrect: MATCHING は isCorrect=true が必要です。",
+          "matchingPairsMin": "{{path}}: MATCHING は leftKey/rightKey のペアを2つ以上（matchingPairs または content のJSON）。",
+          "matchingPairIncomplete": "{{path}}: ペア [{{index}}] に leftKey または rightKey がありません。",
+          "matchingDupLeft": "{{path}}: leftKey \"{{left}}\" が重複しています。",
+          "singleMinAnswers": "{{path}}.answers: SINGLE_CHOICE は回答が2つ以上必要です。",
+          "singleOneCorrect": "{{path}}.answers: SINGLE_CHOICE は isCorrect=true が1つ必要です。",
+          "multiMinAnswers": "{{path}}.answers: MULTIPLE_CHOICE は回答が2つ以上必要です。",
+          "multiSomeCorrect": "{{path}}.answers: MULTIPLE_CHOICE は正解が1つ以上必要です。",
+          "tfTwoAnswers": "{{path}}.answers: TRUE_FALSE は回答が2つ必要です。",
+          "tfOneCorrect": "{{path}}.answers: TRUE_FALSE は正解が1つ必要です。",
+          "shortAnswerSample": "{{path}}.answers: {{type}} には isCorrect=true で内容のある解答例が1つ以上必要です。",
+          "sectionInvalidUser": "「sections」のセクション{{section}}が無効です（null またはオブジェクトではありません）。プロンプトの `{ ... }` 例に合わせて修正してください。",
+          "sectionNoQuestionsUser": "セクション{{section}}に \"questions\" 配列がないか空です。各セクションに少なくとも1問必要です。",
+          "questionInvalidUser": "この設問ブロックの形が正しくありません（`{ … }` ではありません）。プロンプトのサンプルと突き合わせてください。",
+          "questionContentEmptyUser": "設問文（content）が空です。全文を入力してください。",
+          "questionTypeMissingUser": "設問タイプ（questionType）がありません。プロンプトに合わせ \"SINGLE_CHOICE\" などを追加してください。",
+          "questionTypeTypeUser": "questionType は引用符で囲んだ文字列にしてください（例: \"TRUE_FALSE\"）。",
+          "questionTypeUnknownHint": "タイプ \"{{value}}\" は無効です。正誤問題はプロンプトの \"{{suggest}}\" を使ってください（YES_NO などは使いません）。",
+          "questionTypeUnknownUser": "タイプ \"{{value}}\" はシステムにありません。プロンプトを開き、正確な名前をコピーしてください（例: SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE…）。",
+          "imagedNotInPasteUser": "画像付き設問（IMAGED_BASED）はJSON貼り付けでは作成できません。アプリで手動クイズを作成して画像をアップロードしてください。",
+          "questionTypePlanUser": "タイプ {{type}} は現在のプロンプト／プランでは使えません。利用可能: {{allowed}}。",
+          "questionDurationUser": "設問ごとの計時: 各設問の duration は秒で0より大きい値が必要です。",
+          "answersRequiredUser": "回答（answers）がありません。サンプルと同様に選択肢の配列が必要です。",
+          "answerInvalidUser": "この回答行の形が正しくありません。各回答は content と isCorrect を持つオブジェクトである必要があります。",
+          "answerIsCorrectUser": "isCorrect がないか、true/false ではありません。正解に isCorrect: true を付けてください。",
+          "answerContentBlankUser": "回答文が空です — タイプ {{type}} では各選択肢に \"content\" の文字が必要です。",
+          "matchingOneAnswerUser": "マッチング（MATCHING）: answers には leftKey/rightKey のペアを含むオブジェクトを1つだけ入れてください。",
+          "matchingCorrectFlagUser": "MATCHING では、ペアを含む回答行に isCorrect: true を設定してください。",
+          "matchingPairsMinUser": "MATCHING には少なくとも2組の leftKey と rightKey、または content 内の pairs JSON が必要です。",
+          "matchingPairIncompleteUser": "ペア{{index}}に leftKey または rightKey がありません。",
+          "matchingDupLeftUser": "同じ MATCHING 設問で leftKey \"{{left}}\" が重複しています。",
+          "singleMinAnswersUser": "単一選択には少なくとも2つの選択肢が必要です。",
+          "singleOneCorrectUser": "isCorrect: true の回答をちょうど1つ（他は false）にしてください。",
+          "multiMinAnswersUser": "複数選択には少なくとも2つの選択肢が必要です。",
+          "multiSomeCorrectUser": "正解（isCorrect: true）を少なくとも1つ必要とします。",
+          "tfTwoAnswersUser": "正誤問題は選択肢がちょうど2つ必要です（通常は2行の content）。",
+          "tfOneCorrectUser": "正誤問題では正解（isCorrect: true）がちょうど1つ必要です。",
+          "shortAnswerSampleUser": "採点のため、isCorrect: true で内容のある解答例が少なくとも1つ必要です（{{type}}）。"
+        },
+        "disclaimer": {
+          "heading": "注意: 第三者が生成したコンテンツです。",
+          "body": "QuizMateAIはモデレーションせず、このJSONの設問・解答・解説の品質をAIで検証しません。正確性と権利は利用者の責任です。"
+        },
+        "actions": { "saving": "保存中...", "create": "JSONからクイズを作成" },
+        "toasts": {
+          "success": "クイズ「{{title}}」をドラフトで作成しました！",
+          "error": "貼り付けたJSONからクイズを作成できませんでした。"
+        },
+        "confirmDialog": {
+          "title": "JSONからクイズ作成の確認",
+          "body": "このクイズ内容が第三者のAIツール（ChatGPT / NotebookLM 等）で生成されたことを確認します。QuizMateAIは正確性を保証せず、誤り・著作権・不適切な内容について責任を負いません。",
+          "confirm": "理解した上で作成する"
+        },
+        "validationUser": {
+          "refQuestion": "パート{{section}}、設問{{question}}: {{body}}",
+          "refAnswer": "パート{{section}}、設問{{question}}、選択肢{{answer}}: {{body}}"
+        }
+      },
       "manualWizard": {
         "header": {
           "createTitle": "手動クイズを作成",
@@ -1763,6 +1890,7 @@
         "termPercent": "用語パーセント"
       },
       "create": "フラッシュカードを作成",
+      "listSearchPlaceholder": "フラッシュカードを検索（セット名または表裏テキスト）...",
       "creating": "作成中...",
       "cancel": "キャンセル",
       "generateAI": "AI で生成",
@@ -1830,6 +1958,38 @@
         "aiDesc": "教材からフラッシュカードを生成",
         "manual": "手動で作成",
         "manualDesc": "各カードを自分で入力"
+      },
+      "pasteImport": {
+        "step1": {
+          "title": "ステップ 1 — AI 用プロンプト",
+          "description": "下のプロンプトを ChatGPT / NotebookLM などに貼り付け、スキーマに合う JSON のみを返すよう依頼します。生成された JSON をステップ 2 に貼り付けます。",
+          "copy": "プロンプトをコピー",
+          "copied": "コピーしました",
+          "doNotEditPrompt": "プロンプト内のフィールド名や構造は変えず、指示どおりにトピックだけ追加してください。",
+          "offlineHint": "サーバーからプロンプトを取得できませんでした。既定のプロンプトを表示しています。"
+        },
+        "step2": {
+          "title": "ステップ 2 — フラッシュカード JSON を貼り付け",
+          "description": "AI が出力した JSON を貼り付けるか、.json ファイルを読み込みます。下書きに適用前に形式を検証します。",
+          "uploadButton": "JSON ファイルを読み込む",
+          "fileLoaded": "「{{name}}」から読み込みました。",
+          "fileReadError": "ファイルを読めませんでした。UTF-8 の .json を試すか、手動で貼り付けてください。"
+        },
+        "fallbackPromptBody": "You generate flashcard data for QuizMate AI.\nReturn ONLY one valid JSON object—no markdown, no extra text—with this schema:\n\n{\n  \"flashcardSetName\": \"Set name (optional)\",\n  \"items\": [\n    { \"frontContent\": \"Front 1\", \"backContent\": \"Back 1\" }\n  ]\n}\n\nRules: use front/back instead of frontContent/backContent if needed; each card needs both sides; items or cards array must not be empty.\nThe user adds topic and count. Return only JSON.",
+        "errors": {
+          "loadTemplate": "プロンプトを取得できませんでした。",
+          "copyFailed": "コピーできませんでした。手動で選択してコピーしてください。",
+          "notObject": "JSON はオブジェクトである必要があります。",
+          "missingItems": "空でない \"items\"（または \"cards\"）配列が必要です。",
+          "noValidPairs": "有効なペアがありません。frontContent/front と backContent/back が必要です。",
+          "syntax": "JSON の構文エラー: {{message}}"
+        },
+        "title": "JSON からフラッシュカード",
+        "hint": "スキーマ: flashcardSetName（任意）、items: [{ frontContent, backContent }]。front/back も可。",
+        "placeholder": "{ \"flashcardSetName\": \"…\", \"items\": [ … ] }",
+        "ready": "有効 — «{{name}}」、{{count}} 枚。",
+        "apply": "下書きに適用",
+        "defaultName": "JSON から作ったフラッシュカード"
       },
       "manualEditor": {
         "createTitle": "フラッシュカードセットを作成",
@@ -2146,6 +2306,7 @@
       "start": "模擬試験を開始",
       "completeAllPhases": "最終模擬試験を解放するためにすべての学習後テストとフェーズを完了。",
       "noItems": "模擬試験はまだありません。",
+      "listSearchPlaceholder": "タイトルまたは概要で模擬試験を検索...",
       "savedTemplatesButton": "保存されたテンプレート",
       "savedTemplatesTitle": "保存されたテンプレートライブラリ",
       "validation": {
@@ -2338,7 +2499,13 @@
         "sources": "ソース",
         "roadmap": "ロードマップ",
         "quiz": "クイズ",
+        "quizAi": "AIクイズ",
+        "quizManual": "手動クイズ",
+        "quizFromJson": "JSONから作成",
         "flashcard": "フラッシュカード",
+        "flashcardAi": "AIフラッシュカード",
+        "flashcardManual": "手動フラッシュカード",
+        "flashcardFromJson": "JSONから作成",
         "mockTest": "模擬試験",
         "quizCollection": "コレクション",
         "postLearning": "学習後",
@@ -2413,7 +2580,7 @@
   },
   "quizListView": {
     "header": {
-      "searchPlaceholder": "タイトルでクイズを検索...",
+      "searchPlaceholder": "タイトルまたは概要でクイズを検索...",
       "create": "作成",
       "createQuiz": "クイズを作成",
       "community": "コミュニティクイズ",
@@ -2427,6 +2594,38 @@
       "pickMemberPlaceholder": "すべての割り当てクイズ",
       "memberFallback": "ユーザー {{id}}",
       "loadingMembers": "メンバーを読み込み中..."
+    },
+    "intentFilterBar": {
+      "label": "目的",
+      "allLearning": "すべての学習クイズ",
+      "mockTestNote": "模擬試験はサイドバーの Mock test で開いてください。"
+    },
+    "workspaceFilterBar": {
+      "open": "フィルター"
+    },
+    "workspaceFilterDialog": {
+      "title": "クイズをフィルター",
+      "subtitle": "この画面ですでに読み込んだクイズ一覧にのみフィルターを適用します。",
+      "questionMin": "問題数・最小",
+      "questionMax": "問題数・最大",
+      "attempt": "受験状態",
+      "attemptAny": "すべて",
+      "attempted": "受験済み",
+      "notAttempted": "未受験",
+      "difficulty": "難易度",
+      "difficultyAny": "すべて",
+      "bloom": "Bloom レベル",
+      "bloomAny": "すべて",
+      "bloomHint": "クイズに Bloom 情報が含まれる場合のみ一致します。",
+      "durationMin": "最短時間（分）",
+      "durationMax": "最長時間（分）",
+      "timerMode": "タイマー方式",
+      "timerAny": "すべて",
+      "timerTotal": "試験全体の制限時間",
+      "timerPerQuestion": "設問ごと",
+      "clearAll": "フィルターをすべて解除",
+      "cancel": "キャンセル",
+      "apply": "適用"
     },
     "bulkActions": {
       "selectAll": "すべて選択",

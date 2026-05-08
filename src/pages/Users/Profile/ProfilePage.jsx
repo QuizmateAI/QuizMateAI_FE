@@ -29,6 +29,7 @@ import {
 } from "./Components/ProfileTabs";
 import ProfileTopbar from "./Components/ProfileTopbar";
 import { getAvatarLetter } from "./Components/profileHelpers";
+import { cycleAppLanguage, getBaseAppLanguage } from "@/utils/appSupportedLanguages";
 
 const DEFAULT_PROFILE = {
   email: "",
@@ -83,7 +84,7 @@ function ProfilePage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigateWithLoading();
   const location = useLocation();
-  const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const fontClass = getBaseAppLanguage(i18n.language) === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language;
   const fileInputRef = useRef(null);
   const settingsRef = useRef(null);
@@ -181,9 +182,8 @@ function ProfilePage() {
   }, [navigate]);
 
   const handleToggleLanguage = useCallback(() => {
-    const nextLang = currentLang === "vi" ? "en" : "vi";
-    i18n.changeLanguage(nextLang);
-  }, [currentLang, i18n]);
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
+  }, [i18n]);
 
   const handleAvatarClick = useCallback(() => {
     fileInputRef.current?.click();

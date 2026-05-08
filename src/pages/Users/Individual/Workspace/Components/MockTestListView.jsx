@@ -1,7 +1,6 @@
 import React, {
   startTransition,
   useCallback,
-  useDeferredValue,
   useMemo,
   useState,
 } from "react";
@@ -37,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteQuiz, getQuizzesByScope } from "@/api/QuizAPI";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useToast } from "@/context/ToastContext";
 import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
 import { SavedMockTestTemplatesPanel } from "@/pages/Users/MockTest/components/SavedMockTestTemplatesPanel";
@@ -112,11 +112,14 @@ function formatShortDate(dateStr) {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
-async function loadMockTests({ contextId }) {
+async function loadMockTests({ contextId, search }) {
   if (!contextId) {
     return { items: [] };
   }
-  const response = await getQuizzesByScope("WORKSPACE", contextId, { quizIntent: "MOCK_TEST" });
+  const response = await getQuizzesByScope("WORKSPACE", contextId, {
+    quizIntent: "MOCK_TEST",
+    search: search?.trim() ? search.trim() : undefined,
+  });
   const rawQuizzes = response?.data ?? [];
   const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : [];
   // Mock test giờ là đề thử độc lập ở workspace level, không link roadmap.
@@ -145,41 +148,32 @@ function MockTestListView({
   const [deleteTargetQuiz, setDeleteTargetQuiz] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [savedPanelOpen, setSavedPanelOpen] = useState(false);
-  const deferredSearchQuery = useDeferredValue(searchQuery.trim().toLowerCase());
+  const debouncedSearchTrim = useDebouncedValue(searchQuery.trim(), 400);
 
   const {
     data: mockTestPayload = { items: [] },
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["workspace-mock-tests", String(contextType || "").toUpperCase(), normalizedContextId],
+    queryKey: ["workspace-mock-tests", String(contextType || "").toUpperCase(), normalizedContextId, debouncedSearchTrim],
     enabled: normalizedContextId > 0,
-    queryFn: () => loadMockTests({ contextId: normalizedContextId }),
+    queryFn: () => loadMockTests({
+      contextId: normalizedContextId,
+      search: debouncedSearchTrim || undefined,
+    }),
   });
 
   const mockTests = useMemo(() => mockTestPayload.items || [], [mockTestPayload.items]);
 
-  const filteredMockTests = useMemo(
-    () =>
-      mockTests.filter((item) => {
-        if (!deferredSearchQuery) return true;
-
-        return [item?.title, item?.description].some((value) =>
-          String(value || "").toLowerCase().includes(deferredSearchQuery),
-        );
-      }),
-    [deferredSearchQuery, mockTests],
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredMockTests.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(mockTests.length / ITEMS_PER_PAGE));
   const effectivePage = Math.min(page, totalPages);
 
   const pagedMockTests = useMemo(() => {
     const start = (effectivePage - 1) * ITEMS_PER_PAGE;
-    return filteredMockTests.slice(start, start + ITEMS_PER_PAGE);
-  }, [effectivePage, filteredMockTests]);
+    return mockTests.slice(start, start + ITEMS_PER_PAGE);
+  }, [effectivePage, mockTests]);
 
-  const showPagination = filteredMockTests.length > ITEMS_PER_PAGE;
+  const showPagination = mockTests.length > ITEMS_PER_PAGE;
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
 
   const handleConfirmDelete = useCallback(async () => {
@@ -222,7 +216,7 @@ function MockTestListView({
                   setPage(1);
                 });
               }}
-              placeholder={t("workspace.listView.searchPlaceholder")}
+              placeholder={t("workspace.mockTest.listSearchPlaceholder")}
               className={`h-11 w-full rounded-full border py-3 pl-10 pr-10 text-sm outline-none transition-colors ${
                 isDarkMode
                   ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-orange-400"
@@ -301,7 +295,7 @@ function MockTestListView({
               </Button>
             ) : null}
           </div>
-        ) : filteredMockTests.length === 0 ? (
+        ) : mockTests.length === 0 ? (
           <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
             <FolderOpen className={`mb-3 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.listView.noResults")}</p>
@@ -500,7 +494,7 @@ function MockTestListView({
                   {t("workspace.listView.pagination.pageInfo", {
                     page: effectivePage,
                     totalPages,
-                    count: filteredMockTests.length,
+                    count: mockTests.length,
                   })}
                 </p>
                 <div className="flex items-center gap-2">

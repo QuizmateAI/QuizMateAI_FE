@@ -30,6 +30,12 @@ import { getActiveGroupPlan, getActiveUserPlans } from "@/api/ManagementSystemAP
 import { getWorkspaceCurrentPlan } from "@/api/WorkspaceAPI";
 import { createPlanSummaryFromSubscription, useCurrentSubscription } from "@/hooks/useCurrentSubscription";
 import { buildWalletsPath } from "@/lib/routePaths";
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getAppNumberLocale,
+  getBaseAppLanguage,
+} from "@/utils/appSupportedLanguages";
 
 const MATERIAL_FORMATS = [
   { key: "processPdf", labelKey: "pdf" },
@@ -421,7 +427,6 @@ function useSettingsMenu({ fontClass, isDarkMode, toggleDarkMode, toggleLanguage
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [settingsRef, setSettingsRef] = useState(null);
-  const currentLang = i18n?.language || "vi";
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -471,7 +476,7 @@ function useSettingsMenu({ fontClass, isDarkMode, toggleDarkMode, toggleLanguage
               <Globe className="w-4 h-4" />
               {t("common.language")}
             </span>
-            <span className={`text-xs font-semibold ${fontClass}`}>{currentLang === "vi" ? "VI" : "EN"}</span>
+            <span className={`text-xs font-semibold ${fontClass}`}>{appLanguageShortLabel(i18n.language)}</span>
           </button>
           <button
             type="button"
@@ -505,8 +510,9 @@ export default function PlanPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const currentLang = i18n?.language || "vi";
-  const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
-  const locale = currentLang === "vi" ? "vi-VN" : "en-US";
+  const baseLang = getBaseAppLanguage(currentLang);
+  const fontClass = baseLang === "en" ? "font-poppins" : "font-sans";
+  const locale = getAppNumberLocale(currentLang);
   const scopedWorkspaceId = normalizeWorkspaceId(searchParams.get("workspaceId"));
   const requestedPlanType = String(searchParams.get("planType") || "").toUpperCase();
   const isGroupScopedPage = requestedPlanType === "GROUP" && scopedWorkspaceId != null;
@@ -514,8 +520,7 @@ export default function PlanPage() {
 
   const toggleLanguage = () => {
     if (!i18n?.changeLanguage) return;
-    const newLang = currentLang === "vi" ? "en" : "vi";
-    i18n.changeLanguage(newLang);
+    void i18n.changeLanguage(cycleAppLanguage(currentLang));
   };
 
   const plansQuery = useQuery({

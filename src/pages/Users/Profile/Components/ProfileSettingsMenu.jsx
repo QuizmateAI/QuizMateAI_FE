@@ -2,6 +2,7 @@ import React from "react";
 import { Globe, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { appLanguageShortLabel } from "@/utils/appSupportedLanguages";
 
 export default function ProfileSettingsMenu({
   currentLang,
@@ -55,7 +56,7 @@ export default function ProfileSettingsMenu({
               <Globe className="h-4 w-4" />
               {t("common.language")}
             </span>
-            <span className="text-xs font-semibold">{currentLang === "vi" ? "VI" : "EN"}</span>
+            <span className="text-xs font-semibold">{appLanguageShortLabel(currentLang)}</span>
           </button>
 
           <button

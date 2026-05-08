@@ -6,15 +6,16 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { Button } from '@/components/ui/button';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
+import { cycleAppLanguage, getBaseAppLanguage } from '@/utils/appSupportedLanguages';
 
 export default function PolicyHeader() {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const currentLang = i18n.language?.startsWith('en') ? 'en' : 'vi';
+  const currentLang = getBaseAppLanguage(i18n.language);
 
   const toggleLanguage = () => {
-    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
   };
 
   return (

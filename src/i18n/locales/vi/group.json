@@ -143,6 +143,10 @@
             "label": "Giao đối tượng làm quiz",
             "description": "Chọn thành viên được phép truy cập quiz."
           },
+          "CONVERT_QUIZ_TO_FLASHCARD": {
+            "label": "Chuyển quiz sang flashcard",
+            "description": "Từ chi tiết quiz, tạo một bộ flashcard từ đáp án (một lần/quiz)."
+          },
           "CREATE_FLASHCARD": {
             "label": "Tạo flashcard",
             "description": "Tạo và cập nhật bộ flashcard."
@@ -379,7 +383,13 @@
         "documents": "Tài liệu",
         "roadmap": "Lộ trình",
         "quiz": "Bài kiểm tra",
+        "quizAi": "Quiz AI",
+        "quizManual": "Quiz thủ công",
+        "quizFromJson": "Tạo từ JSON",
         "flashcard": "Thẻ ghi nhớ",
+        "flashcardAi": "Flashcard AI",
+        "flashcardManual": "Flashcard thủ công",
+        "flashcardFromJson": "Tạo từ JSON",
         "mockTest": "Đề thi thử",
         "challenge": "Thử thách",
         "ranking": "Xếp hạng",

@@ -24,6 +24,12 @@ import PaymentSidebar from './components/PaymentSidebar';
 import PaymentMethods from './components/PaymentMethods';
 import usePaymentCheckout from './hooks/usePaymentCheckout';
 import { buildWalletsPath } from '@/lib/routePaths';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getAppNumberLocale,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 
 function formatNumber(value, locale) {
   return new Intl.NumberFormat(locale).format(Number(value) || 0);
@@ -43,9 +49,9 @@ export default function CreditPaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = getBaseAppLanguage(i18n.language) === 'en' ? 'font-poppins' : 'font-sans';
   const currentLang = i18n.language;
-  const locale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+  const locale = getAppNumberLocale(currentLang);
   const creditPackageId = searchParams.get('creditPackageId');
   const customCreditsParam = searchParams.get('customCredits');
   const customCreditUnits = customCreditsParam ? Number(customCreditsParam) : null;
@@ -78,9 +84,7 @@ export default function CreditPaymentPage() {
   });
 
   const toggleLanguage = () => {
-    const newLang = currentLang === 'vi' ? 'en' : 'vi';
-    i18n.changeLanguage(newLang);
-    localStorage.setItem('app_language', newLang);
+    void i18n.changeLanguage(cycleAppLanguage(currentLang));
   };
 
   useEffect(() => {
@@ -249,7 +253,7 @@ export default function CreditPaymentPage() {
                       <Globe className="w-4 h-4" />
                       {t('common.language')}
                     </span>
-                    <span className={`text-xs font-semibold ${fontClass}`}>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+                    <span className={`text-xs font-semibold ${fontClass}`}>{appLanguageShortLabel(currentLang)}</span>
                   </button>
                   <button
                     type="button"

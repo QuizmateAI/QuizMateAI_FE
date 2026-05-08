@@ -55,6 +55,7 @@ import { getQuizCollectionsByWorkspace } from "@/api/QuizCollectionAPI";
 import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { cycleAppLanguage, getBaseAppLanguage } from "@/utils/appSupportedLanguages";
 import {
   WORKSPACE_ROUTE_SEGMENTS,
   buildWorkspacePath,
@@ -286,6 +287,11 @@ function WorkspacePage() {
 
     return "sources";
   });
+
+  /** Tab khởi tạo màn tạo quiz khi mở từ sidebar (AI / thủ công / JSON). */
+  const [workspaceSidebarQuizCreateMode, setWorkspaceSidebarQuizCreateMode] = useState(null);
+  /** Lọc danh sách flashcard theo mục con sidebar: ai | manual | paste */
+  const [workspaceSidebarFlashcardSubFilter, setWorkspaceSidebarFlashcardSubFilter] = useState(null);
 
   // Selected quiz state for detail and edit flows
   const [selectedQuiz, setSelectedQuiz] = useState(null);
@@ -921,8 +927,6 @@ function WorkspacePage() {
     workspaceId,
   ]);
 
-  const currentLang = i18n.language;
-
   const applyResolvedWorkspaceProfile = useCallback((profileData) => {
     if (!profileData) return null;
 
@@ -1040,9 +1044,7 @@ function WorkspacePage() {
   }, [workspaceId]);
 
   const toggleLanguage = () => {
-    const newLang = currentLang === "vi" ? "en" : "vi";
-
-    i18n.changeLanguage(newLang);
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
   };
 
   useEffect(() => {
@@ -1958,7 +1960,22 @@ function WorkspacePage() {
       }
 
       if (actionKey === activeView) {
+        if (actionKey === "quiz") {
+          setWorkspaceSidebarQuizCreateMode(null);
+          return;
+        }
+        if (actionKey === "flashcard") {
+          setWorkspaceSidebarFlashcardSubFilter(null);
+          return;
+        }
         return;
+      }
+
+      if (actionKey === "quiz") {
+        setWorkspaceSidebarQuizCreateMode(null);
+      }
+      if (actionKey === "flashcard") {
+        setWorkspaceSidebarFlashcardSubFilter(null);
       }
 
       // Track access history when the user opens a list view
@@ -2021,6 +2038,85 @@ function WorkspacePage() {
     ],
   );
 
+  const navigatePersonalStudioSubItem = useCallback(({ parentId, childId }) => {
+    setIsMobileSidebarOpen(false);
+
+    if (parentId === "roadmap" && canCreateRoadmap === false) {
+      setPlanUpgradeFeatureName(t("workspace.shell.featureNames.roadmap"));
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
+
+    const requiresSources = (
+      (parentId === "roadmap" && shouldDisableRoadmapForStudio) ||
+      (parentId === "quiz" && shouldDisableQuiz) ||
+      (parentId === "flashcard" && shouldDisableFlashcard)
+    );
+    if (requiresSources) {
+      showWarning(t("workspace.shell.lockToast.sources"));
+      if (activeView !== "sources") {
+        setActiveView("sources");
+      }
+      return;
+    }
+
+    if (parentId === "quiz" && shouldDisableCreateQuiz) {
+      showWarning(t("workspace.shell.lockToast.sources"));
+      return;
+    }
+
+    if (parentId === "flashcard" && shouldDisableCreateFlashcard) {
+      showWarning(t("workspace.shell.lockToast.sources"));
+      return;
+    }
+
+    setQuizBackTarget(null);
+    if (parentId !== "quizCollection") {
+      setSelectedCollection(null);
+    }
+    if (parentId !== "roadmap") {
+      setSelectedRoadmapPhaseId(null);
+      setSelectedRoadmapKnowledgeId(null);
+    }
+
+    if (parentId === "quiz") {
+      const modeByChild = {
+        quizAi: "ai",
+        quizManual: "manual",
+        quizFromJson: "paste",
+      };
+      const mode = modeByChild[childId] ?? null;
+      setWorkspaceSidebarQuizCreateMode(mode);
+      setActiveView("quiz");
+      addAccessHistory("quiz", "quiz", "quiz");
+      return;
+    }
+
+    if (parentId === "flashcard") {
+      const fcModeByChild = {
+        flashcardAi: "ai",
+        flashcardManual: "manual",
+        flashcardFromJson: "paste",
+      };
+      const fcMode = fcModeByChild[childId] ?? null;
+      setWorkspaceSidebarFlashcardSubFilter(fcMode);
+      setActiveView("flashcard");
+      addAccessHistory("flashcard", "flashcard", "flashcard");
+      return;
+    }
+  }, [
+    activeView,
+    addAccessHistory,
+    canCreateRoadmap,
+    shouldDisableCreateFlashcard,
+    shouldDisableCreateQuiz,
+    shouldDisableFlashcard,
+    shouldDisableQuiz,
+    shouldDisableRoadmapForStudio,
+    showWarning,
+    t,
+  ]);
+
   const handleSelectRoadmapPhase = useCallback((phaseId, options = {}) => {
     if (options?.focusRoadmapCenter) {
       skipRoadmapStoredRestoreRef.current = true;
@@ -2079,6 +2175,10 @@ function WorkspacePage() {
     },
     [trackQuizGenerationStart],
   );
+
+  const handleBackFromCommunityQuiz = useCallback(() => {
+    setActiveView("quiz");
+  }, []);
 
   const handleShareQuiz = useCallback(
     async (quiz) => {
@@ -2700,6 +2800,9 @@ function WorkspacePage() {
     isSubmittingRoadmapPhaseGeneration: isSubmittingRoadmapPhaseRequest,
     roadmapConfigSummary: roadmapConfigInitialValues,
     activeSourceCount: activeSourceIds.length,
+    workspaceSidebarQuizCreateMode,
+    workspaceSidebarFlashcardSubFilter,
+    onBackFromCommunityQuiz: handleBackFromCommunityQuiz,
   };
 
   // Stabilize props truyền vào PersonalWorkspaceSidebar để memo() hoạt động hiệu quả.
@@ -2760,6 +2863,20 @@ function WorkspacePage() {
     setIsMobileSidebarOpen(false);
   }, []);
 
+  const studioQuizSubKeyForSidebar = useMemo(() => {
+    const v = String(activeView || "");
+    return ["quiz", "createQuiz", "quizDetail", "editQuiz", "communityQuiz"].includes(v)
+      ? workspaceSidebarQuizCreateMode
+      : null;
+  }, [activeView, workspaceSidebarQuizCreateMode]);
+
+  const studioFlashcardSubKeyForSidebar = useMemo(() => {
+    const v = String(activeView || "");
+    return ["flashcard", "createFlashcard", "createManualFlashcard", "flashcardDetail"].includes(v)
+      ? workspaceSidebarFlashcardSubFilter
+      : null;
+  }, [activeView, workspaceSidebarFlashcardSubFilter]);
+
   return (
     <div
       className={cn(
@@ -2775,6 +2892,7 @@ function WorkspacePage() {
           workspaceTitle={personalSidebarTitle}
           activeView={activeView || "sources"}
           onNavigate={handleStudioAction}
+          onStudioSubAction={navigatePersonalStudioSubItem}
           onOpenProfile={handleWorkspaceProfileClick}
           onToggleLanguage={toggleLanguage}
           onToggleDarkMode={toggleDarkMode}
@@ -2787,6 +2905,8 @@ function WorkspacePage() {
           isMobile={isMobileViewport}
           mobileOpen={isMobileSidebarOpen}
           onCloseMobile={handleCloseMobileSidebar}
+          studioQuizSubKey={studioQuizSubKeyForSidebar}
+          studioFlashcardSubKey={studioFlashcardSubKeyForSidebar}
         />
 
         <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-200">
@@ -2895,7 +3015,7 @@ function WorkspacePage() {
             open={profileUpdateGuardOpen}
             onOpenChange={setProfileUpdateGuardOpen}
             isDarkMode={personalWorkspaceIsDark}
-            currentLang={i18n.language?.startsWith("en") ? "en" : "vi"}
+            currentLang={getBaseAppLanguage(i18n.language)}
             materialCount={materialCountForProfile}
             hasLearningData={hasWorkspaceLearningDataAtRisk}
             onDeleteAndContinue={handleDeleteMaterialsForProfileUpdate}

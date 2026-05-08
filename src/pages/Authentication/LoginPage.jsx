@@ -12,6 +12,11 @@ import { useLogin } from './Login';
 import { useRegister } from './Register';
 import { useForgotPassword } from './ForgotPassword';
 import AuthGoogleProvider, { isGoogleAuthEnabled } from './AuthGoogleProvider';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 
 const DiagonalHeroPanel = lazy(() => import('./DiagonalHeroPanel'));
 const RegisterOtpVerificationCard = lazy(() =>
@@ -193,11 +198,11 @@ const LoginPageContent = () => {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const currentLang = i18n.resolvedLanguage || i18n.language;
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const baseLang = getBaseAppLanguage(currentLang);
+  const fontClass = baseLang === 'en' ? 'font-poppins' : 'font-sans';
 
   const toggleLanguage = () => {
-    const newLang = currentLang === 'vi' ? 'en' : 'vi';
-    i18n.changeLanguage(newLang);
+    void i18n.changeLanguage(cycleAppLanguage(currentLang));
   };
 
   const [view, setView] = useState(location.state?.view || 'login');
@@ -245,7 +250,7 @@ const LoginPageContent = () => {
             className="flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <Globe className="h-4 w-4" />
-            <span>{currentLang === 'vi' ? t('loginPage.langShortVi', 'VI') : t('loginPage.langShortEn', 'EN')}</span>
+            <span>{appLanguageShortLabel(currentLang)}</span>
           </button>
         </div>
 
@@ -359,7 +364,7 @@ const LoginPageContent = () => {
                         shape="pill"
                         width="384"
                         text="signin_with"
-                        locale={currentLang}
+                        locale={baseLang}
                       />
                     </div>
                   ) : null}
@@ -696,7 +701,7 @@ const LoginPageContent = () => {
                           shape="pill"
                           width="384"
                           text="signin_with"
-                          locale={currentLang}
+                          locale={baseLang}
                         />
                       </div>
                     ) : null}

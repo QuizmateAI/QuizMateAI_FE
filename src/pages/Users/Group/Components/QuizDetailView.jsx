@@ -33,6 +33,7 @@ import UserDisplayName from "@/components/features/users/UserDisplayName";
 import GroupQuizReviewPanel from "@/pages/Users/Group/Components/GroupQuizReviewPanel";
 import GroupDiscussionPanel from "@/pages/Users/Group/Components/GroupDiscussionPanel";
 import QuestionDiscussionDialog from "@/pages/Users/Group/Components/QuestionDiscussionDialog";
+import QuizToFlashcardDialog from "@/pages/Users/Quiz/components/QuizToFlashcardDialog";
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/components/math/MixedMathText";
 import { hasQuizCompleted } from "@/utils/quizAttemptTracker";
@@ -43,6 +44,8 @@ import {
   buildQuizResultPath,
   isWorkspaceRoadmapsPath,
 } from "@/lib/routePaths";
+import { buildFlashcardItemsFromQuizDetail } from "@/utils/buildFlashcardItemsFromQuizDetail";
+import { markQuizFlashcardConverted, readQuizFlashcardConversion } from "@/utils/quizFlashcardConversionStorage";
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
 const quizDetailCache = new Map();
@@ -196,6 +199,7 @@ function QuizDetailView({
   onGroupQuizUpdated,
   /** Group: mở từ challenge (snapshot) — chỉ xem/sửa đề, không phân phối / không làm bài từ màn này */
   challengeSnapshotReviewMode = false,
+  canConvertQuizToFlashcard = false,
 }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -220,6 +224,8 @@ function QuizDetailView({
   // Personal history (bản thân) — dùng để gate chế độ luyện tập: null = đang tải
   const [personalHistory, setPersonalHistory] = useState(null);
   const [examStartOpen, setExamStartOpen] = useState(false);
+  const [quizToFlashcardOpen, setQuizToFlashcardOpen] = useState(false);
+  const [flashcardConvertRefresh, setFlashcardConvertRefresh] = useState(0);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
@@ -747,6 +753,31 @@ function QuizDetailView({
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, [questionsById]);
+
+  const flashcardFromQuizBundle = React.useMemo(
+    () => buildFlashcardItemsFromQuizDetail(sections, questionsMap, answersMap),
+    [sections, questionsMap, answersMap],
+  );
+
+  const quizFlashcardConvertedLocal = React.useMemo(() => {
+    void flashcardConvertRefresh;
+    return readQuizFlashcardConversion(quiz?.quizId);
+  }, [quiz?.quizId, flashcardConvertRefresh]);
+
+  const hasQuizFlashcardBeenConverted = Boolean(
+    quizFlashcardConvertedLocal?.convertedAt || quizFlashcardConvertedLocal?.flashcardSetId,
+  );
+
+  const showQuizToFlashcardAction =
+    canConvertQuizToFlashcard
+    && canViewAnswers
+    && !challengeSnapshotReviewMode
+    && !loading
+    && Boolean(quiz?.quizId)
+    && Number(_contextId) > 0
+    && flashcardFromQuizBundle.items.length > 0
+    && !hasQuizFlashcardBeenConverted;
+
   const handleQuestionMessageCountChange = React.useCallback((questionId, nextCount) => {
     const questionKey = String(questionId);
     setQCommentCounts((prev) => {
@@ -793,7 +824,16 @@ function QuizDetailView({
     );
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
   const groupMemberCanOpenQuestions = _contextType !== "GROUP" || canEditQuiz || hasCurrentUserCompletedQuiz;
-  const showQuestionsTab = !fairPlayRestricts && !isChallengeSnapshotReview && groupMemberCanOpenQuestions;
+  const hideQuestionsTabForGroupDraftReview =
+    _contextType === "GROUP"
+    && canEditQuiz
+    && currentStatus === "DRAFT"
+    && !challengeSnapshotReviewMode;
+  const showQuestionsTab =
+    !fairPlayRestricts
+    && !isChallengeSnapshotReview
+    && groupMemberCanOpenQuestions
+    && !hideQuestionsTabForGroupDraftReview;
 
   const snapshotReviewPreferCheckTabRef = React.useRef(false);
   useEffect(() => {
@@ -920,6 +960,26 @@ function QuizDetailView({
               </Button>
             );
           })()}
+          {showQuizToFlashcardAction ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setQuizToFlashcardOpen(true)}
+              className={cn(
+                "rounded-full h-9 px-4 flex items-center gap-2",
+                isDarkMode
+                  ? "border-slate-600 text-slate-200 hover:bg-slate-700"
+                  : "text-slate-700 hover:bg-slate-100",
+              )}
+              title={t(
+                "workspace.quiz.detail.convertToFlashcardOnceHint",
+                "Chỉ chuyển được một lần cho mỗi quiz. Ở nhóm, cần quyền «Chuyển quiz sang flashcard» do leader cấp.",
+              )}
+            >
+              <Sparkles className="h-4 w-4 shrink-0 text-amber-500" />
+              <span className="text-sm">{t("workspace.quiz.detail.convertToFlashcard", "Chuyển thành flashcard")}</span>
+            </Button>
+          ) : null}
           {_contextType === "GROUP" && canPublishQuiz && String(currentStatus || "").toUpperCase() === "DRAFT" && (
             <Button
               disabled={publishing || String(currentStatus || "").toUpperCase() === "PROCESSING"}
@@ -1116,6 +1176,7 @@ function QuizDetailView({
             workspaceId={_contextId}
             isLeader={isGroupLeader}
             isReviewer={challengeSnapshotReviewMode && !isGroupLeader}
+            challengeSnapshotReviewMode={challengeSnapshotReviewMode}
             onQuestionDeleted={fetchFullDetail}
           />
         )}
@@ -2029,6 +2090,25 @@ function QuizDetailView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <QuizToFlashcardDialog
+        open={quizToFlashcardOpen}
+        onOpenChange={setQuizToFlashcardOpen}
+        quizTitle={effectiveQuiz?.title}
+        presetItems={flashcardFromQuizBundle.items}
+        linkedQuizId={quiz?.quizId}
+        defaultWorkspaceId={Number(_contextId)}
+        onCreated={({ flashcardSetId }) => {
+          markQuizFlashcardConverted(quiz?.quizId, { flashcardSetId });
+          setFlashcardConvertRefresh((n) => n + 1);
+          const scopeId = Number(_contextId);
+          if (Number.isFinite(scopeId) && scopeId > 0) {
+            queryClient.invalidateQueries({ queryKey: ["workspace-flashcards", _contextType, scopeId] });
+            queryClient.invalidateQueries({ queryKey: ["workspace-flashcards", "WORKSPACE", scopeId] });
+            queryClient.invalidateQueries({ queryKey: ["workspace-flashcards", "GROUP", scopeId] });
+          }
+        }}
+      />
     </div>
   );
 }

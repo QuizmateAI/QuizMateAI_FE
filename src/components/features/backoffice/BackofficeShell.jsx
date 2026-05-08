@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Clock3, Globe, Moon, Sun } from 'lucide-react';
 import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
+import { appLanguageShortLabel, getAppNumberLocale, getBaseAppLanguage } from '@/utils/appSupportedLanguages';
 
 function isPathActive(item, pathname) {
   if (pathname === item.path || pathname === item.alsoMatch) return true;
@@ -16,7 +17,7 @@ function getInitials(value) {
 }
 
 function formatClockLabel(currentLang, timestamp = Date.now()) {
-  return new Date(timestamp).toLocaleString(currentLang === 'vi' ? 'vi-VN' : 'en-US', {
+  return new Date(timestamp).toLocaleString(getAppNumberLocale(currentLang), {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
@@ -45,7 +46,7 @@ function BackofficeShell({
 }) {
   const [, setClockTick] = useState(0);
   const clockLabel = formatClockLabel(currentLang);
-  const t = i18n.getFixedT(currentLang === 'en' ? 'en' : 'vi');
+  const t = i18n.getFixedT(getBaseAppLanguage(currentLang));
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -125,7 +126,7 @@ function BackofficeShell({
                   title={t('common.switchLanguage', { defaultValue: 'Switch language' })}
                 >
                   <Globe className="h-4 w-4" />
-                  <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+                  <span>{appLanguageShortLabel(currentLang)}</span>
                 </button>
 
                 <div className={cn('flex items-center gap-3 rounded-[22px] px-3 py-2', theme.profileCard)}>

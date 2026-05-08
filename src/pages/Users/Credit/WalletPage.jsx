@@ -19,6 +19,12 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useCurrentSubscription } from "@/hooks/useCurrentSubscription";
 import { useWallet } from "@/hooks/useWallet";
 import PlanManagementOverview from "./components/PlanManagementOverview";
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getAppNumberLocale,
+  getBaseAppLanguage,
+} from "@/utils/appSupportedLanguages";
 
 const EMPTY_WALLET_SUMMARY = {
   balance: 0,
@@ -48,10 +54,9 @@ export default function WalletPage() {
   const location = useLocation();
   const { showError } = useToast();
   const resolvedLanguage = String(i18n.resolvedLanguage || i18n.language || "vi").toLowerCase();
-  const isVietnamese = resolvedLanguage.startsWith("vi");
-  const currentLang = isVietnamese ? "vi" : "en";
-  const numberLocale = isVietnamese ? "vi-VN" : "en-US";
-  const fontClass = isVietnamese ? "font-sans" : "font-poppins";
+  const baseLang = getBaseAppLanguage(resolvedLanguage);
+  const numberLocale = getAppNumberLocale(resolvedLanguage);
+  const fontClass = baseLang === "en" ? "font-poppins" : "font-sans";
 
   const [walletSummaryOverride, setWalletSummaryOverride] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -76,8 +81,7 @@ export default function WalletPage() {
   }, [t]);
 
   const toggleLanguage = () => {
-    const newLang = isVietnamese ? "en" : "vi";
-    i18n.changeLanguage(newLang);
+    void i18n.changeLanguage(cycleAppLanguage(i18n.language));
   };
 
   useEffect(() => {
@@ -211,7 +215,7 @@ export default function WalletPage() {
                       <Globe className="h-4 w-4" />
                       {t("common.language")}
                     </span>
-                    <span className={`text-xs font-semibold ${fontClass}`}>{currentLang === "vi" ? "VI" : "EN"}</span>
+                    <span className={`text-xs font-semibold ${fontClass}`}>{appLanguageShortLabel(i18n.language)}</span>
                   </button>
                   <button
                     type="button"

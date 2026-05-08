@@ -160,6 +160,9 @@ function ChatPanel({
   planEntitlements = null,
   onToggleMaterialSelection,
   onRoadmapCanvasViewChange,
+  workspaceSidebarQuizCreateMode = null,
+  workspaceSidebarFlashcardSubFilter = null,
+  onBackFromCommunityQuiz,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -325,6 +328,7 @@ function ChatPanel({
             progressTracking={progressTracking}
             quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
             quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
+            studioSubFilter={workspaceSidebarQuizCreateMode}
           />
         );
       case "communityQuiz":
@@ -332,7 +336,7 @@ function ChatPanel({
           <LazyCommunityQuizExplorerView
             isDarkMode={isDarkMode}
             workspaceId={workspaceId}
-            onBackToQuiz={() => onChangeView?.("quiz")}
+            onBackToQuiz={onBackFromCommunityQuiz ?? (() => onChangeView?.("quiz"))}
           />
         );
       case "quizCollection":
@@ -383,6 +387,7 @@ function ChatPanel({
             contextType="WORKSPACE"
             contextId={workspaceId}
             disableCreate={shouldDisableCreateFlashcard}
+            studioSubFilter={workspaceSidebarFlashcardSubFilter}
           />
         );
       case "mockTest":
@@ -419,6 +424,7 @@ function ChatPanel({
       case "createQuiz":
         return (
           <CreateQuizForm
+            key={`ws-create-quiz-${workspaceSidebarQuizCreateMode || "default"}`}
             isDarkMode={isDarkMode}
             onCreateQuiz={onCreateQuiz}
             onBack={onBack}
@@ -428,11 +434,13 @@ function ChatPanel({
             sources={sources}
             planEntitlements={planEntitlements}
             onToggleMaterialSelection={onToggleMaterialSelection}
+            initialMode={workspaceSidebarQuizCreateMode || undefined}
           />
         );
       case "createFlashcard":
         return (
           <LazyCreateFlashcardForm
+            key={`ws-create-fc-${workspaceSidebarFlashcardSubFilter || "default"}`}
             isDarkMode={isDarkMode}
             onCreateFlashcard={onCreateFlashcard}
             onBack={onBack}
@@ -446,11 +454,19 @@ function ChatPanel({
       case "createManualFlashcard":
         return (
           <LazyManualFlashcardEditor
+            key={`ws-manual-fc-${workspaceSidebarFlashcardSubFilter || "default"}`}
             isDarkMode={isDarkMode}
             workspaceId={workspaceId}
             contextType="WORKSPACE"
             contextId={workspaceId}
             canActivate
+            manualEntryMode={
+              workspaceSidebarFlashcardSubFilter === "manual"
+                ? "manual"
+                : workspaceSidebarFlashcardSubFilter === "paste"
+                  ? "paste"
+                  : null
+            }
             onCreated={onCreateFlashcard}
             onActivated={(saved) => {
               // Sau khi kích hoạt → mở detail view (giống luồng AI flashcard: flip UI).

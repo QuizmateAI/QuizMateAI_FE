@@ -5,16 +5,21 @@ import { Globe, Sun, Moon } from 'lucide-react';
 import AdminSidebar from './components/AdminSidebar';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
+import {
+  appLanguageShortLabel,
+  cycleAppLanguage,
+  getBaseAppLanguage,
+} from '@/utils/appSupportedLanguages';
 
 function AdminLayoutContent() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const currentLang = i18n.language;
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const fontClass = getBaseAppLanguage(currentLang) === 'en' ? 'font-poppins' : 'font-sans';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const toggleLanguage = () => {
-    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+    void i18n.changeLanguage(cycleAppLanguage(currentLang));
   };
 
   return (
@@ -57,7 +62,7 @@ function AdminLayoutContent() {
               }`}
             >
               <Globe className="w-4 h-4" />
-              <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+              <span>{appLanguageShortLabel(currentLang)}</span>
             </button>
             <div className="text-right hidden sm:block">
                 <p className={`text-sm font-bold font-poppins leading-none ${

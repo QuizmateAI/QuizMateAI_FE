@@ -57,6 +57,7 @@ export default function QuizHeader({ onBack, title, showConfirm, confirmTitle, c
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => changeLanguage('en')}>{t('workspace.quiz.header.english', 'English')}</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => changeLanguage('vi')}>{t('workspace.quiz.header.vietnamese', 'Tiếng Việt')}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => changeLanguage('ja')}>{t('workspace.quiz.header.japanese', '日本語')}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 

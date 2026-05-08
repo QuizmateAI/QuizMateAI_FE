@@ -143,6 +143,10 @@
             "label": "Assign audience",
             "description": "Choose which members can access a quiz."
           },
+          "CONVERT_QUIZ_TO_FLASHCARD": {
+            "label": "Convert quiz to flashcards",
+            "description": "From quiz detail, create one flashcard set using correct answers (once per quiz)."
+          },
           "CREATE_FLASHCARD": {
             "label": "Create flashcard",
             "description": "Create and update flashcard sets."
@@ -415,7 +419,13 @@
         "documents": "Documents",
         "roadmap": "Roadmap",
         "quiz": "Quiz",
+        "quizAi": "AI quiz",
+        "quizManual": "Manual quiz",
+        "quizFromJson": "Import from JSON",
         "flashcard": "Flashcard",
+        "flashcardAi": "AI flashcard",
+        "flashcardManual": "Manual flashcard",
+        "flashcardFromJson": "Import from JSON",
         "mockTest": "Mock test",
         "challenge": "Challenge",
         "ranking": "Ranking",
