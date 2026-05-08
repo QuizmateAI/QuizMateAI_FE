@@ -114,6 +114,7 @@ function normalizeLanguage(value, fallback = 'vi') {
  * suitable for POST /api/mocktest/my-templates.
  *
  * @param {object} input
+ * @param {number} input.workspaceId — BAT BUOC ke tu V2026_05_14 (per-workspace scoping)
  * @param {Array} input.sections — current form sections
  * @param {object} input.scoring — current form scoring
  * @param {number} input.totalQuestions
@@ -124,6 +125,7 @@ function normalizeLanguage(value, fallback = 'vi') {
  * @param {object|null} input.matchedTemplate — derived-from template (optional)
  */
 export function buildSavedTemplatePayload({
+  workspaceId,
   sections,
   scoring,
   totalQuestions,
@@ -164,6 +166,7 @@ export function buildSavedTemplatePayload({
   });
   const trimmedExamName = String(examName || '').trim();
   return {
+    workspaceId,
     displayName: matchedTemplate?.displayName || trimmedExamName || 'Mock test custom',
     examType: matchedTemplate?.examType || 'CUSTOM',
     contentLanguage: normalizeLanguage(
@@ -190,11 +193,15 @@ export function buildSavedTemplatePayload({
  * Build payload for saving a *suggested* AI template — we copy the v2 jsonb
  * directly without re-deriving from form state, because the AI already provided
  * canonical structure + scoring with section weights.
+ *
+ * @param {object} option — AI suggestion object
+ * @param {number} workspaceId — BAT BUOC ke tu V2026_05_14 (per-workspace scoping)
  */
-export function buildSavedTemplatePayloadFromSuggestion(option) {
+export function buildSavedTemplatePayloadFromSuggestion(option, workspaceId) {
   if (!option) return null;
   const meta = option?.v2Template || {};
   return {
+    workspaceId,
     displayName: meta.displayName || option.displayName || 'AI template',
     examType: meta.examType || 'CUSTOM',
     contentLanguage: normalizeLanguage(meta.contentLanguage || option.examLanguage, 'vi'),
