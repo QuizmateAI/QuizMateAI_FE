@@ -12,28 +12,40 @@ function unwrap(response) {
 }
 
 /**
- * Hook quản lý kho saved templates của user (visibility=PRIVATE, source=USER).
+ * Hook quản lý kho saved templates của user TRONG workspace cụ thể
+ * (visibility=PRIVATE, source=USER, workspace_id = workspaceId param).
+ *
+ * @param {object} options
+ * @param {boolean} [options.enabled=true] — gate fetching (vd dialog đóng)
+ * @param {number} options.workspaceId — BẮT BUỘC kể từ BE V2026_05_14. Nếu null/undefined,
+ *   hook tự disable list/save (không gọi API). Caller phải pass workspaceId hiện tại.
  *
  * Provides:
- *   - templates: list of summaries
- *   - savedIds: Set<number> of templateIds user already has in their library
- *     (compared against derivedFromTemplateId so AI suggestion picker shows "Đã lưu" badge)
+ *   - templates: list of summaries (chỉ trong workspace + legacy NULL rows)
+ *   - savedIds: Set<number> of templateIds user already saved (derivedFromTemplateId)
  *   - savingTemplateId: id of template currently being saved (for spinner state)
- *   - actions: refetch, save, update, remove
+ *   - actions: refetch, save, update, remove, fetchDetail
  */
-export function useSavedMockTestTemplates({ enabled = true } = {}) {
+export function useSavedMockTestTemplates({ enabled = true, workspaceId } = {}) {
   const [templates, setTemplates] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [savingTemplateId, setSavingTemplateId] = useState(null);
   const [derivedFromMap, setDerivedFromMap] = useState(new Map());
 
+  // Hook chỉ active khi enabled VÀ có workspaceId. Trả empty list khi missing
+  // workspaceId để không phá UI (FE chưa pass đủ context).
+  const effectiveEnabled = Boolean(enabled && workspaceId);
+
   const refetch = useCallback(async () => {
-    if (!enabled) return [];
+    if (!effectiveEnabled) {
+      setTemplates([]);
+      return [];
+    }
     setIsLoading(true);
     setError(null);
     try {
-      const response = await listMySavedMockTestTemplates();
+      const response = await listMySavedMockTestTemplates(workspaceId);
       const list = unwrap(response);
       const items = Array.isArray(list) ? list : [];
       setTemplates(items);
@@ -44,42 +56,28 @@ export function useSavedMockTestTemplates({ enabled = true } = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [enabled]);
+  }, [effectiveEnabled, workspaceId]);
 
   useEffect(() => {
-    if (enabled) {
+    if (effectiveEnabled) {
       refetch();
+    } else {
+      setTemplates([]);
     }
-  }, [enabled, refetch]);
+  }, [effectiveEnabled, refetch]);
 
   /**
-   * Save a template snapshot. If the snapshot is from an AI-suggested template,
-   * pass derivedFromTemplateId so we can mark it as "saved" in the suggestion UI.
+   * Save a template snapshot. Caller PHẢI đảm bảo payload có workspaceId
+   * (build helpers đã inject nó). Hook check ở runtime để fail-fast nếu thiếu.
    */
-  const save = useCallback(async ({
-    displayName,
-    examType,
-    contentLanguage,
-    description,
-    totalQuestion,
-    durationMinutes,
-    structure,
-    scoring,
-    derivedFromTemplateId,
-  }) => {
+  const save = useCallback(async (payload) => {
+    if (!payload?.workspaceId) {
+      throw new Error('save() payload must include workspaceId');
+    }
+    const { derivedFromTemplateId } = payload;
     setSavingTemplateId(derivedFromTemplateId ?? -1);
     try {
-      const response = await saveMockTestTemplate({
-        displayName,
-        examType,
-        contentLanguage,
-        description,
-        totalQuestion,
-        durationMinutes,
-        structure,
-        scoring,
-        derivedFromTemplateId,
-      });
+      const response = await saveMockTestTemplate(payload);
       const created = unwrap(response);
       if (derivedFromTemplateId != null) {
         setDerivedFromMap((prev) => {

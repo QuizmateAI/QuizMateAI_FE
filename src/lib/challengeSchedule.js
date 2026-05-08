@@ -25,6 +25,37 @@ export function defaultStartParts() {
   return { dateStr: toDateInputValue(d), timeStr: toTimeInputValue(d) };
 }
 
+/**
+ * Đảm bảo start không nằm trong quá khứ.
+ * Nếu start hợp lệ (>= now + 5 phút) → giữ nguyên.
+ * Nếu start trong quá khứ hoặc invalid → trả về defaultStartParts().
+ */
+export function clampStartToFutureParts(dateStr, timeStr) {
+  const ms = parseLocalDateTimeToMs(dateStr, timeStr);
+  const minMs = Date.now() + 5 * 60 * 1000;
+  if (!Number.isFinite(ms) || ms < minMs) {
+    return defaultStartParts();
+  }
+  return { dateStr, timeStr };
+}
+
+/**
+ * Smart bump: chỉ chỉnh end nếu duration < min (3 tiếng), giữ end của user nếu đã đủ.
+ * Nếu end chưa nhập → set end = start + 3h.
+ */
+export function bumpEndIfTooClose(startDate, startTime, endDate, endTime) {
+  const startMs = parseLocalDateTimeToMs(startDate, startTime);
+  if (!Number.isFinite(startMs)) {
+    return { dateStr: endDate, timeStr: endTime };
+  }
+  const minEndMs = startMs + CHALLENGE_MIN_DURATION_MINUTES * 60 * 1000;
+  const endMs = parseLocalDateTimeToMs(endDate, endTime);
+  if (!Number.isFinite(endMs) || endMs < minEndMs) {
+    return defaultEndPartsFromStart(startDate, startTime);
+  }
+  return { dateStr: endDate, timeStr: endTime };
+}
+
 /** Kết thúc = bắt đầu + min duration (3 tiếng). */
 export function defaultEndPartsFromStart(dateStr, timeStr) {
   const ms = parseLocalDateTimeToMs(dateStr, timeStr);

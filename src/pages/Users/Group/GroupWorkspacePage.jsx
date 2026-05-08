@@ -18,6 +18,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { buildPlanEntitlementFlags } from '@/hooks/usePlanEntitlements';
 import { useGroup } from '@/hooks/useGroup';
+import useWorkspaceHeartbeat from '@/hooks/useWorkspaceHeartbeat';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
 import {
@@ -629,6 +630,9 @@ function GroupWorkspacePage() {
     removeMember,
     invalidateGroupRealtimeCaches,
   } = useGroup();
+
+  // Heartbeat: ping BE mỗi 30s khi user mở workspace để tính online/offline scope theo workspace.
+  useWorkspaceHeartbeat(isCreating ? null : workspaceId);
 
   const currentWorkspaceFromList = isCreating
     ? null

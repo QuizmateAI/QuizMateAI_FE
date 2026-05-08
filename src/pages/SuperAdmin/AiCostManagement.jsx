@@ -2,7 +2,19 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, HandCoins, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
+import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -181,26 +193,111 @@ function getStatusBadgeClass(status, isDarkMode) {
   return isDarkMode ? 'border-slate-600 bg-slate-800 text-slate-200' : 'border-slate-300 bg-slate-100 text-slate-800';
 }
 
-function MetricCard({ label, value, icon: Icon, tone, isDarkMode, subtext }) {
+function MetricCard({ label, value, icon: Icon, tone, isDarkMode, subtext, sparklinePoints, sparklineKey, sparklineColor }) {
+  const hasSparkline = Array.isArray(sparklinePoints) && sparklinePoints.length > 1 && sparklineKey;
+  const sparklineId = `aicost-spark-${String(label || 'kpi').replace(/\s+/g, '-')}`;
   return (
     <div className={`rounded-xl border p-3.5 transition-colors ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2">
+        <p className={`min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{label}</p>
+        <div className={`shrink-0 rounded-lg p-1.5 ${tone}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+      </div>
+      <div className="mt-2 flex items-end justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{label}</p>
-          <p className={`mt-1.5 text-lg font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
-          {subtext ? <p className={`mt-0.5 text-[11px] leading-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p> : null}
+          <p className={`truncate text-lg font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
+          {subtext ? <p className={`mt-0.5 line-clamp-2 text-[11px] leading-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{subtext}</p> : null}
         </div>
-        <div className={`shrink-0 rounded-lg p-2 ${tone}`}>
-          <Icon className="h-4 w-4" />
-        </div>
+        {hasSparkline ? (
+          <div className="h-10 w-20 shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={sparklinePoints} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={sparklineId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={sparklineColor || '#0ea5e9'} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={sparklineColor || '#0ea5e9'} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey={sparklineKey}
+                  stroke={sparklineColor || '#0ea5e9'}
+                  strokeWidth={1.5}
+                  fill={`url(#${sparklineId})`}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
+function bucketKeyFromTimestamp(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function toAggregateNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function buildCostAggregatesFromEntries(entries = []) {
+  const dailyMap = new Map();
+  const featureMap = new Map();
+
+  entries.forEach((entry) => {
+    const charged = toAggregateNumber(entry?.chargedVnd);
+    const cost = toAggregateNumber(entry?.providerCostVnd);
+    const profit = toAggregateNumber(entry?.profitVnd);
+
+    const bucket = bucketKeyFromTimestamp(entry?.createdAt);
+    if (bucket) {
+      const existing = dailyMap.get(bucket) || {
+        bucket,
+        requestCount: 0,
+        chargedVnd: 0,
+        providerCostVnd: 0,
+        profitVnd: 0,
+      };
+      existing.requestCount += 1;
+      existing.chargedVnd += charged;
+      existing.providerCostVnd += cost;
+      existing.profitVnd += profit;
+      dailyMap.set(bucket, existing);
+    }
+
+    const feature = entry?.actionKey || 'UNKNOWN';
+    const fExisting = featureMap.get(feature) || {
+      featureKey: feature,
+      providerCostVnd: 0,
+      requestCount: 0,
+    };
+    fExisting.providerCostVnd += cost;
+    fExisting.requestCount += 1;
+    featureMap.set(feature, fExisting);
+  });
+
+  const dailyBuckets = [...dailyMap.values()].sort((a, b) => a.bucket.localeCompare(b.bucket));
+  const topFeatures = [...featureMap.values()]
+    .filter((f) => f.providerCostVnd > 0)
+    .sort((a, b) => b.providerCostVnd - a.providerCostVnd)
+    .slice(0, 8);
+
+  return { dailyBuckets, topFeatures };
+}
+
 const AI_COST_PLANS_KEY = ['superAdmin', 'aiCostPlans'];
 const AI_COST_RATE_KEY = ['superAdmin', 'aiCostExchangeRate'];
 const AI_COST_DATA_KEY = ['superAdmin', 'aiCostData'];
+const AI_COST_AGGREGATE_KEY = ['superAdmin', 'aiCostAggregate'];
+const AI_COST_AGGREGATE_PAGE_SIZE = 200;
 
 function AiCostManagement() {
   const { t, i18n } = useTranslation();
@@ -279,6 +376,35 @@ function AiCostManagement() {
   const loading = costQuery.isLoading;
   const isFetching = costQuery.isFetching;
 
+  const aggregateQuery = useQuery({
+    queryKey: [...AI_COST_AGGREGATE_KEY, filters],
+    queryFn: async () => {
+      const query = buildQuery(filters);
+      const firstResponse = await getAiCostRequests({ ...query, page: 0, size: AI_COST_AGGREGATE_PAGE_SIZE });
+      const firstPage = extractData(firstResponse) || {};
+      const allEntries = Array.isArray(firstPage?.content) ? [...firstPage.content] : [];
+      const totalPages = Number(firstPage?.totalPages || 0);
+      if (totalPages > 1) {
+        const remainingResponses = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, index) => getAiCostRequests({
+            ...query,
+            page: index + 1,
+            size: AI_COST_AGGREGATE_PAGE_SIZE,
+          })),
+        );
+        remainingResponses.forEach((response) => {
+          const pageData = extractData(response) || {};
+          const content = Array.isArray(pageData?.content) ? pageData.content : [];
+          allEntries.push(...content);
+        });
+      }
+      return buildCostAggregatesFromEntries(allEntries);
+    },
+    placeholderData: (previous) => previous,
+  });
+  const dailyBuckets = aggregateQuery.data?.dailyBuckets ?? [];
+  const topFeatures = aggregateQuery.data?.topFeatures ?? [];
+
   useEffect(() => {
     if (costQuery.error) showError(getErrorMessage(t, costQuery.error));
     if (plansQuery.error) showError(getErrorMessage(t, plansQuery.error));
@@ -286,11 +412,13 @@ function AiCostManagement() {
 
   const refreshAll = () => {
     queryClient.invalidateQueries({ queryKey: AI_COST_DATA_KEY });
+    queryClient.invalidateQueries({ queryKey: AI_COST_AGGREGATE_KEY });
     queryClient.invalidateQueries({ queryKey: AI_COST_RATE_KEY });
   };
 
   const fetchCostData = () => {
     queryClient.invalidateQueries({ queryKey: AI_COST_DATA_KEY });
+    queryClient.invalidateQueries({ queryKey: AI_COST_AGGREGATE_KEY });
   };
 
   const openDetailRow = (row) => {
@@ -398,13 +526,131 @@ function AiCostManagement() {
         )}
       />
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <MetricCard label={t('aiCosts.metrics.requests')} value={formatInteger(summary?.requestCount)} icon={DatabaseZap} tone="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.matchedRequestCount)} ${t('aiCosts.metrics.matched')}`} />
-        <MetricCard label={t('aiCosts.metrics.revenue')} value={formatVnd(summary?.totalChargedVnd)} icon={Wallet} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.totalChargedCredit)} ${t('aiCosts.metrics.credits')}`} />
-        <MetricCard label={t('aiCosts.metrics.revenueMatched', 'Doanh thu khớp audit')} value={formatVnd(summary?.totalChargedVndMatchedAudit)} icon={Layers} tone="bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300" isDarkMode={isDarkMode} subtext={t('aiCosts.metrics.revenueMatchedHint', 'Trên request có COGS')} />
-        <MetricCard label={t('aiCosts.metrics.providerCost')} value={formatVnd(summary?.totalProviderCostVnd)} icon={Coins} tone="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.totalTokens)} ${t('aiCosts.metrics.tokens')}`} />
-        <MetricCard label={t('aiCosts.metrics.profit')} value={formatVnd(summary?.totalProfitVnd)} icon={ArrowUpRight} tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" isDarkMode={isDarkMode} subtext={t('aiCosts.metrics.profitHint', 'Khớp audit − COGS')} />
-        <MetricCard label={t('aiCosts.metrics.subsidy', 'Trợ giá hệ thống')} value={formatVnd(summary?.totalSystemSubsidyVnd)} icon={HandCoins} tone="bg-rose-100 text-rose-800 dark:bg-rose-950/45 dark:text-rose-300" isDarkMode={isDarkMode} subtext={`${formatInteger(summary?.unmatchedRequestCount)} ${t('aiCosts.metrics.unmatched')}`} />
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          label={t('aiCosts.metrics.requests')}
+          value={formatInteger(summary?.requestCount)}
+          icon={DatabaseZap}
+          tone="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+          isDarkMode={isDarkMode}
+          subtext={t('aiCosts.metrics.requestsSummary', '{{matched}} đối soát · {{unmatched}} chưa', {
+            matched: formatInteger(summary?.matchedRequestCount),
+            unmatched: formatInteger(summary?.unmatchedRequestCount),
+          })}
+          sparklinePoints={dailyBuckets}
+          sparklineKey="requestCount"
+          sparklineColor="#0ea5e9"
+        />
+        <MetricCard
+          label={t('aiCosts.metrics.revenue')}
+          value={formatVnd(summary?.totalChargedVnd)}
+          icon={Wallet}
+          tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+          isDarkMode={isDarkMode}
+          subtext={t('aiCosts.metrics.revenueSummary', 'Khớp audit: {{matched}}', {
+            matched: formatVnd(summary?.totalChargedVndMatchedAudit),
+          })}
+          sparklinePoints={dailyBuckets}
+          sparklineKey="chargedVnd"
+          sparklineColor="#10b981"
+        />
+        <MetricCard
+          label={t('aiCosts.metrics.providerCost')}
+          value={formatVnd(summary?.totalProviderCostVnd)}
+          icon={Coins}
+          tone="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+          isDarkMode={isDarkMode}
+          subtext={`${formatInteger(summary?.totalTokens)} ${t('aiCosts.metrics.tokens')}`}
+          sparklinePoints={dailyBuckets}
+          sparklineKey="providerCostVnd"
+          sparklineColor="#f59e0b"
+        />
+        <MetricCard
+          label={t('aiCosts.metrics.profit')}
+          value={formatVnd(summary?.totalProfitVnd)}
+          icon={ArrowUpRight}
+          tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
+          isDarkMode={isDarkMode}
+          subtext={t('aiCosts.metrics.profitSummary', 'Trợ giá hệ thống: {{subsidy}}', {
+            subsidy: formatVnd(summary?.totalSystemSubsidyVnd),
+          })}
+          sparklinePoints={dailyBuckets}
+          sparklineKey="profitVnd"
+          sparklineColor="#8b5cf6"
+        />
+      </div>
+
+      <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+              {t('aiCosts.topFeatures.title', 'Top tính năng theo AI cost')}
+            </h3>
+            <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+              {t('aiCosts.topFeatures.subtitle', 'Xếp hạng 8 tính năng tiêu tốn nhiều provider cost nhất.')}
+            </p>
+          </div>
+          <p className={`text-right text-xs tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            {topFeatures.length} {t('aiCosts.topFeatures.featureCount', 'tính năng')}
+          </p>
+        </div>
+        {topFeatures.length === 0 ? (
+          <p className="py-12 text-center text-sm text-slate-500">
+            {t('aiCosts.topFeatures.empty', 'Không có dữ liệu cho khoảng này.')}
+          </p>
+        ) : (
+          <ResponsiveContainer width="100%" height={Math.max(180, topFeatures.length * 28)}>
+            <BarChart
+              data={topFeatures.map((f, idx) => ({
+                ...f,
+                rank: idx,
+                label: getAiActionLabel(f.featureKey, t) || f.featureKey,
+              }))}
+              layout="vertical"
+              margin={{ top: 4, right: 56, left: 4, bottom: 4 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} horizontal={false} />
+              <XAxis type="number" hide />
+              <YAxis
+                type="category"
+                dataKey="label"
+                tick={{ fontSize: 11, fill: isDarkMode ? '#cbd5e1' : '#475569' }}
+                axisLine={false}
+                tickLine={false}
+                width={150}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  background: isDarkMode ? '#0f172a' : '#fff',
+                  border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`,
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+                cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
+                formatter={(value, _name, item) => [
+                  `${formatVnd(value)} · ${formatInteger(item?.payload?.requestCount)} ${t('aiCosts.topFeatures.requests', 'request')}`,
+                  item?.payload?.label,
+                ]}
+                labelFormatter={() => ''}
+              />
+              <Bar
+                dataKey="providerCostVnd"
+                radius={[0, 4, 4, 0]}
+                barSize={14}
+                label={{
+                  position: 'right',
+                  formatter: (v) => formatVnd(v),
+                  fill: isDarkMode ? '#94a3b8' : '#64748b',
+                  fontSize: 10,
+                }}
+              >
+                {topFeatures.map((_, idx) => (
+                  <Cell key={`aicost-feat-${idx}`} fill={idx === 0 ? '#f59e0b' : idx <= 2 ? '#fbbf24' : '#94a3b8'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div className={`flex flex-col gap-4 rounded-2xl border p-5 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>

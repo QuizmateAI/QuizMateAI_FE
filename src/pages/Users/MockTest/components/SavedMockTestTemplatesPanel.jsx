@@ -22,18 +22,21 @@ import { Input } from '@/components/ui/input';
 import { useSavedMockTestTemplates } from '../hooks/useSavedMockTestTemplates';
 
 /**
- * Panel hiển thị kho saved templates của user.
+ * Panel hiển thị kho saved templates của user TRONG workspace.
  *
  * Props:
  *   open: bool — controlled dialog visibility
  *   onClose: () => void
  *   onUseTemplate: (template) => void — user click "Dùng template" để mở form Tạo Mocktest pre-filled
+ *   workspaceId: number — BẮT BUỘC kể từ BE V2026_05_14 (per-workspace scoping). Khi missing,
+ *     panel hiển thị empty + warning vì hook không thể fetch.
  *   isDarkMode: bool
  */
 export function SavedMockTestTemplatesPanel({
   open,
   onClose,
   onUseTemplate,
+  workspaceId,
   isDarkMode = false,
 }) {
   const { t } = useTranslation();
@@ -44,7 +47,7 @@ export function SavedMockTestTemplatesPanel({
     refetch,
     remove,
     fetchDetail,
-  } = useSavedMockTestTemplates({ enabled: open });
+  } = useSavedMockTestTemplates({ enabled: open, workspaceId });
   const [search, setSearch] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [usingId, setUsingId] = useState(null);

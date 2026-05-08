@@ -38,6 +38,12 @@ export const getGroupMembers = async (workspaceId, page = 0, size = 50) => {
   return response;
 };
 
+// Heartbeat: cập nhật last_seen_at của user trong workspace để FE tính online/offline scope theo workspace.
+export const recordWorkspaceHeartbeat = async (workspaceId) => {
+  const response = await api.post(`/group/${workspaceId}/heartbeat`);
+  return response;
+};
+
 // Leader cấp quyền upload cho thành viên theo workspaceMemberId
 export const grantUpload = async (workspaceId, memberId) => {
   const response = await api.post(`/group/${workspaceId}/members/${memberId}/grant-upload`);

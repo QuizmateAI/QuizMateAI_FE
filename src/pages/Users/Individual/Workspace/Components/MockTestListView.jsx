@@ -544,6 +544,7 @@ function MockTestListView({
           setSavedPanelOpen(false);
           onCreateMockTestFromTemplate?.(template);
         }}
+        workspaceId={normalizedContextId}
         isDarkMode={isDarkMode}
       />
 

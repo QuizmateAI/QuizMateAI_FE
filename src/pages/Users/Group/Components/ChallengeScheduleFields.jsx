@@ -5,6 +5,14 @@ import {
   minDateStringPlusDays,
 } from '@/lib/challengeSchedule';
 
+/** HH:mm cho hiện tại (làm tròn lên 5 phút). */
+function currentTimeStringRoundedUp() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + 5 - (d.getMinutes() % 5 || 5), 0, 0);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function ChallengeScheduleFields({
   isDarkMode,
   startDate,
@@ -25,6 +33,9 @@ export default function ChallengeScheduleFields({
   }`;
 
   const minStart = minDateStringPlusDays(0);
+  // Nếu user đang chọn ngày = hôm nay → time min = giờ hiện tại; ngược lại 00:00.
+  const startTimeMin = startDate === minStart ? currentTimeStringRoundedUp() : '00:00';
+  const endTimeMin = (endDate && endDate === startDate) ? (startTime || '00:00') : '00:00';
 
   return (
     <div className="flex flex-col gap-4">
@@ -61,6 +72,7 @@ export default function ChallengeScheduleFields({
           <input
             type="time"
             value={startTime}
+            min={startTimeMin}
             onChange={(e) => onStartTimeChange(e.target.value)}
             className={inputCls}
           />
@@ -93,6 +105,7 @@ export default function ChallengeScheduleFields({
           <input
             type="time"
             value={endTime}
+            min={endTimeMin}
             onChange={(e) => onEndTimeChange(e.target.value)}
             className={inputCls}
           />

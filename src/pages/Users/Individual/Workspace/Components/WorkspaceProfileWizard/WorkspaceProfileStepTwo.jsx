@@ -123,38 +123,6 @@ function buildPopularTemplateKey(template) {
   return [templateId || templateName, examName, duration, recommendedCount].join('::');
 }
 
-function buildPopularTemplateMeta(template) {
-  if (!template) return null;
-
-  const defaultTemplateName = translateOrFallback(
-    'workspaceProfileStepTwo.defaultTemplateName',
-    'Template'
-  );
-  return {
-    key: buildPopularTemplateKey(template),
-    templateName: normalizeText(template?.templateName) || normalizeText(template?.examName) || defaultTemplateName,
-    examName: normalizeText(template?.examName) || '',
-  };
-}
-
-function matchesPopularTemplateSelection(template, values) {
-  if (!template || !values) return false;
-
-  const examNameMatches = normalizeForCompare(template?.examName) === normalizeForCompare(values.mockExamName);
-  if (!examNameMatches) return false;
-
-  const duration = Number(template?.structure?.totalDurationMinutes) || null;
-  const recommendedCount = Number(template?.structure?.recommendedTotalQuestions) || null;
-  const notes = buildTemplateNotesFromStructure(template?.structure);
-
-  const durationAndCountMatch = Boolean(duration && recommendedCount)
-    && Number(values.templateDurationMinutes) === duration
-    && Number(values.templateQuestionCount) === recommendedCount;
-  const notesMatch = Boolean(notes) && normalizeText(values.templateNotes) === notes;
-
-  return durationAndCountMatch || notesMatch;
-}
-
 function FieldBlock({
                       label,
                       error,
@@ -256,15 +224,15 @@ function WorkspaceProfileStepTwo({
                                    isDarkMode,
                                    values,
                                    errors,
-                                   templateStatus,
-                                   templatePreview,
+                                   templateStatus: _templateStatus,
+                                   templatePreview: _templatePreview,
                                    fieldSuggestions,
                                    fieldSuggestionStatus,
                                    consistencyResult,
                                    consistencyStatus,
                                    disabled = false,
                                    onFieldChange,
-                                   onGenerateTemplate,
+                                   onGenerateTemplate: _onGenerateTemplate,
                                    onApplySuggestion,
                                  }) {
   const translateStepTwo = (key, fallback, options) => {

@@ -125,13 +125,15 @@ function CreateMockTestForm({
     selectSuggestion,
   } = useMockTestStructureSuggestion();
 
-  // Saved template library (for "save AI template" button + cross-marking saved cards)
+  // Saved template library (for "save AI template" button + cross-marking saved cards).
+  // contextId is the workspaceId (from MockTestListView) — required by BE V2026_05_14+
+  // for per-workspace scoping.
   const {
     templates: savedTemplates,
     savingTemplateId,
     derivedFromTemplateIds,
     save: saveTemplateToLibrary,
-  } = useSavedMockTestTemplates({ enabled: true });
+  } = useSavedMockTestTemplates({ enabled: true, workspaceId: contextId });
 
   // Set of template ids already saved (derived from), so picker shows "Đã lưu" badge
   const savedDerivedIds = useMemo(() => {
@@ -366,6 +368,7 @@ function CreateMockTestForm({
 
   // Build a SaveMockTestTemplateRequest payload from current form state.
   const buildSavePayload = useCallback(() => buildSavedTemplatePayload({
+    workspaceId: contextId,
     sections: aiSections,
     scoring,
     totalQuestions,
@@ -374,20 +377,20 @@ function CreateMockTestForm({
     examLanguage,
     aiTopNotice,
     matchedTemplate,
-  }), [aiSections, scoring, totalQuestions, duration, examName, examLanguage, aiTopNotice, matchedTemplate]);
+  }), [contextId, aiSections, scoring, totalQuestions, duration, examName, examLanguage, aiTopNotice, matchedTemplate]);
 
   // Save the AI-suggested template (the one shown in the picker card).
   const handleSaveSuggestedTemplate = useCallback(async (option) => {
     if (!option) return;
     try {
-      const payload = buildSavedTemplatePayloadFromSuggestion(option);
+      const payload = buildSavedTemplatePayloadFromSuggestion(option, contextId);
       if (!payload) return;
       await saveTemplateToLibrary(payload);
       showSuccess?.(t("mockTestForms.savedTemplates.savedToast", "Đã lưu template vào kho riêng."));
     } catch (e) {
       showError?.(e?.message || t("mockTestForms.savedTemplates.saveFailed", "Lưu template thất bại."));
     }
-  }, [saveTemplateToLibrary, showSuccess, showError, t]);
+  }, [contextId, saveTemplateToLibrary, showSuccess, showError, t]);
 
   // Save the currently-edited template (after user has tweaked structure/scoring).
   const handleSaveCurrentTemplate = useCallback(async () => {

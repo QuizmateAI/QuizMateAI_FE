@@ -7,7 +7,7 @@ import { listChallenges } from '../../../../api/ChallengeAPI';
 import ChallengeListView from './ChallengeListView';
 import ChallengeDetailView from './ChallengeDetailView';
 import CreateChallengeWizard from './CreateChallengeWizard';
-import { writeChallengeDraftEditorMode } from './createChallengeWizardHelpers';
+import { AVAILABLE_MATCH_MODE_OPTIONS, writeChallengeDraftEditorMode } from './createChallengeWizardHelpers';
 
 const SUB_TABS = [
   { key: 'SCHEDULED', labelKey: 'groupWorkspace.challenge.tabs.scheduled', fallback: 'Upcoming' },
@@ -15,11 +15,15 @@ const SUB_TABS = [
   { key: 'FINISHED', labelKey: 'groupWorkspace.challenge.tabs.finished', fallback: 'Finished' },
 ];
 
-const MODE_TABS = [
+const ALL_MODE_TABS = [
   { key: 'ALL', labelKey: 'groupWorkspace.challenge.modes.all', fallback: 'All' },
   { key: 'FREE_FOR_ALL', labelKey: 'groupWorkspace.challenge.modes.freeForAll', fallback: 'Free-for-all' },
   { key: 'TEAM_BATTLE', labelKey: 'groupWorkspace.challenge.modes.teamBattle', fallback: 'Team battle' },
+  { key: 'SOLO_BRACKET', labelKey: 'groupWorkspace.challenge.modes.soloBracket', fallback: '1v1 bracket' },
 ];
+// Chỉ hiển thị mode tab cho những mode đang được bật trong wizard.
+const enabledModeKeys = new Set(['ALL', ...AVAILABLE_MATCH_MODE_OPTIONS.map((o) => o.key)]);
+const MODE_TABS = ALL_MODE_TABS.filter((tab) => enabledModeKeys.has(tab.key));
 
 export default function ChallengeTab({
   workspaceId,
@@ -146,23 +150,26 @@ export default function ChallengeTab({
         ))}
       </div>
 
-      <div className={`flex flex-wrap gap-1 rounded-xl p-1 ${
-        isDarkMode ? 'bg-slate-800/70' : 'bg-gray-100/80'
-      }`}>
-        {MODE_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveMode(tab.key)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-              activeMode === tab.key
-                ? (isDarkMode ? 'bg-teal-500/20 text-teal-100' : 'bg-white text-teal-700 shadow-sm')
-                : (isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700')
-            }`}
-          >
-            {t(tab.labelKey, tab.fallback)}
-          </button>
-        ))}
-      </div>
+      {/* Chỉ hiện filter mode khi có nhiều hơn 1 chế độ trận đấu khả dụng (All + ≥2 modes). */}
+      {MODE_TABS.length > 2 && (
+        <div className={`flex flex-wrap gap-1 rounded-xl p-1 ${
+          isDarkMode ? 'bg-slate-800/70' : 'bg-gray-100/80'
+        }`}>
+          {MODE_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveMode(tab.key)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                activeMode === tab.key
+                  ? (isDarkMode ? 'bg-teal-500/20 text-teal-100' : 'bg-white text-teal-700 shadow-sm')
+                  : (isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700')
+              }`}
+            >
+              {t(tab.labelKey, tab.fallback)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
