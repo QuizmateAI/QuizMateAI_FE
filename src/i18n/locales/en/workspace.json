@@ -613,6 +613,7 @@
       "uploadAllSuccess": "Uploaded both user files and suggested files successfully.",
       "uploadSuccess": "Uploaded successfully!",
       "uploadError": "Upload failed.",
+      "fileTooLarge": "Uploaded document exceeds 200MB",
       "uploadPending": "Your document has been submitted and may still be processing. Please wait a moment then check your sources list.",
       "maxFiles": "Max documents",
       "maxFilesDesc": "Confirm how many documents will be used in this workspace.",
