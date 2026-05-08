@@ -221,9 +221,7 @@ function AdminPaymentManagement() {
   const {
     data: queryData,
     isLoading,
-    isFetching,
     error: queryError,
-    refetch,
   } = useQuery({
     queryKey: [...ADMIN_PAYMENTS_QUERY_KEY, page, size, appliedFilters],
     queryFn: () => fetchPayments(page, size, appliedFilters),

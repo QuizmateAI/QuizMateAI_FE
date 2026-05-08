@@ -88,11 +88,6 @@ const PRESETS = [
   },
 ];
 
-function rangesEqual(a, b) {
-  if (!a || !b) return false;
-  return a.from === b.from && a.to === b.to;
-}
-
 export default function DateRangeChips({ value, onChange, isDarkMode = false, className = '' }) {
   const { t } = useTranslation();
 

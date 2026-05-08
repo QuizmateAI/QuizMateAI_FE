@@ -3,9 +3,6 @@
 // Giữ file trống để tránh lỗi import từ các component còn tham chiếu.
 // Các API dưới đây sẽ trả về empty - không gọi backend.
 
-const DEFAULT_PAGE = 0;
-const DEFAULT_SIZE = 100;
-
 const emptyResponse = (data = []) => ({ data: data ?? [], status: 200 });
 
 export const getActiveDomains = async () => emptyResponse([]);

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
 import {
   Area,
@@ -303,7 +302,6 @@ function AiCostManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showError } = useToast();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const numberLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';

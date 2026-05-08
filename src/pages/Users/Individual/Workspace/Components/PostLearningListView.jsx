@@ -149,8 +149,8 @@ function PostLearningListView({
     queryFn: () => loadPostLearnings({ contextId: normalizedContextId, t }),
   });
 
-  const postLearnings = postLearningPayload.items || [];
-  const phaseIds = postLearningPayload.phaseIds || [];
+  const postLearnings = useMemo(() => postLearningPayload.items || [], [postLearningPayload.items]);
+  const phaseIds = useMemo(() => postLearningPayload.phaseIds || [], [postLearningPayload.phaseIds]);
 
   const allPhasesCovered = useMemo(() => {
     if (phaseIds.length === 0) return false;

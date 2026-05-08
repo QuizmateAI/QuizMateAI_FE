@@ -42,7 +42,7 @@ function collectCandidateImageUrls(value, collector, allowAnyHttp = false) {
   }
 }
 
-function getSourceImageUrls(source, contentBlocks) {
+function getSourceImageUrls(source, _contentBlocks) {
   if (!source) return [];
 
   const discoveredUrls = new Set();
@@ -114,20 +114,6 @@ function buildContentBlocks(text) {
   }
 
   return blocks;
-}
-
-// Format MIME type thành tên file type ngắn gọn
-function formatFileType(type) {
-  if (!type) return "FILE";
-  const lower = type.toLowerCase();
-  if (lower.includes("pdf")) return "PDF";
-  if (lower.includes("wordprocessingml") || lower.includes("msword")) return "DOCX";
-  if (lower.includes("spreadsheetml") || lower.includes("excel")) return "XLSX";
-  if (lower.includes("presentationml") || lower.includes("powerpoint")) return "PPTX";
-  if (lower.includes("image")) return "IMAGE";
-  if (lower.includes("video")) return "VIDEO";
-  if (lower === "url") return "URL";
-  return "FILE";
 }
 
 // Helper lấy icon theo loại tài liệu

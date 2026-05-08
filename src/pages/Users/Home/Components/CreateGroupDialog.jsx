@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
 // Dialog tạo nhóm mới với topic/subject selector
-function CreateGroupDialog({ open, onOpenChange, topics, topicsLoading, onFetchTopics, onCreate, isDarkMode }) {
+function CreateGroupDialog({ open, onOpenChange, topics: _topics, topicsLoading: _topicsLoading, onFetchTopics: _onFetchTopics, onCreate, isDarkMode }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
@@ -58,12 +58,6 @@ function CreateGroupDialog({ open, onOpenChange, topics, topicsLoading, onFetchT
     isDarkMode
       ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500'
       : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400'
-  }`;
-
-  const selectBase = `w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all appearance-none cursor-pointer ${
-    isDarkMode
-      ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500'
-      : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
   }`;
 
   return (

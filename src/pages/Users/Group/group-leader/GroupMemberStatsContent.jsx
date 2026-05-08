@@ -93,7 +93,7 @@ function GroupMemberStatsContent({
     (weakest, item) => (!weakest || item.ratio < weakest.ratio ? item : weakest),
     null,
   );
-  const weakFocus = selectedIntelligence?.weakFocus || [];
+  const _weakFocus = selectedIntelligence?.weakFocus || [];
   const roadmapProgress = selectedSnapshot?.roadmapProgress || selectedIntelligence?.roadmapProgress || {};
   const roadmapPercent = Math.max(0, Math.min(100, Math.round(Number(roadmapProgress.roadmapProgressPercent ?? 0))));
   const roadmapCurrent = roadmapProgress.currentPhaseTitle

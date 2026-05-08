@@ -133,20 +133,6 @@ function formatExchangeRate(value, maximumFractionDigits = 2) {
   return Number(value).toLocaleString('vi-VN', { maximumFractionDigits });
 }
 
-function formatCompactDateTime(value, locale = 'vi-VN') {
-  if (!value) return '-';
-  const parsed = parseApiDateTime(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString(locale, {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function formatDateTimeParts(value, locale = 'vi-VN') {
   if (!value) return { time: '-', date: null };
   const parsed = parseApiDateTime(value);
@@ -215,16 +201,6 @@ function MetricCard({ label, value, icon: Icon, tone, isDarkMode, subtext }) {
   );
 }
 
-function PricingSnapshotCard({ label, value, caption, isDarkMode }) {
-  return (
-    <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50'}`}>
-      <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{label}</p>
-      <p className={`mt-2 text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
-      {caption ? <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{caption}</p> : null}
-    </div>
-  );
-}
-
 function AiModelsManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
@@ -286,7 +262,6 @@ function AiModelsManagement() {
   const archivedCount = models.filter((item) => item.status === 'ARCHIVED').length;
   const assignedCount = models.filter((item) => Number(item.assignedPlanCount || 0) > 0).length;
   const pricingVersions = Array.isArray(pricingModel?.priceVersions) ? pricingModel.priceVersions : [];
-  const activePricingVersion = getActivePriceVersion(pricingModel);
   const inputPreviewVnd = convertUsdToVnd(priceForm.inputPriceUsdPer1M || 0, exchangeRate?.rate);
   const outputPreviewVnd = convertUsdToVnd(priceForm.outputPriceUsdPer1M || 0, exchangeRate?.rate);
 

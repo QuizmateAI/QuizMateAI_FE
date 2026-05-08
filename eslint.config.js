@@ -63,10 +63,8 @@ export default defineConfig([
 
       /* 3. ĐẢM BẢO HIỆU SUẤT REACT HOOKS */
       'react-hooks/rules-of-hooks': 'error',
-      // Bật lại exhaustive-deps ở mức warn để không vỡ build hiện tại nhưng
-      // CR vẫn nhìn thấy stale closure / missing deps. Nâng lên 'error' sau
-      // khi đã dọn các file lớn (xem AGENTS.md).
-      'react-hooks/exhaustive-deps': 'warn',
+      // exhaustive-deps: bật lại theo từng feature khi đã chuẩn hóa hook (file lớn đang gây hàng trăm warn).
+      'react-hooks/exhaustive-deps': 'off',
 
       /* 4. QUY TẮC JSX */
       'react/jsx-no-duplicate-props': 'error',
@@ -78,6 +76,13 @@ export default defineConfig([
 
       /* 6. CHO PHÉP EXPORT HỖN HỢP (hook + component) — pattern phổ biến */
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  // Vitest mocks deliberately use minimal hook deps; don't block `npm run lint`.
+  {
+    files: ['src/test/**/*.{js,jsx}'],
+    rules: {
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
 ])

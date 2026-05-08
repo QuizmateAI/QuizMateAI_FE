@@ -619,7 +619,6 @@ function WorkspacePage() {
   // 2) workspace phải có tài liệu ACTIVE
   // 3) roadmap structure không bị missing
   const passRoadmapCondition1 = resolvedRoadmapEnabled;
-  const passRoadmapCondition2 = hasAtLeastOneActiveSource;
   const passRoadmapCondition3 = !isRoadmapStructureMissing;
   const shouldDisableRoadmapForStudio = canCreateRoadmap === false
     ? true
@@ -924,8 +923,6 @@ function WorkspacePage() {
 
   const currentLang = i18n.language;
 
-  const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
-
   const applyResolvedWorkspaceProfile = useCallback((profileData) => {
     if (!profileData) return null;
 
@@ -955,17 +952,6 @@ function WorkspacePage() {
 
     return applyResolvedWorkspaceProfile(confirmedProfile);
   }, [applyResolvedWorkspaceProfile, workspaceId]);
-
-  const persistWorkspaceRoadmapConfig = useCallback(
-    async (data) => {
-      if (!workspaceId) return null;
-
-      return extractProfileData(
-        await saveIndividualWorkspaceRoadmapConfigStep(workspaceId, data),
-      );
-    },
-    [workspaceId],
-  );
 
   const closeProfileDialogs = useCallback(() => {
     setProfileConfigOpen(false);

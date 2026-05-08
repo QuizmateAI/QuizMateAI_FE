@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shield, Key, ClipboardList, RefreshCw, Plus, Trash2 } from 'lucide-react';
@@ -59,12 +59,12 @@ function RbacManagement() {
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
-  const getFriendlyError = (err, fallbackText, fallbackKey) => {
+  const getFriendlyError = useCallback((err, fallbackText, fallbackKey) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
     if (fallbackKey) return t(fallbackKey);
     return fallbackText;
-  };
+  }, [t]);
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [activeTab, setActiveTab] = useState('permissions');
@@ -132,7 +132,7 @@ function RbacManagement() {
   useEffect(() => {
     const e = permsQuery.error || rolesQuery.error || auditQuery.error;
     if (e) setError(getFriendlyError(e, null, 'rbac.errors.loadPermissions'));
-  }, [permsQuery.error, rolesQuery.error, auditQuery.error]);
+  }, [permsQuery.error, rolesQuery.error, auditQuery.error, getFriendlyError]);
 
   const ensurePermissionsLoaded = async () => {
     if (permissions.length > 0) return permissions;
@@ -151,7 +151,7 @@ function RbacManagement() {
       setUserPermissions(
         filterRemovedLearningConfigPermissionCodes(Array.isArray(data) ? data : user?.permissions ? [...user.permissions] : [])
       );
-    } catch (err) {
+    } catch {
       setUserPermissions(filterRemovedLearningConfigPermissionCodes(user?.permissions ? [...user.permissions] : []));
     } finally {
       setIsModalLoading(false);

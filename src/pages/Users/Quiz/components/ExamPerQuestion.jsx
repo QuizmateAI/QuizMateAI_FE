@@ -299,7 +299,7 @@ export default function ExamPerQuestion({
         setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
       }
     });
-  }, [currentIndex, total, onSubmit, currentQuestion?.id, answers, saveQuestionAnswer, t]);
+  }, [currentIndex, total, currentQuestion?.id, answers, saveQuestionAnswer, t]);
 
   const handleConfirmSubmit = useCallback(async () => {
     if (nextLoading) return;

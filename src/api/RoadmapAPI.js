@@ -641,7 +641,7 @@ export const updateGroupRoadmapConfig = async (roadmapId, data) => {
 
 // ==================== MOCK ROADMAP DATA ====================
 
-const ROADMAP_GRAPH_SEED = {
+const _ROADMAP_GRAPH_SEED = {
   title: 'AI Learning Roadmap',
   description: 'Lộ trình học từ nền tảng đến triển khai thực chiến với quiz và flashcard ở từng knowledge.',
   estimatedDuration: '10 tuần',
@@ -795,10 +795,6 @@ const ROADMAP_GRAPH_SEED = {
 const MOCK_ROADMAP_STORE = new Map();
 let mockSequence = 1;
 
-function deepClone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
 function nextMockId(prefix) {
   const id = `${prefix}-${mockSequence}`;
   mockSequence += 1;
@@ -807,10 +803,6 @@ function nextMockId(prefix) {
 
 function getScopeKey({ workspaceId = null } = {}) {
   return `workspace:${workspaceId}`;
-}
-
-function getScopeLabel({ workspaceId = null } = {}) {
-  return `Workspace ${workspaceId ?? 'Demo'}`;
 }
 
 function buildStats(phases) {
@@ -873,53 +865,6 @@ function buildPhaseMock(phase, roadmapId, phaseIndex) {
       questionCount: 12 + sourceKnowledges.length * 4,
     },
     knowledges: sourceKnowledges.map((knowledge, knowledgeIndex) => buildKnowledgeMock(knowledge, phaseId, knowledgeIndex)),
-  };
-}
-
-function buildSeedRoadmapGraph(payload = {}, { workspaceId = null } = {}) {
-  const scopeLabel = getScopeLabel({ workspaceId });
-  const roadmapId = nextMockId('workspace-roadmap');
-  const graph = deepClone(ROADMAP_GRAPH_SEED);
-  const phases = graph.phases.map((phase, phaseIndex) => {
-    const phaseId = nextMockId('phase');
-    return {
-      ...phase,
-      phaseId,
-      phaseIndex,
-      roadmapId,
-      postLearning: {
-        ...phase.postLearning,
-        id: nextMockId('post-learning'),
-      },
-      knowledges: phase.knowledges.map((knowledge, knowledgeIndex) => ({
-        ...knowledge,
-        knowledgeId: nextMockId('knowledge'),
-        phaseId,
-        knowledgeIndex,
-        quizzes: knowledge.quizzes.map((quiz) => ({
-          ...quiz,
-          id: nextMockId('quiz'),
-        })),
-        flashcards: knowledge.flashcards.map((flashcard) => ({
-          ...flashcard,
-          id: nextMockId('flashcard'),
-        })),
-      })),
-    };
-  });
-
-  const title = payload?.name?.trim() || `${graph.title} - ${scopeLabel}`;
-  const description = payload?.goal?.trim() || payload?.description?.trim() || graph.description;
-
-  return {
-    roadmapId,
-    title,
-    description,
-    estimatedDuration: graph.estimatedDuration,
-    canvasView: payload?.canvasView === 'view2' ? 'view2' : 'view1',
-    generatedAt: new Date().toISOString(),
-    phases,
-    stats: buildStats(phases),
   };
 }
 

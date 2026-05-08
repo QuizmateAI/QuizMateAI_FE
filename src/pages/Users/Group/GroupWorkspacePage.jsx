@@ -280,11 +280,11 @@ function GroupWorkspacePage() {
   const [hasHydratedRoadmapSelection, setHasHydratedRoadmapSelection] = useState(false);
   const [runtimeRoadmapId, setRuntimeRoadmapId] = useState(null);
   const [roadmapCenterFocusToken, setRoadmapCenterFocusToken] = useState(0);
-  const [hasTriggeredGroupRoadmap, setHasTriggeredGroupRoadmap] = useState(false);
+  const [, setHasTriggeredGroupRoadmap] = useState(false);
   const [sources, setSources] = useState([]);
   const [selectedSourceIds, setSelectedSourceIds] = useState([]);
   const [selectedRoadmapSourceIds, setSelectedRoadmapSourceIds] = useState([]);
-  const [createdItems, setCreatedItems] = useState([]);
+  const [createdItems] = useState([]);
   const [groupProfile, setGroupProfile] = useState(null);
   const [groupSubscription, setGroupSubscription] = useState(null);
   const [hasLoadedGroupSubscription, setHasLoadedGroupSubscription] = useState(isCreating);
@@ -312,7 +312,6 @@ function GroupWorkspacePage() {
   const [membersLoading, setMembersLoading] = useState(false);
 
   const currentLang = i18n.language;
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const currentUser = readCurrentUser();
   const planEntitlements = useMemo(
     () => buildPlanEntitlementFlags(groupSubscription?.plan?.entitlement ?? groupSubscription?.entitlement ?? null),
@@ -1230,7 +1229,7 @@ function GroupWorkspacePage() {
         setSelectedQuiz({ ...payload, quizId: normalizedQuizId });
         setQuizDetailFromChallengeReview(false);
         setActiveView('quizDetail');
-      } catch (error) {
+      } catch {
         if (cancelled) return;
         showError(t('groupWorkspacePage.errors.cannotOpenQuiz', 'Could not open this quiz. Check permissions or try again.'));
       }
@@ -2639,33 +2638,6 @@ function GroupWorkspacePage() {
       showError(resolveUiErrorMessage(error));
     }
   }, [currentLang, resolveUiErrorMessage, showError, showInfo, t]);
-
-  const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
-    try {
-      const deletePromises = sourceIds.map((id) =>
-        deleteMaterial(id).catch((err) => {
-          console.error('Delete failed for', id, err);
-          return null;
-        })
-      );
-      await Promise.all(deletePromises);
-      setSources((prev) => prev.filter((source) => !sourceIds.includes(source.id)));
-      showInfo(
-        t('groupWorkspacePage.toast.materialsDeleted', 'Deleted {{count}} material(s).', { count: sourceIds.length }),
-      );
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      showError(resolveUiErrorMessage(error));
-    }
-  }, [currentLang, resolveUiErrorMessage, showError, showInfo, t]);
-
-  const handleSelectAllSources = useCallback((selectAll, currentSourceIds) => {
-    if (selectAll) {
-      setSelectedSourceIds(currentSourceIds);
-    } else {
-      setSelectedSourceIds([]);
-    }
-  }, []);
 
   const handleSelectOneSource = useCallback((sourceId, isSelected) => {
     if (isSelected) {

@@ -483,7 +483,7 @@ function AiAuditManagement() {
     },
     placeholderData: (previous) => previous,
   });
-  const auditLogs = auditLogsQuery.data?.auditLogs ?? [];
+  const auditLogs = useMemo(() => auditLogsQuery.data?.auditLogs ?? [], [auditLogsQuery.data?.auditLogs]);
   const pageInfo = auditLogsQuery.data?.pageInfo ?? { totalElements: 0, totalPages: 0, page: 0, size: pageSize };
   const isLoading = auditLogsQuery.isLoading;
   const error = auditLogsQuery.error

@@ -86,29 +86,6 @@ const DIFFICULTY_STYLES = {
   CUSTOM: { light: "bg-slate-100 text-slate-700", dark: "bg-slate-800 text-slate-300" },
 };
 
-const QUIZ_CARD_THEMES = {
-  EASY: {
-    banner: "bg-sky-50",
-    iconWrap: "border-sky-100 bg-white",
-    iconColor: "text-sky-700",
-  },
-  MEDIUM: {
-    banner: "bg-amber-50",
-    iconWrap: "border-amber-100 bg-white",
-    iconColor: "text-amber-700",
-  },
-  HARD: {
-    banner: "bg-rose-50",
-    iconWrap: "border-rose-100 bg-white",
-    iconColor: "text-rose-700",
-  },
-  CUSTOM: {
-    banner: "bg-slate-50",
-    iconWrap: "border-slate-200 bg-white",
-    iconColor: "text-slate-700",
-  },
-};
-
 const QUIZ_PAGE_SIZE = 6;
 const QUIZ_PAGE_SIZE_XL = 8;
 const QUIZ_GRID_XL_BREAKPOINT = 1280;
@@ -227,14 +204,6 @@ function resolveGroupMember(userId, groupMembers) {
   return (groupMembers || []).find((x) => Number(x.userId ?? x.id) === uid) || null;
 }
 
-function formatAssignedNames(quiz, groupMembers, maxNames = 3) {
-  const ids = getQuizAssignedUserIds(quiz);
-  if (ids.length === 0) return "";
-  const names = ids.map((id) => resolveMemberDisplayName(id, groupMembers));
-  if (names.length <= maxNames) return names.join(", ");
-  return `${names.slice(0, maxNames).join(", ")} +${names.length - maxNames}`;
-}
-
 function GroupMemberAvatar({ member, fallback, isDarkMode, sizeClass = "h-7 w-7", textClass = "text-[10px]" }) {
   const avatarSrc = member?.avatar || member?.avatarUrl || "";
   const initial = String(fallback || member?.fullName || member?.username || "?").trim().charAt(0).toUpperCase() || "?";
@@ -259,10 +228,6 @@ function GroupMemberAvatar({ member, fallback, isDarkMode, sizeClass = "h-7 w-7"
       )}
     </div>
   );
-}
-
-function resolveQuizCardTheme(difficultyKey) {
-  return QUIZ_CARD_THEMES[difficultyKey] || QUIZ_CARD_THEMES.CUSTOM;
 }
 
 function resolveQuizGenerationTaskId(quiz, quizGenerationTaskByQuizId) {
@@ -314,7 +279,7 @@ function QuizListView({
   returnToPath = null,
   refreshToken = 0,
   disableCreate = false,
-  title = null,
+  title: _title = null,
   onNavigateHome,
   onShareQuiz,
   onOpenCommunityQuiz,
@@ -349,7 +314,6 @@ function QuizListView({
   const [quizPageSize, setQuizPageSize] = useState(() => (
     resolveQuizPageSize(typeof window === "undefined" ? NaN : window.innerWidth, { embedded })
   ));
-  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignSaving, setBulkAssignSaving] = useState(false);
   const [bulkAudienceMode, setBulkAudienceMode] = useState("ALL_MEMBERS");
@@ -486,18 +450,6 @@ function QuizListView({
       sourcePhaseId,
     };
   }, [contextId, contextType, location.pathname, resolvedReturnToPath]);
-  const handleStartQuiz = useCallback((mode, quizId) => {
-    if (!mode || !quizId) return;
-
-    navigate(buildQuizAttemptPath(mode, quizId), {
-      state: {
-        returnToQuizPath: resolvedReturnToPath,
-        ...(mode === 'practice' ? { autoStart: true } : {}),
-        ...quizNavigationSourceState,
-      },
-    });
-  }, [navigate, quizNavigationSourceState, resolvedReturnToPath]);
-
   const handleConfirmExamStart = useCallback(() => {
     const resolvedQuizId = resolveQuizNavigationId(examStartQuiz);
     if (!resolvedQuizId) return;
@@ -821,17 +773,6 @@ function QuizListView({
     }
   }, [currentPage, totalPages]);
 
-  const filteredQuizIds = useMemo(
-    () => filtered
-      .map((quiz) => Number(resolveQuizNavigationId(quiz)))
-      .filter((quizId) => Number.isInteger(quizId) && quizId > 0),
-    [filtered],
-  );
-
-  const selectedQuizIdSet = useMemo(() => new Set(selectedQuizIds), [selectedQuizIds]);
-
-  const allFilteredSelected = filteredQuizIds.length > 0 && filteredQuizIds.every((quizId) => selectedQuizIdSet.has(quizId));
-
   useEffect(() => {
     if (selectedQuizIds.length === 0) return;
     const availableIds = new Set(quizzes.map((quiz) => Number(resolveQuizNavigationId(quiz))).filter((quizId) => Number.isInteger(quizId) && quizId > 0));
@@ -841,74 +782,11 @@ function QuizListView({
     });
   }, [quizzes, selectedQuizIds.length]);
 
-  const toggleQuizSelection = useCallback((quizId, checked) => {
-    const normalizedId = Number(quizId);
-    if (!Number.isInteger(normalizedId) || normalizedId <= 0) return;
-
-    setSelectedQuizIds((current) => {
-      if (checked) {
-        return current.includes(normalizedId) ? current : [...current, normalizedId];
-      }
-      return current.filter((id) => id !== normalizedId);
-    });
-  }, []);
-
-  const handleToggleSelectAllFiltered = useCallback(() => {
-    if (filteredQuizIds.length === 0) return;
-    setSelectedQuizIds((current) => {
-      if (allFilteredSelected) {
-        const filteredSet = new Set(filteredQuizIds);
-        return current.filter((id) => !filteredSet.has(id));
-      }
-
-      const next = new Set(current);
-      filteredQuizIds.forEach((id) => next.add(id));
-      return [...next];
-    });
-  }, [allFilteredSelected, filteredQuizIds]);
-
-  const handleBulkDeleteSelected = useCallback(async () => {
-    const targets = [...selectedQuizIds];
-    if (targets.length === 0 || bulkDeleteLoading) return;
-
-    const confirmed = window.confirm(
-      t("quizListView.bulkActions.deleteConfirm", "Are you sure you want to delete {{count}} selected quiz?", { count: targets.length }),
-    );
-    if (!confirmed) return;
-
-    setBulkDeleteLoading(true);
-    try {
-      const results = await Promise.allSettled(targets.map((quizId) => deleteQuiz(quizId)));
-      const successIds = targets.filter((_, index) => results[index]?.status === "fulfilled");
-      const failedCount = targets.length - successIds.length;
-
-      if (successIds.length > 0) {
-        setQuizzes((current) => current.filter((quiz) => !successIds.includes(Number(resolveQuizNavigationId(quiz)))));
-        setSelectedQuizIds((current) => current.filter((quizId) => !successIds.includes(quizId)));
-      }
-
-      if (failedCount > 0) {
-        showError(t("quizListView.bulkActions.deletePartialFail", "Could not delete {{count}} quiz.", { count: failedCount }));
-      }
-    } catch (error) {
-      showError(error?.message || t("quizListView.errors.deleteUnavailable", "Could not delete quiz right now."));
-    } finally {
-      setBulkDeleteLoading(false);
-    }
-  }, [bulkDeleteLoading, selectedQuizIds, showError, t]);
-
   const toggleBulkAudienceMember = useCallback((userId) => {
     setBulkSelectedAudienceUserIds((current) => (
       current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
     ));
   }, []);
-
-  const handleOpenBulkAssign = useCallback(() => {
-    if (selectedQuizIds.length === 0 || !isGroupQuizList) return;
-    setBulkAudienceMode("ALL_MEMBERS");
-    setBulkSelectedAudienceUserIds([]);
-    setBulkAssignOpen(true);
-  }, [isGroupQuizList, selectedQuizIds.length]);
 
   const handleBulkAssign = useCallback(async () => {
     if (!isGroupQuizList || selectedQuizIds.length === 0 || bulkAssignSaving) return;
@@ -950,7 +828,6 @@ function QuizListView({
     t,
   ]);
 
-  const hasSelectedQuiz = selectedQuizIds.length > 0;
   const useLegacyRoadmapCards = false;
 
   const renderQuizFeedbackAction = (quizId, className = "") => (
@@ -1513,18 +1390,6 @@ function QuizListView({
               const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
               const myAttempted = quiz?.myAttempted === true;
               const myPassed = quiz?.myPassed === true;
-              const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
-              const intentValue = quiz?.quizIntent
-                ? t(`quizListView.intent.${quiz.quizIntent}`, quiz.quizIntent)
-                : t("quizListView.cards.notAvailable", "N/A");
-              const timerValue = typeof quiz.timerMode === "boolean"
-                ? (quiz.timerMode
-                  ? t("quizListView.cards.examModeTotalShort", "Total time limit")
-                  : t("quizListView.cards.examModePerQuestionShort", "Per question"))
-                : t("quizListView.cards.notAvailable", "N/A");
-              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz && myAttempted;
-              const showExamAction = normalizedStatus === "ACTIVE";
-              const showFeedbackAction = myAttempted && !hasSubmittedFeedback && resolvedQuizId != null && resolvedQuizId !== "";
               const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
               const questionCount = Number(quiz?.questionCount ?? quiz?.totalQuestion ?? quiz?.totalQuestions ?? 0) || 0;
               const scoreValue = Number(quiz?.latestScore ?? quiz?.score ?? quiz?.myScore ?? quiz?.marksScored ?? quiz?.markScored);

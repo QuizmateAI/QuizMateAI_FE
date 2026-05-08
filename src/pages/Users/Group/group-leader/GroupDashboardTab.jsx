@@ -31,7 +31,6 @@ import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
 import i18n from '@/i18n';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getUserDisplayLabel } from '@/utils/userProfile';
 import UserDisplayName from '@/components/features/users/UserDisplayName';
 import { useToast } from '@/context/ToastContext';
 
@@ -126,22 +125,6 @@ function logLabel(action) {
   return labels[action] || i18n.t('groupDashboard.logLabels.activity', 'Activity');
 }
 
-function classificationLabel(code) {
-  const c = String(code || '').toUpperCase();
-  const map = {
-    STRONG: i18n.t('groupDashboard.classification.strong', 'Strong'),
-    AVERAGE: i18n.t('groupDashboard.classification.average', 'Average'),
-    WEAK: i18n.t('groupDashboard.classification.weak', 'Needs support'),
-    AT_RISK: i18n.t('groupDashboard.classification.atRisk', 'At risk'),
-  };
-  return map[c] || c || '—';
-}
-
-function formatPctRatio(n) {
-  if (n == null || Number.isNaN(Number(n))) return '—';
-  return `${Math.round(Number(n) * 1000) / 10}%`;
-}
-
 function formatScore(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return Math.round(Number(value) * 10) / 10;
@@ -150,12 +133,6 @@ function formatScore(value) {
 function formatWhole(value) {
   if (value == null || Number.isNaN(Number(value))) return '0';
   return new Intl.NumberFormat().format(Number(value));
-}
-
-function passRate(snapshot) {
-  const attempts = Number(snapshot?.totalQuizAttempts ?? 0);
-  const passed = Number(snapshot?.totalQuizPassed ?? 0);
-  return attempts > 0 ? passed / attempts : null;
 }
 
 const MEMBER_CARD_PAGE_SIZE = 8;
@@ -229,8 +206,8 @@ function GroupDashboardTab({
   });
 
   const {
-    data: rankingPage,
-    isLoading: rankingLoading,
+    data: _rankingPage,
+    isLoading: _rankingLoading,
     refetch: refetchRanking,
   } = useQuery({
     queryKey: ['group-learning-snapshot-ranking', workspaceId, LEARNING_SNAPSHOT_PERIOD, 'averageScore', 'desc'],
@@ -248,25 +225,6 @@ function GroupDashboardTab({
     const raw = memberCardsPage?.content;
     return Array.isArray(raw) ? raw : [];
   }, [memberCardsPage]);
-
-  const scoreLeaderboard = useMemo(() => {
-    const ranked = Array.isArray(rankingPage?.content) && rankingPage.content.length > 0
-      ? rankingPage.content
-      : memberLearningCards;
-    return [...ranked]
-      .filter((m) => (m.totalQuizAttempts || 0) > 0 && m.averageScore != null)
-      .sort((a, b) => (Number(b.averageScore) || 0) - (Number(a.averageScore) || 0))
-      .slice(0, 10)
-      .map((m) => {
-        const raw = getUserDisplayLabel(m, '?');
-        const label = raw.length > 12 ? `${raw.slice(0, 12)}…` : raw;
-        return {
-          userId: m.userId,
-          label,
-          score: Math.round(Number(m.averageScore) * 10) / 10,
-        };
-      });
-  }, [memberLearningCards, rankingPage]);
 
   const roster = members.map((member) => ({ ...member, joinedDate: toSafeDate(member.joinedAt) }))
     .sort((a, b) => (b.joinedDate?.getTime() ?? 0) - (a.joinedDate?.getTime() ?? 0));
@@ -421,7 +379,6 @@ function GroupDashboardTab({
   };
 
   if (compactMode) {
-    const quietIconTone = isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700';
     // 4 màu thematic cho 4 KPI để dashboard sống động hơn
     const cyanTone = isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700';
     const emeraldTone = isDarkMode ? 'bg-emerald-400/15 text-emerald-200' : 'bg-emerald-100 text-emerald-700';
@@ -475,7 +432,6 @@ function GroupDashboardTab({
       if (!latest || nextDate.getTime() > latest.getTime()) return nextDate;
       return latest;
     }, null);
-    const spotlightLead = scoreLeaderboard[0] ?? null;
     const activityChartSum = activityChartData.reduce((sum, item) => sum + item.count, 0);
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>

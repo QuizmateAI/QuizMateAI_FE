@@ -6,17 +6,11 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import i18n from '@/i18n';
 import {
   getBeginnerScopeLabel,
   isAbsoluteBeginnerLevel,
   isJapaneseLearningScope,
 } from './profileWizardBeginnerUtils';
-
-function translateOrFallback(key, fallback, options) {
-  const translated = i18n.t(key, options);
-  return translated === key ? fallback : translated;
-}
 
 function normalizeText(value) {
   return (value ?? '').toString().trim();
@@ -46,81 +40,6 @@ function mergeUniqueSuggestions(...lists) {
  */
 function normalizeForCompare(value) {
   return (value ?? '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-function buildTemplateNotesFromStructure(structure) {
-  if (!structure || typeof structure !== 'object') return '';
-
-  const lines = [];
-  const overview = normalizeText(structure.overview);
-  if (overview) {
-    lines.push(
-      translateOrFallback(
-        'workspaceProfileStepTwo.helpers.overview',
-        `- Overview: ${overview}`,
-        { overview }
-      )
-    );
-  }
-
-  const excludedSections = Array.isArray(structure.excludedSections) ? structure.excludedSections : [];
-  excludedSections.forEach((item) => {
-    const name = normalizeText(item?.name);
-    const reason = normalizeText(item?.reason);
-    if (name && reason) {
-      lines.push(
-        translateOrFallback(
-          'workspaceProfileStepTwo.helpers.excludedWithReason',
-          `- Excluded: ${name} (${reason})`,
-          { name, reason }
-        )
-      );
-    } else if (name) {
-      lines.push(
-        translateOrFallback(
-          'workspaceProfileStepTwo.helpers.excluded',
-          `- Excluded: ${name}`,
-          { name }
-        )
-      );
-    }
-  });
-
-  const sections = Array.isArray(structure.sections) ? structure.sections : [];
-  sections.forEach((section) => {
-    const sectionName = normalizeText(section?.name);
-    const parts = Array.isArray(section?.parts) ? section.parts : [];
-    if (!sectionName || parts.length === 0) return;
-    const partsText = parts
-      .map((p) => {
-        const name = normalizeText(p?.name);
-        const count = Number(p?.questionCount) || 0;
-        return translateOrFallback(
-          'workspaceProfileStepTwo.helpers.sectionPartItem',
-          `${name} (${count} questions)`,
-          { name, count }
-        );
-      })
-      .filter(Boolean)
-      .join(', ');
-    lines.push(`- ${sectionName}: ${partsText}`);
-  });
-
-  return lines.join('\n');
-}
-
-function buildPopularTemplateKey(template) {
-  const defaultTemplateName = translateOrFallback(
-    'workspaceProfileStepTwo.defaultTemplateName',
-    'Template'
-  );
-  const templateId = normalizeText(template?.templateId);
-  const templateName = normalizeText(template?.templateName) || normalizeText(template?.examName) || defaultTemplateName;
-  const examName = normalizeText(template?.examName);
-  const duration = Number(template?.structure?.totalDurationMinutes) || 0;
-  const recommendedCount = Number(template?.structure?.recommendedTotalQuestions) || 0;
-
-  return [templateId || templateName, examName, duration, recommendedCount].join('::');
 }
 
 function FieldBlock({

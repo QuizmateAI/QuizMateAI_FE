@@ -127,7 +127,7 @@ function ImportQuestionsPanel({ open, onClose, workspaceId, excludeQuizId, onImp
       const incoming = unwrapApiList(response)
         .filter((quiz) => getQuizId(quiz) !== Number(excludeQuizId || 0))
         .map((quiz) => {
-          const { overallDifficulty, ...restQuiz } = quiz || {};
+          const { overallDifficulty: _overallDifficulty, ...restQuiz } = quiz || {};
           return restQuiz;
         });
       setQuizzes(incoming);

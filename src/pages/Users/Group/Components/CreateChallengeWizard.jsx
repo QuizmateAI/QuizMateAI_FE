@@ -97,7 +97,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     },
     enabled: Boolean(workspaceId) && registrationMode === 'INVITE_ONLY',
   });
-  const members = membersData || [];
+  const members = useMemo(() => membersData || [], [membersData]);
 
   const membersForInvite = useMemo(() => {
     const uid = Number(currentUserId);

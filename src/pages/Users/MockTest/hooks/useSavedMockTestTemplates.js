@@ -33,6 +33,8 @@ export function useSavedMockTestTemplates({ enabled = true, workspaceId } = {}) 
   const [savingTemplateId, setSavingTemplateId] = useState(null);
   const [derivedFromMap, setDerivedFromMap] = useState(new Map());
 
+  const effectiveEnabled = Boolean(enabled) && workspaceId != null;
+
   const refetch = useCallback(async () => {
     if (!effectiveEnabled) {
       setTemplates([]);

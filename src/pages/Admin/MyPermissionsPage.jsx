@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyRound, RefreshCw, Plus, X, ShieldCheck, Hourglass, CircleSlash, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -88,10 +88,10 @@ export default function MyPermissionsPage() {
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  const friendly = (err, fallback) => {
+  const friendly = useCallback((err, fallback) => {
     const mapped = getErrorMessage(t, err);
     return mapped && mapped !== 'error.unknown' ? mapped : fallback;
-  };
+  }, [t]);
 
   const myPermSet = useMemo(() => new Set(myPerms), [myPerms]);
   const selectableCodes = useMemo(
@@ -107,7 +107,7 @@ export default function MyPermissionsPage() {
 
   const normalizedPermissionCode = form.permissionCode.trim();
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     setDialogError('');
     try {
@@ -168,9 +168,9 @@ export default function MyPermissionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [friendly, showError]);
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const openCreateDialog = () => {
     setForm({ permissionCode: selectableCodes[0] || '', reason: '', durationDays: null });

@@ -14,7 +14,6 @@ import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
 import PhaseProgressSummaryCard from "@/components/features/workspace/PhaseProgressSummaryCard";
 import {
-  BookOpenCheck,
   CheckCircle2,
   ChevronDown,
   Eye,
@@ -81,7 +80,7 @@ function RoadmapCanvasView2({
   });
   const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
   const [currentKnowledgePayload, setCurrentKnowledgePayload] = useState(null);
-  const [loadingGlobalCurrentPhase, setLoadingGlobalCurrentPhase] = useState(false);
+  const [, setLoadingGlobalCurrentPhase] = useState(false);
   const [optimisticUnlockedPhaseIds, setOptimisticUnlockedPhaseIds] = useState([]);
   const [unlockingPhaseIds, setUnlockingPhaseIds] = useState([]);
   const progressSyncDebounceRef = useRef(null);
@@ -420,11 +419,6 @@ function RoadmapCanvasView2({
     });
   }, []);
 
-  const hasPassedPostLearning = useCallback((phase) => {
-    const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
-    return postLearningQuizzes.some((quiz) => quiz?.myPassed === true);
-  }, []);
-
   const canShowRoadmapLevelFeedback = useMemo(() => {
     if (!Array.isArray(phases) || phases.length === 0) return false;
 
@@ -438,19 +432,6 @@ function RoadmapCanvasView2({
 
     return allPhasesFinished && postLearningSatisfied;
   }, [phases, isPhaseFinishedStatus, hasCompletedPostLearning]);
-
-  const resolvePostLearningReviewEligibility = useCallback((phase) => {
-    if (!phase) return false;
-    const isFlexible = normalizedAdaptationMode === "FLEXIBLE";
-    const isStrict = normalizedAdaptationMode === "STRICT";
-    const isDone = hasCompletedPostLearning(phase);
-    const isPassed = hasPassedPostLearning(phase);
-
-    if (isFlexible) return isDone;
-    if (isStrict) return isPassed;
-
-    return isPassed;
-  }, [hasCompletedPostLearning, hasPassedPostLearning, normalizedAdaptationMode]);
 
   const syncPhaseSummary = useCallback(async () => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -477,7 +458,7 @@ function RoadmapCanvasView2({
           setPhaseSummaryState({ loading: false, data: summaryData, phaseId: activePhaseId });
           return;
         }
-      } catch (summaryError) {
+      } catch {
         // Chưa có progress summary thì ẩn khung, không coi là lỗi UI.
       }
 
@@ -654,41 +635,6 @@ function RoadmapCanvasView2({
     );
   };
 
-  const renderQuizItem = (quiz) => {
-    const status = String(quiz?.status || "DRAFT").toUpperCase();
-    const questionCount = Number(quiz?.questionCount ?? 0);
-    const isCompleted = status === "COMPLETED";
-
-    return (
-      <div
-        key={quiz?.quizId || quiz?.id || `${quiz?.title}-quiz`}
-        className={`flex items-start gap-3 py-2.5 ${isDarkMode ? "text-slate-100" : "text-gray-900"}`}
-      >
-        {isCompleted ? (
-          <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${isDarkMode ? "text-green-500" : "text-green-600"}`} />
-        ) : (
-          <div className={`w-4 h-4 mt-0.5 shrink-0 rounded border-2 ${isDarkMode ? "border-slate-500" : "border-slate-300"}`} />
-        )}
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>{quiz?.title}</p>
-          <div className={`flex items-center gap-2 mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            <span className="flex items-center gap-1"><BookOpenCheck className="w-3 h-3" />{questionCount} {t("workspace.roadmap.canvas.questions")}</span>
-          </div>
-        </div>
-        <div className={`inline-flex items-center gap-1 text-xs rounded-full px-2 py-0.5 shrink-0 font-medium ${
-          isCompleted 
-            ? isDarkMode 
-              ? "bg-green-950/50 text-green-300 border border-green-500/30" 
-              : "bg-green-100 text-green-800 border border-green-200" 
-            : isDarkMode 
-              ? "bg-slate-800/50 text-slate-300 border border-slate-700/50" 
-              : "bg-slate-100 text-slate-700 border border-slate-200"
-        }`}>
-          {status}
-        </div>
-      </div>
-    );
-  };
 
   const renderFlashcardItem = (flashcard) => {
     const status = String(flashcard?.status || "DRAFT").toUpperCase();
@@ -987,10 +933,6 @@ function RoadmapCanvasView2({
           const isGeneratingKnowledgeQuiz = generatingKnowledgeQuizPhaseIds.includes(Number(phase.phaseId));
           const isGeneratingKnowledge = isGeneratingPhaseContent || isGeneratingKnowledgeQuiz;
           const isGeneratingPreLearning = generatingPreLearningPhaseIds.includes(normalizedPhaseId);
-          const phaseKnowledgePercent = progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0;
-          const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
-          const phasePostLearningPercent = progressTracking?.getPostLearningProgress(normalizedPhaseId) ?? 0;
-          const phaseProcessingPercent = Math.max(phaseKnowledgePercent, phasePreLearningPercent, phasePostLearningPercent, 0);
           const isProcessingPhase = !isCompletedPhase && (
             normalizedPhaseStatus === "PROCESSING"
             || isGeneratingPhaseContent
@@ -1056,6 +998,8 @@ function RoadmapCanvasView2({
             && Number.isInteger(currentRemedialPhaseId)
             && currentRemedialPhaseId === normalizedPhaseId
             && remedialState?.currentPhaseProgress?.needsRemedialDecision === true;
+          const phaseKnowledgePercent = progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0;
+          const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
           return (
             <div key={phase.phaseId} className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white"}`}>
               <button

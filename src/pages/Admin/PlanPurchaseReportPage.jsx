@@ -220,7 +220,7 @@ export default function PlanPurchaseReportPage() {
     setCreditBuyerPage(0);
   };
 
-  const plans = summaryQuery.data?.plans ?? [];
+  const plans = useMemo(() => summaryQuery.data?.plans ?? [], [summaryQuery.data?.plans]);
   const loading = summaryQuery.isLoading;
   const fetching = summaryQuery.isFetching;
 

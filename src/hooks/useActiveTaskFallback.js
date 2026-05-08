@@ -109,7 +109,7 @@ export function useActiveTaskFallback({
         onSnapshot?.(snapshot, { reason, fetchedAt: Date.now() });
       }
       return snapshot;
-    } catch (error) {
+    } catch {
       return null;
     } finally {
       inFlightRef.current = false;

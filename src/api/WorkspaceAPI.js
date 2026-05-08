@@ -31,10 +31,6 @@ function normalizeListField(value) {
   return [];
 }
 
-function extractApiData(response) {
-  return response?.data?.data ?? response?.data ?? response ?? null;
-}
-
 function normalizeRoadmapKnowledgeLoad(value) {
   if (value === 'INTERMEDIATE') return 'INTERMEDIATE';
   if (value === 'ADVANCED') return 'ADVANCED';

@@ -185,7 +185,7 @@ function buildMaterialSummary(report, copy, t) {
 
 function WorkspaceProfileStepUpload({
   t,
-  language = 'vi',
+  language: _language = 'vi',
   isDarkMode,
   values,
   errors,

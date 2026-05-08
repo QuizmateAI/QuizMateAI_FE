@@ -262,7 +262,7 @@ function SuperAdminDashboard() {
   const data = tsQuery.data;
   const planSummary = planQuery.data;
 
-  const points = data?.points ?? [];
+  const points = useMemo(() => data?.points ?? [], [data?.points]);
   const totals = data?.totals ?? null;
   const growthPct = data?.growthPct ?? null;
 

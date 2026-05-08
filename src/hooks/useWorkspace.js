@@ -122,7 +122,7 @@ export function useWorkspace(options = {}) {
     }
   });
 
-  const { data, isLoading: loading, error: queryError, refetch } = useQuery({
+  const { data, isLoading: loading, error: queryError } = useQuery({
     queryKey: [...WORKSPACES_QUERY_KEY, page, size, sortMode],
     queryFn: async () => {
       const res = await getWorkspacesByUser(page, size, sortMode);

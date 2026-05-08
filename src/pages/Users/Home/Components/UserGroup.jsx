@@ -149,16 +149,15 @@ function UserGroup({
   loading,
   onOpenCreate,
   searchQuery: controlledSearchQuery,
-  onSearchQueryChange,
+  onSearchQueryChange: _onSearchQueryChange,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language === "en" ? "en" : "vi";
   const navigate = useNavigateWithLoading();
   const isList = viewMode === "list";
-  const [internalSearchQuery, setInternalSearchQuery] = useState("");
+  const [internalSearchQuery] = useState("");
   const searchQuery = controlledSearchQuery ?? internalSearchQuery;
-  const setSearchQuery = onSearchQueryChange ?? setInternalSearchQuery;
 
   const filteredGroups = searchQuery.trim()
     ? groups.filter((group) => {

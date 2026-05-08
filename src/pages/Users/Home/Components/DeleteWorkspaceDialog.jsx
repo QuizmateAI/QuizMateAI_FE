@@ -19,8 +19,6 @@ function DeleteWorkspaceDialog({ open, onOpenChange, workspace, onDelete, isDark
 
   const handleDelete = async () => {
     if (!workspace) return;
-    console.log('[DELETE] workspace object:', JSON.stringify(workspace, null, 2));
-    console.log('[DELETE] workspaceId:', workspace.workspaceId, typeof workspace.workspaceId);
     setSubmitting(true);
     try {
       await onDelete(workspace.workspaceId);

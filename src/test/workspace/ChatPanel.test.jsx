@@ -3,8 +3,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ChatPanel from '@/pages/Users/Individual/Workspace/Components/ChatPanel';
 
-const ROADMAP_GUIDE_SEEN_STORAGE_KEY = 'quizmate_roadmap_guide_seen_v1';
-
 const overviewSpy = vi.fn();
 const sourcesSpy = vi.fn();
 const roadmapCanvasSpy = vi.fn();

@@ -256,8 +256,8 @@ export default function GroupDocumentsTab({
   const [deletingMaterialId, setDeletingMaterialId] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
 
-  const sharedMaterials = Array.isArray(sources) ? sources : [];
-  const reviewQueueItems = Array.isArray(pendingItems) ? pendingItems : [];
+  const sharedMaterials = useMemo(() => Array.isArray(sources) ? sources : [], [sources]);
+  const reviewQueueItems = useMemo(() => Array.isArray(pendingItems) ? pendingItems : [], [pendingItems]);
 
   const warningItems = useMemo(
     () => reviewQueueItems.filter((item) => isWarningStatus(item?.status)),
@@ -274,11 +274,6 @@ export default function GroupDocumentsTab({
     () => reviewQueueItems.filter((item) => isIssueStatus(item?.status)),
     [reviewQueueItems],
   );
-  const processingItems = useMemo(
-    () => reviewQueueItems.filter((item) => isProcessingStatus(item?.status)),
-    [reviewQueueItems],
-  );
-
   const filteredSharedMaterials = useMemo(() => {
     const normalizedQuery = String(searchValue || '').trim().toLowerCase();
     return sharedMaterials.filter((item) => {

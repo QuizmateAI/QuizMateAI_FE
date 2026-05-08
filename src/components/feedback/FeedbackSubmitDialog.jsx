@@ -50,7 +50,7 @@ function FeedbackSubmitDialog({
   const [inlineError, setInlineError] = useState('');
 
   const activeForm = request?.form ?? resolvedForm;
-  const questions = activeForm?.questions ?? [];
+  const questions = useMemo(() => activeForm?.questions ?? [], [activeForm]);
   const isRequestMode = Boolean(request?.requestId);
 
   useEffect(() => {
