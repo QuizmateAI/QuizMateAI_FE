@@ -88,6 +88,7 @@ function buildAcceptString(ent) {
 }
 
 const SUGGESTED_RESOURCES_LIMIT = 10;
+const MAX_UPLOAD_SIZE_BYTES = 200 * 1024 * 1024;
 
 function normalizeWorkspaceId(workspaceId) {
   const id = Number(workspaceId);
@@ -114,6 +115,16 @@ function isSuggestionImportable(item) {
 
 function getSuggestionId(item) {
   return Number(item?.suggestionId ?? item?.suggestId);
+}
+
+function isFileTooLarge(file) {
+  return Number(file?.size || 0) > MAX_UPLOAD_SIZE_BYTES;
+}
+
+function formatFileSize(size) {
+  const value = Number(size || 0);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function UploadSourceDialogBase({
@@ -178,6 +189,11 @@ function UploadSourceDialogBase({
   const [importingSuggestions, setImportingSuggestions] = useState(false);
   const selectedSuggestionCount = selectedSuggestionIds.length;
   const hasUserSelectedFiles = selectedFiles.length > 0;
+  const selectedOversizedFiles = useMemo(
+    () => selectedFiles.filter(isFileTooLarge),
+    [selectedFiles],
+  );
+  const hasOversizedFiles = selectedOversizedFiles.length > 0;
   const selectedSuggestedResources = useMemo(
     () => suggestedResources.filter((item) => {
       const suggestionId = getSuggestionId(item);
@@ -288,7 +304,7 @@ function UploadSourceDialogBase({
       showError(t("workspace.upload.suggestMissingWorkspace"));
       return;
     }
-    if (!hasAnySelectedSources || uploadActionLockRef.current) return;
+    if (!hasAnySelectedSources || hasOversizedFiles || uploadActionLockRef.current) return;
 
     const shouldUploadFiles = hasUserSelectedFiles;
     const shouldImportSuggestions = hasSelectedSuggestedResources;
@@ -349,7 +365,7 @@ function UploadSourceDialogBase({
   const handleImportSuggestions = async () => handlePrimarySubmit();
 
   const handleUploadUserFiles = async () => {
-    if (!hasUserSelectedFiles || importingSuggestions || uploadActionLockRef.current) return;
+    if (!hasUserSelectedFiles || hasOversizedFiles || importingSuggestions || uploadActionLockRef.current) return;
 
     const filesToUpload = [...selectedFiles];
     uploadActionLockRef.current = true;
@@ -376,7 +392,7 @@ function UploadSourceDialogBase({
   };
 
   const handleUploadAllSources = async () => {
-    if (!canUploadAllSources || uploading || importingSuggestions || uploadActionLockRef.current) return;
+    if (!canUploadAllSources || hasOversizedFiles || uploading || importingSuggestions || uploadActionLockRef.current) return;
 
     const filesToUpload = [...selectedFiles];
     uploadActionLockRef.current = true;
@@ -560,13 +576,18 @@ function UploadSourceDialogBase({
                 </div>
                 <p className={`text-base font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{t("workspace.upload.dragDrop")}</p>
                 <p className={`text-xs mt-3 leading-5 ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>{t("workspace.upload.supportedFormats")}</p>
+                {hasOversizedFiles ? (
+                  <p className="mt-3 text-sm font-medium text-red-500">
+                    {t("workspace.upload.fileTooLarge")}
+                  </p>
+                ) : null}
 
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-[420px] mx-auto">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading || importingSuggestions || processingWebLink}
+                    disabled={uploading || importingSuggestions || processingWebLink || hasOversizedFiles}
                     className={`h-12 rounded-full transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
                   >
                     <UploadCloud className="w-4 h-4 mr-2" />
@@ -618,17 +639,21 @@ function UploadSourceDialogBase({
                           <span className="mt-0.5 shrink-0">
                             {getFileIcon(file)}
                           </span>
-                          <span
-                            title={file.name}
-                            className={`block min-w-0 overflow-hidden break-all leading-5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
-                            style={{
-                              display: "-webkit-box",
-                              WebkitBoxOrient: "vertical",
-                              WebkitLineClamp: 2,
-                            }}
-                          >
-                            {file.name}
-                          </span>
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 items-start gap-3">
+                              <span
+                                title={file.name}
+                                className={`block min-w-0 flex-1 truncate pr-2 leading-5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
+                              >
+                                {file.name}
+                              </span>
+                              {formatFileSize(file.size) ? (
+                                <span className={`shrink-0 text-right text-xs ${isFileTooLarge(file) ? "text-red-500" : isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
+                                  {formatFileSize(file.size)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
                         </div>
                         <button onClick={() => removeFile(i)} className="mt-0.5 shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded">
                           <X className="w-3.5 h-3.5 text-red-500" />
@@ -810,7 +835,7 @@ function UploadSourceDialogBase({
                 <Button
                   type="button"
                   onClick={handlePrimarySubmit}
-                  disabled={uploading || importingSuggestions || !hasAnySelectedSources}
+                  disabled={uploading || importingSuggestions || !hasAnySelectedSources || hasOversizedFiles}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white"
                 >
                   {uploading || importingSuggestions ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}

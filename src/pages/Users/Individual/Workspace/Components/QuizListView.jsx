@@ -1062,6 +1062,13 @@ function QuizListView({
         ? t("quizListView.status.DRAFT", "Draft")
         : t("quizListView.cards.notAttempted", "Not attempted"));
     const shouldShowResultPill = !myAttempted || myPassed;
+    const shouldShowAttemptStatusBadge = normalizedStatus === "ACTIVE";
+    const attemptStatusLabel = myAttempted
+      ? t("workspace.quiz.myAttemptedTrue", "Attempted")
+      : t("workspace.quiz.myAttemptedFalse", "Not attempted");
+    const attemptStatusClassName = myAttempted
+      ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+      : (isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600");
     const roadmapExamLabel = t("quizListView.cards.exam", "Exam");
     const roadmapRetakeExamLabel = t("quizListView.cards.retakeExam", "Retake exam");
 
@@ -1151,7 +1158,7 @@ function QuizListView({
           </div>
 
           <div className={`mt-4 flex flex-col gap-3 border-t pt-3 ${isDarkMode ? "border-slate-700/70" : "border-slate-100"} lg:flex-row lg:items-center lg:justify-between`}>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               {typeof quiz.timerMode === "boolean" ? (
                 <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${
                   quiz.timerMode
@@ -1169,8 +1176,13 @@ function QuizListView({
                 </span>
               ) : null}
               {!shouldHideActiveStatusBadge ? (
-                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-sm font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
                   {statusLabel}
+                </span>
+              ) : null}
+              {shouldShowAttemptStatusBadge ? (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-sm font-semibold ${attemptStatusClassName}`}>
+                  {attemptStatusLabel}
                 </span>
               ) : null}
               {shouldShowResultPill ? (
@@ -1558,6 +1570,13 @@ function QuizListView({
               const createdAtLabel = formatShortDate(quiz.createdAt || quiz.updatedAt);
               const showLeaderStatusBadge = isLeaderGroupQuizList;
               const shouldShowInlineStatusBadge = showLeaderStatusBadge || normalizedStatus === "ACTIVE";
+              const shouldShowAttemptStatusBadge = normalizedStatus === "ACTIVE";
+              const attemptStatusLabel = myAttempted
+                ? t("workspace.quiz.myAttemptedTrue", "Attempted")
+                : t("workspace.quiz.myAttemptedFalse", "Not attempted");
+              const attemptStatusClassName = myAttempted
+                ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                : (isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600");
               const difficultyTextClassName = difficultyKey === "HARD"
                 ? (isDarkMode ? "text-rose-300" : "text-rose-600")
                 : difficultyKey === "MEDIUM"
@@ -1702,10 +1721,19 @@ function QuizListView({
                               <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
                             </div>
                           ) : null}
-                          {shouldShowInlineStatusBadge ? (
-                            <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
-                              {statusLabel}
-                            </span>
+                          {shouldShowInlineStatusBadge || shouldShowAttemptStatusBadge ? (
+                            <div className="flex shrink-0 flex-nowrap items-center gap-1.5 whitespace-nowrap">
+                              {shouldShowInlineStatusBadge ? (
+                                <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                                  {statusLabel}
+                                </span>
+                              ) : null}
+                              {shouldShowAttemptStatusBadge ? (
+                                <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${attemptStatusClassName}`}>
+                                  {attemptStatusLabel}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : null}
                         </div>
                       </div>
