@@ -5,15 +5,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare, Eye, Lock, Pencil, Copy,
+  Share2, UserPlus, MessageSquare, Eye, Lock, Pencil, Copy, Shuffle,
 } from "lucide-react";
 import { getCurrentUser } from "@/api/Authentication";
 import { logSwallowed } from "@/utils/logSwallowed";
 import { resolveEditRule } from "./resolveEditRule";
-import { duplicateQuiz, updateQuiz } from "@/api/QuizAPI";
+import { duplicateQuiz, updateQuiz, updateShuffleEnabled } from "@/api/QuizAPI";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -221,6 +222,9 @@ function QuizDetailView({
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [shuffleSaving, setShuffleSaving] = useState(false);
+  // Leader participation dialog (xuất bản → hỏi ranking)
+  const [leaderParticipationOpen, setLeaderParticipationOpen] = useState(false);
   // Per-question discussion popup
   const [discussionOpenQId, setDiscussionOpenQId] = useState(null);
   const [qCommentCounts, setQCommentCounts] = useState({});
@@ -772,6 +776,38 @@ function QuizDetailView({
     // LOCKED_UNTIL_FIRST_ATTEMPT: button is disabled, no action
   }, [editRule, effectiveQuiz, onEdit]);
 
+  const handleMetadataSaved = useCallback((updatedFields) => {
+    setQuizMeta((prev) => ({ ...(prev || effectiveQuiz), ...updatedFields }));
+  }, [effectiveQuiz]);
+
+  const shuffleEnabled = Boolean(effectiveQuiz?.shuffleEnabled);
+
+  const handleToggleShuffle = useCallback(async (checked) => {
+    const quizId = effectiveQuiz?.quizId;
+    if (!quizId || shuffleSaving) return;
+
+    const previousShuffleEnabled = Boolean(effectiveQuiz?.shuffleEnabled);
+    setShuffleSaving(true);
+    setQuizMeta((prev) => ({ ...(prev || effectiveQuiz), shuffleEnabled: checked }));
+
+    try {
+      const response = await updateShuffleEnabled(quizId, checked);
+      const nextQuiz = unwrapApiData(response);
+      setQuizMeta((prev) => ({
+        ...(prev || effectiveQuiz),
+        ...(nextQuiz || {}),
+        shuffleEnabled: checked,
+      }));
+      quizDetailCache.clear();
+    } catch (error) {
+      console.error("[QuizDetailView] update shuffle failed", error);
+      setQuizMeta((prev) => ({ ...(prev || effectiveQuiz), shuffleEnabled: previousShuffleEnabled }));
+      window.alert(t("workspace.quiz.detail.shuffleUpdateFailed", "Could not update shuffle setting."));
+    } finally {
+      setShuffleSaving(false);
+    }
+  }, [effectiveQuiz, shuffleSaving, t]);
+
   // Gate luyện tập: chỉ hiện sau khi user hoàn thành ít nhất 1 lần kiểm tra chính thức
   const hasCompletedOfficialAttempt = personalHistory !== null &&
     personalHistory.some(a => a.isPracticeMode === false && Boolean(a.completedAt));
@@ -1274,6 +1310,46 @@ function QuizDetailView({
                   </div>
                 </div>
               ) : null}
+
+              {isCreator && isActiveQuiz && !isChallengeSnapshotReview && !fairPlayRestricts && (
+                <div className={`mb-4 rounded-2xl px-5 py-4 ${
+                  isDarkMode
+                    ? "bg-slate-900/80"
+                    : "bg-white"
+                }`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+                      isDarkMode ? "bg-indigo-500/15 text-indigo-300" : "bg-indigo-50 text-indigo-600"
+                    }`}>
+                      <Shuffle className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                        {t("workspace.quiz.detail.shuffleTitle", "Trộn thứ tự câu hỏi & đáp án")}
+                      </p>
+                      <p className={`mt-1 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                        {t(
+                          "workspace.quiz.detail.shuffleDescription",
+                          "Khi bật, mỗi lần làm bài câu hỏi và đáp án sẽ hiển thị theo thứ tự ngẫu nhiên khác nhau.",
+                        )}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={shuffleEnabled}
+                      onCheckedChange={handleToggleShuffle}
+                      disabled={shuffleSaving}
+                      className={cn(
+                        "shrink-0",
+                        shuffleEnabled
+                          ? "bg-indigo-600"
+                          : isDarkMode
+                            ? "bg-slate-700"
+                            : "bg-slate-200",
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons in Overview — quiz challenge snapshot: không làm bài từ đây */}
               {isActiveQuiz && !isChallengeSnapshotReview && !fairPlayRestricts && (

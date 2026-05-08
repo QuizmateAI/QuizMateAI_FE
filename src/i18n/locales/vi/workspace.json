@@ -1360,6 +1360,8 @@
         "confirmActivateQuiz": "Xác nhận & kích hoạt",
         "activateConfirm": "Kích hoạt quiz này? Sau khi kích hoạt, người dùng có thể làm bài. Bạn vẫn có thể chỉnh sửa cho đến khi có attempt đầu tiên.",
         "activateFailed": "Không thể kích hoạt quiz.",
+        "shuffleTitle": "Trộn thứ tự câu hỏi & đáp án",
+        "shuffleDescription": "Khi bật, mỗi lần làm bài câu hỏi và đáp án sẽ hiển thị theo thứ tự ngẫu nhiên khác nhau.",
         "createdAt": "Ngày tạo",
         "updatedAt": "Cập nhật",
         "loadingDetail": "Đang tải chi tiết quiz...",
