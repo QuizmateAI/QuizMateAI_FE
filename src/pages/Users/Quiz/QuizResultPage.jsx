@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import DirectFeedbackButton from '@/components/feedback/DirectFeedbackButton';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
-import CommunityQuizFeedbackDialog from '@/pages/Users/Quiz/components/CommunityQuizFeedbackDialog';
 import QuizToFlashcardDialog from '@/pages/Users/Quiz/components/QuizToFlashcardDialog';
 import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, refreshAttemptAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -218,7 +217,6 @@ export default function QuizResultPage() {
   const [knowledgeGenerationTriggered, setKnowledgeGenerationTriggered] = useState(false);
   const [knowledgeGenerationHydrated, setKnowledgeGenerationHydrated] = useState(false);
   const [expandedReviewSections, setExpandedReviewSections] = useState({});
-  const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
   const [quizToFlashcardOpen, setQuizToFlashcardOpen] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
@@ -281,12 +279,6 @@ export default function QuizResultPage() {
     ?? quizDetails?.quizId
   );
   const hasQuizIdForBack = Boolean(normalizedQuizIdForBack);
-  const communitySourceQuizId = normalizePositiveInteger(
-    quizRawDetails?.communitySourceQuizId
-    ?? result?.communitySourceQuizId
-    ?? quizDetails?.communitySourceQuizId,
-  );
-  const canLeaveCommunityFeedback = Boolean(communitySourceQuizId && hasQuizIdForBack);
 
   useEffect(() => {
     writeStoredResultContext(attemptId, {
@@ -1735,21 +1727,6 @@ handleBack,
                   className="min-w-[180px] gap-2"
                 />
               ) : null}
-              {canLeaveCommunityFeedback ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCommunityFeedbackOpen(true)}
-                  className="min-w-[220px] gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>
-                    {quizRawDetails?.communityFeedbackSubmitted
-                      ? t('quizResultPage.communityFeedbackUpdate', 'Update community feedback')
-                      : t('quizResultPage.communityFeedbackAction', 'Leave community feedback')}
-                  </span>
-                </Button>
-              ) : null}
             </div>
           </div>
         )}
@@ -1980,23 +1957,6 @@ handleBack,
         quizTitle={quizDetails?.title || quizRawDetails?.title || result?.quizTitle}
         reviewQuestions={reviewQuestions}
         defaultWorkspaceId={normalizedWorkspaceId}
-      />
-
-      <CommunityQuizFeedbackDialog
-        open={communityFeedbackOpen}
-        onOpenChange={setCommunityFeedbackOpen}
-        sourceQuizId={communitySourceQuizId}
-        clonedQuizId={normalizedQuizIdForBack}
-        initialRating={quizRawDetails?.communityMyRating}
-        initialComment={quizRawDetails?.communityMyComment || ''}
-        onSubmitted={(nextFeedback) => {
-          setQuizRawDetails((prev) => prev ? {
-            ...prev,
-            communityFeedbackSubmitted: true,
-            communityMyRating: nextFeedback?.rating ?? prev.communityMyRating,
-            communityMyComment: nextFeedback?.comment ?? prev.communityMyComment,
-          } : prev);
-        }}
       />
       </div>
     </div>

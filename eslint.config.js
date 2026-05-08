@@ -50,8 +50,9 @@ export default defineConfig([
       /* 2. LOẠI BỎ IMPORT VÀ BIẾN THỪA (CLEAN CODE) */
       'no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
+      // Bật cảnh báo unused vars để CR thấy được, prefix _ để by-pass có chủ ý.
       'unused-imports/no-unused-vars': [
-        'off',
+        'warn',
         {
           vars: 'all',
           varsIgnorePattern: '^_',
@@ -62,6 +63,7 @@ export default defineConfig([
 
       /* 3. ĐẢM BẢO HIỆU SUẤT REACT HOOKS */
       'react-hooks/rules-of-hooks': 'error',
+      // exhaustive-deps: bật lại theo từng feature khi đã chuẩn hóa hook (file lớn đang gây hàng trăm warn).
       'react-hooks/exhaustive-deps': 'off',
 
       /* 4. QUY TẮC JSX */
@@ -69,11 +71,18 @@ export default defineConfig([
       'react/self-closing-comp': 'off',
       'react/prop-types': 'off',
 
-      /* 5. CẢNH BÁO CONSOLE KHI DEPLOY */
-      'no-console': 'off',
+      /* 5. CẢNH BÁO CONSOLE KHI DEPLOY (terser drop ở prod build) */
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
 
       /* 6. CHO PHÉP EXPORT HỖN HỢP (hook + component) — pattern phổ biến */
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  // Vitest mocks deliberately use minimal hook deps; don't block `npm run lint`.
+  {
+    files: ['src/test/**/*.{js,jsx}'],
+    rules: {
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
 ])

@@ -126,30 +126,10 @@ function CreateQuizForm({
         ? t("workspace.quiz.aiConfig.loadingMaterials", "Đang tải tài liệu...")
         : t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")));
 
-  const selectableMaterialIds = useMemo(() => (
-    (Array.isArray(sources) ? sources : [])
-      .map((source) => Number(source?.id ?? source?.materialId))
-      .filter((id, index, ids) => Number.isInteger(id) && id > 0 && ids.indexOf(id) === index)
-  ), [sources]);
-
   const hasImageMaterials = useMemo(
     () => selectedSourceItems.some((item) => item?.hasImage === true),
     [selectedSourceItems]
   );
-
-  const handleToggleAllMaterialSelection = useCallback((shouldSelect) => {
-    if (typeof onToggleMaterialSelection !== "function" || readOnly) {
-      return;
-    }
-
-    const targetIds = shouldSelect
-      ? selectableMaterialIds.filter((id) => !selectedMaterialIds.includes(id))
-      : selectableMaterialIds.filter((id) => selectedMaterialIds.includes(id));
-
-    targetIds.forEach((id) => {
-      onToggleMaterialSelection(id, shouldSelect);
-    });
-  }, [onToggleMaterialSelection, readOnly, selectableMaterialIds, selectedMaterialIds]);
 
   const {
     activeRecommendation,

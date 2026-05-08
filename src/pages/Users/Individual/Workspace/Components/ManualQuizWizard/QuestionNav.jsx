@@ -96,7 +96,7 @@ function QuestionNav({
 
       {/* Question list */}
       <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
-        {filteredQuestions.map((q, idx) => {
+        {filteredQuestions.map((q, _idx) => {
           const realIdx = questions.indexOf(q) + 1;
           const status = getCardStatus(q);
           const { icon, cls } = STATUS_ICON[status];

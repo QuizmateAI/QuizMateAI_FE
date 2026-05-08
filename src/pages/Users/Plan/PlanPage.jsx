@@ -71,14 +71,6 @@ const formatNumber = (value, locale) => {
   }
 };
 
-const EMPTY_WALLET_SUMMARY = {
-  totalAvailableCredits: 0,
-  regularCreditBalance: 0,
-  planCreditBalance: 0,
-  hasActivePlan: false,
-  planCreditExpiresAt: null,
-};
-
 function normalizeWorkspaceId(value) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;

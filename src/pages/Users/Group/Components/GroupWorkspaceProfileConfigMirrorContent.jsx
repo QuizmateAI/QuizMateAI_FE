@@ -26,52 +26,8 @@ function FieldError({ message }) {
   return <p className="group-profile-field-error mt-2 text-xs font-medium text-rose-500">{message}</p>;
 }
 
-function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled, isDarkMode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'h-full rounded-xl border px-4 py-4 text-left transition-all duration-200',
-        active
-          ? isDarkMode
-            ? 'border-cyan-300/60 bg-[linear-gradient(135deg,rgba(8,145,178,0.22),rgba(16,185,129,0.14))] shadow-[0_18px_36px_-24px_rgba(34,211,238,0.45)] ring-1 ring-cyan-300/20'
-            : 'border-cyan-300 bg-[linear-gradient(135deg,#dff7ff_0%,#e7fbf3_100%)] shadow-[0_22px_42px_-28px_rgba(6,182,212,0.32)] ring-1 ring-cyan-200'
-          : isDarkMode
-            ? 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
-            : 'border-slate-200 bg-white/88 hover:border-slate-300 hover:bg-white',
-        !disabled && 'hover:-translate-y-0.5',
-        disabled && 'cursor-not-allowed opacity-60'
-      )}
-    >
-      <div className="flex h-full items-start gap-3">
-        <div className={cn(
-          'flex h-11 w-11 items-center justify-center rounded-xl border',
-          active
-            ? isDarkMode ? 'border-cyan-300/35 bg-cyan-400/20 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700 shadow-[0_12px_24px_-18px_rgba(6,182,212,0.45)]'
-            : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
-        )}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-semibold">{title}</p>
-            {active ? (
-              <CheckCircle2 className={cn('mt-0.5 h-4 w-4 shrink-0', isDarkMode ? 'text-cyan-200' : 'text-cyan-600')} />
-            ) : null}
-          </div>
-          <p className={cn('mt-1.5 text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
-            {description}
-          </p>
-        </div>
-      </div>
-    </button>
-  );
-}
-
 function GroupWorkspaceProfileConfigMirrorContent({
-  LEARNING_MODES,
+  LEARNING_MODES: _LEARNING_MODES,
   accentBarClass,
   accentPanelClass,
   analysisStatus,
@@ -113,11 +69,11 @@ function GroupWorkspaceProfileConfigMirrorContent({
   knowledge,
   knowledgeAnalysis,
   knowledgeTextareaRef,
-  learningMode,
+  learningMode: _learningMode,
   loading,
   maxUnlockedStep,
   mutedClass,
-  onOpenChange,
+  onOpenChange: _onOpenChange,
   open,
   panelClass,
   readinessItems,
@@ -131,7 +87,7 @@ function GroupWorkspaceProfileConfigMirrorContent({
   setGroupLearningGoal,
   setGroupName,
   setKnowledge,
-  setLearningMode,
+  setLearningMode: _setLearningMode,
   setRules,
   setShowProfileConfirm,
   setStep,

@@ -2,10 +2,13 @@ import axios from 'axios';
 import i18n from '@/i18n';
 import { clearUserCache } from '@/utils/userCache';
 import { clearPlanPurchaseState } from '@/utils/planPurchaseState';
+import { clearCurrentUser } from '@/lib/currentUser';
+import { emitPlanUpgrade } from '@/lib/planUpgradeBus';
 import {
   clearTokens,
   configureRefresh,
   getAccessToken,
+  refresh as refreshTokenStorage,
   setAccessToken,
 } from '@/utils/tokenStorage';
 
@@ -100,10 +103,8 @@ api.interceptors.request.use(
 // the cookie automatically. BE rotates the cookie and returns the new access
 // token in the JSON body, which we put back into the in-memory token store.
 //
-// Single-flight: nếu nhiều request fail cùng lúc, chỉ 1 lần gọi /auth/refresh,
-// các request còn lại cùng share promise. Sau khi có token mới, retry request gốc.
-let refreshPromise = null;
-
+// Single-flight is owned by tokenStorage.refresh() so that this interceptor and
+// the app-start bootstrap share one in-flight refresh request.
 function refreshAccessToken() {
   // Dùng axios "trần" (không qua instance `api`) để tránh interceptor lồng nhau.
   // withCredentials forces the browser to send the refresh cookie even though
@@ -135,17 +136,9 @@ function refreshAccessToken() {
     });
 }
 
-function getOrStartRefresh() {
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken().finally(() => {
-      refreshPromise = null;
-    });
-  }
-  return refreshPromise;
-}
-
-// Wire the refresh function into tokenStorage so its bootstrap() can recover
-// the access token at app start without importing axios.
+// Wire the refresh function into tokenStorage so its bootstrap() and refresh()
+// can recover the access token at app start (and from the interceptor) without
+// importing axios. tokenStorage.refresh() also serializes concurrent callers.
 configureRefresh(refreshAccessToken);
 
 function extractErrorCode(data) {
@@ -183,15 +176,9 @@ function shouldAttemptRefresh(error, originalRequest) {
 
 function clearAuthAndRedirect() {
   clearTokens();
-  // 'user' was a separate localStorage entry holding profile cache — still safe
-  // to wipe even now that tokens are no longer in localStorage.
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.removeItem('user');
-    }
-  } catch {
-    /* ignore */
-  }
+  // 'user' was a separate localStorage entry holding the lightweight identity
+  // snapshot — still safe to wipe even now that tokens are no longer there.
+  clearCurrentUser();
   clearUserCache();
   clearPlanPurchaseState();
   if (typeof window !== 'undefined') {
@@ -211,10 +198,10 @@ api.interceptors.response.use(
     if (shouldAttemptRefresh(error, originalRequest)) {
       originalRequest._retry = true;
       try {
-        await getOrStartRefresh();
-        // Request interceptor sẽ gắn access token mới từ localStorage.
+        await refreshTokenStorage();
+        // Request interceptor sẽ gắn access token mới từ in-memory store.
         return await api(originalRequest);
-      } catch (refreshError) {
+      } catch {
         // Refresh thất bại — chỉ clear+redirect khi original là 401 (giữ behavior cũ).
         if (status === 401 && !skipAuthRedirect) {
           clearAuthAndRedirect();
@@ -247,12 +234,12 @@ api.interceptors.response.use(
       : null;
     const errorMessage = validationMessage || data?.message || i18n.t('error.unknown');
 
-    // Phát sự kiện toàn cục khi BE trả về lỗi giới hạn gói (safety net cho UI guards)
+    // Phát sự kiện qua planUpgradeBus khi BE trả về lỗi giới hạn gói
+    // (safety net cho UI guards). Bus tự re-dispatch window event để giữ
+    // tương thích với listener cũ trong quá trình migrate.
     const businessCode = data?.code;
     if (businessCode === 1066 || businessCode === 1056) {
-      window.dispatchEvent(new CustomEvent('planUpgradeRequired', {
-        detail: { message: data?.message, code: businessCode },
-      }));
+      emitPlanUpgrade({ message: data?.message, code: businessCode });
     }
 
     return Promise.reject({

@@ -631,7 +631,7 @@ export default function PoliciesManagement() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="min-w-[120px] transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.015] active:scale-[0.985]"
+              className="min-w-[120px] transition-transform duration-200 ease-smooth hover:scale-[1.015] active:scale-[0.985]"
             >
               {saving ? (
                 <>

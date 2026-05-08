@@ -144,9 +144,11 @@ const resolveMemberPresenceKey = (member = {}, now = Date.now()) => {
 };
 
 const resolveMemberLastActiveAt = (member = {}) => (
-  member.lastActiveAt
+  // Ưu tiên `lastSeenAt` từ workspace_member (scope theo workspace) — chính xác nhất.
+  // Các field còn lại là fallback cho dữ liệu cũ hoặc nguồn khác (global lastLogin, etc.)
+  member.lastSeenAt
+  || member.lastActiveAt
   || member.lastActivityAt
-  || member.lastSeenAt
   || member.lastSeen
   || member.lastLoginAt
   || member.lastOnlineAt

@@ -419,7 +419,7 @@ test('measure first-use route and transition timing', async ({ browser }) => {
 
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(report, null, 2));
-  console.log(JSON.stringify(report, null, 2));
+  console.warn(JSON.stringify(report, null, 2));
 
   await flowContext.close();
 });

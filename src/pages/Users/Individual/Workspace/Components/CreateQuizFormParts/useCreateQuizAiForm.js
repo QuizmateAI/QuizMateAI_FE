@@ -1221,7 +1221,6 @@ export const useCreateQuizAiForm = ({
       const nextSignature = serializeStructureConfigPayload(previewPayload);
       const response = await previewAIQuizStructure(previewPayload);
       const normalizedPreview = normalizeStructurePreviewResponse(response);
-      console.log("[AI Quiz][Structure Preview] structureJson:", normalizedPreview.structureJson);
       setStructurePreview(normalizedPreview);
       setStructureConfigSignature(nextSignature);
       return normalizedPreview;
@@ -1471,8 +1470,6 @@ export const useCreateQuizAiForm = ({
             editableStructureItems,
           ) || ""
         : "";
-
-      console.log("[AI Quiz][Generate] structureJson:", structureJson);
 
       const payload = {
         title: String(aiName || "").trim(),

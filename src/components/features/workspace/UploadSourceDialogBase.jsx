@@ -204,7 +204,6 @@ function UploadSourceDialogBase({
   const hasSelectedSuggestedResources = selectedSuggestionCount > 0;
   const hasAnySelectedSources = hasUserSelectedFiles || hasSelectedSuggestedResources;
   const isCombinedUpload = hasUserSelectedFiles && hasSelectedSuggestedResources;
-  const canUploadAllSources = isCombinedUpload;
   const primaryActionLabel = isCombinedUpload
     ? t("workspace.upload.uploadAllSources")
     : hasUserSelectedFiles
@@ -359,62 +358,6 @@ function UploadSourceDialogBase({
       uploadActionLockRef.current = false;
       setUploading(false);
       setImportingSuggestions(false);
-    }
-  };
-
-  const handleImportSuggestions = async () => handlePrimarySubmit();
-
-  const handleUploadUserFiles = async () => {
-    if (!hasUserSelectedFiles || hasOversizedFiles || importingSuggestions || uploadActionLockRef.current) return;
-
-    const filesToUpload = [...selectedFiles];
-    uploadActionLockRef.current = true;
-    setUploading(true);
-    try {
-      if (filesToUpload.length > 0) {
-        await onUploadFiles?.(filesToUpload);
-        setSelectedFiles([]);
-      }
-      onOpenChange(false);
-    } catch (error) {
-      const isTimeout = error?.code === "REQUEST_TIMEOUT" || error?.statusCode === 408;
-      if (isTimeout) {
-        // Server may still finish the upload – close dialog to block duplicate re-uploads
-        showInfo(t("workspace.upload.uploadPending"));
-        handleOpenChange(false);
-      } else if (!error?.toastHandled) {
-        showError(error?.message || t("workspace.upload.uploadError"));
-      }
-    } finally {
-      uploadActionLockRef.current = false;
-      setUploading(false);
-    }
-  };
-
-  const handleUploadAllSources = async () => {
-    if (!canUploadAllSources || hasOversizedFiles || uploading || importingSuggestions || uploadActionLockRef.current) return;
-
-    const filesToUpload = [...selectedFiles];
-    uploadActionLockRef.current = true;
-    setUploading(true);
-    try {
-      await onUploadFiles?.(filesToUpload);
-      setSelectedFiles([]);
-      await handleImportSuggestions({ closeAfterImport: false });
-      showSuccess(t("workspace.upload.uploadAllSuccess"));
-      onOpenChange(false);
-    } catch (error) {
-      const isTimeout = error?.code === "REQUEST_TIMEOUT" || error?.statusCode === 408;
-      if (isTimeout) {
-        // Server may still finish the upload – close dialog to block duplicate re-uploads
-        showInfo(t("workspace.upload.uploadPending"));
-        handleOpenChange(false);
-      } else if (!error?.toastHandled) {
-        showError(error?.message || t("workspace.upload.uploadError"));
-      }
-    } finally {
-      uploadActionLockRef.current = false;
-      setUploading(false);
     }
   };
 

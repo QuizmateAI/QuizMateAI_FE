@@ -10,6 +10,7 @@ import RouteMetaManager from '@/components/seo/RouteMetaManager';
 import RuntimeRecoveryBoundary from '@/components/system/RuntimeRecoveryBoundary';
 import { launchConfig } from '@/lib/launchConfig';
 import { hasRouteNamespacesLoaded, preloadRouteNamespaces } from '@/i18n';
+import { subscribePlanUpgrade } from '@/lib/planUpgradeBus';
 import { useTranslation } from 'react-i18next';
 import { loadGroupWorkspacePage, loadHomePage, loadWorkspacePage } from '@/lib/routeLoaders';
 
@@ -91,6 +92,23 @@ const PoliciesManagement = lazy(() => import('./pages/SuperAdmin/PoliciesManagem
 // 404
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 
+/**
+ * Payment provider return URLs occasionally land on FE (e.g. user reloads the
+ * tab during the redirect). Each route renders a tiny redirect-to-BE shim.
+ * Declared once here so MainRoutes and LaunchRoutes stay in sync.
+ */
+const PAYMENT_RETURN_ROUTES = [
+    { path: '/api/momo/return', Component: MomoReturnRedirect },
+    { path: '/api/vnpay/return', Component: VnPayReturnRedirect },
+    { path: '/api/stripe/return', Component: StripeReturnRedirect },
+];
+
+function renderPaymentReturnRoutes() {
+    return PAYMENT_RETURN_ROUTES.map(({ path, Component }) => (
+        <Route key={path} path={path} element={<Component />} />
+    ));
+}
+
 function MainRoutes() {
     return (
         <Routes>
@@ -98,9 +116,7 @@ function MainRoutes() {
             {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home
       page của role đó */}
             {/* VNPay return: nếu request trúng frontend thay vì backend thì redirect sang backend */}
-            <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
-            <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
-            <Route path="/api/stripe/return" element={<StripeReturnRedirect />} />
+            {renderPaymentReturnRoutes()}
             <Route path="/accept-invite" element={<AcceptInvitationPage />} />
             <Route path="/policies" element={<PoliciesIndexPage />} />
             <Route path="/policies/:slug" element={<PolicyDetailPage />} />
@@ -255,9 +271,7 @@ function RouteNamespaceGate({ children }) {
 function LaunchRoutes() {
     return (
         <Routes>
-            <Route path="/api/momo/return" element={<MomoReturnRedirect />} />
-            <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
-            <Route path="/api/stripe/return" element={<StripeReturnRedirect />} />
+            {renderPaymentReturnRoutes()}
             <Route path="*" element={<LaunchingPage />} />
         </Routes>
     );
@@ -267,9 +281,7 @@ function PlanGuardListener() {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
-        const handler = () => setOpen(true);
-        window.addEventListener('planUpgradeRequired', handler);
-        return () => window.removeEventListener('planUpgradeRequired', handler);
+        return subscribePlanUpgrade(() => setOpen(true));
     }, []);
 
     return (

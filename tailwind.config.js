@@ -132,6 +132,9 @@ export default {
         shimmer: "shimmer 2.5s ease-in-out infinite",
         'glitter-sheen': "glitterSheen 3.5s linear infinite",
       },
+      transitionTimingFunction: {
+        smooth: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
   	}
   },
 	plugins: [tailwindcssAnimate],

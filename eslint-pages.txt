@@ -1,0 +1,308 @@
+
+E:\QuizmateAI\QuizMateAI_FE\src\components\features\workspace\UploadSourceDialogBase.jsx
+  191:9  warning  'canUploadAllSources' is assigned a value but never used. Allowed unused vars must match /^_/u      unused-imports/no-unused-vars
+  349:9  warning  'handleImportSuggestions' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\SuperAdmin\Components\FeedbackResponseActivityPanel.jsx
+  448:6  warning  React Hook useEffect has a missing dependency: 'loadResponses'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\Components\QuizDetailView.jsx
+  426:6  warning  React Hook useCallback has a missing dependency: 'quiz?.status'. Either include it or remove the dependency array                                                                                      react-hooks/exhaustive-deps
+  531:9  warning  The 'resultSourceState' object makes the dependencies of useCallback Hook (at line 557) change on every render. To fix this, wrap the initialization of 'resultSourceState' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  531:9  warning  The 'resultSourceState' object makes the dependencies of useCallback Hook (at line 569) change on every render. To fix this, wrap the initialization of 'resultSourceState' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\Components\RoadmapCanvasView.jsx
+  350:6  warning  React Hook useCallback has a missing dependency: 'onRoadmapLoad'. Either include it or remove the dependency array. If 'onRoadmapLoad' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+  579:6  warning  React Hook useEffect has a missing dependency: 'getZoomLimits'. Either include it or remove the dependency array                                                                                                                             react-hooks/exhaustive-deps
+  594:6  warning  React Hook useEffect has a missing dependency: 'getOverviewTransform'. Either include it or remove the dependency array                                                                                                                      react-hooks/exhaustive-deps
+  608:6  warning  React Hook useEffect has missing dependencies: 'getOverviewTransform', 'layoutBounds', 'loading', and 'roadmap'. Either include them or remove the dependency array                                                                          react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\Components\RoadmapCanvasView2.jsx
+   84:10  warning  'loadingGlobalCurrentPhase' is assigned a value but never used. Allowed unused vars must match /^_/u             unused-imports/no-unused-vars
+  442:9   warning  'resolvePostLearningReviewEligibility' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  480:16  warning  'summaryError' is defined but never used                                                                         unused-imports/no-unused-vars
+  657:9   warning  'renderQuizItem' is assigned a value but never used. Allowed unused vars must match /^_/u                        unused-imports/no-unused-vars
+  993:17  warning  'phaseProcessingPercent' is assigned a value but never used. Allowed unused vars must match /^_/u                unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\Components\RoadmapCanvasViewOverview.jsx
+  323:3  warning  'i18n' is defined but never used. Allowed unused args must match /^_/u                                                                                                                               unused-imports/no-unused-vars
+  334:3  warning  'resetViewport' is defined but never used. Allowed unused args must match /^_/u                                                                                                                      unused-imports/no-unused-vars
+  335:3  warning  'adjustZoom' is defined but never used. Allowed unused args must match /^_/u                                                                                                                         unused-imports/no-unused-vars
+  336:3  warning  'draggingMode' is defined but never used. Allowed unused args must match /^_/u                                                                                                                       unused-imports/no-unused-vars
+  338:3  warning  'handlePointerDown' is defined but never used. Allowed unused args must match /^_/u                                                                                                                  unused-imports/no-unused-vars
+  339:3  warning  'handlePointerMove' is defined but never used. Allowed unused args must match /^_/u                                                                                                                  unused-imports/no-unused-vars
+  340:3  warning  'handlePointerUp' is defined but never used. Allowed unused args must match /^_/u                                                                                                                    unused-imports/no-unused-vars
+  341:3  warning  'transform' is defined but never used. Allowed unused args must match /^_/u                                                                                                                          unused-imports/no-unused-vars
+  342:3  warning  'layout' is defined but never used. Allowed unused args must match /^_/u                                                                                                                             unused-imports/no-unused-vars
+  344:3  warning  'canvasHeight' is defined but never used. Allowed unused args must match /^_/u                                                                                                                       unused-imports/no-unused-vars
+  345:3  warning  'centerX' is defined but never used. Allowed unused args must match /^_/u                                                                                                                            unused-imports/no-unused-vars
+  346:3  warning  'centerY' is defined but never used. Allowed unused args must match /^_/u                                                                                                                            unused-imports/no-unused-vars
+  347:3  warning  'expandedKnowledges' is defined but never used. Allowed unused args must match /^_/u                                                                                                                 unused-imports/no-unused-vars
+  348:3  warning  'toggleKnowledge' is defined but never used. Allowed unused args must match /^_/u                                                                                                                    unused-imports/no-unused-vars
+  349:3  warning  'handlePhaseDragStart' is defined but never used. Allowed unused args must match /^_/u                                                                                                               unused-imports/no-unused-vars
+  350:3  warning  'handleKnowledgeDragStart' is defined but never used. Allowed unused args must match /^_/u                                                                                                           unused-imports/no-unused-vars
+  351:3  warning  'onShareRoadmap' is defined but never used. Allowed unused args must match /^_/u                                                                                                                     unused-imports/no-unused-vars
+  352:3  warning  'renderRoadmapConfigActionButtons' is defined but never used. Allowed unused args must match /^_/u                                                                                                   unused-imports/no-unused-vars
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 366) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 402) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 411) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 426) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 581) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 585) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  518:5  warning  React Hook useMemo has an unnecessary dependency: 'maxUnlockedPhaseIndex'. Either exclude it or remove the dependency array                                                                          react-hooks/exhaustive-deps
+  610:9  warning  'resetFishboneViewport' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                     unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\Components\RoadmapCanvasViewStage.jsx
+   19:7  warning  'TOP_SECTION_CARD_BASE_WIDTH' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                         unused-imports/no-unused-vars
+  203:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 266) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  203:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 364) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  203:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 608) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  203:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 769) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  203:9  warning  The 'phases' conditional could make the dependencies of useEffect Hook (at line 941) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                        react-hooks/exhaustive-deps
+  213:9  warning  The 'selectedKnowledges' conditional could make the dependencies of useMemo Hook (at line 273) change on every render. To fix this, wrap the initialization of 'selectedKnowledges' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  240:6  warning  React Hook useEffect has a missing dependency: 'isTopSectionCollapsed'. Either include it or remove the dependency array                                                                                       react-hooks/exhaustive-deps
+  967:6  warning  React Hook useEffect has a missing dependency: 'getKnowledgeBranchViewportTarget'. Either include it or remove the dependency array                                                                            react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\Components\RoadmapJourPanel.jsx
+  21:3  warning  'progressTracking' is assigned a value but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\Components\SourceDetailView.jsx
+   37:37  warning  'contentBlocks' is defined but never used. Allowed unused args must match /^_/u   unused-imports/no-unused-vars
+  112:10  warning  'formatFileType' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\GroupWorkspacePage.jsx
+   220:9  warning  The 'setActiveSection' function makes the dependencies of useEffect Hook (at line 1042) change on every render. To fix this, wrap the definition of 'setActiveSection' in its own useCallback() Hook  react-hooks/exhaustive-deps
+  1373:6  warning  React Hook useEffect has missing dependencies: 'isCreating', 'loadMembers', and 'workspaceId'. Either include them or remove the dependency array                                                     react-hooks/exhaustive-deps
+  1630:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  2062:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  2637:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  2800:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  2945:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  3043:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  3143:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  3211:6  warning  React Hook useCallback has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\group-leader\GroupDashboardTab.jsx
+  132:10  warning  'classificationLabel' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  143:10  warning  'formatPctRatio' is defined but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+  158:10  warning  'passRate' is defined but never used. Allowed unused vars must match /^_/u             unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\group-leader\GroupMembersTab.jsx
+  280:6  warning  React Hook useMemo has an unnecessary dependency: 'currentLang'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  496:6  warning  React Hook useCallback has a missing dependency: 'getInviteKey'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  521:6  warning  React Hook useCallback has a missing dependency: 'getInviteKey'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Group\review\GroupReviewWorkspaceShell.jsx
+   615:6  warning  React Hook useEffect has missing dependencies: 'currentUser?.username' and 'resolvedGroupData'. Either include them or remove the dependency array                                                        react-hooks/exhaustive-deps
+   689:9  warning  The 'allMaterials' logical expression could make the dependencies of useMemo Hook (at line 702) change on every render. To fix this, wrap the initialization of 'allMaterials' in its own useMemo() Hook  react-hooks/exhaustive-deps
+   689:9  warning  The 'allMaterials' logical expression could make the dependencies of useMemo Hook (at line 715) change on every render. To fix this, wrap the initialization of 'allMaterials' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  1049:6  warning  React Hook useCallback has a missing dependency: 'currentUser?.username'. Either include it or remove the dependency array                                                                                react-hooks/exhaustive-deps
+  1144:6  warning  React Hook useCallback has a missing dependency: 'currentUser?.username'. Either include it or remove the dependency array                                                                                react-hooks/exhaustive-deps
+  1192:6  warning  React Hook useCallback has a missing dependency: 'currentUser?.username'. Either include it or remove the dependency array                                                                                react-hooks/exhaustive-deps
+  1220:6  warning  React Hook useCallback has a missing dependency: 'currentUser?.username'. Either include it or remove the dependency array                                                                                react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Home\Components\CreateGroupDialog.jsx
+  15:50  warning  'topics' is defined but never used. Allowed unused args must match /^_/u               unused-imports/no-unused-vars
+  15:58  warning  'topicsLoading' is defined but never used. Allowed unused args must match /^_/u        unused-imports/no-unused-vars
+  15:73  warning  'onFetchTopics' is defined but never used. Allowed unused args must match /^_/u        unused-imports/no-unused-vars
+  63:9   warning  'selectBase' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Home\Components\UserGroup.jsx
+  152:3  warning  'onSearchQueryChange' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Home\HomePage.jsx
+  269:9  warning  The 'handleOpenCreate' function makes the dependencies of useEffect Hook (at line 428) change on every render. To fix this, wrap the definition of 'handleOpenCreate' in its own useCallback() Hook  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\ChatPanel.jsx
+   83:3  warning  'accessHistory' is assigned a value but never used. Allowed unused args must match /^_/u           unused-imports/no-unused-vars
+   95:3  warning  'workspaceTitle' is assigned a value but never used. Allowed unused args must match /^_/u          unused-imports/no-unused-vars
+   96:3  warning  'workspacePurpose' is assigned a value but never used. Allowed unused args must match /^_/u        unused-imports/no-unused-vars
+  112:3  warning  'onEditMockTest' is defined but never used. Allowed unused args must match /^_/u                   unused-imports/no-unused-vars
+  140:3  warning  'shouldDisableQuiz' is assigned a value but never used. Allowed unused args must match /^_/u       unused-imports/no-unused-vars
+  141:3  warning  'shouldDisableFlashcard' is assigned a value but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+  149:3  warning  'completedQuizCount' is assigned a value but never used. Allowed unused args must match /^_/u      unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\CreateMockTestForm.jsx
+  145:6  warning  React Hook useMemo has an unnecessary dependency: 'savedTemplates'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\CreateQuizFormParts\CreateQuizAiFormContent.jsx
+   77:5  warning  'workspaceMaterialsEmptyMessage' is assigned a value but never used. Allowed unused vars must match /^_/u                                 unused-imports/no-unused-vars
+  201:6  warning  React Hook useEffect has missing dependencies: 'selectedMaterialIds' and 't'. Either include them or remove the dependency array          react-hooks/exhaustive-deps
+  201:7  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\CreateQuizFormParts\CreateQuizFormContainer.jsx
+  140:9  warning  'handleToggleAllMaterialSelection' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\CreateQuizFormParts\useCreateQuizAiForm.js
+  1527:6  warning  React Hook useCallback has a missing dependency: 'selectedSubTopicIds'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\FlashcardDetailView.jsx
+  165:6  warning  React Hook useMemo has an unnecessary dependency: 'shuffleSeed'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\ManualQuizWizard\ImportQuestionsPanel.jsx
+  130:19  warning  'overallDifficulty' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\ManualQuizWizard\QuestionNav.jsx
+  99:36  warning  'idx' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\MockTestDetailView.jsx
+  184:67  warning  'onEdit' is defined but never used. Allowed unused args must match /^_/u                   unused-imports/no-unused-vars
+  184:75  warning  'hideEditButton' is assigned a value but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+  354:56  warning  'sectionId' is defined but never used. Allowed unused args must match /^_/u                unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\MockTestListView.jsx
+  142:9  warning  'fontClass' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                unused-imports/no-unused-vars
+  161:9  warning  The 'mockTests' logical expression could make the dependencies of useMemo Hook (at line 172) change on every render. To fix this, wrap the initialization of 'mockTests' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\PersonalWorkspaceSidebar.jsx
+  135:6  warning  React Hook useEffect has a missing dependency: 'loadingWallet'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\PostLearningListView.jsx
+  152:9  warning  The 'postLearnings' logical expression could make the dependencies of useMemo Hook (at line 163) change on every render. To fix this, wrap the initialization of 'postLearnings' in its own useMemo() Hook                               react-hooks/exhaustive-deps
+  152:9  warning  The 'postLearnings' logical expression could make the dependencies of useMemo Hook (at line 174) change on every render. To fix this, wrap the initialization of 'postLearnings' in its own useMemo() Hook                               react-hooks/exhaustive-deps
+  153:9  warning  The 'phaseIds' logical expression could make the dependencies of useMemo Hook (at line 163) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'phaseIds' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\QuizCollectionDetailView.jsx
+  179:9  warning  'randomCountOutOfRange' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\QuizDetailView.jsx
+  225:10  warning  'leaderParticipationOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                     unused-imports/no-unused-vars
+  225:35  warning  'setLeaderParticipationOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                  unused-imports/no-unused-vars
+  234:10  warning  'communityDetailOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                         unused-imports/no-unused-vars
+  235:10  warning  'communityFeedbackOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                       unused-imports/no-unused-vars
+  238:10  warning  'confirmDuplicateOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                        unused-imports/no-unused-vars
+  239:10  warning  'metadataEditOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                            unused-imports/no-unused-vars
+  239:28  warning  'setMetadataEditOpen' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                         unused-imports/no-unused-vars
+  463:6   warning  React Hook useCallback has a missing dependency: 'quiz?.status'. Either include it or remove the dependency array                                                                                      react-hooks/exhaustive-deps
+  571:9   warning  The 'resultSourceState' object makes the dependencies of useCallback Hook (at line 588) change on every render. To fix this, wrap the initialization of 'resultSourceState' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  571:9   warning  The 'resultSourceState' object makes the dependencies of useCallback Hook (at line 600) change on every render. To fix this, wrap the initialization of 'resultSourceState' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  777:9   warning  'handleMetadataSaved' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                         unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\QuizListView.jsx
+   230:10  warning  'formatAssignedNames' is defined but never used. Allowed unused vars must match /^_/u                     unused-imports/no-unused-vars
+   264:10  warning  'resolveQuizCardTheme' is defined but never used. Allowed unused vars must match /^_/u                    unused-imports/no-unused-vars
+   317:3   warning  'title' is assigned a value but never used. Allowed unused args must match /^_/u                          unused-imports/no-unused-vars
+   489:9   warning  'handleStartQuiz' is assigned a value but never used. Allowed unused vars must match /^_/u                unused-imports/no-unused-vars
+   844:9   warning  'toggleQuizSelection' is assigned a value but never used. Allowed unused vars must match /^_/u            unused-imports/no-unused-vars
+   856:9   warning  'handleToggleSelectAllFiltered' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+   870:9   warning  'handleBulkDeleteSelected' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+   906:9   warning  'handleOpenBulkAssign' is assigned a value but never used. Allowed unused vars must match /^_/u           unused-imports/no-unused-vars
+   953:9   warning  'hasSelectedQuiz' is assigned a value but never used. Allowed unused vars must match /^_/u                unused-imports/no-unused-vars
+  1517:21  warning  'intentValue' is assigned a value but never used. Allowed unused vars must match /^_/u                    unused-imports/no-unused-vars
+  1520:21  warning  'timerValue' is assigned a value but never used. Allowed unused vars must match /^_/u                     unused-imports/no-unused-vars
+  1525:21  warning  'showPracticeAction' is assigned a value but never used. Allowed unused vars must match /^_/u             unused-imports/no-unused-vars
+  1526:21  warning  'showExamAction' is assigned a value but never used. Allowed unused vars must match /^_/u                 unused-imports/no-unused-vars
+  1527:21  warning  'showFeedbackAction' is assigned a value but never used. Allowed unused vars must match /^_/u             unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\RoadmapCanvasView.jsx
+  366:6  warning  React Hook useCallback has a missing dependency: 'onRoadmapLoad'. Either include it or remove the dependency array. If 'onRoadmapLoad' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+  593:6  warning  React Hook useEffect has a missing dependency: 'getZoomLimits'. Either include it or remove the dependency array                                                                                                                             react-hooks/exhaustive-deps
+  608:6  warning  React Hook useEffect has a missing dependency: 'getOverviewTransform'. Either include it or remove the dependency array                                                                                                                      react-hooks/exhaustive-deps
+  622:6  warning  React Hook useEffect has missing dependencies: 'getOverviewTransform', 'layoutBounds', 'loading', and 'roadmap'. Either include them or remove the dependency array                                                                          react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\RoadmapCanvasView2.jsx
+   85:10  warning  'loadingGlobalCurrentPhase' is assigned a value but never used. Allowed unused vars must match /^_/u             unused-imports/no-unused-vars
+  442:9   warning  'resolvePostLearningReviewEligibility' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  480:16  warning  'summaryError' is defined but never used                                                                         unused-imports/no-unused-vars
+  657:9   warning  'renderQuizItem' is assigned a value but never used. Allowed unused vars must match /^_/u                        unused-imports/no-unused-vars
+  991:17  warning  'phaseProcessingPercent' is assigned a value but never used. Allowed unused vars must match /^_/u                unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\RoadmapCanvasViewOverview.jsx
+  323:3  warning  'i18n' is defined but never used. Allowed unused args must match /^_/u                                                                                                                               unused-imports/no-unused-vars
+  334:3  warning  'resetViewport' is defined but never used. Allowed unused args must match /^_/u                                                                                                                      unused-imports/no-unused-vars
+  335:3  warning  'adjustZoom' is defined but never used. Allowed unused args must match /^_/u                                                                                                                         unused-imports/no-unused-vars
+  336:3  warning  'draggingMode' is defined but never used. Allowed unused args must match /^_/u                                                                                                                       unused-imports/no-unused-vars
+  338:3  warning  'handlePointerDown' is defined but never used. Allowed unused args must match /^_/u                                                                                                                  unused-imports/no-unused-vars
+  339:3  warning  'handlePointerMove' is defined but never used. Allowed unused args must match /^_/u                                                                                                                  unused-imports/no-unused-vars
+  340:3  warning  'handlePointerUp' is defined but never used. Allowed unused args must match /^_/u                                                                                                                    unused-imports/no-unused-vars
+  341:3  warning  'transform' is defined but never used. Allowed unused args must match /^_/u                                                                                                                          unused-imports/no-unused-vars
+  342:3  warning  'layout' is defined but never used. Allowed unused args must match /^_/u                                                                                                                             unused-imports/no-unused-vars
+  344:3  warning  'canvasHeight' is defined but never used. Allowed unused args must match /^_/u                                                                                                                       unused-imports/no-unused-vars
+  345:3  warning  'centerX' is defined but never used. Allowed unused args must match /^_/u                                                                                                                            unused-imports/no-unused-vars
+  346:3  warning  'centerY' is defined but never used. Allowed unused args must match /^_/u                                                                                                                            unused-imports/no-unused-vars
+  347:3  warning  'expandedKnowledges' is defined but never used. Allowed unused args must match /^_/u                                                                                                                 unused-imports/no-unused-vars
+  348:3  warning  'toggleKnowledge' is defined but never used. Allowed unused args must match /^_/u                                                                                                                    unused-imports/no-unused-vars
+  349:3  warning  'handlePhaseDragStart' is defined but never used. Allowed unused args must match /^_/u                                                                                                               unused-imports/no-unused-vars
+  350:3  warning  'handleKnowledgeDragStart' is defined but never used. Allowed unused args must match /^_/u                                                                                                           unused-imports/no-unused-vars
+  351:3  warning  'onShareRoadmap' is defined but never used. Allowed unused args must match /^_/u                                                                                                                     unused-imports/no-unused-vars
+  352:3  warning  'renderRoadmapConfigActionButtons' is defined but never used. Allowed unused args must match /^_/u                                                                                                   unused-imports/no-unused-vars
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 366) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 402) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 411) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 426) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 581) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  361:9  warning  The 'roadmapPhases' conditional could make the dependencies of useMemo Hook (at line 585) change on every render. To fix this, wrap the initialization of 'roadmapPhases' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  518:5  warning  React Hook useMemo has an unnecessary dependency: 'maxUnlockedPhaseIndex'. Either exclude it or remove the dependency array                                                                          react-hooks/exhaustive-deps
+  610:9  warning  'resetFishboneViewport' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                     unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\RoadmapCanvasViewStage.jsx
+   20:7  warning  'TOP_SECTION_CARD_BASE_WIDTH' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                         unused-imports/no-unused-vars
+  199:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 262) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  199:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 320) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  199:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 562) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  199:9  warning  The 'phases' conditional could make the dependencies of useMemo Hook (at line 723) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                          react-hooks/exhaustive-deps
+  199:9  warning  The 'phases' conditional could make the dependencies of useEffect Hook (at line 883) change on every render. To fix this, wrap the initialization of 'phases' in its own useMemo() Hook                        react-hooks/exhaustive-deps
+  209:9  warning  The 'selectedKnowledges' conditional could make the dependencies of useMemo Hook (at line 269) change on every render. To fix this, wrap the initialization of 'selectedKnowledges' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  236:6  warning  React Hook useEffect has a missing dependency: 'isTopSectionCollapsed'. Either include it or remove the dependency array                                                                                       react-hooks/exhaustive-deps
+  908:6  warning  React Hook useEffect has a missing dependency: 'getKnowledgeBranchViewportTarget'. Either include it or remove the dependency array                                                                            react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\RoadmapJourPanel.jsx
+   22:3  warning  'progressTracking' is assigned a value but never used. Allowed unused args must match /^_/u                                 unused-imports/no-unused-vars
+  120:6  warning  React Hook useCallback has an unnecessary dependency: 'queueSelectPhase'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\SourceDetailView.jsx
+   45:37  warning  'contentBlocks' is defined but never used. Allowed unused args must match /^_/u                         unused-imports/no-unused-vars
+  120:10  warning  'formatFileType' is defined but never used. Allowed unused vars must match /^_/u                        unused-imports/no-unused-vars
+  494:6   warning  React Hook useCallback has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\WorkspaceOverviewView.jsx
+  44:3  warning  'workspaceTitle' is assigned a value but never used. Allowed unused args must match /^_/u    unused-imports/no-unused-vars
+  45:3  warning  'workspacePurpose' is assigned a value but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+  50:3  warning  'onUploadClick' is defined but never used. Allowed unused args must match /^_/u              unused-imports/no-unused-vars
+  65:9  warning  'quickActions' is assigned a value but never used. Allowed unused vars must match /^_/u      unused-imports/no-unused-vars
+  91:9  warning  'statCards' is assigned a value but never used. Allowed unused vars must match /^_/u         unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\WorkspaceProfileWizard\WorkspaceProfileStepTwo.jsx
+  126:10  warning  'buildPopularTemplateMeta' is defined but never used. Allowed unused vars must match /^_/u         unused-imports/no-unused-vars
+  140:10  warning  'matchesPopularTemplateSelection' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  259:36  warning  'templateStatus' is defined but never used. Allowed unused args must match /^_/u                   unused-imports/no-unused-vars
+  260:36  warning  'templatePreview' is defined but never used. Allowed unused args must match /^_/u                  unused-imports/no-unused-vars
+  267:36  warning  'onGenerateTemplate' is defined but never used. Allowed unused args must match /^_/u               unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\WorkspaceProfileWizard\WorkspaceProfileStepUpload.jsx
+  188:3  warning  'language' is assigned a value but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\WorkspaceProfileWizard\useWorkspaceProfileWizard.js
+  321:6   warning  React Hook useEffect has a missing dependency: 'values'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  384:6   warning  React Hook useEffect has a missing dependency: 'values'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  536:29  warning  'examId' is defined but never used. Allowed unused args must match /^_/u                                   unused-imports/no-unused-vars
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\Components\flashcard-modes\FlashcardQuizMode.jsx
+  33:5  warning  React Hook useMemo has an unnecessary dependency: 'deckSeed'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\WorkspacePage.jsx
+  1378:6  warning  React Hook useEffect has a missing dependency: 'navigate'. Either include it or remove the dependency array                                                   react-hooks/exhaustive-deps
+  1685:6  warning  React Hook useCallback has missing dependencies: 'bumpRoadmapReloadToken' and 'resetRoadmapRuntimeState'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  1757:5  warning  React Hook useCallback has an unnecessary dependency: 'showSuccess'. Either exclude it or remove the dependency array                                         react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Individual\Workspace\hooks\useWorkspaceRoadmapManager.js
+   490:30  warning  The ref value 'roadmapReloadThrottleRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'roadmapReloadThrottleRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  1320:5   warning  React Hook useCallback has unnecessary dependencies: 'roadmapAiRoadmapId' and 'workspaceId'. Either exclude them or remove the dependency array                                                                                                                                                  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Quiz\PracticeQuizPage.jsx
+  326:9  warning  The 'questions' logical expression could make the dependencies of useCallback Hook (at line 420) change on every render. To fix this, wrap the initialization of 'questions' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Quiz\QuizResultPage.jsx
+  531:41  warning  The ref value 'postGradingAssessmentRefreshRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'postGradingAssessmentRefreshRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  621:6   warning  React Hook useMemo has a missing dependency: 't'. Either include it or remove the dependency array                                                                                                                                                                                                             react-hooks/exhaustive-deps
+  896:6   warning  React Hook useCallback has missing dependencies: 'quizId' and 'result?.quizId'. Either include them or remove the dependency array                                                                                                                                                                             react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Quiz\components\ExamPerQuestion.jsx
+  302:6  warning  React Hook useCallback has an unnecessary dependency: 'onSubmit'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\QuizmateAI\QuizMateAI_FE\src\pages\Users\Quiz\components\QuestionCard.jsx
+  135:9  warning  The 'normalizedSelectedAnswers' conditional could make the dependencies of useMemo Hook (at line 228) change on every render. To fix this, wrap the initialization of 'normalizedSelectedAnswers' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  192:9  warning  The 'correctAnswerIds' conditional could make the dependencies of useMemo Hook (at line 228) change on every render. To fix this, wrap the initialization of 'correctAnswerIds' in its own useMemo() Hook                    react-hooks/exhaustive-deps
+
+Γ£û 209 problems (0 errors, 209 warnings)
+

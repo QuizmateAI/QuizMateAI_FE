@@ -404,11 +404,6 @@ export const getGroupQuizHistory = async (workspaceId, quizId) => {
 // Nộp bài — đóng attempt và trả về kết quả
 export const submitAttempt = async (attemptId, answers) => {
   const hasRequestBody = Array.isArray(answers);
-  console.debug('[QuizAPI] submitAttempt', {
-    attemptId,
-    hasRequestBody,
-    answersCount: hasRequestBody ? answers.length : null,
-  });
 
   if (hasRequestBody) {
     const response = await api.post(`/quiz-attempts/${attemptId}/submit`, answers, { timeout: 60000 });

@@ -257,8 +257,6 @@ function GroupWorkspaceProfileConfigMirror({
   const goalSuggestionAbortRef = useRef(null);
   const knowledgeTextareaRef = useRef(null);
   const groupGoalTextareaRef = useRef(null);
-  const isStudyNewMode = learningMode === 'STUDY_NEW';
-
   useLayoutEffect(() => {
     if (!open || step !== 2) return;
     autoResizeTextarea(knowledgeTextareaRef.current);
@@ -268,15 +266,6 @@ function GroupWorkspaceProfileConfigMirror({
     if (!open || step !== 2) return;
     autoResizeTextarea(groupGoalTextareaRef.current);
   }, [groupLearningGoal, open, step]);
-
-  const summary = useMemo(() => {
-    const mode = LEARNING_MODES.find((item) => item.value === learningMode);
-    return {
-      mode: mode
-        ? t(mode.labelKey, mode.labelFallback)
-        : t('groupWorkspaceProfileConfigMirror.summary.modeNotSet', 'Not set'),
-    };
-  }, [learningMode, t]);
 
   const totalSteps = isPostOnboardingEdit ? 1 : 2;
   const displayStep = isPostOnboardingEdit ? 1 : step;

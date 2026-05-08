@@ -1,18 +1,15 @@
+import { getCurrentUser } from '@/lib/currentUser';
+
 const ATTEMPTED_QUIZ_IDS_KEY = 'attemptedQuizIds';
 const COMPLETED_QUIZ_IDS_KEY = 'completedQuizIds';
 
 function resolveActiveUserIdentity() {
-  try {
-    const raw = localStorage.getItem('user');
-    if (!raw) return 'anonymous';
-    const user = JSON.parse(raw);
-    const userId = Number(user?.id ?? user?.userId);
-    if (Number.isFinite(userId) && userId > 0) return `user-${userId}`;
-    const email = String(user?.email || '').trim().toLowerCase();
-    if (email) return `email-${email}`;
-  } catch {
-    // Ignore localStorage/JSON issues and use anonymous scope.
-  }
+  const user = getCurrentUser();
+  if (!user) return 'anonymous';
+  const userId = Number(user?.id ?? user?.userId);
+  if (Number.isFinite(userId) && userId > 0) return `user-${userId}`;
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (email) return `email-${email}`;
   return 'anonymous';
 }
 

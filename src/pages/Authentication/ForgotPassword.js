@@ -277,7 +277,7 @@ export const validateForgotPasswordForm = (email, t) => {
 };
 
 // Gửi yêu cầu đặt lại mật khẩu (giả lập API)
-export const submitForgotPasswordRequest = async (email) => {
+export const submitForgotPasswordRequest = async (_email) => {
   try {
     // Gọi API đặt lại mật khẩu
     // const response = await api.post('/auth/forgot-password', { email });

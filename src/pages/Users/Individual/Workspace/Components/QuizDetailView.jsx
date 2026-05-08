@@ -221,8 +221,6 @@ function QuizDetailView({
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [activating, setActivating] = useState(false);
-  // Leader participation dialog (xuất bản → hỏi ranking)
-  const [leaderParticipationOpen, setLeaderParticipationOpen] = useState(false);
   // Per-question discussion popup
   const [discussionOpenQId, setDiscussionOpenQId] = useState(null);
   const [qCommentCounts, setQCommentCounts] = useState({});
@@ -231,12 +229,12 @@ function QuizDetailView({
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
-  const [communityDetailOpen, setCommunityDetailOpen] = useState(false);
-  const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
+  const [, setCommunityDetailOpen] = useState(false);
+  const [, setCommunityFeedbackOpen] = useState(false);
   const detailRequestRunRef = React.useRef(0);
   const attemptHistoryProbeKeyRef = React.useRef(null);
-  const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false);
-  const [metadataEditOpen, setMetadataEditOpen] = useState(false);
+  const [, setConfirmDuplicateOpen] = useState(false);
+  const [, _setMetadataEditOpen] = useState(false);
 
   const currentUserId = React.useMemo(() => {
     const currentUser = getCurrentUser();
@@ -773,10 +771,6 @@ function QuizDetailView({
     }
     // LOCKED_UNTIL_FIRST_ATTEMPT: button is disabled, no action
   }, [editRule, effectiveQuiz, onEdit]);
-
-  const handleMetadataSaved = useCallback((updatedFields) => {
-    setQuizMeta((prev) => ({ ...(prev || effectiveQuiz), ...updatedFields }));
-  }, [effectiveQuiz]);
 
   // Gate luyện tập: chỉ hiện sau khi user hoàn thành ít nhất 1 lần kiểm tra chính thức
   const hasCompletedOfficialAttempt = personalHistory !== null &&

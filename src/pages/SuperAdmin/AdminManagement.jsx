@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -90,12 +90,12 @@ function AdminManagement() {
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
-  const getFriendlyError = (err, fallbackKey, fallbackText) => {
+  const getFriendlyError = useCallback((err, fallbackKey, fallbackText) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
     if (fallbackKey) return t(fallbackKey);
     return fallbackText;
-  };
+  }, [t]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
@@ -143,7 +143,7 @@ function AdminManagement() {
     if (queryError) {
       setError(getFriendlyError(queryError, 'adminManagement.errors.loadAdmins'));
     }
-  }, [queryError]);
+  }, [queryError, getFriendlyError]);
 
   const invalidateAdmins = () =>
     queryClient.invalidateQueries({ queryKey: ADMIN_LIST_QUERY_KEY });
@@ -225,7 +225,7 @@ function AdminManagement() {
         });
         setPermissionDetailsMap(map);
       }
-    } catch (err) {
+    } catch {
       setUserPermissions(filterRemovedLearningConfigPermissionCodes(admin?.permissions ? [...admin.permissions] : []));
     } finally {
       setIsRbacLoading(false);

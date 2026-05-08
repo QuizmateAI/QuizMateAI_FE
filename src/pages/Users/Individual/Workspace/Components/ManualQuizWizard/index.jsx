@@ -433,7 +433,6 @@ function ManualQuizWizard({
       if (editingQuizId) {
         // Edit mode — update-bulk
         const payload = buildUpdatePayload(config, questions, editingSectionId, questionTypes, t);
-        console.log("[ManualQuizWizard] updateManualQuizBulk payload", payload);
         const res = await updateManualQuizBulk(editingQuizId, payload);
         const updatedQuiz = unwrapApiData(res);
         initialSnapshotRef.current = currentSnapshot;
@@ -454,7 +453,6 @@ function ManualQuizWizard({
       } else {
         // Create or clone mode — create-bulk
         const payload = buildPayload(config, questions, workspaceId, questionTypes, t);
-        console.log("[ManualQuizWizard] createManualQuizBulk payload", payload);
         const res = await createManualQuizBulk(payload);
         const createdQuiz = unwrapApiData(res);
         initialSnapshotRef.current = currentSnapshot;

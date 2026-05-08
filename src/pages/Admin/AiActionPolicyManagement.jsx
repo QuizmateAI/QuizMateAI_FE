@@ -129,30 +129,6 @@ function getPolicyTitle(policy, t) {
   return normalizedDisplayName || normalizedLabelTitle;
 }
 
-function getCategoryLabel(actionKey, t) {
-  const category = ACTION_META[actionKey]?.category;
-  if (category === 'generate') return t('aiActionPolicy.categoryGenerate');
-  if (category === 'analysis') return t('aiActionPolicy.categoryAnalysis');
-  if (category === 'process') return t('aiActionPolicy.categoryProcess');
-  return '-';
-}
-
-function getCategoryBadgeClass(category, isDarkMode) {
-  if (category === 'generate') {
-    return isDarkMode ? 'bg-sky-500/10 text-sky-300 border-sky-500/30' : 'bg-sky-50 text-sky-700 border-sky-200';
-  }
-
-  if (category === 'analysis') {
-    return isDarkMode ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30' : 'bg-cyan-50 text-cyan-700 border-cyan-200';
-  }
-
-  if (category === 'process') {
-    return isDarkMode ? 'bg-violet-500/10 text-violet-300 border-violet-500/30' : 'bg-violet-50 text-violet-700 border-violet-200';
-  }
-
-  return isDarkMode ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-gray-100 text-gray-700 border-gray-200';
-}
-
 function CostModeBadge({ costMode, isDarkMode, t }) {
   return (
     <span

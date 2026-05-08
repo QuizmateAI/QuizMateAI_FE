@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { updateWorkspace } from '@/api/WorkspaceAPI';
 import { toggleVisibility as apiToggleVisibility, deleteGroup as apiDeleteGroup } from '@/api/GroupAPI';
+import { getCurrentUser } from '@/lib/currentUser';
 import GroupSettingsActionsCard from '../Components/GroupSettingsActionsCard';
 
 function GroupSettingsTab({
@@ -129,7 +130,7 @@ function GroupSettingsTab({
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      const storedUser = JSON.parse(window.localStorage.getItem('user') || 'null');
+      const storedUser = getCurrentUser();
       const editorUserId = group?.createdByUserId ?? group?.ownerUserId ?? group?.userId ?? storedUser?.userID;
       if (!editorUserId) {
         throw new Error('Missing user id');

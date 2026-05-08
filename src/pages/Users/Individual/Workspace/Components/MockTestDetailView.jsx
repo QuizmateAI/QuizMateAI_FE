@@ -181,7 +181,7 @@ function updateQuestionInSectionTree(sectionList, questionId, updater) {
  * Component hiển thị chi tiết Mock Test — giao diện tím (purple) để phân biệt với Quiz (xanh dương)
  * Cấu trúc giống QuizDetailView: sections → questions → answers
  */
-function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEditButton = false, contextType = "WORKSPACE", isGroupLeader = false }) {
+function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit: _onEdit, hideEditButton: _hideEditButton = false, contextType = "WORKSPACE", isGroupLeader = false }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -351,7 +351,7 @@ function MockTestDetailView({ isDarkMode, quiz: quizProp, onBack, onEdit, hideEd
 
   const ss = STATUS_STYLES[quiz?.status] || STATUS_STYLES.DRAFT;
 
-  const renderQuestionItem = (question, questionIndex, sectionId) => {
+  const renderQuestionItem = (question, questionIndex, _sectionId) => {
     const answers = Array.isArray(question?.answers) ? question.answers : [];
     const isQExpanded = expandedQuestions[question.questionId];
     const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";

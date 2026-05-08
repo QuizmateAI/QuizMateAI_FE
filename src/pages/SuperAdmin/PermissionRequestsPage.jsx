@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, ShieldCheck, CircleSlash, Infinity as InfinityIcon, KeyRound } from 'lucide-react';
@@ -78,10 +78,10 @@ export default function PermissionRequestsPage() {
   const [rejecting, setRejecting] = useState(null);
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
-  const friendly = (err, fallback) => {
+  const friendly = useCallback((err, fallback) => {
     const mapped = getErrorMessage(t, err);
     return mapped && mapped !== 'error.unknown' ? mapped : fallback;
-  };
+  }, [t]);
 
   const {
     data,
@@ -120,7 +120,7 @@ export default function PermissionRequestsPage() {
     if (queryError) {
       showError(friendly(queryError, 'Không thể tải danh sách yêu cầu'));
     }
-  }, [queryError]);
+  }, [queryError, friendly, showError]);
 
   const invalidateRequests = () =>
     queryClient.invalidateQueries({ queryKey: PERMISSION_REQUESTS_QUERY_KEY });

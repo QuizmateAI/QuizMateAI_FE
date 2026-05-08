@@ -19,7 +19,7 @@ function RoadmapJourPanel({
   reloadToken = 0,
   isGeneratingRoadmapPhases = false,
   roadmapPhaseGenerationProgress = 0,
-  progressTracking = null,
+  progressTracking: _progressTracking = null,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
   generatingKnowledgeQuizKnowledgeKeys = [],

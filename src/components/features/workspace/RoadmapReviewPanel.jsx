@@ -15,28 +15,6 @@ import {
 import { getRoadmapReview } from "@/api/RoadmapAPI";
 
 /**
- * Maps the backend rating string to a friendly format and color
- */
-function getRatingMeta(rating, isDarkMode) {
-  const norm = String(rating || "").toUpperCase();
-  switch (norm) {
-    case "EXCELLENT":
-    case "STRONG":
-    case "GOOD":
-      return { label: norm === "EXCELLENT" ? "Xuất sắc" : (norm === "STRONG" ? "Rất tốt" : "Tốt"), color: "emerald", bg: isDarkMode ? "bg-emerald-900/30" : "bg-emerald-100", text: isDarkMode ? "text-emerald-400" : "text-emerald-700" };
-    case "ADEQUATE":
-    case "FAIR":
-      return { label: norm === "ADEQUATE" ? "Đạt yêu cầu" : "Khá", color: "sky", bg: isDarkMode ? "bg-sky-900/30" : "bg-sky-100", text: isDarkMode ? "text-sky-400" : "text-sky-700" };
-    case "NEEDS_IMPROVEMENT":
-    case "POOR":
-    case "WEAK":
-      return { label: "Cần cải thiện", color: "rose", bg: isDarkMode ? "bg-rose-900/30" : "bg-rose-100", text: isDarkMode ? "text-rose-400" : "text-rose-700" };
-    default:
-      return { label: rating || "Chưa rõ", color: "slate", bg: isDarkMode ? "bg-slate-800" : "bg-slate-100", text: isDarkMode ? "text-slate-400" : "text-slate-600" };
-  }
-}
-
-/**
  * Renders a list of chips for a mastery category
  */
 function TopicList({ title, topics, icon: Icon, colorTheme, isDarkMode, fontClass }) {
@@ -144,8 +122,6 @@ export default function RoadmapReviewPanel({ roadmapId, isDarkMode = false }) {
     masteryReport,
     nextStep,
   } = reviewData;
-
-  const ratingMeta = getRatingMeta(learningJourney?.overallRating, isDarkMode);
 
   return (
     <div className={`mt-8 w-full rounded-[24px] border overflow-hidden ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-indigo-100 bg-white"}`}>

@@ -486,9 +486,6 @@
     "add": "Thêm Admin mới",
     "cardTitle": "Tài khoản Admin",
     "searchPlaceholder": "Tìm kiếm theo username hoặc email...",
-    "deleteDialog": {
-      "reasonPlaceholder": "Nhập lý do audit khi xóa tài khoản admin này..."
-    },
     "table": {
       "id": "ID",
       "username": "Tên đăng nhập",
@@ -1783,11 +1780,6 @@
       "member": "Thành viên"
     }
   },
-  "creditPackage": {
-    "form": {
-      "namePlaceholder": "VD: Starter, Pro, Enterprise..."
-    }
-  },
   "creditPackageManagement": {
     "title": "Gói tín dụng",
     "desc": "Quản lý danh mục gói tín dụng đang được sử dụng trong hệ thống.",
@@ -2133,11 +2125,6 @@
     "rejectReasonPlaceholder": "Ví dụ: quyền này không phù hợp với phạm vi công việc hiện tại.",
     "rejectSubmit": "Xác nhận từ chối",
     "rejecting": "Đang gửi..."
-  },
-  "communityQuizManagement": {
-    "filters": {
-      "searchPlaceholder": "Tìm theo tên quiz, người tạo hoặc email"
-    }
   },
   "userManagementPage": {
     "fetchError": "Không thể tải danh sách người dùng.",

@@ -1,0 +1,199 @@
+{
+  "plan": {
+    "title": "学習プランを選択",
+    "subtitle": "長い技術設定リストを読み込まずに、必要な AI サポートのレベルを選んでください。",
+    "heroBadge": "学習向け AI プラン",
+    "backToHome": "ホームに戻る",
+    "back": "戻る",
+    "groupScopeTitle": "{{groupName}} のプランを選択",
+    "groupFallbackName": "このグループ",
+    "groupScopeSubtitle": "このプランは現在のグループワークスペースにのみ適用されます。グループサブスクリプションは個人プランとは別に管理されます。",
+    "groupScopeNoticeTitle": "このワークスペースのグループプラン",
+    "groupEntryTitle": "グループプランは各グループ内で管理されます",
+    "leaderOnlyBadge": "リーダー精算",
+    "groupScopeLeaderDesc": "この購入は {{groupName}} にのみ適用されます。グループリーダーとして、ここでこのワークスペースのプランを選択または変更できます。",
+    "groupScopeMemberDesc": "この購入は {{groupName}} にのみ適用されます。グループリーダーのみがこのワークスペースのプランを選択または変更できます。",
+    "groupEntryDesc": "グループサブスクリプションは各グループワークスペース内で個別に購入されます。リーダーであるグループを開いてプランを表示し、そこで購入を完了してください。",
+    "groupLeaderManagedCta": "リーダーがプランを管理",
+    "types": {
+      "individual": "個人",
+      "group": "グループ"
+    },
+    "badges": {
+      "permanent": "期間限定プラン",
+      "credits": "クレジット制 AI 利用",
+      "transparent": "明確で透明"
+    },
+    "creditModel": {
+      "title": "AI のクレジットモデル",
+      "desc": "適したプランを選択し、AI 利用が必要なときだけクレジットをチャージしてください。",
+      "cta": "クレジットウォレットを開く",
+      "guide": "クレジット価格を見る"
+    },
+    "manage": {
+      "eyebrow": "あなたのプラン",
+      "title": "プランを管理",
+      "groupTitle": "グループプランを管理",
+      "changePlan": "プランを変更",
+      "currentBadge": "現在",
+      "freePlan": "Free プラン",
+      "statusLabel": "ステータス",
+      "validUntil": "有効期限",
+      "noExpiry": "プラン設定に基づく",
+      "scope": "範囲",
+      "creditWallet": "クレジットウォレット",
+      "regularCredits": "通常クレジット",
+      "planCredits": "プランクレジット",
+      "planCreditsExpire": "有効期限",
+      "planEndsIn": "プランは {{count}} 日後に終了します",
+      "planEndsToday": "プランは本日終了します",
+      "planExpired": "プランの有効期限が切れました",
+      "resubscribe": "再サブスクライブ",
+      "topUpCredits": "クレジットをチャージ",
+      "subscriptionStatus": {
+        "ACTIVE": "有効",
+        "EXPIRED": "期限切れ",
+        "CANCELLED": "キャンセル済み",
+        "PENDING": "処理中"
+      },
+      "target": {
+        "userPlan": "個人プラン",
+        "workspacePlan": "グループプラン",
+        "userCredit": "個人クレジット",
+        "workspaceCredit": "グループクレジット",
+        "workspaceSlot": "メンバー枠",
+        "payment": "支払い"
+      },
+      "status": {
+        "pending": "処理中",
+        "completed": "支払い済み",
+        "failed": "失敗",
+        "cancelled": "キャンセル済み"
+      },
+      "history": {
+        "title": "支払い履歴",
+        "groupTitle": "グループ支払い履歴",
+        "subtitle": "最新 5 件の取引",
+        "refresh": "支払い履歴を更新",
+        "date": "日付",
+        "package": "プラン / 項目",
+        "amount": "金額",
+        "status": "ステータス",
+        "loading": "履歴を読み込み中...",
+        "empty": "支払い取引はまだありません。",
+        "loadError": "支払い履歴を読み込めません。",
+        "usage": {
+          "title": "利用履歴",
+          "groupTitle": "グループ利用履歴",
+          "subtitle": "最近の 5 件のクレジット移動",
+          "refresh": "利用履歴を更新",
+          "activity": "アクティビティ",
+          "change": "変動",
+          "balance": "変動後残高",
+          "empty": "クレジット利用アクティビティはまだありません。",
+          "loadError": "利用履歴を読み込めません。"
+        }
+      }
+    },
+    "noPlans": "このカテゴリで利用可能なプランはありません。",
+    "loadError": "プランを読み込めません。もう一度お試しください。",
+    "mostPopular": "最も人気",
+    "durationDays": "{{count}} 日間",
+    "durationForever": "永続",
+    "durationForeverShort": "永続",
+    "upgrade": "プランを選択",
+    "currentCta": "現在利用中",
+    "teamCta": "チームプランを開始",
+    "thanhToan": "支払い",
+    "defaultPlan": "デフォルトプラン",
+    "aiQuality": {
+      "core": "コア AI",
+      "enhanced": "拡張 AI",
+      "premium": "プレミアム AI",
+      "team": "チーム AI"
+    },
+    "descriptions": {
+      "free": "クイズ作成と軽量な学習セッションの基本機能から始めましょう。",
+      "freeWithLimits": "{{workspaces}} ワークスペース、各ワークスペースに {{materials}} 教材という確かなスタートポイント。",
+      "standard": "より便利な AI ツールで日々の学習フローを拡張します。",
+      "recommended": "より明確で実用的な AI サポートで完全な学習ワークフローを解放します。",
+      "premium": "より広い AI サポートと深い洞察で集中的な学習セッション向けに設計。",
+      "group": "共有 AI 駆動ワークフローを必要とする学習グループや教室向けに設計。",
+      "groupWithLimits": "{{workspaces}} ワークスペースと各ワークスペースに {{materials}} 教材を持つ共有学習スペース。",
+      "includesPrevious": "{{previousPlan}} のすべて、加えて {{extras}}。",
+      "includesPreviousSimple": "{{previousPlan}} のすべて、より充実した学習ワークフロー。",
+      "extraFormats": "{{formats}} のサポート",
+      "higherLimits": "より高い学習上限"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "word": "Word",
+      "slide": "スライド",
+      "excel": "Excel",
+      "text": "テキスト",
+      "image": "画像",
+      "video": "動画",
+      "audio": "音声"
+    },
+    "bullets": {
+      "groupCollab": "チーム学習と共同教材作業のための共有セットアップ",
+      "includesPrevious": "{{planName}} に含まれるすべて",
+      "singleFormat": "{{format}} から教材をインポート",
+      "multiFormat": "{{formats}} をインポート",
+      "multiFormatMore": "{{formats}} とその他 {{count}} フォーマットをインポート",
+      "addedFormats": "{{formats}} のサポートを追加",
+      "coreAi": "コア AI クイズワークフローをカバー",
+      "limitWithMaterials": "{{workspaces}} ワークスペースと各ワークスペースに {{materials}} 教材",
+      "limitWorkspacesOnly": "学習教材を整理する {{workspaces}} ワークスペース",
+      "limitMaterialsOnly": "各ワークスペースに {{materials}} 教材",
+      "upgradedLimits": "{{workspaces}} ワークスペースと各ワークスペースに {{materials}} 教材にアップグレード",
+      "roadmaps": "教材と目標から AI 学習ロードマップを生成",
+      "companion": "AI コンパニオンで簡単な質問とガイド付き練習",
+      "summaries": "AI で密度の高い教材をより速く読み要約",
+      "analytics": "学習分析で進捗と弱点を追跡",
+      "advancedQuiz": "より深い練習のための高度なクイズタイプを解放",
+      "bonusCredits": "購入時にボーナスクレジット {{count}} を含む"
+    },
+    "featureNames": {
+      "roadmaps": "AI 学習ロードマップ",
+      "companion": "AI コンパニオン",
+      "summaries": "スマート要約",
+      "analytics": "学習分析",
+      "advancedQuiz": "高度なクイズモード",
+      "multiformatImport": "マルチフォーマット教材サポート",
+      "bonusCredits": "ボーナスクレジット"
+    },
+    "studyFeatures": {
+      "title": "プレミアム学習ツール",
+      "subtitle": "有料プランは学習ワークフロー全体を通じて AI を活用するより実用的な方法を解放します。",
+      "roadmap": {
+        "title": "AI 学習ロードマップ",
+        "desc": "教材を、より追いやすい段階的な学習パスに変換します。"
+      },
+      "companion": {
+        "title": "AI コンパニオン",
+        "desc": "簡単な質問、より速い復習、学習中の勢い維持。"
+      },
+      "summary": {
+        "title": "スマート要約",
+        "desc": "長い教材を主要なアイデアに凝縮し、復習時間を短縮します。"
+      },
+      "analytics": {
+        "title": "学習分析",
+        "desc": "強み、弱点、進捗パターンをより早く特定します。"
+      },
+      "advancedQuiz": {
+        "title": "高度なクイズモード",
+        "desc": "より広いクイズ設定とより柔軟な練習セッションを解放します。"
+      }
+    },
+    "notes": {
+      "permanentTitle": "明確なプラン期間",
+      "permanentDesc": "QuizMateAI は永続購入を提供していません。各プランには独自の期間と特典があり、学習ニーズに合うものを選択できます。",
+      "creditsTitle": "AI はクレジット制",
+      "creditsDesc": "AI 機能は実際に使用したときのみクレジットを消費するため、支出の管理が容易になります。",
+      "refundTitle": "明確な精算フロー",
+      "refundDesc": "支払いは保護され、クレジット購入履歴はウォレットで引き続き利用できます。"
+    }
+  }
+}

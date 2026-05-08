@@ -1110,7 +1110,6 @@
       "preLearningRequirement": "Pre-learning requirement",
       "preLearningRequired": "Required before starting shared work.",
       "preLearningOptional": "Optional, depending on your current level.",
-      "learningSnapshotLoading": "Loading your learning snapshot...",
       "peopleTitle": "People in this group",
       "peopleDescription": "A quick snapshot so members know who they are studying with.",
       "youBadge": "You"
@@ -2237,7 +2236,6 @@
     },
     "input": {
       "placeholder": "Write a comment… Use / to tag a question · Enter to send",
-      "replyPlaceholder": "Reply to {{name}}… Press Enter to send",
       "footerPrefix": "Enter to send · Shift+Enter for new line ·",
       "leaderCanDelete": "Leader can delete any comment",
       "memberCanDelete": "You can only delete your own comments"
@@ -2309,9 +2307,6 @@
         "image": "Image",
         "sticker": "Sticker"
       }
-    },
-    "reply": {
-      "placeholder": "Reply to {{name}}"
     },
     "dialog": {
       "lockedNotice": "Complete the quiz to join the discussion for this question.",

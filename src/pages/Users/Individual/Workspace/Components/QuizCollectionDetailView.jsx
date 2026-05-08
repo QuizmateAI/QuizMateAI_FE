@@ -174,12 +174,6 @@ function QuizCollectionDetailView({
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
 
   const maxRandomCount = Math.max(totalQuestion, 0);
-  const randomCountNumber = Number(randomCount);
-  const randomCountIsInteger = Number.isInteger(randomCountNumber);
-  const randomCountOutOfRange =
-    maxRandomCount > 0 &&
-    randomCountIsInteger &&
-    (randomCountNumber < 1 || randomCountNumber > maxRandomCount);
 
   useEffect(() => {
     if (maxRandomCount <= 0) return;

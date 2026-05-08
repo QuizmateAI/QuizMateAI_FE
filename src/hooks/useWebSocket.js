@@ -365,41 +365,12 @@ export function useWebSocket({
 
       connectHeaders,
 
-      debug: (str) => {
-        console.log("STOMP Debug:", str);
-      },
-
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
 
       onConnect: () => {
         isDeactivatingRef.current = false;
-        console.log("✅ STOMP WebSocket connected");
-        if (needsProgressQueue) {
-          console.log("🔔 Subscribed channel: /user/queue/progress");
-        }
-        if (needsWalletQueue) {
-          console.log("🔔 Subscribed channel: /user/queue/wallet");
-        }
-        if (needsQuizAttemptGradingQueue) {
-          console.log("🔔 Subscribed channel: /user/queue/quiz-attempt-grading");
-        }
-        if (hasMaterialSubscription && workspaceId) {
-          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/material`);
-        }
-        if (hasChallengeSubscription && workspaceId) {
-          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/challenge`);
-        }
-        if (hasGroupSubscription && workspaceId) {
-          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/group`);
-        }
-        if (hasDiscussionSubscription && workspaceId) {
-          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/discussion`);
-        }
-        if (hasWorkspaceWalletSubscription && workspaceId) {
-          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/wallet`);
-        }
         setIsConnected(true);
 
         if (!hasRequestedResyncRef.current) {
@@ -454,14 +425,11 @@ export function useWebSocket({
               try {
                 const response = enrichProgressWithActiveTaskShape(JSON.parse(message.body));
                 const materialEvent = resolveMaterialEventFromProgressPayload(response);
-                console.log("📊 Progress update received:", response);
-                console.log("   Progress status:", response.status);
 
                 setLastMessage({ type: "progress", data: response, timestamp: Date.now() });
                 callbackRefs.current.onProgress?.(response);
 
                 if (materialEvent) {
-                  console.log("🔄 Routed material event from progress channel:", materialEvent);
                   setLastMessage({
                     type: materialEvent.eventType,
                     data: materialEvent.material,
@@ -488,7 +456,6 @@ export function useWebSocket({
             (message) => {
               try {
                 const response = JSON.parse(message.body);
-                console.log("💳 Wallet update received:", response);
                 setLastMessage({ type: "wallet:update", data: response, timestamp: Date.now() });
                 callbackRefs.current.onWalletUpdate?.(response);
               } catch (err) {
@@ -505,7 +472,6 @@ export function useWebSocket({
             (message) => {
               try {
                 const response = JSON.parse(message.body);
-                console.log("🧪 Quiz attempt grading event:", response);
                 setLastMessage({ type: "quiz:attempt-grading", data: response, timestamp: Date.now() });
                 callbackRefs.current.onQuizAttemptGrading?.(response);
               } catch (err) {
@@ -522,25 +488,15 @@ export function useWebSocket({
             `/topic/workspace/${workspaceId}/material`,
             (message) => {
               try {
-                console.log("📨 Raw WebSocket message received:", message.body);
                 const data = normalizeMaterialPayload(JSON.parse(message.body));
-                console.log("📤 Workspace material update (parsed):", data);
-                console.log("   - Type:", data.type);
-                console.log("   - Status:", data.status);
-                console.log("   - Material ID:", data.materialId);
-                console.log("   - Full data:", JSON.stringify(data, null, 2));
-                
-                // Xử lý theo type của message
+
                 if (data.type === "UPLOADED" || data.status === "UPLOADED" || data.status === "ACTIVE") {
-                  console.log("✅ Triggering onMaterialUploaded callback");
                   setLastMessage({ type: "material:uploaded", data, timestamp: Date.now() });
                   callbackRefs.current.onMaterialUploaded?.(data);
                 } else if (data.type === "DELETED" || data.status === "DELETED") {
-                  console.log("🗑️ Triggering onMaterialDeleted callback");
                   setLastMessage({ type: "material:deleted", data, timestamp: Date.now() });
                   callbackRefs.current.onMaterialDeleted?.(data);
                 } else if (data.type === "UPDATED" || ["UPDATED", "PROCESSING", "ERROR", "WARN", "REJECT"].includes(data.status)) {
-                  console.log("🔄 Triggering onMaterialUpdated callback");
                   setLastMessage({ type: "material:updated", data, timestamp: Date.now() });
                   callbackRefs.current.onMaterialUpdated?.(data);
                 } else {
@@ -561,7 +517,6 @@ export function useWebSocket({
             (message) => {
               try {
                 const data = JSON.parse(message.body);
-                console.log("⚔️ Challenge update:", data);
                 setLastMessage({ type: "challenge:update", data, timestamp: Date.now() });
                 callbackRefs.current.onChallengeUpdate?.(data);
               } catch (err) {
@@ -578,7 +533,6 @@ export function useWebSocket({
             (message) => {
               try {
                 const data = JSON.parse(message.body);
-                console.log("👥 Group workspace update:", data);
                 setLastMessage({ type: "group:update", data, timestamp: Date.now() });
                 callbackRefs.current.onGroupUpdate?.(data);
               } catch (err) {
@@ -595,7 +549,6 @@ export function useWebSocket({
             (message) => {
               try {
                 const data = JSON.parse(message.body);
-                console.log("💬 Discussion update:", data);
                 setLastMessage({ type: "discussion:update", data, timestamp: Date.now() });
                 callbackRefs.current.onDiscussionUpdate?.(data);
               } catch (err) {
@@ -612,7 +565,6 @@ export function useWebSocket({
             (message) => {
               try {
                 const data = JSON.parse(message.body);
-                console.log("💳 Workspace wallet update:", data);
                 setLastMessage({ type: "workspace-wallet:update", data, timestamp: Date.now() });
                 callbackRefs.current.onWorkspaceWalletUpdate?.(data);
               } catch (err) {
@@ -625,10 +577,7 @@ export function useWebSocket({
       },
 
       onDisconnect: () => {
-        if (isDeactivatingRef.current) {
-          console.log("ℹ️ STOMP WebSocket disconnected (cleanup)");
-        } else {
-          console.log("❌ STOMP WebSocket disconnected");
+        if (!isDeactivatingRef.current) {
           hasRequestedResyncRef.current = false;
         }
         setIsConnected(false);

@@ -1,0 +1,94 @@
+{
+  "feedbackCenterPage": {
+    "summary": {
+      "pendingSurveysTitle": "未回答のアンケート",
+      "pendingSurveysHelper": "あなたの回答が必要なリクエスト",
+      "productTicketsTitle": "プロダクトチケット",
+      "productTicketsHelper": "バグ報告、サポートリクエスト、プロダクトに関する障害",
+      "systemTicketsTitle": "システムチケット",
+      "systemTicketsHelper": "プラットフォームのインシデントとインフラの問題",
+      "openTicketsTitle": "未対応のチケット",
+      "openTicketsHelper": "未対応または対応中のプロダクト/システムチケット"
+    },
+    "createSection": {
+      "title": "新しいチケットを作成",
+      "description": "適切なチャネルを選択してください。スーパー管理者が正しいキューで対応できます。",
+      "productTitle": "プロダクトフィードバック",
+      "productDescription": "バグ、欠落しているフロー、サポートリクエスト、または通常の利用を妨げるあらゆる問題。",
+      "sendProductTicket": "プロダクトチケットを送信",
+      "openProductQueue": "プロダクトキューを開く",
+      "systemTitle": "システムフィードバック",
+      "systemDescription": "プラットフォームのインシデント、サービスの不安定さ、インフラエラー、または運用上の問題。",
+      "sendSystemTicket": "システムチケットを送信",
+      "openSystemQueue": "システムキューを開く"
+    },
+    "recentTickets": {
+      "title": "最近のチケット",
+      "description": "プロダクトおよびシステム専用キューで処理された最新のフィードバック。",
+      "loading": "チケットを読み込み中...",
+      "emptyTitle": "チケットはまだありません",
+      "emptyDescription": "プロダクトまたはシステムチケットを作成してフィードバックフローを開始してください。",
+      "openQueues": "チケットキューを開く"
+    },
+    "pendingSurveys": {
+      "title": "未回答のアンケート",
+      "description": "予定されたフィードバックリクエストは専用のアンケートキューに分離されています。",
+      "emptyTitle": "現在、未回答のアンケートはありません",
+      "emptyDescription": "システムが予定アンケートを作成すると、ここに表示されます。",
+      "openQueue": "アンケートキューを開く"
+    }
+  },
+  "feedbackChannelPages": {
+    "common": {
+      "totalTickets": "チケット合計",
+      "openInProgress": "未対応 / 対応中",
+      "resolvedClosed": "解決済み / クローズ"
+    },
+    "product": {
+      "heroTitle": "プロダクトキュー",
+      "heroDescription": "バグの報告、サポートの依頼、または欠落しているプロダクトフローのリクエストはこちらから。",
+      "sendTicket": "プロダクトチケットを送信",
+      "totalHelper": "アカウントから送信されたプロダクト関連リクエストすべて",
+      "openHelper": "スーパー管理者が対応中の問題",
+      "resolvedHelper": "最終ステータスに到達したリクエスト",
+      "listTitle": "プロダクトチケット一覧",
+      "listDescription": "システムインシデントやアンケートと混ざらず、返信や対応状況を追跡できます。",
+      "loading": "プロダクトチケットを読み込み中...",
+      "emptyTitle": "プロダクトチケットはまだありません",
+      "emptyDescription": "プロダクトの問題で作業が滞ったときにチケットを作成してください。"
+    },
+    "system": {
+      "heroTitle": "システムキュー",
+      "heroDescription": "障害、サービスの不安定さ、インフラ問題など、その他のプラットフォームインシデントにはこのキューを使用してください。",
+      "sendTicket": "システムチケットを送信",
+      "totalHelper": "アカウントから送信されたシステム関連リクエストすべて",
+      "openHelper": "対応中のインシデント",
+      "resolvedHelper": "最終ステータスに到達したインシデント",
+      "listTitle": "システムチケット一覧",
+      "listDescription": "インフラやサービスのインシデントを、プロダクトリクエストとは別のリストで管理します。",
+      "loading": "システムチケットを読み込み中...",
+      "emptyTitle": "システムチケットはまだありません",
+      "emptyDescription": "問題が単一のプロダクトフローに限定されない場合、ここでプラットフォームインシデントを報告してください。"
+    }
+  },
+  "feedbackSurveyPage": {
+    "header": {
+      "title": "アンケートキュー",
+      "description": "予定されたフィードバックフォームはサポートチケットと分離して管理されます。"
+    },
+    "summary": {
+      "pendingTitle": "未回答のアンケート",
+      "pendingHelper": "あなたの回答が必要なリクエスト",
+      "flowTitle": "アンケートフロー",
+      "flowValue": "分離",
+      "flowHelper": "アンケートフォームはプロダクト/システムのチケットキューに含まれません"
+    },
+    "list": {
+      "title": "未回答のアンケートリクエスト",
+      "description": "サポート会話とは別に、これらの構造化フォームに回答してください。",
+      "loading": "アンケートを読み込み中...",
+      "emptyTitle": "現在、未回答のアンケートはありません",
+      "emptyDescription": "アンケートが作成されると、この専用キューに表示されます。"
+    }
+  }
+}

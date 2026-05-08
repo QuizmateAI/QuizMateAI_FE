@@ -56,6 +56,7 @@ import {
 import { deleteQuiz, getQuizzesByScope } from '@/api/QuizAPI';
 import { getGroupWorkspaceProfile, normalizeGroupWorkspaceProfile } from '@/api/WorkspaceAPI';
 import { unwrapApiData, unwrapApiList } from '@/utils/apiResponse';
+import { getCurrentUser } from '@/lib/currentUser';
 import { useToast } from '@/context/ToastContext';
 import GroupWorkspaceHeader from '../Components/GroupWorkspaceHeader';
 import UploadSourceDialog from '../Components/UploadSourceDialog';
@@ -104,13 +105,7 @@ function getLearningModeLabel(mode, t) {
 }
 
 function readCurrentUser() {
-  try {
-    const rawUser = window.localStorage.getItem('user');
-    return rawUser ? JSON.parse(rawUser) : null;
-  } catch (error) {
-    console.error('Unable to read current user from storage:', error);
-    return null;
-  }
+  return getCurrentUser();
 }
 
 function normalizeRole(role) {

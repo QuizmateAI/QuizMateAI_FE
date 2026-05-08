@@ -323,7 +323,7 @@ export default function PracticeQuizPage() {
   // always generates an individual workspace path which breaks group-workspace flows.
   const returnToQuizPath = location.state?.returnToQuizPath || '/home';
 
-  const questions = quiz?.questions || [];
+  const questions = useMemo(() => quiz?.questions || [], [quiz?.questions]);
   const total = questions.length;
   const currentQuestion = questions[currentIndex] || null;
   const currentAnswerValue = currentQuestion ? answers[currentQuestion.id] : undefined;

@@ -1,0 +1,116 @@
+{
+  "landingPage": {
+    "nav": {
+      "features": "機能",
+      "solutions": "ソリューション",
+      "pricing": "料金",
+      "login": "ログイン",
+      "signup": "新規登録"
+    },
+    "hero": {
+      "badge": "✨ AI を活用した学習イノベーション",
+      "titlePart1": "あらゆる科目をマスター",
+      "titlePart2": "QuizMate AI",
+      "subtitle": "あらゆる教材を数秒でクイズに変換。学習資料(PDF、DOC、YouTube URL)をアップロードするだけで、AI があなたの学習スタイルに合わせたインタラクティブな問題セットを自動生成します。",
+      "startLearning": "今すぐ学習を始める",
+      "watchDemo": "デモを見る",
+      "activeStudents": "アクティブな学習者",
+      "avatarLabels": {
+        "anh": "アクティブな学習者 Anh",
+        "binh": "アクティブな学習者 Binh",
+        "chi": "アクティブな学習者 Chi",
+        "duc": "アクティブな学習者 Duc"
+      }
+    },
+    "features": {
+      "title": "学習ジャーニーに革命を",
+      "new": {
+        "generation": {
+          "title": "自動生成",
+          "bullet1": "多様なソース: PDF、動画、画像、YouTube リンクなどをアップロード...",
+          "bullet2": "AI が知識を抽出し、関連性の高い問題を生成。",
+          "bullet3": "クイズの手作業作成にかかる時間を大幅に削減(主要な課題を解決)。"
+        },
+        "customization": {
+          "title": "深いカスタマイズ",
+          "bullet1": "調整可能: 問題タイプ、難易度、ブルームの認知レベル。",
+          "bullet2": "目的の選択: クイック復習、知識テスト、模擬試験。",
+          "bullet3": "AI が結果を評価し、復習すべき重要トピックを提案。"
+        },
+        "collaborative": {
+          "title": "共同学習",
+          "bullet1": "学習資料を共有し、グループ全体にクイズを割り当て。",
+          "bullet2": "リアルタイムのマルチプレイヤーチャレンジで参加意欲を向上。",
+          "bullet3": "リーダーは個々のメンバーの進捗を管理・追跡可能。"
+        }
+      },
+      "roadmapTitle": "AI ロードマップ",
+      "roadmapDesc": "AI があなたの教材を分析し、基礎から応用までの段階的な学習パスを生成します。",
+      "quizTitle": "スマートクイズ",
+      "quizDesc": "PDF や YouTube 動画から、選択式や記述式の問題を瞬時に生成。",
+      "companionTitle": "AI コンパニオン",
+      "companionDesc": "音声で AI チューターと対話し、リアルタイムで疑問を解消し、複雑な概念を解説します。"
+    },
+    "pricing": {
+      "titlePart1": "選ぶ",
+      "titlePart2": "あなたのプラン",
+      "subtitle": "すべての学習者に柔軟な料金設定",
+      "free": "Free",
+      "pro": "Professional",
+      "elite": "Elite",
+      "billedMonthly": "月額請求",
+      "mostPopular": "最も人気",
+      "getStarted": "始める",
+      "selectPro": "Pro プランを選択",
+      "features": {
+        "fiveRoadmaps": "AI ロードマップ 5 件 / 月",
+        "basicQuizzes": "ベーシック AI クイズ",
+        "voiceTutor": "音声 AI チューター",
+        "unlimitedRoadmaps": "AI ロードマップ無制限",
+        "advancedVoice": "高度な音声コンパニオン",
+        "urlVideo": "URL & 動画処理",
+        "everythingPro": "Pro のすべての機能",
+        "studyGroup": "学習グループ(5 ユーザー)",
+        "apiAccess": "開発者向け API アクセス"
+      }
+    },
+    "testimonials": {
+      "title": "学習者の声 😍",
+      "student1Quote": "「QuizMate AI で試験勉強の方法が一変しました。講義動画からクイズを作れるのは画期的です!」",
+      "student1Role": "医学生",
+      "student2Quote": "「AI ロードマップは素晴らしいです。200 ページの教科書を 10 段階の論理的な学習フェーズに分けてくれました。強くおすすめします!」",
+      "student2Role": "コンピュータサイエンス専攻",
+      "student1Name": "Sarah Johnson",
+      "student2Name": "Mark Thompson"
+    },
+    "footer": {
+      "brandDesc": "AI 駆動のツールで世界中の学習者をエンパワーし、よりスマートな学習の未来を実現します。",
+      "tagline": "もっと賢く学ぼう、もっと効率的に。",
+      "product": "プロダクト",
+      "productLinks": {
+        "roadmap": "AI ロードマップ",
+        "quizzes": "スマートクイズ",
+        "flashcards": "AI フラッシュカード",
+        "groups": "学習グループ"
+      },
+      "company": "会社情報",
+      "companyLinks": {
+        "about": "QuizMate AI について",
+        "support": "サポート"
+      },
+      "legal": "法的情報",
+      "legalLinks": {
+        "terms": "利用規約",
+        "privacy": "プライバシーポリシー",
+        "community": "コミュニティガイドライン",
+        "aiUsage": "AI 利用ポリシー",
+        "refund": "返金ポリシー",
+        "copyright": "著作権",
+        "viewAll": "すべてのポリシーを見る"
+      },
+      "madeIn": "Made in Vietnam",
+      "connect": "つながる",
+      "copyright": "© 2026 QuizMate AI. All rights reserved."
+    }
+  }
+}
