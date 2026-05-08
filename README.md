@@ -4,7 +4,7 @@
 
 # QuizMate AI
 
-**Chinh phục kiến thức cùng AI** — An AI-powered platform that turns your study materials into personalized quizzes, flashcards, and learning roadmaps.
+**Làm quen với người bạn học mới của bạn: AI** — An AI-powered platform that turns your study materials into personalized quizzes, flashcards, and learning roadmaps.
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
