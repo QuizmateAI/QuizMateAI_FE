@@ -945,7 +945,13 @@
         "easy": "Dễ",
         "medium": "Trung bình",
         "hard": "Khó",
-        "custom": "Tùy chỉnh (Tự cấu hình)"
+        "custom": "Tùy chỉnh (Tự cấu hình)",
+        "balance": "Tiêu chuẩn"
+      },
+      "advancedDifficultyPresets": {
+        "BALANCED": "Tiêu chuẩn",
+        "EASY_FOCUS": "Thiên về câu dễ",
+        "HARD_FOCUS": "Thiên về câu khó"
       },
       "bloomLevels": {
         "remember": "Ghi nhớ",
