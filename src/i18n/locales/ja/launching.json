@@ -1,0 +1,129 @@
+{
+  "launchingPage": {
+    "documentTitle": "{{brandName}} | プライベートローンチ",
+    "header": {
+      "sequence": "プライベートローンチ進行中",
+      "closedUntil": "{{date}} まで非公開",
+      "requestAccess": "早期アクセスを申請",
+      "launchDateSoon": "ローンチ日決定間近"
+    },
+    "hero": {
+      "badge": "QuizMate AI ローンチモード",
+      "titlePrefix": "汎用テンプレートではなく、",
+      "titleSuffix": "のために設計されたローンチページです。",
+      "description": "QuizMate AI が、教師、学校、教育チーム向けのコントロールされたリリースを準備するため、公開アプリは意図的にロックされています。クイズ生成、安全な評価フロー、学習サポートを最適化するため、より小規模な最初のコホートから公開を開始しています。",
+      "joinCohort": "最初のコホートに参加",
+      "blockedUntil": "公開ログイン、ホーム、ワークスペース、クイズの各ルートは {{date}} までブロックされたままです。",
+      "cards": {
+        "focus": {
+          "label": "フォーカス",
+          "title": "AI クイズ",
+          "description": "ソースから評価まで、よりタイトでクリーンなワークフロー。"
+        },
+        "security": {
+          "label": "セキュリティ",
+          "title": "試験フロー",
+          "description": "保護された評価動作を調整中のため制限されています。"
+        },
+        "support": {
+          "label": "サポート",
+          "title": "ノート + ロードマップ",
+          "description": "復習ツールは生成された各クイズと整合します。"
+        }
+      }
+    },
+    "audiences": {
+      "teachers": "教師",
+      "highSchools": "高等学校",
+      "universities": "大学",
+      "trainingCenters": "教育センター",
+      "academicTeams": "学術チーム"
+    },
+    "console": {
+      "label": "ローンチコンソール",
+      "title": "QuizMate AI コマンドセンター",
+      "openingNow": "現在オープン中",
+      "openingDate": "{{date}} オープン",
+      "countdown": {
+        "days": "日",
+        "hours": "時間",
+        "minutes": "分",
+        "seconds": "秒"
+      },
+      "modeLabel": "現在のモード",
+      "modeValue": "プライベートベータロック",
+      "modeDescription": "公開向けルートは意図的にローンチモードへリダイレクトされています。",
+      "cohortLabel": "最初のコホート",
+      "cohortValue": "教育者 + 教育機関",
+      "cohortDescription": "早期アクセスは、評価・復習・分析フローを検証できるユーザーに提供されます。"
+    },
+    "signals": {
+      "quizStudio": {
+        "title": "AI クイズスタジオ",
+        "description": "授業、スライド、PDF から構造化された評価を生成します。",
+        "value": "準備完了"
+      },
+      "secureExamRoom": {
+        "title": "セキュア試験ルーム",
+        "description": "公開トラフィック前に厳格に管理されたフォーカステスト体験。",
+        "value": "ロック中"
+      },
+      "learningRoadmaps": {
+        "title": "学習ロードマップ",
+        "description": "クイズ、学習ノート、復習パスを 1 つのフローに接続します。",
+        "value": "マッピング済み"
+      }
+    },
+    "reasonsSection": {
+      "eyebrow": "アクセスを閉じている理由",
+      "title": "ノイズではなく、コントロールでローンチする"
+    },
+    "reasons": {
+      "qualityFirst": {
+        "title": "品質第一",
+        "description": "実際の教育者からのフィードバックを基に、クイズ生成、採点ロジック、学習フローを最適化するため、最初のコホートは小規模に保たれます。"
+      },
+      "saferRollout": {
+        "title": "安全なロールアウト",
+        "description": "公開リリース前に試験のセキュリティ、ナビゲーションのガードレール、アカウントフローを強化するため、アクセスは制限されています。"
+      },
+      "directFeedbackLoop": {
+        "title": "直接的なフィードバックループ",
+        "description": "AI クイズ出力から復習ノート、分析の優先順位まで、初期ユーザーが最初にリリースされる内容に影響を与えます。"
+      }
+    },
+    "releaseSection": {
+      "eyebrow": "初日リリーススタック",
+      "title": "QuizMate AI が公開された時に開かれるもの"
+    },
+    "releaseStack": {
+      "assessmentBuilder": {
+        "title": "評価ビルダー",
+        "description": "AI クイズ作成、問題バンク、マルチフォーマットのソース取り込み。"
+      },
+      "examSecurity": {
+        "title": "試験セキュリティ",
+        "description": "時間制評価フローのための保護された評価モード。"
+      },
+      "progressAnalytics": {
+        "title": "進捗分析",
+        "description": "教師、学習者、チームのためのパフォーマンスシグナル。"
+      },
+      "studyCompanion": {
+        "title": "学習コンパニオン",
+        "description": "ロードマップ、ノート、各クイズを取り巻くスマートな復習サポート。"
+      }
+    },
+    "earlyAccess": {
+      "eyebrow": "早期アクセス",
+      "title": "公開ローンチ前に登録する",
+      "description": "QuizMate AI を一足先にテストし、評価品質に関するフィードバックを共有し、学校・大学・教育チーム向けのリリース優先順位の形成に参加するため、最初のロールアウトに参加してください。",
+      "registerAction": "早期テスターとして登録",
+      "contact": "お問い合わせ {{email}}"
+    },
+    "footer": {
+      "rights": "© {{year}} {{brandName}}. All rights reserved.",
+      "restricted": "ローンチモードが有効です。すべてのアプリケーションルートは制限されたままです。"
+    }
+  }
+}

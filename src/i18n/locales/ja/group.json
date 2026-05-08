@@ -1,0 +1,1068 @@
+{
+  "groupManage": {
+    "title": "グループ管理",
+    "subtitle": "あなたのグループを管理します",
+    "tabs": {
+      "dashboard": "ダッシュボード",
+      "members": "メンバー",
+      "settings": "設定"
+    },
+    "dashboard": {
+      "totalMembers": "総メンバー数",
+      "contributors": "貢献者",
+      "canUpload": "アップロード可能",
+      "progress": "進捗",
+      "noDescription": "説明はありません",
+      "topic": "トピック",
+      "roleDistribution": "役割分布",
+      "recentActivity": "最近のアクティビティ",
+      "learningProgress": "学習進捗",
+      "progressPlaceholder": "チャート & 分析がここに表示されます",
+      "ago": "前",
+      "activityJoined": "新しいメンバーがグループに参加しました",
+      "activityUploaded": "新しいソースがワークスペースにアップロードされました",
+      "activityQuiz": "メンバーがクイズを完了しました",
+      "activityRole": "メンバーの役割が更新されました"
+    },
+    "members": {
+      "all": "すべて",
+      "searchPlaceholder": "名前またはメールで検索...",
+      "name": "名前",
+      "email": "メール",
+      "role": "役割",
+      "upload": "アップロード",
+      "yes": "はい",
+      "no": "いいえ",
+      "reload": "再読み込み",
+      "refresh": "更新",
+      "headingEyebrow": "チームディレクトリ",
+      "headingTitle": "チームディレクトリ",
+      "headingDescription": "{{count}} メンバー全体のアクセス権を管理し、ワークスペースのアクティビティを監視します。",
+      "totalUsers": "総ユーザー数",
+      "pendingInvitations": "保留中の招待",
+      "securityHealth": "セキュリティヘルス",
+      "onlineNow": "{{count}} オンライン",
+      "onlineMetric": "現在オンライン",
+      "leaderCount": "{{count}} リーダー",
+      "contributorsMetric": "貢献者",
+      "contributorsHint": "共有学習コンテンツをサポートできます",
+      "uploadReadyMetric": "アップロード可能",
+      "uploadCoverageValue": "{{count}}/{{total}} 人 · {{percent}}%",
+      "accessHealth": "アクセスヘルス",
+      "accessHealthHint": "適切な人にアップロード権限を共有しましょう。",
+      "visibleNow": "{{count}} / {{total}} 表示中",
+      "memberFallback": "メンバー",
+      "columns": {
+        "member": "メンバー",
+        "role": "役割",
+        "status": "ステータス",
+        "lastActive": "最終アクティブ",
+        "uploadAccess": "アップロードアクセス",
+        "actions": "操作",
+        "upload": "アップロード",
+        "permissions": "権限"
+      },
+      "status": {
+        "active": "アクティブ",
+        "away": "離席",
+        "offline": "オフライン",
+        "unknown": "不明"
+      },
+      "time": {
+        "justNow": "たった今",
+        "minutesAgo": "{{count}} 分前",
+        "hoursAgo": "{{count}} 時間前",
+        "daysAgo": "{{count}} 日前",
+        "noActivity": "アクティビティなし"
+      },
+      "uploadGranted": "アップロード可能",
+      "uploadLimited": "閲覧と参加",
+      "removeConfirmEyebrow": "操作を確認",
+      "showing": "{{total}} 件中 1〜{{count}} 件のメンバーを表示",
+      "invitations": {
+        "manage": "管理",
+        "title": "招待を管理",
+        "description": "招待されたメールアドレスを追跡し、必要に応じて再送信します。",
+        "refresh": "招待を更新",
+        "loadFailed": "招待を読み込めませんでした。",
+        "resendFailed": "招待を再送信できませんでした。",
+        "cancelFailed": "招待をキャンセルできませんでした。",
+        "empty": "現在保留中の招待はありません。",
+        "emailFallback": "不明なメール",
+        "invitedBy": "招待者",
+        "sentAt": "送信日時",
+        "expiresAt": "有効期限",
+        "noDate": "未更新",
+        "copy": "コピー",
+        "resend": "再送信",
+        "resending": "送信中...",
+        "cancel": "キャンセル",
+        "cancelling": "キャンセル中...",
+        "status": {
+          "pending": "保留中",
+          "accepted": "承認済み",
+          "expired": "期限切れ",
+          "cancelled": "キャンセル済み"
+        }
+      },
+      "memberSeatLimitReached": "このグループには利用可能なメンバー枠がありません。",
+      "memberSeatUsage": "{{used}}/{{limit}} メンバー枠を使用中",
+      "permissionOn": "オン",
+      "permissionOff": "オフ",
+      "managePermissions": "管理",
+      "permissionsTitle": "権限",
+      "permissionsFor": "{{name}} の権限",
+      "permissionsAllFull": "すべてフル",
+      "permissionsAll": "すべて",
+      "savingPermissions": "保存中...",
+      "savePermissions": "権限を保存",
+      "permissionPresets": {
+        "member": "メンバー",
+        "contributor": "貢献者",
+        "analyst": "アナリスト",
+        "contentManager": "コンテンツマネージャー",
+        "resetToRoleDefaults": "役割のデフォルトにリセット"
+      },
+      "permissionCatalog": {
+        "sections": {
+          "content": "コンテンツ",
+          "materials": "教材",
+          "insights": "インサイト",
+          "admin": "管理"
+        },
+        "items": {
+          "CREATE_QUIZ": {
+            "label": "クイズを作成",
+            "description": "グループクイズを下書き・編集します。"
+          },
+          "PUBLISH_QUIZ": {
+            "label": "クイズを公開",
+            "description": "クイズドラフトをメンバーに公開します。"
+          },
+          "ASSIGN_QUIZ_AUDIENCE": {
+            "label": "対象者を割り当て",
+            "description": "クイズにアクセスできるメンバーを選択します。"
+          },
+          "CREATE_FLASHCARD": {
+            "label": "フラッシュカードを作成",
+            "description": "フラッシュカードセットを作成・更新します。"
+          },
+          "CREATE_MOCK_TEST": {
+            "label": "模擬試験を作成",
+            "description": "模擬試験を生成・管理します。"
+          },
+          "CREATE_ROADMAP": {
+            "label": "ロードマップを作成",
+            "description": "ロードマップコンテンツと学習フェーズを生成します。"
+          },
+          "CREATE_CHALLENGE": {
+            "label": "チャレンジを作成",
+            "description": "グループのチャレンジイベントを作成します。"
+          },
+          "DELETE_CONTENT": {
+            "label": "コンテンツを削除",
+            "description": "グループ学習コンテンツを削除します。"
+          },
+          "UPLOAD_MATERIAL": {
+            "label": "教材をアップロード",
+            "description": "学習教材をアップロード・更新します。"
+          },
+          "MODERATE_MATERIAL": {
+            "label": "教材を審査",
+            "description": "保留中の教材を承認、却下、レビューします。"
+          },
+          "VIEW_MEMBER_DASHBOARD": {
+            "label": "メンバーダッシュボードを表示",
+            "description": "メンバー統計と分析を開きます。"
+          },
+          "MANAGE_MEMBERS": {
+            "label": "メンバーを管理",
+            "description": "メンバーを招待、削除、権限管理します。"
+          },
+          "MANAGE_SETTINGS": {
+            "label": "設定を管理",
+            "description": "グループ設定と表示範囲を更新します。"
+          }
+        }
+      }
+    },
+    "settings": {
+      "groupInfo": "グループ情報",
+      "edit": "編集",
+      "save": "変更を保存",
+      "saveSuccess": "グループを更新しました!",
+      "saveError": "グループの更新に失敗しました。",
+      "subject": "科目",
+      "dangerZone": "危険ゾーン",
+      "deleteWarning": "グループを削除すると元に戻せません。すべてのデータが完全に削除されます。",
+      "deleteGroup": "このグループを削除",
+      "deleteConfirm": "本当によろしいですか?",
+      "confirmDelete": "はい、削除する",
+      "deleteError": "グループの削除に失敗しました。",
+      "leaderOnly": "グループリーダーのみが設定を変更できます。",
+      "actions": {
+        "title": "設定マネージャー",
+        "subtitle": "ページを整然と保つため、各設定グループをダイアログとして開きます。",
+        "profile": {
+          "title": "グループプロフィール",
+          "subtitle": "名前、目標、知識、ルール。"
+        },
+        "rankingPoints": {
+          "title": "ランキングポイント設定",
+          "subtitle": "クイズタイプごとのベース + ボーナスを調整します。"
+        }
+      },
+      "profileDialog": {
+        "title": "グループプロフィール",
+        "description": "プロフィール概要、知識範囲、ルール。ここから直接編集できます。"
+      },
+      "rankingPoints": {
+        "title": "ランキングポイント (RP) 設定",
+        "description": "リーダーが正解率ティアごとのベース + ボーナスを調整できます。セルを空のままにするとシステムデフォルトにフォールバックします。",
+        "tier": "ティア",
+        "type": {
+          "regular": "通常クイズ",
+          "roadmap": "ロードマップクイズ",
+          "mock": "模擬試験"
+        },
+        "row": {
+          "Base": "ベース",
+          "BonusPerfect": "ボーナス 100%",
+          "BonusHigh": "ボーナス 80〜99%",
+          "BonusMid": "ボーナス 60〜79%",
+          "BonusLow": "ボーナス <60%"
+        },
+        "fallbackHint": "セルを空のままにするとシステムデフォルトを使用します。デフォルト値はプレースホルダーとして表示されます。",
+        "previewHint": "正解率 100% で獲得する RP。",
+        "useDefault": "このフィールドをデフォルトに戻す",
+        "resetAll": "すべてデフォルトにリセット",
+        "saveSuccess": "ランキングポイント設定を保存しました。",
+        "saveError": "ランキングポイント設定の保存に失敗しました。",
+        "loadError": "ランキングポイント設定の読み込みに失敗しました。"
+      }
+    },
+    "notifications": {
+      "title": "グループ通知",
+      "subtitle": "リーダーがアナウンスを承認、貢献者は下書き可能、メンバーは公開済み項目を読みます。",
+      "createTitle": "アナウンスを作成",
+      "titlePlaceholder": "アナウンスのタイトル",
+      "contentPlaceholder": "アナウンスの詳細を記入...",
+      "publishNow": "今すぐ公開",
+      "submitForApproval": "承認のため送信",
+      "pendingApprovals": "承認待ち",
+      "noPending": "承認待ちのアナウンスはありません。",
+      "by": "投稿者",
+      "publisher": "公開者",
+      "waitingForApproval": "承認待ち",
+      "approve": "承認",
+      "publishedTitle": "公開された通知",
+      "noPublished": "公開されたアナウンスはまだありません。",
+      "publishedBadge": "公開済み",
+      "awaitingApproval": "承認待ち",
+      "pendingBadge": "保留中",
+      "seed": {
+        "roadmapTitle": "ロードマップチェックポイント開設",
+        "roadmapContent": "今週新しいチェックポイントが開かれました。金曜までに事前学習を完了してください。",
+        "quizTitle": "クイズレーン更新",
+        "quizContent": "貢献者が読解練習セットのクイズリフレッシュを提案しました。"
+      },
+      "toast": {
+        "published": "通知を公開しました。",
+        "submitted": "通知をリーダー承認用に送信しました。",
+        "approved": "通知を承認し公開しました。"
+      }
+    }
+  },
+  "groupProfileConfig": {
+    "common": {
+      "step": "ステップ",
+      "stepCount": "ステップ {{current}} / {{total}}",
+      "back": "戻る",
+      "continue": "続ける",
+      "saving": "保存中...",
+      "retry": "再試行",
+      "select": "選択",
+      "selected": "選択済み",
+      "close": "閉じる",
+      "later": "あとで",
+      "finish": "保存して完了",
+      "finishIncomplete": "完了するにはレビュー",
+      "enabled": "有効",
+      "disabled": "無効"
+    },
+    "messages": {
+      "basicsSaved": "グループの基本情報を保存しました。",
+      "basicsSaveError": "グループの基本情報を保存できません。",
+      "confirmSaveError": "グループのセットアップを完了できません。",
+      "completed": "グループセットアップが更新されました。"
+    },
+    "validation": {
+      "groupName": "グループ名を入力してください。",
+      "knowledge": "共有する知識範囲を記述してください。",
+      "analysisLoading": "Quizmate AI がドメインを分析中です。少々お待ちください。",
+      "analysisError": "Quizmate AI はまだドメインを推測できませんでした。再度分析してください。",
+      "analysisMissing": "Quizmate AI がドメインを推測できるよう、知識範囲を入力してください。",
+      "domain": "Quizmate AI の提案から 1 つのドメインを選択してください。",
+      "learningMode": "学習モードを選択してください。",
+      "groupGoal": "グループの学習目標を入力してください。",
+      "examName": "試験名を入力してください。"
+    },
+    "tabs": {
+      "basic": {
+        "title": "基本とグランドルール",
+        "description": "グループ名と共有運用ルール"
+      },
+      "learning": {
+        "title": "共有学習プロフィール",
+        "description": "知識、ドメイン、チームの学習リズム"
+      }
+    },
+    "stepOne": {
+      "title": "グループの基本をセットアップ",
+      "description": "グループ名を付け、共有運用メモを追加して、全員が同じ学習リズムに従えるようにします。",
+      "groupName": "グループ名",
+      "groupNameEyebrow": "グループ識別",
+      "groupNameHint": "メンバーがすぐに認識できるよう、短く分かりやすい名前を使用してください。",
+      "groupNamePlaceholder": "例: TOEIC 750+ Sprint",
+      "defaultRole": "参加時のデフォルト役割",
+      "memberDescription": "通常の学習者がグループに参加する場合に最適。",
+      "contributorDescription": "学習コンテンツやアクティビティに貢献できるメンバーに最適。",
+      "rules": "ルールまたは共有メモ",
+      "rulesEyebrow": "共有グランドルール",
+      "rulesHint": "学習リズム、共同作業ルール、教材共有規範など、グループ全員が従うべきルールを記録します。",
+      "rulesPlaceholder": "例: 週 2 回チェックインを実施、トピック別に質問、教材共有時はソースを引用。"
+    },
+    "stepTwo": {
+      "title": "共有学習プロフィールをセットアップ",
+      "description": "このステップでは共有知識範囲、AI ドメイン、グループ全体のデフォルト学習リズムを定義します。",
+      "workflow": {
+        "eyebrow": "クイックデザイン",
+        "title": "3 つの集中した選択でセットアップを完了",
+        "description": "グループが学習している内容を記述し、AI 提案のドメインを選び、学習フローに合うオプションを有効化します。",
+        "describeTitle": "知識を記述",
+        "describeDescription": "グループが学習または準備している内容を簡潔に説明します。",
+        "domainTitle": "ドメインを確定",
+        "domainDescription": "AI がこのワークスペースを正しく理解できるよう、適切なベースラインを選択します。",
+        "modeTitle": "学習スタイルを選択",
+        "modeDescription": "グループが新規学習に焦点を当てるか復習かを決定します。"
+      },
+      "knowledgeLabel": "共有グループ知識",
+      "knowledgePlaceholder": "例: 我々のグループは JLPT N3 を学習し、トピック別に文法、語彙、読解練習を強化しています。",
+      "knowledgeHint": "説明が具体的であるほど、Quizmate AI はグループに適したドメインを提案できます。",
+      "domainSuggestions": "Quizmate AI ドメイン提案",
+      "selectedDomain": "このグループ用に選択されたドメイン",
+      "selectedDomainHint": "このドメインがロードマップ提案、クイズ、学習アクティビティの共有ベースラインになります。",
+      "learningMode": "学習モード",
+      "modePrompt": "グループの主要な学習リズムを選択",
+      "studyNewDescription": "グループが新しい教材を学習し明確なロードマップが必要なときに最適。",
+      "reviewDescription": "グループが既に学習し構造化された復習フローを望み、後で模擬試験を作成する場合もあるときに最適。",
+      "mockTestDescription": "グループが試験練習をしてテストで進捗を追跡したいときに最適。",
+      "examName": "試験名",
+      "examNamePlaceholder": "例: JLPT N3 12 月",
+      "groupGoal": "グループ学習目標",
+      "groupGoalPlaceholder": "例: 8 週間で 20 文法テーマと 1500 語彙項目を完了。",
+      "learningSwitches": "学習オプション",
+      "learningSwitchesHint": "グループの運用に応じてロードマップまたは入会評価をオンにします。",
+      "analysis": {
+        "loading": "Quizmate AI が知識範囲を分析し最適なドメインを提案中です。",
+        "error": "Quizmate AI はまだ信頼できるドメイン提案を生成できませんでした。今すぐ再試行できます。",
+        "interpretingLabel": "Quizmate AI はこの知識を次のように理解しています",
+        "tooBroad": "現在の知識範囲はまだ広いです。より精密な提案が必要なら、もう少し焦点を追加してください。",
+        "emptyDomainTitle": "ドメインがまだ準備できていません",
+        "emptyDomainDescription": "Quizmate AI は現在の説明からドメイン提案を構築できませんでした。詳細を追加するか分析を再実行してください。"
+      },
+      "roadmap": {
+        "title": "共有ロードマップを有効化",
+        "description": "共有学習構造を作成し、グループ全体がより明確なペースを持てるようにします。",
+        "studyNewDescription": "このモードはロードマップをデフォルトでオンにし、グループが新規学習のためのより明確なパスを持てるようにします。",
+        "studyNewBadge": "ロードマップがデフォルトで有効",
+        "defaultOn": "デフォルトオン"
+      },
+      "entryAssessment": {
+        "title": "入会評価を必須にする",
+        "description": "新規メンバーが共有学習フローに参加する前にこれを適用します。"
+      },
+      "ready": {
+        "title": "準備チェック",
+        "knowledge": "知識",
+        "domain": "ドメイン",
+        "mode": "学習リズム",
+        "pending": "まだ必要"
+      },
+      "sidebar": {
+        "eyebrow": "コントロールパネル",
+        "title": "完了前のクイックビュー",
+        "readyBadge": "準備完了"
+      }
+    }
+  },
+  "groupWorkspace": {
+    "bootstrap": {
+      "title": "グループワークスペースを準備中",
+      "description": "ドラフトワークスペースの準備ができ次第、セットアップウィザードが開きます。"
+    },
+    "chatPanel": {
+      "openDocumentsHub": "ドキュメントハブを開く"
+    },
+    "shell": {
+      "defaultGroupName": "グループワークスペース",
+      "memberCount": "{{count}} メンバー",
+      "openSidebar": "サイドバーを開く",
+      "closeSidebar": "サイドバーを閉じる",
+      "nav": {
+        "dashboard": "ダッシュボード",
+        "personalDashboard": "個人ダッシュボード",
+        "documents": "ドキュメント",
+        "roadmap": "ロードマップ",
+        "quiz": "クイズ",
+        "flashcard": "フラッシュカード",
+        "mockTest": "模擬試験",
+        "challenge": "チャレンジ",
+        "ranking": "ランキング",
+        "notifications": "通知",
+        "members": "メンバー",
+        "memberStats": "メンバー統計",
+        "wallet": "ウォレット",
+        "settings": "設定"
+      },
+      "expandSidebar": "サイドバーを展開",
+      "collapseSidebar": "サイドバーを折りたたみ"
+    },
+    "studio": {
+      "systemDashboard": "概要",
+      "personalDashboard": "マイ概要",
+      "documents": "ドキュメント",
+      "activity": "アクティビティ",
+      "memberManagement": "メンバー",
+      "memberStatus": "メンバー",
+      "memberStats": "メンバー統計",
+      "wallet": "ウォレット",
+      "groupStudy": "学習",
+      "groupActivity": "アクティビティ",
+      "groupManage": "管理",
+      "requireUploadBeforeActions": "この機能を使用する前に、ドキュメントタブで少なくとも 1 つのドキュメントをアップロードしてください。"
+    },
+    "memberStats": {
+      "eyebrow": "メンバードリルダウン",
+      "title": "メンバー統計",
+      "description": "概要の後にこのタブを使用: 一度に 1 人の学習者を検査し、学習スナップショットを更新し、集中作業を割り当てます。",
+      "hero": {
+        "questionValue": "メンバーごとの判断",
+        "totalRosterLabel": "ロスター範囲",
+        "totalRosterNote": "レビューに利用可能なすべてのメンバー。",
+        "activeRowsLabel": "学習データ",
+        "activeRowsValue": "{{count}}/{{total}} 表示",
+        "activeRowsNote": "{{count}} 行は既に生成されたスナップショットを持っています。",
+        "visibleAverageLabel": "表示中の平均結果",
+        "visibleAverageNote": "現在表示されている行全体の平均。"
+      },
+      "scope": {
+        "detailTitle": "メンバーごとのドリルダウン",
+        "detailBody": "受験回数、合格数、平均結果、合格率、AI クラスは各行に表示されます。",
+        "refreshTitle": "スナップショット制御",
+        "refreshBody": "グループビュー全体を再生成せずに 1 メンバーを更新します。",
+        "actionTitle": "集中アクション",
+        "actionBody": "ちょうど 1 人の学習者にクイズを割り当てたりフォローアップを準備します。"
+      },
+      "totalMembers": "{{count}} メンバー",
+      "readOnlyBadge": "貢献者は読み取り専用",
+      "empty": "メンバーデータはまだありません。",
+      "quizDone": "クイズ完了",
+      "avgScore": "平均結果",
+      "accuracy": "正解率",
+      "aiClass": "AI クラス",
+      "assignQuiz": "クイズを割り当て",
+      "assignQuizDisabled": "クイズを割り当て(リーダーのみ)",
+      "roadmapByMember": "メンバーロードマップを作成",
+      "roadmapPending": "メンバー固有のロードマップアクションはバックエンドサポート待ちです。",
+      "contributorReadOnly": "貢献者はメンバー統計の閲覧のみ可能です。",
+      "assignRequiredQuiz": "まずクイズを選択してください。",
+      "assignMissingMember": "メンバーが見つかりませんでした。このダイアログを再度開いてください。",
+      "assignSuccess": "クイズを正常に割り当てました。",
+      "assignFailed": "クイズを割り当てられませんでした。",
+      "pageInfo": "ページ {{page}}/{{totalPages}} · {{count}} メンバー",
+      "prev": "前へ",
+      "next": "次へ",
+      "assignDialogTitle": "クイズを割り当て",
+      "assignDialogDescription": "{{name}} に割り当てるクイズを 1 つ選択します。",
+      "pickQuiz": "クイズを選択",
+      "pickQuizPlaceholder": "1 つのクイズを選択",
+      "noQuiz": "グループクイズがまだ見つかりません。",
+      "openQuizTab": "クイズタブを開く",
+      "cancel": "キャンセル",
+      "confirmAssign": "今すぐ割り当て",
+      "assigning": "割り当て中..."
+    },
+    "forms": {
+      "loadingMaterials": "共有ドキュメントを読み込み中...",
+      "loadMaterialsError": "共有ドキュメントを読み込めません。このフォームを閉じて再度開いてください。",
+      "workspaceMaterialsEmpty": "共有ドキュメントはまだありません。ドキュメントタブでファイルをアップロードし、このフォームから直接選択してください。",
+      "sourceSelectHint": "この作成のために AI が使用するドキュメントを選択します。"
+    },
+    "challenge": {
+      "title": "チャレンジ",
+      "description": "リアルタイムのチャレンジマッチでグループメンバーと競います。",
+      "badge": "チャレンジ",
+      "noItems": "チャレンジはまだありません。",
+      "createChallenge": "チャレンジを作成",
+      "tabs": {
+        "scheduled": "予定",
+        "live": "ライブ",
+        "finished": "終了"
+      },
+      "modes": {
+        "all": "すべて",
+        "freeForAll": "フリーフォーオール",
+        "teamBattle": "チームバトル",
+        "soloBracket": "1v1 トーナメント"
+      },
+      "list": {
+        "inviteOnly": "招待のみ",
+        "unpublished": "未公開",
+        "participantCount": "{{count}} 参加者",
+        "started": "開始済み",
+        "startsIn": "開始まで {{value}}",
+        "countdownWithDays": "{{days}}日 {{hours}}時間 {{minutes}}分 {{seconds}}秒",
+        "countdownWithHours": "{{hours}}時間 {{minutes}}分 {{seconds}}秒",
+        "countdownWithMinutes": "{{minutes}}分 {{seconds}}秒",
+        "myStatus": {
+          "finished": "終了",
+          "playing": "進行中",
+          "registered": "登録済み"
+        }
+      },
+      "cancelDialogTitle": "このチャレンジをキャンセルしますか?",
+      "cancelDialogDescription": "本当にこのチャレンジをキャンセルしますか? メンバーは参加できなくなり、スケジュールは削除されます。",
+      "cancelDialogBack": "閉じる",
+      "cancelDialogConfirm": "チャレンジをキャンセル",
+      "finishDialogTitle": "今すぐこのチャレンジを終了しますか?",
+      "finishDialogDescription": "リーダーボードがロックされ、チャレンジは FINISHED に移行します。手動終了は全員が提出した後のみ許可されます。これは取り消せません。",
+      "finishDialogBack": "閉じる",
+      "finishDialogConfirm": "今すぐ終了",
+      "snapshotQuizDefaultTitle": "チャレンジマッチ",
+      "viewSnapshotQuiz": "マッチを開く",
+      "snapshotQuizHint": "クイックマッチステータス。",
+      "quizSnapshotReviewDraftTitle": "チャレンジマッチ(レビュー&編集のみ)",
+      "quizSnapshotReviewDraftBody": "このマッチはチャレンジに属し、共有グループコンテンツリストには含まれません。メンバーはチャレンジ開始時のみ受験します。Check タブでコンテンツをレビューし、Compose で編集、準備ができたら Publish してください — 通常のグループ割り当てのようなグループ全体配布はありません。",
+      "quizSnapshotReviewNoTakeHint": "このマッチはチャレンジ開始時(スケジュールまたはリーダーが実行時)のみ開きます。ランキングはチャレンジごとです — この画面からマッチを開始することはできません。",
+      "leaderboardTitle": "リーダーボード",
+      "editSchedule": "スケジュールと詳細を編集",
+      "editDialogTitle": "チャレンジを更新",
+      "editDialogDescription": "予定開始まで 1 時間以上残っているときのみ編集できます。タイムゾーンと期間を再確認してください。",
+      "editTitleLabel": "チャレンジタイトル",
+      "editDescriptionLabel": "説明",
+      "editStartLabel": "開始",
+      "editEndLabel": "終了",
+      "editSave": "変更を保存",
+      "phase": {
+        "SCHEDULED": "未開始",
+        "LIVE": "ライブ",
+        "FINISHED": "終了",
+        "CANCELLED": "キャンセル"
+      },
+      "leaderFairPlayQuizHint": "あなたは競技に参加しています: マッチが公開された後は問題をプレビューできません。まだドラフトの間は作成とレビューが可能です。",
+      "quizStatus": {
+        "DRAFT": "ドラフト",
+        "PROCESSING": "生成中",
+        "ACTIVE": "準備完了",
+        "REVIEW_PENDING": "レビュー待ち",
+        "ERROR": "生成エラー"
+      },
+      "reviewContributorsTitle": "マッチレビュアー",
+      "reviewContributorsHint": "割り当てられたメンバーはこのチャレンジに登録できません。既に参加者である人を割り当てることはできません。",
+      "reviewContributorPickLabel": "グループメンバー",
+      "reviewContributorPickPlaceholder": "メンバーを選択…",
+      "reviewContributorAdd": "追加",
+      "reviewContributorRemove": "削除",
+      "reviewContributorCannotRegister": "あなたはマッチレビュアーとして割り当てられているため、このチャレンジに登録できません。",
+      "reviewInviteeNotice": "あなたはこのチャレンジマッチをレビューするよう招待されました。「マッチを開く」 → Check タブを開く: マッチを OK としてマークするか、準備ができたら APPROVED 投票を提出してください。開始時刻にレビュー要件が満たされると、システムが自動的にチャレンジを開きます。",
+      "reviewInviteeShortHint": "上のチャレンジマッチブロックの「マッチを開く」をクリックし、「Check」タブを開いてください。",
+      "reviewQuizNotReadyHint": "マッチはまだプレビューできません(例: まだ生成中)。後ほど再度お試しください。"
+    },
+    "members": {
+      "loading": "メンバーを読み込み中...",
+      "empty": "メンバーデータはまだありません。"
+    },
+    "ranking": {
+      "title": "グループランキング",
+      "description": "現在のトップ 3 とグループの完全な RP ボード。",
+      "loading": "全クイズからデータを集計中…",
+      "error": "ランキングデータを読み込めません。",
+      "retry": "再試行",
+      "refresh": "更新",
+      "empty": "まだクイズを完了したメンバーはいません。",
+      "noData": "データはまだありません。",
+      "meta": "{{quizCount}} 件のアクティブクイズ · {{memberCount}} 参加メンバーから集計",
+      "tableTitle": "ランキングポイント",
+      "priority": "RP でランキング",
+      "podiumTitle": "現在のトップ 3",
+      "podiumSubtitle": "リーディングの 3 名がグループのペースを設定しています。",
+      "detail": {
+        "title": "なぜここにランクされているのか?",
+        "description": "共有公開エリアでの有効な受験から獲得した詳細な RP。",
+        "currentRank": "現在のランク",
+        "totalRp": "総 RP",
+        "evidenceTitle": "RP 履歴",
+        "evidenceHint": "各クイズは最初の公式受験のみカウントします。",
+        "empty": "詳細な RP 証拠はまだありません。",
+        "formula": "ベース {{base}} · ボーナス {{bonus}}",
+        "breakdown": {
+          "regular": "通常クイズ",
+          "roadmap": "ロードマップクイズ",
+          "mockTest": "模擬試験"
+        },
+        "types": {
+          "REGULAR": "通常クイズ",
+          "ROADMAP": "ロードマップクイズ",
+          "MOCK_TEST": "模擬試験"
+        }
+      },
+      "snapshotTitle": "クイックスナップショット",
+      "snapshotStats": {
+        "quizzes": "RP 対象クイズ",
+        "members": "ボード上のメンバー",
+        "leaderRp": "リーディング RP"
+      },
+      "note": "共有公開コンテンツのみカウントされます。各クイズはスパム防止のため最初の公式受験のみ使用します。",
+      "topBadge": "トップ 1",
+      "topBadges": {
+        "1": "トップ 1",
+        "2": "トップ 2",
+        "3": "トップ 3"
+      },
+      "completedValue": "{{count}} クイズ",
+      "columns": {
+        "rank": "ランク",
+        "member": "メンバー",
+        "points": "RP",
+        "quiz": "クイズ",
+        "roadmap": "ロードマップ",
+        "mockTest": "模擬試験",
+        "accuracy": "正解率",
+        "completed": "完了",
+        "totalScore": "総スコア"
+      },
+      "metrics": {
+        "accuracy": {
+          "title": "正解率",
+          "subtitle": "各クイズは最初の公式受験を使用し、正解率を平均化"
+        },
+        "completion": {
+          "title": "クイズ完了",
+          "subtitle": "少なくとも 1 回完了したクイズ数でランキング",
+          "value": "{{count}} クイズ"
+        }
+      }
+    },
+    "profile": {
+      "noRules": "追加ルールはまだありません。"
+    }
+  },
+  "groupReview": {
+    "sections": {
+      "overview": "概要",
+      "materials": "教材",
+      "moderation": "警告",
+      "quiz": "クイズ",
+      "members": "メンバー",
+      "performance": "パフォーマンス",
+      "roadmap": "ロードマップ",
+      "logs": "ログ"
+    },
+    "learningMode": {
+      "STUDY_NEW": "新しい知識を学ぶ",
+      "REVIEW": "グループ復習",
+      "MOCK_TEST": "グループ模擬試験"
+    },
+    "role": {
+      "leader": "リーダー",
+      "contributor": "貢献者",
+      "member": "メンバー"
+    },
+    "status": {
+      "approved": "承認済み",
+      "needsRecheck": "再チェックが必要",
+      "rejected": "却下",
+      "needsReupload": "再アップロード必要",
+      "processing": "処理中",
+      "uploading": "アップロード中"
+    },
+    "fallback": {
+      "groupName": "学習グループ",
+      "description": "グループ学習用のレビュー UI スペース。",
+      "untitledMaterial": "無題のドキュメント",
+      "member": "メンバー",
+      "reviewer": "リーダー",
+      "contributorFallback": "貢献者",
+      "quizMateUser": "QuizMate ユーザー"
+    },
+    "header": {
+      "refresh": "更新",
+      "groupProfile": "グループプロフィール",
+      "upload": "アップロード",
+      "inviteMember": "メンバーを招待"
+    }
+  },
+  "groupWorkspacePage": {
+    "upload": {
+      "failedDefault": "アップロードに失敗しました。",
+      "unknownFile": "不明なファイル",
+      "insufficientCredit": "ワークスペースクレジットが不足: {{needed}} QMC 必要、利用可能 {{available}} QMC。",
+      "cannotUploadInvalidWorkspaceId": "アップロードできません: workspaceId が無効です。",
+      "completeProfileBeforeUpload": "教材をアップロードする前にグループプロフィールを完成してください。",
+      "noUploadPermission": "教材をアップロードする権限がありません。",
+      "chooseAtLeastOneFile": "少なくとも 1 つのファイルを選択してください。",
+      "unsupportedOrEmpty": "サポートされていないか空のファイル: {{files}}。",
+      "unknownFileName": "不明",
+      "noValidFileLeft": "アップロード可能な有効なファイルが残っていません。",
+      "serverNoMaterialId": "サーバーが material id を返しませんでした。",
+      "submittedCount": "{{count}} 件のファイルをグループレビューキューに送信しました。",
+      "leaderApprovalRequired": "新しい教材は、あなたが承認した後にのみ共有ソースリストに表示されます。",
+      "waitingLeaderApproval": "アップロードはグループ全体が使用する前にリーダー承認を待っています。",
+      "insufficientQmcNeedPlan": "グループに十分な QMC がありません。続けるにはプランを購入してください — その後グループウォレットでクレジットを購入できます。",
+      "insufficientQmcNeedCredits": "グループに十分な QMC がありません。グループウォレットを開いてクレジットを購入してください。",
+      "allUploadsFailed": "すべてのアップロードに失敗しました。",
+      "filesFailedTitle": "{{count}} 件のファイルをアップロードできませんでした",
+      "filesFailedTitlePlural": "{{count}} 件のファイルをアップロードできませんでした",
+      "filesFailedDescription": "下記の失敗したファイルをレビューして再試行してください。",
+      "moreFile": "+{{count}} 件のファイル",
+      "moreFiles": "+{{count}} 件のファイル"
+    },
+    "queue": {
+      "uploading": "ファイルをサーバーにアップロード中。",
+      "processing": "AI がこの教材をグループプロフィールと照合チェック中。",
+      "activeLeaderNoReview": "AI 処理が完了しました。この教材は共有ソースリストに追加されました。",
+      "activeLeaderReview": "AI 処理が完了しました。今すぐ共有ソースリストに承認できます。",
+      "activeMemberReview": "AI 処理が完了しました。この教材はリーダー承認を待っています。",
+      "warnLeader": "AI が警告を見つけました。承認前に注意深くレビューしてください。",
+      "warnMember": "AI がこの教材をフラグしました。リーダーレビュー待ちです。",
+      "error": "システムはこの教材の処理を完了できませんでした。",
+      "reject": "教材はこのグループワークスペースから却下されました。",
+      "waitingUpdate": "この教材は更新を待っています。",
+      "officialQueue": "公式グループレビューキュー",
+      "sessionQueue": "このセッションから送信",
+      "materialFallback": "教材"
+    },
+    "realtime": {
+      "activeLeaderSuccess": "「{{title}}」が AI チェックを通過し、共有ソースリストに追加されました。",
+      "activePending": "「{{title}}」が AI チェックを通過し、リーダー承認を待っています。",
+      "warned": "「{{title}}」に警告があり、リーダーレビューが必要です。",
+      "errorProcessing": "システムは「{{title}}」の処理を完了できませんでした。",
+      "rejected": "「{{title}}」はこのグループワークスペースから却下されました。"
+    },
+    "time": {
+      "noDate": "日付なし",
+      "noRecentActivity": "最近のアクティビティなし",
+      "justNow": "たった今",
+      "hoursAgo": "{{count}} 時間前",
+      "daysAgo": "{{count}} 日前"
+    },
+    "log": {
+      "groupCreated": "グループ作成",
+      "groupProfileUpdated": "プロフィール更新",
+      "invitationSent": "招待送信",
+      "invitationAccepted": "招待承認",
+      "memberJoined": "メンバー参加",
+      "memberRemoved": "メンバー削除",
+      "memberRoleUpdated": "役割更新",
+      "quizCreated": "クイズ作成",
+      "quizPublished": "クイズ公開",
+      "quizAudienceUpdated": "クイズ割り当て",
+      "quizSubmitted": "クイズ提出",
+      "groupActivity": "グループアクティビティ",
+      "system": "システム"
+    },
+    "planNames": {
+      "groupBase": "Group Base"
+    },
+    "bootstrap": {
+      "creating": "グループワークスペースを作成中...",
+      "unableToCreate": "グループワークスペースを作成できません。"
+    },
+    "errors": {
+      "leaderOnlyInvite": "リーダーのみがメンバーをグループに招待できます。",
+      "cannotOpenChallengeDraft": "チャレンジドラフトクイズを開けませんでした。権限を確認するか再試行してください。",
+      "cannotOpenQuiz": "このクイズを開けませんでした。権限を確認するか再試行してください。",
+      "noWorkspace": "ワークスペースが見つかりません",
+      "noRoadmap": "ロードマップが見つかりません",
+      "unableToDeleteData": "ワークスペースデータを削除できません。再試行してください。"
+    },
+    "toast": {
+      "inviteSent": "招待を正常に送信しました!",
+      "materialApproved": "教材をグループに承認しました。",
+      "materialRejected": "教材をグループから却下しました。",
+      "materialDeleted": "教材を削除しました。",
+      "materialsDeleted": "{{count}} 件の教材を削除しました。",
+      "resetDataSuccess": "ドキュメントを削除しました。グループオンボーディングを更新できます。",
+      "quizCreated": "クイズを正常に作成しました。",
+      "memberCannotCreateQuiz": "メンバーはクイズを作成できません。",
+      "memberCannotCreateFlashcard": "メンバーはフラッシュカードを作成できません。",
+      "memberCannotCreateRoadmap": "メンバーはロードマップを作成できません。",
+      "memberCannotCreateRoadmapPhases": "メンバーはロードマップフェーズを作成できません。",
+      "memberCannotCreateMockTest": "メンバーは模擬試験を作成できません。",
+      "noRoadmapConfig": "このグループにはまだロードマップ設定が見つかりません。",
+      "selectMaterialBeforeRoadmap": "ロードマップを生成する前に少なくとも 1 つの教材を選択してください。",
+      "roadmapGenerationStarted": "ロードマップ生成を開始しました。",
+      "roadmapGenerationFailed": "ロードマップの生成に失敗しました。",
+      "completeProfileBeforeStudio": "スタジオタブを使用する前にグループプロフィールを完成してください。",
+      "featureNotAvailableForRole": "この機能はあなたの役割では利用できません。",
+      "removedFromGroup": "あなたはこのグループから削除されました。"
+    },
+    "planUpgrade": {
+      "workspaceAnalytics": "ワークスペース分析",
+      "createRoadmap": "学習ロードマップを作成"
+    },
+    "activity": {
+      "title": "最近のグループアクティビティ",
+      "description": "グループワークスペースログからの実イベント。",
+      "loading": "アクティビティを読み込み中...",
+      "empty": "まだアクティビティは記録されていません。"
+    },
+    "personalDashboard": {
+      "memberFallback": "メンバー",
+      "roleLabel": "現在の役割",
+      "teamMembers": "チームメンバー",
+      "sharedSources": "共有ソース",
+      "joinedAt": "参加日時",
+      "pendingConfirmation": "確認待ち",
+      "welcomeBadge": "ようこそ",
+      "memberSpaceBadge": "メンバースペース",
+      "welcomeTo": "ようこそ",
+      "hello": "こんにちは、",
+      "descriptionFallback": "ここからグループプロフィールを確認し、誰がいるかを見て、最新のアクティビティをフォローできます。",
+      "openRoadmap": "ロードマップを開く",
+      "viewActivity": "アクティビティを表示",
+      "hideWelcome": "ウェルカムを非表示",
+      "quickRead": "グループクイックリード",
+      "domain": "ドメイン",
+      "learningMode": "学習モード",
+      "examTarget": "試験 / ターゲット",
+      "profileTitle": "メンバー向けグループプロフィール",
+      "profileRefreshing": "グループプロフィールを更新中...",
+      "profileLoaded": "下記すべては実際のワークスペースプロフィールから読み込まれます。",
+      "knowledgeFocus": "知識フォーカス",
+      "rulesAndNorms": "ルールと規範",
+      "groupLearningGoal": "グループ学習目標",
+      "preLearningRequirement": "事前学習要件",
+      "preLearningRequired": "共有作業を開始する前に必須。",
+      "preLearningOptional": "現在のレベルに応じて任意。",
+      "peopleTitle": "このグループの人々",
+      "peopleDescription": "メンバーが誰と学習しているか分かるクイックスナップショット。",
+      "youBadge": "あなた"
+    },
+    "profileGate": {
+      "checkingTitle": "グループプロフィールを確認中...",
+      "completeTitle": "続ける前にグループプロフィールを完成させてください",
+      "checkingDescription": "QuizMate AI がこのグループの現在の設定状態を読み込んでいます。",
+      "completeDescription": "リーダーはまず共有グループプロフィールを完成する必要があります。それまで、メンバーの招待、教材アップロード、スタジオタブの使用はロックされたままです。",
+      "continueSetup": "セットアップを続ける"
+    },
+    "roadmap": {
+      "setupPromptTitle": "グループのロードマップをセットアップ",
+      "setupPromptDescription": "グループ学習計画にロードマップが合うよう、まず知識量、ペース、総日数、毎日の学習時間を設定します。",
+      "setupButton": "ロードマップをセットアップ",
+      "panelButton": "ロードマップパネル"
+    },
+    "setupComplete": "グループセットアップ完了!"
+  },
+  "acceptInvitationPage": {
+    "empty": "N/A",
+    "invalidLink": "招待リンクが無効です。メールを再確認してください。",
+    "loadFail": "この招待を読み込めません。",
+    "acceptFail": "この招待を確認できません。",
+    "welcomeToast": "ようこそ! グループに参加しました。",
+    "loading": {
+      "title": "グループ招待を読み込み中",
+      "subtitle": "参加を確認する前にグループ詳細が表示されます。"
+    },
+    "errorState": {
+      "title": "招待を開けません",
+      "backHome": "ホームに戻る",
+      "registerAccount": "アカウントを作成"
+    },
+    "hero": {
+      "eyebrow": "グループ招待",
+      "fallbackTitle": "グループ参加招待",
+      "fallbackDescription": "QuizMate AI のグループワークスペースに招待されました。下の詳細を確認して参加前に確認してください。"
+    },
+    "infoLabels": {
+      "group": "グループ",
+      "description": "説明",
+      "invitedBy": "招待者",
+      "invitedEmail": "招待されたメール",
+      "domain": "ドメイン",
+      "learningMode": "学習モード",
+      "exam": "試験",
+      "groupGoal": "グループ目標",
+      "expiresAt": "確認期限"
+    },
+    "detailLabels": {
+      "knowledge": "知識コンテンツ",
+      "rules": "グループルール"
+    },
+    "sidebar": {
+      "eyebrow": "参加フロー",
+      "title": "グループに参加する前に確認",
+      "step1Title": "1. 招待されたメールを使っていることを確認",
+      "step1Description": "確認に使用するアカウントは、招待を受けたメールと一致する必要があります。これによりシステムが正しいグループにあなたを配置します。",
+      "step2Title": "2. ウェブで確認",
+      "step2Description": "確認後、ワークスペースに直接移動し、グループ情報のあるウェルカム画面を表示します。"
+    },
+    "expired": {
+      "title": "招待の有効期限が切れました",
+      "description": "このグループに参加したい場合は、リーダーが新しい招待を送信する必要があります。"
+    },
+    "guest": {
+      "title": "確認のためサインイン",
+      "description": "続けるにはメール <1>{{email}}</1> を使用するアカウントでサインインする必要があります。",
+      "loginButton": "サインインして確認",
+      "registerButton": "新しいアカウントを作成"
+    },
+    "mismatch": {
+      "title": "間違ったアカウントでサインインしています",
+      "description": "現在 <1>{{currentEmail}}</1> としてサインインしていますが、この招待は <3>{{invitedEmail}}</3> 用です。",
+      "switchButton": "正しいメールでサインイン"
+    },
+    "accepted": {
+      "title": "既にこのグループに参加しています",
+      "description": "ワークスペースは準備完了です。グループ情報を開いて学習を開始できます。",
+      "openButton": "グループワークスペースを開く"
+    },
+    "ready": {
+      "title": "アカウントは有効、参加準備完了",
+      "description": "確認後、このグループのウェルカムページに直接移動します。",
+      "confirmButton": "確認してグループに参加",
+      "laterButton": "あとで",
+      "laterToast": "招待リンクを再度開くために、いつでもこのメールに戻ることができます。"
+    }
+  },
+  "createChallengeWizard": {
+    "steps": {
+      "mode": "モード",
+      "quiz": "コンテンツを選択",
+      "schedule": "スケジュール",
+      "registration": "登録",
+      "review": "レビュー"
+    },
+    "mode": {
+      "personalLabel": "フリーフォーオール",
+      "personalDesc": "全員が同じマッチを受け、リーダーボードはスコアと時間でランキング。",
+      "teamLabel": "チームバトル",
+      "teamDesc": "チームサイズを設定するか、マッチ開始時にシステムにチームを自動バランスさせます。",
+      "soloLabel": "1v1 トーナメント",
+      "soloDesc": "4/8/16/32 スロットのブラケットを選択し、参加者数をブラケットに合わせます。"
+    },
+    "footer": {
+      "cancel": "キャンセル",
+      "back": "戻る",
+      "next": "次へ",
+      "submit": "チャレンジを作成"
+    }
+  },
+  "challengeDetailView": {
+    "back": "戻る",
+    "actions": {
+      "publish": "チャレンジを公開",
+      "register": "登録",
+      "acceptInvite": "招待を受諾",
+      "continueAttempt": "受験を続ける",
+      "startAttempt": "受験を開始",
+      "cancel": "チャレンジをキャンセル",
+      "start": "チャレンジを開始",
+      "finish": "チャレンジを終了"
+    },
+    "participantStatus": {
+      "finished": "終了",
+      "playing": "進行中",
+      "waiting": "待機中"
+    }
+  },
+  "challengeLeaderboard": {
+    "empty": "参加者はまだいません",
+    "memberHeader": "メンバー",
+    "memberFallback": "メンバー",
+    "scoreHeader": "スコア",
+    "accuracyHeader": "正解率",
+    "timeHeader": "時間",
+    "statusHeader": "ステータス",
+    "statusFinished": "終了",
+    "statusPlaying": "進行中",
+    "statusWaiting": "待機中",
+    "sortTooltip": "結果でランキング、同点の場合は早く終了した方が上位。",
+    "sortHint": "最高結果でランキング、同点の場合は早く終了した方が上位。"
+  },
+  "groupSettingsTab": {
+    "identityState": "識別状態",
+    "identityAligned": "整合済み",
+    "identityNeedsSetup": "セットアップが必要",
+    "generalInfo": "一般グループ情報",
+    "groupVisibility": "グループ表示範囲",
+    "compactPublicHint": "誰でもこのグループを発見できます。",
+    "compactPrivateHint": "招待されたメンバーのみ参加可能。",
+    "publicBadge": "公開",
+    "privateBadge": "非公開",
+    "publicHeading": "公開 — 発見可能",
+    "privateHeading": "非公開 — 招待のみ",
+    "publicDescription": "誰でもこのグループを発見し参加リクエストを送れます。",
+    "privateDescription": "直接招待を持つメンバーのみがこのグループにアクセスできます。",
+    "leaderOnlyControls": "リーダー専用コントロール"
+  },
+  "groupDocumentsTab": {
+    "noDate": "日付なし",
+    "fileType": "ファイル",
+    "imageLabel": "画像",
+    "videoLabel": "動画",
+    "audioLabel": "音声",
+    "statusAiChecking": "AI チェック中",
+    "statusShared": "共有",
+    "statusWarning": "警告",
+    "statusFailed": "失敗",
+    "statusRejected": "却下",
+    "statusPending": "保留中",
+    "badgeDocumentsHub": "ドキュメントハブ",
+    "badgeLeaderControl": "リーダーコントロール",
+    "badgeMemberRequests": "メンバーリクエスト",
+    "heroTitle": "グループ学習教材を一箇所で管理",
+    "heroSubtitle": "共有ドキュメントをアップロードし、メンバーリクエストをレビューし、リーダーの判断が必要な警告教材を分離します。",
+    "refreshButton": "更新",
+    "uploadButton": "教材をアップロード",
+    "tabDocuments": "ドキュメント",
+    "tabPendingReview": "レビュー待ち",
+    "warningSectionTitle": "レビュー待ちの警告教材",
+    "warningSectionSubtitle": "これらの教材は AI によってフラグされたもので、共有ライブラリに入る前にまずレビューする必要があります。",
+    "warningCountLabel": "警告項目",
+    "untitledMaterial": "無題の教材",
+    "submittedToQueue": "グループレビューキューに送信",
+    "warningOpenHint": "決定する前に AI 審査詳細を検査するには開きます。",
+    "processingProgress": "処理進捗",
+    "approveWarning": "警告を承認",
+    "reject": "却下",
+    "librarySectionTitle": "共有教材ライブラリ",
+    "librarySectionSubtitle": "グループワークスペースに既にアタッチされたすべてのファイルを追跡し、現在のステータスで素早くフィルタリングします。",
+    "searchPlaceholder": "ドキュメントを検索...",
+    "filterAll": "すべて",
+    "filterShared": "共有",
+    "filterProcessing": "処理中",
+    "filterIssues": "問題",
+    "emptyFilteredMaterials": "現在のフィルターに一致する共有ドキュメントはありません。",
+    "materialOpenHint": "クリックして AI レビューと抽出されたコンテンツを開きます。",
+    "deleteMaterialTitle": "教材を削除",
+    "issuesSectionTitle": "注意が必要な教材",
+    "issueDefaultMessage": "この教材はグループライブラリに入れませんでした。",
+    "issueOpenHint": "教材を開いて審査結果を検査します。",
+    "issuePillRejected": "却下"
+  },
+  "challengeScheduleFields": {
+    "helper": "未来の時刻のみ選択してください。開始から終了までのウィンドウは少なくとも {{minutes}} 分必要です。ブラケットマッチはラウンド数に応じてより長いウィンドウが必要です。",
+    "startDate": "開始 - 日付 *",
+    "startTime": "開始 - 時刻 *",
+    "endDate": "終了 - 日付 *",
+    "endTime": "終了 - 時刻 *",
+    "errors": {
+      "endBeforeStart": "終了時刻は開始時刻より後である必要があります。",
+      "shortWindow": "開始から終了までのウィンドウは少なくとも {{minutes}} 分必要です。",
+      "pastDate": "過去の日付や時刻を選択しないでください。",
+      "invalid": "選択された時刻が無効です。"
+    }
+  }
+}

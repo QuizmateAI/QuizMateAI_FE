@@ -1,0 +1,114 @@
+{
+  "profile": {
+    "title": "マイプロフィール",
+    "description": "学習ジャーニーと個人設定を管理します。",
+    "personalInfo": "個人情報",
+    "personalInfoDesc": "基本情報を更新します",
+    "email": "メール",
+    "fullName": "氏名",
+    "fullNamePlaceholder": "氏名を入力してください",
+    "birthday": "生年月日",
+    "security": "セキュリティ",
+    "securityDesc": "パスワードとアカウントセキュリティを管理します",
+    "changePassword": "パスワードを変更",
+    "changePasswordDesc": "現在のパスワードと新しいパスワードを入力して更新します",
+    "oldPassword": "現在のパスワード",
+    "newPassword": "新しいパスワード",
+    "confirmNewPassword": "新しいパスワードの確認",
+    "edit": "編集",
+    "save": "変更を保存",
+    "saving": "保存中...",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "signOut": "サインアウト",
+    "loadError": "プロフィール情報の読み込みに失敗しました",
+    "updateSuccess": "プロフィールを更新しました",
+    "updateError": "プロフィールの更新に失敗しました",
+    "avatarSuccess": "アバターを更新しました",
+    "avatarError": "アバターの更新に失敗しました",
+    "invalidFileType": "画像ファイルを選択してください",
+    "fileTooLarge": "ファイルサイズは 5MB 以下にしてください",
+    "fullNameRequired": "氏名を入力してください",
+    "passwordFieldsRequired": "すべてのパスワード欄を入力してください",
+    "passwordMismatch": "パスワード確認が一致しません",
+    "passwordTooShort": "パスワードは 6 文字以上にしてください",
+    "passwordSuccess": "パスワードを変更しました",
+    "passwordError": "パスワードの変更に失敗しました",
+    "xpProgress": "XP の進捗",
+    "achievements": "実績",
+    "unlockedDaysAgo": "{{days}} 日前に解除",
+    "tabs": {
+      "overview": "概要",
+      "settings": "設定",
+      "subscription": "サブスクリプション"
+    },
+    "badges": {
+      "quizMaster": "クイズマスター",
+      "streakKeeper": "ストリークキーパー",
+      "speedster": "スピードスター"
+    },
+    "skillMatrix": {
+      "title": "スキルマトリクス",
+      "desc": "あなたの強みと改善ポイント"
+    },
+    "stats": {
+      "topicsMastered": "習得したトピック",
+      "learningTime": "学習時間",
+      "learningTimeValue": "128h",
+      "dayStreak": "連続日数",
+      "avgScore": "平均スコア"
+    },
+    "recentActivity": "最近のアクティビティ",
+    "recentActivityAccuracy": "正解率 {{value}}%",
+    "recentActivityScore": "{{value}} 点",
+    "recentActivityPractice": "練習",
+    "recentActivityQuiz": "クイズ",
+    "recentQuizCompleted": "クイズを完了しました",
+    "recentActivityEmpty": "最近の学習アクティビティはまだありません。",
+    "recentActivityItemTitle": "「React 上級パターン」を完了しました",
+    "recentActivityItemTimeAgo": "2 時間前",
+    "recentActivityItemXp": "+50 XP",
+    "subscription": {
+      "currentPlan": "現在のプラン",
+      "currentPlanDesc": "現在有効なサブスクリプションプラン",
+      "freeDesc": "始めるための基本機能",
+      "activeStatus": "有効",
+      "currentLabel": "現在のプラン",
+      "mostPopular": "最も人気",
+      "perMonth": "月",
+      "upgrade": "今すぐアップグレード",
+      "individual": "個人",
+      "group": "グループ",
+      "noPlans": "このカテゴリで利用可能なプランはありません。",
+      "loadError": "プランを読み込めません。もう一度お試しください。",
+      "durationDays": "{{count}} 日間",
+      "durationForever": "永続",
+      "guaranteeTitle": "30 日間返金保証",
+      "guaranteeDesc": "リスクなしでお試しください。ご満足いただけない場合、30 日以内に全額返金いたします。",
+      "plans": {
+        "free": {
+          "name": "Free"
+        },
+        "pro": {
+          "name": "Professional"
+        },
+        "elite": {
+          "name": "Elite"
+        }
+      },
+      "features": {
+        "fiveRoadmaps": "AI ロードマップ 5 件 / 月",
+        "basicQuizzes": "ベーシック AI クイズ",
+        "voiceTutor": "音声 AI チューター",
+        "unlimitedRoadmaps": "AI ロードマップ無制限",
+        "advancedVoice": "高度な音声コンパニオン",
+        "urlVideo": "URL & 動画処理",
+        "prioritySupport": "優先サポート",
+        "everythingPro": "Pro のすべての機能",
+        "studyGroup": "学習グループ(5 ユーザー)",
+        "apiAccess": "開発者向け API アクセス",
+        "customBranding": "カスタムブランディング"
+      }
+    }
+  }
+}
