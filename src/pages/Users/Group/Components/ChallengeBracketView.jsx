@@ -547,8 +547,8 @@ export default function ChallengeBracketView({
     retry: false,
   });
 
-  const effectiveData = data || {};
-  const normalizedParticipants = Array.isArray(participants) ? participants : [];
+  const effectiveData = useMemo(() => data || {}, [data]);
+  const normalizedParticipants = useMemo(() => Array.isArray(participants) ? participants : [], [participants]);
   const resolvedBracketSize = resolveBracketSize(effectiveData, normalizedParticipants, bracketSize);
   const slots = useMemo(
     () => buildSeededSlots(effectiveData, normalizedParticipants, resolvedBracketSize),

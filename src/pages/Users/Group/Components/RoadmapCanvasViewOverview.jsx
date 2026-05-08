@@ -320,7 +320,7 @@ function RoadmapCanvasViewOverview({
   isStudyNewRoadmap = false,
   isDarkMode = false,
   fontClass,
-  i18n,
+  i18n: _i18n,
   t,
   labels,
   isExpanded = false,
@@ -331,25 +331,25 @@ function RoadmapCanvasViewOverview({
   openExpandedView,
   closeExpandedView,
   setIsExpanded,
-  resetViewport,
-  adjustZoom,
-  draggingMode,
+  resetViewport: _resetViewport,
+  adjustZoom: _adjustZoom,
+  draggingMode: _draggingMode,
   viewportRef,
-  handlePointerDown,
-  handlePointerMove,
-  handlePointerUp,
-  transform,
-  layout,
+  handlePointerDown: _handlePointerDown,
+  handlePointerMove: _handlePointerMove,
+  handlePointerUp: _handlePointerUp,
+  transform: _transform,
+  layout: _layout,
   canvasWidth,
-  canvasHeight,
-  centerX,
-  centerY,
-  expandedKnowledges,
-  toggleKnowledge,
-  handlePhaseDragStart,
-  handleKnowledgeDragStart,
-  onShareRoadmap,
-  renderRoadmapConfigActionButtons,
+  canvasHeight: _canvasHeight,
+  centerX: _centerX,
+  centerY: _centerY,
+  expandedKnowledges: _expandedKnowledges,
+  toggleKnowledge: _toggleKnowledge,
+  handlePhaseDragStart: _handlePhaseDragStart,
+  handleKnowledgeDragStart: _handleKnowledgeDragStart,
+  onShareRoadmap: _onShareRoadmap,
+  renderRoadmapConfigActionButtons: _renderRoadmapConfigActionButtons,
   onSelectCenterRoadmap,
 }) {
   const scrollContainerRef = useRef(null);
@@ -607,11 +607,6 @@ function RoadmapCanvasViewOverview({
 
   const zoomIn = () => setZoomLevel((current) => clamp(current + ZOOM_STEP, layoutConfig.minZoom, layoutConfig.maxZoom));
   const zoomOut = () => setZoomLevel((current) => clamp(current - ZOOM_STEP, layoutConfig.minZoom, layoutConfig.maxZoom));
-  const resetFishboneViewport = () => {
-    setZoomLevel(layoutConfig.defaultZoom);
-    scrollContainerRef.current?.scrollTo({ left: 0, behavior: "smooth" });
-  };
-
   const handleSelectKnowledgeFromDrawer = (phaseId, knowledgeId, isLocked) => {
     if (isLocked) return;
 

@@ -30,7 +30,7 @@ function FeedbackAutoPrompt() {
   const [activeRequest, setActiveRequest] = useState(null);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
-  const currentUser = useMemo(() => getCurrentUser(), [location.pathname]);
+  const currentUser = useMemo(() => getCurrentUser(), []);
   const canAutoPrompt = isAuthenticated()
     && currentUser?.role === 'USER'
     && !shouldBlockAutoPrompt(location.pathname || '');

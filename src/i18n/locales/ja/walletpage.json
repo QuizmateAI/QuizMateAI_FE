@@ -1,0 +1,140 @@
+{
+  "walletPage": {
+    "logoAlt": "QuizMate AI ロゴ",
+    "goHome": "ホームへ",
+    "back": "戻る",
+    "summary": {
+      "title": "あなたのクレジットウォレット",
+      "subtitle": "残高を確認し、AI 機能で使うクレジットを管理します",
+      "badge": "個人ウォレット",
+      "totalAvailable": "利用可能なクレジット合計",
+      "creditsUnit": "クレジット",
+      "hint": "クレジットはクイズ生成、フラッシュカード、学習ロードマップなどの AI タスクで使用されます...",
+      "regularCredits": "通常クレジット",
+      "planCredits": "プランクレジット",
+      "expiresAt": "有効期限"
+    },
+    "buy": {
+      "title": "クレジットを追加購入",
+      "subtitle": "AI 機能を使い続けるためのクレジットパッケージを選択してください",
+      "cannotBuyCredit": "現在のプランでは追加クレジットの購入ができません。",
+      "loading": "読み込み中...",
+      "packageFallback": "クレジットパッケージ {{id}}",
+      "baseCredits": "基本クレジット {{count}}",
+      "bonusCredits": "+{{count}} ボーナスクレジット"
+    },
+    "customCredit": {
+      "title": "カスタムクレジット数量を入力",
+      "cta": "カスタム数量",
+      "openAria": "カスタム数量でクレジットを購入",
+      "dialogDesc": "購入したいクレジット数を入力してください。合計は単価から自動計算されます。",
+      "helper": "最低 {{min}} クレジット · 1 クレジットあたり {{price}}",
+      "configError": "クレジット購入設定を読み込めません。もう一度お試しください。",
+      "placeholder": "例: {{example}}",
+      "inputAria": "購入するクレジット",
+      "buy": "今すぐ購入",
+      "belowMin": "最低 {{min}} クレジットから購入できます。",
+      "previewTotal": "合計: {{credits}} クレジット · {{price}}",
+      "minBadge": "最低 {{min}} クレジット",
+      "priceBadge": "1 クレジットあたり {{price}}",
+      "youGet": "受け取るクレジット",
+      "totalLabel": "合計",
+      "breakdown": "{{credits}} × {{unitPrice}}",
+      "readyToUse": "支払い直後に利用可能"
+    },
+    "history": {
+      "title": "取引履歴",
+      "subtitle": "ウォレット上の最新 20 件の取引",
+      "loading": "読み込み中...",
+      "noHistory": "取引はまだありません。",
+      "emptyWorkspace": "—",
+      "table": {
+        "time": "時刻",
+        "activity": "アクティビティ",
+        "workspace": "ワークスペース",
+        "amount": "クレジット",
+        "source": "ソース"
+      }
+    },
+    "fallback": {
+      "other": "その他",
+      "emDash": "—"
+    },
+    "transactionType": {
+      "WELCOME": "ウェルカムクレジット",
+      "TOPUP": "クレジットチャージ",
+      "CONSUME": "AI クレジット使用",
+      "RESERVE": "クレジット予約",
+      "RESERVE_CANCELLED": "予約解除",
+      "REFUND": "クレジット返金",
+      "ADJUST": "クレジット調整",
+      "PLAN_BONUS": "プランクレジット",
+      "PLAN_EXPIRE_RESET": "プランリセット"
+    },
+    "transactionSource": {
+      "SYSTEM": "システム",
+      "PAYMENT": "支払い",
+      "AI_USAGE": "AI 使用",
+      "USER_PLAN": "あなたのプラン",
+      "WORKSPACE_PLAN": "グループプラン",
+      "ADMIN": "管理者"
+    },
+    "aiActivity": {
+      "default": "AI 機能を使用しました",
+      "PROCESS_PDF": "PDF をアップロードしました",
+      "PROCESS_IMAGE": "画像をアップロードしました",
+      "PROCESS_TEXT": "テキストを AI 処理に送信しました",
+      "PROCESS_DOCX": "Word 文書をアップロードしました",
+      "PROCESS_XLSX": "Excel ファイルをアップロードしました",
+      "PROCESS_PPTX": "PowerPoint デッキをアップロードしました",
+      "PROCESS_AUDIO": "音声ファイルをアップロードしました",
+      "PROCESS_VIDEO": "動画をアップロードしました",
+      "GENERATE_QUIZ": "クイズを生成しました",
+      "PREVIEW_QUIZ_STRUCTURE": "クイズ構造をプレビューしました",
+      "GENERATE_FLASHCARDS": "フラッシュカードを生成しました",
+      "GENERATE_MOCK_TEST": "模擬試験を生成しました",
+      "GENERATE_ROADMAP": "学習ロードマップを生成しました",
+      "GENERATE_ROADMAP_PHASES": "ロードマップのフェーズを生成しました",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "学習コンテンツを生成しました",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "知識クイズを生成しました",
+      "SUGGEST_LEARNING_RESOURCES": "学習リソースをリクエストしました",
+      "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "学習プロフィールを分析しました",
+      "SUGGEST_STUDY_PROFILE_FIELDS": "学習プロフィールの提案をリクエストしました",
+      "SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES": "試験テンプレートの提案をリクエストしました",
+      "SUGGEST_WORKSPACE_NAME": "ワークスペース名をリクエストしました",
+      "VALIDATE_STUDY_PROFILE_CONSISTENCY": "学習プロフィールを検証しました"
+    },
+    "uiActivity": {
+      "default": "AI を使用: {{target}}",
+      "PROCESS_PDF": "PDF をアップロード: {{target}}",
+      "PROCESS_DOCX": "Word ファイルをアップロード: {{target}}",
+      "PROCESS_PPTX": "スライドをアップロード: {{target}}",
+      "PROCESS_XLSX": "Excel ファイルをアップロード: {{target}}",
+      "PROCESS_IMAGE": "画像をアップロード: {{target}}",
+      "PROCESS_AUDIO": "音声をアップロード: {{target}}",
+      "PROCESS_VIDEO": "動画をアップロード: {{target}}",
+      "PROCESS_TEXT": "テキストを処理: {{target}}",
+      "GENERATE_QUIZ": "クイズを生成: {{target}}",
+      "GENERATE_FLASHCARDS": "次からフラッシュカードを生成: {{target}}",
+      "GENERATE_MOCK_TEST": "模擬試験を生成: {{target}}",
+      "GENERATE_ROADMAP": "ロードマップを生成: {{target}}",
+      "GENERATE_ROADMAP_PHASES": "次のフェーズを生成: {{target}}",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "次のコンテンツを生成: {{target}}",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "知識クイズを生成: {{target}}"
+    },
+    "txActivity": {
+      "welcomeTitle": "ウェルカムクレジットを受け取りました",
+      "welcomeSubtitle": "新規アカウントへのウェルカムボーナス",
+      "planBonusTitle": "プランクレジットを受け取りました",
+      "planBonusSubtitle": "プランに含まれるクレジットがウォレットに追加されました",
+      "topupTitle": "クレジットをチャージしました",
+      "topupSubtitle": "クレジットがウォレットに追加されました",
+      "refundTitle": "クレジット返金を受け取りました",
+      "refundSubtitle": "未使用のクレジットがウォレットに返却されました",
+      "reserveCancelledTitle": "予約された金額が解除されました",
+      "reserveCancelledSubtitle": "予約クレジットがウォレットに返却されました",
+      "planExpireResetTitle": "プランクレジットがリセットされました",
+      "planExpireResetSubtitle": "システムが次のサイクルのプランクレジットをリセットしました"
+    }
+  }
+}

@@ -406,7 +406,7 @@ function useQuestionDiscussionThread({
   hasAttempted,
   onMessageCountChange,
 }) {
-  const { t } = useTranslation();
+  useTranslation();
   const { profile } = useUserProfile();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);

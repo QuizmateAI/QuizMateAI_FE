@@ -8,30 +8,28 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
-  Line,
-  LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import {
-  AlertTriangle,
   Banknote,
   Coins,
   CreditCard,
   Crown,
   TrendingDown,
   TrendingUp,
-  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ListSpinner from '@/components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getPlanPurchaseSummary, getRevenueTimeseries } from '@/api/ManagementSystemAPI';
 import {
-  SuperAdminMetricCard,
   SuperAdminPage,
   SuperAdminPageHeader,
   SuperAdminPanel,
@@ -264,7 +262,7 @@ function SuperAdminDashboard() {
   const data = tsQuery.data;
   const planSummary = planQuery.data;
 
-  const points = data?.points ?? [];
+  const points = useMemo(() => data?.points ?? [], [data?.points]);
   const totals = data?.totals ?? null;
   const growthPct = data?.growthPct ?? null;
 
@@ -306,6 +304,47 @@ function SuperAdminDashboard() {
     }, 0);
   }, [totals, activeTabConfig.types]);
 
+  const topBuckets = useMemo(
+    () => [...detailFilteredPoints]
+      .filter((p) => Number(p.totalVnd) > 0)
+      .sort((a, b) => Number(b.totalVnd) - Number(a.totalVnd))
+      .slice(0, 6),
+    [detailFilteredPoints],
+  );
+
+  const weekdayData = useMemo(() => {
+    const labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    const totals = [0, 0, 0, 0, 0, 0, 0];
+    detailFilteredPoints.forEach((p) => {
+      const date = new Date(p.bucket);
+      if (Number.isNaN(date.getTime())) return;
+      const dow = date.getDay();
+      const idx = (dow + 6) % 7;
+      totals[idx] += Number(p.totalVnd) || 0;
+    });
+    return labels.map((label, i) => ({ label, totalVnd: totals[i] }));
+  }, [detailFilteredPoints]);
+
+  const weekdayHasData = useMemo(
+    () => weekdayData.some((d) => d.totalVnd > 0),
+    [weekdayData],
+  );
+
+  const breakdownData = useMemo(
+    () => activeTabConfig.types
+      .map((type) => {
+        const meta = TARGET_TYPE_META[type];
+        return {
+          type,
+          name: t(meta.labelKey, meta.label),
+          value: Number(totals?.[meta.dataKey]) || 0,
+          color: meta.color,
+        };
+      })
+      .filter((item) => item.value > 0),
+    [activeTabConfig.types, totals, t],
+  );
+
   // Top 3 plans theo doanh thu
   const topPlans = useMemo(() => {
     const list = planSummary?.plans ?? [];
@@ -314,36 +353,6 @@ function SuperAdminDashboard() {
       .sort((a, b) => Number(b.revenueVnd) - Number(a.revenueVnd))
       .slice(0, 3);
   }, [planSummary]);
-
-  // Health alerts: drop > 30%, dry run 7 ngày, low volume
-  const healthAlerts = useMemo(() => {
-    const alerts = [];
-    if (growthPct !== null && Number(growthPct) < -30) {
-      alerts.push({
-        level: 'danger',
-        icon: TrendingDown,
-        text: t('dashboard.b.alert.drop', 'Doanh thu giảm mạnh ({{pct}}) so với khoảng trước', { pct: formatPct(growthPct) }),
-      });
-    }
-    const last7 = points.slice(-7);
-    const last7Sum = last7.reduce((acc, p) => acc + (Number(p.totalVnd) || 0), 0);
-    if (points.length >= 7 && last7Sum === 0) {
-      alerts.push({
-        level: 'warning',
-        icon: AlertTriangle,
-        text: t('dashboard.b.alert.dryRun', '7 ngày gần nhất không có giao dịch nào'),
-      });
-    }
-    const tx = Number(totals?.transactionCount) || 0;
-    if (points.length >= 14 && tx > 0 && tx < 5) {
-      alerts.push({
-        level: 'warning',
-        icon: AlertTriangle,
-        text: t('dashboard.b.alert.lowVolume', 'Volume thấp: chỉ {{n}} giao dịch trong 30 ngày', { n: tx }),
-      });
-    }
-    return alerts;
-  }, [growthPct, points, totals, t]);
 
   return (
     <SuperAdminPage className={cn(fontClass, 'gap-5 pb-10')}>
@@ -465,105 +474,103 @@ function SuperAdminDashboard() {
               onChange={setActiveTab}
             />
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <ChartCard
                 isDarkMode={isDarkMode}
                 title={t('dashboard.detail.stacked', 'Cơ cấu doanh thu theo loại')}
-                subtitle={t('dashboard.detail.stackedHint', 'Stacked area: từng loại payment cộng lại theo bucket.')}
+                subtitle={t('dashboard.detail.stackedHint', 'Tỉ trọng từng loại payment trên tổng doanh thu.')}
                 summary={formatVnd(detailTabTotal)}
               >
-                {detailFilteredPoints.length === 0 ? (
+                {breakdownData.length === 0 || detailTabTotal <= 0 ? (
                   <p className="py-12 text-center text-sm text-slate-500">{t('revenue.chartEmpty', 'Không có dữ liệu cho khoảng này.')}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={260}>
-                    <AreaChart data={detailFilteredPoints} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-                      <defs>
-                        {activeTabConfig.types.map((type) => {
-                          const meta = TARGET_TYPE_META[type];
-                          return (
-                            <linearGradient key={type} id={`grad-detail-${type}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={meta.color} stopOpacity={0.55} />
-                              <stop offset="100%" stopColor={meta.color} stopOpacity={0.05} />
-                            </linearGradient>
-                          );
-                        })}
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} vertical={false} />
-                      <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: isDarkMode ? '#94a3b8' : '#475569' }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(v) => formatCompactVnd(v)} tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={60} />
+                    <PieChart>
                       <Tooltip
-                        contentStyle={{ background: isDarkMode ? '#0f172a' : '#fff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, borderRadius: 12, fontSize: 12 }}
-                        cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
-                        labelStyle={{ color: isDarkMode ? '#e2e8f0' : '#0f172a', fontWeight: 600 }}
-                        formatter={(value, name) => [formatVnd(value), name]}
+                        contentStyle={{
+                          background: isDarkMode ? '#0f172a' : '#fff',
+                          border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`,
+                          borderRadius: 12,
+                          fontSize: 12,
+                        }}
+                        formatter={(value, name) => [
+                          `${formatVnd(value)} (${detailTabTotal > 0 ? ((value / detailTabTotal) * 100).toFixed(1) : 0}%)`,
+                          name,
+                        ]}
                       />
-                      <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle" iconSize={8} />
-                      {activeTabConfig.types.map((type) => {
-                        const meta = TARGET_TYPE_META[type];
-                        return (
-                          <Area
-                            key={type}
-                            type="monotone"
-                            dataKey={meta.dataKey}
-                            stackId="rev"
-                            stroke={meta.color}
-                            strokeWidth={2}
-                            fill={`url(#grad-detail-${type})`}
-                            name={t(meta.labelKey, meta.label)}
-                          />
-                        );
-                      })}
-                    </AreaChart>
+                      <Legend
+                        wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                        iconType="circle"
+                        iconSize={8}
+                      />
+                      <Pie
+                        data={breakdownData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="45%"
+                        innerRadius={0}
+                        outerRadius={92}
+                        paddingAngle={1}
+                        stroke={isDarkMode ? '#0f172a' : '#fff'}
+                        strokeWidth={2}
+                        label={({ percent }) => (percent > 0.06 ? `${(percent * 100).toFixed(0)}%` : '')}
+                        labelLine={false}
+                      >
+                        {breakdownData.map((item) => (
+                          <Cell key={item.type} fill={item.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
                   </ResponsiveContainer>
                 )}
               </ChartCard>
 
               <ChartCard
                 isDarkMode={isDarkMode}
-                title={t('dashboard.detail.totalLine', 'Đường tổng doanh thu')}
-                subtitle={t('dashboard.detail.totalLineHint', 'Quan sát xu hướng tăng/giảm theo bucket đã chọn.')}
-                summary={formatVnd(detailTabTotal)}
+                title={t('dashboard.detail.topBuckets', 'Top bucket có doanh thu cao nhất')}
+                subtitle={t('dashboard.detail.topBucketsHint', 'Xếp hạng các kỳ có doanh thu lớn nhất.')}
+                summary={`${topBuckets.length} ${t('dashboard.detail.bucketsCount', 'bucket')}`}
               >
-                {detailFilteredPoints.length === 0 ? (
+                {topBuckets.length === 0 ? (
                   <p className="py-12 text-center text-sm text-slate-500">{t('revenue.chartEmpty', 'Không có dữ liệu cho khoảng này.')}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={detailFilteredPoints} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} vertical={false} />
-                      <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: isDarkMode ? '#94a3b8' : '#475569' }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(v) => formatCompactVnd(v)} tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={60} />
+                    <BarChart
+                      data={topBuckets}
+                      layout="vertical"
+                      margin={{ top: 4, right: 64, left: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} horizontal={false} />
+                      <XAxis type="number" hide />
+                      <YAxis
+                        type="category"
+                        dataKey="bucket"
+                        tick={{ fontSize: 11, fill: isDarkMode ? '#cbd5e1' : '#475569' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={88}
+                      />
                       <Tooltip
                         contentStyle={{ background: isDarkMode ? '#0f172a' : '#fff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, borderRadius: 12, fontSize: 12 }}
                         cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
-                        labelStyle={{ color: isDarkMode ? '#e2e8f0' : '#0f172a', fontWeight: 600 }}
                         formatter={(value) => [formatVnd(value), t('revenue.legend.total', 'Tổng')]}
                       />
-                      <Line type="monotone" dataKey="totalVnd" stroke="#0455BF" strokeWidth={2.5} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </ChartCard>
-
-              <ChartCard
-                isDarkMode={isDarkMode}
-                title={t('dashboard.detail.txCount', 'Số giao dịch theo bucket')}
-                subtitle={t('dashboard.detail.txCountHint', 'Đếm payment COMPLETED — phản ánh tần suất.')}
-                summary={`${formatInt(totals?.transactionCount)} ${t('revenue.kpi.txCount', 'giao dịch')}`}
-              >
-                {detailFilteredPoints.length === 0 ? (
-                  <p className="py-12 text-center text-sm text-slate-500">{t('revenue.chartEmpty', 'Không có dữ liệu.')}</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={detailFilteredPoints} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} vertical={false} />
-                      <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: isDarkMode ? '#94a3b8' : '#475569' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }} axisLine={false} tickLine={false} width={40} />
-                      <Tooltip
-                        contentStyle={{ background: isDarkMode ? '#0f172a' : '#fff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, borderRadius: 8, fontSize: 11 }}
-                        cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
-                        formatter={(value) => [formatInt(value), t('revenue.legend.transactions', 'Giao dịch')]}
-                      />
-                      <Bar dataKey="transactionCount" fill="#94a3b8" radius={[6, 6, 0, 0]} />
+                      <Bar
+                        dataKey="totalVnd"
+                        radius={[0, 4, 4, 0]}
+                        barSize={14}
+                        label={{
+                          position: 'right',
+                          formatter: (v) => formatCompactVnd(v),
+                          fill: isDarkMode ? '#94a3b8' : '#64748b',
+                          fontSize: 10,
+                        }}
+                      >
+                        {topBuckets.map((_, idx) => (
+                          <Cell key={`top-bucket-${idx}`} fill={idx === 0 ? '#0455BF' : idx <= 2 ? '#3b82f6' : '#94a3b8'} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -571,49 +578,61 @@ function SuperAdminDashboard() {
 
               <ChartCard
                 isDarkMode={isDarkMode}
-                title={t('dashboard.detail.breakdown', 'Cơ cấu theo loại payment')}
-                subtitle={t('dashboard.detail.breakdownHint', 'Tỉ trọng từng loại trên tổng doanh thu của tab.')}
-                summary={formatVnd(detailTabTotal)}
+                title={t('dashboard.detail.weekday', 'Doanh thu theo ngày trong tuần')}
+                subtitle={t('dashboard.detail.weekdayHint', 'Tổng doanh thu cộng dồn theo thứ.')}
+                summary={formatVnd(weekdayData.reduce((acc, d) => acc + d.totalVnd, 0))}
               >
-                <div className="space-y-3 py-2">
-                  {activeTabConfig.types.map((type) => {
-                    const meta = TARGET_TYPE_META[type];
-                    const value = Number(totals?.[meta.dataKey]) || 0;
-                    const pct = detailTabTotal > 0 ? (value / detailTabTotal) * 100 : 0;
-                    return (
-                      <div key={type}>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-2 font-semibold">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: meta.color }} />
-                            {t(meta.labelKey, meta.label)}
-                          </span>
-                          <span className={`tabular-nums ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                            {formatVnd(value)} <span className="text-slate-400">({pct.toFixed(1)}%)</span>
-                          </span>
-                        </div>
-                        <div className={`mt-1 h-2 overflow-hidden rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, pct)}%`, background: meta.color }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {!weekdayHasData ? (
+                  <p className="py-12 text-center text-sm text-slate-500">{t('revenue.chartEmpty', 'Không có dữ liệu cho khoảng này.')}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={weekdayData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: isDarkMode ? '#cbd5e1' : '#475569' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tickFormatter={(v) => formatCompactVnd(v)}
+                        tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={60}
+                      />
+                      <Tooltip
+                        contentStyle={{ background: isDarkMode ? '#0f172a' : '#fff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, borderRadius: 12, fontSize: 12 }}
+                        cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
+                        formatter={(value) => [formatVnd(value), t('revenue.legend.total', 'Tổng')]}
+                      />
+                      <Bar dataKey="totalVnd" radius={[6, 6, 0, 0]} barSize={28}>
+                        {weekdayData.map((d, idx) => {
+                          const isWeekend = idx >= 5;
+                          return (
+                            <Cell key={`weekday-${idx}`} fill={isWeekend ? '#8b5cf6' : '#0ea5e9'} />
+                          );
+                        })}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </ChartCard>
+
             </div>
           </div>
 
-          {/* Top plans + Health alerts */}
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            <SuperAdminPanel
-              title={(
-                <span className="flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-amber-500" />
-                  {t('dashboard.b.topPlans.title', 'Top gói có doanh thu cao nhất')}
-                </span>
-              )}
-              description={t('dashboard.b.topPlans.desc', '30 ngày gần nhất · click để xem người mua')}
-              contentClassName="px-0 py-0"
-            >
+          {/* Top plans */}
+          <SuperAdminPanel
+            title={(
+              <span className="flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-500" />
+                {t('dashboard.b.topPlans.title', 'Top gói có doanh thu cao nhất')}
+              </span>
+            )}
+            description={t('dashboard.b.topPlans.desc', '30 ngày gần nhất · click để xem người mua')}
+            contentClassName="px-0 py-0"
+          >
               {planQuery.isLoading ? (
                 <div className="px-6 py-8"><ListSpinner /></div>
               ) : topPlans.length === 0 ? (
@@ -683,99 +702,6 @@ function SuperAdminDashboard() {
                 </div>
               )}
             </SuperAdminPanel>
-
-            <SuperAdminPanel
-              title={(
-                <span className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  {t('dashboard.b.alerts.title', 'Cảnh báo & sức khoẻ')}
-                </span>
-              )}
-              description={t('dashboard.b.alerts.desc', 'Tự phát hiện bất thường trong 30 ngày')}
-            >
-              {healthAlerts.length === 0 ? (
-                <div className={`flex items-center gap-3 rounded-xl border-2 border-dashed p-4 ${
-                  isDarkMode ? 'border-emerald-800/50 bg-emerald-950/20' : 'border-emerald-200 bg-emerald-50/50'
-                }`}>
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                    isDarkMode ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    ✓
-                  </span>
-                  <div>
-                    <p className={`text-sm font-semibold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
-                      {t('dashboard.b.alerts.healthy', 'Mọi thứ ổn')}
-                    </p>
-                    <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                      {t('dashboard.b.alerts.healthyDesc', 'Không phát hiện bất thường lớn')}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {healthAlerts.map((a, idx) => {
-                    const Icon = a.icon;
-                    const danger = a.level === 'danger';
-                    return (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-3 rounded-xl border p-3 ${
-                          danger
-                            ? (isDarkMode ? 'border-rose-800 bg-rose-950/40' : 'border-rose-200 bg-rose-50')
-                            : (isDarkMode ? 'border-amber-800 bg-amber-950/40' : 'border-amber-200 bg-amber-50')
-                        }`}
-                      >
-                        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${
-                          danger
-                            ? (isDarkMode ? 'text-rose-300' : 'text-rose-600')
-                            : (isDarkMode ? 'text-amber-300' : 'text-amber-700')
-                        }`} />
-                        <p className={`text-sm ${
-                          danger
-                            ? (isDarkMode ? 'text-rose-200' : 'text-rose-800')
-                            : (isDarkMode ? 'text-amber-200' : 'text-amber-800')
-                        }`}>
-                          {a.text}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </SuperAdminPanel>
-          </div>
-
-          {/* Footer KPIs nhỏ */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SuperAdminMetricCard
-              isDarkMode={isDarkMode}
-              tone="blue"
-              icon={Wallet}
-              label={t('revenue.kpi.txCount', 'Số giao dịch')}
-              value={formatInt(totals?.transactionCount)}
-            />
-            <SuperAdminMetricCard
-              isDarkMode={isDarkMode}
-              tone="emerald"
-              icon={CreditCard}
-              label={t('revenue.kpi.subscription', 'Subscription')}
-              value={formatCompactVnd(sourceData.subscription.total)}
-            />
-            <SuperAdminMetricCard
-              isDarkMode={isDarkMode}
-              tone="amber"
-              icon={Coins}
-              label={t('revenue.kpi.credit', 'Credit topup')}
-              value={formatCompactVnd(sourceData.credit.total)}
-            />
-            <SuperAdminMetricCard
-              isDarkMode={isDarkMode}
-              tone="slate"
-              icon={Banknote}
-              label={t('revenue.kpi.slot', 'Slot nhóm')}
-              value={formatCompactVnd(sourceData.slot.total)}
-            />
-          </div>
         </>
       )}
     </SuperAdminPage>

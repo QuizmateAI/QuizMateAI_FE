@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { getCurrentUser } from '@/api/Authentication';
+import { useMemo, useSyncExternalStore } from 'react';
+import { getCurrentUser, subscribeCurrentUser } from '@/lib/currentUser';
 
 export const ROLES = Object.freeze({
   USER: 'USER',
@@ -49,14 +49,24 @@ export function isGroupContributor(groupRole) {
 }
 
 /**
- * Hook đọc user hiện tại từ localStorage và trả về tập cờ role tiện dụng.
+ * Hook đọc user hiện tại từ client snapshot và trả về tập cờ role tiện dụng.
  * Chỉ là UX gate — không thay thế cho kiểm tra backend.
+ *
+ * Subscribe qua useSyncExternalStore để cập nhật khi login/logout xảy ra
+ * trong cùng tab (notify từ setCurrentUser/clearCurrentUser) hoặc khác tab
+ * (storage event). Khắc phục bug useMemo deps=[] khiến flag bị stale sau
+ * khi user đổi vai trò.
  */
+function getServerSnapshot() {
+  return null;
+}
+
 export function useRolePermission() {
-  return useMemo(() => {
-    const user = getCurrentUser();
-    const role = normalizeRole(user?.role);
-    return {
+  const user = useSyncExternalStore(subscribeCurrentUser, getCurrentUser, getServerSnapshot);
+  const role = normalizeRole(user?.role);
+
+  return useMemo(
+    () => ({
       user,
       role,
       isAuthenticated: Boolean(user),
@@ -64,8 +74,9 @@ export function useRolePermission() {
       isSuperAdmin: isSuperAdmin(user),
       isEndUser: isEndUser(user),
       hasRole: (allowed) => matchesRole(role, allowed),
-    };
-  }, []);
+    }),
+    [user, role],
+  );
 }
 
 /**

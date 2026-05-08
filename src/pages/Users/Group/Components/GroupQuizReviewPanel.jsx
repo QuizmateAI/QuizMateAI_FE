@@ -1,11 +1,13 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer, BadgeCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, ClipboardCheck, Loader2, RotateCcw, Timer, BadgeCheck, Trash2 } from "lucide-react";
 import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
 import {
+  clearSnapshotConcern,
   deleteQuestionFromSnapshot,
   getMyQuizReviewContributor,
+  raiseSnapshotConcern,
   setQuizReviewCompleteOk,
 } from "@/api/ChallengeAPI";
 import MixedMathText from "@/components/math/MixedMathText";
@@ -42,13 +44,23 @@ function GroupQuizReviewPanel({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [reviewCompleteOkAt, setReviewCompleteOkAt] = useState(null);
+  const [concernRaisedAt, setConcernRaisedAt] = useState(null);
+  const [concernResolvedAt, setConcernResolvedAt] = useState(null);
+  const [concernNote, setConcernNote] = useState("");
   const [ackLoading, setAckLoading] = useState(false);
   const [confirmReviewOpen, setConfirmReviewOpen] = useState(false);
   const [deleteLoadingQuestionId, setDeleteLoadingQuestionId] = useState(null);
   const [pendingDeleteQuestion, setPendingDeleteQuestion] = useState(null);
+  const [deleteNote, setDeleteNote] = useState("");
+  const [concernDialogOpen, setConcernDialogOpen] = useState(false);
+  const [concernDraftNote, setConcernDraftNote] = useState("");
+  const [concernSubmitting, setConcernSubmitting] = useState(false);
+  const [concernError, setConcernError] = useState("");
 
   const canInteract = isLeader || isReviewer;
   const canDeleteQuestions = isLeader || isReviewer;
+  // Concern đang mở (chưa được resolve)
+  const hasOpenConcern = Boolean(concernRaisedAt && !concernResolvedAt);
 
   const fetchMyReviewRow = useCallback(async () => {
     if (!quizId || !workspaceId || !isReviewer) return;
@@ -56,8 +68,14 @@ function GroupQuizReviewPanel({
       const res = await getMyQuizReviewContributor(workspaceId, quizId);
       const row = res.data?.data ?? res.data;
       setReviewCompleteOkAt(row?.reviewCompleteOkAt ?? null);
+      setConcernRaisedAt(row?.concernRaisedAt ?? null);
+      setConcernResolvedAt(row?.concernResolvedAt ?? null);
+      setConcernNote(row?.concernNote ?? "");
     } catch {
       setReviewCompleteOkAt(null);
+      setConcernRaisedAt(null);
+      setConcernResolvedAt(null);
+      setConcernNote("");
     }
   }, [quizId, workspaceId, isReviewer]);
 
@@ -92,18 +110,66 @@ function GroupQuizReviewPanel({
   const confirmDeleteQuestion = useCallback(async () => {
     const questionId = pendingDeleteQuestion?.questionId;
     if (!questionId || !workspaceId || !quizId || !canDeleteQuestions) return;
+    if (!deleteNote || deleteNote.trim().length < 5) return;
     setDeleteLoadingQuestionId(questionId);
     try {
-      await deleteQuestionFromSnapshot(workspaceId, quizId, questionId);
+      await deleteQuestionFromSnapshot(workspaceId, quizId, questionId, deleteNote.trim());
       invalidateChallengeCaches();
       setPendingDeleteQuestion(null);
+      setDeleteNote("");
       await onQuestionDeleted?.();
     } catch {
       /* toast / global */
     } finally {
       setDeleteLoadingQuestionId(null);
     }
-  }, [pendingDeleteQuestion, workspaceId, quizId, canDeleteQuestions, invalidateChallengeCaches, onQuestionDeleted]);
+  }, [pendingDeleteQuestion, workspaceId, quizId, canDeleteQuestions, deleteNote, invalidateChallengeCaches, onQuestionDeleted]);
+
+  const submitConcern = useCallback(async () => {
+    if (!quizId || !workspaceId || !isReviewer) return;
+    if (!concernDraftNote || concernDraftNote.trim().length < 10) {
+      setConcernError(t(
+        "workspace.quiz.reviewConcern.noteTooShort",
+        "Note phải có ít nhất 10 ký tự để leader hiểu vấn đề.",
+      ));
+      return;
+    }
+    setConcernError("");
+    setConcernSubmitting(true);
+    try {
+      const res = await raiseSnapshotConcern(workspaceId, quizId, concernDraftNote.trim());
+      const row = res.data?.data ?? res.data;
+      setConcernRaisedAt(row?.concernRaisedAt ?? new Date().toISOString());
+      setConcernResolvedAt(null);
+      setConcernNote(row?.concernNote ?? concernDraftNote.trim());
+      // Raise concern → tự động bỏ trạng thái "confirm OK" trước đó (BE đã làm).
+      setReviewCompleteOkAt(null);
+      invalidateChallengeCaches();
+      setConcernDialogOpen(false);
+      setConcernDraftNote("");
+    } catch (err) {
+      setConcernError(err?.response?.data?.message || t(
+        "workspace.quiz.reviewConcern.submitFailed",
+        "Không gửi được report, thử lại sau.",
+      ));
+    } finally {
+      setConcernSubmitting(false);
+    }
+  }, [quizId, workspaceId, isReviewer, concernDraftNote, invalidateChallengeCaches, t]);
+
+  const withdrawConcern = useCallback(async () => {
+    if (!quizId || !workspaceId || !isReviewer) return;
+    setConcernSubmitting(true);
+    try {
+      await clearSnapshotConcern(workspaceId, quizId);
+      setConcernResolvedAt(new Date().toISOString());
+      invalidateChallengeCaches();
+    } catch {
+      /* toast / global */
+    } finally {
+      setConcernSubmitting(false);
+    }
+  }, [quizId, workspaceId, isReviewer, invalidateChallengeCaches]);
 
   const flatItems = useMemo(() => {
     const out = [];
@@ -430,50 +496,106 @@ function GroupQuizReviewPanel({
       })}
 
       {isReviewer && !loading && flatItems.length > 0 && (
-        <div
-          className={`mt-6 rounded-2xl border px-4 py-4 ${
-            isDarkMode ? "border-emerald-800/50 bg-emerald-950/25" : "border-emerald-200 bg-emerald-50/90"
-          }`}
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-2">
-              <BadgeCheck className={`mt-0.5 h-5 w-5 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-700"}`} />
-              <div>
-                <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-100" : "text-emerald-950"}`}>
-                  {t("workspace.quiz.reviewQuizOkTitle", "Xác nhận toàn bộ đề")}
-                </p>
-                <p className={`mt-0.5 text-xs ${isDarkMode ? "text-emerald-200/85" : "text-emerald-900/80"}`}>
-                  {t(
-                    "workspace.quiz.reviewQuizOkHint",
-                    "Khi đã xem hết và thấy đề ổn, bấm xác nhận bên dưới.",
-                  )}
-                </p>
-                {reviewCompleteOkAt ? (
-                  <p className={`mt-2 text-xs ${isDarkMode ? "text-emerald-300/90" : "text-emerald-800"}`}>
-                    {t("workspace.quiz.reviewQuizOkDoneAt", "Đã xác nhận lúc {{time}}", {
-                      time: new Date(reviewCompleteOkAt).toLocaleString(),
-                    })}
+        <>
+          {/* Banner concern đang mở của reviewer này */}
+          {hasOpenConcern && (
+            <div className={`mt-6 rounded-2xl border px-4 py-3 ${
+              isDarkMode ? "border-rose-800/50 bg-rose-950/25" : "border-rose-200 bg-rose-50/90"
+            }`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className={`mt-0.5 h-5 w-5 shrink-0 ${isDarkMode ? "text-rose-400" : "text-rose-700"}`} />
+                  <div>
+                    <p className={`text-sm font-semibold ${isDarkMode ? "text-rose-100" : "text-rose-950"}`}>
+                      {t("workspace.quiz.reviewConcern.activeTitle", "Bạn đã báo: Đề chưa ổn")}
+                    </p>
+                    <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? "text-rose-200/85" : "text-rose-900/80"}`}>
+                      {t("workspace.quiz.reviewConcern.activeHint", "Leader đã nhận report. Trong khi chờ leader xử lý, đề này không thể publish.")}
+                    </p>
+                    {concernNote ? (
+                      <p className={`mt-2 rounded-lg px-3 py-2 text-xs italic ${isDarkMode ? "bg-rose-900/30 text-rose-100" : "bg-rose-100/80 text-rose-900"}`}>
+                        "{concernNote}"
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={withdrawConcern}
+                  disabled={concernSubmitting}
+                  className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    isDarkMode ? "bg-rose-500/20 text-rose-100 ring-1 ring-rose-500/40 hover:bg-rose-500/30" : "bg-white text-rose-700 ring-1 ring-rose-300 hover:bg-rose-50"
+                  }`}
+                >
+                  {concernSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                  {t("workspace.quiz.reviewConcern.withdraw", "Rút lại report")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div
+            className={`mt-6 rounded-2xl border px-4 py-4 ${
+              isDarkMode ? "border-emerald-800/50 bg-emerald-950/25" : "border-emerald-200 bg-emerald-50/90"
+            }`}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-2">
+                <BadgeCheck className={`mt-0.5 h-5 w-5 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-700"}`} />
+                <div>
+                  <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-100" : "text-emerald-950"}`}>
+                    {t("workspace.quiz.reviewQuizOkTitle", "Xác nhận toàn bộ đề")}
                   </p>
+                  <p className={`mt-0.5 text-xs ${isDarkMode ? "text-emerald-200/85" : "text-emerald-900/80"}`}>
+                    {t(
+                      "workspace.quiz.reviewQuizOkHint",
+                      "Khi đã xem hết và thấy đề ổn, bấm xác nhận bên dưới. Nếu thấy đề bất ổn, dùng nút 'Đề chưa ổn'.",
+                    )}
+                  </p>
+                  {reviewCompleteOkAt ? (
+                    <p className={`mt-2 text-xs ${isDarkMode ? "text-emerald-300/90" : "text-emerald-800"}`}>
+                      {t("workspace.quiz.reviewQuizOkDoneAt", "Đã xác nhận lúc {{time}}", {
+                        time: new Date(reviewCompleteOkAt).toLocaleString(),
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:shrink-0">
+                {!reviewCompleteOkAt && !hasOpenConcern ? (
+                  <button
+                    type="button"
+                    disabled={ackLoading || concernSubmitting}
+                    onClick={() => {
+                      setConcernDraftNote("");
+                      setConcernError("");
+                      setConcernDialogOpen(true);
+                    }}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                      isDarkMode ? "bg-rose-500/20 text-rose-100 ring-1 ring-rose-500/40 hover:bg-rose-500/30" : "bg-white text-rose-700 ring-1 ring-rose-300 hover:bg-rose-50"
+                    }`}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    {t("workspace.quiz.reviewConcern.raiseButton", "Đề chưa ổn")}
+                  </button>
+                ) : null}
+                {!reviewCompleteOkAt && !hasOpenConcern ? (
+                  <button
+                    type="button"
+                    disabled={ackLoading}
+                    onClick={() => setConfirmReviewOpen(true)}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50 ${
+                      isDarkMode ? "bg-emerald-600 hover:bg-emerald-500" : "bg-emerald-600 hover:bg-emerald-700"
+                    }`}
+                  >
+                    {ackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {t("workspace.quiz.reviewQuizOkButton", "Tôi xác nhận — đề này ổn")}
+                  </button>
                 ) : null}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 sm:shrink-0">
-              {!reviewCompleteOkAt ? (
-                <button
-                  type="button"
-                  disabled={ackLoading}
-                  onClick={() => setConfirmReviewOpen(true)}
-                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50 ${
-                    isDarkMode ? "bg-emerald-600 hover:bg-emerald-500" : "bg-emerald-600 hover:bg-emerald-700"
-                  }`}
-                >
-                  {ackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  {t("workspace.quiz.reviewQuizOkButton", "Tôi xác nhận — đề này ổn")}
-                </button>
-              ) : null}
-            </div>
           </div>
-        </div>
+        </>
       )}
 
       <Dialog open={confirmReviewOpen} onOpenChange={setConfirmReviewOpen}>
@@ -515,7 +637,10 @@ function GroupQuizReviewPanel({
       </Dialog>
 
       <Dialog open={Boolean(pendingDeleteQuestion)} onOpenChange={(open) => {
-        if (!open && !deleteLoadingQuestionId) setPendingDeleteQuestion(null);
+        if (!open && !deleteLoadingQuestionId) {
+          setPendingDeleteQuestion(null);
+          setDeleteNote("");
+        }
       }}>
         <DialogContent
           className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}
@@ -528,7 +653,7 @@ function GroupQuizReviewPanel({
             <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
               {t(
                 "workspace.quiz.reviewDeleteQuestionConfirmDescription",
-                "Câu hỏi sẽ bị xóa khỏi đề challenge. Chỉ tiếp tục nếu câu hỏi này thực sự không đạt yêu cầu review.",
+                "Câu hỏi sẽ bị xóa khỏi đề challenge. Hãy ghi chú lý do để leader / co-reviewer biết.",
               )}
             </DialogDescription>
           </DialogHeader>
@@ -537,23 +662,120 @@ function GroupQuizReviewPanel({
               <MixedMathText>{pendingDeleteQuestion.content}</MixedMathText>
             </div>
           ) : null}
+          <div className="space-y-1.5">
+            <label className={`text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+              {t("workspace.quiz.reviewDeleteQuestionNoteLabel", "Lý do xóa (≥ 5 ký tự, bắt buộc)")}
+            </label>
+            <textarea
+              value={deleteNote}
+              onChange={(e) => setDeleteNote(e.target.value)}
+              placeholder={t(
+                "workspace.quiz.reviewDeleteQuestionNotePlaceholder",
+                "VD: câu hỏi bị trùng với câu khác / đáp án không chính xác / sai chính tả nghiêm trọng…",
+              )}
+              rows={3}
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none ${
+                isDarkMode
+                  ? "border-slate-700 bg-slate-800 text-white placeholder-slate-500 focus:border-rose-400/60"
+                  : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-rose-400"
+              }`}
+            />
+            <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+              {(deleteNote?.trim().length || 0)} / 1000
+            </p>
+          </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               type="button"
               variant="outline"
               disabled={Boolean(deleteLoadingQuestionId)}
-              onClick={() => setPendingDeleteQuestion(null)}
+              onClick={() => { setPendingDeleteQuestion(null); setDeleteNote(""); }}
             >
               {t("workspace.quiz.reviewDeleteQuestionConfirmCancel", "Hủy")}
             </Button>
             <Button
               type="button"
               variant="destructive"
-              disabled={Boolean(deleteLoadingQuestionId)}
+              disabled={Boolean(deleteLoadingQuestionId) || !deleteNote || deleteNote.trim().length < 5}
               onClick={() => confirmDeleteQuestion()}
             >
               {deleteLoadingQuestionId ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {t("workspace.quiz.reviewDeleteQuestionConfirmSubmit", "Xóa câu hỏi")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: reviewer raise concern "đề chưa ổn" */}
+      <Dialog open={concernDialogOpen} onOpenChange={(open) => {
+        if (!open && !concernSubmitting) {
+          setConcernDialogOpen(false);
+          setConcernDraftNote("");
+          setConcernError("");
+        }
+      }}>
+        <DialogContent
+          className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}
+          hideClose={false}
+        >
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? "text-white" : ""}>
+              <span className="inline-flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-rose-500" />
+                {t("workspace.quiz.reviewConcern.dialogTitle", "Báo: Đề chưa ổn")}
+              </span>
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
+              {t(
+                "workspace.quiz.reviewConcern.dialogDescription",
+                "Báo cáo này sẽ gửi đến leader. Trong khi chờ xử lý, đề sẽ KHÔNG publish được. Hãy ghi rõ chỗ chưa ổn để leader hiểu và quyết định.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <label className={`text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+              {t("workspace.quiz.reviewConcern.noteLabel", "Mô tả vấn đề (≥ 10 ký tự, bắt buộc)")}
+            </label>
+            <textarea
+              value={concernDraftNote}
+              onChange={(e) => { setConcernDraftNote(e.target.value); if (concernError) setConcernError(""); }}
+              placeholder={t(
+                "workspace.quiz.reviewConcern.notePlaceholder",
+                "VD: Nhiều câu sai đáp án; mức độ khó không khớp với phạm vi đề ra; trùng lặp nội dung…",
+              )}
+              rows={4}
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none ${
+                isDarkMode
+                  ? "border-slate-700 bg-slate-800 text-white placeholder-slate-500 focus:border-rose-400/60"
+                  : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-rose-400"
+              }`}
+            />
+            <div className="flex items-center justify-between">
+              <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                {(concernDraftNote?.trim().length || 0)} / 2000
+              </p>
+              {concernError ? (
+                <p className="text-[11px] font-medium text-rose-500">{concernError}</p>
+              ) : null}
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={concernSubmitting}
+              onClick={() => { setConcernDialogOpen(false); setConcernDraftNote(""); setConcernError(""); }}
+            >
+              {t("workspace.quiz.reviewConcern.cancel", "Hủy")}
+            </Button>
+            <Button
+              type="button"
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={concernSubmitting || !concernDraftNote || concernDraftNote.trim().length < 10}
+              onClick={submitConcern}
+            >
+              {concernSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+              {t("workspace.quiz.reviewConcern.submit", "Gửi báo cáo")}
             </Button>
           </DialogFooter>
         </DialogContent>

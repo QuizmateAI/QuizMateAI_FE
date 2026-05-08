@@ -2,6 +2,8 @@
 // Tách khỏi page (4000+ dòng) cho dễ test và tránh trùng lặp khi nhiều UI
 // surface cần cùng key.
 
+import { getCurrentUser } from '@/lib/currentUser';
+
 export const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 
 export function getWelcomeStorageKey(workspaceId) {
@@ -9,11 +11,5 @@ export function getWelcomeStorageKey(workspaceId) {
 }
 
 export function readCurrentUser() {
-  try {
-    const rawUser = window.localStorage.getItem('user');
-    return rawUser ? JSON.parse(rawUser) : null;
-  } catch (error) {
-    console.error('Unable to read current user from storage:', error);
-    return null;
-  }
+  return getCurrentUser();
 }

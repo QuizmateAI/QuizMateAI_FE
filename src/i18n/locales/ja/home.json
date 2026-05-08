@@ -1,0 +1,218 @@
+{
+  "home": {
+    "tabs": {
+      "all": "すべて",
+      "workspace": "マイワークスペース",
+      "group": "マイグループ",
+      "community": "コミュニティ"
+    },
+    "view": {
+      "grid": "グリッド表示",
+      "list": "リスト表示"
+    },
+    "actions": {
+      "create": "新規作成",
+      "createWorkspace": "新しいワークスペースを作成",
+      "createGroup": "グループを作成",
+      "openGroupCommunity": "QuizMate AI グループコミュニティ",
+      "backToHome": "ホームに戻る"
+    },
+    "search": {
+      "workspacePlaceholder": "ワークスペースを検索...",
+      "groupPlaceholder": "グループを検索...",
+      "noResults": "結果が見つかりません",
+      "clear": "検索をクリア"
+    },
+    "create": {
+      "personalTab": "個人ワークスペース",
+      "groupTab": "グループワークスペース"
+    },
+    "sections": {
+      "featured": "注目のノートブック",
+      "recent": "最近のワークスペース",
+      "myWorkspaces": "マイワークスペース",
+      "myGroups": "マイグループ"
+    },
+    "table": {
+      "title": "タイトル",
+      "sources": "ソース",
+      "learningInfo": "知識 / 分野",
+      "created": "作成日",
+      "lastUsed": "最終利用",
+      "status": "ステータス",
+      "role": "役割",
+      "members": "メンバー",
+      "updates": "更新"
+    },
+    "labels": {
+      "owner": "オーナー",
+      "sourcesUnit": "ソース"
+    },
+    "workspace": {
+      "createTitle": "新しいワークスペースを作成",
+      "createDesc": "空のワークスペースを作成します。セットアップ後に AI が名前を付けます。",
+      "editTitle": "ワークスペースを編集",
+      "editDesc": "このワークスペースの名前を変更します。",
+      "deleteTitle": "ワークスペースを削除",
+      "deleteDesc": "このワークスペースを削除してもよろしいですか? この操作は取り消せません。",
+      "titleLabel": "ワークスペース名",
+      "titlePlaceholder": "ワークスペース名を入力...",
+      "descriptionLabel": "説明",
+      "descriptionPlaceholder": "説明を入力(空欄の場合は「説明なし」がデフォルト)...",
+      "topicLabel": "トピック",
+      "topicPlaceholder": "トピックを選択...",
+      "subjectLabel": "科目",
+      "subjectPlaceholder": "科目を選択...",
+      "selectTopicFirst": "先にトピックを選択してください",
+      "create": "作成",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "delete": "削除",
+      "creating": "作成中...",
+      "saving": "保存中...",
+      "deleting": "削除中...",
+      "createSuccess": "ワークスペースを作成しました。",
+      "editSuccess": "ワークスペースを更新しました。",
+      "deleteSuccess": "ワークスペースを削除しました。",
+      "createError": "ワークスペースの作成に失敗しました。",
+      "editError": "ワークスペースの更新に失敗しました。",
+      "deleteError": "ワークスペースの削除に失敗しました。",
+      "titleRequired": "ワークスペース名を入力してください。",
+      "topicRequired": "トピックを選択してください。",
+      "subjectRequired": "科目を選択してください。",
+      "noDescription": "説明なし",
+      "noWorkspaces": "ワークスペースはまだありません",
+      "noWorkspacesDesc": "最初のワークスペースを作成して始めましょう。",
+      "actions": "ワークスペースのオプション",
+      "lastUsed": "最終利用",
+      "lastUsedNever": "未使用",
+      "created": "作成日",
+      "ready": "準備完了",
+      "settingUp": "セットアップ中",
+      "sortLabel": "並び替え",
+      "sortRecent": "最終利用順",
+      "sortCreated": "新着順",
+      "recentHint": "最近の学習スペースは手の届く場所に。",
+      "createHint": "セットアップを開始すると適切な名前が付けられます。",
+      "knowledge": "知識",
+      "domain": "分野",
+      "sourceCount": "{{count}} ソース",
+      "topic": "トピック",
+      "subject": "科目",
+      "edit": "編集",
+      "confirmDeleteName": "次を削除しようとしています:"
+    },
+    "community": {
+      "title": "共有された学習スペース",
+      "subtitle": "最もクローンされている個人およびグループのワークスペースを発見し、自分専用の学習ワークスペースに変えましょう。",
+      "recommendationsTitle": "あなたへのおすすめ",
+      "trendingTitle": "今トレンド",
+      "clone": "自分にクローン",
+      "cloned": "クローン済み",
+      "shareSuccess": "コミュニティへの共有に成功しました。",
+      "shareError": "現在この項目を共有できません。",
+      "cloneSuccess": "コミュニティ共有から個人ワークスペースを作成しました。",
+      "cloneError": "現在このコミュニティ共有をクローンできません。",
+      "owner": "{{owner}} が共有",
+      "starCount": "スター {{count}} 件",
+      "quizCount": "クイズ {{count}} 件",
+      "materialCount": "教材 {{count}} 件",
+      "emptyDescription": "この共有には追加の説明がありません。",
+      "empty": "コミュニティ共有はまだありません。ワークスペースを共有してフィードを始めましょう。",
+      "types": {
+        "WORKSPACE": "ワークスペース",
+        "QUIZ": "クイズ",
+        "MATERIAL": "教材",
+        "ROADMAP": "ロードマップ"
+      },
+      "kinds": {
+        "INDIVIDUAL": "個人",
+        "GROUP": "グループ"
+      }
+    },
+    "groupHub": {
+      "eyebrow": "QuizMate AI コミュニティ",
+      "title": "あなたの学習スタイルに合うグループを見つけよう",
+      "subtitle": "QuizMate AI グループコミュニティを開いて、共有された目標、学習リズム、各グループにすでにあるセクションを確認してから参加を決定しましょう。",
+      "public": "公開",
+      "joined": "参加済み",
+      "join": "グループに参加",
+      "joining": "参加中...",
+      "full": "満員",
+      "joinSuccess": "グループに参加しました。",
+      "joinError": "このグループに参加できません。",
+      "emptyTitle": "公開グループはまだありません",
+      "emptyDescription": "公開グループが利用可能になると、ここから確認して直接参加できます。",
+      "emptyCardDescription": "このグループにはまだ短い説明が追加されていません。",
+      "noResultsDescription": "目標、分野、または受験対象に基づいて別のキーワードを試してください。",
+      "requirementsTitle": "このグループが求めているもの",
+      "sectionsTitle": "利用可能なセクション",
+      "sharedPace": "共有学習ペース",
+      "fallbackNeed": "{{role}} の役割で {{mode}} のリズムに最適。",
+      "createdBy": "{{owner}} が作成",
+      "metrics": {
+        "community": "公開グループ",
+        "readyToJoin": "参加可能",
+        "myGroups": "あなたのグループ"
+      },
+      "labels": {
+        "goal": "目標",
+        "focus": "フォーカス",
+        "rules": "ルール",
+        "capacity": "定員",
+        "fit": "おすすめ度",
+        "meta": "グループ情報"
+      },
+      "sections": {
+        "discussion": "ディスカッション",
+        "materials": "教材",
+        "quiz": "クイズ",
+        "roadmap": "ロードマップ",
+        "mockTest": "模擬試験"
+      },
+      "emptyPreviewTitle": "ここに表示される内容",
+      "emptyPreview": {
+        "goal": "各グループの学習目標と共有された方向性",
+        "sections": "ロードマップ、クイズ、教材、ディスカッションなどグループ内のコアセクション",
+        "join": "グループがコミュニティに開かれている時の直接参加アクション"
+      },
+      "viewDetails": "詳細を見る",
+      "capacitySummary": "アクティブ {{active}} • 招待中 {{pending}} • 残り {{remaining}} / {{limit}}"
+    },
+    "welcomeBackModal": {
+      "greetings": {
+        "long": "とても恋しかったです!",
+        "mid": "おかえりなさい!",
+        "short": "また会えて嬉しいです!"
+      },
+      "messages": {
+        "long": "前回お会いしてから 1 ヶ月以上が経ちました。忙しい時期があったとしても、QuizMate AI があなたの学習フローに引き続きフィットすることを願っています。準備ができたらいつでも、私たちはここにいます。",
+        "mid": "しばらくお会いしていませんでした。長く触れずにいると知識は薄れることがありますが、ご安心ください — 今すぐ学習フローを再接続できます。",
+        "short": "少し時間が経ちました。あなたの学習パスはここで待っています。"
+      },
+      "userFallback": "あなた",
+      "inactiveLine": "{{name}} さん、前回の訪問から {{count}} 日が経ちました。",
+      "resumeCardEyebrow": "お休み前は次を学習中でした",
+      "resumeCardRoadmap": "ロードマップ「{{title}}」内",
+      "resumeCardHint": "覚えているか確認できる短いクイズを提案できます。試してみますか?",
+      "emptyCardTitle": "QuizMate AI はうまく機能していますか?",
+      "emptyCardBody": "新しい学習ロードマップの作成を試してみてください。前回の訪問以降、体験を大幅にパーソナライズしました。",
+      "resumeAction": "続けて復習",
+      "dismissLater": "あとで",
+      "dismissExplore": "ホームページを引き続き探索"
+    },
+    "pagination": {
+      "showing": "{{start}} - {{end}} / {{total}} 件を表示",
+      "page": "ページ"
+    },
+    "profile": {
+      "greeting": "こんにちは {{name}} さん、",
+      "manageAccount": "アカウントを管理",
+      "logout": "ログアウト",
+      "lastLogin": "最終ログイン",
+      "materialRequired": "少なくとも 1 つの教材を選択してください。",
+      "privacyPolicy": "プライバシーポリシー",
+      "termsOfService": "利用規約"
+    }
+  }
+}

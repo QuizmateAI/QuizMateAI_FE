@@ -1,14 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import {
-  BarChart3,
-  Clock3,
-  Compass,
-  Files,
-  GraduationCap,
-  Route,
-  Sparkles,
-} from "lucide-react";
+import { Clock3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { workspaceSurface } from "./workspaceShellTheme";
 
@@ -41,85 +33,24 @@ function formatRelativeTime(value, language) {
 }
 
 function WorkspaceOverviewView({
-  workspaceTitle = "",
-  workspacePurpose = "",
+  workspaceTitle: _workspaceTitle = "",
+  workspacePurpose: _workspacePurpose = "",
   sources = [],
   accessHistory = [],
   selectedSourceIds = [],
   onNavigate,
-  onUploadClick,
-  shouldDisableRoadmap = false,
+  onUploadClick: _onUploadClick,
+  shouldDisableRoadmap: _shouldDisableRoadmap = false,
   shouldDisableQuiz = false,
   shouldDisableFlashcard = false,
-  roadmapHasPhases = false,
-  completedQuizCount = 0,
+  roadmapHasPhases: _roadmapHasPhases = false,
+  completedQuizCount: _completedQuizCount = 0,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
-  const activeSourceCount = sources.filter(
-    (source) => String(source?.status || "").toUpperCase() === "ACTIVE",
-  ).length;
   const recentSources = sources.slice(0, 4);
   const recentActivity = accessHistory.slice(0, 5);
-  const quickActions = [
-    {
-      key: "roadmap",
-      icon: Route,
-      disabled: shouldDisableRoadmap,
-      title: t("workspace.shell.quickActions.roadmap", "Open roadmap"),
-      description: roadmapHasPhases
-        ? t("workspace.shell.quickActionHints.roadmapReady", "Continue the current learning path.")
-        : t("workspace.shell.quickActionHints.roadmapSetup", "Set up the new fishbone roadmap."),
-    },
-    {
-      key: "quiz",
-      icon: GraduationCap,
-      disabled: shouldDisableQuiz,
-      title: t("workspace.shell.quickActions.quiz", "Create quiz"),
-      description: t("workspace.shell.quickActionHints.quiz", "Generate practice or exam-style quizzes from your sources."),
-    },
-    {
-      key: "flashcard",
-      icon: Sparkles,
-      disabled: shouldDisableFlashcard,
-      title: t("workspace.shell.quickActions.flashcard", "Build flashcards"),
-      description: t("workspace.shell.quickActionHints.flashcard", "Turn selected materials into fast review cards."),
-    },
-  ];
-
-  const statCards = [
-    {
-      key: "sources",
-      icon: Files,
-      value: sources.length,
-      label: t("workspace.shell.stats.sources", "Sources"),
-      hint: `${activeSourceCount} ${t("workspace.shell.activeLabel", "active")}`,
-    },
-    {
-      key: "selected",
-      icon: Compass,
-      value: selectedSourceIds.length,
-      label: t("workspace.shell.stats.selected", "Selected"),
-      hint: t("workspace.shell.statsHints.selected", "Ready for generation"),
-    },
-    {
-      key: "roadmap",
-      icon: Route,
-      value: roadmapHasPhases ? "Live" : "Draft",
-      label: t("workspace.shell.stats.roadmap", "Roadmap"),
-      hint: roadmapHasPhases
-        ? t("workspace.shell.statsHints.roadmapReady", "Phases available")
-        : t("workspace.shell.statsHints.roadmapEmpty", "Needs setup"),
-    },
-    {
-      key: "quizzes",
-      icon: BarChart3,
-      value: completedQuizCount,
-      label: t("workspace.shell.stats.completedQuizzes", "Completed quizzes"),
-      hint: t("workspace.shell.statsHints.completedQuizzes", "Used for analytics unlock"),
-    },
-  ];
 
   return (
     <section className="h-full overflow-y-auto p-4 sm:p-5 lg:p-7">

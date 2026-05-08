@@ -1,0 +1,61 @@
+{
+  "policies": {
+    "pageTitle": "ポリシーと利用規約",
+    "pageSubtitle": "QuizMate AI は、本規約および当社の運用判断に基づき、透明性・公平性・不正利用への対応を約束します。",
+    "lastUpdated": "最終更新日",
+    "version": "バージョン",
+    "effectiveDate": "発効日",
+    "readPolicy": "全文を読む",
+    "tableOfContents": "目次",
+    "backToPolicies": "← すべてのポリシーに戻る",
+    "searchInDocument": "ドキュメント内を検索...",
+    "noResultsFound": "結果が見つかりません",
+    "loading": "読み込み中...",
+    "errorLoading": "ポリシーを読み込めませんでした。もう一度お試しください。",
+    "notFound": "ポリシーが見つかりません",
+    "agreeBanner": "QuizMate AI を利用することで、以下のポリシーを遵守することに同意したものとみなされます。違反した場合、本ポリシーおよび利用規約に基づいて適切な措置が取られることがあります。",
+    "violationWarningTitle": "重要なお知らせ",
+    "violationWarningText": "不正行為、悪用、または有害なコンテンツの配布は、コミュニティとサービスに損害を与えます。重大度に応じて、ポリシーおよび審査プロセスにより、機能へのアクセスが制限されたり、サインインが許可されなくなる場合があります。",
+    "needHelp": "サポートが必要ですか?",
+    "contactUs": "お問い合わせ",
+    "categories": {
+      "TERMS_OF_SERVICE": {
+        "title": "利用規約",
+        "summary": "QuizMate AI を利用するための一般規則: アカウント、行動規範、違反対応について。",
+        "category": "規約"
+      },
+      "PRIVACY_POLICY": {
+        "title": "プライバシーポリシー",
+        "summary": "政令 13/2023 に基づき、QuizMate AI が個人データを収集・保存・保護する方法。",
+        "category": "プライバシー"
+      },
+      "COMMUNITY_GUIDELINES": {
+        "title": "コミュニティガイドライン",
+        "summary": "グループワークスペースおよびコミュニティ内での行動基準。",
+        "category": "コミュニティ"
+      },
+      "AI_USAGE_POLICY": {
+        "title": "AI 利用ポリシー",
+        "summary": "クレジットの仕組み、AI 利用時の責任、利用上限について。",
+        "category": "AI"
+      },
+      "REFUND_POLICY": {
+        "title": "返金ポリシー",
+        "summary": "返金の対象となるケース、申請プロセス、紛争解決について。",
+        "category": "請求"
+      },
+      "COPYRIGHT_POLICY": {
+        "title": "著作権ポリシー",
+        "summary": "コンテンツの所有権、DMCA 手続き、繰り返し侵害への対応について。",
+        "category": "著作権"
+      }
+    },
+    "browsewrap": {
+      "prefix": "登録することにより、QuizMate AI の",
+      "termsLabel": "利用規約",
+      "and": "および",
+      "privacyLabel": "プライバシーポリシー",
+      "suffix": "に同意したものとみなされます。"
+    }
+  }
+}

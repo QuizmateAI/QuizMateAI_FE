@@ -32,8 +32,6 @@ const RegisterPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Add your registration logic here
-    console.log('Registration data:', formData);
   };
 
   return (

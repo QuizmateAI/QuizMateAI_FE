@@ -114,7 +114,7 @@ export function IconPicker({ value, onChange, accent = 'indigo', typeHint }) {
               type="button"
               onClick={() => onChange(name)}
               title={name}
-              className={`group h-8 w-8 rounded-md flex items-center justify-center ring-1 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110 active:scale-95 ${
+              className={`group h-8 w-8 rounded-md flex items-center justify-center ring-1 transition-all duration-200 ease-smooth hover:scale-110 active:scale-95 ${
                 selected
                   ? `${ACCENT_SWATCHES[accent] || ACCENT_SWATCHES.indigo} ring-slate-900/10 dark:ring-white/15 text-white shadow-sm`
                   : 'bg-slate-50 dark:bg-slate-800/40 ring-slate-200/70 dark:ring-slate-700/70 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:ring-slate-300 dark:hover:ring-slate-600'
@@ -146,7 +146,7 @@ export function ColorPicker({ value, onChange }) {
             title={c}
             aria-label={c}
             aria-pressed={selected}
-            className={`relative h-9 w-9 rounded-md ${ACCENT_SWATCHES[c]} ring-1 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110 active:scale-95 ${
+            className={`relative h-9 w-9 rounded-md ${ACCENT_SWATCHES[c]} ring-1 transition-all duration-200 ease-smooth hover:scale-110 active:scale-95 ${
               selected
                 ? 'ring-2 ring-offset-2 ring-slate-900 dark:ring-white ring-offset-white dark:ring-offset-slate-950 shadow-md'
                 : 'ring-slate-900/10 dark:ring-white/10 hover:ring-slate-900/30 dark:hover:ring-white/30'

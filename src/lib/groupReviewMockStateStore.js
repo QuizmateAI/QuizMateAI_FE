@@ -1,3 +1,5 @@
+import { getCurrentUser } from '@/lib/currentUser';
+
 const STORAGE_KEY = 'group_review_workspace_store_v1';
 const STORE_VERSION = 1;
 
@@ -91,44 +93,24 @@ export function normalizeWorkspaceId(workspaceId) {
   return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
 }
 
+const DEFAULT_ACTIVE_USER = Object.freeze({
+  userId: 0,
+  fullName: 'QuizMate User',
+  email: 'user@quizmate.local',
+  role: 'LEADER',
+});
+
 export function readActiveUser() {
-  if (!hasWindow()) {
-    return {
-      userId: 0,
-      fullName: 'QuizMate User',
-      email: 'user@quizmate.local',
-      role: 'LEADER',
-    };
-  }
+  const parsed = getCurrentUser();
+  if (!parsed) return { ...DEFAULT_ACTIVE_USER };
 
-  try {
-    const raw = window.localStorage.getItem('user');
-    if (!raw) {
-      return {
-        userId: 0,
-        fullName: 'QuizMate User',
-        email: 'user@quizmate.local',
-        role: 'LEADER',
-      };
-    }
-
-    const parsed = JSON.parse(raw);
-    const userId = Number(parsed?.id ?? parsed?.userId ?? parsed?.userID);
-    return {
-      userId: Number.isFinite(userId) ? userId : 0,
-      fullName: parsed?.fullName || parsed?.username || parsed?.email || 'QuizMate User',
-      email: parsed?.email || 'user@quizmate.local',
-      role: String(parsed?.role || 'LEADER').toUpperCase(),
-    };
-  } catch (error) {
-    console.error('[groupReviewMockState] Failed to read active user:', error);
-    return {
-      userId: 0,
-      fullName: 'QuizMate User',
-      email: 'user@quizmate.local',
-      role: 'LEADER',
-    };
-  }
+  const userId = Number(parsed?.id ?? parsed?.userId ?? parsed?.userID);
+  return {
+    userId: Number.isFinite(userId) ? userId : 0,
+    fullName: parsed?.fullName || parsed?.username || parsed?.email || DEFAULT_ACTIVE_USER.fullName,
+    email: parsed?.email || DEFAULT_ACTIVE_USER.email,
+    role: String(parsed?.role || DEFAULT_ACTIVE_USER.role).toUpperCase(),
+  };
 }
 
 export function formatPersonName(person, fallback = 'Thanh vien') {

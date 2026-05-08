@@ -115,10 +115,6 @@ function formatCurrency(value, t, locale) {
   return `${amount.toLocaleString(locale)} VND`;
 }
 
-function formatMoneyAlways(value, locale) {
-  return `${(Number(value) || 0).toLocaleString(locale)} VND`;
-}
-
 function getScopeLabel(scope, t) {
   return scope === 'WORKSPACE'
     ? t('subscription.scope.workspace', 'Group workspace')
@@ -133,11 +129,11 @@ function PlanManagement() {
   const queryClient = useQueryClient();
   // Quyền ghi cho Plan sử dụng permission backend `plan:write`
   const canWrite = !permLoading && permissions.has('plan:write');
-  const getFriendlyError = (err, fallbackKey) => {
+  const getFriendlyError = useCallback((err, fallbackKey) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
     return t(fallbackKey);
-  };
+  }, [t]);
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const pageFontStyle = {
     fontFamily: i18n.language === 'en'
@@ -209,7 +205,7 @@ function PlanManagement() {
     if (queryError) {
       showError(getFriendlyError(queryError, 'subscription.fetchError'));
     }
-  }, [queryError]);
+  }, [queryError, getFriendlyError, showError]);
 
   const invalidatePlanCatalog = useCallback(
     () => queryClient.invalidateQueries({ queryKey: PLAN_CATALOG_QUERY_KEY }),
@@ -557,7 +553,6 @@ function PlanManagement() {
   const workspaceScopeCount = plans.filter(p => p.planScope === 'WORKSPACE').length;
   const activeCount = plans.filter(p => isActive(p.status)).length;
 
-  const sectionCls = `rounded-xl border p-4 ${dk ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-50/90 border-slate-200'}`;
   const getAssignedModelForPlan = (plan, modelGroup) => {
     const assignment = Array.isArray(plan?.aiModelAssignments)
       ? plan.aiModelAssignments.find((item) => item.modelGroup === modelGroup)

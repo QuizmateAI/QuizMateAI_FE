@@ -233,12 +233,12 @@ function QuizDetailView({
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
-  const [communityDetailOpen, setCommunityDetailOpen] = useState(false);
-  const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
+  const [, setCommunityDetailOpen] = useState(false);
+  const [, setCommunityFeedbackOpen] = useState(false);
   const detailRequestRunRef = React.useRef(0);
   const attemptHistoryProbeKeyRef = React.useRef(null);
-  const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false);
-  const [metadataEditOpen, setMetadataEditOpen] = useState(false);
+  const [, setConfirmDuplicateOpen] = useState(false);
+  const [, _setMetadataEditOpen] = useState(false);
 
   const currentUserId = React.useMemo(() => {
     const currentUser = getCurrentUser();

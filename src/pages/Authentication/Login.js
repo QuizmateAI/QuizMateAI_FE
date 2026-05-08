@@ -99,7 +99,6 @@ export const useLogin = (navigate, location, t) => {
 
     try {
       const response = await login(trimmed);
-      console.log("BE Login Response:", response);
       if (response.statusCode === 200 || response.statusCode === 0) {
         navigateByRole(response.data.role);
       }
@@ -114,10 +113,8 @@ export const useLogin = (navigate, location, t) => {
     setIsLoading(true);
     setError('');
     try {
-      console.log("Google Credential Response:", credentialResponse);
       // credentialResponse.credential CHÃNH LÃ€ idToken (JWT) mong muá»‘n
       const response = await googleLogin(credentialResponse.credential);
-      console.log("BE Google Submit Response:", response);
       if (response.statusCode === 200 || response.statusCode === 0) {
         navigateByRole(response.data.role);
       }

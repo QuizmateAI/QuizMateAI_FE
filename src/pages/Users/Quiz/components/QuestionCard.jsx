@@ -132,13 +132,15 @@ const QuestionCard = memo(function QuestionCard({
   const isReviewRevealed = showResult || reviewState?.revealed === true;
   const isExplanationRevealed = showExplanation || reviewState?.revealed === true;
   const isLocked = disabled || reviewState?.locked === true || isReviewRevealed;
-  const normalizedSelectedAnswers = Array.isArray(answerValue)
-    ? answerValue
-    : Array.isArray(answerValue?.selectedAnswerIds)
-      ? answerValue.selectedAnswerIds
-      : Array.isArray(selectedAnswers)
-        ? selectedAnswers
-        : [];
+  const normalizedSelectedAnswers = useMemo(() => (
+    Array.isArray(answerValue)
+      ? answerValue
+      : Array.isArray(answerValue?.selectedAnswerIds)
+        ? answerValue.selectedAnswerIds
+        : Array.isArray(selectedAnswers)
+          ? selectedAnswers
+          : []
+  ), [answerValue, selectedAnswers]);
   const textAnswer = typeof answerValue === 'string'
     ? answerValue
     : typeof answerValue?.textAnswer === 'string'
@@ -189,9 +191,11 @@ const QuestionCard = memo(function QuestionCard({
     ? t('workspace.quiz.expectedAnswerLabel', 'Expected answer')
     : t('workspace.quiz.correctAnswerLabel', 'Correct answer');
   const showFlagToggle = !isReviewRevealed && typeof onToggleFlag === 'function';
-  const correctAnswerIds = Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
-    ? reviewState.correctAnswerIds
-    : (Array.isArray(question.answers) ? question.answers.filter((answer) => answer.isCorrect).map((answer) => answer.id) : []);
+  const correctAnswerIds = useMemo(() => (
+    Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
+      ? reviewState.correctAnswerIds
+      : (Array.isArray(question.answers) ? question.answers.filter((answer) => answer.isCorrect).map((answer) => answer.id) : [])
+  ), [reviewState, question.answers]);
 
   const isFullyCorrect = useMemo(() => {
     if (isPendingGrading) {
@@ -226,6 +230,7 @@ const QuestionCard = memo(function QuestionCard({
 
     return correctAnswerIds.length === normalizedSelectedAnswers.length && correctAnswerIds.every(id => normalizedSelectedAnswers.includes(id));
   }, [
+    reviewState,
     correctAnswerIds,
     correctMatchingPairByLeft,
     correctMatchingPairs,
@@ -235,7 +240,6 @@ const QuestionCard = memo(function QuestionCard({
     isTextQuestion,
     normalizedMatchingPairs,
     normalizedSelectedAnswers,
-    reviewState?.isCorrect,
     textAnswer,
     correctTextAnswers,
   ]);
@@ -255,20 +259,6 @@ const QuestionCard = memo(function QuestionCard({
     if (stateClass === 'quiz-answer-incorrect') return 'border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400';
     if (stateClass === 'quiz-answer-selected') return 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400';
     return 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500';
-  };
-
-  const handleMatchingPairChange = (leftKey, nextRightKey) => {
-    const nextPairs = matchingLeftItems.reduce((pairs, itemLeftKey) => {
-      const existingRightKey = itemLeftKey === leftKey
-        ? nextRightKey
-        : matchingPairByLeft.get(itemLeftKey);
-      if (existingRightKey) {
-        pairs.push({ leftKey: itemLeftKey, rightKey: existingRightKey });
-      }
-      return pairs;
-    }, []);
-
-    onMatchingAnswerChange?.({ matchingPairs: nextPairs });
   };
 
   const cardToneClass = isReviewRevealed

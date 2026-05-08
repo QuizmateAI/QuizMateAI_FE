@@ -1137,15 +1137,9 @@
         "updateFeedback": "Update community feedback",
         "loadError": "Unable to load community quiz.",
         "commentPlaceholder": "Public comment visible to everyone.",
-        "replyPlaceholder": "Write a reply",
         "commentSuccess": "Community comment sent.",
         "commentError": "Unable to send community comment.",
         "cloneAction": "Clone to workspace"
-      },
-      "pasteImport": {
-        "step2": {
-          "placeholder": "{ \"title\": \"...\", \"sections\": [ ... ] }"
-        }
       },
       "communityFeedback": {
         "title": "Community quiz feedback",
@@ -1264,9 +1258,7 @@
         "selectedMaterialsCount": "Using {{count}} selected material(s) from Sources panel.",
         "noSelectedMaterials": "Please choose the material you want to use.",
         "workspaceMaterialsEmpty": "No documents in this workspace yet. Add materials from the Sources panel.",
-        "loadingMaterials": "Loading materials...",
         "materialSelectedBadge": "Selected",
-        "materialsLoading": "Loading material list...",
         "materialsSelectedSummary": "{{selected}} of {{total}} selected",
         "subTopicLabel": "Suggested topics (optional)",
         "subTopicLoading": "Loading topics...",
@@ -2092,7 +2084,7 @@
       "createRoadmapButton": "Create roadmap",
       "emptyRoadmapDescription": "Generate phases with AI to start your learning roadmap from selected materials.",
       "emptyRoadmapTitle": "Welcome to roadmap",
-      "generatingKnowledge": "Please wait while AI generates knowledge for this phase...",
+      "generatingKnowledge": "Generating Knowledge",
       "generatingKnowledgeQuiz": "Generating Knowledge Quiz",
       "generatingPostLearning": "Generating Post Learning",
       "generatingPreLearning": "Generating Pre Learning",
@@ -2264,9 +2256,6 @@
       "noSourcesYet": "No sources yet. Upload material to unlock roadmap, quiz, and flashcard generation.",
       "activeLabel": "active",
       "readyBadge": "Ready",
-      "uploadProgress": {
-        "uploading": "Uploading"
-      },
       "roadmapSnapshotTitle": "Roadmap snapshot",
       "roadmapSnapshotReady": "The roadmap is ready. Open it and move phase by phase.",
       "roadmapSnapshotEmpty": "No phases yet. Build the roadmap from your selected sources.",
@@ -3388,11 +3377,6 @@
       "replyPlaceholder": "Write a reply",
       "cancelReply": "Cancel",
       "sendReply": "Send"
-    },
-    "pasteImport": {
-      "step2": {
-        "placeholder": "{ \"title\": \"...\", \"sections\": [ ... ] }"
-      }
     }
   },
   "editChoiceDialog": {

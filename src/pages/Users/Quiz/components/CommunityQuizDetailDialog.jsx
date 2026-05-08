@@ -30,11 +30,6 @@ function resolveAuthorInitial(name) {
   return String(name || '?').trim().charAt(0).toUpperCase() || '?';
 }
 
-function formatDifficulty(value, t) {
-  if (!value) return null;
-  return t(`workspace.quiz.difficultyLevels.${String(value).toLowerCase()}`, value);
-}
-
 function flattenPreviewQuestions(sections = [], trail = []) {
   return (sections || []).flatMap((section) => {
     const nextTrail = section?.content ? [...trail, section.content] : trail;

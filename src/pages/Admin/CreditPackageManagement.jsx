@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -105,11 +105,11 @@ function CreditPackageManagement() {
     },
   });
 
-  const getFriendlyError = (err, fallbackKey) => {
+  const getFriendlyError = useCallback((err, fallbackKey) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
     return t(fallbackKey);
-  };
+  }, [t]);
 
   const {
     data,
@@ -138,14 +138,14 @@ function CreditPackageManagement() {
     },
   });
 
-  const packages = data?.packages ?? [];
+  const packages = React.useMemo(() => data?.packages ?? [], [data]);
   const creditUnitPrice = data?.creditUnitPrice ?? DEFAULT_CREDIT_UNIT_PRICE;
 
   React.useEffect(() => {
     if (queryError) {
       showError(getFriendlyError(queryError, 'creditPackageManagement.fetchError'));
     }
-  }, [queryError]);
+  }, [queryError, getFriendlyError, showError]);
 
   const invalidatePackages = () =>
     queryClient.invalidateQueries({ queryKey: CREDIT_PACKAGES_QUERY_KEY });

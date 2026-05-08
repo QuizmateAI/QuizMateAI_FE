@@ -200,7 +200,7 @@ function HomePage() {
   const [communitySearchQuery, setCommunitySearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [joiningPublicGroupId, setJoiningPublicGroupId] = useState(null);
-  const [creatingWorkspaceKind, setCreatingWorkspaceKind] = useState(null); // 'individual' | 'group' | null
+  const [creatingWorkspaceKind] = useState(null); // 'individual' | 'group' | null
   // Quick-create flow: mở dialog step-1 ngay <100ms trên HomePage, BE createWorkspace
   // chạy song song. Các bước onboarding tiếp theo chạy trong cùng dialog; chỉ navigate sau confirm.
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);

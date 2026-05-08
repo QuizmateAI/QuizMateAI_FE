@@ -1,0 +1,48 @@
+{
+  "wallet": {
+    "title": "Quizmate クレジット",
+    "subtitle": "残高の確認、クレジットの追加購入、取引履歴の閲覧ができます。",
+    "badge": "ウォレット",
+    "back": "戻る",
+    "balance": "現在の残高",
+    "totalAvailable": "利用可能なクレジット合計",
+    "regularCredits": "通常クレジット",
+    "planCredits": "プランクレジット",
+    "expiresAt": "有効期限",
+    "creditsUnit": "クレジット",
+    "hint": "クレジットは QuizMate の AI 機能で使用されます。",
+    "buyTitle": "クレジットを追加購入",
+    "buySubtitle": "AI 機能を使い続けるためのパッケージを選択してください。",
+    "cannotBuyCredit": "現在のプランではクレジットの購入ができません。プランをアップグレードしてご利用ください。",
+    "bonus": "ボーナス",
+    "buyNow": "今すぐ購入",
+    "packageHint": "即時チャージ — すぐに利用可能",
+    "historyTitle": "取引履歴",
+    "historySubtitle": "最近のチャージとクレジット使用履歴。",
+    "noHistory": "取引はまだありません。",
+    "toastAdded": "{{amount}} クレジットがウォレットに追加されました(UI デモ)。",
+    "types": {
+      "TOPUP": "チャージ",
+      "USAGE": "使用"
+    },
+    "status": {
+      "SUCCESS": "成功",
+      "PENDING": "処理中",
+      "FAILED": "失敗"
+    },
+    "table": {
+      "id": "ID",
+      "time": "時刻",
+      "activity": "アクティビティ",
+      "workspace": "ワークスペース",
+      "type": "種別",
+      "amount": "金額",
+      "source": "ソース",
+      "status": "ステータス"
+    },
+    "noPackage": "クレジットパッケージが見つかりません。",
+    "customCreditPackName": "{{count}} クレジット(カスタム)",
+    "customCreditConfigError": "クレジットの単価を読み込めませんでした。",
+    "customCreditBelowMin": "最低 {{min}} クレジットから購入できます。"
+  }
+}

@@ -61,8 +61,7 @@
       "closeAriaLabel": "Đóng thông báo"
     },
     "loadingSpinner": {
-      "brandLabel": "QuizMate AI",
-      "inlineLabel": "Đang tải"
+      "brandLabel": "QuizMate AI"
     },
     "paymentRedirect": {
       "proxyError": "Cấu hình proxy chưa đúng: /api phải trỏ về backend. Hoặc đặt VITE_API_BASE_URL trỏ sang domain API.",

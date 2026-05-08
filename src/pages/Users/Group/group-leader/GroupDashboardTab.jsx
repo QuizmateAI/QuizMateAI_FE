@@ -18,12 +18,9 @@ import {
   Users,
 } from 'lucide-react';
 import {
-  Bar,
-  BarChart,
+  Area,
+  AreaChart,
   CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -34,7 +31,6 @@ import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
 import i18n from '@/i18n';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getUserDisplayLabel } from '@/utils/userProfile';
 import UserDisplayName from '@/components/features/users/UserDisplayName';
 import { useToast } from '@/context/ToastContext';
 
@@ -129,22 +125,6 @@ function logLabel(action) {
   return labels[action] || i18n.t('groupDashboard.logLabels.activity', 'Activity');
 }
 
-function classificationLabel(code) {
-  const c = String(code || '').toUpperCase();
-  const map = {
-    STRONG: i18n.t('groupDashboard.classification.strong', 'Strong'),
-    AVERAGE: i18n.t('groupDashboard.classification.average', 'Average'),
-    WEAK: i18n.t('groupDashboard.classification.weak', 'Needs support'),
-    AT_RISK: i18n.t('groupDashboard.classification.atRisk', 'At risk'),
-  };
-  return map[c] || c || '—';
-}
-
-function formatPctRatio(n) {
-  if (n == null || Number.isNaN(Number(n))) return '—';
-  return `${Math.round(Number(n) * 1000) / 10}%`;
-}
-
 function formatScore(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return Math.round(Number(value) * 10) / 10;
@@ -153,12 +133,6 @@ function formatScore(value) {
 function formatWhole(value) {
   if (value == null || Number.isNaN(Number(value))) return '0';
   return new Intl.NumberFormat().format(Number(value));
-}
-
-function passRate(snapshot) {
-  const attempts = Number(snapshot?.totalQuizAttempts ?? 0);
-  const passed = Number(snapshot?.totalQuizPassed ?? 0);
-  return attempts > 0 ? passed / attempts : null;
 }
 
 const MEMBER_CARD_PAGE_SIZE = 8;
@@ -232,8 +206,8 @@ function GroupDashboardTab({
   });
 
   const {
-    data: rankingPage,
-    isLoading: rankingLoading,
+    data: _rankingPage,
+    isLoading: _rankingLoading,
     refetch: refetchRanking,
   } = useQuery({
     queryKey: ['group-learning-snapshot-ranking', workspaceId, LEARNING_SNAPSHOT_PERIOD, 'averageScore', 'desc'],
@@ -251,25 +225,6 @@ function GroupDashboardTab({
     const raw = memberCardsPage?.content;
     return Array.isArray(raw) ? raw : [];
   }, [memberCardsPage]);
-
-  const scoreLeaderboard = useMemo(() => {
-    const ranked = Array.isArray(rankingPage?.content) && rankingPage.content.length > 0
-      ? rankingPage.content
-      : memberLearningCards;
-    return [...ranked]
-      .filter((m) => (m.totalQuizAttempts || 0) > 0 && m.averageScore != null)
-      .sort((a, b) => (Number(b.averageScore) || 0) - (Number(a.averageScore) || 0))
-      .slice(0, 10)
-      .map((m) => {
-        const raw = getUserDisplayLabel(m, '?');
-        const label = raw.length > 12 ? `${raw.slice(0, 12)}…` : raw;
-        return {
-          userId: m.userId,
-          label,
-          score: Math.round(Number(m.averageScore) * 10) / 10,
-        };
-      });
-  }, [memberLearningCards, rankingPage]);
 
   const roster = members.map((member) => ({ ...member, joinedDate: toSafeDate(member.joinedAt) }))
     .sort((a, b) => (b.joinedDate?.getTime() ?? 0) - (a.joinedDate?.getTime() ?? 0));
@@ -424,7 +379,15 @@ function GroupDashboardTab({
   };
 
   if (compactMode) {
-    const quietIconTone = isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700';
+    // 4 màu thematic cho 4 KPI để dashboard sống động hơn
+    const cyanTone = isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700';
+    const emeraldTone = isDarkMode ? 'bg-emerald-400/15 text-emerald-200' : 'bg-emerald-100 text-emerald-700';
+    const amberTone = isDarkMode ? 'bg-amber-400/15 text-amber-200' : 'bg-amber-100 text-amber-700';
+    const violetTone = isDarkMode ? 'bg-violet-400/15 text-violet-200' : 'bg-violet-100 text-violet-700';
+    const cyanCard = isDarkMode ? 'border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-transparent to-transparent' : 'border-cyan-200/70 bg-gradient-to-br from-cyan-50 via-white to-white';
+    const emeraldCard = isDarkMode ? 'border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.08] via-transparent to-transparent' : 'border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-white';
+    const amberCard = isDarkMode ? 'border-amber-500/20 bg-gradient-to-br from-amber-500/[0.08] via-transparent to-transparent' : 'border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-white';
+    const violetCard = isDarkMode ? 'border-violet-500/20 bg-gradient-to-br from-violet-500/[0.08] via-transparent to-transparent' : 'border-violet-200/70 bg-gradient-to-br from-violet-50 via-white to-white';
     const learningKpis = [
       {
         label: t('groupDashboard.compact.kpiQuizAttemptsLabel', 'Quiz attempts'),
@@ -434,28 +397,32 @@ function GroupDashboardTab({
           defaultValue: '{{count}} snapshot(s)',
         }),
         icon: BarChart3,
-        tone: quietIconTone,
+        tone: cyanTone,
+        cardTone: cyanCard,
       },
       {
         label: t('groupDashboard.compact.kpiPassedLabel', 'Passed'),
         value: summaryLoading ? '…' : formatWhole(learningSummary?.totalQuizPassed),
         note: t('groupDashboard.compact.kpiPassedNote', 'passed quiz attempts'),
         icon: CheckCircle2,
-        tone: quietIconTone,
+        tone: emeraldTone,
+        cardTone: emeraldCard,
       },
       {
         label: t('groupDashboard.compact.kpiAvgScoreLabel', 'Avg score'),
         value: summaryLoading ? '…' : formatScore(learningSummary?.averageScore),
         note: t('groupDashboard.compact.kpiAvgScoreNote', 'from generated snapshots'),
         icon: TrendingUp,
-        tone: quietIconTone,
+        tone: amberTone,
+        cardTone: amberCard,
       },
       {
         label: t('groupDashboard.compact.kpiMinutesLabel', 'Minutes spent'),
         value: summaryLoading ? '…' : formatWhole(learningSummary?.totalMinutesSpent),
         note: t('groupDashboard.compact.kpiMinutesNote', 'tracked study time'),
         icon: Target,
-        tone: quietIconTone,
+        tone: violetTone,
+        cardTone: violetCard,
       },
     ];
 
@@ -465,7 +432,6 @@ function GroupDashboardTab({
       if (!latest || nextDate.getTime() > latest.getTime()) return nextDate;
       return latest;
     }, null);
-    const spotlightLead = scoreLeaderboard[0] ?? null;
     const activityChartSum = activityChartData.reduce((sum, item) => sum + item.count, 0);
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
@@ -487,8 +453,10 @@ function GroupDashboardTab({
                   <div className="flex items-start gap-3">
                     <span
                       className={cn(
-                        'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-                        quietIconTone,
+                        'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-sm',
+                        isDarkMode
+                          ? 'bg-gradient-to-br from-orange-400 to-rose-500 text-white'
+                          : 'bg-gradient-to-br from-orange-500 to-rose-500 text-white',
                       )}
                     >
                       <Users className="h-4 w-4" />
@@ -554,7 +522,7 @@ function GroupDashboardTab({
                 {learningKpis.map((k) => {
                   const Icon = k.icon;
                   return (
-                    <div key={k.label} className={cn('rounded-lg border p-4', innerCardClass)}>
+                    <div key={k.label} className={cn('rounded-lg border p-4 transition-shadow hover:shadow-md', k.cardTone)}>
                       <div className="flex items-center gap-2">
                         <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', k.tone)}>
                           <Icon className="h-4 w-4" />
@@ -568,62 +536,20 @@ function GroupDashboardTab({
                 })}
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                <div className={cn('rounded-lg border p-4', innerCardClass)}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="mb-1 flex items-center gap-2">
-                        <TrendingUp className={cn('h-4 w-4', isDarkMode ? 'text-slate-300' : 'text-slate-600')} />
-                        <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                          {t('groupDashboard.compact.scoreSpotlightTitle', 'Score ranking')}
-                        </h3>
-                      </div>
-                      <p className={`text-xs ${subtleTextClass}`}>
-                        {t('groupDashboard.compact.scoreSpotlightSubtitle', { pageSize: MEMBER_CARD_PAGE_SIZE, defaultValue: 'Ranks {{pageSize}} members per page by average result from the latest snapshot.' })}
-                      </p>
-                    </div>
-                    {spotlightLead ? (
-                      <div className={cn('min-w-[132px] rounded-lg border px-3 py-2 text-right', isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-slate-50')}>
-                        <p className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>
-                          {t('groupDashboard.snapshots.topPerformer', 'Highest score')}
-                        </p>
-                        <p className={cn('mt-1 truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                          {spotlightLead.label}
-                        </p>
-                        <p className={cn('mt-1 text-lg font-black tracking-tight', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>
-                          {spotlightLead.score}
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="mt-4 h-56 w-full min-h-[14rem]">
-                    {rankingLoading ? (
-                      <div className={`flex h-full items-center justify-center text-sm ${subtleTextClass}`}>…</div>
-                    ) : scoreLeaderboard.length === 0 ? (
-                      <div className={`flex h-full items-center justify-center rounded-lg border border-dashed px-4 text-center text-sm ${subtleTextClass}`}>
-                        {t('groupDashboard.compact.noCompletedQuizData', 'No generated snapshot data yet.')}
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={scoreLeaderboard} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1e293b' : '#e2e8f0'} vertical={false} />
-                          <XAxis dataKey="label" tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} interval={0} angle={-18} textAnchor="end" height={48} />
-                          <YAxis tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={32} />
-                          <Tooltip cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(100,116,139,0.08)' }} contentStyle={chartTooltipBox.contentStyle} />
-                          <Bar dataKey="score" radius={[6, 6, 0, 0]} maxBarSize={28}>
-                            {scoreLeaderboard.map((_, i) => (
-                              <Cell key={`cell-bar-${i}`} fill={isDarkMode ? '#94a3b8' : '#475569'} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </div>
-
-                <div className={cn('rounded-lg border p-4', innerCardClass)}>
+              <div className="grid gap-4">
+                <div className={cn(
+                  'rounded-lg border p-4',
+                  isDarkMode
+                    ? 'border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.06] via-transparent to-transparent'
+                    : 'border-cyan-200/70 bg-gradient-to-br from-cyan-50/80 via-white to-white',
+                )}>
                   <div className="mb-1 flex items-center gap-2">
-                    <Activity className={cn('h-4 w-4', isDarkMode ? 'text-slate-300' : 'text-slate-600')} />
+                    <span className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-md',
+                      isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700',
+                    )}>
+                      <Activity className="h-3.5 w-3.5" />
+                    </span>
                     <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                       {t('groupDashboard.charts.weeklyTrendCompact', '7-day activity rhythm')}
                     </h3>
@@ -636,11 +562,14 @@ function GroupDashboardTab({
                       <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${eyebrowClass}`}>
                         {t('groupDashboard.hero.activityThisWeekLabel', 'Activity this week')}
                       </p>
-                      <p className={cn('mt-1 text-2xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      <p className={cn('mt-1 text-2xl font-black tracking-tight', isDarkMode ? 'text-cyan-100' : 'text-cyan-700')}>
                         {formatWhole(activityChartSum)}
                       </p>
                     </div>
-                    <span className={cn('rounded-md border px-2.5 py-1 text-xs font-medium', isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
+                    <span className={cn(
+                      'rounded-md border px-2.5 py-1 text-xs font-medium',
+                      isDarkMode ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-300 bg-cyan-50 text-cyan-700',
+                    )}>
                       {t('groupDashboard.charts.recentWindow', 'Last 7 days')}
                     </span>
                   </div>
@@ -651,20 +580,27 @@ function GroupDashboardTab({
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={activityChartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                        <AreaChart data={activityChartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="activityAreaFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#06b6d4" stopOpacity={isDarkMode ? 0.45 : 0.35} />
+                              <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1e293b' : '#e2e8f0'} vertical={false} />
                           <XAxis dataKey="label" tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={28} />
                           <Tooltip contentStyle={chartTooltipBox.contentStyle} />
-                          <Line
+                          <Area
                             type="monotone"
                             dataKey="count"
-                            stroke={isDarkMode ? '#94a3b8' : '#475569'}
+                            stroke="#06b6d4"
                             strokeWidth={2.5}
-                            dot={{ r: 3 }}
-                            activeDot={{ r: 5 }}
+                            fill="url(#activityAreaFill)"
+                            dot={{ r: 3, fill: '#06b6d4', stroke: '#06b6d4' }}
+                            activeDot={{ r: 5, fill: '#0891b2', stroke: '#06b6d4' }}
                           />
-                        </LineChart>
+                        </AreaChart>
                       </ResponsiveContainer>
                     )}
                   </div>

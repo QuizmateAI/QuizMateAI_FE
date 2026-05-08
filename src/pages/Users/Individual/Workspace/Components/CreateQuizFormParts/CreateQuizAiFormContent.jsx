@@ -74,7 +74,7 @@ function CreateQuizAiFormContent({
     onToggleMaterialSelection,
     onSelectedSubTopicIdsChange,
     readOnly = false,
-    workspaceMaterialsEmptyMessage,
+    workspaceMaterialsEmptyMessage: _workspaceMaterialsEmptyMessage,
   } = ui;
   const {
     areAllWorkspaceMaterialsSelected,

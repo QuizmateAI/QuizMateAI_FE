@@ -305,7 +305,7 @@ function UserDetailPage() {
       const res = await getGroupDetail(workspaceId);
       const data = res?.data ?? res;
       setGroupDetails((prev) => ({ ...prev, [workspaceId]: data }));
-    } catch (err) {
+    } catch {
       setGroupDetails((prev) => ({ ...prev, [workspaceId]: null }));
     }
   };

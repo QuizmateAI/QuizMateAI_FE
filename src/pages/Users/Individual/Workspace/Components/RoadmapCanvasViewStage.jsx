@@ -17,7 +17,6 @@ import { hasReadyRoadmapQuiz } from "../utils/roadmapProcessing";
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;
 const KNOWLEDGE_CARD_WIDTH = 196;
-const TOP_SECTION_CARD_BASE_WIDTH = 100;
 const TOP_SECTION_CARD_MAX_WIDTH = 320;
 const TIMELINE_GAP = 20;
 const TIMELINE_PADDING = 20;

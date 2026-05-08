@@ -137,9 +137,8 @@ function MockTestListView({
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { showError } = useToast();
-  const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const normalizedContextId = Number(contextId) || 0;
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -158,7 +157,7 @@ function MockTestListView({
     queryFn: () => loadMockTests({ contextId: normalizedContextId }),
   });
 
-  const mockTests = mockTestPayload.items || [];
+  const mockTests = useMemo(() => mockTestPayload.items || [], [mockTestPayload.items]);
 
   const filteredMockTests = useMemo(
     () =>

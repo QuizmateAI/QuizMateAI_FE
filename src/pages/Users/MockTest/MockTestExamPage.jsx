@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Clock } from 'lucide-react';
@@ -56,7 +56,6 @@ export default function MockTestExamPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const { showError } = useToast();
   const { t } = useTranslation();
 

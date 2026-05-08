@@ -6,25 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/context/ToastContext';
 import { createManualFlashcardBulk } from '@/api/FlashcardAPI';
-import { getWorkspacesByUser } from '@/api/WorkspaceAPI';
 import { unwrapApiData } from '@/utils/apiResponse';
 import { buildFlashcardItemsFromAttempt } from '../utils/buildFlashcardItemsFromAttempt';
 
 const MAX_NAME_LENGTH = 120;
-
-function normalizeWorkspaceList(rawList) {
-  if (!Array.isArray(rawList)) return [];
-
-  return rawList
-    .map((entry) => {
-      const workspaceId = Number(entry?.workspaceId ?? entry?.id);
-      if (!Number.isInteger(workspaceId) || workspaceId <= 0) return null;
-      const name = String(entry?.name ?? entry?.title ?? entry?.workspaceName ?? '').trim()
-        || `Workspace #${workspaceId}`;
-      return { workspaceId, name };
-    })
-    .filter(Boolean);
-}
 
 function deriveDefaultName(quizTitle, t) {
   const cleanTitle = String(quizTitle || '').trim();
@@ -50,9 +35,6 @@ export default function QuizToFlashcardDialog({
   const queryClient = useQueryClient();
 
   const [name, setName] = useState('');
-  const [workspaceId, setWorkspaceId] = useState(null);
-  const [workspaces, setWorkspaces] = useState([]);
-  const [workspacesLoading, setWorkspacesLoading] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const { items, skippedCount } = useMemo(
@@ -61,56 +43,24 @@ export default function QuizToFlashcardDialog({
   );
   const totalQuestions = Array.isArray(reviewQuestions) ? reviewQuestions.length : 0;
 
+  // Workspace của flashcard set luôn = workspace của quiz (không cho chọn workspace khác)
+  const workspaceId = useMemo(() => {
+    const candidate = Number(defaultWorkspaceId);
+    return Number.isInteger(candidate) && candidate > 0 ? candidate : null;
+  }, [defaultWorkspaceId]);
+  const workspaceMissing = !Number.isInteger(workspaceId) || workspaceId <= 0;
+
   // Reset form mỗi lần dialog mở lại
   useEffect(() => {
     if (!open) return;
     setName(deriveDefaultName(quizTitle, t));
-    setWorkspaceId(Number.isInteger(Number(defaultWorkspaceId)) && Number(defaultWorkspaceId) > 0
-      ? Number(defaultWorkspaceId)
-      : null);
-  }, [open, quizTitle, defaultWorkspaceId, t]);
-
-  // Lấy danh sách workspace của user khi mở dialog (chỉ khi cần — workspace chưa cố định)
-  useEffect(() => {
-    if (!open) return undefined;
-    let cancelled = false;
-
-    (async () => {
-      setWorkspacesLoading(true);
-      try {
-        const response = await getWorkspacesByUser(0, 50);
-        const payload = unwrapApiData(response);
-        const list = payload?.content || payload?.data || (Array.isArray(payload) ? payload : []);
-        const normalized = normalizeWorkspaceList(list);
-        if (cancelled) return;
-
-        setWorkspaces(normalized);
-        // Nếu chưa chọn workspace mặc định thì chọn cái đầu tiên
-        setWorkspaceId((prev) => {
-          if (Number.isInteger(prev) && prev > 0) return prev;
-          return normalized[0]?.workspaceId ?? null;
-        });
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Failed to load workspaces for flashcard dialog:', error);
-          setWorkspaces([]);
-        }
-      } finally {
-        if (!cancelled) setWorkspacesLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
+  }, [open, quizTitle, t]);
 
   const trimmedName = name.trim();
   const canSubmit = !creating
     && items.length > 0
     && trimmedName.length > 0
-    && Number.isInteger(workspaceId)
-    && workspaceId > 0;
+    && !workspaceMissing;
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
@@ -209,33 +159,21 @@ export default function QuizToFlashcardDialog({
             />
           </label>
 
-          <div className="block">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              {t('quizResultPage.toFlashcard.workspaceLabel', 'Save to workspace')}
-            </span>
-            {workspacesLoading ? (
-              <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t('quizResultPage.toFlashcard.workspaceLoading', 'Loading your workspaces...')}
-              </div>
-            ) : workspaces.length === 0 ? (
-              <p className="mt-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300">
-                {t('quizResultPage.toFlashcard.workspaceEmpty', 'You do not have any workspaces. Create one before generating flashcards.')}
-              </p>
-            ) : (
-              <select
-                value={workspaceId ?? ''}
-                onChange={(event) => setWorkspaceId(Number(event.target.value) || null)}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-              >
-                {workspaces.map((workspace) => (
-                  <option key={workspace.workspaceId} value={workspace.workspaceId}>
-                    {workspace.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          {workspaceMissing ? (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300">
+              {t(
+                'quizResultPage.toFlashcard.workspaceMissing',
+                'Cannot determine this quiz\'s workspace. Please reload the page and try again.',
+              )}
+            </p>
+          ) : (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+              {t(
+                'quizResultPage.toFlashcard.workspaceFixedHint',
+                'Flashcards will be saved to this quiz\'s workspace.',
+              )}
+            </p>
+          )}
         </div>
 
         <DialogFooter>

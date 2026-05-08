@@ -486,9 +486,6 @@
     "add": "Add New Admin",
     "cardTitle": "Admin Accounts",
     "searchPlaceholder": "Search by username or email...",
-    "deleteDialog": {
-      "reasonPlaceholder": "Enter the audit reason for deleting this admin account..."
-    },
     "table": {
       "id": "ID",
       "username": "Username",
@@ -2150,11 +2147,6 @@
     "rejectReasonPlaceholder": "Example: this permission does not match the current scope of work.",
     "rejectSubmit": "Confirm rejection",
     "rejecting": "Submitting..."
-  },
-  "communityQuizManagement": {
-    "filters": {
-      "searchPlaceholder": "Search by quiz title, creator, or email"
-    }
   },
   "userManagementPage": {
     "fetchError": "Unable to load users.",

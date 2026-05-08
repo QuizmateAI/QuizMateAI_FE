@@ -22,6 +22,12 @@ let _accessToken = '';
 let _bootstrapPromise = null;
 let _bootstrapped = false;
 let _refreshFn = null;
+// Single-flight refresh is owned by this module so both bootstrap() (called
+// once at app start) and ad-hoc refreshes (driven by the axios 401 interceptor)
+// share the same in-flight promise. Without this, both code paths could fire a
+// duplicate /auth/refresh round-trip on a cold start when queries race the
+// bootstrap.
+let _refreshPromise = null;
 
 /**
  * Inject the function that performs the cookie-based refresh call. Done from api.js
@@ -79,10 +85,37 @@ export function hasAccessToken() {
 }
 
 /**
+ * Single-flight refresh. Multiple concurrent callers (interceptor + bootstrap +
+ * other code paths) share one in-flight /auth/refresh request. Resolves with
+ * the new access token; rejects if refresh failed.
+ */
+export function refresh() {
+  if (!_refreshFn) {
+    return Promise.reject(new Error('REFRESH_NOT_CONFIGURED'));
+  }
+  if (!_refreshPromise) {
+    _refreshPromise = Promise.resolve()
+      .then(() => _refreshFn())
+      .then((newAccess) => {
+        if (newAccess) {
+          _accessToken = newAccess;
+        }
+        return _accessToken;
+      })
+      .finally(() => {
+        _refreshPromise = null;
+      });
+  }
+  return _refreshPromise;
+}
+
+/**
  * Called once at app start. Tries to recover the access token via the refresh cookie.
  * Resolves whether or not auth succeeded — callers branch on hasAccessToken() after.
  *
- * Idempotent: subsequent calls return the same in-flight promise.
+ * Idempotent: subsequent calls return the same in-flight promise. Internally
+ * shares the {@link refresh} single-flight so a query firing concurrently with
+ * bootstrap doesn't trigger a duplicate refresh round-trip.
  */
 export async function bootstrap() {
   if (_bootstrapped) return _accessToken;
@@ -94,10 +127,7 @@ export async function bootstrap() {
 
   _bootstrapPromise = (async () => {
     try {
-      const newAccess = await _refreshFn();
-      if (newAccess) {
-        _accessToken = newAccess;
-      }
+      await refresh();
     } catch {
       // No refresh cookie, expired, or revoked — treat as logged-out.
       _accessToken = '';
@@ -120,6 +150,7 @@ export function __resetForTests() {
   _accessToken = '';
   _bootstrapPromise = null;
   _bootstrapped = false;
+  _refreshPromise = null;
 }
 
 export const TOKEN_KEYS = Object.freeze({

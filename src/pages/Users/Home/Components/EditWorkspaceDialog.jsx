@@ -18,7 +18,7 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
 
   const [title, setTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [, setErrors] = useState({});
 
   // Điền dữ liệu workspace vào form khi mở dialog
   useEffect(() => {

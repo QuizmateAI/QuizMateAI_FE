@@ -57,10 +57,12 @@ export default defineConfig(({ mode }) => {
       eslint({
         cache: false,
         include: ['./src/**/*.js', './src/**/*.jsx'],
-        exclude: ['/node_modules/'],
+        // Tests are covered by `npm run lint`; excluding keeps `vite build` output clean.
+        exclude: [/node_modules/, /[\\/]src[\\/]test[\\/]/],
         failOnError: false,
         failOnWarning: false,
-        emitWarning: true,
+        // Production build: do not print ESLint warnings (still fix via `npm run lint`).
+        emitWarning: false,
         emitError: true,
       }),
       compression({
