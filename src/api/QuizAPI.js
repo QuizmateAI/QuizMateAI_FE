@@ -49,6 +49,11 @@ export const updateQuiz = async (quizId, data) => {
   return response;
 };
 
+export const updateShuffleEnabled = async (quizId, enabled) => {
+  const response = await api.patch(`/quiz/${quizId}/shuffle`, { enabled });
+  return response;
+};
+
 export const shareQuizToCommunity = async (quizId, shared = true) => {
   const response = await api.post(`/quiz/${quizId}/community-share?shared=${shared}`);
   return response;
