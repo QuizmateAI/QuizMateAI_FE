@@ -248,4 +248,40 @@ describe('UploadSourceDialogBase', () => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
+
+  it('shows the 200MB validation message and disables upload actions for oversized files', async () => {
+    render(
+      <UploadSourceDialogBase
+        open
+        onOpenChange={vi.fn()}
+        isDarkMode={false}
+        workspaceId={42}
+        onUploadFiles={vi.fn()}
+        planEntitlements={{
+          canUploadPdf: true,
+          canUploadWord: true,
+          canUploadSlide: true,
+          canUploadExcel: true,
+          canUploadText: true,
+          canUploadImage: true,
+          canUploadAudio: true,
+          canUploadVideo: true,
+        }}
+      />,
+    );
+
+    const oversizedFile = new File(['oversized'], 'huge.pdf', { type: 'application/pdf' });
+    Object.defineProperty(oversizedFile, 'size', { value: 201 * 1024 * 1024 });
+
+    const fileInput = document.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, {
+      target: {
+        files: [oversizedFile],
+      },
+    });
+
+    expect(screen.getByText('workspace.upload.fileTooLarge')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'workspace.upload.uploadFileButton' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'workspace.upload.uploadUserFiles' })).toBeDisabled();
+  });
 });
