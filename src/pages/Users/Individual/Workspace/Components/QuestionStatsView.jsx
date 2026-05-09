@@ -23,11 +23,6 @@ import {
   Cell,
   Pie,
   PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -60,7 +55,9 @@ const SURFACE_OPTIONS = [
 ];
 
 const DIFFICULTY_KEYS = ["EASY", "MEDIUM", "HARD", "CUSTOM", "UNSPECIFIED"];
-const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "APPLY"];
+// UNSPECIFIED dat cuoi de cau hoi thieu metadata van duoc dem vao chart, nhung tach biet
+// truc quan voi cac muc Bloom hop le.
+const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "APPLY", "UNSPECIFIED"];
 
 const BLOOM_COLORS = {
   REMEMBER: { main: "#6366f1" },
@@ -68,6 +65,7 @@ const BLOOM_COLORS = {
   APPLY: { main: "#22c55e" },
   ANALYZE: { main: "#f59e0b" },
   EVALUATE: { main: "#ef4444" },
+  UNSPECIFIED: { main: "#94a3b8" },
 };
 
 function pct(value, total) {
@@ -167,30 +165,10 @@ function translateLabel(label, t, bucketType) {
 }
 
 function getRenderableBloomBuckets(buckets = []) {
-  const available = buckets.filter((bucket) => String(bucket?.label || "").toUpperCase() !== "UNSPECIFIED");
-  const bucketMap = Object.fromEntries(available.map((bucket) => [String(bucket?.label || "").toUpperCase(), bucket]));
+  const bucketMap = Object.fromEntries(
+    (buckets || []).map((bucket) => [String(bucket?.label || "").toUpperCase(), bucket])
+  );
   return BLOOM_ORDER.map((key) => bucketMap[key]).filter(Boolean);
-}
-
-function getQuestionBucketAttemptCount(bucket) {
-  return Number(bucket?.attemptedQuestionsInMode ?? bucket?.gradedQuestionsInMode ?? 0);
-}
-
-function getQuestionBucketAccuracy(bucket) {
-  return Number(bucket?.accuracyInMode ?? 0);
-}
-
-function pickQuestionInsightBucket(buckets = [], type = "best") {
-  const candidates = buckets.filter((bucket) => getQuestionBucketAttemptCount(bucket) > 0);
-  if (candidates.length === 0) return null;
-
-  const sorted = [...candidates].sort((left, right) => {
-    const accuracyDiff = getQuestionBucketAccuracy(right) - getQuestionBucketAccuracy(left);
-    if (Math.abs(accuracyDiff) > 0.0001) return accuracyDiff;
-    return getQuestionBucketAttemptCount(right) - getQuestionBucketAttemptCount(left);
-  });
-
-  return type === "worst" ? sorted[sorted.length - 1] : sorted[0];
 }
 
 function pickQuizInsightItem(items = [], type = "best") {
@@ -444,13 +422,13 @@ function DifficultyBarChart({ buckets, isDarkMode, t, isLifetime = false }) {
 
   const colors = chartColors(isDarkMode);
   const ts = tooltipStyle(colors);
-  const data = buckets
-    .filter((bucket) => String(bucket?.label || "").toUpperCase() !== "UNSPECIFIED")
-    .map((bucket) => ({
-      label: translateLabel(bucket?.label, t, "difficulty"),
-      correct: isLifetime ? Number(bucket?.correctQuestionAttemptsInMode || 0) : Number(bucket?.correctQuestionsInMode || 0),
-      incorrect: isLifetime ? Number(bucket?.incorrectQuestionAttemptsInMode || 0) : Number(bucket?.incorrectQuestionsInMode || 0),
-    }));
+  // Khong loc UNSPECIFIED — cau hoi thieu metadata van phai duoc hien thi de tong khop
+  // voi card summary o root. BE da sap UNSPECIFIED ve cuoi qua difficultyComparator().
+  const data = buckets.map((bucket) => ({
+    label: translateLabel(bucket?.label, t, "difficulty"),
+    correct: isLifetime ? Number(bucket?.correctQuestionAttemptsInMode || 0) : Number(bucket?.correctQuestionsInMode || 0),
+    incorrect: isLifetime ? Number(bucket?.incorrectQuestionAttemptsInMode || 0) : Number(bucket?.incorrectQuestionsInMode || 0),
+  }));
 
   if (data.length === 0) return null;
 
@@ -465,41 +443,6 @@ function DifficultyBarChart({ buckets, isDarkMode, t, isLifetime = false }) {
         <Bar dataKey="incorrect" name={t("workspace.questionStats.incorrect")} fill="#ef4444" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
-  );
-}
-
-function BloomRadarChart({ buckets, isDarkMode, t }) {
-  const filtered = getRenderableBloomBuckets(buckets);
-  if (filtered.length < 3) return null;
-
-  const colors = chartColors(isDarkMode);
-  const ts = tooltipStyle(colors);
-  const data = filtered.map((bucket) => ({
-    subject: translateLabel(bucket?.label, t, "bloom"),
-    accuracy: Math.round((bucket?.accuracyInMode ?? 0) * 100),
-    fullMark: 100,
-  }));
-
-  return (
-    <div className={`rounded-[28px] border p-5 ${panelClasses(isDarkMode)}`}>
-      <h3 className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-        {t("workspace.questionStats.radarTitle")}
-      </h3>
-      <p className={`mt-1 text-sm ${mutedTextClasses(isDarkMode)}`}>
-        {t("workspace.questionStats.radarSubtitle")}
-      </p>
-      <div className="mt-4">
-        <ResponsiveContainer width="100%" height={280}>
-          <RadarChart data={data} cx="50%" cy="50%" outerRadius="72%">
-            <PolarGrid stroke={colors.grid} />
-            <PolarAngleAxis dataKey="subject" tick={{ fill: colors.axis, fontSize: 11 }} />
-            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: colors.axis, fontSize: 10 }} tickCount={4} />
-            <Radar dataKey="accuracy" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.22} strokeWidth={2} dot={{ r: 3, fill: "#3b82f6" }} />
-            <Tooltip {...ts} formatter={(value) => [`${value}%`, t("workspace.questionStats.accuracy")]} />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
   );
 }
 
@@ -682,14 +625,11 @@ function QuestionStatsContent({ lifetime, current, isDarkMode, t, containerWidth
   const pendingQuestions = Number(current?.pendingQuestionsInMode || 0);
   const untouchedQuestions = Math.max(0, totalQuestions - attemptedQuestions);
   const attemptedPercent = pct(attemptedQuestions, totalQuestions);
-  const hasBloomRadar = getRenderableBloomBuckets(current?.byBloom).length >= 3;
   const isUltraCompact = containerWidth > 0 && containerWidth < 560;
   const isDense = containerWidth > 0 && containerWidth < 760;
   const summaryGridClass = isDense ? "grid-cols-2" : "grid-cols-3";
   const totalAttempts = Number(lifetime?.totalQuestionAttempts ?? lifetime?.totalAttempts ?? 0);
   const showWelcome = !welcomeDismissed && totalAttempts <= 5;
-  const strongestDifficulty = pickQuestionInsightBucket(current?.byDifficulty, "best");
-  const weakestDifficulty = pickQuestionInsightBucket(current?.byDifficulty, "worst");
 
   return (
     <>
@@ -751,27 +691,6 @@ function QuestionStatsContent({ lifetime, current, isDarkMode, t, containerWidth
           accentClassName={isDarkMode ? "bg-slate-600" : "bg-slate-400"}
           isDarkMode={isDarkMode}
           compact
-        />
-      </div>
-
-      <div className="grid gap-3 xl:grid-cols-2">
-        <InsightCard
-          title={t("workspace.questionStats.strongArea")}
-          value={strongestDifficulty ? translateLabel(strongestDifficulty.label, t, "difficulty") : t("workspace.questionStats.notEnoughData")}
-          description={strongestDifficulty
-            ? `${fmtAccuracy(strongestDifficulty.accuracyInMode)} • ${fmtNumber(strongestDifficulty.attemptedQuestionsInMode)} ${t("workspace.questionStats.attempted").toLowerCase()}`
-            : t("workspace.questionStats.strongAreaDesc")}
-          isDarkMode={isDarkMode}
-          tone="emerald"
-        />
-        <InsightCard
-          title={t("workspace.questionStats.needsFocus")}
-          value={weakestDifficulty ? translateLabel(weakestDifficulty.label, t, "difficulty") : t("workspace.questionStats.notEnoughData")}
-          description={weakestDifficulty
-            ? `${fmtAccuracy(weakestDifficulty.accuracyInMode)} • ${fmtNumber(weakestDifficulty.attemptedQuestionsInMode)} ${t("workspace.questionStats.attempted").toLowerCase()}`
-            : t("workspace.questionStats.needsFocusDesc")}
-          isDarkMode={isDarkMode}
-          tone="amber"
         />
       </div>
 
@@ -862,8 +781,6 @@ function QuestionStatsContent({ lifetime, current, isDarkMode, t, containerWidth
             <BloomAccuracyBarChart buckets={current?.byBloom} isDarkMode={isDarkMode} t={t} />
           </ChartSection>
         </div>
-
-        {hasBloomRadar ? <BloomRadarChart buckets={current?.byBloom} isDarkMode={isDarkMode} t={t} /> : null}
       </section>
 
       {lifetime ? (
