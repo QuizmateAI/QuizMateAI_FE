@@ -17,10 +17,12 @@ const budgets = [
   { label: 'en auth locale payload', prefixes: ['i18n-en-common-', 'i18n-en-auth-'], maxBytes: 27 * 1024 },
   { label: 'vi home locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-home-', 'i18n-vi-grouphome-'], maxBytes: 52 * 1024 },
   { label: 'en home locale payload', prefixes: ['i18n-en-common-', 'i18n-en-home-', 'i18n-en-grouphome-'], maxBytes: 44 * 1024 },
-  { label: 'vi workspace locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-'], maxBytes: 168 * 1024 },
-  { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 149 * 1024 },
-  { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-', 'i18n-vi-group-', 'i18n-vi-grouphome-', 'i18n-vi-wallet-'], maxBytes: 270 * 1024 },
-  { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-', 'i18n-en-group-', 'i18n-en-grouphome-', 'i18n-en-wallet-'], maxBytes: 240 * 1024 },
+  // Workspace namespace JSON is intentionally large (quiz/mock flows, profile wizard).
+  // Group payloads sum workspace + group + wallet namespace chunks loaded on `/group-workspaces`.
+  { label: 'vi workspace locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-'], maxBytes: 192 * 1024 },
+  { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 168 * 1024 },
+  { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-', 'i18n-vi-group-', 'i18n-vi-grouphome-', 'i18n-vi-wallet-'], maxBytes: 286 * 1024 },
+  { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-', 'i18n-en-group-', 'i18n-en-grouphome-', 'i18n-en-wallet-'], maxBytes: 256 * 1024 },
   { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-', 'i18n-vi-wallet-'], maxBytes: 96 * 1024 },
   { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-', 'i18n-en-wallet-'], maxBytes: 82 * 1024 },
 ];

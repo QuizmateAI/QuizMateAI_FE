@@ -2841,26 +2841,6 @@
     }
   },
   "workspaceSettings": "Workspace settings",
-  "Bloom Skills": "Bloom Skills",
-  "Dashboard": "Dashboard",
-  "Difficulty Level": "Difficulty Level",
-  "General Info": "General Info",
-  "Loading materials": {
-    "": {
-      "": {
-        "": ""
-      }
-    }
-  },
-  "Members": "Members",
-  "No description": "No description",
-  "No materials found in this workspace": {
-    "": ""
-  },
-  "Question Types": "Question Types",
-  "Select Materials": "Select Materials",
-  "Settings": "Settings",
-  "Total Questions": "Total Questions",
   "individualWorkspaceProfileOverviewDialog": {
     "notConfigured": "Not configured",
     "roadmapDisabled": "Disabled",
