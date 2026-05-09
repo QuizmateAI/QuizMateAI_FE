@@ -5,14 +5,7 @@ import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, Layers, RefreshC
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
   ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +45,7 @@ import {
 } from './Components/SuperAdminSurface';
 import TokenBreakdownCell from './Components/TokenBreakdownCell';
 import DateRangeChips from './Components/DateRangeChips';
+import TopFeaturesByCostCard from './Components/TopFeaturesByCostCard';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 
@@ -507,7 +501,6 @@ function AiCostManagement() {
       <SuperAdminPageHeader
         eyebrow={t('sidebarSections.aiUsageCommerce', 'Chi phí & nhật ký AI')}
         title={t('aiCosts.title')}
-        description={`${t('aiCosts.subtitle')} ${t('aiCosts.scopeNote', '· Only user-paid features. Click a row to inspect AI sub-calls.')}`}
         actions={(
           <Button
             type="button"
@@ -578,78 +571,30 @@ function AiCostManagement() {
         />
       </div>
 
-      <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-              {t('aiCosts.topFeatures.title', 'Top tính năng theo AI cost')}
-            </h3>
-            <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-              {t('aiCosts.topFeatures.subtitle', 'Xếp hạng 8 tính năng tiêu tốn nhiều provider cost nhất.')}
-            </p>
-          </div>
-          <p className={`text-right text-xs tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            {topFeatures.length} {t('aiCosts.topFeatures.featureCount', 'tính năng')}
-          </p>
-        </div>
-        {topFeatures.length === 0 ? (
-          <p className="py-12 text-center text-sm text-slate-500">
-            {t('aiCosts.topFeatures.empty', 'Không có dữ liệu cho khoảng này.')}
-          </p>
-        ) : (
-          <ResponsiveContainer width="100%" height={Math.max(180, topFeatures.length * 28)}>
-            <BarChart
-              data={topFeatures.map((f, idx) => ({
-                ...f,
-                rank: idx,
-                label: getAiActionLabel(f.featureKey, t) || f.featureKey,
-              }))}
-              layout="vertical"
-              margin={{ top: 4, right: 56, left: 4, bottom: 4 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} horizontal={false} />
-              <XAxis type="number" hide />
-              <YAxis
-                type="category"
-                dataKey="label"
-                tick={{ fontSize: 11, fill: isDarkMode ? '#cbd5e1' : '#475569' }}
-                axisLine={false}
-                tickLine={false}
-                width={150}
-              />
-              <RechartsTooltip
-                contentStyle={{
-                  background: isDarkMode ? '#0f172a' : '#fff',
-                  border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`,
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-                cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
-                formatter={(value, _name, item) => [
-                  `${formatVnd(value)} · ${formatInteger(item?.payload?.requestCount)} ${t('aiCosts.topFeatures.requests', 'request')}`,
-                  item?.payload?.label,
-                ]}
-                labelFormatter={() => ''}
-              />
-              <Bar
-                dataKey="providerCostVnd"
-                radius={[0, 4, 4, 0]}
-                barSize={14}
-                label={{
-                  position: 'right',
-                  formatter: (v) => formatVnd(v),
-                  fill: isDarkMode ? '#94a3b8' : '#64748b',
-                  fontSize: 10,
-                }}
-              >
-                {topFeatures.map((_, idx) => (
-                  <Cell key={`aicost-feat-${idx}`} fill={idx === 0 ? '#f59e0b' : idx <= 2 ? '#fbbf24' : '#94a3b8'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      <TopFeaturesByCostCard
+        topFeatures={topFeatures}
+        isDarkMode={isDarkMode}
+        title={t('aiCosts.topFeatures.title', 'Top tính năng theo AI cost')}
+        subtitle={t('aiCosts.topFeatures.subtitle', 'Xếp hạng 8 tính năng tiêu tốn nhiều provider cost nhất.')}
+        emptyText={t('aiCosts.topFeatures.empty', 'Không có dữ liệu cho khoảng này.')}
+        scopeRange={{ from: filters.from, to: filters.to }}
+        defaultScopeLabel={{
+          day: t('aiCosts.topFeatures.dayUnit', 'ngày'),
+          feature: t('aiCosts.topFeatures.featureCount', 'tính năng'),
+          all: t('aiCosts.topFeatures.allRange', 'Tất cả'),
+        }}
+        legendTopLabel={t('aiCosts.topFeatures.legendTop', 'Top tính năng')}
+        legendOtherLabel={t('aiCosts.topFeatures.legendOther', 'Còn lại')}
+        legendUnitLabel={t('aiCosts.topFeatures.legendUnit', 'Đơn vị: VND')}
+        totalLabel={t('aiCosts.topFeatures.total', 'Tổng AI cost')}
+        featureColumnLabel={t('aiCosts.topFeatures.columnFeature', 'Tính năng')}
+        costColumnLabel={t('aiCosts.topFeatures.columnCost', 'AI cost')}
+        shareColumnLabel={t('aiCosts.topFeatures.columnShare', 'Tỷ lệ')}
+        requestSuffixLabel={t('aiCosts.topFeatures.requests', 'request')}
+        formatVnd={formatVnd}
+        formatInteger={formatInteger}
+        getFeatureLabel={(featureKey) => getAiActionLabel(featureKey, t) || featureKey}
+      />
 
       <div className={`flex flex-col gap-4 rounded-2xl border p-5 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
         <div>

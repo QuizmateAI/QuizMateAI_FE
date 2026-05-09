@@ -282,19 +282,20 @@ export default function PaymentResultPage() {
   }, [isCreditPurchase, isSuccess, pendingPurchase]);
 
   const activePlanSummary = isCreditPurchase ? null : fallbackPlanSummary ?? currentPlanSummary;
+  const activePlanEndDate = activePlanSummary?.endDate;
   const formattedPlanEndDate = useMemo(() => {
-    if (!activePlanSummary?.endDate) return '';
+    if (!activePlanEndDate) return '';
 
     try {
       return new Intl.DateTimeFormat(getAppNumberLocale(currentLang), {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-      }).format(new Date(activePlanSummary.endDate));
+      }).format(new Date(activePlanEndDate));
     } catch {
-      return activePlanSummary.endDate;
+      return activePlanEndDate;
     }
-  }, [activePlanSummary?.endDate, currentLang]);
+  }, [activePlanEndDate, currentLang]);
 
   /** Do not show gateway `message` on success (often duplicate / unaccented). */
   const backendRejectedSuccessUrl = Boolean(effectiveOrderId && urlIndicatesSuccess && resultVariant === 'failed');
