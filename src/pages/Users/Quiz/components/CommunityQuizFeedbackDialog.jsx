@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { submitCommunityQuizReview } from '@/api/QuizAPI';
 import { useToast } from '@/context/ToastContext';
+import { countLinksInText, useCommentLimits } from '@/hooks/useSystemSettings';
 
 function StarButton({ value, active, onClick }) {
   return (
@@ -30,9 +31,12 @@ export default function CommunityQuizFeedbackDialog({
   description = 'Đánh giá quiz community sau khi bạn hoàn thành bản clone này.',
 }) {
   const { showError, showSuccess } = useToast();
+  const { maxLength: commentMaxLength, maxLinks: commentMaxLinks } = useCommentLimits();
   const [rating, setRating] = React.useState(initialRating);
   const [comment, setComment] = React.useState(initialComment || '');
   const [submitting, setSubmitting] = React.useState(false);
+  const linkCount = React.useMemo(() => countLinksInText(comment), [comment]);
+  const hasTooManyLinks = linkCount > commentMaxLinks;
 
   React.useEffect(() => {
     if (!open) return;
@@ -47,6 +51,10 @@ export default function CommunityQuizFeedbackDialog({
     if (!Number.isInteger(normalizedClonedQuizId) || normalizedClonedQuizId <= 0) return;
     if (!Number.isInteger(Number(rating)) || Number(rating) < 1 || Number(rating) > 5) {
       showError('Vui lòng chọn số sao trước khi gửi feedback.');
+      return;
+    }
+    if (countLinksInText(comment) > commentMaxLinks) {
+      showError(`Mỗi comment chỉ được chứa tối đa ${commentMaxLinks} link.`);
       return;
     }
 
@@ -70,7 +78,7 @@ export default function CommunityQuizFeedbackDialog({
     } finally {
       setSubmitting(false);
     }
-  }, [clonedQuizId, comment, onOpenChange, onSubmitted, rating, showError, showSuccess, sourceQuizId]);
+  }, [clonedQuizId, comment, commentMaxLinks, onOpenChange, onSubmitted, rating, showError, showSuccess, sourceQuizId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,6 +118,7 @@ export default function CommunityQuizFeedbackDialog({
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               rows={5}
+              maxLength={commentMaxLength}
               placeholder="Comment này sẽ xuất hiện trên community quiz nếu bạn gửi."
               className={`mt-3 w-full rounded-3xl border px-4 py-3 text-sm outline-none transition-colors ${
                 isDarkMode
@@ -117,6 +126,12 @@ export default function CommunityQuizFeedbackDialog({
                   : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-blue-500'
               }`}
             />
+            <div className={`mt-1 flex items-center justify-between text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span className={hasTooManyLinks ? 'text-red-500' : ''}>
+                {linkCount}/{commentMaxLinks} link
+              </span>
+              <span>{comment.length}/{commentMaxLength}</span>
+            </div>
           </div>
         </div>
 

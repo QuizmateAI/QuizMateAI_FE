@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generateTemplateSuggestion, getRecommendedRoadmapDays, getRecommendedRoadmapMinutesPerDay } from './mockProfileWizardData';
 import { analyzeKnowledge, suggestProfileFields, validateProfileConsistency } from '@/api/StudyProfileAPI';
-import { NO_ROADMAP_FLOW_TOTAL_STEPS, ANALYSIS_DEBOUNCE_MS, FIELD_SUGGESTION_DEBOUNCE_MS, CONSISTENCY_DEBOUNCE_MS, ensureString, normalizeWorkspacePurpose, getReadyLiveFieldValue, createInitialValues, getInitialStep, getTotalStepsForValues, syncRoadmapConfigFields, translateOrFallback, extractDomainSuggestionDetails, buildDomainOptionsFromApi, buildKnowledgeOptionsFromApi, localizeDomainOptions, getSelectedKnowledgeForAi, getSelectedDomainForAi, buildFieldSuggestionPayload, buildConsistencyPayload, shouldRunLiveConsistency, buildConsistencyFingerprint, buildPayload, buildRequestFingerprint, buildStepSnapshot, areStepSnapshotsEqual, createSavedStepSnapshots, buildLiveValidationErrors, canFetchFieldSuggestions, getStudyProfileAnalysisErrorType, validateWorkspaceProfileStep, buildWizardStatus, hasCompleteBasicStepData } from './workspaceProfileWizardUtils';
+import { NO_ROADMAP_FLOW_TOTAL_STEPS, ANALYSIS_DEBOUNCE_MS, FIELD_SUGGESTION_DEBOUNCE_MS, CONSISTENCY_DEBOUNCE_MS, ensureString, normalizeWorkspacePurpose, getReadyLiveFieldValue, createInitialValues, getInitialStep, getTotalStepsForValues, syncRoadmapConfigFields, translateOrFallback, extractDomainSuggestionDetails, buildDomainOptionsFromApi, buildKnowledgeOptionsFromApi, localizeDomainOptions, getSelectedKnowledgeForAi, getSelectedDomainForAi, buildFieldSuggestionPayload, buildConsistencyPayload, shouldRunLiveConsistency, buildConsistencyFingerprint, buildPayload, buildRequestFingerprint, buildStepSnapshot, areStepSnapshotsEqual, createSavedStepSnapshots, buildLiveValidationErrors, canFetchFieldSuggestions, getStudyProfileAnalysisErrorType, validateWorkspaceProfileStep, buildWizardStatus, hasCompleteBasicStepData, loadCachedKnowledgeAnalysis, saveCachedKnowledgeAnalysis } from './workspaceProfileWizardUtils';
 export function useWorkspaceProfileWizard({
   open,
   initialData,
@@ -186,20 +186,73 @@ export function useWorkspaceProfileWizard({
       setKnowledgeOptions([]);
       setDomainOptions([]);
       setKnowledgeAnalysis(null);
-      setValues((current) => ({
-        ...current,
-        analysisId: '',
-        inferredDomain: '',
-        selectedKnowledgeOptionId: '',
-        selectedDomainOptionId: '',
-        selectedKnowledgeOption: '',
-      }));
+      // BUG fix (race condition on dialog re-open after page reload):
+      //
+      // Previously this branch wiped user-facing values (inferredDomain,
+      // selectedKnowledgeOption, analysisId, etc.) whenever knowledge wasn't ready.
+      // That destroyed BE-rehydrated state because of this render order:
+      //
+      //   Render N: open just changed to true. values = previous-render snapshot
+      //             (still empty — init useEffect's setValues hasn't committed yet).
+      //             canRequestKnowledgeAnalysis = false → this useEffect fires.
+      //   ↓ React commits queued setValues calls in order:
+      //     1) init's setValues(nextValues) → values.inferredDomain = "情報技術"
+      //     2) wipe's setValues(current => wiped) → overrides inferredDomain = ""
+      //   Render N+1: values.inferredDomain = "" forever (until step-1 AI returns
+      //               domains and re-applies them — and if the AI call fails or is
+      //               slow, step 2's field-suggestion AI never gets to fire).
+      //
+      // A functional-update guard (`if (current.inferredDomain) return`) does NOT
+      // reliably help: depending on React scheduling, `current` inside the wipe's
+      // closure can still be the pre-init snapshot (empty), so the guard fails.
+      //
+      // Cleanest fix: don't reset user-facing values from this effect at all. They're
+      // either (a) BE-rehydrated and must be preserved, or (b) user-confirmed
+      // selections that should persist until knowledge actually changes. The only
+      // state that genuinely needs clearing when knowledge becomes invalid is the
+      // AI-derived result state (knowledgeOptions, domainOptions, knowledgeAnalysis),
+      // which we already cleared above. inferredDomain/selectedKnowledgeOption now
+      // stay until either (i) the next successful analyzeKnowledge overwrites them
+      // via applyResolvedAnalysis, (ii) the user picks a different domain, or
+      // (iii) the wizard fully unmounts (init useEffect's reset path).
       return;
     }
     if (analysisFingerprintRef.current === analysisFingerprint) {
       return;
     }
+    // sessionStorage cache lookup: when the user reloads the page or re-opens the
+    // wizard with the SAME knowledge text + UI language as a previous successful
+    // analysis, restore the result instantly instead of showing a loading spinner
+    // and re-calling the BE/AI. This addresses the "khi từ bước 2 quay lại thì
+    // lại load AI" complaint — even after a hard refresh, the previously analyzed
+    // result reappears without the user waiting again.
+    const cacheLocale = (typeof t === 'function' && t.lng) || (typeof window !== 'undefined' ? window.localStorage?.getItem?.('app_language') : '') || 'vi';
+    const cachedResult = loadCachedKnowledgeAnalysis(trimmedKnowledge, cacheLocale);
     analysisFingerprintRef.current = analysisFingerprint;
+    if (cachedResult) {
+      // Apply the cached result via the same code path as a fresh AI return,
+      // but do it synchronously and skip the network call.
+      const rawDomainOptions = buildDomainOptionsFromApi({
+        domainSuggestions: cachedResult?.domainSuggestions || [],
+        domainSuggestionDetails: extractDomainSuggestionDetails(cachedResult),
+        domainOptions: cachedResult?.domainOptions || [],
+        knowledge: trimmedKnowledge,
+      });
+      const localizedDomainOptions = localizeDomainOptions(rawDomainOptions, t);
+      const rawKnowledgeOptions = buildKnowledgeOptionsFromApi({
+        knowledgeOptions: cachedResult?.knowledgeOptions || [],
+        knowledge: trimmedKnowledge,
+        domainOptions: localizedDomainOptions,
+      });
+      setKnowledgeAnalysis(cachedResult);
+      setKnowledgeOptions(rawKnowledgeOptions);
+      setDomainOptions(localizedDomainOptions);
+      setAnalysisStatus('success');
+      // Don't overwrite values.inferredDomain etc. from the cache — those are
+      // already rehydrated from BE (the canonical source) and may differ from
+      // a stale cache. Cache only restores the AI-derived display state.
+      return;
+    }
     setAnalysisStatus('loading');
     analysisTimerRef.current = setTimeout(async () => {
       const abortController = new AbortController();
@@ -209,6 +262,9 @@ export function useWorkspaceProfileWizard({
           signal: abortController.signal,
         });
         if (abortController.signal.aborted) return;
+        // Persist the successful AI result so a reload / re-open with the same
+        // knowledge text restores it instantly (sessionStorage TTL 30 min).
+        saveCachedKnowledgeAnalysis(trimmedKnowledge, cacheLocale, result);
         const applyResolvedAnalysis = (result, { preferSelectedKnowledgeLabel = '', preferSelectedDomainLabel = '' } = {}) => {
           const rawDomainOptions = buildDomainOptionsFromApi({
             domainSuggestions: result?.domainSuggestions || [],

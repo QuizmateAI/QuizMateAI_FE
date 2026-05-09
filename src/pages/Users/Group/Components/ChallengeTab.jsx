@@ -32,6 +32,10 @@ export default function ChallengeTab({
   currentUserId,
   quizGenerationTaskByQuizId = {},
   quizGenerationProgressByQuizId = {},
+  onChallengeInlineQuizCreated,
+  planEntitlements,
+  quizTitleMaxLength,
+  currentPlanSummaryOverride,
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -104,6 +108,10 @@ export default function ChallengeTab({
         onBack={handleBackToList}
         quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
         quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
+        onChallengeInlineQuizCreated={onChallengeInlineQuizCreated}
+        planEntitlements={planEntitlements}
+        quizTitleMaxLength={quizTitleMaxLength}
+        currentPlanSummaryOverride={currentPlanSummaryOverride}
       />
     );
   }

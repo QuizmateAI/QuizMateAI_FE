@@ -1,7 +1,9 @@
 import {
+  Banknote,
   Bot,
   CheckCircle2,
   ChevronRight,
+  Coins,
   Layers3,
   Lock,
   ShieldCheck,
@@ -39,6 +41,9 @@ function PlanFormWizardStepContent({
   handleBasePriceChange,
   hasCustomCreditPrice,
   hasGroupInheritance,
+  hasLevelLadderInheritance,
+  lowerLevelFloor,
+  numericPlanLevel,
   highestActiveUserPlanEntitlement,
   includedCredits,
   inputCls,
@@ -257,6 +262,28 @@ function PlanFormWizardStepContent({
           'from-emerald-500 to-teal-600'
         )}
 
+        {hasLevelLadderInheritance ? (
+          <div
+            className={cn(
+              'mt-5 rounded-[22px] border px-4 py-3 text-sm',
+              isDarkMode ? 'border-glitter-400/25 bg-glitter-500/10 text-glitter-100' : 'border-ocean-200 bg-ocean-50 text-ocean-800'
+            )}
+          >
+            <p className="font-semibold">
+              {t('subscription.wizard.entitlement.levelLadderTitle', {
+                defaultValue: 'Level {{level}} kế thừa từ level thấp hơn',
+                level: numericPlanLevel,
+              })}
+            </p>
+            <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'text-glitter-100/80' : 'text-ocean-700/85')}>
+              {t('subscription.wizard.entitlement.levelLadderBody', {
+                defaultValue: 'Mọi quyền lợi và giới hạn ở các plan {{sources}} đều phải có ở level này — các giá trị thấp hơn đã được tự nâng và các quyền đã có không thể tắt.',
+                sources: lowerLevelFloor.sourceLabels.join(', '),
+              })}
+            </p>
+          </div>
+        ) : null}
+
         <div className={cn('mt-6 grid gap-4', isWorkspace ? 'md:grid-cols-2' : 'md:grid-cols-3')}>
           {(() => {
             // USER scope: 3 input (maxIndividualWorkspace + maxMaterialInWorkspace + planIncludedCredits)
@@ -283,122 +310,242 @@ function PlanFormWizardStepContent({
               hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
             });
             return fields;
-          })().map((field) => (
-            <div
-              key={field.key}
-              className={cn(
-                'rounded-[24px] border p-4',
-                isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
-              )}
-            >
-              <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>{field.label}</Label>
-              <Input
-                type="number"
-                min={field.key === 'planIncludedCredits' && isDefaultPlanLevel ? '0' : '1'}
-                disabled={field.key === 'planIncludedCredits' && isDefaultPlanLevel}
-                required={requireIndividualPlanLimits}
-                value={entitlement[field.key] ?? ''}
-                onChange={field.key === 'planIncludedCredits'
-                  ? handleIncludedCreditsChange
-                  : (event) => setEntitlement((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                className={cn(inputCls, 'h-10')}
-              />
-              <p className={cn('mt-2 text-xs leading-5', mutedCls)}>{field.hint}</p>
-            </div>
-          ))}
+          })().map((field) => {
+            const floorValue = lowerLevelFloor ? Number(lowerLevelFloor[field.key]) || 0 : 0;
+            const currentValue = Number(entitlement[field.key]) || 0;
+            const belowFloor = floorValue > 0 && currentValue < floorValue;
+            const baseMin = field.key === 'planIncludedCredits' && isDefaultPlanLevel ? 0 : 1;
+            const effectiveMin = Math.max(baseMin, floorValue);
+            return (
+              <div
+                key={field.key}
+                className={cn(
+                  'rounded-[24px] border p-4 transition-colors',
+                  belowFloor
+                    ? isDarkMode
+                      ? 'border-amber-400/40 bg-amber-500/10'
+                      : 'border-amber-300 bg-amber-50/70'
+                    : isDarkMode
+                      ? 'border-white/10 bg-slate-950/60'
+                      : 'border-slate-200 bg-slate-50/80'
+                )}
+              >
+                <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>{field.label}</Label>
+                <Input
+                  type="number"
+                  min={String(effectiveMin)}
+                  disabled={field.key === 'planIncludedCredits' && isDefaultPlanLevel}
+                  required={requireIndividualPlanLimits}
+                  value={entitlement[field.key] ?? ''}
+                  onChange={field.key === 'planIncludedCredits'
+                    ? handleIncludedCreditsChange
+                    : (event) => setEntitlement((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                  className={cn(inputCls, 'h-10')}
+                />
+                <p className={cn('mt-2 text-xs leading-5', mutedCls)}>{field.hint}</p>
+                {floorValue > 0 ? (
+                  <p
+                    className={cn(
+                      'mt-1.5 text-[11px] font-semibold tabular-nums',
+                      belowFloor
+                        ? isDarkMode ? 'text-amber-300' : 'text-amber-700'
+                        : isDarkMode ? 'text-glitter-300' : 'text-ocean-700'
+                    )}
+                  >
+                    {t('subscription.wizard.entitlement.lowerLevelFloorHint', {
+                      defaultValue: 'Tối thiểu (kế thừa level thấp): {{floor}}',
+                      floor: floorValue.toLocaleString(locale),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
 
         {(() => {
           const creditUnitPrice = includedCredits > 0 ? minPrice / includedCredits : 0;
           const creditPremium = hasCustomCreditPrice ? Math.max(0, currentCreditPrice - minPrice) : 0;
+          const creditPriceNumeric = Number(formData.creditPrice) || 0;
+          const basePriceNumeric = Number(formData.basePrice) || 0;
+          const ladderCreditFloor = Number(lowerLevelFloor?.creditPriceVnd) || 0;
+          const ladderBaseFloor = Number(lowerLevelFloor?.basePriceVnd) || 0;
+          const creditBelowLadder = ladderCreditFloor > 0 && creditPriceNumeric < ladderCreditFloor;
+          const baseBelowLadder = ladderBaseFloor > 0 && basePriceNumeric < ladderBaseFloor;
           const strongTextCls = isDarkMode ? 'text-white' : 'text-slate-900';
-          const dividerCls = isDarkMode ? 'border-white/10' : 'border-slate-200';
+          const dividerCls = isDarkMode ? 'border-white/10' : 'border-ocean-200/60';
+          const accentTextCls = isDarkMode ? 'text-glitter-300' : 'text-ocean-700';
+          const suffixTextCls = isDarkMode ? 'text-glitter-300/80' : 'text-ocean-600';
+          const ladderWarnCls = isDarkMode ? 'text-amber-300' : 'text-amber-700';
+          const moneyInputCls = cn(
+            inputCls,
+            'mt-1.5 h-11 pr-14 tabular-nums text-base font-semibold',
+            '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+          );
+          const previewBadgeCls = cn(
+            'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums',
+            isDarkMode ? 'bg-glitter-500/15 text-glitter-200' : 'bg-ocean-100 text-ocean-700'
+          );
           return (
             <div
               className={cn(
-                'mt-4 rounded-[24px] border p-5',
-                isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
+                'relative mt-4 overflow-hidden rounded-[24px] border p-5 transition-shadow',
+                isDarkMode
+                  ? 'border-glitter-400/20 bg-gradient-to-br from-glitter-500/10 via-ocean-700/10 to-slate-950/60 shadow-[0_24px_60px_-32px_rgba(2,132,199,0.45)]'
+                  : 'border-ocean-200/70 bg-gradient-to-br from-glitter-50 via-ocean-50/60 to-white shadow-[0_24px_60px_-32px_rgba(31,119,168,0.18)]'
               )}
             >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-glitter-sheen bg-[length:200%_100%] animate-glitter-sheen"
+              />
+
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className={cn('text-xs font-semibold uppercase tracking-wide', mutedCls)}>
-                    {t('subscription.wizard.entitlement.pricingBlockTitle', { defaultValue: 'Giá bán' })}
-                  </p>
-                  <p className={cn('text-[11px] mt-0.5', mutedCls)}>
-                    {t('subscription.wizard.entitlement.totalListPrice', { defaultValue: 'Tổng niêm yết (VND)' })}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ocean-cta text-white shadow-lg shadow-ocean-500/30">
+                    <Coins className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className={cn('text-xs font-semibold uppercase tracking-wide', accentTextCls)}>
+                      {t('subscription.wizard.entitlement.pricingBlockTitle', { defaultValue: 'Giá bán' })}
+                    </p>
+                    <p className={cn('text-[11px] mt-0.5', mutedCls)}>
+                      {t('subscription.wizard.entitlement.totalListPrice', { defaultValue: 'Tổng niêm yết (VND)' })}
+                    </p>
+                  </div>
                 </div>
-                <p className={cn('text-2xl font-bold tabular-nums', strongTextCls)}>
+                <p
+                  className={cn(
+                    'text-2xl font-extrabold tabular-nums bg-clip-text text-transparent bg-gradient-to-r',
+                    isDarkMode ? 'from-glitter-200 via-glitter-300 to-ocean-200' : 'from-ocean-700 via-ocean-500 to-glitter-500'
+                  )}
+                >
                   {formatCurrency(effectiveTotalPrice, t, locale)}
                 </p>
               </div>
 
               <div className={cn('mt-5 grid gap-4 md:grid-cols-2 border-t pt-5', dividerCls)}>
                 <div>
-                  <Label className={cn('text-xs font-semibold', strongTextCls)}>
-                    {t('subscription.wizard.entitlement.creditPriceLabel', { defaultValue: 'Phần credit' })} *
+                  <Label className={cn('flex items-center gap-1.5 text-xs font-semibold', strongTextCls)}>
+                    <Coins className={cn('h-3.5 w-3.5', isDarkMode ? 'text-glitter-300' : 'text-ocean-600')} />
+                    {t('subscription.wizard.entitlement.creditPriceLabel', { defaultValue: 'Phần credit' })}
+                    <span className={cn('text-[10px] font-bold uppercase tracking-wider', accentTextCls)}>· VND</span>
+                    <span className="text-rose-500">*</span>
                   </Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    disabled={isDefaultPlanLevel}
-                    required={requireIndividualPlanLimits}
-                    value={formData.creditPrice}
-                    onChange={handleCreditPriceChange}
-                    placeholder={String(minPrice)}
-                    className={cn(inputCls, 'mt-1.5 h-10 tabular-nums')}
-                  />
-                  <p className={cn('mt-1.5 text-[11px] tabular-nums', mutedCls)}>
-                    {creditPremium > 0
-                      ? t('subscription.wizard.entitlement.creditPriceAboveFloor', {
-                          defaultValue: '≥ sàn {{floor}} (+{{premium}} so với sàn)',
-                          floor: formatCurrency(minPrice, t, locale),
-                          premium: formatCurrency(creditPremium, t, locale),
-                        })
-                      : t('subscription.wizard.entitlement.creditPriceAtFloor', {
-                          defaultValue: 'Đúng sàn theo {{count}} credit đi kèm',
-                          count: includedCredits.toLocaleString(locale),
-                        })}
-                  </p>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="0"
+                      disabled={isDefaultPlanLevel}
+                      required={requireIndividualPlanLimits}
+                      value={formData.creditPrice}
+                      onChange={handleCreditPriceChange}
+                      placeholder={String(minPrice)}
+                      className={moneyInputCls}
+                    />
+                    <span
+                      className={cn(
+                        'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold tracking-wider',
+                        suffixTextCls
+                      )}
+                    >
+                      VND
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                    <p className={cn('text-[11px] tabular-nums', mutedCls)}>
+                      {creditPremium > 0
+                        ? t('subscription.wizard.entitlement.creditPriceAboveFloor', {
+                            defaultValue: '≥ sàn {{floor}} (+{{premium}} so với sàn)',
+                            floor: formatCurrency(minPrice, t, locale),
+                            premium: formatCurrency(creditPremium, t, locale),
+                          })
+                        : t('subscription.wizard.entitlement.creditPriceAtFloor', {
+                            defaultValue: 'Đúng sàn theo {{count}} credit đi kèm',
+                            count: includedCredits.toLocaleString(locale),
+                          })}
+                    </p>
+                    {creditPriceNumeric > 0 ? (
+                      <span className={previewBadgeCls}>≈ {formatCurrency(creditPriceNumeric, t, locale)}</span>
+                    ) : null}
+                  </div>
+                  {ladderCreditFloor > 0 ? (
+                    <p className={cn('mt-1 text-[11px] font-semibold tabular-nums', creditBelowLadder ? ladderWarnCls : accentTextCls)}>
+                      {t('subscription.wizard.entitlement.lowerLevelPriceFloor', {
+                        defaultValue: 'Tối thiểu (kế thừa level thấp): {{floor}}',
+                        floor: formatCurrency(ladderCreditFloor, t, locale),
+                      })}
+                    </p>
+                  ) : null}
                 </div>
                 <div>
-                  <Label className={cn('text-xs font-semibold', strongTextCls)}>
-                    {t('subscription.wizard.entitlement.basePriceLabel', { defaultValue: 'Giá gốc' })} *
+                  <Label className={cn('flex items-center gap-1.5 text-xs font-semibold', strongTextCls)}>
+                    <Banknote className={cn('h-3.5 w-3.5', isDarkMode ? 'text-glitter-300' : 'text-ocean-600')} />
+                    {t('subscription.wizard.entitlement.basePriceLabel', { defaultValue: 'Giá gốc' })}
+                    <span className={cn('text-[10px] font-bold uppercase tracking-wider', accentTextCls)}>· VND</span>
+                    <span className="text-rose-500">*</span>
                   </Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    disabled={isDefaultPlanLevel}
-                    required={requireIndividualPlanLimits}
-                    value={formData.basePrice}
-                    onChange={handleBasePriceChange}
-                    placeholder="0"
-                    className={cn(inputCls, 'mt-1.5 h-10 tabular-nums')}
-                  />
-                  <p className={cn('mt-1.5 text-[11px]', mutedCls)}>
-                    {t(
-                      'subscription.wizard.entitlement.basePriceHint',
-                      'Phí nền tảng cộng thêm vào tổng — không quy đổi credit.'
-                    )}
-                  </p>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="0"
+                      disabled={isDefaultPlanLevel}
+                      required={requireIndividualPlanLimits}
+                      value={formData.basePrice}
+                      onChange={handleBasePriceChange}
+                      placeholder="0"
+                      className={moneyInputCls}
+                    />
+                    <span
+                      className={cn(
+                        'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold tracking-wider',
+                        suffixTextCls
+                      )}
+                    >
+                      VND
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                    <p className={cn('text-[11px]', mutedCls)}>
+                      {t(
+                        'subscription.wizard.entitlement.basePriceHint',
+                        'Phí nền tảng cộng thêm vào tổng — không quy đổi credit.'
+                      )}
+                    </p>
+                    {basePriceNumeric > 0 ? (
+                      <span className={previewBadgeCls}>≈ {formatCurrency(basePriceNumeric, t, locale)}</span>
+                    ) : null}
+                  </div>
+                  {ladderBaseFloor > 0 ? (
+                    <p className={cn('mt-1 text-[11px] font-semibold tabular-nums', baseBelowLadder ? ladderWarnCls : accentTextCls)}>
+                      {t('subscription.wizard.entitlement.lowerLevelPriceFloor', {
+                        defaultValue: 'Tối thiểu (kế thừa level thấp): {{floor}}',
+                        floor: formatCurrency(ladderBaseFloor, t, locale),
+                      })}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
               {includedCredits > 0 ? (
-                <div className={cn('mt-4 border-t pt-3', dividerCls)}>
-                  <div className={cn('flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12px] tabular-nums', mutedCls)}>
-                    <span className="font-semibold uppercase tracking-wide text-[10px]">
+                <div
+                  className={cn(
+                    'mt-4 rounded-[18px] border px-4 py-2.5',
+                    isDarkMode ? 'border-glitter-400/15 bg-glitter-500/[0.06]' : 'border-ocean-200/60 bg-white/70'
+                  )}
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12px] tabular-nums">
+                    <span className={cn('font-semibold uppercase tracking-wide text-[10px]', accentTextCls)}>
                       {t('subscription.wizard.entitlement.floorFormulaLabel', { defaultValue: 'Sàn credit' })}
                     </span>
-                    <span>
+                    <span className={mutedCls}>
                       {t('subscription.wizard.entitlement.floorFormulaBody', {
                         defaultValue: '{{credits}} credit × {{unit}}/credit',
                         credits: includedCredits.toLocaleString(locale),
                         unit: formatCurrency(creditUnitPrice, t, locale),
                       })}
                     </span>
-                    <span className={cn('ml-auto font-semibold', strongTextCls)}>
+                    <span className={cn('ml-auto font-bold', accentTextCls)}>
                       = {formatCurrency(minPrice, t, locale)}
                     </span>
                   </div>
@@ -486,14 +633,16 @@ function PlanFormWizardStepContent({
           {Object.entries(entitlementToggles).map(([key, meta]) => {
             const checked = Boolean(entitlement[key]);
             const Icon = meta.icon;
-            const inheritedFromUser = hasGroupInheritance && highestActiveUserPlanEntitlement[key] === true;
+            const inheritedFromUser = hasGroupInheritance && highestActiveUserPlanEntitlement?.[key] === true;
+            const inheritedFromLowerLevel = Boolean(lowerLevelFloor?.features?.[key]);
+            const locked = inheritedFromUser || inheritedFromLowerLevel;
 
             return (
               <label
                 key={key}
                 className={cn(
                   'flex items-center gap-3 rounded-[22px] border px-4 py-3 transition-all',
-                  inheritedFromUser ? 'cursor-not-allowed' : 'cursor-pointer',
+                  locked ? 'cursor-not-allowed' : 'cursor-pointer',
                   checked
                     ? isDarkMode
                       ? 'border-blue-400/20 bg-blue-500/10 shadow-[0_18px_40px_-28px_rgba(59,130,246,0.7)]'
@@ -505,7 +654,7 @@ function PlanFormWizardStepContent({
               >
                 <Switch
                   checked={checked}
-                  disabled={inheritedFromUser}
+                  disabled={locked}
                   onCheckedChange={(value) => setEntitlement((prev) => ({ ...prev, [key]: value }))}
                 />
                 <div
@@ -523,11 +672,29 @@ function PlanFormWizardStepContent({
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className={cn('text-sm font-semibold', checked ? (isDarkMode ? 'text-white' : 'text-slate-900') : mutedCls)}>
-                    {t(meta.labelKey, meta.defaultLabel)}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className={cn('text-sm font-semibold', checked ? (isDarkMode ? 'text-white' : 'text-slate-900') : mutedCls)}>
+                      {t(meta.labelKey, meta.defaultLabel)}
+                    </p>
+                    {inheritedFromLowerLevel ? (
+                      <span
+                        className={cn(
+                          'rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+                          isDarkMode ? 'bg-glitter-500/20 text-glitter-200' : 'bg-ocean-100 text-ocean-700'
+                        )}
+                      >
+                        {t('subscription.wizard.entitlement.lockedByLowerLevel', { defaultValue: 'Lv↓' })}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className={cn('mt-1 text-xs', checked ? (isDarkMode ? 'text-blue-100/80' : 'text-blue-700/80') : mutedCls)}>
-                    {checked ? 'Đang mở cho plan này.' : 'Đang tắt.'}
+                    {inheritedFromLowerLevel
+                      ? t('subscription.wizard.entitlement.lockedByLowerLevelHint', {
+                          defaultValue: 'Đã có ở level thấp hơn — không thể tắt.',
+                        })
+                      : checked
+                        ? 'Đang mở cho plan này.'
+                        : 'Đang tắt.'}
                   </p>
                 </div>
               </label>

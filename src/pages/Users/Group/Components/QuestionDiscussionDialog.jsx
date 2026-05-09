@@ -23,8 +23,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/context/ToastContext";
 import { useUserProfile } from "@/context/UserProfileContext";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { countLinksInText, useCommentLimits } from "@/hooks/useSystemSettings";
 import { getUserDisplayParts } from "@/utils/userProfile";
 import {
   deleteMessage,
@@ -406,8 +408,10 @@ function useQuestionDiscussionThread({
   hasAttempted,
   onMessageCountChange,
 }) {
-  useTranslation();
+  const { t } = useTranslation();
   const { profile } = useUserProfile();
+  const { showError } = useToast();
+  const { maxLength: commentMaxLength, maxLinks: commentMaxLinks } = useCommentLimits();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
@@ -530,6 +534,13 @@ function useQuestionDiscussionThread({
   const handlePost = useCallback(async () => {
     const body = draft.trim();
     if (!body || posting || !canAccess) return;
+    if (countLinksInText(body) > commentMaxLinks) {
+      showError(t(
+        "questionDiscussion.errors.tooManyLinks",
+        { max: commentMaxLinks, defaultValue: `Mỗi bình luận chỉ được chứa tối đa ${commentMaxLinks} link.` },
+      ));
+      return;
+    }
     const parentMessageId = replyTarget?.id && Number.isFinite(Number(replyTarget.id))
       ? Number(replyTarget.id)
       : null;
@@ -556,7 +567,7 @@ function useQuestionDiscussionThread({
     } finally {
       setPosting(false);
     }
-  }, [canAccess, draft, posting, questionId, quizId, replyTarget, workspaceId]);
+  }, [canAccess, commentMaxLinks, draft, posting, questionId, quizId, replyTarget, showError, t, workspaceId]);
 
   const handleDelete = useCallback(async (messageId) => {
     try {
@@ -612,6 +623,7 @@ function useQuestionDiscussionThread({
     replyTarget,
     textareaRef,
     bottomRef,
+    commentMaxLength,
     setDraft,
     setReplyTarget,
     handleDelete,
@@ -650,6 +662,7 @@ export default function QuestionDiscussionDialog({
     replyTarget: discussionReplyTarget,
     textareaRef,
     bottomRef,
+    commentMaxLength: discussionMaxLength,
     setDraft: setDiscussionDraft,
     setReplyTarget: setDiscussionReplyTarget,
     handleDelete: handleDiscussionDelete,
@@ -943,6 +956,7 @@ export default function QuestionDiscussionDialog({
                     onChange={(event) => setDiscussionDraft(event.target.value)}
                     onKeyDown={handleDiscussionKeyDown}
                     onInput={handleDiscussionInput}
+                    maxLength={discussionMaxLength}
                     placeholder={discussionReplyTarget
                       ? t("questionDiscussion.reply.placeholder", {
                         name: discussionReplyDisplay?.name || t("questionDiscussion.shared.userFallback", "User"),

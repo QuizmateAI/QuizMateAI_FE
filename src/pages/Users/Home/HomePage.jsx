@@ -60,6 +60,34 @@ function normalizeHomeTab(value) {
   return 'workspace';
 }
 
+// Nhớ tab Home gần nhất user đã chọn → khi quay lại /home (HomeButton, logo group,
+// sidebar Home...) sẽ giữ đúng tab cũ thay vì luôn nhảy về workspace.
+const LAST_HOME_TAB_STORAGE_KEY = 'quizmate.home.lastTab';
+
+function isValidHomeTab(value) {
+  return value === 'workspace' || value === 'group' || value === 'community';
+}
+
+function readLastHomeTab() {
+  try {
+    if (typeof window === 'undefined') return null;
+    const value = window.sessionStorage.getItem(LAST_HOME_TAB_STORAGE_KEY);
+    return isValidHomeTab(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastHomeTab(tab) {
+  if (!isValidHomeTab(tab)) return;
+  try {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem(LAST_HOME_TAB_STORAGE_KEY, tab);
+  } catch {
+    // ignore: sessionStorage có thể bị disabled / quota.
+  }
+}
+
 function isGroupWorkspace(workspace) {
   return String(workspace?.workspaceKind || '').toUpperCase() === 'GROUP';
 }
@@ -434,12 +462,15 @@ function HomePage() {
 
   useEffect(() => {
     const currentTab = searchParams.get('tab');
-    if (currentTab === 'workspace' || currentTab === 'group' || currentTab === 'community') {
+    if (isValidHomeTab(currentTab)) {
+      // URL đã có tab hợp lệ → ghi nhớ để lần sau quay lại /home không tab vẫn giữ đúng.
+      writeLastHomeTab(currentTab);
       return;
     }
 
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.set('tab', 'workspace');
+    // Không có tab trong URL → khôi phục tab gần nhất user đã chọn, fallback workspace.
+    nextParams.set('tab', readLastHomeTab() || 'workspace');
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 

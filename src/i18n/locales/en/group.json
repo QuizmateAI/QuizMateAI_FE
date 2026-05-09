@@ -1069,6 +1069,9 @@
       "materialsDeleted": "Deleted {{count}} material(s).",
       "resetDataSuccess": "Documents deleted. You can now update the group onboarding.",
       "quizCreated": "Quiz created successfully.",
+      "quizGenerationStarted": "Quiz is being generated. Track progress in the quiz list.",
+      "challengeQuizCreated": "Challenge quiz updated successfully.",
+      "challengeQuizGenerationStarted": "Challenge quiz is being generated. Track progress in the challenge detail.",
       "memberCannotCreateQuiz": "Member cannot create quizzes.",
       "memberCannotCreateFlashcard": "Member cannot create flashcards.",
       "memberCannotCreateRoadmap": "Member cannot create roadmap.",
@@ -1882,6 +1885,8 @@
     "processingQuizTitle": "Challenge match is being generated",
     "processingQuizHint": "The system is still generating questions for this challenge. Return here shortly to continue reviewing or editing the match.",
     "processingQuizProgressLabel": "WebSocket progress",
+    "snapshotPendingTitle": "Preparing the challenge match",
+    "snapshotPendingHint": "The system is initializing this challenge match. Management options (compose match, invite reviewers, publish) will appear once the match is ready.",
     "reviewerPanel": {
       "orderHint": "All reviewers share the same review role.",
       "primaryBadge": "Reviewer",

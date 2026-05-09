@@ -719,7 +719,6 @@ function AiAuditManagement() {
           value={formatTokenValue(totalRequestsForDisplay, locale)}
           tone="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.totalRequestsHint', 'System + plan-based features only')}
           helpText={t(
             'aiAudit.metrics.totalRequestsHelp',
             'Tổng số lượt gọi AI thành công, bao gồm tính năng hệ thống và các tính năng có trong gói trả phí.',
@@ -734,12 +733,6 @@ function AiAuditManagement() {
           value={formatTokenValue(metrics.totalTokens, locale)}
           tone="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.totalTokensBreakdown', {
-            prompt: formatTokenValue(metrics.promptTokens, locale),
-            thought: formatTokenValue(metrics.thoughtTokens, locale),
-            output: formatTokenValue(metrics.completionTokens, locale),
-            defaultValue: 'Prompt {{prompt}} | Thought {{thought}} | Output {{output}}',
-          })}
           helpText={t(
             'aiAudit.metrics.totalTokensHelp',
             'Tổng token tiêu thụ: Prompt là token đầu vào, Thought là token suy luận nội bộ của model, Output là token trả về.',
@@ -754,7 +747,6 @@ function AiAuditManagement() {
           value={formatVndValue(metrics.systemCostVnd, locale)}
           tone="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.systemCostHint', 'Provider cost of system features')}
           helpText={t(
             'aiAudit.metrics.systemCostHelp',
             'Chi phí provider của các tính năng AI hệ thống — phần này QuizMate trả, người dùng không bị tính phí.',
@@ -769,9 +761,6 @@ function AiAuditManagement() {
           value={formatVndValue(metrics.planCostVnd, locale)}
           tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.planCostHint', 'Provider cost of plan-based features. Avg {{avg}} tokens/request', {
-            avg: formatTokenValue(totalAverageTokens, locale),
-          })}
           helpText={t(
             'aiAudit.metrics.planCostHelp',
             'Chi phí provider của các tính năng AI nằm trong gói trả phí — đối ứng với doanh thu thu được từ người dùng.',

@@ -19,6 +19,8 @@ import {
   CheckSquare,
   Square,
   ExternalLink,
+  ClipboardPaste,
+  AlertTriangle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import InlineSpinner from "@/components/ui/InlineSpinner";
@@ -149,6 +151,12 @@ function UploadSourceDialogBase({
   const [processingWebLink, setProcessingWebLink] = useState(false);
   const [webUrl, setWebUrl] = useState("");
   const [showWebInput, setShowWebInput] = useState(false);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [pastedText, setPastedText] = useState("");
+  const [pastedTextName, setPastedTextName] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingUploadType, setPendingUploadType] = useState(null);
+  const [confirmAcknowledged, setConfirmAcknowledged] = useState(false);
   const fileInputRef = useRef(null);
   const uploadActionLockRef = useRef(false);
 
@@ -266,6 +274,31 @@ function UploadSourceDialogBase({
     }
   };
 
+  const handleInsertPastedText = () => {
+    const trimmed = String(pastedText || "").trim();
+    if (trimmed.length === 0) {
+      showError(t("workspace.upload.pasteTextEmpty"));
+      return;
+    }
+
+    const rawName = String(pastedTextName || "").trim() || t("workspace.upload.pasteTextDefaultName");
+    const safeBase = rawName.replace(/[\\/:*?"<>|]+/g, "_");
+    const fileName = safeBase.toLowerCase().endsWith(".txt") ? safeBase : `${safeBase}.txt`;
+    const blob = new Blob([trimmed], { type: "text/plain" });
+    const file = new File([blob], fileName, { type: "text/plain" });
+
+    if (!isFileAllowed(file)) {
+      setPlanBlockedFeature(t("workspace.upload.pasteTextButton"));
+      setPlanBlockedModalOpen(true);
+      return;
+    }
+
+    setSelectedFiles((prev) => [...prev, file]);
+    setPastedText("");
+    setPastedTextName("");
+    setShowTextInput(false);
+  };
+
   const removeFile = (index) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
@@ -361,6 +394,45 @@ function UploadSourceDialogBase({
     }
   };
 
+  const handleRequestPrimaryConfirm = () => {
+    if (uploading || importingSuggestions || processingWebLink) return;
+    if (!hasAnySelectedSources || hasOversizedFiles) return;
+    if (!normalizedWorkspaceId && hasSelectedSuggestedResources) {
+      showError(t("workspace.upload.suggestMissingWorkspace"));
+      return;
+    }
+    setPendingUploadType("primary");
+    setConfirmAcknowledged(false);
+    setShowConfirm(true);
+  };
+
+  const handleRequestUrlConfirm = () => {
+    if (processingWebLink) return;
+    if (String(webUrl || "").trim().length === 0) return;
+    setPendingUploadType("url");
+    setConfirmAcknowledged(false);
+    setShowConfirm(true);
+  };
+
+  const handleConfirmBack = () => {
+    setShowConfirm(false);
+    setPendingUploadType(null);
+    setConfirmAcknowledged(false);
+  };
+
+  const handleConfirmContinue = async () => {
+    if (!confirmAcknowledged) return;
+    const type = pendingUploadType;
+    setShowConfirm(false);
+    setPendingUploadType(null);
+    setConfirmAcknowledged(false);
+    if (type === "primary") {
+      await handlePrimarySubmit();
+    } else if (type === "url") {
+      await handleAddWebUrl();
+    }
+  };
+
   const handleOpenChange = (val) => {
     if (!val) {
       setSelectedFiles([]);
@@ -369,6 +441,12 @@ function UploadSourceDialogBase({
       setWebUrl("");
       setSelectedSuggestionIds([]);
       setSuggestedResources([]);
+      setShowTextInput(false);
+      setPastedText("");
+      setPastedTextName("");
+      setShowConfirm(false);
+      setPendingUploadType(null);
+      setConfirmAcknowledged(false);
     }
     onOpenChange(val);
   };
@@ -425,40 +503,178 @@ function UploadSourceDialogBase({
       }`}>
         <DialogHeader>
           <DialogTitle className={fontClass}>
-            {showWebInput
-              ? t("workspace.upload.webYoutubeTitle")
-              : isGroupReviewUpload
-                ? t("workspace.upload.groupReviewTitle")
-                : t("workspace.upload.title")}
+            {showConfirm
+              ? t("workspace.upload.confirmTitle")
+              : showTextInput
+                ? t("workspace.upload.pasteTextTitle")
+                : showWebInput
+                  ? t("workspace.upload.webYoutubeTitle")
+                  : isGroupReviewUpload
+                    ? t("workspace.upload.groupReviewTitle")
+                    : t("workspace.upload.title")}
           </DialogTitle>
           <DialogDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
-            {showWebInput
-              ? t("workspace.upload.webYoutubeDescription")
-              : isGroupReviewUpload
-                ? t("workspace.upload.groupReviewDescription")
-                : `${t("workspace.upload.dragDrop")} / ${t("workspace.upload.orBrowse")}`}
+            {showConfirm
+              ? t("workspace.upload.confirmDescription")
+              : showTextInput
+                ? t("workspace.upload.pasteTextDescription")
+                : showWebInput
+                  ? t("workspace.upload.webYoutubeDescription")
+                  : isGroupReviewUpload
+                    ? t("workspace.upload.groupReviewDescription")
+                    : `${t("workspace.upload.dragDrop")} / ${t("workspace.upload.orBrowse")}`}
           </DialogDescription>
         </DialogHeader>
-        {showWebInput ? (
-          <div className="space-y-3">
-            {/* <div className="flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setShowWebInput(false)}
-                className={`inline-flex items-center gap-2 ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="text-base font-semibold leading-none">{t("workspace.upload.webYoutubeTitle", "URL trang YouTube")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowWebInput(false)}
-                className={`p-1 rounded-md transition-all ${isDarkMode ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div> */}
+        {showConfirm ? (
+          <div className="space-y-4">
+            <div className={`rounded-xl border p-4 ${
+              isDarkMode
+                ? "border-amber-700/50 bg-amber-950/20"
+                : "border-amber-300 bg-amber-50"
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`shrink-0 mt-0.5 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`}>
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <p className={`text-sm leading-6 ${isDarkMode ? "text-amber-100/90" : "text-amber-900"}`}>
+                  {t("workspace.upload.confirmWarning")}
+                </p>
+              </div>
+            </div>
 
+            {pendingUploadType === "primary" && (selectedFiles.length > 0 || selectedSuggestedResources.length > 0) ? (
+              <div className={`rounded-xl border ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-slate-50"}`}>
+                <div className={`px-3 py-2 border-b text-xs font-medium ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-500"}`}>
+                  {t("workspace.upload.confirmSummaryTitle")} · {selectedFiles.length + selectedSuggestedResources.length}
+                </div>
+                <div className="max-h-48 overflow-y-auto px-3 py-2 space-y-1.5">
+                  {selectedFiles.map((file, i) => (
+                    <div key={`confirm_file_${i}`} className={`flex items-center gap-2 text-sm ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      <span className="shrink-0">{getFileIcon(file)}</span>
+                      <span className="truncate" title={file.name}>{file.name}</span>
+                    </div>
+                  ))}
+                  {selectedSuggestedResources.map((item, i) => (
+                    <div key={`confirm_sugg_${i}`} className={`flex items-center gap-2 text-sm ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      <span className="shrink-0">{getSuggestedItemIcon(item)}</span>
+                      <span className="truncate" title={item?.title || t("workspace.upload.untitled")}>
+                        {item?.title || t("workspace.upload.untitled")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {pendingUploadType === "url" && String(webUrl || "").trim().length > 0 ? (
+              <div className={`rounded-xl border ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-slate-50"}`}>
+                <div className={`px-3 py-2 border-b text-xs font-medium ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-500"}`}>
+                  {t("workspace.upload.confirmUrlSummary")}
+                </div>
+                <div className={`px-3 py-2 text-sm break-all ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                  {webUrl}
+                </div>
+              </div>
+            ) : null}
+
+            <label className={`flex items-start gap-2 cursor-pointer ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
+              <input
+                type="checkbox"
+                checked={confirmAcknowledged}
+                onChange={(event) => setConfirmAcknowledged(event.target.checked)}
+                className="mt-1 w-4 h-4 cursor-pointer accent-blue-600"
+              />
+              <span className="text-sm leading-5">{t("workspace.upload.confirmAcknowledge")}</span>
+            </label>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleConfirmBack}
+                disabled={uploading || importingSuggestions || processingWebLink}
+                className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+              >
+                {t("workspace.upload.confirmBack")}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmContinue}
+                disabled={!confirmAcknowledged || uploading || importingSuggestions || processingWebLink}
+                className="min-w-[160px] h-10 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-300 disabled:text-slate-600"
+              >
+                {(uploading || importingSuggestions || processingWebLink) ? (
+                  <InlineSpinner className="mr-2" />
+                ) : (
+                  <UploadCloud className="w-4 h-4 mr-2" />
+                )}
+                {t("workspace.upload.confirmContinue")}
+              </Button>
+            </div>
+          </div>
+        ) : showTextInput ? (
+          <div className="space-y-3">
+            <div>
+              <label className={`text-xs font-medium block mb-1 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
+                {t("workspace.upload.pasteTextNameLabel")}
+              </label>
+              <input
+                type="text"
+                value={pastedTextName}
+                onChange={(event) => setPastedTextName(event.target.value)}
+                placeholder={t("workspace.upload.pasteTextNamePlaceholder")}
+                maxLength={120}
+                className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
+                  isDarkMode
+                    ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
+                    : "border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
+                }`}
+              />
+            </div>
+
+            <textarea
+              value={pastedText}
+              onChange={(event) => setPastedText(event.target.value)}
+              placeholder={t("workspace.upload.pasteTextPlaceholder")}
+              className={`w-full min-h-[220px] rounded-xl border px-3 py-2.5 text-sm resize-y outline-none transition-all ${
+                isDarkMode
+                  ? "border-blue-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
+                  : "border-blue-500 bg-white text-slate-900 placeholder:text-slate-500 focus:border-blue-600"
+              }`}
+            />
+
+            <ul className={`list-disc pl-5 space-y-1 text-sm ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
+              <li>{t("workspace.upload.pasteTextNote1")}</li>
+              <li>{t("workspace.upload.pasteTextNote2")}</li>
+              <li>{t("workspace.upload.pasteTextNote3")}</li>
+            </ul>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowTextInput(false);
+                  setPastedText("");
+                  setPastedTextName("");
+                }}
+                className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+              >
+                {t("workspace.upload.cancel")}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleInsertPastedText}
+                disabled={String(pastedText || "").trim().length === 0}
+                className="min-w-[140px] h-10 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-300 disabled:text-slate-600"
+              >
+                <ClipboardPaste className="w-4 h-4 mr-2" />
+                {t("workspace.upload.insertText")}
+              </Button>
+            </div>
+          </div>
+        ) : showWebInput ? (
+          <div className="space-y-3">
             <textarea
               value={webUrl}
               onChange={(event) => setWebUrl(event.target.value)}
@@ -489,7 +705,7 @@ function UploadSourceDialogBase({
               </Button>
               <Button
                 type="button"
-                onClick={handleAddWebUrl}
+                onClick={handleRequestUrlConfirm}
                 disabled={processingWebLink || String(webUrl || "").trim().length === 0}
                 className="min-w-[120px] h-10 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-300 disabled:text-slate-600"
               >
@@ -525,7 +741,7 @@ function UploadSourceDialogBase({
                   </p>
                 ) : null}
 
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-[420px] mx-auto">
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-[620px] mx-auto">
                   <Button
                     type="button"
                     variant="outline"
@@ -542,6 +758,33 @@ function UploadSourceDialogBase({
                       type="button"
                       variant="outline"
                       onClick={() => {
+                        if (planEntitlements && planEntitlements.canUploadText === false) {
+                          setPlanBlockedFeature(t("workspace.upload.pasteTextButton"));
+                          setPlanBlockedModalOpen(true);
+                          return;
+                        }
+                        setShowTextInput(true);
+                      }}
+                      disabled={uploading || importingSuggestions || processingWebLink}
+                      className={`h-12 w-full rounded-full transition-all active:scale-95 ${
+                        planEntitlements && planEntitlements.canUploadText === false ? "opacity-60" : ""
+                      } ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
+                    >
+                      <ClipboardPaste className="w-4 h-4 mr-2" />
+                      {t("workspace.upload.pasteTextButton")}
+                    </Button>
+                    {planEntitlements && planEntitlements.canUploadText === false && (
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center pointer-events-none z-10">
+                        <Crown className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
                         if (planEntitlements && !planEntitlements.canUploadVideo) {
                           setPlanBlockedFeature("Liên kết YouTube (video)");
                           setPlanBlockedModalOpen(true);
@@ -550,13 +793,13 @@ function UploadSourceDialogBase({
                         setShowWebInput(true);
                       }}
                       disabled={uploading || importingSuggestions || processingWebLink}
-                      className={`h-12 rounded-full transition-all active:scale-95 ${
+                      className={`h-12 w-full rounded-full transition-all active:scale-95 ${
                         planEntitlements && !planEntitlements.canUploadVideo ? "opacity-60" : ""
                       } ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
                     >
                       <span className="inline-flex items-center mr-2">
                         <Link2 className="w-4 h-4" />
-                      
+
                       </span>
                       {t("workspace.upload.webYoutubeButton")}
                     </Button>
@@ -777,7 +1020,7 @@ function UploadSourceDialogBase({
                 </Button>
                 <Button
                   type="button"
-                  onClick={handlePrimarySubmit}
+                  onClick={handleRequestPrimaryConfirm}
                   disabled={uploading || importingSuggestions || !hasAnySelectedSources || hasOversizedFiles}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white"
                 >

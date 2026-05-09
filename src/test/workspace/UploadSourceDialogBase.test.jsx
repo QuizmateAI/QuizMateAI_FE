@@ -56,6 +56,13 @@ describe('UploadSourceDialogBase', () => {
     importSuggestedResources.mockResolvedValue({ data: {} });
   });
 
+  const acknowledgeAndConfirm = async () => {
+    const acknowledgeCheckbox = await screen.findByRole('checkbox');
+    fireEvent.click(acknowledgeCheckbox);
+    const continueButton = screen.getByRole('button', { name: 'workspace.upload.confirmContinue' });
+    fireEvent.click(continueButton);
+  };
+
   it('opens plan-upgrade modal when blocked file type is selected', async () => {
     render(
       <UploadSourceDialogBase
@@ -137,6 +144,8 @@ describe('UploadSourceDialogBase', () => {
     expect(screen.getAllByText('https://example.com/source')).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.uploadAllSources' }));
 
+    await acknowledgeAndConfirm();
+
     await waitFor(() => {
       expect(onUploadFiles).toHaveBeenCalledTimes(1);
       expect(importSuggestedResources).toHaveBeenCalledWith({
@@ -189,6 +198,8 @@ describe('UploadSourceDialogBase', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.importSuggested' }));
 
+    await acknowledgeAndConfirm();
+
     await waitFor(() => {
       expect(importSuggestedResources).toHaveBeenCalledWith({
         workspaceId: 42,
@@ -238,7 +249,13 @@ describe('UploadSourceDialogBase', () => {
 
     const uploadButton = screen.getByRole('button', { name: 'workspace.upload.uploadUserFiles' });
     fireEvent.click(uploadButton);
-    fireEvent.click(uploadButton);
+
+    const acknowledgeCheckbox = await screen.findByRole('checkbox');
+    fireEvent.click(acknowledgeCheckbox);
+
+    const continueButton = screen.getByRole('button', { name: 'workspace.upload.confirmContinue' });
+    fireEvent.click(continueButton);
+    fireEvent.click(continueButton);
 
     expect(onUploadFiles).toHaveBeenCalledTimes(1);
 
@@ -283,5 +300,122 @@ describe('UploadSourceDialogBase', () => {
     expect(screen.getByText('workspace.upload.fileTooLarge')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'workspace.upload.uploadFileButton' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'workspace.upload.uploadUserFiles' })).toBeDisabled();
+  });
+
+  it('converts pasted text into a .txt file and queues it for upload', async () => {
+    const onUploadFiles = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <UploadSourceDialogBase
+        open
+        onOpenChange={vi.fn()}
+        isDarkMode={false}
+        workspaceId={42}
+        onUploadFiles={onUploadFiles}
+        planEntitlements={{
+          canUploadPdf: true,
+          canUploadWord: true,
+          canUploadSlide: true,
+          canUploadExcel: true,
+          canUploadText: true,
+          canUploadImage: true,
+          canUploadAudio: true,
+          canUploadVideo: true,
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.pasteTextButton' }));
+
+    const nameInput = screen.getByPlaceholderText('workspace.upload.pasteTextNamePlaceholder');
+    fireEvent.change(nameInput, { target: { value: 'My pasted note' } });
+
+    const textarea = screen.getByPlaceholderText('workspace.upload.pasteTextPlaceholder');
+    fireEvent.change(textarea, { target: { value: 'Hello pasted world' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /workspace\.upload\.insertText/ }));
+
+    expect(screen.getByText('My pasted note.txt')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.uploadUserFiles' }));
+    await acknowledgeAndConfirm();
+
+    await waitFor(() => {
+      expect(onUploadFiles).toHaveBeenCalledTimes(1);
+    });
+
+    const sentFiles = onUploadFiles.mock.calls[0][0];
+    expect(sentFiles).toHaveLength(1);
+    expect(sentFiles[0].name).toBe('My pasted note.txt');
+    expect(sentFiles[0].type).toBe('text/plain');
+  });
+
+  it('blocks paste-text when the plan does not allow uploading text', async () => {
+    render(
+      <UploadSourceDialogBase
+        open
+        onOpenChange={vi.fn()}
+        isDarkMode={false}
+        workspaceId={42}
+        onUploadFiles={vi.fn()}
+        planEntitlements={{
+          canUploadPdf: true,
+          canUploadWord: true,
+          canUploadSlide: true,
+          canUploadExcel: true,
+          canUploadText: false,
+          canUploadImage: true,
+          canUploadAudio: true,
+          canUploadVideo: true,
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.pasteTextButton' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('plan-upgrade-modal')).toBeInTheDocument();
+    });
+  });
+
+  it('returns to the main view when the user cancels the confirm screen', async () => {
+    const onUploadFiles = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <UploadSourceDialogBase
+        open
+        onOpenChange={vi.fn()}
+        isDarkMode={false}
+        workspaceId={42}
+        onUploadFiles={onUploadFiles}
+        planEntitlements={{
+          canUploadPdf: true,
+          canUploadWord: true,
+          canUploadSlide: true,
+          canUploadExcel: true,
+          canUploadText: true,
+          canUploadImage: true,
+          canUploadAudio: true,
+          canUploadVideo: true,
+        }}
+      />,
+    );
+
+    const fileInput = document.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, {
+      target: {
+        files: [new File(['local'], 'source.pdf', { type: 'application/pdf' })],
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.uploadUserFiles' }));
+
+    expect(await screen.findByText('workspace.upload.confirmWarning')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.upload.confirmBack' }));
+
+    expect(screen.queryByText('workspace.upload.confirmWarning')).not.toBeInTheDocument();
+    expect(screen.getByText('source.pdf')).toBeInTheDocument();
+    expect(onUploadFiles).not.toHaveBeenCalled();
   });
 });
