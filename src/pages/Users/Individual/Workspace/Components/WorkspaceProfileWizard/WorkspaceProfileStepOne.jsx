@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Compass,
-  Crown,
   Layers3,
   Loader2,
   RefreshCw,
@@ -13,6 +12,8 @@ import {
   Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import PlanGatedFeature from '@/components/plan/PlanGatedFeature';
+import { usePlanUpgradeInfo } from '@/hooks/usePlanUpgradeInfo';
 
 const PURPOSE_META = {
   STUDY_NEW: {
@@ -106,6 +107,22 @@ function WorkspaceProfileStepOne({
     : 'border-slate-200 bg-white text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
   const roadmapLockedByPlan = canCreateRoadmap === false;
+  const {
+    requiredPlanName: roadmapRequiredPlanName,
+    upgradePath: roadmapUpgradePath,
+  } = usePlanUpgradeInfo({
+    featureEntitlementKey: 'canCreateRoadMap',
+    enabled: roadmapLockedByPlan,
+  });
+  const studyNewLockedFeatureName = roadmapRequiredPlanName
+    ? t('workspace.profileConfig.stepOne.studyNewLockedFeatureNameWithPlan', {
+        planName: roadmapRequiredPlanName,
+        defaultValue: `Học mới cần gói ${roadmapRequiredPlanName}`,
+      })
+    : t(
+        'workspace.profileConfig.stepOne.studyNewLockedFeatureNameFallback',
+        'Học mới cần gói có roadmap',
+      );
   const inputClass = cn(
     'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all',
     isDarkMode
@@ -223,31 +240,19 @@ function WorkspaceProfileStepOne({
             const purposeDescription = isLockedPurpose
               ? t('workspace.profileConfig.stepOne.studyNewLockedDescription')
               : t(`workspace.profileConfig.purpose.${purpose}.description`);
-            const indicatorToneClass = active
-              ? 'text-white'
-              : isLockedPurpose
-                ? isDarkMode
-                  ? 'text-amber-300'
-                  : 'text-amber-600'
-                : mutedClass;
 
-            return (
+            const purposeButton = (
               <button
-                key={purpose}
                 type="button"
-                disabled={disabled || isLockedPurpose}
+                disabled={disabled}
                 onClick={() => onPurposeChange(purpose)}
                 className={cn(
-                  'group min-h-[112px] rounded-[20px] border p-3.5 text-left transition-all sm:min-h-[120px] sm:p-4',
-                  (disabled || isLockedPurpose) && 'cursor-not-allowed',
+                  'group min-h-[112px] w-full rounded-[20px] border p-3.5 text-left transition-all sm:min-h-[120px] sm:p-4',
+                  disabled && 'cursor-not-allowed',
                   active
                     ? isDarkMode
                       ? `border-transparent bg-gradient-to-br ${meta.tint} text-white shadow-lg shadow-cyan-950/25`
                       : `border-transparent bg-gradient-to-br ${meta.tint} text-white shadow-lg shadow-cyan-200/60`
-                    : isLockedPurpose
-                      ? isDarkMode
-                        ? 'border-amber-400/25 bg-amber-500/10 text-slate-200'
-                        : 'border-amber-200 bg-amber-50 text-slate-700'
                     : isDarkMode
                       ? 'border-white/10 bg-white/[0.03] hover:border-cyan-400/40 hover:bg-white/[0.06]'
                       : 'border-slate-200 bg-slate-50 hover:border-cyan-400/50 hover:bg-cyan-50/70'
@@ -274,41 +279,44 @@ function WorkspaceProfileStepOne({
                       </p>
                     </div>
                   </div>
-                  {isLockedPurpose ? (
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]',
-                        active
-                          ? 'border-white/25 bg-white/15 text-white'
-                          : isDarkMode
-                            ? 'border-amber-300/30 bg-amber-400/15 text-amber-200'
-                            : 'border-amber-300 bg-white text-amber-700'
-                      )}
-                    >
-                      <Crown className="h-3 w-3" />
-                      <span>{t('workspace.profileConfig.stepOne.vipBadge')}</span>
-                    </span>
-                  ) : active ? (
+                  {active ? (
                     <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                   ) : (
-                    <ChevronRight className={cn('h-3.5 w-3.5 shrink-0', indicatorToneClass)} />
+                    <ChevronRight className={cn('h-3.5 w-3.5 shrink-0', mutedClass)} />
                   )}
                 </div>
               </button>
             );
+
+            if (isLockedPurpose) {
+              return (
+                <PlanGatedFeature
+                  key={purpose}
+                  allowed={false}
+                  featureName={studyNewLockedFeatureName}
+                  isDarkMode={isDarkMode}
+                  fullWidth
+                  badgeInset
+                  toastTitle={t('workspace.profileConfig.stepOne.studyNewLockedToastTitle', 'Cần nâng cấp gói')}
+                  toastDescription={t('workspace.profileConfig.stepOne.studyNewLockedDescription')}
+                  toastMeta={t('workspace.profileConfig.stepOne.studyNewLockedHint')}
+                  upgradePath={roadmapUpgradePath}
+                  upgradeLabel={t('workspace.profileConfig.stepOne.upgradeAction', 'Nâng cấp')}
+                  badgeLabel={t('workspace.profileConfig.stepOne.vipBadge')}
+                >
+                  {purposeButton}
+                </PlanGatedFeature>
+              );
+            }
+
+            return <React.Fragment key={purpose}>{purposeButton}</React.Fragment>;
           })}
         </div>
         {errors.workspacePurpose ? <p className="mt-3 text-sm font-medium text-red-400">{errors.workspacePurpose}</p> : null}
         {roadmapLockedByPlan ? (
-          <div
-            className={cn(
-              'mt-4 flex items-start gap-3 rounded-[22px] border px-4 py-3 text-sm leading-6',
-              isDarkMode ? 'border-amber-400/20 bg-amber-500/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-800'
-            )}
-          >
-            <Crown className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>{t('workspace.profileConfig.stepOne.studyNewLockedHint')}</p>
-          </div>
+          <p className={cn('mt-3 text-xs leading-5', mutedClass)}>
+            {t('workspace.profileConfig.stepOne.studyNewLockedHint')}
+          </p>
         ) : null}
       </section>
 

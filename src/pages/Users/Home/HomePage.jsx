@@ -22,6 +22,7 @@ import { useWallet } from '@/hooks/useWallet';
 import CreditIconImage from "@/components/ui/CreditIconImage";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
+import { usePlanEntitlements } from '@/hooks/usePlanEntitlements';
 import {
   confirmIndividualWorkspaceProfile,
   deleteIndividualWorkspace,
@@ -225,6 +226,10 @@ function HomePage() {
   const activeTab = normalizeHomeTab(searchParams.get('tab'));
   const shouldLoadGroups = activeTab === 'group' || activeTab === 'community';
   const { summary: currentPlanSummary } = useCurrentSubscription();
+  const planEntitlements = usePlanEntitlements();
+  const quickCreateCanCreateRoadmap = planEntitlements.loading
+    ? null
+    : Boolean(planEntitlements.canCreateRoadmap);
   // Defer wallet fetch đến sau khi paint lần đầu (giữ hành vi cũ + có unit test).
   // Chuyển sang React Query qua useWallet → share cache với Profile/Plan/Sidebar.
   const [walletEnabled, setWalletEnabled] = useState(false);
@@ -595,7 +600,7 @@ function HomePage() {
             onSuggestRoadmapConfig={handleQuickSuggestRoadmapConfig}
             onUploadFiles={() => Promise.resolve([])}
             isDarkMode={isDarkMode}
-            canCreateRoadmap={true}
+            canCreateRoadmap={quickCreateCanCreateRoadmap}
             uploadedMaterials={[]}
             workspaceId={null}
             forceStartAtStepOne={true}
