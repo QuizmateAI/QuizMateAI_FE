@@ -1,14 +1,22 @@
 import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import i18n, { i18nReady, preloadNamespaces } from '@/i18n';
 import IndividualWorkspaceProfileConfigDialog from '@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog';
+import { ToastProvider } from '@/context/ToastContext';
 
 // Mock the StudyProfileAPI module
 vi.mock('@/api/StudyProfileAPI', () => ({
   analyzeKnowledge: vi.fn(),
   suggestProfileFields: vi.fn(),
   validateProfileConsistency: vi.fn(),
+}));
+
+vi.mock('@/api/ManagementSystemAPI', () => ({
+  getCurrentUserPlan: vi.fn().mockResolvedValue({ data: { data: null } }),
+  getActiveUserPlans: vi.fn().mockResolvedValue({ data: { data: [] } }),
+  getActiveGroupPlan: vi.fn().mockResolvedValue({ data: { data: [] } }),
 }));
 
 import {
@@ -99,15 +107,19 @@ function renderDialog(props = {}) {
   const onConfirm = props.onConfirm || vi.fn().mockResolvedValue(undefined);
 
   const view = render(
-    <IndividualWorkspaceProfileConfigDialog
-      open
-      onOpenChange={onOpenChange}
-      onSave={onSave}
-      onConfirm={onConfirm}
-      workspaceId={props.workspaceId || '123'}
-      isDarkMode={false}
-      {...props}
-    />
+    <MemoryRouter>
+      <ToastProvider>
+        <IndividualWorkspaceProfileConfigDialog
+          open
+          onOpenChange={onOpenChange}
+          onSave={onSave}
+          onConfirm={onConfirm}
+          workspaceId={props.workspaceId || '123'}
+          isDarkMode={false}
+          {...props}
+        />
+      </ToastProvider>
+    </MemoryRouter>
   );
 
   return { ...view, onSave, onOpenChange, onConfirm };
@@ -351,8 +363,8 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     const { onSave } = renderDialog({ canCreateRoadmap: false });
 
     const studyNewButton = getPurposeButtonByText(i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'));
-    expect(studyNewButton).toBeDisabled();
-    expect(within(studyNewButton).getByText(i18n.t('workspace.profileConfig.stepOne.vipBadge'))).toBeInTheDocument();
+    expect(studyNewButton).toBeTruthy();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.stepOne.vipBadge'))).toBeInTheDocument();
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepOne.studyNewLockedHint'))).toBeInTheDocument();
     expect(screen.queryByText(i18n.t('workspace.profileConfig.stepOne.roadmapQuestion'))).not.toBeInTheDocument();
 

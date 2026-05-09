@@ -149,12 +149,12 @@
         "analysisHighlightsTitle": "Quizmate AI が確認した内容",
         "analysisRefinementTitle": "次のように書き直すことができます",
         "vipBadge": "VIP",
-        "studyNewLockedDescription": "このオプションにはロードマップ作成を含むプランが必要です。",
-        "studyNewLockedHint": "現在のプランにはロードマップ作成が含まれていないため、Quizmate AI はこのワークスペースを復習モードに切り替えます。",
-        "roadmapQuestion": "AI にロードマップも生成してもらいますか?",
+        "studyNewLockedDescription": "このオプションには推奨ロードマップ作成を含むプランが必要です。",
+        "studyNewLockedHint": "現在のプランには推奨ロードマップ作成が含まれていないため、この機能を使用するにはアップグレードしてください。",
+        "roadmapQuestion": "AI に推奨ロードマップも生成してもらいますか?",
         "roadmapDescription": "このオプションは復習および模擬試験フローのみで表示されます。",
-        "enableRoadmap": "はい、ロードマップを含める",
-        "skipRoadmap": "ロードマップなし、残りのセットアップのみ"
+        "enableRoadmap": "はい、推奨ロードマップを含める",
+        "skipRoadmap": "推奨ロードマップなし、残りのセットアップのみ"
       },
       "stepTwo": {
         "title": "現在の状態を記述",

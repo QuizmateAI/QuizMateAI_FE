@@ -2098,9 +2098,9 @@
         "analysisSummaryTitle": "Quizmate AI đang hiểu nội dung này là",
         "analysisHighlightsTitle": "Quizmate AI đã kiểm tra",
         "analysisRefinementTitle": "Bạn có thể nhập lại theo hướng này",
-        "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
-        "enableRoadmap": "Có, tạo lộ trình kèm theo",
-        "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại"
+        "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình gợi ý không?",
+        "enableRoadmap": "Có, tạo lộ trình gợi ý kèm theo",
+        "skipRoadmap": "Không cần lộ trình gợi ý, chỉ cấu hình các phần còn lại"
       },
       "stepTwo": {
         "title": "Mô tả trạng thái hiện tại của bạn",

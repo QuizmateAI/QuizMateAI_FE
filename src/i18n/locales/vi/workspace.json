@@ -148,11 +148,11 @@
         "analysisHighlightsTitle": "Quizmate AI đã kiểm tra",
         "analysisRefinementTitle": "Bạn có thể nhập lại theo hướng này",
         "vipBadge": "VIP",
-        "studyNewLockedDescription": "Tính năng này cần gói có quyền tạo roadmap.",
-        "studyNewLockedHint": "Gói hiện tại chưa có quyền tạo roadmap, vui lòng nâng cấp đề sử dụng tính năng này.",
-        "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
-        "enableRoadmap": "Có, tạo lộ trình kèm theo",
-        "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại"
+        "studyNewLockedDescription": "Tính năng này cần gói có quyền tạo roadmap gợi ý.",
+        "studyNewLockedHint": "Gói hiện tại chưa có quyền tạo roadmap gợi ý, vui lòng nâng cấp để sử dụng tính năng này.",
+        "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình gợi ý không?",
+        "enableRoadmap": "Có, tạo lộ trình gợi ý kèm theo",
+        "skipRoadmap": "Không cần lộ trình gợi ý, chỉ cấu hình các phần còn lại"
       },
       "stepTwo": {
         "title": "Mô tả trạng thái hiện tại của bạn",

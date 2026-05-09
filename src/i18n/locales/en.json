@@ -2101,10 +2101,10 @@
         "analysisSummaryTitle": "Quizmate AI currently understands this as",
         "analysisHighlightsTitle": "What Quizmate AI checked",
         "analysisRefinementTitle": "You can rewrite it like this",
-        "roadmapQuestion": "Do you want AI to generate a roadmap as well?",
+        "roadmapQuestion": "Do you want AI to generate a suggested roadmap as well?",
         "roadmapDescription": "This option only appears for review and mock-test flows.",
-        "enableRoadmap": "Yes, include a roadmap",
-        "skipRoadmap": "No roadmap, keep only the remaining setup"
+        "enableRoadmap": "Yes, include a suggested roadmap",
+        "skipRoadmap": "No suggested roadmap, keep only the remaining setup"
       },
       "stepTwo": {
         "title": "Describe your current state",
