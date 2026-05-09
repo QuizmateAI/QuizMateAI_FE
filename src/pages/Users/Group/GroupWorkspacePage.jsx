@@ -1040,6 +1040,7 @@ function GroupWorkspacePage() {
   const resolveUiErrorMessage = useCallback((error) => getErrorMessage(t, error), [t]);
 
   useEffect(() => {
+    if (isMember) return;
     const hasEnoughSourceStateToEnforce = hasCheckedInitialSources || hasMaterialsFromProfile;
     if (!hasEnoughSourceStateToEnforce) return;
     if (hasUploadedMaterials) return;
@@ -1053,6 +1054,7 @@ function GroupWorkspacePage() {
     hasCheckedInitialSources,
     hasMaterialsFromProfile,
     hasUploadedMaterials,
+    isMember,
     setActiveSection,
     showInfo,
     t,
@@ -2775,7 +2777,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (GROUP_SECTIONS_REQUIRE_MATERIALS.has(actionKey) && !hasUploadedMaterials) {
+    if (!isMember && GROUP_SECTIONS_REQUIRE_MATERIALS.has(actionKey) && !hasUploadedMaterials) {
       showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
       setActiveSection('documents');
       setActiveView(null);
@@ -2815,6 +2817,7 @@ function GroupWorkspacePage() {
     canCreateFlashcard,
     canCreateQuiz,
     currentRoleKey,
+    isMember,
     showInfo,
     currentLang,
     shouldForceProfileSetup,
@@ -2851,7 +2854,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (GROUP_SECTIONS_REQUIRE_MATERIALS.has(parentId) && !hasUploadedMaterials) {
+    if (!isMember && GROUP_SECTIONS_REQUIRE_MATERIALS.has(parentId) && !hasUploadedMaterials) {
       showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
       setActiveSection('documents');
       setActiveView(null);
@@ -2908,6 +2911,7 @@ function GroupWorkspacePage() {
     canUploadSource,
     currentRoleKey,
     hasUploadedMaterials,
+    isMember,
     navigateInstant,
     searchParams,
     setActiveSection,
@@ -3100,20 +3104,26 @@ function GroupWorkspacePage() {
     trackQuizGenerationStart(createdPayload);
 
     if (isRealtimeProcessingQuizPayload(createdPayload)) {
-      showInfo(t(
-        challengeDraftUiActive
-          ? 'groupWorkspacePage.toast.challengeQuizGenerationStarted'
-          : 'groupWorkspacePage.toast.quizGenerationStarted',
-        challengeDraftUiActive
-          ? 'Challenge quiz is being generated. Track progress in the challenge detail.'
-          : 'Quiz is being generated. Track progress in the quiz list.',
-      ));
+      showInfo(
+        t(
+          challengeDraftUiActive
+            ? 'groupWorkspacePage.toast.challengeQuizGenerationStarted'
+            : 'groupWorkspacePage.toast.quizGenerationStarted',
+          challengeDraftUiActive
+            ? 'Challenge quiz is being generated. Track progress in the challenge detail.'
+            : 'Quiz is being generated. Track progress in the quiz list.',
+        ),
+        challengeDraftUiActive ? { duration: 8000 } : undefined,
+      );
       bumpQuizListRefreshToken();
-      setSelectedQuiz(null);
       void refreshActiveTaskSnapshot('group-quiz-create');
-      if (challengeDraftUiActive && returnToChallengeDraftContext()) {
+      if (challengeDraftUiActive) {
+        // Stay in editor — bouncing back to challenge detail can expose a transient BE state
+        // where snapshotQuizId is briefly null while AI setup runs, hiding leader controls.
+        // User can press "Quay lại" once BE has settled.
         return;
       }
+      setSelectedQuiz(null);
       setActiveView('quiz');
       return;
     }
@@ -3131,9 +3141,6 @@ function GroupWorkspacePage() {
         )
       );
       bumpQuizListRefreshToken();
-      if (challengeDraftUiActive && returnToChallengeDraftContext()) {
-        return;
-      }
       setSelectedQuiz(createdQuiz);
       setActiveView('quizDetail');
       return;
@@ -3145,7 +3152,34 @@ function GroupWorkspacePage() {
     }
     void refreshActiveTaskSnapshot('group-quiz-create');
     setActiveView('quiz');
-  }, [bumpQuizListRefreshToken, canCreateQuiz, challengeDraftUiActive, currentLang, refreshActiveTaskSnapshot, returnToChallengeDraftContext, showInfo, showSuccess, t, trackQuizGenerationStart]);
+  }, [bumpQuizListRefreshToken, canCreateQuiz, challengeDraftUiActive, currentLang, refreshActiveTaskSnapshot, showInfo, showSuccess, t, trackQuizGenerationStart]);
+
+  /** Khi user submit AI form từ inline ChallengeAIMatchEditor (mở trong tab Thử thách).
+   * Side-effects giống handleCreateQuiz nhưng KHÔNG đổi activeView/navigate — caller
+   * tự đóng inline editor và ChallengeDetailView refetch để hiện AI progress card. */
+  const handleChallengeInlineQuizCreated = useCallback((createdPayload) => {
+    trackQuizGenerationStart(createdPayload);
+    bumpQuizListRefreshToken();
+    if (isRealtimeProcessingQuizPayload(createdPayload)) {
+      showInfo(
+        t(
+          'groupWorkspacePage.toast.challengeQuizGenerationStarted',
+          'Challenge quiz is being generated. Track progress in the challenge detail.',
+        ),
+        { duration: 8000 },
+      );
+      void refreshActiveTaskSnapshot('group-quiz-create');
+    } else if (extractGroupCreatedQuizPayload(createdPayload)) {
+      showSuccess(
+        t(
+          'groupWorkspacePage.toast.challengeQuizCreated',
+          'Challenge quiz updated successfully.',
+        ),
+      );
+    }
+    void queryClient.invalidateQueries({ queryKey: ['challenge-detail'] });
+  }, [bumpQuizListRefreshToken, queryClient, refreshActiveTaskSnapshot, showInfo, showSuccess, t, trackQuizGenerationStart]);
+
   const handleViewQuiz = useCallback((quiz, options = {}) => {
     const normalizedQuizId = Number(quiz?.quizId ?? quiz?.id ?? 0);
     const normalizedQuiz = Number.isInteger(normalizedQuizId) && normalizedQuizId > 0
@@ -3183,12 +3217,9 @@ function GroupWorkspacePage() {
   const handleEditQuiz = useCallback((quiz) => { setSelectedQuiz(quiz); setActiveView('editQuiz'); }, []);
   const handleSaveQuiz = useCallback((updatedQuiz) => {
     bumpQuizListRefreshToken();
-    if (challengeDraftUiActive && returnToChallengeDraftContext()) {
-      return;
-    }
     setSelectedQuiz((p) => ({ ...p, ...updatedQuiz }));
     setActiveView('quizDetail');
-  }, [bumpQuizListRefreshToken, challengeDraftUiActive, returnToChallengeDraftContext]);
+  }, [bumpQuizListRefreshToken]);
 
   const handleGroupQuizUpdated = useCallback((payload) => {
     const qid = Number(payload?.quizId);
@@ -4112,6 +4143,10 @@ function GroupWorkspacePage() {
               currentUserId={currentUser?.userID}
               quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
               quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
+              onChallengeInlineQuizCreated={handleChallengeInlineQuizCreated}
+              planEntitlements={planEntitlements}
+              quizTitleMaxLength={groupQuizTitleMaxLength}
+              currentPlanSummaryOverride={groupCurrentPlanSummary}
               />
             </React.Suspense>
           </div>

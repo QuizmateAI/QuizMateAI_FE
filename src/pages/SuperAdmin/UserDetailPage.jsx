@@ -512,8 +512,10 @@ function UserDetailPage() {
           )}
 
           {activeTab === 'logs' && (
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {logs.length === 0 ? (
+            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+              {logsQuery.isLoading ? (
+                <ListSpinner variant="section" />
+              ) : logs.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">{t('userDetail.noLogs')}</p>
               ) : (
                 logs.map((log, i) => {
@@ -523,24 +525,90 @@ function UserDetailPage() {
                     action.includes('DELETE') || action.includes('REVOKE') ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200 dark:border-rose-800' :
                     action.includes('UPDATE') || action.includes('SYNC') ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800' :
                     'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600';
+
+                  const actorName = log.actorFullName || log.actorName || log.actorUsername || '';
+                  const actorEmail = log.actorEmail || '';
+                  const targetType = log.targetType || log.resource || '';
+                  const targetId = log.targetId ?? log.resourceId ?? '';
+                  const targetLabel = targetType
+                    ? (targetId !== '' && targetId != null ? `${targetType} #${targetId}` : targetType)
+                    : '';
+                  const beforeState = log.beforeState ?? log.before ?? '';
+                  const afterState = log.afterState ?? log.after ?? '';
+                  const hasStateChange = (beforeState !== '' && beforeState != null) || (afterState !== '' && afterState != null);
+
+                  let metaText = '';
+                  const rawMeta = log.metadata ?? log.details ?? log.payload;
+                  if (rawMeta) {
+                    if (typeof rawMeta === 'string') {
+                      metaText = rawMeta;
+                    } else {
+                      try {
+                        metaText = JSON.stringify(rawMeta);
+                      } catch {
+                        metaText = '';
+                      }
+                    }
+                  }
+
                   return (
                     <div
                       key={log.auditId ?? i}
-                      className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
+                      className={`p-4 rounded-xl border space-y-3 ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Badge className={`shrink-0 font-medium ${actionColor}`}>
-                          {log.action || log.actionType}
+                          {log.action || log.actionType || '-'}
                         </Badge>
-                        {(log.targetType || log.resource) && (
-                          <p className={`text-sm min-w-0 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                            {log.targetType || log.resource}
-                          </p>
+                        {targetLabel && (
+                          <span className={`text-xs px-2 py-0.5 rounded-md font-mono ${isDarkMode ? 'bg-slate-900 text-slate-300 border border-slate-700' : 'bg-white text-slate-600 border border-slate-200'}`}>
+                            {targetLabel}
+                          </span>
                         )}
+                        <span className={`ml-auto text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                          {formatDate(log.createdAt || log.timestamp || log.logTime)}
+                        </span>
                       </div>
-                      <p className={`text-xs shrink-0 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                        {formatDate(log.createdAt || log.timestamp)}
-                      </p>
+
+                      {(actorName || actorEmail) && (
+                        <div className={`flex items-center gap-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <UserIcon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            <span className={`font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{actorName || actorEmail}</span>
+                            {actorName && actorEmail && (
+                              <span className="ml-1.5 opacity-70">· {actorEmail}</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+
+                      {hasStateChange && (
+                        <div className={`text-xs grid grid-cols-1 sm:grid-cols-[auto_1fr_auto_1fr] gap-x-2 gap-y-1 items-center rounded-lg p-2 ${isDarkMode ? 'bg-slate-900/60' : 'bg-white/70'}`}>
+                          <span className={`uppercase tracking-wider text-[10px] font-semibold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {t('userDetail.beforeState')}
+                          </span>
+                          <span className={`font-mono break-all ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {beforeState !== '' && beforeState != null ? String(beforeState) : '—'}
+                          </span>
+                          <span className={`uppercase tracking-wider text-[10px] font-semibold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {t('userDetail.afterState')}
+                          </span>
+                          <span className={`font-mono break-all ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {afterState !== '' && afterState != null ? String(afterState) : '—'}
+                          </span>
+                        </div>
+                      )}
+
+                      {metaText && (
+                        <details className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <summary className="cursor-pointer select-none hover:text-blue-500">
+                            {t('userDetail.metadata')}
+                          </summary>
+                          <pre className={`mt-2 p-2 rounded-md font-mono text-[11px] whitespace-pre-wrap break-all ${isDarkMode ? 'bg-slate-900/60 text-slate-300' : 'bg-white/70 text-slate-700'}`}>
+                            {metaText}
+                          </pre>
+                        </details>
+                      )}
                     </div>
                   );
                 })
@@ -550,31 +618,133 @@ function UserDetailPage() {
 
           {activeTab === 'subscription' && (
             <div className="space-y-4">
-              {!subscription ? (
+              {subscriptionQuery.isLoading ? (
+                <ListSpinner variant="section" />
+              ) : !subscription ? (
                 <p className="text-slate-400 text-center py-8">{t('userDetail.noSubscription')}</p>
-              ) : (
-                <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                  <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {subscription.plan?.displayName || subscription.plan?.planName}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-slate-500">{t('userDetail.status')}</p>
-                      <p className="font-medium">{subscription.status}</p>
+              ) : (() => {
+                const plan = subscription.plan ?? {};
+                const planVersion = Number.isFinite(Number(plan.version)) ? Number(plan.version) : null;
+                const planCode = plan.code || plan.planCode || '';
+                const planScope = plan.planScope || '';
+                const planLevel = plan.planLevel != null ? String(plan.planLevel) : '';
+                const planDescription = sanitizeDisplayText(plan.description);
+                const durationInDay = Number(plan.durationInDay) || 0;
+                const isForever = durationInDay >= 999999;
+
+                const startDate = subscription.startDate || subscription.startedAt || subscription.createdAt || null;
+                const endDate = subscription.endDate
+                  || subscription.expiresAt
+                  || subscription.expiredAt
+                  || subscription.validUntil
+                  || subscription.currentPeriodEnd
+                  || plan.endDate
+                  || null;
+
+                let daysRemaining = null;
+                if (endDate) {
+                  const ms = new Date(endDate).getTime() - Date.now();
+                  if (Number.isFinite(ms)) {
+                    daysRemaining = Math.ceil(ms / (24 * 60 * 60 * 1000));
+                  }
+                }
+
+                const status = String(subscription.status || plan.status || '').toUpperCase();
+                const statusColor =
+                  status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                  status === 'EXPIRED' || status === 'CANCELLED' || status === 'CANCELED' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
+                  status === 'PENDING' || status === 'TRIAL' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+                  'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+
+                return (
+                  <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                        {plan.displayName || plan.planName || t('userDetail.noPlan')}
+                      </h3>
+                      {planVersion != null && (
+                        <Badge
+                          className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                          title={t('userDetail.planVersionTip')}
+                        >
+                          v{planVersion}
+                        </Badge>
+                      )}
+                      {planCode && planCode !== (plan.displayName || plan.planName) && (
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {planCode}
+                        </Badge>
+                      )}
+                      {status && (
+                        <Badge className={`ml-auto ${statusColor}`}>
+                          {status}
+                        </Badge>
+                      )}
                     </div>
-                    <div>
-                      <p className="text-slate-500">{t('userDetail.endDate')}</p>
-                      <p className="font-medium">{formatDate(subscription.endDate)}</p>
+
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {planScope && (
+                        <Badge variant="outline" className="text-xs">
+                          {planScope}
+                        </Badge>
+                      )}
+                      {planLevel && (
+                        <Badge variant="outline" className="text-xs">
+                          {t('userDetail.planLevel')}: {planLevel}
+                        </Badge>
+                      )}
                     </div>
-                    {subscription.plan?.price != null && (
-                      <div>
-                        <p className="text-slate-500">{t('userDetail.price')}</p>
-                        <p className="font-medium">{subscription.plan.price?.toLocaleString('vi-VN')} VNĐ</p>
-                      </div>
+
+                    {planDescription && (
+                      <p className={`text-sm mb-4 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                        {planDescription}
+                      </p>
                     )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                      {plan.price != null && (
+                        <div>
+                          <p className="text-slate-500 text-xs uppercase tracking-wider">{t('userDetail.price')}</p>
+                          <p className="font-medium mt-0.5">{Number(plan.price).toLocaleString('vi-VN')} VNĐ</p>
+                        </div>
+                      )}
+
+                      {durationInDay > 0 && (
+                        <div>
+                          <p className="text-slate-500 text-xs uppercase tracking-wider">{t('userDetail.duration')}</p>
+                          <p className="font-medium mt-0.5">
+                            {isForever ? t('userDetail.durationForever') : `${durationInDay} ${t('userDetail.days')}`}
+                          </p>
+                        </div>
+                      )}
+
+                      {startDate && (
+                        <div>
+                          <p className="text-slate-500 text-xs uppercase tracking-wider">{t('userDetail.startDate')}</p>
+                          <p className="font-medium mt-0.5">{formatDate(startDate)}</p>
+                        </div>
+                      )}
+
+                      <div>
+                        <p className="text-slate-500 text-xs uppercase tracking-wider">{t('userDetail.endDate')}</p>
+                        <p className="font-medium mt-0.5">
+                          {endDate ? formatDate(endDate) : (isForever ? t('userDetail.durationForever') : '-')}
+                        </p>
+                        {daysRemaining != null && daysRemaining > 0 && (
+                          <p className={`text-xs mt-0.5 ${daysRemaining <= 7 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}`}>
+                            {t('userDetail.daysRemaining', { count: daysRemaining })}
+                          </p>
+                        )}
+                        {daysRemaining != null && daysRemaining <= 0 && (
+                          <p className="text-xs mt-0.5 text-rose-600 dark:text-rose-400">
+                            {t('userDetail.expired')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
         </CardContent>

@@ -24,13 +24,14 @@
   },
   "sidebarSections": {
     "overview": "Tổng quan",
-    "workspace": "Người dùng & nhóm",
+    "workspace": "Người dùng và nhóm",
     "revenueReports": "Báo cáo doanh thu",
-    "commerce": "Quản lý thương mại",
+    "commerce": "Quản lý gói",
     "aiSystemLogs": "Hệ thống AI",
     "system": "Hệ thống nội bộ",
     "accessControl": "Quản trị truy cập",
     "aiGovernance": "Điều phối AI",
+    "trustSafety": "Tin cậy",
     "platformConfig": "Cấu hình nền tảng"
   },
   "systemSettings": {
@@ -2092,7 +2093,7 @@
         },
         "knowledgeNudgeTitle": "Knowledge này vẫn còn khá chung chung",
         "knowledgeNudgeDescription": "Hãy mô tả rõ hơn phạm vi, tài liệu hoặc kỹ năng mục tiêu để Quizmate AI gợi ý chính xác hơn.",
-        "analyzing": "AI đang phân tích kiến thức...",
+        "analyzing": "Quizmate AI đang phân tích kiến thức...",
         "analysisError": "AI phân tích thất bại. Vui lòng thử lại.",
         "knowledgeBroadHint": "Hãy quay lại ô \"Kiến thức\" và nhập cụ thể hơn về phạm vi, tài liệu hoặc kỹ năng bạn muốn học.",
         "analysisSummaryTitle": "Quizmate AI đang hiểu nội dung này là",

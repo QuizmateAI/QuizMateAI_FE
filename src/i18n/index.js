@@ -44,7 +44,7 @@ const routeNamespaceRules = [
   {
 
     matches: (pathname) => pathname === '/home',
-    namespaces: ['common', 'home', 'grouphome'],
+    namespaces: ['common', 'home', 'grouphome', 'workspace'],
   },
   {
     matches: (pathname) => pathname.startsWith('/plans'),

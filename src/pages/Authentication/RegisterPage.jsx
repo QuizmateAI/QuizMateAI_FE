@@ -114,18 +114,16 @@ const RegisterPage = () => {
                 <label htmlFor="agreeToTerms" className="text-sm text-[#313131] cursor-pointer leading-relaxed">
                   {t('policies.browsewrap.prefix', { defaultValue: t('agreeToTerms') })}{' '}
                   <Link
-                    to="/policies/terms-of-service"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    to="/policies"
+                    onClick={(e) => e.stopPropagation()}
                     className="text-[#FF8682] hover:underline font-medium"
                   >
                     {t('policies.browsewrap.termsLabel', { defaultValue: t('terms') })}
                   </Link>{' '}
                   {t('policies.browsewrap.and', { defaultValue: t('and') })}{' '}
                   <Link
-                    to="/policies/privacy-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    to="/policies"
+                    onClick={(e) => e.stopPropagation()}
                     className="text-[#FF8682] hover:underline font-medium"
                   >
                     {t('policies.browsewrap.privacyLabel', { defaultValue: t('privacyPolicies') })}

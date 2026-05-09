@@ -250,6 +250,10 @@ export function useWebSocket({
   });
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
+  // Bump khi auth:changed (login/logout) → useEffect kết nối re-run với token mới.
+  // Nếu không có cơ chế này, STOMP client capture token cũ trong connectHeaders và
+  // mọi reconnect (mỗi 5s) sẽ dùng token đã bị revoke sau khi user re-login.
+  const [authVersion, setAuthVersion] = useState(0);
   const needsProgressQueue = Boolean(
     onProgress || onMaterialUploaded || onMaterialDeleted || onMaterialUpdated,
   );
@@ -323,6 +327,17 @@ export function useWebSocket({
       console.error("Failed to get auth token:", err);
       return null;
     }
+  }, []);
+
+  // Lắng auth:changed (do api/Authentication.js dispatch khi login/logout) để
+  // tear-down kết nối hiện tại và reconnect với token mới. Không có effect này,
+  // sau khi user re-login, STOMP vẫn cầm token cũ đã bị BE revoke và mọi
+  // reconnect đều fail.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handler = () => setAuthVersion((v) => v + 1);
+    window.addEventListener("auth:changed", handler);
+    return () => window.removeEventListener("auth:changed", handler);
   }, []);
 
   // Kết nối WebSocket
@@ -643,6 +658,8 @@ export function useWebSocket({
     needsQuizAttemptGradingQueue,
     shouldConnect,
     workspaceId,
+    // Force re-connect khi auth thay đổi (login/logout) để pickup token mới.
+    authVersion,
   ]);
 
   // Gửi message qua WebSocket

@@ -11,6 +11,7 @@ import {
   refresh as refreshTokenStorage,
   setAccessToken,
 } from '@/utils/tokenStorage';
+import { getDeviceId } from '@/utils/deviceId';
 
 function readEnvString(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -79,6 +80,17 @@ const api = axios.create({
 // Interceptor cho request - thêm token vào header nếu có
 api.interceptors.request.use(
   (config) => {
+    // X-Device-Id: BE dùng để phân biệt browser instance cho device-aware logout.
+    // Gắn cho mọi request (kể cả /auth/login) để BE biết device khi cấp token.
+    try {
+      const deviceId = getDeviceId();
+      if (deviceId) {
+        config.headers['X-Device-Id'] = deviceId;
+      }
+    } catch {
+      /* no-op: thiếu header chỉ khiến BE fallback sang User-Agent hash */
+    }
+
     if (config.skipAuthHeader) {
       if (config.headers) {
         delete config.headers.Authorization;
@@ -109,6 +121,15 @@ function refreshAccessToken() {
   // Dùng axios "trần" (không qua instance `api`) để tránh interceptor lồng nhau.
   // withCredentials forces the browser to send the refresh cookie even though
   // we're using the bare axios — no interceptor would do it for us here.
+  // X-Device-Id phải gắn thủ công vì bare axios không qua request interceptor.
+  let deviceIdHeader = {};
+  try {
+    const deviceId = getDeviceId();
+    if (deviceId) deviceIdHeader = { 'X-Device-Id': deviceId };
+  } catch {
+    /* no-op */
+  }
+
   return axios
     .post(
       `${baseURL}/auth/refresh`,
@@ -118,6 +139,7 @@ function refreshAccessToken() {
           'Content-Type': 'application/json',
           Accept: 'application/json',
           ...(isNgrokUrl ? { 'ngrok-skip-browser-warning': 'true' } : {}),
+          ...deviceIdHeader,
         },
         timeout: 30000,
         withCredentials: true,

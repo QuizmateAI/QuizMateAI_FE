@@ -97,6 +97,7 @@ function PlanFormWizard({
   setAiModelAssignments,
   functionAssignmentMap,
   availableAiModels,
+  plans = [],
   creditUnitPrice = 200,
   highestActiveUserPlanEntitlement,
   editLocked = false,
@@ -175,6 +176,52 @@ function PlanFormWizard({
   const isDefaultPlanLevel = resolvedPlanLevel === (PLAN_LEVEL_OPTIONS[0] ?? '0');
   const hasGroupInheritance = isWorkspace && !isDefaultPlanLevel && Boolean(highestActiveUserPlanEntitlement);
 
+  const numericPlanLevel = parseInt(resolvedPlanLevel, 10) || 0;
+  const lowerLevelFloor = useMemo(() => {
+    if (numericPlanLevel <= 0) return null;
+    const targetScope = formData.planScope === 'WORKSPACE' ? 'WORKSPACE' : 'USER';
+    const editingId = editingPlan?.planCatalogId;
+    const lowerActive = (plans || []).filter((plan) => {
+      if (!plan) return false;
+      const sameScope = (plan.planScope === 'GROUP_WORKSPACE' ? 'WORKSPACE' : plan.planScope) === targetScope;
+      if (!sameScope) return false;
+      const lvl = parseInt(plan.planLevel ?? 0, 10) || 0;
+      if (lvl >= numericPlanLevel) return false;
+      if (editingId && plan.planCatalogId === editingId) return false;
+      return (plan.status || '').toUpperCase() === 'ACTIVE';
+    });
+    if (lowerActive.length === 0) return null;
+    const floor = {
+      maxIndividualWorkspace: 0,
+      maxMaterialInWorkspace: 0,
+      planIncludedCredits: 0,
+      creditPriceVnd: 0,
+      basePriceVnd: 0,
+      totalPriceVnd: 0,
+      features: {},
+      sourceLabels: [],
+    };
+    lowerActive.forEach((plan) => {
+      const ent = plan.entitlement || {};
+      floor.maxIndividualWorkspace = Math.max(floor.maxIndividualWorkspace, Number(ent.maxIndividualWorkspace) || 0);
+      floor.maxMaterialInWorkspace = Math.max(floor.maxMaterialInWorkspace, Number(ent.maxMaterialInWorkspace) || 0);
+      floor.planIncludedCredits = Math.max(floor.planIncludedCredits, Number(ent.planIncludedCredits) || 0);
+      const credit = Number(plan.creditPriceVnd ?? plan.creditPrice ?? 0) || 0;
+      const base = Number(plan.basePriceVnd ?? plan.basePrice ?? 0) || 0;
+      const total = Number(plan.price ?? (credit + base)) || (credit + base);
+      floor.creditPriceVnd = Math.max(floor.creditPriceVnd, credit);
+      floor.basePriceVnd = Math.max(floor.basePriceVnd, base);
+      floor.totalPriceVnd = Math.max(floor.totalPriceVnd, total);
+      Object.keys(entitlementToggles).forEach((key) => {
+        if (ent[key] === true) floor.features[key] = true;
+      });
+      floor.sourceLabels.push(`${plan.displayName || plan.code || `Plan ${plan.planCatalogId}`} (Lv.${plan.planLevel ?? 0})`);
+    });
+    return floor;
+  }, [plans, numericPlanLevel, formData.planScope, editingPlan, entitlementToggles]);
+
+  const hasLevelLadderInheritance = Boolean(lowerLevelFloor);
+
   useEffect(() => {
     if (editingPlan) return;
     if (formData.planLevel === resolvedPlanLevel) return;
@@ -221,6 +268,48 @@ function PlanFormWizard({
       return changed ? next : prev;
     });
   }, [hasGroupInheritance, editingPlan, highestActiveUserPlanEntitlement, entitlementToggles, setEntitlement]);
+
+  useEffect(() => {
+    if (!hasLevelLadderInheritance || editingPlan) return;
+    const floor = lowerLevelFloor;
+    setEntitlement((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      Object.keys(floor.features).forEach((key) => {
+        if (next[key] !== true) {
+          next[key] = true;
+          changed = true;
+        }
+      });
+      const raise = (key, floorValue) => {
+        const current = Number(next[key]);
+        if (Number.isFinite(current) && current >= floorValue) return;
+        if (floorValue > 0 && (!Number.isFinite(current) || current < floorValue)) {
+          next[key] = floorValue;
+          changed = true;
+        }
+      };
+      raise('maxIndividualWorkspace', floor.maxIndividualWorkspace);
+      raise('maxMaterialInWorkspace', floor.maxMaterialInWorkspace);
+      raise('planIncludedCredits', floor.planIncludedCredits);
+      return changed ? next : prev;
+    });
+    setFormData((prev) => {
+      const currentCredit = Number(prev.creditPrice) || 0;
+      const currentBase = Number(prev.basePrice) || 0;
+      const next = { ...prev };
+      let changed = false;
+      if (currentCredit < floor.creditPriceVnd) {
+        next.creditPrice = String(floor.creditPriceVnd);
+        changed = true;
+      }
+      if (currentBase < floor.basePriceVnd) {
+        next.basePrice = String(floor.basePriceVnd);
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [hasLevelLadderInheritance, editingPlan, lowerLevelFloor, setEntitlement, setFormData]);
 
   const handleDialogOpenChange = (nextOpen) => {
     if (isSubmitting) return;
@@ -295,6 +384,70 @@ function PlanFormWizard({
     return null;
   };
 
+  const getLevelLadderError = () => {
+    if (!lowerLevelFloor) return null;
+    const floor = lowerLevelFloor;
+    const formatField = (label) => label;
+
+    const checkLimit = (key, label) => {
+      const floorValue = floor[key];
+      if (!floorValue || floorValue <= 0) return null;
+      const current = Number(entitlement[key]) || 0;
+      if (current < floorValue) {
+        return t('subscription.wizard.validation.levelLadderLimit', {
+          defaultValue: '{{field}} ở Level {{level}} phải ≥ {{floor}} (kế thừa từ level thấp hơn)',
+          field: formatField(label),
+          level: numericPlanLevel,
+          floor: floorValue.toLocaleString(locale),
+        });
+      }
+      return null;
+    };
+
+    if (requireIndividualPlanLimits) {
+      const e1 = checkLimit('maxIndividualWorkspace', t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace'));
+      if (e1) return e1;
+    }
+    const e2 = checkLimit('maxMaterialInWorkspace', t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace'));
+    if (e2) return e2;
+    const e3 = checkLimit('planIncludedCredits', t('subscription.detail.planIncludedCredits', 'Included credits'));
+    if (e3) return e3;
+
+    const missingFeatures = Object.keys(floor.features).filter((key) => entitlement[key] !== true);
+    if (missingFeatures.length > 0) {
+      const list = missingFeatures
+        .map((key) => t(entitlementToggles[key]?.labelKey, entitlementToggles[key]?.defaultLabel || key))
+        .join(', ');
+      return t('subscription.wizard.validation.levelLadderFeature', {
+        defaultValue: 'Level {{level}} phải bật các quyền đã có ở level thấp hơn: {{list}}',
+        level: numericPlanLevel,
+        list,
+      });
+    }
+
+    if (floor.creditPriceVnd > 0) {
+      const credit = Number(formData.creditPrice) || 0;
+      if (credit < floor.creditPriceVnd) {
+        return t('subscription.wizard.validation.levelLadderCreditPrice', {
+          defaultValue: 'Phần credit ở Level {{level}} phải ≥ {{floor}} VND (kế thừa từ level thấp hơn)',
+          level: numericPlanLevel,
+          floor: floor.creditPriceVnd.toLocaleString(locale),
+        });
+      }
+    }
+    if (floor.basePriceVnd > 0) {
+      const base = Number(formData.basePrice) || 0;
+      if (base < floor.basePriceVnd) {
+        return t('subscription.wizard.validation.levelLadderBasePrice', {
+          defaultValue: 'Giá gốc ở Level {{level}} phải ≥ {{floor}} VND (kế thừa từ level thấp hơn)',
+          level: numericPlanLevel,
+          floor: floor.basePriceVnd.toLocaleString(locale),
+        });
+      }
+    }
+    return null;
+  };
+
   const getValidationError = ({ forSubmit = false } = {}) => {
     if (editLocked) {
       return editLockedReason || t(
@@ -307,6 +460,8 @@ function PlanFormWizard({
     if (currentStep === 1 || forSubmit) {
       const leveledPlanFieldError = getIndividualPlanLimitError();
       if (leveledPlanFieldError) return leveledPlanFieldError;
+      const ladderError = getLevelLadderError();
+      if (ladderError) return ladderError;
     }
     return null;
   };
@@ -376,6 +531,9 @@ function PlanFormWizard({
       handleBasePriceChange={handleBasePriceChange}
       hasCustomCreditPrice={hasCustomCreditPrice}
       hasGroupInheritance={hasGroupInheritance}
+      hasLevelLadderInheritance={hasLevelLadderInheritance}
+      lowerLevelFloor={lowerLevelFloor}
+      numericPlanLevel={numericPlanLevel}
       highestActiveUserPlanEntitlement={highestActiveUserPlanEntitlement}
       includedCredits={includedCredits}
       inputCls={inputCls}

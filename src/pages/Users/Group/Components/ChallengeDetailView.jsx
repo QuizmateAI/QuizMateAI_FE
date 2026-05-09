@@ -25,6 +25,7 @@ import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
 import ChallengeDetailContent from './ChallengeDetailContent';
 import ChallengeManualMatchEditor from './ChallengeManualMatchEditor';
+import ChallengeAIMatchEditor from './ChallengeAIMatchEditor';
 import { readChallengeDraftEditorMode } from './createChallengeWizardHelpers';
 
 /** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS): tối đa 2 reviewer. */
@@ -218,6 +219,10 @@ export default function ChallengeDetailView({
   onBack,
   quizGenerationTaskByQuizId = {},
   quizGenerationProgressByQuizId = {},
+  onChallengeInlineQuizCreated,
+  planEntitlements,
+  quizTitleMaxLength,
+  currentPlanSummaryOverride,
 }) {
   const { t, i18n } = useTranslation();
   const { showSuccess } = useToast();
@@ -237,6 +242,7 @@ export default function ChallengeDetailView({
   const [editScheduleIssues, setEditScheduleIssues] = useState([]);
   const [reviewerPick, setReviewerPick] = useState('');
   const [manualMatchEditor, setManualMatchEditor] = useState(null);
+  const [aiMatchEditor, setAiMatchEditor] = useState(null);
   const [displayedRealtimeChallengeQuizPercent, setDisplayedRealtimeChallengeQuizPercent] = useState(0);
 
   const {
@@ -254,6 +260,20 @@ export default function ChallengeDetailView({
     enabled: Boolean(workspaceId && eventId),
     refetchInterval: 10000,
   });
+
+  /** BE đôi khi trả `snapshotQuizId = 0/null` ngay sau khi tạo challenge NEW_CHALLENGE_QUIZ
+   * (đang setup snapshot/AI). Trong trạng thái này leader controls sẽ ẩn — refetch nhanh
+   * mỗi 1.5s cho tới khi snapshot ready để leader không bị "mất" UI. */
+  const isSnapshotPendingForNewChallenge = Boolean(detail)
+    && String(detail?.sourceMode || '').toUpperCase() === 'NEW_CHALLENGE_QUIZ'
+    && Number(detail?.snapshotQuizId) <= 0;
+  useEffect(() => {
+    if (!isSnapshotPendingForNewChallenge) return undefined;
+    const id = globalThis.setTimeout(() => {
+      void refetchDetail();
+    }, 1500);
+    return () => globalThis.clearTimeout(id);
+  }, [isSnapshotPendingForNewChallenge, refetchDetail]);
 
   const { data: reviewMembersRaw = [] } = useQuery({
     queryKey: ['group-members-review', workspaceId],
@@ -307,6 +327,11 @@ export default function ChallengeDetailView({
 
   const handleManualMatchSaved = useCallback(() => {
     setManualMatchEditor(null);
+    invalidate();
+  }, [invalidate]);
+
+  const handleCloseAiMatchEditor = useCallback(() => {
+    setAiMatchEditor(null);
     invalidate();
   }, [invalidate]);
 
@@ -419,16 +444,9 @@ export default function ChallengeDetailView({
       setManualMatchEditor({ quizId: qid, roundNumber: null });
       return;
     }
-    navigate(
-      buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
-        challengeDraftQuizId: qid,
-        challengeDraft: 1,
-        challengeEventId: eventId,
-        challengeDraftMode: draftEditorMode,
-      }),
-      { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: eventId } } },
-    );
-  }, [navigate, workspaceId, detail?.snapshotQuizId, eventId]);
+    // AI mode: render inline (giống manual) — không navigate sang Bài kiểm tra.
+    setAiMatchEditor({ quizId: qid, roundNumber: null });
+  }, [workspaceId, detail?.snapshotQuizId, eventId]);
 
   const handleOpenRoundQuizEditor = useCallback((round) => {
     const qid = round?.quizId;
@@ -438,17 +456,8 @@ export default function ChallengeDetailView({
       setManualMatchEditor({ quizId: qid, roundNumber: round?.roundNumber || null });
       return;
     }
-    navigate(
-      buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
-        challengeDraftQuizId: qid,
-        challengeDraft: 1,
-        challengeEventId: eventId,
-        challengeRound: round.roundNumber,
-        challengeDraftMode: draftEditorMode,
-      }),
-      { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: eventId } } },
-    );
-  }, [navigate, workspaceId, eventId]);
+    setAiMatchEditor({ quizId: qid, roundNumber: round?.roundNumber || null });
+  }, [workspaceId, eventId]);
 
   const handleViewSnapshotQuiz = useCallback(() => {
     const qid = detail?.snapshotQuizId;
@@ -537,22 +546,28 @@ export default function ChallengeDetailView({
   const hasSnapshotQuiz = Number(detail?.snapshotQuizId) > 0;
   const snapshotQuizId = Number(detail?.snapshotQuizId) || 0;
   const snapshotStatusKeyRaw = String(detail?.snapshotQuizStatus || '').toUpperCase();
+  /** Defensive guard: nếu snapshot đã có câu hỏi, coi như AI generation hoàn tất —
+   * bỏ qua status/WS task tracking sticky (BE đôi khi không gửi COMPLETED signal hoặc
+   * không cập nhật snapshotQuizStatus về DRAFT/ACTIVE sau khi Python xong). */
+  const aiEffectivelyDone = Number(detail?.snapshotQuizTotalQuestion) > 0;
   const realtimeChallengeQuizTaskId = snapshotQuizId > 0
     ? String(quizGenerationTaskByQuizId?.[snapshotQuizId] ?? '').trim()
     : '';
   const realtimeChallengeQuizPercent = snapshotQuizId > 0
     ? clampPercent(quizGenerationProgressByQuizId?.[snapshotQuizId] ?? 0)
     : 0;
-  const hasRealtimeChallengeQuizActivity = snapshotQuizId > 0 && (
-    (Boolean(realtimeChallengeQuizTaskId) && realtimeChallengeQuizPercent < 100)
-    || (realtimeChallengeQuizPercent > 0 && realtimeChallengeQuizPercent < 100)
-  );
+  const hasRealtimeChallengeQuizActivity = !aiEffectivelyDone
+    && snapshotQuizId > 0 && (
+      (Boolean(realtimeChallengeQuizTaskId) && realtimeChallengeQuizPercent < 100)
+      || (realtimeChallengeQuizPercent > 0 && realtimeChallengeQuizPercent < 100)
+    );
   const snapshotStatusOverridesRealtime = snapshotStatusKeyRaw === 'ACTIVE'
     || (snapshotStatusKeyRaw === 'ERROR' && !hasRealtimeChallengeQuizActivity);
   const hasRealtimeChallengeQuizProcessing = !snapshotStatusOverridesRealtime && hasRealtimeChallengeQuizActivity;
   const showChallengeQuizCard = hasSnapshotQuiz || detail?.sourceMode === 'NEW_CHALLENGE_QUIZ';
   const showChallengeQuizProcessingState = showChallengeQuizCard
-    && (snapshotStatusKeyRaw === 'PROCESSING' || hasRealtimeChallengeQuizProcessing);
+    && !aiEffectivelyDone
+    && (snapshotStatusKeyRaw === 'PROCESSING' || hasRealtimeChallengeQuizProcessing || isSnapshotPendingForNewChallenge);
   const detailTimedOut = isRequestTimeoutError(detailError);
   const isVietnameseLanguage = String(i18n?.language || '').toLowerCase().startsWith('vi');
 
@@ -694,6 +709,22 @@ export default function ChallengeDetailView({
     );
   }
 
+  if (aiMatchEditor?.quizId) {
+    return (
+      <ChallengeAIMatchEditor
+        workspaceId={workspaceId}
+        quizId={aiMatchEditor.quizId}
+        detail={detail}
+        isDarkMode={isDarkMode}
+        onBack={handleCloseAiMatchEditor}
+        onChallengeInlineQuizCreated={onChallengeInlineQuizCreated}
+        planEntitlements={planEntitlements}
+        quizTitleMaxLength={quizTitleMaxLength}
+        currentPlanSummaryOverride={currentPlanSummaryOverride}
+      />
+    );
+  }
+
   const isChallengeCreator = Number(currentUserId) > 0 && Number(detail.creatorId) === Number(currentUserId);
   const isPublished = Boolean(detail.published);
   const reviewContributors = Array.isArray(detail.reviewContributors) ? detail.reviewContributors : [];
@@ -760,7 +791,11 @@ export default function ChallengeDetailView({
       : t(`groupWorkspace.challenge.quizStatus.${snapshotStatusKeyRaw}`, snapshotStatusKeyRaw))
     : null;
 
-  const snapshotDisplayStatusKeyRaw = hasRealtimeChallengeQuizProcessing ? 'PROCESSING' : snapshotStatusKeyRaw;
+  const snapshotDisplayStatusKeyRaw = aiEffectivelyDone
+    ? snapshotStatusKeyRaw
+    : (hasRealtimeChallengeQuizProcessing || isSnapshotPendingForNewChallenge)
+      ? 'PROCESSING'
+      : snapshotStatusKeyRaw;
   const hasSnapshotQuizContent = Number(detail.snapshotQuizTotalQuestion) > 0;
   const effectiveChallengePublishReady = hasBackendRoundQuizPlan ? bracketRoundQuizReady : challengePublishReady;
   /** Sau khi xuất bản (ACTIVE), chỉ leader có tham gia thi mới bị chặn xem trước đề — reviewer vẫn xem được để góp ý */

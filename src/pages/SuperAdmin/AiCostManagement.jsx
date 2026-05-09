@@ -524,10 +524,6 @@ function AiCostManagement() {
           icon={DatabaseZap}
           tone="bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
           isDarkMode={isDarkMode}
-          subtext={t('aiCosts.metrics.requestsSummary', '{{matched}} đối soát · {{unmatched}} chưa', {
-            matched: formatInteger(summary?.matchedRequestCount),
-            unmatched: formatInteger(summary?.unmatchedRequestCount),
-          })}
           sparklinePoints={dailyBuckets}
           sparklineKey="requestCount"
           sparklineColor="#0ea5e9"
@@ -538,9 +534,6 @@ function AiCostManagement() {
           icon={Wallet}
           tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           isDarkMode={isDarkMode}
-          subtext={t('aiCosts.metrics.revenueSummary', 'Khớp audit: {{matched}}', {
-            matched: formatVnd(summary?.totalChargedVndMatchedAudit),
-          })}
           sparklinePoints={dailyBuckets}
           sparklineKey="chargedVnd"
           sparklineColor="#10b981"
@@ -551,7 +544,6 @@ function AiCostManagement() {
           icon={Coins}
           tone="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
           isDarkMode={isDarkMode}
-          subtext={`${formatInteger(summary?.totalTokens)} ${t('aiCosts.metrics.tokens')}`}
           sparklinePoints={dailyBuckets}
           sparklineKey="providerCostVnd"
           sparklineColor="#f59e0b"
@@ -562,9 +554,6 @@ function AiCostManagement() {
           icon={ArrowUpRight}
           tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
           isDarkMode={isDarkMode}
-          subtext={t('aiCosts.metrics.profitSummary', 'Trợ giá hệ thống: {{subsidy}}', {
-            subsidy: formatVnd(summary?.totalSystemSubsidyVnd),
-          })}
           sparklinePoints={dailyBuckets}
           sparklineKey="profitVnd"
           sparklineColor="#8b5cf6"

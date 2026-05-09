@@ -362,7 +362,7 @@ function WorkspaceProfileStepOne({
             >
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm font-medium">
-                {translateOrFallback(t, 'workspace.profileConfig.stepOne.analyzing', 'AI đang phân tích kiến thức...')}
+                {translateOrFallback(t, 'workspace.profileConfig.stepOne.analyzing', 'Quizmate AI đang phân tích kiến thức...')}
               </span>
             </div>
           ) : null}

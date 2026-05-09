@@ -1042,6 +1042,9 @@
       "materialsDeleted": "Đã xóa {{count}} tài liệu.",
       "resetDataSuccess": "Đã xóa tài liệu. Bạn có thể cập nhật onboarding nhóm ngay bây giờ.",
       "quizCreated": "Đã tạo quiz thành công.",
+      "quizGenerationStarted": "Đang tạo quiz. Theo dõi tiến độ trong danh sách Bài kiểm tra.",
+      "challengeQuizCreated": "Đã cập nhật đề challenge.",
+      "challengeQuizGenerationStarted": "Đang tạo đề challenge. Theo dõi tiến độ tại chi tiết challenge.",
       "memberCannotCreateQuiz": "Member không có quyền tạo quiz.",
       "memberCannotCreateFlashcard": "Member không có quyền tạo thẻ ghi nhớ.",
       "memberCannotCreateRoadmap": "Member không có quyền tạo roadmap.",
@@ -1855,6 +1858,8 @@
     "processingQuizTitle": "Đề challenge đang được tạo",
     "processingQuizHint": "Hệ thống vẫn đang sinh câu hỏi cho challenge này. Quay lại đây sau ít phút để tiếp tục review hoặc chỉnh sửa đề.",
     "processingQuizProgressLabel": "Tiến độ WebSocket",
+    "snapshotPendingTitle": "Đang chuẩn bị đề challenge",
+    "snapshotPendingHint": "Hệ thống đang khởi tạo đề challenge. Các tùy chọn quản lý (soạn đề, mời reviewer, xuất bản) sẽ hiện sau khi đề sẵn sàng.",
     "reviewerPanel": {
       "orderHint": "Mỗi reviewer có cùng quyền review.",
       "primaryBadge": "Reviewer",
