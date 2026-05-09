@@ -115,9 +115,6 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
                     {!collapsed ? (
                       <div className="min-w-0">
                         <p className="truncate font-semibold">{t(item.labelKey, item.defaultLabel)}</p>
-                        <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
-                          {t(section.labelKey, section.defaultLabel)}
-                        </p>
                       </div>
                     ) : null}
                   </button>

@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, ChevronDown, ChevronUp, RefreshCw, Users } from 'lucide-react';
+import {
+  ArrowUpDown,
+  BadgeCheck,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  RefreshCw,
+  Search,
+  Users,
+} from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -67,28 +77,6 @@ function formatCompactVnd(value) {
   return `${sign}${abs}`;
 }
 
-function KpiTile({ isDarkMode, label, value, hint, accent = 'slate' }) {
-  const accentColor = {
-    emerald: isDarkMode ? 'text-emerald-300' : 'text-emerald-700',
-    amber: isDarkMode ? 'text-amber-300' : 'text-amber-700',
-    rose: isDarkMode ? 'text-rose-300' : 'text-rose-700',
-    slate: isDarkMode ? 'text-white' : 'text-slate-900',
-  }[accent] || (isDarkMode ? 'text-white' : 'text-slate-900');
-  return (
-    <div
-      className={`rounded-2xl border p-4 ${
-        isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
-      }`}
-    >
-      <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{label}</p>
-      <p className={`mt-2 text-xl font-bold tabular-nums ${accentColor}`}>{value}</p>
-      {hint ? (
-        <p className={`mt-1 text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{hint}</p>
-      ) : null}
-    </div>
-  );
-}
-
 function ChartCard({ isDarkMode, title, subtitle, summary, children }) {
   return (
     <div
@@ -116,6 +104,64 @@ function formatScope(value) {
   if (value == null || value === '') return '—';
   return String(value);
 }
+
+function getPlanInitials(planCode, fallbackName) {
+  const source = String(planCode || fallbackName || '').trim().toUpperCase();
+  if (!source) return '—';
+  const cleaned = source.replace(/[^A-Z0-9]/g, '');
+  return cleaned.slice(0, 2) || source.slice(0, 2);
+}
+
+const PLAN_FAMILY_ACCENT = {
+  TEAM: 'from-indigo-500 to-blue-700',
+  TITANIUM: 'from-slate-700 to-slate-900',
+  PRO: 'from-cyan-400 to-sky-600',
+  PLUS: 'from-emerald-400 to-teal-600',
+  STARTER: 'from-amber-400 to-orange-600',
+};
+
+function getPlanFamilyAccent(planCode) {
+  const key = String(planCode || '').trim().toUpperCase();
+  return PLAN_FAMILY_ACCENT[key] || 'from-ocean-500 to-ocean-700';
+}
+
+const SORT_OPTIONS = [
+  { value: 'revenue_desc', labelKey: 'planPurchases.sort.revenueDesc', label: 'Doanh thu ↓' },
+  { value: 'revenue_asc', labelKey: 'planPurchases.sort.revenueAsc', label: 'Doanh thu ↑' },
+  { value: 'purchases_desc', labelKey: 'planPurchases.sort.purchasesDesc', label: 'Lượt mua ↓' },
+  { value: 'purchases_asc', labelKey: 'planPurchases.sort.purchasesAsc', label: 'Lượt mua ↑' },
+  { value: 'base_desc', labelKey: 'planPurchases.sort.baseDesc', label: 'Tiền gốc ↓' },
+  { value: 'base_asc', labelKey: 'planPurchases.sort.baseAsc', label: 'Tiền gốc ↑' },
+  { value: 'margin_desc', labelKey: 'planPurchases.sort.marginDesc', label: 'Biên ↓' },
+  { value: 'margin_asc', labelKey: 'planPurchases.sort.marginAsc', label: 'Biên ↑' },
+];
+
+function comparePlans(a, b, sortKey) {
+  const pick = (row) => {
+    switch (sortKey) {
+      case 'purchases_desc':
+      case 'purchases_asc':
+        return Number(row?.purchaseCount) || 0;
+      case 'base_desc':
+      case 'base_asc':
+        return Number(row?.baseRevenueVnd) || 0;
+      case 'margin_desc':
+      case 'margin_asc':
+        return Number(row?.estimatedMarginVnd) || 0;
+      case 'revenue_asc':
+      case 'revenue_desc':
+      default:
+        return Number(row?.revenueVnd) || 0;
+    }
+  };
+  const dir = sortKey?.endsWith('_asc') ? 1 : -1;
+  const av = pick(a);
+  const bv = pick(b);
+  if (av === bv) return 0;
+  return av < bv ? -1 * dir : 1 * dir;
+}
+
+const TABLE_PAGE_SIZE = 10;
 
 function toApiIso(dateStr) {
   if (dateStr == null || String(dateStr).trim() === '') return undefined;
@@ -147,6 +193,12 @@ export default function PlanPurchaseReportPage() {
   const [chartVersionFilter, setChartVersionFilter] = useState('current');
   // Tab: 'plans' (default) = báo cáo gói trả phí | 'credits' = báo cáo mua credit
   const [activeTab, setActiveTab] = useState('plans');
+  // Toolbar trong card "Chi tiết theo phiên bản" — filter client-side trên dữ liệu summary đã load
+  const [tableSearch, setTableSearch] = useState('');
+  const [tableGroupFilter, setTableGroupFilter] = useState('all');
+  const [tableStatusFilter, setTableStatusFilter] = useState('all'); // 'all' | 'current' | 'old'
+  const [tableSort, setTableSort] = useState('revenue_desc');
+  const [tablePage, setTablePage] = useState(0);
 
   const queryParams = useMemo(() => ({
     from: toApiIso(from),
@@ -287,33 +339,78 @@ export default function PlanPurchaseReportPage() {
     { credit: 0, base: 0, revenue: 0, cogs: 0, margin: 0 },
   ), [chartData]);
 
-  const totals = useMemo(() => {
-    // Prefer server-computed totals (source of truth). Fallback to client reduce when
-    // BE chua deploy hoac field con thieu — tranh hien NaN/undefined trong KPI.
-    const summary = summaryQuery.data ?? {};
-    const fromServer = summary.totalRevenueVnd != null
-      || summary.totalBaseRevenueVnd != null
-      || summary.totalCreditRevenueVnd != null;
-    if (fromServer) {
-      return {
-        credit: Number(summary.totalCreditRevenueVnd) || 0,
-        base: Number(summary.totalBaseRevenueVnd) || 0,
-        revenue: Number(summary.totalRevenueVnd) || 0,
-        cogs: Number(summary.totalAiProviderCostVnd) || 0,
-        margin: Number(summary.totalEstimatedMarginVnd) || 0,
-      };
-    }
-    return chartData.reduce(
+  // Danh sách distinct planCode để build dropdown "Nhóm gói" trên toolbar bảng.
+  const planGroupOptions = useMemo(() => {
+    const set = new Set();
+    plans.forEach((row) => {
+      const code = row?.planCode;
+      if (code) set.add(code);
+    });
+    return Array.from(set).sort();
+  }, [plans]);
+
+  // Plans sau khi áp dụng search/group/status — không bao gồm sort & pagination,
+  // dùng cho row tổng cộng và đếm tổng.
+  const filteredPlans = useMemo(() => {
+    const term = tableSearch.trim().toLowerCase();
+    return plans.filter((row) => {
+      if (tableGroupFilter !== 'all' && row?.planCode !== tableGroupFilter) return false;
+      if (tableStatusFilter === 'current' && row?.planIsCurrent === false) return false;
+      if (tableStatusFilter === 'old' && row?.planIsCurrent !== false) return false;
+      if (!term) return true;
+      const haystack = [
+        row?.planCode,
+        row?.planDisplayName,
+        row?.planScope,
+        Number.isFinite(Number(row?.planVersion)) ? `v${row.planVersion}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [plans, tableSearch, tableGroupFilter, tableStatusFilter]);
+
+  const sortedPlans = useMemo(() => {
+    const next = filteredPlans.slice();
+    next.sort((a, b) => comparePlans(a, b, tableSort));
+    return next;
+  }, [filteredPlans, tableSort]);
+
+  // Reset trang về 0 khi filter/search/sort/dataset thay đổi để tránh page index out of range.
+  useEffect(() => {
+    setTablePage(0);
+  }, [tableSearch, tableGroupFilter, tableStatusFilter, tableSort, plans.length]);
+
+  const totalPlanRows = sortedPlans.length;
+  const totalPlanPages = Math.max(1, Math.ceil(totalPlanRows / TABLE_PAGE_SIZE));
+  const safePlanPage = Math.min(tablePage, totalPlanPages - 1);
+  const pagedPlans = useMemo(
+    () => sortedPlans.slice(safePlanPage * TABLE_PAGE_SIZE, safePlanPage * TABLE_PAGE_SIZE + TABLE_PAGE_SIZE),
+    [sortedPlans, safePlanPage],
+  );
+
+  const filteredTotals = useMemo(
+    () => filteredPlans.reduce(
       (acc, row) => ({
-        credit: acc.credit + row.credit,
-        base: acc.base + row.base,
-        revenue: acc.revenue + row.revenue,
-        cogs: acc.cogs + row.cogs,
-        margin: acc.margin + row.margin,
+        purchaseCount: acc.purchaseCount + (Number(row?.purchaseCount) || 0),
+        distinctPayerCount: acc.distinctPayerCount + (Number(row?.distinctPayerCount) || 0),
+        baseRevenueVnd: acc.baseRevenueVnd + (Number(row?.baseRevenueVnd) || 0),
+        revenueVnd: acc.revenueVnd + (Number(row?.revenueVnd) || 0),
+        aiProviderCostVnd: acc.aiProviderCostVnd + (Number(row?.aiProviderCostVnd) || 0),
+        estimatedMarginVnd: acc.estimatedMarginVnd + (Number(row?.estimatedMarginVnd) || 0),
       }),
-      { credit: 0, base: 0, revenue: 0, cogs: 0, margin: 0 },
-    );
-  }, [chartData, summaryQuery.data]);
+      {
+        purchaseCount: 0,
+        distinctPayerCount: 0,
+        baseRevenueVnd: 0,
+        revenueVnd: 0,
+        aiProviderCostVnd: 0,
+        estimatedMarginVnd: 0,
+      },
+    ),
+    [filteredPlans],
+  );
 
   const buyersPageData = buyersQuery.data ?? {};
   const buyers = Array.isArray(buyersPageData.content) ? buyersPageData.content : [];
@@ -399,39 +496,6 @@ export default function PlanPurchaseReportPage() {
         <ListSpinner />
       ) : (
         <>
-          {chartData.length > 0 ? (
-            <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiTile
-                isDarkMode={isDarkMode}
-                label={t('planPurchases.kpi.baseRevenue', 'Tổng tiền gốc thu được')}
-                value={formatVnd(totals.base)}
-                hint={t('planPurchases.kpi.baseRevenueHint', 'Phần phí nền tảng (không quy đổi credit)')}
-                accent="amber"
-              />
-              <KpiTile
-                isDarkMode={isDarkMode}
-                label={t('planPurchases.kpi.revenue', 'Tổng doanh thu gói')}
-                value={formatVnd(totals.revenue)}
-                hint={t('planPurchases.kpi.revenueHint', 'Tiền credit + tiền gốc')}
-                accent="slate"
-              />
-              <KpiTile
-                isDarkMode={isDarkMode}
-                label={t('planPurchases.kpi.cogs', 'Tổng COGS AI')}
-                value={formatVnd(totals.cogs)}
-                hint={t('planPurchases.kpi.cogsHint', 'Chi phí AI ước tính khớp snapshot plan')}
-                accent="rose"
-              />
-              <KpiTile
-                isDarkMode={isDarkMode}
-                label={t('planPurchases.kpi.margin', 'Biên ước lượng')}
-                value={formatVnd(totals.margin)}
-                hint={`${totals.revenue > 0 ? ((totals.margin / totals.revenue) * 100).toFixed(1) : '0.0'}% trên doanh thu`}
-                accent={totals.margin >= 0 ? 'emerald' : 'rose'}
-              />
-            </div>
-          ) : null}
-
           {showCharts ? (
             <div
               className={`mb-3 flex flex-wrap items-center gap-2 rounded-2xl border p-3 ${
@@ -697,83 +761,279 @@ export default function PlanPurchaseReportPage() {
               isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
             }`}
           >
-          <Table>
-            <TableHeader>
-              <TableRow className={isDarkMode ? 'border-slate-800 hover:bg-slate-900' : ''}>
-                <TableHead className="w-[28%]">{t('planPurchases.col.plan', 'Gói')}</TableHead>
-                <TableHead className="text-right">{t('planPurchases.col.purchases', 'Lượt mua')}</TableHead>
-                <TableHead className="text-right">{t('planPurchases.col.payers', 'Người trả')}</TableHead>
-                <TableHead className="text-right">{t('planPurchases.col.baseRevenue', 'Tiền gốc')}</TableHead>
-                <TableHead className="text-right">{t('planPurchases.col.revenue', 'Doanh thu')}</TableHead>
-                <TableHead className="text-right">{t('planPurchases.col.aiCogs', 'COGS AI')}</TableHead>
-                <TableHead className="text-right">{t('planPurchases.col.margin', 'Biên ước lượng')}</TableHead>
-                <TableHead className="w-[120px] text-right">{t('planPurchases.col.buyers', 'Chi tiết')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {plans.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className={`text-center py-10 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                    {t('planPurchases.empty', 'Không có giao dịch gói trong khoảng đã chọn.')}
-                  </TableCell>
+            <div className={`flex flex-col gap-1 border-b px-5 py-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                {t('planPurchases.versionTable.title', 'Chi tiết theo phiên bản')}
+              </h3>
+              <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                {t('planPurchases.versionTable.subtitle', 'Mỗi dòng tương ứng một gói × version. Bấm ')}
+                <strong className={isDarkMode ? 'text-ocean-300' : 'text-ocean-600'}>
+                  {t('planPurchases.buyers', 'Người mua')}
+                </strong>
+                {t('planPurchases.versionTable.subtitleSuffix', ' để xem danh sách user đã mua.')}
+              </p>
+            </div>
+
+            <div className={`flex flex-wrap items-center gap-2 px-5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/60'}`}>
+              <div className={`flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border px-3 py-2 ${
+                isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
+              }`}>
+                <Search className={`h-4 w-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                <input
+                  type="text"
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  placeholder={t('planPurchases.versionTable.searchPlaceholder', 'Tìm theo tên gói, version...')}
+                  className={`min-w-0 flex-1 bg-transparent text-sm outline-none ${
+                    isDarkMode ? 'text-slate-100 placeholder:text-slate-500' : 'text-slate-700 placeholder:text-slate-400'
+                  }`}
+                />
+              </div>
+
+              <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 ${
+                isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
+              }`}>
+                <Layers className={`h-4 w-4 ${isDarkMode ? 'text-ocean-300' : 'text-ocean-500'}`} />
+                <span className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {t('planPurchases.versionTable.groupLabel', 'Nhóm gói')}
+                </span>
+                <select
+                  value={tableGroupFilter}
+                  onChange={(e) => setTableGroupFilter(e.target.value)}
+                  className={`bg-transparent text-xs font-semibold outline-none ${
+                    isDarkMode ? 'text-ocean-200' : 'text-ocean-600'
+                  }`}
+                >
+                  <option value="all">{t('planPurchases.versionTable.allOption', 'Tất cả')}</option>
+                  {planGroupOptions.map((code) => (
+                    <option key={code} value={code}>{code}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 ${
+                isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
+              }`}>
+                <BadgeCheck className={`h-4 w-4 ${isDarkMode ? 'text-ocean-300' : 'text-ocean-500'}`} />
+                <span className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {t('planPurchases.versionTable.statusLabel', 'Trạng thái')}
+                </span>
+                <select
+                  value={tableStatusFilter}
+                  onChange={(e) => setTableStatusFilter(e.target.value)}
+                  className={`bg-transparent text-xs font-semibold outline-none ${
+                    isDarkMode ? 'text-ocean-200' : 'text-ocean-600'
+                  }`}
+                >
+                  <option value="all">{t('planPurchases.versionTable.allOption', 'Tất cả')}</option>
+                  <option value="current">{t('planPurchases.versionTable.statusCurrent', 'Đang bán')}</option>
+                  <option value="old">{t('planPurchases.versionTable.statusOld', 'Cũ')}</option>
+                </select>
+              </div>
+
+              <div className={`ml-auto inline-flex items-center gap-2 rounded-xl border px-3 py-2 ${
+                isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
+              }`}>
+                <ArrowUpDown className={`h-4 w-4 ${isDarkMode ? 'text-ocean-300' : 'text-ocean-500'}`} />
+                <span className={`text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {t('planPurchases.versionTable.sortLabel', 'Sắp xếp')}
+                </span>
+                <select
+                  value={tableSort}
+                  onChange={(e) => setTableSort(e.target.value)}
+                  className={`bg-transparent text-xs font-semibold outline-none ${
+                    isDarkMode ? 'text-ocean-200' : 'text-ocean-600'
+                  }`}
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {t(opt.labelKey, opt.label)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow className={isDarkMode ? 'border-slate-800 hover:bg-slate-900' : ''}>
+                  <TableHead className="w-[28%]">{t('planPurchases.col.plan', 'Gói')}</TableHead>
+                  <TableHead className="text-right">{t('planPurchases.col.purchases', 'Lượt mua')}</TableHead>
+                  <TableHead className="text-right">{t('planPurchases.col.payers', 'Người trả')}</TableHead>
+                  <TableHead className="text-right">{t('planPurchases.col.baseRevenue', 'Tiền gốc')}</TableHead>
+                  <TableHead className="text-right">{t('planPurchases.col.revenue', 'Doanh thu')}</TableHead>
+                  <TableHead className="text-right">{t('planPurchases.col.aiCogs', 'COGS AI')}</TableHead>
+                  <TableHead className="text-right">{t('planPurchases.col.margin', 'Biên ước lượng')}</TableHead>
+                  <TableHead className="w-[120px] text-right">{t('planPurchases.col.buyers', 'Chi tiết')}</TableHead>
                 </TableRow>
-              ) : (
-                plans.map((row) => {
-                  const margin = Number(row?.estimatedMarginVnd);
-                  const marginNeg = Number.isFinite(margin) && margin < 0;
-                  return (
-                    <TableRow key={row.planCatalogId} className={isDarkMode ? 'border-slate-800' : ''}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{row.planDisplayName || row.planCode || '—'}</span>
-                          {Number.isFinite(Number(row.planVersion)) ? (
-                            <span
-                              title={
-                                row.planIsCurrent === false
-                                  ? t('planPurchases.versionHistoricalTip', 'Snapshot cũ (đã bị thay bởi version mới)')
-                                  : t('planPurchases.versionCurrentTip', 'Version hiện tại đang bán')
-                              }
-                              className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wide tabular-nums ${
-                                row.planIsCurrent === false
-                                  ? (isDarkMode ? 'bg-slate-500/15 text-slate-400' : 'bg-slate-100 text-slate-600')
-                                  : (isDarkMode ? 'bg-indigo-500/15 text-indigo-300' : 'bg-indigo-100 text-indigo-700')
-                              }`}
+              </TableHeader>
+              <TableBody>
+                {pagedPlans.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className={`text-center py-10 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                      {plans.length === 0
+                        ? t('planPurchases.empty', 'Không có giao dịch gói trong khoảng đã chọn.')
+                        : t('planPurchases.versionTable.noMatch', 'Không có gói nào khớp với bộ lọc hiện tại.')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  pagedPlans.map((row) => {
+                    const margin = Number(row?.estimatedMarginVnd);
+                    const marginNeg = Number.isFinite(margin) && margin < 0;
+                    const revenue = Number(row?.revenueVnd) || 0;
+                    const marginPct = revenue > 0 && Number.isFinite(margin) ? (margin / revenue) * 100 : null;
+                    const isCurrent = row?.planIsCurrent !== false;
+                    const initials = getPlanInitials(row?.planCode, row?.planDisplayName);
+                    const accent = getPlanFamilyAccent(row?.planCode);
+                    return (
+                      <TableRow key={row.planCatalogId} className={isDarkMode ? 'border-slate-800' : ''}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-[11px] font-extrabold tracking-wide text-white shadow-sm`}
+                              aria-hidden
                             >
-                              {`v${row.planVersion}`}
-                              {row.planIsCurrent === false ? ` · ${t('planPurchases.versionOld', 'cũ')}` : ''}
-                            </span>
+                              {initials}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className={`text-sm font-bold tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                  {row.planDisplayName || row.planCode || '—'}
+                                </span>
+                                {Number.isFinite(Number(row.planVersion)) ? (
+                                  <span
+                                    title={
+                                      isCurrent
+                                        ? t('planPurchases.versionCurrentTip', 'Version hiện tại đang bán')
+                                        : t('planPurchases.versionHistoricalTip', 'Snapshot cũ (đã bị thay bởi version mới)')
+                                    }
+                                    className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide tabular-nums ${
+                                      isDarkMode ? 'bg-ocean-500/15 text-ocean-200' : 'bg-ocean-50 text-ocean-700'
+                                    }`}
+                                  >
+                                    v{row.planVersion}
+                                  </span>
+                                ) : null}
+                                {isCurrent ? (
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                    isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
+                                  }`}>
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    {t('planPurchases.versionTable.statusCurrentBadge', 'đang bán')}
+                                  </span>
+                                ) : (
+                                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                    isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-600'
+                                  }`}>
+                                    {t('planPurchases.versionOld', 'cũ')}
+                                  </span>
+                                )}
+                              </div>
+                              <div className={`mt-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+                                isDarkMode ? 'text-slate-500' : 'text-slate-500'
+                              }`}>
+                                {row.planCode ? `${row.planCode} · ` : ''}{formatScope(row.planScope)}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums font-medium">{Number(row.purchaseCount || 0).toLocaleString('vi-VN')}</TableCell>
+                        <TableCell className="text-right tabular-nums">{Number(row.distinctPayerCount || 0).toLocaleString('vi-VN')}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatVnd(row.baseRevenueVnd)}</TableCell>
+                        <TableCell className={`text-right tabular-nums font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{formatVnd(row.revenueVnd)}</TableCell>
+                        <TableCell className={`text-right tabular-nums ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>{formatVnd(row.aiProviderCostVnd)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className={`tabular-nums font-semibold ${
+                            marginNeg ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-300'
+                          }`}>
+                            {formatVnd(row.estimatedMarginVnd)}
+                          </div>
+                          {marginPct != null ? (
+                            <div className={`text-[11px] tabular-nums ${
+                              marginNeg
+                                ? (isDarkMode ? 'text-rose-400/80' : 'text-rose-500/80')
+                                : (isDarkMode ? 'text-emerald-400/80' : 'text-emerald-600/80')
+                            }`}>
+                              {marginPct.toFixed(2)}%
+                            </div>
                           ) : null}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openBuyers(row)}
+                            className={`rounded-xl gap-1.5 ${
+                              isDarkMode
+                                ? 'border-ocean-500/40 bg-ocean-500/10 text-ocean-200 hover:bg-ocean-500/20'
+                                : 'border-ocean-200 bg-ocean-50 text-ocean-700 hover:bg-ocean-100'
+                            }`}
+                          >
+                            <Users className="h-3.5 w-3.5" />
+                            {t('planPurchases.buyers', 'Người mua')}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+                {filteredPlans.length > 0 ? (
+                  <TableRow className={`${
+                    isDarkMode ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-50'
+                  } font-semibold`}>
+                    <TableCell>
+                      <div className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
+                        isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                      }`}>
+                        {t('planPurchases.versionTable.totalsLabel', 'Tổng cộng')}
+                        {' — '}
+                        {filteredPlans.length}
+                        {' '}
+                        {t('planPurchases.versionTable.versionsUnit', 'phiên bản')}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{filteredTotals.purchaseCount.toLocaleString('vi-VN')}</TableCell>
+                    <TableCell className="text-right tabular-nums">{filteredTotals.distinctPayerCount.toLocaleString('vi-VN')}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatVnd(filteredTotals.baseRevenueVnd)}</TableCell>
+                    <TableCell className={`text-right tabular-nums font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{formatVnd(filteredTotals.revenueVnd)}</TableCell>
+                    <TableCell className={`text-right tabular-nums ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>{formatVnd(filteredTotals.aiProviderCostVnd)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className={`tabular-nums font-bold ${
+                        filteredTotals.estimatedMarginVnd < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-emerald-700 dark:text-emerald-300'
+                      }`}>
+                        {formatVnd(filteredTotals.estimatedMarginVnd)}
+                      </div>
+                      {filteredTotals.revenueVnd > 0 ? (
+                        <div className={`text-[11px] tabular-nums ${
+                          filteredTotals.estimatedMarginVnd < 0
+                            ? (isDarkMode ? 'text-rose-400/80' : 'text-rose-500/80')
+                            : (isDarkMode ? 'text-emerald-400/80' : 'text-emerald-600/80')
+                        }`}>
+                          {((filteredTotals.estimatedMarginVnd / filteredTotals.revenueVnd) * 100).toFixed(2)}%
                         </div>
-                        <div className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                          {row.planCode ? `${row.planCode} · ` : ''}
-                          {formatScope(row.planScope)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{Number(row.purchaseCount || 0).toLocaleString('vi-VN')}</TableCell>
-                      <TableCell className="text-right tabular-nums">{Number(row.distinctPayerCount || 0).toLocaleString('vi-VN')}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatVnd(row.baseRevenueVnd)}</TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{formatVnd(row.revenueVnd)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatVnd(row.aiProviderCostVnd)}</TableCell>
-                      <TableCell
-                        className={`text-right tabular-nums font-semibold ${
-                          marginNeg ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-300'
-                        }`}
-                      >
-                        {formatVnd(row.estimatedMarginVnd)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => openBuyers(row)}>
-                          <Users className="h-3.5 w-3.5" />
-                          {t('planPurchases.buyers', 'Người mua')}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+
+            {filteredPlans.length > 0 ? (
+              <AdminPagination
+                currentPage={safePlanPage}
+                totalPages={totalPlanPages}
+                totalElements={totalPlanRows}
+                pageSize={TABLE_PAGE_SIZE}
+                onPageChange={setTablePage}
+                isDarkMode={isDarkMode}
+                hidePageSize
+              />
+            ) : null}
+          </div>
           )}
         </>
       )}

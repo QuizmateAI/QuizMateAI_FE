@@ -21,7 +21,7 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
   {
     id: 'overview',
     labelKey: 'sidebarSections.overview',
-    defaultLabel: 'Overview',
+    defaultLabel: 'Tổng quan',
     items: [
       {
         id: 'dashboard',
@@ -30,37 +30,6 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
         icon: LayoutDashboard,
         to: '/super-admin',
         matchPrefix: false,
-      },
-    ],
-  },
-  {
-    id: 'workspace',
-    labelKey: 'sidebarSections.workspace',
-    defaultLabel: 'Workspace',
-    items: [
-      {
-        id: 'users',
-        labelKey: 'sidebar.users',
-        defaultLabel: 'Users',
-        icon: Users,
-        to: '/super-admin/users',
-        matchPrefix: true,
-      },
-      {
-        id: 'groups',
-        labelKey: 'sidebar.groups',
-        defaultLabel: 'Groups',
-        icon: UsersRound,
-        to: '/super-admin/groups',
-        matchPrefix: true,
-      },
-      {
-        id: 'community-quizzes',
-        labelKey: 'sidebar.communityQuizzes',
-        defaultLabel: 'Community Quizzes',
-        icon: Globe2,
-        to: '/super-admin/community-quizzes',
-        matchPrefix: true,
       },
     ],
   },
@@ -80,37 +49,6 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
     ],
   },
   {
-    id: 'commerce',
-    labelKey: 'sidebarSections.commerce',
-    defaultLabel: 'Quản lý thương mại',
-    items: [
-      {
-        id: 'plans',
-        labelKey: 'sidebar.subscriptions',
-        defaultLabel: 'Subscription Plans',
-        icon: CreditCard,
-        to: '/super-admin/plans',
-        matchPrefix: true,
-      },
-      {
-        id: 'credits',
-        labelKey: 'sidebar.creditPackages',
-        defaultLabel: 'Credit Packages',
-        icon: Coins,
-        to: '/super-admin/credits',
-        matchPrefix: true,
-      },
-      {
-        id: 'payments',
-        labelKey: 'sidebar.payments',
-        defaultLabel: 'Lịch sử giao dịch',
-        icon: Banknote,
-        to: '/super-admin/payments',
-        matchPrefix: true,
-      },
-    ],
-  },
-  {
     id: 'ai-system',
     labelKey: 'sidebarSections.aiSystemLogs',
     defaultLabel: 'Hệ thống AI',
@@ -118,7 +56,7 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
       {
         id: 'ai-costs',
         labelKey: 'sidebar.aiCostSummary',
-        defaultLabel: 'Chi phí AI người dùng',
+        defaultLabel: 'Chi phí AI',
         icon: ReceiptText,
         to: '/super-admin/ai-costs',
         matchPrefix: true,
@@ -126,7 +64,7 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
       {
         id: 'ai-audit',
         labelKey: 'sidebar.aiRequestAudit',
-        defaultLabel: 'Nhật ký AI hệ thống',
+        defaultLabel: 'Nhật ký AI',
         icon: Bot,
         to: '/super-admin/ai-audit',
         matchPrefix: true,
@@ -134,32 +72,9 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
     ],
   },
   {
-    id: 'access-control',
-    labelKey: 'sidebarSections.accessControl',
-    defaultLabel: 'Access Control',
-    items: [
-      {
-        id: 'admins',
-        labelKey: 'sidebar.adminAccounts',
-        defaultLabel: 'Admin Accounts',
-        icon: Shield,
-        to: '/super-admin/admins',
-        matchPrefix: true,
-      },
-      {
-        id: 'rbac',
-        labelKey: 'sidebar.rbac',
-        defaultLabel: 'RBAC',
-        icon: KeyRound,
-        to: '/super-admin/rbac',
-        matchPrefix: true,
-      },
-    ],
-  },
-  {
     id: 'ai-governance',
     labelKey: 'sidebarSections.aiGovernance',
-    defaultLabel: 'AI Governance',
+    defaultLabel: 'Điều phối AI',
     items: [
       {
         id: 'ai-providers',
@@ -188,9 +103,94 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
     ],
   },
   {
+    id: 'workspace',
+    labelKey: 'sidebarSections.workspace',
+    defaultLabel: 'Người dùng và nhóm',
+    items: [
+      {
+        id: 'users',
+        labelKey: 'sidebar.users',
+        defaultLabel: 'Users',
+        icon: Users,
+        to: '/super-admin/users',
+        matchPrefix: true,
+      },
+      {
+        id: 'groups',
+        labelKey: 'sidebar.groups',
+        defaultLabel: 'Groups',
+        icon: UsersRound,
+        to: '/super-admin/groups',
+        matchPrefix: true,
+      },
+      {
+        id: 'community-quizzes',
+        labelKey: 'sidebar.communityQuizzes',
+        defaultLabel: 'Community Quizzes',
+        icon: Globe2,
+        to: '/super-admin/community-quizzes',
+        matchPrefix: true,
+      },
+    ],
+  },
+  {
+    id: 'commerce',
+    labelKey: 'sidebarSections.commerce',
+    defaultLabel: 'Quản lý gói',
+    items: [
+      {
+        id: 'plans',
+        labelKey: 'sidebar.subscriptions',
+        defaultLabel: 'Subscription Plans',
+        icon: CreditCard,
+        to: '/super-admin/plans',
+        matchPrefix: true,
+      },
+      {
+        id: 'credits',
+        labelKey: 'sidebar.creditPackages',
+        defaultLabel: 'Credit Packages',
+        icon: Coins,
+        to: '/super-admin/credits',
+        matchPrefix: true,
+      },
+      {
+        id: 'payments',
+        labelKey: 'sidebar.payments',
+        defaultLabel: 'Lịch sử giao dịch',
+        icon: Banknote,
+        to: '/super-admin/payments',
+        matchPrefix: true,
+      },
+    ],
+  },
+  {
+    id: 'access-control',
+    labelKey: 'sidebarSections.accessControl',
+    defaultLabel: 'Quản trị truy cập',
+    items: [
+      {
+        id: 'admins',
+        labelKey: 'sidebar.adminAccounts',
+        defaultLabel: 'Admin Accounts',
+        icon: Shield,
+        to: '/super-admin/admins',
+        matchPrefix: true,
+      },
+      {
+        id: 'rbac',
+        labelKey: 'sidebar.rbac',
+        defaultLabel: 'RBAC',
+        icon: KeyRound,
+        to: '/super-admin/rbac',
+        matchPrefix: true,
+      },
+    ],
+  },
+  {
     id: 'trust-safety',
     labelKey: 'sidebarSections.trustSafety',
-    defaultLabel: 'Trust & Safety',
+    defaultLabel: 'Tin cậy',
     items: [
       {
         id: 'policies',
@@ -205,7 +205,7 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
   {
     id: 'platform',
     labelKey: 'sidebarSections.platformConfig',
-    defaultLabel: 'Platform',
+    defaultLabel: 'Cấu hình nền tảng',
     items: [
       {
         id: 'system-settings',

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { Check, Calendar, CreditCard } from 'lucide-react';
+import { Check, Calendar, CreditCard, Coins } from 'lucide-react';
 import PlanDetails from './PlanDetails';
 
 export default function PlanInfoCard({ plan }) {
@@ -9,10 +9,16 @@ export default function PlanInfoCard({ plan }) {
   const { isDarkMode } = useDarkMode();
 
   const isForever = Number(plan.durationInDay) >= 999999;
+  const planCredits = Number(plan.bonusCreditOnPlanPurchase) || 0;
 
   const formattedPrice = useMemo(
     () => new Intl.NumberFormat('vi-VN').format(plan.price),
     [plan.price]
+  );
+
+  const formattedCredits = useMemo(
+    () => new Intl.NumberFormat('vi-VN').format(planCredits),
+    [planCredits]
   );
 
   return (
@@ -68,11 +74,24 @@ export default function PlanInfoCard({ plan }) {
               {formattedPrice}₫
             </span>
           </div>
-          <div className={`flex items-center gap-1.5 mt-2 text-sm ${
+          <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm ${
             isDarkMode ? 'text-slate-400' : 'text-slate-500'
           }`}>
-            <Calendar className="w-3.5 h-3.5" />
-            {isForever ? t('plan.durationForeverShort') : `${plan.durationInDay} ${t('payment.days')}`}
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              {isForever ? t('plan.durationForeverShort') : `${plan.durationInDay} ${t('payment.days')}`}
+            </span>
+            {planCredits > 0 && (
+              <>
+                <span aria-hidden="true" className="opacity-40">•</span>
+                <span className={`inline-flex items-center gap-1.5 font-semibold ${
+                  isDarkMode ? 'text-amber-300' : 'text-amber-600'
+                }`}>
+                  <Coins className="w-3.5 h-3.5" />
+                  {formattedCredits} {t('wallet.creditsUnit')}
+                </span>
+              </>
+            )}
           </div>
         </div>
 

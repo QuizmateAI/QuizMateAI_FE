@@ -3,8 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const MAX_QUESTIONS = 100;
+import { SYSTEM_SETTING_KEYS, useSystemSettingNumber } from "@/hooks/useSystemSettings";
 
 const INPUT_CLS = (isDark, hasError, surface = "quiz") =>
   `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
@@ -22,6 +21,7 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
   const { t } = useTranslation();
   const [errors, setErrors] = React.useState({});
   const isChallengeSurface = surface === "challenge";
+  const maxQuestions = useSystemSettingNumber(SYSTEM_SETTING_KEYS.maxQuestions_PER_QUIZ);
 
   const set = (field, value) => {
     onConfigChange({ ...config, [field]: value });
@@ -38,10 +38,10 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
     if (!config.questionCount || config.questionCount < 1) {
       errs.questionCount = t("workspace.quiz.manualWizard.step1.errors.questionCountRequired", "Số câu hỏi phải ≥ 1.");
     }
-    if (config.questionCount > MAX_QUESTIONS) {
+    if (config.questionCount > maxQuestions) {
       errs.questionCount = t("workspace.quiz.manualWizard.step1.errors.questionCountMax", {
-        max: MAX_QUESTIONS,
-        defaultValue: `Tối đa ${MAX_QUESTIONS} câu.`,
+        max: maxQuestions,
+        defaultValue: `Tối đa ${maxQuestions} câu.`,
       });
     }
     if (!config.duration || config.duration < 1) {
@@ -119,16 +119,16 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
           <label className={LABEL_CLS(isDarkMode)}>
             {t("workspace.quiz.manualWizard.step1.fields.questionCountLabel", "Số câu hỏi")} <span className="text-red-500">*</span>
             <span className={cn("ml-1 text-xs font-normal", isDarkMode ? "text-slate-500" : "text-gray-400")}>
-              ({t("workspace.quiz.manualWizard.step1.fields.questionCountHint", { max: MAX_QUESTIONS, defaultValue: `tối đa ${MAX_QUESTIONS}` })})
+              ({t("workspace.quiz.manualWizard.step1.fields.questionCountHint", { max: maxQuestions, defaultValue: `tối đa ${maxQuestions}` })})
             </span>
           </label>
           <input
             type="number"
             min={1}
-            max={MAX_QUESTIONS}
+            max={maxQuestions}
             aria-label={t("workspace.quiz.manualWizard.step1.fields.questionCountLabel", "Số câu hỏi")}
             value={config.questionCount || ""}
-            onChange={(e) => set("questionCount", Math.min(MAX_QUESTIONS, parseInt(e.target.value, 10) || 0))}
+            onChange={(e) => set("questionCount", Math.min(maxQuestions, parseInt(e.target.value, 10) || 0))}
             className={INPUT_CLS(isDarkMode, !!errors.questionCount, surface)}
             placeholder={t("workspace.quiz.manualWizard.step1.fields.questionCountPlaceholder", "Ví dụ: 20")}
           />

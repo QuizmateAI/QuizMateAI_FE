@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SYSTEM_SETTING_KEYS, useSystemSettingNumber } from '@/hooks/useSystemSettings';
 import { useSavedMockTestTemplates } from '../hooks/useSavedMockTestTemplates';
 
 /**
@@ -40,6 +41,7 @@ export function SavedMockTestTemplatesPanel({
   isDarkMode = false,
 }) {
   const { t } = useTranslation();
+  const maxTemplates = useSystemSettingNumber(SYSTEM_SETTING_KEYS.MAX_SAVED_TEMPLATES_PER_USER);
   const {
     templates,
     isLoading,
@@ -48,6 +50,8 @@ export function SavedMockTestTemplatesPanel({
     remove,
     fetchDetail,
   } = useSavedMockTestTemplates({ enabled: open, workspaceId });
+  const usedTemplates = templates?.length ?? 0;
+  const atLimit = usedTemplates >= maxTemplates;
   const [search, setSearch] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [usingId, setUsingId] = useState(null);
@@ -101,11 +105,30 @@ export function SavedMockTestTemplatesPanel({
           <DialogTitle className="flex items-center gap-2">
             <Bookmark className="h-5 w-5 text-orange-500" />
             {t('mockTestForms.savedTemplates.title', 'Kho template đã lưu')}
+            <span
+              className={`ml-2 rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                atLimit
+                  ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300'
+                  : isDarkMode
+                    ? 'border-slate-700 bg-slate-900 text-slate-300'
+                    : 'border-slate-200 bg-slate-50 text-slate-600'
+              }`}
+            >
+              {usedTemplates}/{maxTemplates}
+            </span>
           </DialogTitle>
           <DialogDescription className={isDarkMode ? 'text-slate-400' : ''}>
             {t(
               'mockTestForms.savedTemplates.description',
               'Các template bạn đã lưu trong workspace. Bấm "Dùng template" để tạo nhanh mocktest mới từ cấu trúc đã có.',
+            )}
+            {atLimit && (
+              <span className="mt-1 block text-xs font-semibold text-rose-600 dark:text-rose-400">
+                {t(
+                  'mockTestForms.savedTemplates.limitReached',
+                  { max: maxTemplates, defaultValue: `Bạn đã đạt giới hạn ${maxTemplates} template. Hãy xoá bớt trước khi lưu thêm.` },
+                )}
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>

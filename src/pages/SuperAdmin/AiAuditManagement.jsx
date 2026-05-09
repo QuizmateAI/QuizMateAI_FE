@@ -25,14 +25,7 @@ import {
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
   ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +52,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAiAuditLogs, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
 import TokenBreakdownCell from './Components/TokenBreakdownCell';
 import DateRangeChips from './Components/DateRangeChips';
+import TopFeaturesByCostCard from './Components/TopFeaturesByCostCard';
 import AdminPagination from '@/pages/Admin/components/AdminPagination';
 import { getWebSocketUrl } from '@/lib/websocketUrl';
 import {
@@ -699,10 +693,6 @@ function AiAuditManagement() {
       <SuperAdminPageHeader
         eyebrow={t('sidebarSections.aiUsageCommerce', 'Chi phí & nhật ký AI')}
         title={t('aiAudit.title.v2', { defaultValue: 'Nhật ký AI hệ thống' })}
-        description={t(
-          'aiAudit.description.v2',
-          'Theo dõi lượt gọi AI, token, model và trạng thái. Dùng chọn nhanh khoảng thời gian bên dưới; lọc nâng cao đã gỡ để tránh chồng chéo UI.',
-        )}
         actions={(
           <Button
             type="button"
@@ -729,7 +719,6 @@ function AiAuditManagement() {
           value={formatTokenValue(totalRequestsForDisplay, locale)}
           tone="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.totalRequestsHint', 'System + plan-based features only')}
           helpText={t(
             'aiAudit.metrics.totalRequestsHelp',
             'Tổng số lượt gọi AI thành công, bao gồm tính năng hệ thống và các tính năng có trong gói trả phí.',
@@ -744,12 +733,6 @@ function AiAuditManagement() {
           value={formatTokenValue(metrics.totalTokens, locale)}
           tone="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.totalTokensBreakdown', {
-            prompt: formatTokenValue(metrics.promptTokens, locale),
-            thought: formatTokenValue(metrics.thoughtTokens, locale),
-            output: formatTokenValue(metrics.completionTokens, locale),
-            defaultValue: 'Prompt {{prompt}} | Thought {{thought}} | Output {{output}}',
-          })}
           helpText={t(
             'aiAudit.metrics.totalTokensHelp',
             'Tổng token tiêu thụ: Prompt là token đầu vào, Thought là token suy luận nội bộ của model, Output là token trả về.',
@@ -764,7 +747,6 @@ function AiAuditManagement() {
           value={formatVndValue(metrics.systemCostVnd, locale)}
           tone="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.systemCostHint', 'Provider cost of system features')}
           helpText={t(
             'aiAudit.metrics.systemCostHelp',
             'Chi phí provider của các tính năng AI hệ thống — phần này QuizMate trả, người dùng không bị tính phí.',
@@ -779,9 +761,6 @@ function AiAuditManagement() {
           value={formatVndValue(metrics.planCostVnd, locale)}
           tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.planCostHint', 'Provider cost of plan-based features. Avg {{avg}} tokens/request', {
-            avg: formatTokenValue(totalAverageTokens, locale),
-          })}
           helpText={t(
             'aiAudit.metrics.planCostHelp',
             'Chi phí provider của các tính năng AI nằm trong gói trả phí — đối ứng với doanh thu thu được từ người dùng.',
@@ -792,80 +771,30 @@ function AiAuditManagement() {
         />
       </div>
 
-      <Card className={`rounded-2xl border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'}`}>
-        <CardContent className="p-5">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                {t('aiAudit.topFeatures.title', 'Top tính năng theo AI cost')}
-              </h3>
-              <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                {t('aiAudit.topFeatures.subtitle', 'Xếp hạng 8 tính năng tiêu tốn nhiều provider cost nhất trong khoảng đã chọn.')}
-              </p>
-            </div>
-            <p className={`text-right text-xs tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {topFeatures.length} {t('aiAudit.topFeatures.featureCount', 'tính năng')}
-            </p>
-          </div>
-          {topFeatures.length === 0 ? (
-            <p className="py-12 text-center text-sm text-slate-500">
-              {t('aiAudit.topFeatures.empty', 'Không có dữ liệu cho khoảng này.')}
-            </p>
-          ) : (
-            <ResponsiveContainer width="100%" height={Math.max(180, topFeatures.length * 28)}>
-              <BarChart
-                data={topFeatures.map((f, idx) => ({
-                  ...f,
-                  rank: idx,
-                  label: getFeatureLabel(t, f.featureKey),
-                }))}
-                layout="vertical"
-                margin={{ top: 4, right: 56, left: 4, bottom: 4 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#e2e8f0'} horizontal={false} />
-                <XAxis type="number" hide />
-                <YAxis
-                  type="category"
-                  dataKey="label"
-                  tick={{ fontSize: 11, fill: isDarkMode ? '#cbd5e1' : '#475569' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={150}
-                />
-                <RechartsTooltip
-                  contentStyle={{
-                    background: isDarkMode ? '#0f172a' : '#fff',
-                    border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`,
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                  cursor={{ fill: isDarkMode ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)' }}
-                  formatter={(value, _name, item) => [
-                    `${formatVndValue(value, locale)} · ${formatTokenValue(item?.payload?.requestCount, locale)} ${t('aiAudit.topFeatures.requests', 'request')}`,
-                    item?.payload?.label,
-                  ]}
-                  labelFormatter={() => ''}
-                />
-                <Bar
-                  dataKey="providerCostVnd"
-                  radius={[0, 4, 4, 0]}
-                  barSize={14}
-                  label={{
-                    position: 'right',
-                    formatter: (v) => formatVndValue(v, locale),
-                    fill: isDarkMode ? '#94a3b8' : '#64748b',
-                    fontSize: 10,
-                  }}
-                >
-                  {topFeatures.map((_, idx) => (
-                    <Cell key={`top-feat-${idx}`} fill={idx === 0 ? '#f59e0b' : idx <= 2 ? '#fbbf24' : '#94a3b8'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+      <TopFeaturesByCostCard
+        topFeatures={topFeatures}
+        isDarkMode={isDarkMode}
+        title={t('aiAudit.topFeatures.title', 'Top tính năng theo AI cost')}
+        subtitle={t('aiAudit.topFeatures.subtitle', 'Xếp hạng 8 tính năng tiêu tốn nhiều provider cost nhất trong khoảng đã chọn.')}
+        emptyText={t('aiAudit.topFeatures.empty', 'Không có dữ liệu cho khoảng này.')}
+        scopeRange={{ from: filters.from, to: filters.to }}
+        defaultScopeLabel={{
+          day: t('aiAudit.topFeatures.dayUnit', 'ngày'),
+          feature: t('aiAudit.topFeatures.featureCount', 'tính năng'),
+          all: t('aiAudit.topFeatures.allRange', 'Tất cả'),
+        }}
+        legendTopLabel={t('aiAudit.topFeatures.legendTop', 'Top tính năng')}
+        legendOtherLabel={t('aiAudit.topFeatures.legendOther', 'Còn lại')}
+        legendUnitLabel={t('aiAudit.topFeatures.legendUnit', 'Đơn vị: VND')}
+        totalLabel={t('aiAudit.topFeatures.total', 'Tổng AI cost')}
+        featureColumnLabel={t('aiAudit.topFeatures.columnFeature', 'Tính năng')}
+        costColumnLabel={t('aiAudit.topFeatures.columnCost', 'AI cost')}
+        shareColumnLabel={t('aiAudit.topFeatures.columnShare', 'Tỷ lệ')}
+        requestSuffixLabel={t('aiAudit.topFeatures.requests', 'request')}
+        formatVnd={(value) => formatVndValue(value, locale)}
+        formatInteger={(value) => formatTokenValue(value, locale)}
+        getFeatureLabel={(featureKey) => getFeatureLabel(t, featureKey)}
+      />
 
       <div className={`flex flex-col gap-5 rounded-3xl border p-6 lg:flex-row lg:items-center lg:justify-between ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200/80 bg-white shadow-sm'}`}>
         <div className="min-w-0">

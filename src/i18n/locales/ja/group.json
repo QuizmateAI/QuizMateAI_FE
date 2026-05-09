@@ -805,6 +805,9 @@
       "materialsDeleted": "{{count}} 件の教材を削除しました。",
       "resetDataSuccess": "ドキュメントを削除しました。グループオンボーディングを更新できます。",
       "quizCreated": "クイズを正常に作成しました。",
+      "quizGenerationStarted": "クイズを生成中です。クイズ一覧で進捗を確認してください。",
+      "challengeQuizCreated": "チャレンジクイズを更新しました。",
+      "challengeQuizGenerationStarted": "チャレンジクイズを生成中です。チャレンジ詳細で進捗を確認してください。",
       "memberCannotCreateQuiz": "メンバーはクイズを作成できません。",
       "memberCannotCreateFlashcard": "メンバーはフラッシュカードを作成できません。",
       "memberCannotCreateRoadmap": "メンバーはロードマップを作成できません。",
@@ -985,7 +988,9 @@
       "finished": "終了",
       "playing": "進行中",
       "waiting": "待機中"
-    }
+    },
+    "snapshotPendingTitle": "チャレンジ問題を準備しています",
+    "snapshotPendingHint": "システムがチャレンジ問題を初期化中です。準備が整い次第、管理オプション（問題作成、レビュアー招待、公開）が表示されます。"
   },
   "challengeLeaderboard": {
     "empty": "参加者はまだいません",

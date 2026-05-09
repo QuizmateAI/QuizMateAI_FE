@@ -593,6 +593,61 @@ export function normalizeFingerprintValue(value) {
 export function buildRequestFingerprint(payload) {
   return JSON.stringify(normalizeFingerprintValue(payload));
 }
+
+/**
+ * sessionStorage cache for the AI knowledge-analysis result so a full page reload
+ * (or wizard re-open) restores the previously-shown analysis WITHOUT another AI call.
+ *
+ * Keyed by normalized knowledge text + UI language so two different knowledge entries
+ * — or the same entry asked in different languages — get separate cache entries.
+ *
+ * Why sessionStorage (not localStorage):
+ *   - Per-tab, dies when the tab closes — matches the lifetime of a setup session
+ *   - Survives full page reload (the actual bug we're addressing)
+ *   - No cross-user pollution on shared machines
+ *
+ * The TTL guard avoids serving stale results if the user comes back hours later.
+ */
+const KNOWLEDGE_ANALYSIS_CACHE_KEY_PREFIX = 'studyProfile:knowledgeAnalysis:v1';
+const KNOWLEDGE_ANALYSIS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
+
+function getKnowledgeAnalysisCacheKey(knowledge, locale) {
+  const normalizedKnowledge = ensureString(knowledge).trim().toLowerCase();
+  const normalizedLocale = ensureString(locale).trim().toLowerCase() || 'vi';
+  return `${KNOWLEDGE_ANALYSIS_CACHE_KEY_PREFIX}:${normalizedLocale}:${normalizedKnowledge}`;
+}
+
+export function loadCachedKnowledgeAnalysis(knowledge, locale) {
+  if (typeof window === 'undefined' || !knowledge) return null;
+  try {
+    const key = getKnowledgeAnalysisCacheKey(knowledge, locale);
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed.result) return null;
+    if (typeof parsed.savedAt === 'number'
+        && Date.now() - parsed.savedAt > KNOWLEDGE_ANALYSIS_CACHE_TTL_MS) {
+      window.sessionStorage.removeItem(key);
+      return null;
+    }
+    return parsed.result;
+  } catch {
+    return null;
+  }
+}
+
+export function saveCachedKnowledgeAnalysis(knowledge, locale, result) {
+  if (typeof window === 'undefined' || !knowledge || !result) return;
+  try {
+    const key = getKnowledgeAnalysisCacheKey(knowledge, locale);
+    window.sessionStorage.setItem(key, JSON.stringify({
+      result,
+      savedAt: Date.now(),
+    }));
+  } catch {
+    // sessionStorage can throw (quota, disabled) — silently degrade to "no cache".
+  }
+}
 export function buildStepSnapshot(stepNumber, values, options = {}) {
   if (!values || typeof values !== 'object') {
     return null;

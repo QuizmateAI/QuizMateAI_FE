@@ -24,13 +24,14 @@
   },
   "sidebarSections": {
     "overview": "Overview",
-    "workspace": "Users & groups",
+    "workspace": "Users and groups",
     "revenueReports": "Revenue reports",
-    "commerce": "Commerce management",
+    "commerce": "Plan management",
     "aiSystemLogs": "AI system",
     "system": "Internal systems",
     "accessControl": "Access control",
-    "aiGovernance": "AI governance",
+    "aiGovernance": "AI orchestration",
+    "trustSafety": "Trust",
     "platformConfig": "Platform config"
   },
   "systemSettings": {

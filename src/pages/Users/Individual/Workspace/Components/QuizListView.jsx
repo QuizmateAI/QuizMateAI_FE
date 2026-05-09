@@ -1599,7 +1599,7 @@ function QuizListView({
                       onViewQuiz?.(quiz);
                     }
                   }}
-                  className={`group flex ${isProcessing ? "min-h-[228px]" : "h-[228px]"} flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                  className={`group flex ${isProcessing ? "" : "h-[228px]"} flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
                     isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
                   } ${
                     isDarkMode
