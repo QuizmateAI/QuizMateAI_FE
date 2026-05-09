@@ -82,6 +82,9 @@ const FeedbackManagement = lazy(() => import('./pages/SuperAdmin/FeedbackManagem
 const FeedbackResponseActivityPage = lazy(() => import('./pages/SuperAdmin/FeedbackResponseActivityPage'));
 const PermissionRequestsPage = lazy(() => import('./pages/SuperAdmin/PermissionRequestsPage'));
 
+// Visual previews (no auth gate) — used để kiểm tra layout component không cần data thực.
+const PlanVersionsPreview = lazy(() => import('./pages/__preview/PlanVersionsPreview'));
+
 // Policies (public)
 const PoliciesIndexPage = lazy(() => import('./pages/Policies/PoliciesIndexPage'));
 const PolicyDetailPage = lazy(() => import('./pages/Policies/PolicyDetailPage'));
@@ -120,6 +123,7 @@ function MainRoutes() {
             <Route path="/accept-invite" element={<AcceptInvitationPage />} />
             <Route path="/policies" element={<PoliciesIndexPage />} />
             <Route path="/policies/:slug" element={<PolicyDetailPage />} />
+            <Route path="/__preview/plan-versions" element={<PlanVersionsPreview />} />
 
 
             <Route element={<PublicRoute />}>
