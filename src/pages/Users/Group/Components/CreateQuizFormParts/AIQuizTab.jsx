@@ -514,7 +514,7 @@ function AIQuizTab({
         <select className={selectCls} value={selectedDifficultyId} onChange={onDifficultyChange}>
           {difficultyDefs.map((difficulty) => (
             <option key={difficulty.id} value={difficulty.id}>
-              {difficulty.difficultyName} ({difficulty.easyRatio}-{difficulty.mediumRatio}-{difficulty.hardRatio})
+              {getDifficultyLabel(difficulty.difficultyName || difficulty.id)} ({difficulty.easyRatio}-{difficulty.mediumRatio}-{difficulty.hardRatio})
             </option>
           ))}
           <option value="CUSTOM">{t("workspace.quiz.difficultyLevels.custom")}</option>
@@ -525,7 +525,7 @@ function AIQuizTab({
             {["easy", "medium", "hard"].map((level) => (
               <div key={level}>
                 <label className={`mb-1 block text-[10px] font-bold uppercase ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
-                  {level} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})
+                  {getDifficultyLabel(level.toUpperCase())} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})
                 </label>
                 <input
                   type="number"

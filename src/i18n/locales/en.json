@@ -2103,10 +2103,10 @@
         "analysisSummaryTitle": "Quizmate AI currently understands this as",
         "analysisHighlightsTitle": "What Quizmate AI checked",
         "analysisRefinementTitle": "You can rewrite it like this",
-        "roadmapQuestion": "Do you want AI to generate a roadmap as well?",
+        "roadmapQuestion": "Do you want AI to generate a suggested roadmap as well?",
         "roadmapDescription": "This option only appears for review and mock-test flows.",
-        "enableRoadmap": "Yes, include a roadmap",
-        "skipRoadmap": "No roadmap, keep only the remaining setup"
+        "enableRoadmap": "Yes, include a suggested roadmap",
+        "skipRoadmap": "No suggested roadmap, keep only the remaining setup"
       },
       "stepTwo": {
         "title": "Describe your current state",
@@ -2457,8 +2457,6 @@
       "lifetimeAccuracy": "Overall Accuracy",
       "byDifficulty": "By Difficulty",
       "byBloom": "By Bloom Level",
-      "radarTitle": "Skill Matrix",
-      "radarSubtitle": "Strengths and areas to improve",
       "difficulty": {
         "EASY": "Easy",
         "MEDIUM": "Medium",
@@ -2497,10 +2495,6 @@
       "quizName": "Quiz Name",
       "bestScore": "Best Score",
       "latestAttempt": "Latest Attempt",
-      "strongArea": "Strongest Area",
-      "strongAreaDesc": "Complete more questions so the system can identify the knowledge area you handle best.",
-      "needsFocus": "Needs More Focus",
-      "needsFocusDesc": "Keep practicing so the system can point to the weakest area more reliably.",
       "bestQuiz": "Best-performing Quiz",
       "bestQuizDesc": "Finish more quizzes to identify the quiz where you currently perform best.",
       "reviewQuiz": "Quiz To Review",

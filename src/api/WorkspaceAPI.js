@@ -496,12 +496,12 @@ export const updateGroupRankingPointsConfig = async (workspaceId, data = {}) => 
 
 // ====== Individual Workspace Question Stats ======
 
-export const getIndividualWorkspaceQuestionStats = async (workspaceId, attemptMode = 'OFFICIAL') => {
+export const getIndividualWorkspaceQuestionStats = async (workspaceId, attemptMode = 'ALL') => {
   const response = await api.get(`/workspace/${workspaceId}/question-stats?attemptMode=${attemptMode}`);
   return response;
 };
 
-export const getIndividualWorkspaceQuizStats = async (workspaceId, attemptMode = 'OFFICIAL') => {
+export const getIndividualWorkspaceQuizStats = async (workspaceId, attemptMode = 'ALL') => {
   const response = await api.get(`/workspace/${workspaceId}/quiz-stats?attemptMode=${attemptMode}`);
   return response;
 };

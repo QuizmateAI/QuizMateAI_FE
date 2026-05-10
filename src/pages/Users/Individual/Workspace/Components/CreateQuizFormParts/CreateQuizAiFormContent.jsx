@@ -794,7 +794,7 @@ function CreateQuizAiFormContent({
         <select className={selectCls} value={selectedDifficultyId} onChange={handleDifficultyChange}>
           {difficultyDefs.map((difficulty) => (
             <option key={difficulty.id} value={difficulty.id}>
-              {difficulty.difficultyName} ({difficulty.easyRatio}-{difficulty.mediumRatio}-{difficulty.hardRatio})
+              {getDifficultyLabel(difficulty.difficultyName || difficulty.id)} ({difficulty.easyRatio}-{difficulty.mediumRatio}-{difficulty.hardRatio})
             </option>
           ))}
           <option value="CUSTOM">{t("workspace.quiz.aiConfig.customSelfConfig")}</option>

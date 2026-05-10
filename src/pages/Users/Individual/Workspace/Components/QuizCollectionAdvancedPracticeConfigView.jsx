@@ -19,6 +19,7 @@ import {
   Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 import {
   getQuizCollectionById,
   getQuizCollectionQuestions,
@@ -43,9 +44,9 @@ import {
 } from "@/lib/quizQuestionTypes";
 
 const DIFFICULTY_PRESETS = [
-  { id: "BALANCED", difficultyName: "Balanced", easyRatio: 20, mediumRatio: 60, hardRatio: 20 },
-  { id: "EASY_FOCUS", difficultyName: "Easy focus", easyRatio: 60, mediumRatio: 30, hardRatio: 10 },
-  { id: "HARD_FOCUS", difficultyName: "Hard focus", easyRatio: 10, mediumRatio: 30, hardRatio: 60 },
+  { id: "BALANCED", easyRatio: 20, mediumRatio: 60, hardRatio: 20 },
+  { id: "EASY_FOCUS", easyRatio: 60, mediumRatio: 30, hardRatio: 10 },
+  { id: "HARD_FOCUS", easyRatio: 10, mediumRatio: 30, hardRatio: 60 },
 ];
 
 function toPositiveInteger(value, fallback = 1) {
@@ -84,6 +85,16 @@ function percentagesToCounts(ratios, total) {
 
 function getDifficultyLabel(t, key) {
   return getQuizDifficultyLabel(key, t);
+}
+
+function getDifficultyPresetLabel(t, presetId) {
+  const normalizedId = String(presetId || "").toUpperCase();
+  const labels = {
+    BALANCED: t("workspace.quiz.advancedDifficultyPresets.BALANCED", "Balanced"),
+    EASY_FOCUS: t("workspace.quiz.advancedDifficultyPresets.EASY_FOCUS", "Easy focus"),
+    HARD_FOCUS: t("workspace.quiz.advancedDifficultyPresets.HARD_FOCUS", "Hard focus"),
+  };
+  return labels[normalizedId] || normalizedId;
 }
 
 function getQuestionTypeLabel(questionType, t) {
@@ -963,85 +974,32 @@ function QuizCollectionAdvancedPracticeConfigView({
           </section>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <div className={sectionCardClass}>
-              <h3 className={cn("mb-2 flex items-center gap-2 text-sm font-semibold", isDarkMode ? "text-slate-200" : "text-gray-800")}>
-                <Sliders className="h-4 w-4 text-gray-500" /> {t("workspace.quiz.aiConfig.settings", "Settings")}
-              </h3>
+            <div className={cn(sectionCardClass, "xl:col-span-2")}>
+              <div>
+                <h3 className={cn("mb-2 flex items-center gap-2 text-sm font-semibold", isDarkMode ? "text-slate-200" : "text-gray-800")}>
+                  <Sliders className="h-4 w-4 text-gray-500" /> {t("workspace.quiz.aiConfig.totalQuestions", "Total questions")}
+                </h3>
 
-              <div className={cn("grid gap-2", config.timerMode ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
-                <div>
-                  <label className={labelCls}>{t("workspace.quiz.aiConfig.totalQuestions", "Total questions")}</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={maxSelectableQuestions}
-                    className={inputCls}
-                    value={config.numQuestions}
-                    onChange={(event) => updateConfig({
-                      numQuestions: Math.min(toPositiveInteger(event.target.value, 1), maxSelectableQuestions),
-                    })}
-                  />
-                </div>
-
-                {config.timerMode ? (
+                <div className="grid gap-2">
                   <div>
-                    <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes", "Time (minutes)")}</label>
                     <input
                       type="number"
                       min={1}
+                      max={maxSelectableQuestions}
                       className={inputCls}
-                      value={config.duration}
-                      onChange={(event) => updateConfig({ duration: Math.max(1, Number(event.target.value) || 1) })}
+                      value={config.numQuestions}
+                      onChange={(event) => updateConfig({
+                        numQuestions: Math.min(toPositiveInteger(event.target.value, 1), maxSelectableQuestions),
+                      })}
                     />
                   </div>
-                ) : null}
-              </div>
-
-              <div className="mt-2">
-                <label className={labelCls}>{t("workspace.quiz.aiConfig.examType", "Exam type")}</label>
-                <div className={cn("inline-flex w-full flex-wrap gap-2 rounded-full p-1", isDarkMode ? "bg-slate-900/60" : "bg-slate-100")}>
-                  <button
-                    type="button"
-                    onClick={() => updateConfig({ timerMode: true })}
-                    className={cn(
-                      "min-w-0 flex-1 rounded-full px-3 py-2 text-left transition-all",
-                      config.timerMode
-                        ? (isDarkMode ? "bg-blue-500/20 text-blue-200" : "bg-white text-blue-700 shadow-sm")
-                        : (isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-600 hover:text-gray-900"),
-                    )}
-                  >
-                    <p className="text-[11px] font-medium leading-4 sm:text-xs">
-                      {t("workspace.quiz.aiConfig.examTypeTimed", "Timed Exam (global timer, free navigation)")}
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateConfig({ timerMode: false })}
-                    className={cn(
-                      "min-w-0 flex-1 rounded-full px-3 py-2 text-left transition-all",
-                      !config.timerMode
-                        ? (isDarkMode ? "bg-emerald-500/20 text-emerald-200" : "bg-white text-emerald-700 shadow-sm")
-                        : (isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-600 hover:text-gray-900"),
-                    )}
-                  >
-                    <p className="text-[11px] font-medium leading-4 sm:text-xs">
-                      {t("workspace.quiz.aiConfig.examTypeSequential", "Sequential Timed Exam (per-question timer, locked order)")}
-                    </p>
-                  </button>
                 </div>
-
-                {!config.timerMode ? (
-                  <div className={cn("mt-2 rounded-xl border px-3 py-2 text-xs", isDarkMode ? "border-slate-800 bg-slate-900/60 text-slate-400" : "border-slate-200 bg-slate-50 text-slate-600")}>
-                    {t("quizCollection.practiceSequentialHint", "Cháº¿ Ä‘á»™ nÃ y sáº½ táº¡o session khÃ´ng giá»›i háº¡n tá»•ng thá»i gian.")}
-                  </div>
-                ) : null}
               </div>
-            </div>
 
-            <div className={sectionCardClass}>
-              <h3 className={cn("mb-2 flex items-center gap-2 text-sm font-semibold", isDarkMode ? "text-slate-200" : "text-gray-800")}>
-                <Sliders className="h-4 w-4 text-amber-500" /> {t("workspace.quiz.aiConfig.difficultyLevel", "Difficulty level")}
-              </h3>
+              <div className={cn("mt-4 border-t pt-4", isDarkMode ? "border-slate-800" : "border-slate-200")}>
+                <h3 className={cn("mb-2 flex items-center gap-2 text-sm font-semibold", isDarkMode ? "text-slate-200" : "text-gray-800")}>
+                  <Sliders className="h-4 w-4 text-amber-500" /> {t("workspace.quiz.aiConfig.difficultyLevel", "Difficulty level")}
+                </h3>
 
               <div className="mb-3 flex items-center gap-2">
                 <input
@@ -1059,7 +1017,7 @@ function QuizCollectionAdvancedPracticeConfigView({
               <select className={selectCls} value={config.selectedDifficultyId} onChange={(event) => handleDifficultyPresetChange(event.target.value)}>
                 {DIFFICULTY_PRESETS.map((difficulty) => (
                   <option key={difficulty.id} value={difficulty.id}>
-                    {difficulty.difficultyName} ({difficulty.easyRatio}-{difficulty.mediumRatio}-{difficulty.hardRatio})
+                    {getDifficultyPresetLabel(t, difficulty.id)} ({difficulty.easyRatio}-{difficulty.mediumRatio}-{difficulty.hardRatio})
                   </option>
                 ))}
                 <option value="CUSTOM">{t("workspace.quiz.aiConfig.customSelfConfig", "Custom")}</option>
@@ -1098,7 +1056,7 @@ function QuizCollectionAdvancedPracticeConfigView({
                 </div>
               ) : null}
 
-              <div className={cn("mt-4 border-t pt-3", isDarkMode ? "border-slate-800" : "border-slate-200")}>
+                <div className={cn("mt-4 border-t pt-3", isDarkMode ? "border-slate-800" : "border-slate-200")}>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <span className={cn("text-xs font-medium", isDarkMode ? "text-slate-300" : "text-gray-700")}>
                     {t("workspace.quiz.aiConfig.difficultyPreviewTitle", "Difficulty preview")}
@@ -1120,6 +1078,7 @@ function QuizCollectionAdvancedPracticeConfigView({
                   <PreviewLegend color="bg-green-500" label={`${getDifficultyLabel(t, "EASY")}: ${formatDifficultyPreviewPercent(difficultyPreviewPercent.easy)}%`} isDarkMode={isDarkMode} />
                   <PreviewLegend color="bg-amber-500" label={`${getDifficultyLabel(t, "MEDIUM")}: ${formatDifficultyPreviewPercent(difficultyPreviewPercent.medium)}%`} isDarkMode={isDarkMode} />
                   <PreviewLegend color="bg-red-500" label={`${getDifficultyLabel(t, "HARD")}: ${formatDifficultyPreviewPercent(difficultyPreviewPercent.hard)}%`} isDarkMode={isDarkMode} />
+                </div>
                 </div>
               </div>
             </div>
@@ -1195,16 +1154,29 @@ function QuizCollectionAdvancedPracticeConfigView({
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h3 className={cn("flex items-center gap-2 text-sm font-semibold", isDarkMode ? "text-slate-200" : "text-gray-800")}>
                   <BrainCircuit className="h-4 w-4 text-teal-500" /> {t("workspace.quiz.aiConfig.bloomSkills", "Bloom skills")}
-                  <div className="group relative">
+                  <div className="group/bloom-info relative">
                     <button
                       type="button"
-                      className={cn("inline-flex h-5 w-5 items-center justify-center rounded-full border transition-colors", isDarkMode ? "border-slate-700 text-slate-400 hover:border-teal-500/50 hover:text-teal-300" : "border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600")}
+                      className={cn(
+                        "inline-flex h-5 w-5 items-center justify-center rounded-full border transition-colors",
+                        isDarkMode
+                          ? "border-slate-700 text-slate-400 hover:border-teal-500/50 hover:text-teal-300"
+                          : "border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600",
+                      )}
                       aria-label={t("workspace.quiz.aiConfig.bloomInfo", "Bloom info")}
+                      title={t("workspace.quiz.aiConfig.bloomInfo", "Bloom info")}
                     >
                       <Info className="h-3.5 w-3.5" />
                     </button>
-                    <div className={cn("absolute left-0 top-7 z-20 hidden w-[260px] rounded-xl border px-3 py-2 text-xs shadow-xl group-hover:block", isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300" : "border-gray-200 bg-white text-gray-600")}>
-                      {t("quizCollection.bloomInfoInline", "Bloom Ä‘Æ°á»£c dÃ¹ng Ä‘á»ƒ Ä‘iá»u chá»‰nh má»©c Ä‘á»™ tá»« ghi nhá»› Ä‘áº¿n váº­n dá»¥ng, phÃ¢n tÃ­ch vÃ  Ä‘Ã¡nh giÃ¡.")}
+                    <div className={cn("absolute left-0 top-7 z-50 hidden w-[320px] rounded-xl border p-2 shadow-xl group-hover/bloom-info:block group-focus-within/bloom-info:block md:w-[420px]", isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white")}>
+                      <p className={cn("mb-1 text-xs font-medium", isDarkMode ? "text-slate-300" : "text-gray-700")}>
+                        {t("workspace.quiz.aiConfig.bloomInfo", "Bloom info")}
+                      </p>
+                      <img
+                        src={bloomTaxonomyImage}
+                        alt={t("workspace.quiz.aiConfig.bloomInfoAlt", "Bloom taxonomy")}
+                        className="h-auto w-full rounded-lg border border-slate-200/30"
+                      />
                     </div>
                   </div>
                 </h3>
