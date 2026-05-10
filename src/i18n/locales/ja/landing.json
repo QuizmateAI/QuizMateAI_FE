@@ -96,7 +96,9 @@
       "company": "会社情報",
       "companyLinks": {
         "about": "QuizMate AI について",
-        "support": "サポート"
+        "support": "サポート",
+        "terms": "Terms",
+        "privacy": "Privacy"
       },
       "legal": "法的情報",
       "legalLinks": {

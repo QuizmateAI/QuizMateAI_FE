@@ -43,7 +43,13 @@
           "bullet2": "Tổ chức thử thách tương tác trong thời gian thực để tạo hứng thú.",
           "bullet3": "Trưởng nhóm có thể quản lý và theo dõi tiến độ của từng học viên."
         }
-      }
+      },
+      "roadmapTitle": "AI Roadmap",
+      "roadmapDesc": "Our AI analyzes your materials and generates a step-by-step learning path from basics to advanced.",
+      "quizTitle": "Smart Quizzes",
+      "quizDesc": "Generate multiple-choice or essay questions instantly from any PDF, YouTube video.",
+      "companionTitle": "AI Companion",
+      "companionDesc": "Interact with your AI tutor via voice to clear doubts and explain complex concepts in real-time."
     },
     "pricing": {
       "titlePart1": "Chọn",
@@ -90,7 +96,9 @@
       "company": "Công ty",
       "companyLinks": {
         "about": "Về QuizMate AI",
-        "support": "Hỗ trợ"
+        "support": "Hỗ trợ",
+        "terms": "Terms",
+        "privacy": "Privacy"
       },
       "legal": "Pháp lý",
       "legalLinks": {

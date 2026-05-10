@@ -501,7 +501,12 @@
       "openQuizTab": "Open quiz tab",
       "cancel": "Cancel",
       "confirmAssign": "Assign now",
-      "assigning": "Assigning..."
+      "assigning": "Assigning...",
+      "snapshotGenerating": "Snapshot Generating",
+      "snapshotMissingMember": "Snapshot Missing Member",
+      "snapshotGenerateSuccess": "Snapshot Generate Success",
+      "snapshotGenerateFailed": "Snapshot Generate Failed",
+      "detailLeaderOnly": "Detail Leader Only"
     },
     "forms": {
       "loadingMaterials": "Loading shared documents...",
@@ -539,7 +544,11 @@
           "finished": "Finished",
           "playing": "In progress",
           "registered": "Registered"
-        }
+        },
+        "startsInLabel": "Starts In Label",
+        "endsInLabel": "Ends In Label",
+        "joinNow": "Join Now",
+        "viewDetail": "View Detail"
       },
       "cancelDialogTitle": "Cancel this challenge?",
       "cancelDialogDescription": "Are you sure you want to cancel this challenge? Members will no longer be able to join and the schedule will be removed.",
@@ -587,7 +596,13 @@
       "reviewContributorCannotRegister": "You are assigned as a match reviewer, so you cannot register for this challenge.",
       "reviewInviteeNotice": "You were invited to review this challenge match. Open “Open match” → Check tab: mark the match as OK or submit an APPROVED vote when ready. At the start time, the system will open the challenge automatically once review requirements are met.",
       "reviewInviteeShortHint": "Click “Open match” in the Challenge match block above, then open the “Check” tab.",
-      "reviewQuizNotReadyHint": "The match is not ready to preview yet (for example still generating). Please try again later."
+      "reviewQuizNotReadyHint": "The match is not ready to preview yet (for example still generating). Please try again later.",
+      "sections": {
+        "liveNow": "Live Now",
+        "startingSoon": "Starting Soon",
+        "scheduled": "Scheduled",
+        "finished": "Finished"
+      }
     },
     "members": {
       "loading": "Loading members...",
@@ -1059,7 +1074,10 @@
       "cannotOpenQuiz": "Could not open this quiz. Check permissions or try again.",
       "noWorkspace": "No workspace found",
       "noRoadmap": "No roadmap found",
-      "unableToDeleteData": "Unable to delete workspace data. Please try again."
+      "unableToDeleteData": "Unable to delete workspace data. Please try again.",
+      "memberSeatLimitUnknown": "Member Seat Limit Unknown",
+      "memberSeatLimitExceeded": "Nhóm đang vượt ${overLimitBy} slot thành viên so với giới hạn ${limit}. Hãy giảm thành viên hoặc hủy lời mời chờ trước khi mời thêm.",
+      "memberSeatLimitReached": "Nhóm đã dùng hết ${used}/${limit} slot thành viên. Hãy hủy ${pending > 0 ? 'lời mời chờ hoặc ' : ''}nâng cấp gói trước khi mời thêm."
     },
     "toast": {
       "inviteSent": "Invitation sent successfully!",
@@ -1125,7 +1143,17 @@
       "preLearningOptional": "Optional, depending on your current level.",
       "peopleTitle": "People in this group",
       "peopleDescription": "A quick snapshot so members know who they are studying with.",
-      "youBadge": "You"
+      "youBadge": "You",
+      "learningSnapshotEyebrow": "Learning Snapshot Eyebrow",
+      "learningSnapshotTitle": "Learning Snapshot Title",
+      "learningSnapshotLoading": "Learning Snapshot Loading",
+      "snapshotAttempts": "Snapshot Attempts",
+      "snapshotPassed": "Snapshot Passed",
+      "snapshotScore": "Snapshot Score",
+      "snapshotPassRate": "Snapshot Pass Rate",
+      "snapshotMinutes": "Snapshot Minutes",
+      "snapshotClass": "Snapshot Class",
+      "learningSnapshotEmpty": "Learning Snapshot Empty"
     },
     "profileGate": {
       "checkingTitle": "Checking the group profile...",
@@ -2257,7 +2285,15 @@
       "placeholder": "Write a comment… Use / to tag a question · Enter to send",
       "footerPrefix": "Enter to send · Shift+Enter for new line ·",
       "leaderCanDelete": "Leader can delete any comment",
-      "memberCanDelete": "You can only delete your own comments"
+      "memberCanDelete": "You can only delete your own comments",
+      "replyPlaceholder": "Reply to {{name}}… Press Enter to send"
+    },
+    "reply": {
+      "originalUnavailable": "Original Unavailable",
+      "replyingTo": "Replying to {{name}}",
+      "emptyBody": "Empty Body",
+      "action": "Action",
+      "cancel": "Cancel"
     }
   },
   "groupSourceDetailView": {
@@ -2338,6 +2374,17 @@
       "explanationLabel": "Explanation:",
       "commentsPerQuestion": "Comments for this question",
       "commentsPerQuestionSubtitle": "The question and its comments live in the same discussion thread."
+    },
+    "reply": {
+      "originalUnavailable": "Original Unavailable",
+      "replyingTo": "Replying to {{name}}",
+      "emptyBody": "Empty Body",
+      "action": "Action",
+      "cancel": "Cancel",
+      "placeholder": "Reply to {{name}}"
+    },
+    "errors": {
+      "tooManyLinks": "Mỗi bình luận chỉ được chứa tối đa ${commentMaxLinks} link."
     }
   },
   "roadmapCanvasView2": {
@@ -2405,5 +2452,14 @@
       "pastDate": "Do not choose a date or time in the past.",
       "invalid": "The selected time is invalid."
     }
+  },
+  "challengeBracket": {
+    "championLabel": "Vô địch: {{name}}"
+  },
+  "challengeTeams": {
+    "winnerLabel": "Đội {{team}} chiến thắng",
+    "draw": "Draw",
+    "finished": "Finished",
+    "benchHint": "Bench Hint"
   }
 }

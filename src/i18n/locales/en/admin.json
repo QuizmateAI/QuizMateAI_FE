@@ -480,6 +480,30 @@
       "plans": "Manage the plan catalog and publication status across the system.",
       "creditPackages": "Track the credit packages on sale and the credit supply surface offered to users.",
       "aiAudit": "Review AI calls, active models, and token consumption across recent operations."
+    },
+    "overviewTitle": "Overview",
+    "description": "Platform health, usage and revenue at a glance.",
+    "chartDay": "Chart Day",
+    "chartWeek": "Chart Week",
+    "chartMonth": "Chart Month",
+    "b": {
+      "hero": {
+        "label": "Label"
+      },
+      "topPlans": {
+        "title": "Title",
+        "desc": "Desc",
+        "empty": "Empty"
+      }
+    },
+    "detail": {
+      "stacked": "Stacked",
+      "stackedHint": "Stacked Hint",
+      "topBuckets": "Top Buckets",
+      "topBucketsHint": "Top Buckets Hint",
+      "bucketsCount": "Buckets Count",
+      "weekday": "Weekday",
+      "weekdayHint": "Weekday Hint"
     }
   },
   "adminManagement": {
@@ -544,8 +568,33 @@
       "superAdminReadonly": "SUPER_ADMIN accounts always have full default access.",
       "clearAll": "Clear all",
       "grantAll": "Grant all",
-      "syncWarning": "Sync converts every currently granted permission into permanent access (expiresAt is removed). Use the Permission Requests tab to approve time-limited access."
-    }
+      "syncWarning": "Sync converts every currently granted permission into permanent access (expiresAt is removed). Use the Permission Requests tab to approve time-limited access.",
+      "expired": "Expired",
+      "remainingDays": "{{count}}d left",
+      "remainingHours": "{{count}}h left",
+      "remainingMinutes": "{{count}}m left",
+      "expiresAt": "Expires At",
+      "permanent": "Permanent"
+    },
+    "deleteSuccess": "Delete Success",
+    "deleteError": "Delete Error",
+    "deleteDialog": {
+      "confirmMismatch": "Confirm Mismatch",
+      "reasonTooShort": "Reason Too Short",
+      "title": "Title",
+      "description": "This action will permanently remove admin account {{username}} ({{email}}).",
+      "warning": "Warning",
+      "confirmLabel": "Confirm Label",
+      "confirmHelp": "Confirm Help",
+      "reasonLabel": "Reason Label",
+      "reasonPlaceholder": "Reason Placeholder",
+      "reasonHelp": "Reason Help"
+    },
+    "metricAdmins": "Metric Admins",
+    "metricStatus": "Metric Status",
+    "metricPermissions": "Metric Permissions",
+    "metricRecentActivity": "Metric Recent Activity",
+    "cardSubtitle": "Card Subtitle"
   },
   "adminPayments": {
     "desc": "Look up transactions by order ID, user, workspace, or payment status.",
@@ -887,7 +936,12 @@
       "createRole": "Unable to create role.",
       "syncRolePermissions": "Unable to sync role permissions.",
       "deleteRole": "Unable to delete role."
-    }
+    },
+    "metricRoles": "Metric Roles",
+    "metricPermissions": "Metric Permissions",
+    "metricAudit": "Metric Audit",
+    "metricUsersLabel": "Metric Users Label",
+    "metricUsersHelper": "Metric Users Helper"
   },
   "subscription": {
     "title": "Subscription Management",
@@ -1157,7 +1211,12 @@
       "group": "Capability group",
       "allGroups": "All groups",
       "status": "Status",
-      "allStatuses": "All statuses"
+      "allStatuses": "All statuses",
+      "open": "Open",
+      "dialogTitle": "Dialog Title",
+      "dialogDescription": "Dialog Description",
+      "reset": "Reset",
+      "searchAction": "Search Action"
     },
     "exchangeRate": {
       "title": "Current USD/VND rate",
@@ -1211,7 +1270,15 @@
       "officialUnsupported": "This model does not currently support official auto pricing.",
       "previewVnd": "Converted",
       "openEndedHint": "Leave blank if this pricing version has no end date yet.",
-      "submit": "Save pricing version"
+      "submit": "Save pricing version",
+      "dataSources": "Data Sources",
+      "dataSourcesDescription": "Data Sources Description",
+      "officialReady": "Official Ready",
+      "inputUsd": "Input Usd",
+      "outputUsd": "Output Usd",
+      "formAppliedHint": "Form Applied Hint",
+      "formEmptyHint": "Form Empty Hint",
+      "rate": "Rate"
     },
     "actions": {
       "menu": "Open action menu",
@@ -1326,7 +1393,9 @@
       "tokenPrice": "Conversion price / token",
       "actualCostTokens": "Actual-cost tokens",
       "tokenBudget": "Equivalent token budget",
-      "tokenMargin": "Equivalent token margin"
+      "tokenMargin": "Equivalent token margin",
+      "providerCostUsd": "Provider Cost Usd",
+      "systemSubsidy": "System Subsidy"
     },
     "status": {
       "SUCCESS": "Success",
@@ -1361,7 +1430,34 @@
       "subCallError": "Error",
       "subCallInput": "Input",
       "subCallOutput": "Output",
-      "subCallNoPreview": "No data"
+      "subCallNoPreview": "No data",
+      "inputUnitUsd": "Input Unit Usd",
+      "outputUnitUsd": "Output Unit Usd",
+      "exchangeRate": "Exchange Rate",
+      "exchangeRateAt": "Exchange Rate At",
+      "inputCostUsd": "Input Cost Usd",
+      "outputCostUsd": "Output Cost Usd"
+    },
+    "topFeatures": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "empty": "Empty",
+      "dayUnit": "Day Unit",
+      "featureCount": "Feature Count",
+      "allRange": "All Range",
+      "legendTop": "Legend Top",
+      "legendOther": "Legend Other",
+      "legendUnit": "Legend Unit",
+      "total": "Total",
+      "columnFeature": "Column Feature",
+      "columnCost": "Column Cost",
+      "columnShare": "Column Share",
+      "requests": "Requests"
+    },
+    "tokens": {
+      "input": "Input",
+      "output": "Output",
+      "total": "Total"
     }
   },
   "adminLayout": {
@@ -1392,7 +1488,9 @@
     "controlPlane": "QuizMate control plane"
   },
   "aiAudit": {
-    "title": "AI Audit",
+    "title": {
+      "v2": "Nhật ký AI hệ thống"
+    },
     "description": "Track AI requests, token usage, models, statuses, and open detailed traces when needed.",
     "errors": {
       "loadLogs": "Unable to load AI audit logs."
@@ -1411,7 +1509,11 @@
       "planCost": "Plan cost",
       "planCostHint": "Provider cost of plan features. Avg {{avg}} tokens/request",
       "errors": "Errors",
-      "errorsHint": "Errored requests matching the current filters"
+      "errorsHint": "Errored requests matching the current filters",
+      "totalRequestsHelp": "Total Requests Help",
+      "totalTokensHelp": "Total Tokens Help",
+      "systemCostHelp": "System Cost Help",
+      "planCostHelp": "Plan Cost Help"
     },
     "filters": {
       "title": "AI audit filters",
@@ -1434,7 +1536,11 @@
       "actorEmail": "Actor email",
       "taskIdPlaceholder": "Task ID",
       "reset": "Reset",
-      "apply": "Apply"
+      "apply": "Apply",
+      "taskId": "Task ID",
+      "email": "Email",
+      "featureKey": "Feature Key",
+      "clear": "Clear"
     },
     "table": {
       "title": "AI request list",
@@ -1502,7 +1608,7 @@
       "COMPANION_TTS": "Companion text-to-speech",
       "GENERATE_ROADMAP": "Generate roadmap",
       "GENERATE_ROADMAP_PHASES": "Generate roadmap phases",
-      "GENERATE_ROADMAP_PHASE_CONTENT": "Generate phase content",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Generate roadmap phase content",
       "CHECK_MATERIAL_COVERAGE": "Check material coverage",
       "WORKSPACE_QUIZ_ASSESSMENT": "Workspace quiz assessment",
       "PHASE_PRE_LEARNING_ASSESSMENT": "Pre-learning assessment",
@@ -1519,11 +1625,25 @@
       "SUGGEST_WORKSPACE_NAME": "Suggest workspace name",
       "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Validate profile consistency",
       "PREVIEW_QUIZ_STRUCTURE": "Preview quiz structure",
-      "GENERATE_ROADMAP_PHASES": "Generate roadmap phases",
-      "GENERATE_ROADMAP_PHASE_CONTENT": "Generate roadmap phase content",
       "SUGGEST_MOCK_TEST_STRUCTURE": "Suggest mock test structure",
       "SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS": "Synthesize mock test from materials",
       "ROADMAP_REVIEW": "Roadmap review"
+    },
+    "topFeatures": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "empty": "Empty",
+      "dayUnit": "Day Unit",
+      "featureCount": "Feature Count",
+      "allRange": "All Range",
+      "legendTop": "Legend Top",
+      "legendOther": "Legend Other",
+      "legendUnit": "Legend Unit",
+      "total": "Total",
+      "columnFeature": "Column Feature",
+      "columnCost": "Column Cost",
+      "columnShare": "Column Share",
+      "requests": "Requests"
     }
   },
   "aiProviders": {
@@ -1595,7 +1715,14 @@
       "checkedAt": "Time",
       "checkedBy": "Tested by",
       "noData": "No test history in this time window.",
-      "rangeHours": "Window (hours)"
+      "rangeHours": "Window (hours)",
+      "keyCount": "{{count}} keys",
+      "groupSummary": "{{valid}}/{{total}} hợp lệ"
+    },
+    "latency": {
+      "ok": "OK",
+      "slow": "Chậm",
+      "abnormal": "Bất thường"
     }
   },
   "groupPage": {
@@ -1885,7 +2012,8 @@
       "descriptionPlaceholder": "Short description of what this package offers",
       "creditAmount": "Credit amount",
       "price": "Price (VND)",
-      "bonusCredit": "Bonus credits"
+      "bonusCredit": "Bonus credits",
+      "bonusCreditHint": "Bonus Credit Hint"
     },
     "systemSettings": {
       "title": "Credit purchase settings",
@@ -2201,5 +2329,149 @@
     "deleting": "Deleting...",
     "deleteSuccess": "User deleted.",
     "deleteError": "Unable to delete the user."
+  },
+  "communityQuizManagement": {
+    "toast": {
+      "unshareSuccess": "Unshare Success"
+    },
+    "header": {
+      "eyebrow": "Eyebrow",
+      "title": "Title",
+      "description": "Description",
+      "refresh": "Refresh"
+    },
+    "metrics": {
+      "totalQuizzes": "Total Quizzes",
+      "totalQuizzesHelper": "Total Quizzes Helper",
+      "totalClones": "Total Clones",
+      "currentPageHelper": "Current Page Helper",
+      "averageRating": "Average Rating",
+      "totalRatingsHelper": "{{count}} lượt đánh giá",
+      "totalComments": "Total Comments"
+    },
+    "filters": {
+      "searchPlaceholder": "Search Placeholder",
+      "allStatuses": "All Statuses"
+    },
+    "table": {
+      "title": "Title",
+      "description": "Description",
+      "quiz": "Quiz",
+      "creator": "Creator",
+      "status": "Status",
+      "signals": "Signals",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "untitled": "Untitled",
+      "questionCount": "{{count}} câu",
+      "shared": "Shared",
+      "unshared": "Unshared"
+    },
+    "empty": {
+      "title": "Title",
+      "description": "Description"
+    },
+    "actions": {
+      "preview": "Preview",
+      "remove": "Remove"
+    },
+    "preview": {
+      "description": "Description"
+    },
+    "removeDialog": {
+      "title": "Title",
+      "description": "Description",
+      "creatorLabel": "Creator Label",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "planPurchases": {
+    "versionOld": "Version Old",
+    "title": "Title",
+    "sparklineLabel": "Sparkline Label",
+    "hideCharts": "Hide Charts",
+    "showCharts": "Show Charts",
+    "chart": {
+      "versionFilter": "Version Filter",
+      "versionCurrent": "Version Current",
+      "versionAll": "Version All",
+      "versionHint": "Version Hint",
+      "revenueSplit": "Revenue Split",
+      "revenueSplitHint": "Revenue Split Hint",
+      "creditPart": "Credit Part",
+      "basePart": "Base Part",
+      "margin": "Margin",
+      "marginHint": "Margin Hint",
+      "marginLabel": "Margin Label"
+    },
+    "tab": {
+      "plans": "Plans",
+      "credits": "Credits"
+    },
+    "credit": {
+      "col": {
+        "package": "Package",
+        "scope": "Scope",
+        "creditsDelivered": "Credits Delivered"
+      },
+      "empty": "Empty",
+      "totalRevenue": "Total Revenue",
+      "totalCredits": "Total Credits",
+      "totalPurchases": "Total Purchases"
+    },
+    "col": {
+      "purchases": "Purchases",
+      "payers": "Payers",
+      "revenue": "Revenue",
+      "buyers": "Buyers",
+      "plan": "Plan",
+      "baseRevenue": "Base Revenue",
+      "aiCogs": "AI Cogs",
+      "margin": "Margin"
+    },
+    "buyers": {
+      "totalRecords": "Total Records",
+      "activeOnPage": "Active On Page",
+      "pageRevenue": "Page Revenue",
+      "email": "Email",
+      "amount": "Amount",
+      "status": "Status",
+      "paidAt": "Paid At",
+      "active": "Active",
+      "expired": "Expired",
+      "versionMismatchTip": "Version Mismatch Tip",
+      "versionMatchTip": "Version Match Tip",
+      "expiresAt": "Expires At"
+    },
+    "versionTable": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "subtitleSuffix": "Subtitle Suffix",
+      "searchPlaceholder": "Search Placeholder",
+      "groupLabel": "Group Label",
+      "allOption": "All Option",
+      "statusLabel": "Status Label",
+      "statusCurrent": "Status Current",
+      "statusOld": "Status Old",
+      "sortLabel": "Sort Label",
+      "noMatch": "No Match",
+      "statusCurrentBadge": "Status Current Badge",
+      "totalsLabel": "Totals Label",
+      "versionsUnit": "Versions Unit"
+    },
+    "empty": "Empty",
+    "versionCurrentTip": "Version Current Tip",
+    "versionHistoricalTip": "Version Historical Tip",
+    "buyersTitle": "Buyers Title",
+    "buyersHint": "Buyers Hint",
+    "buyersEmpty": "Buyers Empty",
+    "creditBuyers": {
+      "title": "Title",
+      "hint": "Hint",
+      "creditsOnPage": "Credits On Page",
+      "creditsReceived": "Credits Received",
+      "scope": "Scope"
+    }
   }
 }

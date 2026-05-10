@@ -109,6 +109,15 @@
         "apiAccess": "API Access for Devs",
         "customBranding": "Custom Branding"
       }
-    }
+    },
+    "hero": {
+      "thisYear": "This Year",
+      "completedQuizzes": "Completed Quizzes",
+      "credit": "Credit",
+      "lastLogin": "Last Login",
+      "profileSeason": "Profile Season",
+      "verified": "Verified"
+    },
+    "avatarUpload": "Avatar Upload"
   }
 }

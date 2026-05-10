@@ -109,6 +109,15 @@
         "apiAccess": "Truy cập API cho lập trình viên",
         "customBranding": "Tùy chỉnh thương hiệu"
       }
-    }
+    },
+    "hero": {
+      "thisYear": "This Year",
+      "completedQuizzes": "Completed Quizzes",
+      "credit": "Credit",
+      "lastLogin": "Last Login",
+      "profileSeason": "Profile Season",
+      "verified": "Verified"
+    },
+    "avatarUpload": "Avatar Upload"
   }
 }

@@ -480,6 +480,30 @@
       "plans": "Quản lý danh mục gói và trạng thái phát hành trong toàn hệ thống.",
       "creditPackages": "Theo dõi các gói tín dụng đang bán và mặt bằng credit đang cung cấp cho người dùng.",
       "aiAudit": "Xem các lệnh gọi AI, model đang hoạt động và mức tiêu thụ token gần đây."
+    },
+    "overviewTitle": "Overview",
+    "description": "Platform health, usage and revenue at a glance.",
+    "chartDay": "Chart Day",
+    "chartWeek": "Chart Week",
+    "chartMonth": "Chart Month",
+    "b": {
+      "hero": {
+        "label": "Label"
+      },
+      "topPlans": {
+        "title": "Title",
+        "desc": "Desc",
+        "empty": "Empty"
+      }
+    },
+    "detail": {
+      "stacked": "Stacked",
+      "stackedHint": "Stacked Hint",
+      "topBuckets": "Top Buckets",
+      "topBucketsHint": "Top Buckets Hint",
+      "bucketsCount": "Buckets Count",
+      "weekday": "Weekday",
+      "weekdayHint": "Weekday Hint"
     }
   },
   "adminManagement": {
@@ -544,8 +568,33 @@
       "superAdminReadonly": "Tài khoản SUPER_ADMIN luôn có toàn bộ quyền mặc định.",
       "clearAll": "Bỏ tất cả",
       "grantAll": "Cấp tất cả",
-      "syncWarning": "Đồng bộ sẽ biến mọi quyền đang được cấp thành quyền vĩnh viễn (mất expiresAt). Dùng tab Yêu cầu cấp quyền để duyệt quyền có thời hạn."
-    }
+      "syncWarning": "Đồng bộ sẽ biến mọi quyền đang được cấp thành quyền vĩnh viễn (mất expiresAt). Dùng tab Yêu cầu cấp quyền để duyệt quyền có thời hạn.",
+      "expired": "Expired",
+      "remainingDays": "{{count}}d left",
+      "remainingHours": "{{count}}h left",
+      "remainingMinutes": "{{count}}m left",
+      "expiresAt": "Expires At",
+      "permanent": "Permanent"
+    },
+    "deleteSuccess": "Delete Success",
+    "deleteError": "Delete Error",
+    "deleteDialog": {
+      "confirmMismatch": "Confirm Mismatch",
+      "reasonTooShort": "Reason Too Short",
+      "title": "Title",
+      "description": "This action will permanently remove admin account {{username}} ({{email}}).",
+      "warning": "Warning",
+      "confirmLabel": "Confirm Label",
+      "confirmHelp": "Confirm Help",
+      "reasonLabel": "Reason Label",
+      "reasonPlaceholder": "Reason Placeholder",
+      "reasonHelp": "Reason Help"
+    },
+    "metricAdmins": "Metric Admins",
+    "metricStatus": "Metric Status",
+    "metricPermissions": "Metric Permissions",
+    "metricRecentActivity": "Metric Recent Activity",
+    "cardSubtitle": "Card Subtitle"
   },
   "adminPayments": {
     "desc": "Tra cứu giao dịch theo mã đơn, user, workspace hoặc trạng thái thanh toán.",
@@ -615,7 +664,10 @@
       "WORKSPACE_CREDIT": "Credit nhóm",
       "WORKSPACE_SLOT": "Slot nhóm"
     },
-    "targetSummary": {},
+    "targetSummary": {
+      "workspace": "WS #{{id}}",
+      "chargedUser": "Charged User #{{id}}"
+    },
     "notifications": {
       "title": "Thông báo nhóm",
       "subtitle": "Trưởng nhóm duyệt thông báo, cộng tác viên tạo nháp, thành viên xem bản đã xuất bản.",
@@ -917,7 +969,12 @@
       "createRole": "Không thể tạo vai trò.",
       "syncRolePermissions": "Không thể đồng bộ quyền cho vai trò.",
       "deleteRole": "Không thể xóa vai trò."
-    }
+    },
+    "metricRoles": "Metric Roles",
+    "metricPermissions": "Metric Permissions",
+    "metricAudit": "Metric Audit",
+    "metricUsersLabel": "Metric Users Label",
+    "metricUsersHelper": "Metric Users Helper"
   },
   "subscription": {
     "title": "Quản lý gói",
@@ -1187,7 +1244,12 @@
       "group": "Nhóm capability",
       "allGroups": "Tất cả nhóm",
       "status": "Trạng thái",
-      "allStatuses": "Tất cả trạng thái"
+      "allStatuses": "Tất cả trạng thái",
+      "open": "Open",
+      "dialogTitle": "Dialog Title",
+      "dialogDescription": "Dialog Description",
+      "reset": "Reset",
+      "searchAction": "Search Action"
     },
     "exchangeRate": {
       "title": "Tỷ giá USD/VND hiện tại",
@@ -1241,7 +1303,15 @@
       "officialUnsupported": "Model này hiện chưa hỗ trợ lấy giá tự động từ nguồn chính thức.",
       "previewVnd": "Quy đổi",
       "openEndedHint": "Để trống nếu version này chưa có mốc kết thúc.",
-      "submit": "Lưu phiên bản giá"
+      "submit": "Lưu phiên bản giá",
+      "dataSources": "Data Sources",
+      "dataSourcesDescription": "Data Sources Description",
+      "officialReady": "Official Ready",
+      "inputUsd": "Input Usd",
+      "outputUsd": "Output Usd",
+      "formAppliedHint": "Form Applied Hint",
+      "formEmptyHint": "Form Empty Hint",
+      "rate": "Rate"
     },
     "actions": {
       "menu": "Mở menu thao tác",
@@ -1356,7 +1426,9 @@
       "tokenPrice": "Đơn giá quy đổi / token",
       "actualCostTokens": "Token thực tế",
       "tokenBudget": "Ngân sách token tương đương",
-      "tokenMargin": "Biên token tương đương"
+      "tokenMargin": "Biên token tương đương",
+      "providerCostUsd": "Provider Cost Usd",
+      "systemSubsidy": "System Subsidy"
     },
     "status": {
       "SUCCESS": "Thành công",
@@ -1391,7 +1463,34 @@
       "subCallError": "Lỗi",
       "subCallInput": "Input",
       "subCallOutput": "Output",
-      "subCallNoPreview": "Không có dữ liệu"
+      "subCallNoPreview": "Không có dữ liệu",
+      "inputUnitUsd": "Input Unit Usd",
+      "outputUnitUsd": "Output Unit Usd",
+      "exchangeRate": "Exchange Rate",
+      "exchangeRateAt": "Exchange Rate At",
+      "inputCostUsd": "Input Cost Usd",
+      "outputCostUsd": "Output Cost Usd"
+    },
+    "topFeatures": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "empty": "Empty",
+      "dayUnit": "Day Unit",
+      "featureCount": "Feature Count",
+      "allRange": "All Range",
+      "legendTop": "Legend Top",
+      "legendOther": "Legend Other",
+      "legendUnit": "Legend Unit",
+      "total": "Total",
+      "columnFeature": "Column Feature",
+      "columnCost": "Column Cost",
+      "columnShare": "Column Share",
+      "requests": "Requests"
+    },
+    "tokens": {
+      "input": "Input",
+      "output": "Output",
+      "total": "Total"
     }
   },
   "adminLayout": {
@@ -1422,7 +1521,9 @@
     "controlPlane": "QuizMate control plane"
   },
   "aiAudit": {
-    "title": "AI Audit",
+    "title": {
+      "v2": "Nhật ký AI hệ thống"
+    },
     "description": "Theo dõi AI request, token tiêu hao, model, trạng thái và mở chi tiết khi cần.",
     "errors": {
       "loadLogs": "Không thể tải AI audit logs."
@@ -1441,7 +1542,11 @@
       "planCost": "Chi phí theo gói",
       "planCostHint": "Provider cost các tính năng trong gói. Trung bình {{avg}} tokens/request",
       "errors": "Lỗi",
-      "errorsHint": "Số request lỗi theo bộ lọc hiện tại"
+      "errorsHint": "Số request lỗi theo bộ lọc hiện tại",
+      "totalRequestsHelp": "Total Requests Help",
+      "totalTokensHelp": "Total Tokens Help",
+      "systemCostHelp": "System Cost Help",
+      "planCostHelp": "Plan Cost Help"
     },
     "filters": {
       "title": "Bộ lọc AI audit",
@@ -1464,7 +1569,11 @@
       "actorEmail": "Email người dùng",
       "taskIdPlaceholder": "Task ID",
       "reset": "Xóa lọc",
-      "apply": "Áp dụng"
+      "apply": "Áp dụng",
+      "taskId": "Task ID",
+      "email": "Email",
+      "featureKey": "Feature Key",
+      "clear": "Clear"
     },
     "table": {
       "title": "Danh sách AI request",
@@ -1532,7 +1641,7 @@
       "COMPANION_TTS": "Companion text-to-speech",
       "GENERATE_ROADMAP": "Tạo roadmap",
       "GENERATE_ROADMAP_PHASES": "Tạo phase roadmap",
-      "GENERATE_ROADMAP_PHASE_CONTENT": "Tạo nội dung phase",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Tạo nội dung phase roadmap",
       "CHECK_MATERIAL_COVERAGE": "Kiểm tra độ phủ tài liệu",
       "WORKSPACE_QUIZ_ASSESSMENT": "Đánh giá quiz workspace",
       "PHASE_PRE_LEARNING_ASSESSMENT": "Đánh giá trước học",
@@ -1549,11 +1658,25 @@
       "SUGGEST_WORKSPACE_NAME": "Gợi ý tên workspace",
       "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Kiểm tra độ nhất quán hồ sơ",
       "PREVIEW_QUIZ_STRUCTURE": "Xem trước cấu trúc quiz",
-      "GENERATE_ROADMAP_PHASES": "Tạo phase roadmap",
-      "GENERATE_ROADMAP_PHASE_CONTENT": "Tạo nội dung phase roadmap",
       "SUGGEST_MOCK_TEST_STRUCTURE": "Gợi ý cấu trúc đề thi thử",
       "SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS": "Tổng hợp đề thi từ tài liệu",
       "ROADMAP_REVIEW": "Đánh giá roadmap"
+    },
+    "topFeatures": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "empty": "Empty",
+      "dayUnit": "Day Unit",
+      "featureCount": "Feature Count",
+      "allRange": "All Range",
+      "legendTop": "Legend Top",
+      "legendOther": "Legend Other",
+      "legendUnit": "Legend Unit",
+      "total": "Total",
+      "columnFeature": "Column Feature",
+      "columnCost": "Column Cost",
+      "columnShare": "Column Share",
+      "requests": "Requests"
     }
   },
   "aiProviders": {
@@ -1625,7 +1748,14 @@
       "checkedAt": "Thời gian",
       "checkedBy": "Người test",
       "noData": "Chưa có lịch sử test trong khoảng thời gian này.",
-      "rangeHours": "Khoảng thời gian (giờ)"
+      "rangeHours": "Khoảng thời gian (giờ)",
+      "keyCount": "{{count}} keys",
+      "groupSummary": "{{valid}}/{{total}} hợp lệ"
+    },
+    "latency": {
+      "ok": "OK",
+      "slow": "Chậm",
+      "abnormal": "Bất thường"
     }
   },
   "groupPage": {
@@ -1649,7 +1779,10 @@
       "leader": "Trưởng nhóm",
       "createdAt": "Ngày tạo",
       "actions": "Hành động"
-    }
+    },
+    "untitledGroup": "Untitled group",
+    "noDescription": "No description yet",
+    "unknownLeader": "No leader assigned"
   },
   "userPage": {
     "title": "Quản lý người dùng",
@@ -1863,7 +1996,8 @@
       "descriptionPlaceholder": "Mô tả ngắn về những gì gói này cung cấp",
       "creditAmount": "Số lượng credit",
       "price": "Giá (VND)",
-      "bonusCredit": "Credit thưởng"
+      "bonusCredit": "Credit thưởng",
+      "bonusCreditHint": "Bonus Credit Hint"
     },
     "systemSettings": {
       "title": "Cấu hình mua credit",
@@ -2179,5 +2313,198 @@
     "deleting": "Đang xóa...",
     "deleteSuccess": "Đã xóa người dùng.",
     "deleteError": "Không thể xóa người dùng."
+  },
+  "communityQuizManagement": {
+    "toast": {
+      "unshareSuccess": "Unshare Success"
+    },
+    "header": {
+      "eyebrow": "Eyebrow",
+      "title": "Title",
+      "description": "Description",
+      "refresh": "Refresh"
+    },
+    "metrics": {
+      "totalQuizzes": "Total Quizzes",
+      "totalQuizzesHelper": "Total Quizzes Helper",
+      "totalClones": "Total Clones",
+      "currentPageHelper": "Current Page Helper",
+      "averageRating": "Average Rating",
+      "totalRatingsHelper": "{{count}} lượt đánh giá",
+      "totalComments": "Total Comments"
+    },
+    "filters": {
+      "searchPlaceholder": "Search Placeholder",
+      "allStatuses": "All Statuses"
+    },
+    "table": {
+      "title": "Title",
+      "description": "Description",
+      "quiz": "Quiz",
+      "creator": "Creator",
+      "status": "Status",
+      "signals": "Signals",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "untitled": "Untitled",
+      "questionCount": "{{count}} câu",
+      "shared": "Shared",
+      "unshared": "Unshared"
+    },
+    "empty": {
+      "title": "Title",
+      "description": "Description"
+    },
+    "actions": {
+      "preview": "Preview",
+      "remove": "Remove"
+    },
+    "preview": {
+      "description": "Description"
+    },
+    "removeDialog": {
+      "title": "Title",
+      "description": "Description",
+      "creatorLabel": "Creator Label",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "planPurchases": {
+    "versionOld": "Version Old",
+    "title": "Title",
+    "sparklineLabel": "Sparkline Label",
+    "hideCharts": "Hide Charts",
+    "showCharts": "Show Charts",
+    "chart": {
+      "versionFilter": "Version Filter",
+      "versionCurrent": "Version Current",
+      "versionAll": "Version All",
+      "versionHint": "Version Hint",
+      "revenueSplit": "Revenue Split",
+      "revenueSplitHint": "Revenue Split Hint",
+      "creditPart": "Credit Part",
+      "basePart": "Base Part",
+      "margin": "Margin",
+      "marginHint": "Margin Hint",
+      "marginLabel": "Margin Label"
+    },
+    "tab": {
+      "plans": "Plans",
+      "credits": "Credits"
+    },
+    "credit": {
+      "col": {
+        "package": "Package",
+        "scope": "Scope",
+        "creditsDelivered": "Credits Delivered"
+      },
+      "empty": "Empty",
+      "totalRevenue": "Total Revenue",
+      "totalCredits": "Total Credits",
+      "totalPurchases": "Total Purchases"
+    },
+    "col": {
+      "purchases": "Purchases",
+      "payers": "Payers",
+      "revenue": "Revenue",
+      "buyers": "Buyers",
+      "plan": "Plan",
+      "baseRevenue": "Base Revenue",
+      "aiCogs": "AI Cogs",
+      "margin": "Margin"
+    },
+    "buyers": {
+      "totalRecords": "Total Records",
+      "activeOnPage": "Active On Page",
+      "pageRevenue": "Page Revenue",
+      "email": "Email",
+      "amount": "Amount",
+      "status": "Status",
+      "paidAt": "Paid At",
+      "active": "Active",
+      "expired": "Expired",
+      "versionMismatchTip": "Version Mismatch Tip",
+      "versionMatchTip": "Version Match Tip",
+      "expiresAt": "Expires At"
+    },
+    "versionTable": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "subtitleSuffix": "Subtitle Suffix",
+      "searchPlaceholder": "Search Placeholder",
+      "groupLabel": "Group Label",
+      "allOption": "All Option",
+      "statusLabel": "Status Label",
+      "statusCurrent": "Status Current",
+      "statusOld": "Status Old",
+      "sortLabel": "Sort Label",
+      "noMatch": "No Match",
+      "statusCurrentBadge": "Status Current Badge",
+      "totalsLabel": "Totals Label",
+      "versionsUnit": "Versions Unit"
+    },
+    "empty": "Empty",
+    "versionCurrentTip": "Version Current Tip",
+    "versionHistoricalTip": "Version Historical Tip",
+    "buyersTitle": "Buyers Title",
+    "buyersHint": "Buyers Hint",
+    "buyersEmpty": "Buyers Empty",
+    "creditBuyers": {
+      "title": "Title",
+      "hint": "Hint",
+      "creditsOnPage": "Credits On Page",
+      "creditsReceived": "Credits Received",
+      "scope": "Scope"
+    }
+  },
+  "creditPackage": {
+    "add": "Add",
+    "addTitle": "Add Title",
+    "basicInfo": "Basic Info",
+    "confirmDelete": "Confirm Delete",
+    "confirmDeleteDesc": "Confirm Delete Desc",
+    "create": "Create",
+    "createSuccess": "Create Success",
+    "delete": "Delete",
+    "deleteSuccess": "Delete Success",
+    "deleting": "Deleting",
+    "desc": "Manage the portfolio of credit packages used within the system.",
+    "edit": "Edit",
+    "editTitle": "Edit Title",
+    "empty": "Empty",
+    "form": {
+      "bonusCredit": "Bonus Credit",
+      "creditAmount": "Credit Amount",
+      "description": "Description",
+      "descriptionPlaceholder": "Description Placeholder",
+      "name": "Name",
+      "namePlaceholder": "Name Placeholder",
+      "price": "Price"
+    },
+    "formDesc": "Form Desc",
+    "nameRequired": "Name Required",
+    "save": "Save",
+    "search": "Search",
+    "stats": {
+      "active": "Active",
+      "maxCredit": "Max Credit",
+      "minPrice": "Min Price",
+      "total": "Total"
+    },
+    "submitting": "Submitting",
+    "table": {
+      "actions": "Actions",
+      "bonus": "Bonus",
+      "credit": "Credit",
+      "name": "Name",
+      "price": "Price",
+      "status": "Status"
+    },
+    "tableTitle": "List of credit packages",
+    "title": "Credit package management",
+    "toggleStatus": "Toggle Status",
+    "updateStatusSuccess": "Update Status Success",
+    "updateSuccess": "Update Success"
   }
 }

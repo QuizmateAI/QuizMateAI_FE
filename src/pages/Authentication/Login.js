@@ -5,25 +5,24 @@ import { preloadGroupWorkspacePage, preloadHomePage, preloadWorkspacePage } from
 export const useLogin = (navigate, location, t) => {
   const [loginData, setLoginData] = useState({
     username: '',
-    password: ''
+    password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const handleLoginChange = (field) => (e) => {
-    setLoginData(prev => ({ ...prev, [field]: e.target.value }));
+  const handleLoginChange = (field) => (event) => {
+    setLoginData((prev) => ({ ...prev, [field]: event.target.value }));
     setError('');
     if (fieldErrors[field]) {
-      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+      setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
-  // Trim táº¥t cáº£ dá»¯ liá»‡u trÆ°á»›c khi submit
   const trimLoginData = () => ({
     username: loginData.username.trim(),
-    password: loginData.password
+    password: loginData.password,
   });
 
   const resolveReturnPath = () => {
@@ -61,7 +60,6 @@ export const useLogin = (navigate, location, t) => {
     }
   };
 
-  // Navigate according to the resolved role and return path.
   const navigateByRole = (role) => {
     if (role === 'SUPER_ADMIN') return navigate('/super-admin');
     if (role === 'ADMIN') return navigate('/admin');
@@ -73,12 +71,11 @@ export const useLogin = (navigate, location, t) => {
     return navigate('/home');
   };
 
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
+  const handleLoginSubmit = async (event) => {
+    event.preventDefault();
     setError('');
     setFieldErrors({});
 
-    // Trim dá»¯ liá»‡u trÆ°á»›c khi gá»­i
     const trimmed = trimLoginData();
     setLoginData(trimmed);
 
@@ -103,7 +100,7 @@ export const useLogin = (navigate, location, t) => {
         navigateByRole(response.data.role);
       }
     } catch (err) {
-      setError(err.message || t('auth.loginFailed') || 'ÄÄƒng nháº­p tháº¥t báº¡i, vui lÃ²ng thá»­ láº¡i');
+      setError(err.message || t('auth.loginFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -113,13 +110,12 @@ export const useLogin = (navigate, location, t) => {
     setIsLoading(true);
     setError('');
     try {
-      // credentialResponse.credential CHÃNH LÃ€ idToken (JWT) mong muá»‘n
       const response = await googleLogin(credentialResponse.credential);
       if (response.statusCode === 200 || response.statusCode === 0) {
         navigateByRole(response.data.role);
       }
     } catch (err) {
-      setError(t('auth.loginGoogleFailed') || 'ÄÄƒng nháº­p Google tháº¥t báº¡i');
+      setError(t('auth.loginGoogleFailed'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -136,6 +132,6 @@ export const useLogin = (navigate, location, t) => {
     setError,
     handleLoginChange,
     handleLoginSubmit,
-    handleGoogleSubmit
+    handleGoogleSubmit,
   };
 };

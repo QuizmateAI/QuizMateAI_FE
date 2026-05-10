@@ -195,5 +195,56 @@
       "refundTitle": "Clear checkout flow",
       "refundDesc": "Payments are secured and your Credit purchase history stays available in the wallet."
     }
+  },
+  "subscription": {
+    "wizard": {
+      "review": {
+        "totalListPrice": "Tổng niêm yết"
+      },
+      "entitlement": {
+        "creditPriceLabel": "Giá phần credit",
+        "basePriceLabel": "Giá gốc",
+        "levelLadderTitle": "Level {{level}} kế thừa từ level thấp hơn",
+        "levelLadderBody": "Mọi quyền lợi và giới hạn ở các plan {{sources}} đều phải có ở level này — các giá trị thấp hơn đã được tự nâng và các quyền đã có không thể tắt.",
+        "lowerLevelFloorHint": "Tối thiểu (kế thừa level thấp): {{floor}}",
+        "pricingBlockTitle": "Giá bán",
+        "totalListPrice": "Tổng niêm yết (VND)",
+        "creditPriceAboveFloor": "≥ sàn {{floor}} (+{{premium}} so với sàn)",
+        "creditPriceAtFloor": "Đúng sàn theo {{count}} credit đi kèm",
+        "lowerLevelPriceFloor": "Tối thiểu (kế thừa level thấp): {{floor}}",
+        "basePriceHint": "Base Price Hint",
+        "floorFormulaLabel": "Sàn credit",
+        "floorFormulaBody": "{{credits}} credit × {{unit}}/credit",
+        "creditAutoRaiseHint": "Credit Auto Raise Hint",
+        "lockedByLowerLevel": "Lv↓",
+        "lockedByLowerLevelHint": "Đã có ở level thấp hơn — không thể tắt."
+      },
+      "validation": {
+        "maxIndividualWorkspaceRequired": "Max Individual Workspace Required",
+        "maxMaterialInWorkspaceRequired": "Max Material In Workspace Required",
+        "planIncludedCreditsRequired": "Plan Included Credits Required",
+        "levelLadderLimit": "{{field}} ở Level {{level}} phải ≥ {{floor}} (kế thừa từ level thấp hơn)",
+        "levelLadderFeature": "Level {{level}} phải bật các quyền đã có ở level thấp hơn: {{list}}",
+        "levelLadderCreditPrice": "Phần credit ở Level {{level}} phải ≥ {{floor}} VND (kế thừa từ level thấp hơn)",
+        "levelLadderBasePrice": "Giá gốc ở Level {{level}} phải ≥ {{floor}} VND (kế thừa từ level thấp hơn)"
+      },
+      "sidebar": {
+        "totalListPrice": "Giá niêm yết"
+      }
+    },
+    "planEditLocked": "Plan Edit Locked",
+    "table": {
+      "totalPrice": "Giá niêm yết"
+    },
+    "versionHistory": "Version History",
+    "versionHistoryTitle": "Version History Title",
+    "versionHistoryDesc": "Version History Desc",
+    "versionHistoryEmpty": "Version History Empty",
+    "versionCurrent": "Version Current",
+    "versionSuperseded": "Version Superseded",
+    "detail": {
+      "displayName": "Display Name"
+    },
+    "versionPrevious": "Version Previous"
   }
 }

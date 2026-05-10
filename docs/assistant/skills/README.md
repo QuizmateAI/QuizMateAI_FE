@@ -39,3 +39,4 @@ Skill card nen ngan, de doc trong 1 den 2 phut.
 - `progressive-loading.md`
 - `performance-budget-check.md`
 - `i18n-locale-audit.md`
+- `fullstack-ai-design-fe-fix.md`

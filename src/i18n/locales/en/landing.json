@@ -96,7 +96,9 @@
       "company": "Company",
       "companyLinks": {
         "about": "About QuizMate AI",
-        "support": "Support"
+        "support": "Support",
+        "terms": "Terms",
+        "privacy": "Privacy"
       },
       "legal": "Legal",
       "legalLinks": {

@@ -53,7 +53,8 @@
       "contributor": "Cộng tác viên",
       "canUpload": "Được upload",
       "noMembers": "Không tìm thấy thành viên",
-      "you": "Bạn"
+      "you": "Bạn",
+      "setupComplete": "Setup Complete"
     }
   }
 }

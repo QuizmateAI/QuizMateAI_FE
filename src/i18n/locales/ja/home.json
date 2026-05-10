@@ -213,6 +213,11 @@
       "materialRequired": "少なくとも 1 つの教材を選択してください。",
       "privacyPolicy": "プライバシーポリシー",
       "termsOfService": "利用規約"
+    },
+    "group": {
+      "memberSeatLimitReached": "Nhóm đã dùng hết ${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit}/${normalizedMemberSeatLimit} slot thành viên.",
+      "memberSeatLimitRemaining": "Còn ${Number.isFinite(normalizedMemberSeatRemaining) ? normalizedMemberSeatRemaining : 0} slot trong tổng ${normalizedMemberSeatLimit} slot thành viên.",
+      "created": "Created"
     }
   }
 }

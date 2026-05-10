@@ -155,7 +155,11 @@
         "roadmapQuestion": "Do you want AI to generate a suggested roadmap as well?",
         "roadmapDescription": "This option only appears for review and mock-test flows.",
         "enableRoadmap": "Yes, include a suggested roadmap",
-        "skipRoadmap": "No suggested roadmap, keep only the remaining setup"
+        "skipRoadmap": "No suggested roadmap, keep only the remaining setup",
+        "studyNewLockedFeatureNameWithPlan": "Học mới cần gói ${roadmapRequiredPlanName}",
+        "studyNewLockedFeatureNameFallback": "Study New Locked Feature Name Fallback",
+        "studyNewLockedToastTitle": "Study New Locked Toast Title",
+        "upgradeAction": "Upgrade Action"
       },
       "stepTwo": {
         "title": "Describe your current state",
@@ -253,7 +257,8 @@
         "mockTemplateAwaitingBackendShort": "Confirming",
         "backgroundMockTestReady": "The mock test finished in the background. You can open Mock test to review it now.",
         "finishSuccess": "Workspace setup completed successfully.",
-        "saveError": "Unable to save the workspace setup progress."
+        "saveError": "Unable to save the workspace setup progress.",
+        "confirmError": "Confirm Error"
       },
       "fields": {
         "workspacePurpose": "Primary learning mode",
@@ -674,7 +679,10 @@
           "uploadTitle": "Choose a .json file on your device",
           "fileLoaded": "Loaded contents from \"{{name}}\".",
           "fileReadError": "Could not read the file. Try a UTF-8 .json file or paste manually.",
-          "tabs": { "edit": "Edit", "preview": "Preview" },
+          "tabs": {
+            "edit": "Edit",
+            "preview": "Preview"
+          },
           "format": "Format",
           "formatHint": "Pretty-print JSON (2-space indent).",
           "copy": "Copy JSON",
@@ -765,7 +773,10 @@
           "heading": "Note: content is produced by a third party.",
           "body": "QuizMateAI does not moderate and does not use AI to verify question/answer/explanation quality in this JSON. You are responsible for accuracy and rights."
         },
-        "actions": { "saving": "Saving...", "create": "Create quiz from JSON" },
+        "actions": {
+          "saving": "Saving...",
+          "create": "Create quiz from JSON"
+        },
         "toasts": {
           "success": "Quiz \"{{title}}\" saved as draft!",
           "error": "Could not create quiz from pasted JSON."
@@ -1283,7 +1294,8 @@
               "passed": "Passed"
             }
           }
-        }
+        },
+        "totalQuestions": "Total Questions"
       },
       "communitySignals": {
         "rating": "{{rating}}★ · {{count}} reviews",
@@ -1304,7 +1316,13 @@
         "commentPlaceholder": "Public comment visible to everyone.",
         "commentSuccess": "Community comment sent.",
         "commentError": "Unable to send community comment.",
-        "cloneAction": "Clone to workspace"
+        "cloneAction": "Clone to workspace",
+        "unknownUser": "Unknown User",
+        "reviewNoComment": "Review No Comment",
+        "replyAction": "Reply Action",
+        "replyPlaceholder": "Reply Placeholder",
+        "cancelReply": "Cancel Reply",
+        "sendReply": "Send Reply"
       },
       "communityFeedback": {
         "title": "Community quiz feedback",
@@ -1513,7 +1531,10 @@
         "structureQuantity": "Quantity",
         "materialFallback": "Material #{{id}}",
         "questionTypeFallback": "Type #{{id}}",
-        "bloomFallback": "Bloom #{{id}}"
+        "bloomFallback": "Bloom #{{id}}",
+        "outputLanguage": "Output Language",
+        "materialsLoading": "Materials Loading",
+        "loadingMaterials": "Loading Materials"
       },
       "detail": {
         "edit": "Edit",
@@ -1550,7 +1571,16 @@
           "tooltip": "Create a fresh draft copy (without distribution or attempt history) so you can edit it",
           "toastSuccess": "Quiz duplicated to a new MANUAL draft. You can edit it now.",
           "toastError": "Failed to duplicate the quiz."
-        }
+        },
+        "reviewHintChallengeReviewer": "Review Hint Challenge Reviewer",
+        "reviewHintChallengeLeader": "Review Hint Challenge Leader",
+        "reviewHintGroupQuizDraft": "Review Hint Group Quiz Draft",
+        "questionDeletionLogTitle": "Question Deletion Log Title",
+        "questionDeletionLogHint": "Question Deletion Log Hint",
+        "questionDeletionLogReason": "Lý do: {{note}}",
+        "convertToFlashcardOnceHint": "Convert To Flashcard Once Hint",
+        "convertToFlashcard": "Convert To Flashcard",
+        "shuffleUpdateFailed": "Shuffle Update Failed"
       },
       "edit": {
         "title": "Edit Quiz",
@@ -1580,7 +1610,8 @@
         "durationPlaceholder": "30",
         "nameRequired": "Quiz name is required.",
         "durationMin": "Time must be at least 1 minute.",
-        "saveFailed": "Something went wrong while updating the quiz."
+        "saveFailed": "Something went wrong while updating the quiz.",
+        "title": "Update quiz information"
       },
       "create": "Create Quiz",
       "createActive": "Create & Activate",
@@ -1839,13 +1870,17 @@
         "recommendedCount": "{{count}} recommended",
         "searchPlaceholder": "Search community quizzes...",
         "title": "Community Quiz",
-        "topMatch": "Top Match"
+        "topMatch": "Top Match",
+        "hiddenTitle": "Hidden Title",
+        "hiddenDescription": "Hidden Description"
       },
       "deleteConfirm": "Are you sure you want to delete this quiz? This action cannot be undone.",
       "history": {
         "attempt": "Attempt",
         "empty": "No attempt history yet.",
-        "loading": "Loading history..."
+        "loading": "Loading history...",
+        "viewAttempts": "View Attempts",
+        "latestAttempt": "Latest Attempt"
       },
       "startExamPrompt": "Start test mode for this quiz?",
       "tabs": {
@@ -1890,7 +1925,79 @@
         "noAnswerSelected": "No answer selected",
         "correct": "Correct!",
         "incorrect": "Incorrect"
-      }
+      },
+      "reviewBan": {
+        "bannedBadge": "Banned Badge",
+        "noteTooShort": "Note Too Short",
+        "submitFailed": "Submit Failed",
+        "button": "Button",
+        "dialogTitle": "Dialog Title",
+        "dialogDescription": "Dialog Description",
+        "targetLabel": "Target Label",
+        "noteLabel": "Note Label",
+        "notePlaceholder": "Note Placeholder",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "planGate": {
+        "structureTitleFallback": "Structure Title Fallback",
+        "title": "Title",
+        "structureDescriptionFallback": "Structure Description Fallback",
+        "structureMeta": "Structure Meta",
+        "upgradeAction": "Upgrade Action",
+        "vipBadge": "Vip Badge",
+        "meta": "Meta",
+        "inlineHintWithPlan": "Các loại bên dưới cần gói ${advancedQuizRequiredPlanName}.",
+        "inlineHintFallback": "Inline Hint Fallback",
+        "lockedGroupTitleWithPlan": "Cần gói ${advancedQuizRequiredPlanName}",
+        "lockedGroupTitleFallback": "Locked Group Title Fallback",
+        "structureTitleWithPlan": "Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName}",
+        "structureDescriptionWithCurrentPlan": "Cấu trúc quiz không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "structureDescriptionWithRequiredPlan": "Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionWithCurrentPlan": "Nhóm loại câu hỏi nâng cao không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionWithRequiredPlan": "Nhóm loại câu hỏi nâng cao cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionFallback": "Nhóm loại câu hỏi nâng cao cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng."
+      },
+      "reviewConcern": {
+        "noteTooShort": "Note Too Short",
+        "submitFailed": "Submit Failed",
+        "autoTitle": "Auto Title",
+        "activeTitle": "Active Title",
+        "autoHint": "Auto Hint",
+        "activeHint": "Active Hint",
+        "withdraw": "Withdraw",
+        "raiseButton": "Raise Button",
+        "dialogTitle": "Dialog Title",
+        "dialogDescription": "Dialog Description",
+        "noteLabel": "Note Label",
+        "notePlaceholder": "Note Placeholder",
+        "cancel": "Cancel",
+        "submit": "Submit"
+      },
+      "deletionAuditPanel": {
+        "title": "Title",
+        "totalDeleted": "Total Deleted",
+        "percentDeleted": "Percent Deleted",
+        "overThreshold": "Over Threshold",
+        "reason": "Reason"
+      },
+      "reviewDeleteQuestion": "Review Delete Question",
+      "reviewQuizOkTitle": "Review Quiz Ok Title",
+      "reviewQuizOkHint": "Review Quiz Ok Hint",
+      "reviewQuizOkDoneAt": "Review Quiz Ok Done At",
+      "reviewQuizOkButton": "Review Quiz Ok Button",
+      "reviewQuizOkConfirmTitle": "Review Quiz Ok Confirm Title",
+      "reviewQuizOkConfirmDescription": "Review Quiz Ok Confirm Description",
+      "reviewQuizOkConfirmCancel": "Review Quiz Ok Confirm Cancel",
+      "reviewQuizOkConfirmSubmit": "Review Quiz Ok Confirm Submit",
+      "reviewDeleteQuestionConfirmDescriptionChallenge": "Câu hỏi sẽ bị xóa khỏi đề challenge. Hãy ghi chú lý do để leader / co-reviewer biết.",
+      "reviewDeleteQuestionConfirmDescriptionQuiz": "Câu hỏi sẽ bị xóa khỏi quiz nhóm (bản nháp). Hãy ghi lý do để leader và thành viên phối hợp theo dõi.",
+      "reviewDeleteQuestionNoteLabel": "Review Delete Question Note Label",
+      "reviewDeleteQuestionNotePlaceholder": "Review Delete Question Note Placeholder",
+      "reviewDeleteQuestionConfirmCancel": "Review Delete Question Confirm Cancel",
+      "reviewDeleteQuestionConfirmSubmit": "Review Delete Question Confirm Submit",
+      "questionImageAlt": "Question Image Alt",
+      "review": "Review"
     },
     "flashcard": {
       "createTitle": "Create Flashcard",
@@ -2113,7 +2220,24 @@
           "showBack": "Show back first",
           "reshuffle": "Reshuffle"
         }
-      }
+      },
+      "deleteFailed": "Delete Failed",
+      "audience": {
+        "selectedMembers": "Selected Members",
+        "allMembers": "All Members",
+        "selectMemberRequired": "Select Member Required",
+        "saveFailed": "Save Failed",
+        "noMembers": "No Members"
+      },
+      "publishConfirm": "Publish Confirm",
+      "setDraftConfirm": "Set Draft Confirm",
+      "activateConfirm": "Activate Confirm",
+      "deactivateConfirm": "Deactivate Confirm",
+      "publish": "Publish",
+      "distribution": "Distribution",
+      "tapToFlip": "Tap To Flip",
+      "itemsList": "Items List",
+      "processing": "Processing"
     },
     "phase": {
       "fallbackName": "Phase #{{id}}"
@@ -2286,7 +2410,15 @@
         "postLearningLocked": "Complete all knowledge quizzes to unlock post-learning",
         "postLearningProgress": "{{completed}} / {{total}} knowledge quizzes completed",
         "postLearningSubtitle": "Final assessment for this phase",
-        "fullscreen": "Fullscreen"
+        "fullscreen": "Fullscreen",
+        "phaseLockedTitle": "Phase Locked Title",
+        "phaseLockedDesc": "Phase Locked Desc",
+        "unlockingPhaseBtn": "Unlocking Phase Btn",
+        "unlockPhaseBtn": "Unlock Phase Btn",
+        "prevPhase": "Prev Phase",
+        "nextPhase": "Next Phase",
+        "prevKnowledge": "Prev Knowledge",
+        "nextKnowledge": "Next Knowledge"
       },
       "doubleClickToRename": "Double-click to rename",
       "noMockTestYet": "No mock test created yet.",
@@ -2340,7 +2472,17 @@
       "postLearningLocked": "Please complete all knowledge items in this phase to unlock post-learning.",
       "postLearningUnlockProgress": "Knowledge progress to unlock: {{completed}}/{{total}}",
       "postLearningProgress": "Post Learning Progress",
-      "preLearningHelper": "Pre Learning Helper"
+      "preLearningHelper": "Pre Learning Helper",
+      "phaseUnlockFailed": "Phase Unlock Failed",
+      "groupPreLearning": {
+        "questionCount": "Question Count",
+        "create": "Create",
+        "generating": "Generating",
+        "empty": "Empty",
+        "started": "Started",
+        "failed": "Failed"
+      },
+      "editConfig": "Edit Config"
     },
     "mockTest": {
       "title": "Mock Test",
@@ -2463,7 +2605,8 @@
       "uploadProgress": {
         "uploading": "Uploading",
         "processing": "AI is analyzing",
-        "finalizing": "Finalizing"
+        "finalizing": "Finalizing",
+        "rejectionNotice": "Rejection Notice"
       },
       "renameHint": "Update the source name shown across the workspace.",
       "renamePlaceholder": "New source name",
@@ -2635,6 +2778,20 @@
         "showAll": "Show all knowledge items",
         "of": "of",
         "phaseNext": "Next"
+      },
+      "roadmapSetupTitle": "Roadmap Setup Title",
+      "roadmapSetupHint": "Roadmap Setup Hint"
+    },
+    "settings": {
+      "reviewBans": {
+        "unbanFailed": "Unban Failed",
+        "tabTitle": "Tab Title",
+        "description": "Description",
+        "empty": "Empty",
+        "bannedAt": "Banned At",
+        "by": "By",
+        "relatedQuiz": "Related Quiz",
+        "unban": "Unban"
       }
     }
   },
@@ -3299,7 +3456,17 @@
     "setupConfirmDescription": "Are you sure you want to save this roadmap configuration for this workspace?",
     "updateExistingConfirmDescription": "If you update these values, the roadmap currently in use will be removed. Are you sure you want to update the roadmap information?",
     "updateConfirmDescription": "Are you sure you want to update the roadmap information?",
-    "saveFailed": "Save failed. Please try again."
+    "saveFailed": "Save failed. Please try again.",
+    "suggestButton": "Suggest Button",
+    "suggesting": "Suggesting",
+    "suggestInvalid": "Suggest Invalid",
+    "suggestFailed": "Suggest Failed",
+    "suggestTitle": "Suggest Title",
+    "suggestDescription": "Suggest Description",
+    "suggestRationaleLabel": "Suggest Rationale Label",
+    "preLearningRequired": "Pre Learning Required",
+    "preLearningNotRequired": "Pre Learning Not Required",
+    "suggestRecommendationsLabel": "Suggest Recommendations Label"
   },
   "useWorkspaceProfileWizard": {
     "overallReviewLoadingTitle": "QuizMate AI is performing an overall review",
@@ -3394,7 +3561,9 @@
       "questionTypeMultiple": "Multiple choice",
       "questionTypeTrueFalse": "True / False",
       "close": "Close",
-      "materialRequired": "Please select at least one material."
+      "materialRequired": "Please select at least one material.",
+      "generatedSuccess": "Generated Success",
+      "generateFailed": "Generate Failed"
     },
     "create": {
       "title": "Create Mock Test",
@@ -3483,7 +3652,8 @@
       "saveShort": "Save template",
       "savedShort": "Saved",
       "savingShort": "Saving...",
-      "validationFailed": "Structure is not valid yet."
+      "validationFailed": "Structure is not valid yet.",
+      "limitReached": "Bạn đã đạt giới hạn ${maxTemplates} template. Hãy xoá bớt trước khi lưu thêm."
     },
     "exitConfirm": {
       "title": "Exit the create-mocktest form?",
@@ -3532,7 +3702,8 @@
         "structureQuantityPositive": "Structure #{{index}}: quantity must be greater than 0.",
         "numQuestionsMismatch": "numQuestions = {{num}} does not match total quantity = {{total}}.",
         "sectionLabel": "Section #{{index}}",
-        "totalLeafMismatch": "Total leaf questions = {{total}}, expected {{target}}."
+        "totalLeafMismatch": "Total leaf questions = {{total}}, expected {{target}}.",
+        "questionTypeInvalid": "Question Type Invalid"
       }
     },
     "postLearning": {
@@ -3606,7 +3777,19 @@
     },
     "manualWizard": {
       "questionNavigator": {
-        "jumpTo": "Jump to"
+        "jumpTo": "Jump to",
+        "countLabel": "{{count}}/{{max}} questions",
+        "errorCount": "{{count}} errors",
+        "incompleteCount": "{{count}} incomplete",
+        "all": "All",
+        "incomplete": "Incomplete",
+        "error": "Errors",
+        "emptyQuestion": "(Not filled yet)",
+        "noQuestions": "No questions.",
+        "jumpButton": "Go",
+        "scrollTop": "Top",
+        "addQuestion": "Add question",
+        "importQuestions": "Import from another quiz"
       }
     },
     "communityDetail": {
