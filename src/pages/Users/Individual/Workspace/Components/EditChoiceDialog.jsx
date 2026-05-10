@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Loader2, Copy, FileEdit } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,21 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-/**
- * Dialog cho REQUIRES_DUPLICATE manual quiz — 2 lựa chọn:
- * 1. Chỉ cập nhật metadata (title, description, timerMode, duration)
- * 2. Tạo bản sao để chỉnh sửa toàn bộ
- *
- * Props:
- *  - open, onClose
- *  - onEditMetadata(): chỉnh metadata — dialog tự đóng
- *  - onDuplicate(): duplicate + edit toàn bộ — async, hiển thị loading
- *  - quiz
- *  - isDarkMode
- */
 function EditChoiceDialog({ open, onClose, onEditMetadata, onDuplicate, quiz, isDarkMode = false }) {
+  const { t } = useTranslation();
   const [duplicating, setDuplicating] = useState(false);
-  const quizTitle = quiz?.title || "Quiz";
+  const quizTitle = quiz?.title || t("editChoiceDialog.fallbackTitle");
 
   const handleDuplicate = async () => {
     setDuplicating(true);
@@ -47,7 +37,7 @@ function EditChoiceDialog({ open, onClose, onEditMetadata, onDuplicate, quiz, is
   );
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !duplicating && !v && onClose?.()}>
+    <Dialog open={open} onOpenChange={(value) => !duplicating && !value && onClose?.()}>
       <DialogContent
         className={cn(
           "max-w-md rounded-2xl",
@@ -56,43 +46,37 @@ function EditChoiceDialog({ open, onClose, onEditMetadata, onDuplicate, quiz, is
       >
         <DialogHeader>
           <DialogTitle className={isDarkMode ? "text-slate-100" : "text-slate-900"}>
-            Chỉnh sửa quiz
+            {t("editChoiceDialog.title")}
           </DialogTitle>
           <DialogDescription className={cn("text-sm leading-relaxed mt-1", isDarkMode ? "text-slate-400" : "text-slate-600")}>
-            <span className={cn("font-semibold", isDarkMode ? "text-slate-200" : "text-slate-800")}>
-              &quot;{quizTitle}&quot;
-            </span>{" "}
-            đã có lượt làm hoàn tất. Chọn cách chỉnh sửa:
+            {t("editChoiceDialog.description", { title: quizTitle })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-1">
-          {/* Option 1: metadata-only */}
           <button type="button" onClick={handleMetadata} disabled={duplicating} className={cardBase}>
             <div className="flex items-center gap-2">
               <FileEdit className="w-4 h-4 text-blue-500 shrink-0" />
               <span className={cn("text-sm font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-                Cập nhật thông tin cơ bản
+                {t("editChoiceDialog.metadataTitle")}
               </span>
             </div>
             <p className={cn("text-xs pl-6", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-              Chỉnh tên, mô tả, chế độ tính giờ và thời gian. Lịch sử làm bài giữ nguyên.
+              {t("editChoiceDialog.metadataDescription")}
             </p>
           </button>
 
-          {/* Option 2: duplicate + edit */}
           <button type="button" onClick={handleDuplicate} disabled={duplicating} className={cardBase}>
             <div className="flex items-center gap-2">
               {duplicating
                 ? <Loader2 className="w-4 h-4 text-amber-500 shrink-0 animate-spin" />
-                : <Copy className="w-4 h-4 text-amber-500 shrink-0" />
-              }
+                : <Copy className="w-4 h-4 text-amber-500 shrink-0" />}
               <span className={cn("text-sm font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-                Tạo bản sao để chỉnh sửa toàn bộ
+                {t("editChoiceDialog.duplicateTitle")}
               </span>
             </div>
             <p className={cn("text-xs pl-6", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-              Tạo quiz mới từ quiz này, có thể chỉnh câu hỏi. Quiz gốc và lịch sử giữ nguyên.
+              {t("editChoiceDialog.duplicateDescription")}
             </p>
           </button>
         </div>
@@ -104,7 +88,7 @@ function EditChoiceDialog({ open, onClose, onEditMetadata, onDuplicate, quiz, is
             onClick={() => onClose?.()}
             className={cn("rounded-full", isDarkMode && "border-slate-600 text-slate-200 hover:bg-slate-800")}
           >
-            Hủy
+            {t("editChoiceDialog.cancel")}
           </Button>
         </DialogFooter>
       </DialogContent>

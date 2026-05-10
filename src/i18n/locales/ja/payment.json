@@ -72,7 +72,9 @@
       "method": "方法",
       "grandTotal": "総額",
       "continue": "続ける"
-    }
+    },
+    "methodSectionHint": "Method Section Hint",
+    "bonusCredit": "Tặng ${plan.bonusCreditOnPlanPurchase} credit khi mua gói này"
   },
   "paymentResult": {
     "successTitle": "支払いが成功しました!",

@@ -153,7 +153,12 @@
         "studyNewLockedHint": "Gói hiện tại chưa có quyền tạo roadmap gợi ý, vui lòng nâng cấp để sử dụng tính năng này.",
         "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình gợi ý không?",
         "enableRoadmap": "Có, tạo lộ trình gợi ý kèm theo",
-        "skipRoadmap": "Không cần lộ trình gợi ý, chỉ cấu hình các phần còn lại"
+        "skipRoadmap": "Không cần lộ trình gợi ý, chỉ cấu hình các phần còn lại",
+        "studyNewLockedFeatureNameWithPlan": "Học mới cần gói ${roadmapRequiredPlanName}",
+        "studyNewLockedFeatureNameFallback": "Study New Locked Feature Name Fallback",
+        "studyNewLockedToastTitle": "Study New Locked Toast Title",
+        "upgradeAction": "Upgrade Action",
+        "roadmapDescription": "This option only appears for review and mock-test flows."
       },
       "stepTwo": {
         "title": "Mô tả trạng thái hiện tại của bạn",
@@ -251,7 +256,8 @@
         "mockTemplateAwaitingBackendShort": "Đang xác nhận",
         "backgroundMockTestReady": "Mock test đã được tạo xong ở nền. Bạn có thể mở mục Mock test để xem ngay.",
         "finishSuccess": "Hoàn thành thiết lập Không gian Học tập thành công.",
-        "saveError": "Không thể lưu tiến trình thiết lập Không gian Học tập."
+        "saveError": "Không thể lưu tiến trình thiết lập Không gian Học tập.",
+        "confirmError": "Confirm Error"
       },
       "fields": {
         "workspacePurpose": "Cách học chính",
@@ -389,8 +395,11 @@
         "validMaterialsRequired": "Bạn đang chọn sử dụng Lộ trình để học tập nên cần tải lên ít nhất một tài liệu hợp lệ và bám đúng kiến thức trước khi sang bước 4.",
         "targetScoreRequired": "Vui lòng nhập hoặc chọn điểm mục tiêu.",
         "targetScoreScaleRequired": "Vui lòng nhập thang điểm cho kỳ thi private.",
-        "expectedExamDateRequired": "Vui lòng chọn ngày thi dự kiến."
-      }
+        "expectedExamDateRequired": "Vui lòng chọn ngày thi dự kiến.",
+        "waitForAi": "Please wait for AI to finish analyzing your knowledge.",
+        "domainRequired": "Please confirm the domain inferred by AI."
+      },
+      "editDesc": "Move step by step to define your learning intent, knowledge focus, goals, and roadmap or mock-test setup."
     },
     "sources": {
       "title": "Tài liệu",
@@ -671,7 +680,10 @@
           "uploadTitle": "Chọn tệp .json trên máy",
           "fileLoaded": "Đã tải nội dung từ \"{{name}}\".",
           "fileReadError": "Không đọc được tệp. Hãy thử tệp .json UTF-8 hoặc dán nội dung thủ công.",
-          "tabs": { "edit": "Soạn thảo", "preview": "Xem trước" },
+          "tabs": {
+            "edit": "Soạn thảo",
+            "preview": "Xem trước"
+          },
           "format": "Định dạng",
           "formatHint": "Định dạng theo chuẩn JSON (thụt 2 dấu cách).",
           "copy": "Copy JSON",
@@ -762,7 +774,10 @@
           "heading": "Lưu ý: nội dung do bên thứ 3 sinh ra.",
           "body": "QuizMateAI KHÔNG kiểm duyệt và KHÔNG dùng AI để xác minh chất lượng câu hỏi/đáp án/giải thích trong JSON này. Bạn chịu trách nhiệm về tính chính xác và bản quyền của nội dung."
         },
-        "actions": { "saving": "Đang lưu...", "create": "Tạo quiz từ JSON" },
+        "actions": {
+          "saving": "Đang lưu...",
+          "create": "Tạo quiz từ JSON"
+        },
         "toasts": {
           "success": "Đã tạo quiz \"{{title}}\" ở trạng thái bản nháp!",
           "error": "Có lỗi khi tạo quiz từ JSON đã dán."
@@ -1097,7 +1112,8 @@
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
         "trueFalse": "Đúng / Sai",
         "fillBlank": "Điền chỗ trống",
-        "shortAnswer": "Trả lời ngắn"
+        "shortAnswer": "Trả lời ngắn",
+        "matching": "Matching"
       },
       "difficulty": "Độ khó",
       "difficultyLevels": {
@@ -1273,7 +1289,8 @@
               "passed": "Đã đậu"
             }
           }
-        }
+        },
+        "totalQuestions": "Total Questions"
       },
       "communitySignals": {
         "rating": "{{rating}}★ · {{count}} đánh giá",
@@ -1294,7 +1311,13 @@
         "commentPlaceholder": "Bình luận công khai để mọi người cùng thấy.",
         "commentSuccess": "Đã gửi bình luận community.",
         "commentError": "Không thể gửi bình luận community.",
-        "cloneAction": "Clone vào workspace"
+        "cloneAction": "Clone vào workspace",
+        "unknownUser": "Unknown User",
+        "reviewNoComment": "Review No Comment",
+        "replyAction": "Reply Action",
+        "replyPlaceholder": "Reply Placeholder",
+        "cancelReply": "Cancel Reply",
+        "sendReply": "Send Reply"
       },
       "communityFeedback": {
         "title": "Đánh giá quiz community",
@@ -1315,7 +1338,9 @@
         "recommendedCount": "{{count}} quiz được đề xuất",
         "searchPlaceholder": "Tìm quiz cộng đồng...",
         "title": "Quiz Community",
-        "topMatch": "Khớp nhất"
+        "topMatch": "Khớp nhất",
+        "hiddenTitle": "Hidden Title",
+        "hiddenDescription": "Hidden Description"
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
@@ -1515,7 +1540,10 @@
         "structureQuantity": "Số câu",
         "materialFallback": "Tài liệu #{{id}}",
         "questionTypeFallback": "Loại #{{id}}",
-        "bloomFallback": "Bloom #{{id}}"
+        "bloomFallback": "Bloom #{{id}}",
+        "outputLanguage": "Output Language",
+        "materialsLoading": "Materials Loading",
+        "loadingMaterials": "Loading Materials"
       },
       "detail": {
         "edit": "Chỉnh sửa",
@@ -1552,7 +1580,16 @@
           "tooltip": "Tạo bản nháp sao chép (không kèm phân phối và lịch sử làm bài) để chỉnh sửa",
           "toastSuccess": "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
           "toastError": "Không thể sao chép quiz."
-        }
+        },
+        "reviewHintChallengeReviewer": "Review Hint Challenge Reviewer",
+        "reviewHintChallengeLeader": "Review Hint Challenge Leader",
+        "reviewHintGroupQuizDraft": "Review Hint Group Quiz Draft",
+        "questionDeletionLogTitle": "Question Deletion Log Title",
+        "questionDeletionLogHint": "Question Deletion Log Hint",
+        "questionDeletionLogReason": "Lý do: {{note}}",
+        "convertToFlashcardOnceHint": "Convert To Flashcard Once Hint",
+        "convertToFlashcard": "Convert To Flashcard",
+        "shuffleUpdateFailed": "Shuffle Update Failed"
       },
       "edit": {
         "title": "Chỉnh sửa Quiz",
@@ -1566,7 +1603,9 @@
         "saving": "Đang lưu...",
         "cancel": "Hủy",
         "saveSuccess": "Cập nhật quiz thành công!",
-        "saveFailed": "Lưu quiz thất bại. Vui lòng thử lại."
+        "saveFailed": "Lưu quiz thất bại. Vui lòng thử lại.",
+        "questionOption": "Question Option",
+        "selectQuestion": "Select Question"
       },
       "metadataEditModal": {
         "nameLabel": "Tên quiz",
@@ -1580,7 +1619,8 @@
         "durationPlaceholder": "30",
         "nameRequired": "Tên quiz không được để trống.",
         "durationMin": "Thời gian phải ít nhất 1 phút.",
-        "saveFailed": "Có lỗi khi cập nhật quiz."
+        "saveFailed": "Có lỗi khi cập nhật quiz.",
+        "title": "C?p nh?t th?ng tin quiz"
       },
       "create": "Tạo Quiz",
       "createActive": "Tạo & Kích hoạt",
@@ -1634,7 +1674,9 @@
         "confirmBackTitle": "Bạn có chắc chắn không?",
         "confirmBackDescription": "Tiến độ chưa lưu có thể bị mất.",
         "cancel": "Hủy",
-        "confirm": "Xác nhận"
+        "confirm": "Xác nhận",
+        "sessionLabel": "Quiz session",
+        "font": "Change font"
       },
       "pagination": {
         "prev": "Trang trước",
@@ -1811,7 +1853,10 @@
         "unavailable": "Hiện chưa lấy được kết quả bài làm này. Vui lòng thử lại.",
         "waitingForResult": "Đang chờ hệ thống trả kết quả bài làm...",
         "weaknesses": "Cần củng cố",
-        "wrong": "Sai"
+        "wrong": "Sai",
+        "nextQuizPlan": "Next Quiz Plan",
+        "recurringMistakes": "Recurring Mistakes",
+        "unknownTopic": "Unknown Topic"
       },
       "answerLocked": "Hoàn thành bài quiz để xem đáp án và lời giải.",
       "close": "Đóng",
@@ -1863,13 +1908,96 @@
       "history": {
         "attempt": "Lần làm",
         "empty": "Chưa có lịch sử làm bài.",
-        "loading": "Đang tải lịch sử..."
+        "loading": "Đang tải lịch sử...",
+        "viewAttempts": "View Attempts",
+        "latestAttempt": "Latest Attempt"
       },
       "tabs": {
         "overview": "Tổng quan",
         "review": "Kiểm tra",
         "questions": "Câu hỏi",
         "history": "Lịch sử làm bài"
+      },
+      "reviewBan": {
+        "bannedBadge": "Banned Badge",
+        "noteTooShort": "Note Too Short",
+        "submitFailed": "Submit Failed",
+        "button": "Button",
+        "dialogTitle": "Dialog Title",
+        "dialogDescription": "Dialog Description",
+        "targetLabel": "Target Label",
+        "noteLabel": "Note Label",
+        "notePlaceholder": "Note Placeholder",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "planGate": {
+        "structureTitleFallback": "Structure Title Fallback",
+        "title": "Title",
+        "structureDescriptionFallback": "Structure Description Fallback",
+        "structureMeta": "Structure Meta",
+        "upgradeAction": "Upgrade Action",
+        "vipBadge": "Vip Badge",
+        "meta": "Meta",
+        "inlineHintWithPlan": "Các loại bên dưới cần gói ${advancedQuizRequiredPlanName}.",
+        "inlineHintFallback": "Inline Hint Fallback",
+        "lockedGroupTitleWithPlan": "Cần gói ${advancedQuizRequiredPlanName}",
+        "lockedGroupTitleFallback": "Locked Group Title Fallback",
+        "structureTitleWithPlan": "Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName}",
+        "structureDescriptionWithCurrentPlan": "Cấu trúc quiz không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "structureDescriptionWithRequiredPlan": "Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionWithCurrentPlan": "Nhóm loại câu hỏi nâng cao không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionWithRequiredPlan": "Nhóm loại câu hỏi nâng cao cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionFallback": "Nhóm loại câu hỏi nâng cao cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng."
+      },
+      "reviewConcern": {
+        "noteTooShort": "Note Too Short",
+        "submitFailed": "Submit Failed",
+        "autoTitle": "Auto Title",
+        "activeTitle": "Active Title",
+        "autoHint": "Auto Hint",
+        "activeHint": "Active Hint",
+        "withdraw": "Withdraw",
+        "raiseButton": "Raise Button",
+        "dialogTitle": "Dialog Title",
+        "dialogDescription": "Dialog Description",
+        "noteLabel": "Note Label",
+        "notePlaceholder": "Note Placeholder",
+        "cancel": "Cancel",
+        "submit": "Submit"
+      },
+      "deletionAuditPanel": {
+        "title": "Title",
+        "totalDeleted": "Total Deleted",
+        "percentDeleted": "Percent Deleted",
+        "overThreshold": "Over Threshold",
+        "reason": "Reason"
+      },
+      "reviewDeleteQuestion": "Review Delete Question",
+      "reviewQuizOkTitle": "Review Quiz Ok Title",
+      "reviewQuizOkHint": "Review Quiz Ok Hint",
+      "reviewQuizOkDoneAt": "Review Quiz Ok Done At",
+      "reviewQuizOkButton": "Review Quiz Ok Button",
+      "reviewQuizOkConfirmTitle": "Review Quiz Ok Confirm Title",
+      "reviewQuizOkConfirmDescription": "Review Quiz Ok Confirm Description",
+      "reviewQuizOkConfirmCancel": "Review Quiz Ok Confirm Cancel",
+      "reviewQuizOkConfirmSubmit": "Review Quiz Ok Confirm Submit",
+      "reviewDeleteQuestionConfirmDescriptionChallenge": "Câu hỏi sẽ bị xóa khỏi đề challenge. Hãy ghi chú lý do để leader / co-reviewer biết.",
+      "reviewDeleteQuestionConfirmDescriptionQuiz": "Câu hỏi sẽ bị xóa khỏi quiz nhóm (bản nháp). Hãy ghi lý do để leader và thành viên phối hợp theo dõi.",
+      "reviewDeleteQuestionNoteLabel": "Review Delete Question Note Label",
+      "reviewDeleteQuestionNotePlaceholder": "Review Delete Question Note Placeholder",
+      "reviewDeleteQuestionConfirmCancel": "Review Delete Question Confirm Cancel",
+      "reviewDeleteQuestionConfirmSubmit": "Review Delete Question Confirm Submit",
+      "questionImageAlt": "Question Image Alt",
+      "review": "Review",
+      "processingProgressLabel": "Creating quiz",
+      "processingProgressHint": "The system is generating questions and configuring the quiz.",
+      "cardQuestionUnit": "questions",
+      "cardAiLabel": "AI",
+      "cardManualLabel": "Manual Quiz",
+      "cardResultLabel": "Result",
+      "common": {
+        "cancel": "Cancel"
       }
     },
     "flashcard": {
@@ -1898,7 +2026,17 @@
         "byCount": "Theo số lượng",
         "byPercent": "Theo phần trăm",
         "singleMaterialHint": "Chỉ được chọn 1 tài liệu để tạo flashcard.",
-        "selectedSingleMaterialCount": "{{count}}/1 tài liệu đã được chọn."
+        "selectedSingleMaterialCount": "{{count}}/1 tài liệu đã được chọn.",
+        "clozePercent": "Cloze Percent",
+        "distributionInvalid": "Distribution is invalid",
+        "distributionTitle": "Flashcard type distribution",
+        "distributionValid": "{{sum}}/{{target}} {{unit}}",
+        "imagePercent": "Image Percent",
+        "lockLimitHint": "Lock up to {{count}} card types. The remaining types will auto-balance.",
+        "noActiveSelectedMaterials": "No Active Selected Materials",
+        "nonActiveMaterialsWarning": "Non Active Materials Warning",
+        "qaPercent": "Qa Percent",
+        "termPercent": "Term Percent"
       },
       "create": "Tạo Flashcard",
       "listSearchPlaceholder": "Tìm flashcard (tên bộ hoặc nội dung thẻ)...",
@@ -2082,7 +2220,25 @@
           "showBack": "Hiện mặt sau trước",
           "reshuffle": "Trộn lại"
         }
-      }
+      },
+      "deleteFailed": "Delete Failed",
+      "audience": {
+        "selectedMembers": "Selected Members",
+        "allMembers": "All Members",
+        "selectMemberRequired": "Select Member Required",
+        "saveFailed": "Save Failed",
+        "noMembers": "No Members"
+      },
+      "publishConfirm": "Publish Confirm",
+      "setDraftConfirm": "Set Draft Confirm",
+      "activateConfirm": "Activate Confirm",
+      "deactivateConfirm": "Deactivate Confirm",
+      "publish": "Publish",
+      "distribution": "Distribution",
+      "tapToFlip": "Tap To Flip",
+      "itemsList": "Items List",
+      "processing": "Processing",
+      "aiOnlyHint": "Ai Only Hint"
     },
     "phase": {
       "fallbackName": "Giai đoạn #{{id}}"
@@ -2257,7 +2413,15 @@
         "postLearningLocked": "Hoàn thành toàn bộ quiz kiến thức để mở bài đánh giá sau học",
         "postLearningProgress": "{{completed}} / {{total}} quiz kiến thức đã hoàn thành",
         "postLearningSubtitle": "Bài đánh giá cuối cho giai đoạn này",
-        "fullscreen": "Toàn màn hình"
+        "fullscreen": "Toàn màn hình",
+        "phaseLockedTitle": "Phase Locked Title",
+        "phaseLockedDesc": "Phase Locked Desc",
+        "unlockingPhaseBtn": "Unlocking Phase Btn",
+        "unlockPhaseBtn": "Unlock Phase Btn",
+        "prevPhase": "Prev Phase",
+        "nextPhase": "Next Phase",
+        "prevKnowledge": "Prev Knowledge",
+        "nextKnowledge": "Next Knowledge"
       },
       "doubleClickToRename": "Nhấp đúp để đổi tên",
       "noMockTestYet": "Chưa có mock test nào.",
@@ -2283,7 +2447,43 @@
         "clearAll": "Bỏ chọn hết",
         "selectAll": "Chọn tất cả",
         "untitled": "Tài liệu chưa có tên"
-      }
+      },
+      "phaseUnlockFailed": "Phase Unlock Failed",
+      "groupPreLearning": {
+        "questionCount": "Question Count",
+        "create": "Create",
+        "generating": "Generating",
+        "empty": "Empty",
+        "started": "Started",
+        "failed": "Failed"
+      },
+      "editConfig": "Edit Config",
+      "aiSuggestTitle": "Ai Suggest Title",
+      "createKnowledgeAndPostLearning": "Create Knowledge And Post Learning",
+      "generatingKnowledge": "Generating Knowledge",
+      "generatingKnowledgeQuiz": "Generating Knowledge Quiz",
+      "generatingPostLearning": "Generating Post Learning",
+      "generatingPreLearning": "Generating Pre Learning",
+      "nextStepTitle": "Next Step Title",
+      "noRoadmapYet": "No Roadmap Yet",
+      "phaseAiSuggestTitle": "Phase Ai Suggest Title",
+      "phaseDescriptionDropdown": "Phase Description Dropdown",
+      "phaseDialog": {
+        "createButton": "Create Button",
+        "creating": "Creating",
+        "description": "Description",
+        "existingMaterials": "Existing Materials",
+        "noMaterialYet": "No Material Yet",
+        "onlyActive": "Only Active",
+        "selectionCount": "Selection Count",
+        "title": "Title"
+      },
+      "phaseReviewAssessedAt": "Đánh giá lúc",
+      "phaseReviewSummaryDropdown": "Phase Review Summary Dropdown",
+      "phaseReviewTitle": "Đánh giá AI cho phase hiện tại",
+      "postLearningHelper": "Post Learning Helper",
+      "postLearningProgress": "Post Learning Progress",
+      "preLearningHelper": "Pre Learning Helper"
     },
     "mockTest": {
       "title": "Mock Test",
@@ -2406,7 +2606,8 @@
       "uploadProgress": {
         "uploading": "Đang tải lên",
         "processing": "Quimzate AI đang phân tích",
-        "finalizing": "Đang hoàn tất"
+        "finalizing": "Đang hoàn tất",
+        "rejectionNotice": "Rejection Notice"
       },
       "renameHint": "Đổi tên nguồn hiển thị trong workspace.",
       "renamePlaceholder": "Tên nguồn mới",
@@ -2578,6 +2779,20 @@
         "showAll": "Hiển thị tất cả kiến thức",
         "of": "trên",
         "phaseNext": "Tiếp theo"
+      },
+      "roadmapSetupTitle": "Roadmap Setup Title",
+      "roadmapSetupHint": "Roadmap Setup Hint"
+    },
+    "settings": {
+      "reviewBans": {
+        "unbanFailed": "Unban Failed",
+        "tabTitle": "Tab Title",
+        "description": "Description",
+        "empty": "Empty",
+        "bannedAt": "Banned At",
+        "by": "By",
+        "relatedQuiz": "Related Quiz",
+        "unban": "Unban"
       }
     }
   },
@@ -3242,7 +3457,17 @@
     "setupConfirmDescription": "Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho workspace này không?",
     "updateExistingConfirmDescription": "Nếu cập nhật, lộ trình đang sử dụng sẽ bị mất đi. Bạn chắc chắn với quyết định cập nhật thông tin lộ trình không?",
     "updateConfirmDescription": "Bạn có chắc chắn muốn cập nhật thông tin lộ trình không?",
-    "saveFailed": "Lưu thất bại. Vui lòng thử lại."
+    "saveFailed": "Lưu thất bại. Vui lòng thử lại.",
+    "suggestButton": "Suggest Button",
+    "suggesting": "Suggesting",
+    "suggestInvalid": "Suggest Invalid",
+    "suggestFailed": "Suggest Failed",
+    "suggestTitle": "Suggest Title",
+    "suggestDescription": "Suggest Description",
+    "suggestRationaleLabel": "Suggest Rationale Label",
+    "preLearningRequired": "Pre Learning Required",
+    "preLearningNotRequired": "Pre Learning Not Required",
+    "suggestRecommendationsLabel": "Suggest Recommendations Label"
   },
   "useWorkspaceProfileWizard": {
     "overallReviewLoadingTitle": "QuizMate AI đang đánh giá tổng quan",
@@ -3337,7 +3562,9 @@
       "questionTypeMultiple": "Nhiều đáp án",
       "questionTypeTrueFalse": "Đúng / Sai",
       "close": "Đóng",
-      "materialRequired": "Vui lòng chọn ít nhất một tài liệu."
+      "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
+      "generatedSuccess": "Generated Success",
+      "generateFailed": "Generate Failed"
     },
     "create": {
       "title": "Tạo Mock Test",
@@ -3426,7 +3653,8 @@
       "saveShort": "Lưu template",
       "savedShort": "Đã lưu",
       "savingShort": "Đang lưu...",
-      "validationFailed": "Cấu trúc chưa hợp lệ."
+      "validationFailed": "Cấu trúc chưa hợp lệ.",
+      "limitReached": "Bạn đã đạt giới hạn ${maxTemplates} template. Hãy xoá bớt trước khi lưu thêm."
     },
     "exitConfirm": {
       "title": "Thoát khỏi form tạo mocktest?",
@@ -3475,7 +3703,8 @@
         "structureQuantityPositive": "Structure #{{index}}: số lượng phải lớn hơn 0.",
         "numQuestionsMismatch": "numQuestions = {{num}} không khớp với tổng quantity = {{total}}.",
         "sectionLabel": "Section #{{index}}",
-        "totalLeafMismatch": "Tổng số câu leaf = {{total}}, cần đúng {{target}}."
+        "totalLeafMismatch": "Tổng số câu leaf = {{total}}, cần đúng {{target}}.",
+        "questionTypeInvalid": "Question Type Invalid"
       }
     },
     "postLearning": {
@@ -3549,7 +3778,19 @@
     },
     "manualWizard": {
       "questionNavigator": {
-        "jumpTo": "Đi tới"
+        "jumpTo": "Đi tới",
+        "countLabel": "{{count}}/{{max}} c?u",
+        "errorCount": "{{count}} l?i",
+        "incompleteCount": "{{count}} ch?a xong",
+        "all": "T?t c?",
+        "incomplete": "Ch?a xong",
+        "error": "L?i",
+        "emptyQuestion": "(Ch?a nh?p)",
+        "noQuestions": "Kh?ng c? c?u n?o.",
+        "jumpButton": "??n",
+        "scrollTop": "L?n ??u",
+        "addQuestion": "Th?m c?u",
+        "importQuestions": "Nh?p t? quiz kh?c"
       }
     },
     "communityDetail": {

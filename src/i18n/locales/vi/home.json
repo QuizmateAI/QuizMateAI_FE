@@ -211,7 +211,13 @@
       "logout": "Đăng xuất",
       "lastLogin": "Lần đăng nhập gần nhất",
       "privacyPolicy": "Chính sách quyền riêng tư",
-      "termsOfService": "Điều khoản dịch vụ"
+      "termsOfService": "Điều khoản dịch vụ",
+      "materialRequired": "Please select at least one material."
+    },
+    "group": {
+      "memberSeatLimitReached": "Nhóm đã dùng hết ${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit}/${normalizedMemberSeatLimit} slot thành viên.",
+      "memberSeatLimitRemaining": "Còn ${Number.isFinite(normalizedMemberSeatRemaining) ? normalizedMemberSeatRemaining : 0} slot trong tổng ${normalizedMemberSeatLimit} slot thành viên.",
+      "created": "Created"
     }
   }
 }

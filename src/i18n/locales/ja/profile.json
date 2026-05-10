@@ -109,6 +109,15 @@
         "apiAccess": "開発者向け API アクセス",
         "customBranding": "カスタムブランディング"
       }
-    }
+    },
+    "hero": {
+      "thisYear": "This Year",
+      "completedQuizzes": "Completed Quizzes",
+      "credit": "Credit",
+      "lastLogin": "Last Login",
+      "profileSeason": "Profile Season",
+      "verified": "Verified"
+    },
+    "avatarUpload": "Avatar Upload"
   }
 }

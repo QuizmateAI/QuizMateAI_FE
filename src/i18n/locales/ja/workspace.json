@@ -155,7 +155,11 @@
         "roadmapQuestion": "AI に推奨ロードマップも生成してもらいますか?",
         "roadmapDescription": "このオプションは復習および模擬試験フローのみで表示されます。",
         "enableRoadmap": "はい、推奨ロードマップを含める",
-        "skipRoadmap": "推奨ロードマップなし、残りのセットアップのみ"
+        "skipRoadmap": "推奨ロードマップなし、残りのセットアップのみ",
+        "studyNewLockedFeatureNameWithPlan": "Học mới cần gói ${roadmapRequiredPlanName}",
+        "studyNewLockedFeatureNameFallback": "Study New Locked Feature Name Fallback",
+        "studyNewLockedToastTitle": "Study New Locked Toast Title",
+        "upgradeAction": "Upgrade Action"
       },
       "stepTwo": {
         "title": "現在の状態を記述",
@@ -253,7 +257,8 @@
         "mockTemplateAwaitingBackendShort": "確認中",
         "backgroundMockTestReady": "模擬試験がバックグラウンドで完了しました。模擬試験を開いて今すぐレビューできます。",
         "finishSuccess": "ワークスペースセットアップが正常に完了しました。",
-        "saveError": "ワークスペースセットアップの進捗を保存できません。"
+        "saveError": "ワークスペースセットアップの進捗を保存できません。",
+        "confirmError": "Confirm Error"
       },
       "fields": {
         "workspacePurpose": "主要学習モード",
@@ -646,7 +651,8 @@
       "confirmBack": "戻る",
       "confirmContinue": "アップロードを続ける",
       "confirmSummaryTitle": "アップロードされるアイテム",
-      "confirmUrlSummary": "処理されるリンク"
+      "confirmUrlSummary": "処理されるリンク",
+      "fileTooLarge": "Uploaded document exceeds 200MB"
     },
     "quiz": {
       "createTitle": "クイズを作成",
@@ -673,7 +679,10 @@
           "uploadTitle": "端末から.jsonを選択",
           "fileLoaded": "「{{name}}」から読み込みました。",
           "fileReadError": "ファイルを読めませんでした。UTF-8の.jsonを試すか、手動で貼り付けてください。",
-          "tabs": { "edit": "編集", "preview": "プレビュー" },
+          "tabs": {
+            "edit": "編集",
+            "preview": "プレビュー"
+          },
           "format": "整形",
           "formatHint": "JSONを整形（2スペース）。",
           "copy": "JSONをコピー",
@@ -764,7 +773,10 @@
           "heading": "注意: 第三者が生成したコンテンツです。",
           "body": "QuizMateAIはモデレーションせず、このJSONの設問・解答・解説の品質をAIで検証しません。正確性と権利は利用者の責任です。"
         },
-        "actions": { "saving": "保存中...", "create": "JSONからクイズを作成" },
+        "actions": {
+          "saving": "保存中...",
+          "create": "JSONからクイズを作成"
+        },
         "toasts": {
           "success": "クイズ「{{title}}」をドラフトで作成しました！",
           "error": "貼り付けたJSONからクイズを作成できませんでした。"
@@ -1113,7 +1125,8 @@
         "easy": "簡単",
         "medium": "普通",
         "hard": "難しい",
-        "custom": "カスタム "
+        "custom": "カスタム ",
+        "balance": "Balanced"
       },
       "bloomLevels": {
         "remember": "記憶",
@@ -1276,7 +1289,8 @@
               "passed": "合格"
             }
           }
-        }
+        },
+        "totalQuestions": "Total Questions"
       },
       "communitySignals": {
         "rating": "{{rating}}★ · {{count}} レビュー",
@@ -1297,7 +1311,13 @@
         "commentPlaceholder": "全員に表示される公開コメント。",
         "commentSuccess": "コミュニティコメントを送信しました。",
         "commentError": "コミュニティコメントを送信できません。",
-        "cloneAction": "ワークスペースにクローン"
+        "cloneAction": "ワークスペースにクローン",
+        "unknownUser": "Unknown User",
+        "reviewNoComment": "Review No Comment",
+        "replyAction": "Reply Action",
+        "replyPlaceholder": "Reply Placeholder",
+        "cancelReply": "Cancel Reply",
+        "sendReply": "Send Reply"
       },
       "communityFeedback": {
         "title": "コミュニティクイズフィードバック",
@@ -1506,7 +1526,10 @@
         "structureQuantity": "数量",
         "materialFallback": "教材 #{{id}}",
         "questionTypeFallback": "タイプ #{{id}}",
-        "bloomFallback": "ブルーム #{{id}}"
+        "bloomFallback": "ブルーム #{{id}}",
+        "outputLanguage": "Output Language",
+        "materialsLoading": "Materials Loading",
+        "loadingMaterials": "Loading Materials"
       },
       "detail": {
         "edit": "編集",
@@ -1541,7 +1564,18 @@
           "tooltip": "編集できるよう新しいドラフトコピー(配布や受験履歴なし)を作成",
           "toastSuccess": "クイズを新しい MANUAL ドラフトに複製しました。今すぐ編集できます。",
           "toastError": "クイズの複製に失敗しました。"
-        }
+        },
+        "reviewHintChallengeReviewer": "Review Hint Challenge Reviewer",
+        "reviewHintChallengeLeader": "Review Hint Challenge Leader",
+        "reviewHintGroupQuizDraft": "Review Hint Group Quiz Draft",
+        "questionDeletionLogTitle": "Question Deletion Log Title",
+        "questionDeletionLogHint": "Question Deletion Log Hint",
+        "questionDeletionLogReason": "Lý do: {{note}}",
+        "convertToFlashcardOnceHint": "Convert To Flashcard Once Hint",
+        "convertToFlashcard": "Convert To Flashcard",
+        "shuffleUpdateFailed": "Shuffle Update Failed",
+        "shuffleTitle": "Shuffle question and answer order",
+        "shuffleDescription": "When enabled, each attempt shows questions and answers in a different random order."
       },
       "edit": {
         "title": "クイズを編集",
@@ -1571,7 +1605,8 @@
         "durationPlaceholder": "30",
         "nameRequired": "クイズ名は必須です。",
         "durationMin": "時間は少なくとも 1 分必要です。",
-        "saveFailed": "クイズの更新中に問題が発生しました。"
+        "saveFailed": "クイズの更新中に問題が発生しました。",
+        "title": "????????"
       },
       "create": "クイズを作成",
       "createActive": "作成 & 有効化",
@@ -1830,13 +1865,17 @@
         "recommendedCount": "{{count}} 推奨",
         "searchPlaceholder": "コミュニティクイズを検索...",
         "title": "コミュニティクイズ",
-        "topMatch": "トップマッチ"
+        "topMatch": "トップマッチ",
+        "hiddenTitle": "Hidden Title",
+        "hiddenDescription": "Hidden Description"
       },
       "deleteConfirm": "このクイズを削除してもよろしいですか? この操作は取り消せません。",
       "history": {
         "attempt": "受験",
         "empty": "受験履歴はまだありません。",
-        "loading": "履歴を読み込み中..."
+        "loading": "履歴を読み込み中...",
+        "viewAttempts": "View Attempts",
+        "latestAttempt": "Latest Attempt"
       },
       "startExamPrompt": "このクイズのテストモードを開始しますか?",
       "tabs": {
@@ -1881,6 +1920,83 @@
         "noAnswerSelected": "回答が選択されていません",
         "correct": "正解!",
         "incorrect": "不正解"
+      },
+      "reviewBan": {
+        "bannedBadge": "Banned Badge",
+        "noteTooShort": "Note Too Short",
+        "submitFailed": "Submit Failed",
+        "button": "Button",
+        "dialogTitle": "Dialog Title",
+        "dialogDescription": "Dialog Description",
+        "targetLabel": "Target Label",
+        "noteLabel": "Note Label",
+        "notePlaceholder": "Note Placeholder",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "planGate": {
+        "structureTitleFallback": "Structure Title Fallback",
+        "title": "Title",
+        "structureDescriptionFallback": "Structure Description Fallback",
+        "structureMeta": "Structure Meta",
+        "upgradeAction": "Upgrade Action",
+        "vipBadge": "Vip Badge",
+        "meta": "Meta",
+        "inlineHintWithPlan": "Các loại bên dưới cần gói ${advancedQuizRequiredPlanName}.",
+        "inlineHintFallback": "Inline Hint Fallback",
+        "lockedGroupTitleWithPlan": "Cần gói ${advancedQuizRequiredPlanName}",
+        "lockedGroupTitleFallback": "Locked Group Title Fallback",
+        "structureTitleWithPlan": "Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName}",
+        "structureDescriptionWithCurrentPlan": "Cấu trúc quiz không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "structureDescriptionWithRequiredPlan": "Cấu trúc quiz cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionWithCurrentPlan": "Nhóm loại câu hỏi nâng cao không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionWithRequiredPlan": "Nhóm loại câu hỏi nâng cao cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.",
+        "descriptionFallback": "Nhóm loại câu hỏi nâng cao cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng."
+      },
+      "reviewConcern": {
+        "noteTooShort": "Note Too Short",
+        "submitFailed": "Submit Failed",
+        "autoTitle": "Auto Title",
+        "activeTitle": "Active Title",
+        "autoHint": "Auto Hint",
+        "activeHint": "Active Hint",
+        "withdraw": "Withdraw",
+        "raiseButton": "Raise Button",
+        "dialogTitle": "Dialog Title",
+        "dialogDescription": "Dialog Description",
+        "noteLabel": "Note Label",
+        "notePlaceholder": "Note Placeholder",
+        "cancel": "Cancel",
+        "submit": "Submit"
+      },
+      "deletionAuditPanel": {
+        "title": "Title",
+        "totalDeleted": "Total Deleted",
+        "percentDeleted": "Percent Deleted",
+        "overThreshold": "Over Threshold",
+        "reason": "Reason"
+      },
+      "reviewDeleteQuestion": "Review Delete Question",
+      "reviewQuizOkTitle": "Review Quiz Ok Title",
+      "reviewQuizOkHint": "Review Quiz Ok Hint",
+      "reviewQuizOkDoneAt": "Review Quiz Ok Done At",
+      "reviewQuizOkButton": "Review Quiz Ok Button",
+      "reviewQuizOkConfirmTitle": "Review Quiz Ok Confirm Title",
+      "reviewQuizOkConfirmDescription": "Review Quiz Ok Confirm Description",
+      "reviewQuizOkConfirmCancel": "Review Quiz Ok Confirm Cancel",
+      "reviewQuizOkConfirmSubmit": "Review Quiz Ok Confirm Submit",
+      "reviewDeleteQuestionConfirmDescriptionChallenge": "Câu hỏi sẽ bị xóa khỏi đề challenge. Hãy ghi chú lý do để leader / co-reviewer biết.",
+      "reviewDeleteQuestionConfirmDescriptionQuiz": "Câu hỏi sẽ bị xóa khỏi quiz nhóm (bản nháp). Hãy ghi lý do để leader và thành viên phối hợp theo dõi.",
+      "reviewDeleteQuestionNoteLabel": "Review Delete Question Note Label",
+      "reviewDeleteQuestionNotePlaceholder": "Review Delete Question Note Placeholder",
+      "reviewDeleteQuestionConfirmCancel": "Review Delete Question Confirm Cancel",
+      "reviewDeleteQuestionConfirmSubmit": "Review Delete Question Confirm Submit",
+      "questionImageAlt": "Question Image Alt",
+      "review": "Review",
+      "advancedDifficultyPresets": {
+        "BALANCED": "Balanced",
+        "EASY_FOCUS": "Easy focus",
+        "HARD_FOCUS": "Hard focus"
       }
     },
     "flashcard": {
@@ -2104,7 +2220,24 @@
           "showBack": "最初に裏を表示",
           "reshuffle": "再シャッフル"
         }
-      }
+      },
+      "deleteFailed": "Delete Failed",
+      "audience": {
+        "selectedMembers": "Selected Members",
+        "allMembers": "All Members",
+        "selectMemberRequired": "Select Member Required",
+        "saveFailed": "Save Failed",
+        "noMembers": "No Members"
+      },
+      "publishConfirm": "Publish Confirm",
+      "setDraftConfirm": "Set Draft Confirm",
+      "activateConfirm": "Activate Confirm",
+      "deactivateConfirm": "Deactivate Confirm",
+      "publish": "Publish",
+      "distribution": "Distribution",
+      "tapToFlip": "Tap To Flip",
+      "itemsList": "Items List",
+      "processing": "Processing"
     },
     "phase": {
       "fallbackName": "フェーズ #{{id}}"
@@ -2277,7 +2410,15 @@
         "postLearningLocked": "学習後を解放するためにすべての知識クイズを完了",
         "postLearningProgress": "{{completed}} / {{total}} 知識クイズ完了",
         "postLearningSubtitle": "このフェーズの最終評価",
-        "fullscreen": "フルスクリーン"
+        "fullscreen": "フルスクリーン",
+        "phaseLockedTitle": "Phase Locked Title",
+        "phaseLockedDesc": "Phase Locked Desc",
+        "unlockingPhaseBtn": "Unlocking Phase Btn",
+        "unlockPhaseBtn": "Unlock Phase Btn",
+        "prevPhase": "Prev Phase",
+        "nextPhase": "Next Phase",
+        "prevKnowledge": "Prev Knowledge",
+        "nextKnowledge": "Next Knowledge"
       },
       "doubleClickToRename": "ダブルクリックで名前変更",
       "noMockTestYet": "まだ模擬試験が作成されていません。",
@@ -2331,7 +2472,17 @@
       "postLearningLocked": "学習後を解放するためにこのフェーズのすべての知識項目を完了してください。",
       "postLearningUnlockProgress": "解放するための知識進捗: {{completed}}/{{total}}",
       "postLearningProgress": "学習後進捗",
-      "preLearningHelper": "事前学習ヘルパー"
+      "preLearningHelper": "事前学習ヘルパー",
+      "phaseUnlockFailed": "Phase Unlock Failed",
+      "groupPreLearning": {
+        "questionCount": "Question Count",
+        "create": "Create",
+        "generating": "Generating",
+        "empty": "Empty",
+        "started": "Started",
+        "failed": "Failed"
+      },
+      "editConfig": "Edit Config"
     },
     "mockTest": {
       "title": "模擬試験",
@@ -2454,7 +2605,8 @@
       "uploadProgress": {
         "uploading": "アップロード中",
         "processing": "AIが解析中",
-        "finalizing": "最終処理中"
+        "finalizing": "最終処理中",
+        "rejectionNotice": "Rejection Notice"
       },
       "renameHint": "ワークスペース全体に表示されるソース名を更新。",
       "renamePlaceholder": "新しいソース名",
@@ -2626,6 +2778,20 @@
         "showAll": "すべての知識項目を表示",
         "of": "/",
         "phaseNext": "次へ"
+      },
+      "roadmapSetupTitle": "Roadmap Setup Title",
+      "roadmapSetupHint": "Roadmap Setup Hint"
+    },
+    "settings": {
+      "reviewBans": {
+        "unbanFailed": "Unban Failed",
+        "tabTitle": "Tab Title",
+        "description": "Description",
+        "empty": "Empty",
+        "bannedAt": "Banned At",
+        "by": "By",
+        "relatedQuiz": "Related Quiz",
+        "unban": "Unban"
       }
     }
   },
@@ -3290,7 +3456,17 @@
     "setupConfirmDescription": "このワークスペースにこのロードマップ設定を保存してもよろしいですか?",
     "updateExistingConfirmDescription": "これらの値を更新すると、現在使用中のロードマップは削除されます。ロードマップ情報を更新してもよろしいですか?",
     "updateConfirmDescription": "ロードマップ情報を更新してもよろしいですか?",
-    "saveFailed": "保存に失敗しました。再試行してください。"
+    "saveFailed": "保存に失敗しました。再試行してください。",
+    "suggestButton": "Suggest Button",
+    "suggesting": "Suggesting",
+    "suggestInvalid": "Suggest Invalid",
+    "suggestFailed": "Suggest Failed",
+    "suggestTitle": "Suggest Title",
+    "suggestDescription": "Suggest Description",
+    "suggestRationaleLabel": "Suggest Rationale Label",
+    "preLearningRequired": "Pre Learning Required",
+    "preLearningNotRequired": "Pre Learning Not Required",
+    "suggestRecommendationsLabel": "Suggest Recommendations Label"
   },
   "useWorkspaceProfileWizard": {
     "overallReviewLoadingTitle": "QuizMate AI が総合レビューを実行中",
@@ -3385,7 +3561,9 @@
       "questionTypeMultiple": "多肢選択",
       "questionTypeTrueFalse": "True / False",
       "close": "閉じる",
-      "materialRequired": "少なくとも 1 つの教材を選択してください。"
+      "materialRequired": "少なくとも 1 つの教材を選択してください。",
+      "generatedSuccess": "Generated Success",
+      "generateFailed": "Generate Failed"
     },
     "create": {
       "title": "模擬試験を作成",
@@ -3474,7 +3652,8 @@
       "saveShort": "テンプレートを保存",
       "savedShort": "保存済み",
       "savingShort": "保存中...",
-      "validationFailed": "構造はまだ有効ではありません。"
+      "validationFailed": "構造はまだ有効ではありません。",
+      "limitReached": "Bạn đã đạt giới hạn ${maxTemplates} template. Hãy xoá bớt trước khi lưu thêm."
     },
     "exitConfirm": {
       "title": "模擬試験作成フォームを終了しますか?",
@@ -3523,7 +3702,8 @@
         "structureQuantityPositive": "構造 #{{index}}: 数量は 0 より大きくなければなりません。",
         "numQuestionsMismatch": "numQuestions = {{num}} は合計数量 = {{total}} と一致しません。",
         "sectionLabel": "セクション #{{index}}",
-        "totalLeafMismatch": "総リーフ問題 = {{total}}、期待 {{target}}。"
+        "totalLeafMismatch": "総リーフ問題 = {{total}}、期待 {{target}}。",
+        "questionTypeInvalid": "Question Type Invalid"
       }
     },
     "postLearning": {
@@ -3597,7 +3777,19 @@
     },
     "manualWizard": {
       "questionNavigator": {
-        "jumpTo": "ジャンプ"
+        "jumpTo": "ジャンプ",
+        "countLabel": "{{count}}/{{max}} ?",
+        "errorCount": "{{count}} ?????",
+        "incompleteCount": "{{count}} ????",
+        "all": "???",
+        "incomplete": "???",
+        "error": "???",
+        "emptyQuestion": "(???)",
+        "noQuestions": "?????????",
+        "jumpButton": "??",
+        "scrollTop": "???",
+        "addQuestion": "?????",
+        "importQuestions": "????????????"
       }
     },
     "communityDetail": {

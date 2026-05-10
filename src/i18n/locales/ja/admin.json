@@ -480,6 +480,30 @@
       "plans": "システム全体のプランカタログと公開ステータスを管理します。",
       "creditPackages": "販売中のクレジットパッケージとユーザーに提供されるクレジット供給サーフェスを追跡します。",
       "aiAudit": "AI 呼び出し、アクティブモデル、最近の運用におけるトークン消費を確認します。"
+    },
+    "overviewTitle": "Overview",
+    "description": "Platform health, usage and revenue at a glance.",
+    "chartDay": "Chart Day",
+    "chartWeek": "Chart Week",
+    "chartMonth": "Chart Month",
+    "b": {
+      "hero": {
+        "label": "Label"
+      },
+      "topPlans": {
+        "title": "Title",
+        "desc": "Desc",
+        "empty": "Empty"
+      }
+    },
+    "detail": {
+      "stacked": "Stacked",
+      "stackedHint": "Stacked Hint",
+      "topBuckets": "Top Buckets",
+      "topBucketsHint": "Top Buckets Hint",
+      "bucketsCount": "Buckets Count",
+      "weekday": "Weekday",
+      "weekdayHint": "Weekday Hint"
     }
   },
   "adminManagement": {
@@ -544,8 +568,33 @@
       "superAdminReadonly": "SUPER_ADMIN アカウントは常に既定のフルアクセスを持ちます。",
       "clearAll": "すべてクリア",
       "grantAll": "すべて付与",
-      "syncWarning": "同期は現在付与されているすべての権限を恒久的アクセスに変換します(expiresAt は削除されます)。期限付きアクセスを承認するには「権限リクエスト」タブを使用してください。"
-    }
+      "syncWarning": "同期は現在付与されているすべての権限を恒久的アクセスに変換します(expiresAt は削除されます)。期限付きアクセスを承認するには「権限リクエスト」タブを使用してください。",
+      "expired": "Expired",
+      "remainingDays": "{{count}}d left",
+      "remainingHours": "{{count}}h left",
+      "remainingMinutes": "{{count}}m left",
+      "expiresAt": "Expires At",
+      "permanent": "Permanent"
+    },
+    "deleteSuccess": "Delete Success",
+    "deleteError": "Delete Error",
+    "deleteDialog": {
+      "confirmMismatch": "Confirm Mismatch",
+      "reasonTooShort": "Reason Too Short",
+      "title": "Title",
+      "description": "This action will permanently remove admin account {{username}} ({{email}}).",
+      "warning": "Warning",
+      "confirmLabel": "Confirm Label",
+      "confirmHelp": "Confirm Help",
+      "reasonLabel": "Reason Label",
+      "reasonPlaceholder": "Reason Placeholder",
+      "reasonHelp": "Reason Help"
+    },
+    "metricAdmins": "Metric Admins",
+    "metricStatus": "Metric Status",
+    "metricPermissions": "Metric Permissions",
+    "metricRecentActivity": "Metric Recent Activity",
+    "cardSubtitle": "Card Subtitle"
   },
   "adminPayments": {
     "desc": "注文 ID、ユーザー、ワークスペース、または支払いステータスで取引を検索します。",
@@ -887,7 +936,12 @@
       "createRole": "ロールを作成できません。",
       "syncRolePermissions": "ロール権限を同期できません。",
       "deleteRole": "ロールを削除できません。"
-    }
+    },
+    "metricRoles": "Metric Roles",
+    "metricPermissions": "Metric Permissions",
+    "metricAudit": "Metric Audit",
+    "metricUsersLabel": "Metric Users Label",
+    "metricUsersHelper": "Metric Users Helper"
   },
   "subscription": {
     "title": "サブスクリプション管理",
@@ -1157,7 +1211,12 @@
       "group": "機能グループ",
       "allGroups": "すべてのグループ",
       "status": "ステータス",
-      "allStatuses": "すべてのステータス"
+      "allStatuses": "すべてのステータス",
+      "open": "Open",
+      "dialogTitle": "Dialog Title",
+      "dialogDescription": "Dialog Description",
+      "reset": "Reset",
+      "searchAction": "Search Action"
     },
     "exchangeRate": {
       "title": "現在の USD/VND レート",
@@ -1211,7 +1270,15 @@
       "officialUnsupported": "このモデルは現在、公式自動価格をサポートしていません。",
       "previewVnd": "変換結果",
       "openEndedHint": "この価格バージョンに終了日がない場合は空欄にしてください。",
-      "submit": "価格バージョンを保存"
+      "submit": "価格バージョンを保存",
+      "dataSources": "Data Sources",
+      "dataSourcesDescription": "Data Sources Description",
+      "officialReady": "Official Ready",
+      "inputUsd": "Input Usd",
+      "outputUsd": "Output Usd",
+      "formAppliedHint": "Form Applied Hint",
+      "formEmptyHint": "Form Empty Hint",
+      "rate": "Rate"
     },
     "actions": {
       "menu": "操作メニューを開く",
@@ -1326,7 +1393,9 @@
       "tokenPrice": "変換価格 / トークン",
       "actualCostTokens": "実コストトークン",
       "tokenBudget": "等価トークン予算",
-      "tokenMargin": "等価トークンマージン"
+      "tokenMargin": "等価トークンマージン",
+      "providerCostUsd": "Provider Cost Usd",
+      "systemSubsidy": "System Subsidy"
     },
     "status": {
       "SUCCESS": "成功",
@@ -1361,7 +1430,34 @@
       "subCallError": "エラー",
       "subCallInput": "入力",
       "subCallOutput": "出力",
-      "subCallNoPreview": "データなし"
+      "subCallNoPreview": "データなし",
+      "inputUnitUsd": "Input Unit Usd",
+      "outputUnitUsd": "Output Unit Usd",
+      "exchangeRate": "Exchange Rate",
+      "exchangeRateAt": "Exchange Rate At",
+      "inputCostUsd": "Input Cost Usd",
+      "outputCostUsd": "Output Cost Usd"
+    },
+    "topFeatures": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "empty": "Empty",
+      "dayUnit": "Day Unit",
+      "featureCount": "Feature Count",
+      "allRange": "All Range",
+      "legendTop": "Legend Top",
+      "legendOther": "Legend Other",
+      "legendUnit": "Legend Unit",
+      "total": "Total",
+      "columnFeature": "Column Feature",
+      "columnCost": "Column Cost",
+      "columnShare": "Column Share",
+      "requests": "Requests"
+    },
+    "tokens": {
+      "input": "Input",
+      "output": "Output",
+      "total": "Total"
     }
   },
   "adminLayout": {
@@ -1392,7 +1488,9 @@
     "controlPlane": "QuizMate コントロールプレーン"
   },
   "aiAudit": {
-    "title": "AI 監査",
+    "title": {
+      "v2": "Nhật ký AI hệ thống"
+    },
     "description": "AI リクエスト、トークン使用、モデル、ステータスを追跡し、必要に応じて詳細トレースを開きます。",
     "errors": {
       "loadLogs": "AI 監査ログを読み込めません。"
@@ -1411,7 +1509,11 @@
       "planCost": "プランコスト",
       "planCostHint": "プラン機能のプロバイダーコスト。平均 {{avg}} トークン/リクエスト",
       "errors": "エラー",
-      "errorsHint": "現在のフィルターに一致するエラーリクエスト"
+      "errorsHint": "現在のフィルターに一致するエラーリクエスト",
+      "totalRequestsHelp": "Total Requests Help",
+      "totalTokensHelp": "Total Tokens Help",
+      "systemCostHelp": "System Cost Help",
+      "planCostHelp": "Plan Cost Help"
     },
     "filters": {
       "title": "AI 監査フィルター",
@@ -1434,7 +1536,11 @@
       "actorEmail": "実行者メール",
       "taskIdPlaceholder": "タスク ID",
       "reset": "リセット",
-      "apply": "適用"
+      "apply": "適用",
+      "taskId": "Task ID",
+      "email": "Email",
+      "featureKey": "Feature Key",
+      "clear": "Clear"
     },
     "table": {
       "title": "AI リクエスト一覧",
@@ -1522,6 +1628,22 @@
       "SUGGEST_MOCK_TEST_STRUCTURE": "模擬試験構造を提案",
       "SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS": "教材から模擬試験を合成",
       "ROADMAP_REVIEW": "ロードマップレビュー"
+    },
+    "topFeatures": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "empty": "Empty",
+      "dayUnit": "Day Unit",
+      "featureCount": "Feature Count",
+      "allRange": "All Range",
+      "legendTop": "Legend Top",
+      "legendOther": "Legend Other",
+      "legendUnit": "Legend Unit",
+      "total": "Total",
+      "columnFeature": "Column Feature",
+      "columnCost": "Column Cost",
+      "columnShare": "Column Share",
+      "requests": "Requests"
     }
   },
   "aiProviders": {
@@ -1593,7 +1715,14 @@
       "checkedAt": "時刻",
       "checkedBy": "テスト実行者",
       "noData": "この期間内のテスト履歴はありません。",
-      "rangeHours": "期間(時間)"
+      "rangeHours": "期間(時間)",
+      "keyCount": "{{count}} keys",
+      "groupSummary": "{{valid}}/{{total}} hợp lệ"
+    },
+    "latency": {
+      "ok": "OK",
+      "slow": "Chậm",
+      "abnormal": "Bất thường"
     }
   },
   "groupPage": {
@@ -1883,7 +2012,8 @@
       "descriptionPlaceholder": "このパッケージが提供する内容の短い説明",
       "creditAmount": "クレジット数量",
       "price": "価格(VND)",
-      "bonusCredit": "ボーナスクレジット"
+      "bonusCredit": "ボーナスクレジット",
+      "bonusCreditHint": "Bonus Credit Hint"
     },
     "systemSettings": {
       "title": "クレジット購入設定",
@@ -2199,5 +2329,149 @@
     "deleting": "削除中...",
     "deleteSuccess": "ユーザーを削除しました。",
     "deleteError": "ユーザーを削除できません。"
+  },
+  "communityQuizManagement": {
+    "toast": {
+      "unshareSuccess": "Unshare Success"
+    },
+    "header": {
+      "eyebrow": "Eyebrow",
+      "title": "Title",
+      "description": "Description",
+      "refresh": "Refresh"
+    },
+    "metrics": {
+      "totalQuizzes": "Total Quizzes",
+      "totalQuizzesHelper": "Total Quizzes Helper",
+      "totalClones": "Total Clones",
+      "currentPageHelper": "Current Page Helper",
+      "averageRating": "Average Rating",
+      "totalRatingsHelper": "{{count}} lượt đánh giá",
+      "totalComments": "Total Comments"
+    },
+    "filters": {
+      "searchPlaceholder": "Search Placeholder",
+      "allStatuses": "All Statuses"
+    },
+    "table": {
+      "title": "Title",
+      "description": "Description",
+      "quiz": "Quiz",
+      "creator": "Creator",
+      "status": "Status",
+      "signals": "Signals",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "untitled": "Untitled",
+      "questionCount": "{{count}} câu",
+      "shared": "Shared",
+      "unshared": "Unshared"
+    },
+    "empty": {
+      "title": "Title",
+      "description": "Description"
+    },
+    "actions": {
+      "preview": "Preview",
+      "remove": "Remove"
+    },
+    "preview": {
+      "description": "Description"
+    },
+    "removeDialog": {
+      "title": "Title",
+      "description": "Description",
+      "creatorLabel": "Creator Label",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "planPurchases": {
+    "versionOld": "Version Old",
+    "title": "Title",
+    "sparklineLabel": "Sparkline Label",
+    "hideCharts": "Hide Charts",
+    "showCharts": "Show Charts",
+    "chart": {
+      "versionFilter": "Version Filter",
+      "versionCurrent": "Version Current",
+      "versionAll": "Version All",
+      "versionHint": "Version Hint",
+      "revenueSplit": "Revenue Split",
+      "revenueSplitHint": "Revenue Split Hint",
+      "creditPart": "Credit Part",
+      "basePart": "Base Part",
+      "margin": "Margin",
+      "marginHint": "Margin Hint",
+      "marginLabel": "Margin Label"
+    },
+    "tab": {
+      "plans": "Plans",
+      "credits": "Credits"
+    },
+    "credit": {
+      "col": {
+        "package": "Package",
+        "scope": "Scope",
+        "creditsDelivered": "Credits Delivered"
+      },
+      "empty": "Empty",
+      "totalRevenue": "Total Revenue",
+      "totalCredits": "Total Credits",
+      "totalPurchases": "Total Purchases"
+    },
+    "col": {
+      "purchases": "Purchases",
+      "payers": "Payers",
+      "revenue": "Revenue",
+      "buyers": "Buyers",
+      "plan": "Plan",
+      "baseRevenue": "Base Revenue",
+      "aiCogs": "AI Cogs",
+      "margin": "Margin"
+    },
+    "buyers": {
+      "totalRecords": "Total Records",
+      "activeOnPage": "Active On Page",
+      "pageRevenue": "Page Revenue",
+      "email": "Email",
+      "amount": "Amount",
+      "status": "Status",
+      "paidAt": "Paid At",
+      "active": "Active",
+      "expired": "Expired",
+      "versionMismatchTip": "Version Mismatch Tip",
+      "versionMatchTip": "Version Match Tip",
+      "expiresAt": "Expires At"
+    },
+    "versionTable": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "subtitleSuffix": "Subtitle Suffix",
+      "searchPlaceholder": "Search Placeholder",
+      "groupLabel": "Group Label",
+      "allOption": "All Option",
+      "statusLabel": "Status Label",
+      "statusCurrent": "Status Current",
+      "statusOld": "Status Old",
+      "sortLabel": "Sort Label",
+      "noMatch": "No Match",
+      "statusCurrentBadge": "Status Current Badge",
+      "totalsLabel": "Totals Label",
+      "versionsUnit": "Versions Unit"
+    },
+    "empty": "Empty",
+    "versionCurrentTip": "Version Current Tip",
+    "versionHistoricalTip": "Version Historical Tip",
+    "buyersTitle": "Buyers Title",
+    "buyersHint": "Buyers Hint",
+    "buyersEmpty": "Buyers Empty",
+    "creditBuyers": {
+      "title": "Title",
+      "hint": "Hint",
+      "creditsOnPage": "Credits On Page",
+      "creditsReceived": "Credits Received",
+      "scope": "Scope"
+    }
   }
 }

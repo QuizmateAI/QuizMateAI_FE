@@ -787,7 +787,7 @@ export default function PlanPurchaseReportPage() {
                           <TableCell className="text-right">
                             <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => openCreditBuyers(row)}>
                               <Users className="h-3.5 w-3.5" />
-                              {t('planPurchases.buyers', 'Người mua')}
+                              {t('planPurchases.col.buyers', 'Người mua')}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -823,7 +823,7 @@ export default function PlanPurchaseReportPage() {
               <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
                 {t('planPurchases.versionTable.subtitle', 'Mỗi dòng tương ứng một gói × version. Bấm ')}
                 <strong className={isDarkMode ? 'text-ocean-300' : 'text-ocean-600'}>
-                  {t('planPurchases.buyers', 'Người mua')}
+                  {t('planPurchases.col.buyers', 'Người mua')}
                 </strong>
                 {t('planPurchases.versionTable.subtitleSuffix', ' để xem danh sách user đã mua.')}
               </p>
@@ -1026,7 +1026,7 @@ export default function PlanPurchaseReportPage() {
                             }`}
                           >
                             <Users className="h-3.5 w-3.5" />
-                            {t('planPurchases.buyers', 'Người mua')}
+                            {t('planPurchases.col.buyers', 'Người mua')}
                           </Button>
                         </TableCell>
                       </TableRow>

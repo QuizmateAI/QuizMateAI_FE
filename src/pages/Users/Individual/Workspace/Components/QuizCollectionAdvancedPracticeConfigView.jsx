@@ -195,10 +195,6 @@ function QuizCollectionAdvancedPracticeConfigView({
       ? "border-slate-700 bg-slate-900 text-slate-100"
       : "border-slate-200 bg-white text-slate-900",
   );
-  const labelCls = cn(
-    "mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em]",
-    isDarkMode ? "text-slate-400" : "text-gray-600",
-  );
   const sectionCardClass = cn(
     "rounded-[28px] border p-5 shadow-sm",
     isDarkMode ? "border-slate-800 bg-slate-900/80" : "border-slate-200 bg-white",
@@ -522,26 +518,25 @@ function QuizCollectionAdvancedPracticeConfigView({
     if (totalQuestion <= 0) {
       return {
         ok: false,
-        message: t("quizCollection.noQuestions", "Bá»™ sÆ°u táº­p chÆ°a cÃ³ cÃ¢u há»i. HÃ£y import quiz hoáº·c import cÃ¢u há»i Ä‘á»ƒ báº¯t Ä‘áº§u."),
+        message: t("quizCollection.noQuestions"),
       };
     }
     if (config.selectedQuestionTypes.length === 0) {
       return {
         ok: false,
-        message: t("quizCollection.questionTypeRequired", "HÃ£y chá»n Ã­t nháº¥t má»™t loáº¡i cÃ¢u há»i."),
+        message: t("quizCollection.questionTypeRequired"),
       };
     }
     if (config.selectedBloomSkills.length === 0) {
       return {
         ok: false,
-        message: t("quizCollection.bloomRequired", "HÃ£y chá»n Ã­t nháº¥t má»™t má»©c Bloom."),
+        message: t("quizCollection.bloomRequired"),
       };
     }
     if (baseCandidates.length < requestedCount) {
       return {
         ok: false,
         message: t("quizCollection.advancedNotEnoughFiltered", {
-          defaultValue: "Bá»™ lá»c hiá»‡n chá»‰ cÃ³ {{count}} cÃ¢u phÃ¹ há»£p. HÃ£y giáº£m sá»‘ cÃ¢u hoáº·c bá»• sung cÃ¢u há»i.",
           count: baseCandidates.length,
         }),
       };
@@ -558,7 +553,6 @@ function QuizCollectionAdvancedPracticeConfigView({
       return {
         ok: false,
         message: t("quizCollection.advancedDifficultyShortage", {
-          defaultValue: "ChÆ°a Ä‘á»§ cÃ¢u theo tá»· lá»‡ Ä‘á»™ khÃ³ {{difficulty}}. HÃ£y chá»‰nh tá»· lá»‡ hoáº·c import thÃªm cÃ¢u.",
           difficulty: difficultyShortage.label,
         }),
       };
@@ -570,7 +564,6 @@ function QuizCollectionAdvancedPracticeConfigView({
       return {
         ok: false,
         message: t("quizCollection.advancedBloomShortage", {
-          defaultValue: "ChÆ°a Ä‘á»§ cÃ¢u theo Bloom {{bloom}}. HÃ£y chá»‰nh tá»· lá»‡ hoáº·c import thÃªm cÃ¢u.",
           bloom: getBloomLabel(bloomShortage.bloomName, t),
         }),
       };
@@ -579,7 +572,6 @@ function QuizCollectionAdvancedPracticeConfigView({
     return {
       ok: true,
       message: t("quizCollection.advancedReady", {
-        defaultValue: "Sáºµn sÃ ng táº¡o phiÃªn luyá»‡n táº­p vá»›i {{count}} cÃ¢u.",
         count: requestedCount,
       }),
     };
@@ -893,14 +885,14 @@ function QuizCollectionAdvancedPracticeConfigView({
       if (result?.hasEnoughQuestions === false) {
         showError(
           result?.message ||
-            t("quizCollection.advancedNotEnough", "Bá»™ sÆ°u táº­p chÆ°a Ä‘á»§ cÃ¢u há»i cho cáº¥u hÃ¬nh nÃ y."),
+            t("quizCollection.advancedNotEnough"),
         );
         return;
       }
 
       const nextQuizId = Number(result?.attempt?.quizId);
       if (!Number.isInteger(nextQuizId) || nextQuizId <= 0) {
-        throw new Error(t("quizCollection.startMissingQuiz", "KhÃ´ng xÃ¡c Ä‘á»‹nh Ä‘Æ°á»£c quiz luyá»‡n táº­p."));
+        throw new Error(t("quizCollection.startMissingQuiz"));
       }
 
       navigate(buildQuizAttemptPath("practice", nextQuizId), {
@@ -939,10 +931,10 @@ function QuizCollectionAdvancedPracticeConfigView({
           </button>
           <div className="min-w-0">
             <h2 className={cn("truncate text-xl font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-              {t("quizCollection.advancedPractice", "Luyá»‡n táº­p nÃ¢ng cao")}
+              {t("quizCollection.advancedPractice")}
             </h2>
             <p className={cn("mt-0.5 line-clamp-1 text-sm", mutedTextClass)}>
-              {currentCollection?.title || t("quizCollection.fallbackTitle", "Bá»™ sÆ°u táº­p")}
+              {currentCollection?.title || t("quizCollection.fallbackTitle")}
             </p>
           </div>
         </div>
@@ -955,20 +947,20 @@ function QuizCollectionAdvancedPracticeConfigView({
               <div>
                 <div className={cn("mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold", isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-100 text-emerald-700")}>
                   <SlidersHorizontal className="h-3.5 w-3.5" />
-                  {t("quizCollection.advancedSubtitle", "TÃ¹y biáº¿n phiÃªn luyá»‡n táº­p")}
+                  {t("quizCollection.advancedSubtitle")}
                 </div>
                 <h3 className={cn("text-2xl font-semibold", isDarkMode ? "text-slate-100" : "text-slate-950")}>
-                  {t("quizCollection.advancedHero", "Chá»n Ä‘Ãºng pháº§n cáº§n Ã´n, Ä‘Ãºng má»©c Ä‘á»™ cáº§n luyá»‡n.")}
+                  {t("quizCollection.advancedHero")}
                 </h3>
                 <p className={cn("mt-2 text-sm leading-6", mutedTextClass)}>
-                  {t("quizCollection.advancedHeroHint", "Há»‡ thá»‘ng sáº½ táº¡o má»™t quiz session má»›i tá»« cÃ¡c cÃ¢u há»i trong bá»™ sÆ°u táº­p theo cáº¥u hÃ¬nh bÃªn dÆ°á»›i.")}
+                  {t("quizCollection.advancedHeroHint")}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <StatCard icon={FileQuestion} label={t("quizCollection.questions", "CÃ¢u há»i")} value={totalQuestion} isDarkMode={isDarkMode} />
-                <StatCard icon={Target} label={t("quizCollection.selectedPool", "PhÃ¹ há»£p")} value={baseCandidates.length} isDarkMode={isDarkMode} />
+                <StatCard icon={FileQuestion} label={t("quizCollection.questions")} value={totalQuestion} isDarkMode={isDarkMode} />
+                <StatCard icon={Target} label={t("quizCollection.selectedPool")} value={baseCandidates.length} isDarkMode={isDarkMode} />
                 <StatCard icon={Brain} label={t("quizCollection.bloom", "Bloom")} value={bloomOptions.length || "-"} isDarkMode={isDarkMode} />
-                <StatCard icon={Layers3} label={t("quizCollection.questionType", "Loáº¡i cÃ¢u")} value={questionTypeOptions.length || "-"} isDarkMode={isDarkMode} />
+                <StatCard icon={Layers3} label={t("quizCollection.questionType")} value={questionTypeOptions.length || "-"} isDarkMode={isDarkMode} />
               </div>
             </div>
           </section>
@@ -1144,7 +1136,7 @@ function QuizCollectionAdvancedPracticeConfigView({
                 onRatioChange={(id, value) => handleQuestionTypeRatioChange(id, value)}
                 onToggleLock={(id) => handleToggleQuestionTypeLock(id)}
                 idKey="questionTypeId"
-                emptyLabel={t("quizCollection.noSelectionYet", "ChÆ°a chá»n má»¥c nÃ o.")}
+                emptyLabel={t("quizCollection.noSelectionYet")}
                 lockLabel={t("workspace.quiz.aiConfig.lock", "Lock")}
                 unlockLabel={t("workspace.quiz.aiConfig.unlock", "Unlock")}
               />
@@ -1234,7 +1226,7 @@ function QuizCollectionAdvancedPracticeConfigView({
                 onRatioChange={(id, value) => handleBloomRatioChange(id, value)}
                 onToggleLock={(id) => handleToggleBloomLock(id)}
                 idKey="bloomId"
-                emptyLabel={t("quizCollection.noSelectionYet", "ChÆ°a chá»n má»¥c nÃ o.")}
+                emptyLabel={t("quizCollection.noSelectionYet")}
                 lockLabel={t("workspace.quiz.aiConfig.lock", "Lock")}
                 unlockLabel={t("workspace.quiz.aiConfig.unlock", "Unlock")}
               />
@@ -1249,7 +1241,6 @@ function QuizCollectionAdvancedPracticeConfigView({
                 </p>
                 <p className={cn("mt-1 text-xs", mutedTextClass)}>
                   {t("quizCollection.advancedPreview", {
-                    defaultValue: "Nguá»“n lá»c hiá»‡n cÃ³ {{pool}} cÃ¢u, yÃªu cáº§u {{requested}} cÃ¢u.",
                     pool: baseCandidates.length,
                     requested: requestedCount,
                   })}
@@ -1262,7 +1253,7 @@ function QuizCollectionAdvancedPracticeConfigView({
                 className="h-11 rounded-full bg-emerald-600 px-6 text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 {starting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                {t("quizCollection.startAdvanced", "Báº¯t Ä‘áº§u luyá»‡n táº­p")}
+                {t("quizCollection.startAdvanced")}
               </Button>
             </div>
           </section>
@@ -1337,4 +1328,3 @@ function SelectedRatioPanel({
 }
 
 export default QuizCollectionAdvancedPracticeConfigView;
-

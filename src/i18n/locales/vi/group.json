@@ -244,6 +244,37 @@
         "saveError": "Lưu cấu hình điểm xếp hạng thất bại.",
         "loadError": "Không tải được cấu hình điểm xếp hạng."
       }
+    },
+    "notifications": {
+      "title": "Group Notifications",
+      "subtitle": "Leaders approve announcements, contributors can draft, and members read published items.",
+      "createTitle": "Create announcement",
+      "titlePlaceholder": "Announcement title",
+      "contentPlaceholder": "Write announcement details...",
+      "publishNow": "Publish now",
+      "submitForApproval": "Submit for approval",
+      "pendingApprovals": "Pending approvals",
+      "noPending": "No pending announcements.",
+      "by": "By",
+      "publisher": "Publisher",
+      "waitingForApproval": "Waiting for approval",
+      "approve": "Approve",
+      "publishedTitle": "Published notifications",
+      "noPublished": "No published announcements yet.",
+      "publishedBadge": "Published",
+      "awaitingApproval": "Awaiting approval",
+      "pendingBadge": "Pending",
+      "seed": {
+        "roadmapTitle": "Roadmap checkpoint opened",
+        "roadmapContent": "A new checkpoint is open this week. Please complete pre-learning before Friday.",
+        "quizTitle": "Quiz lane update",
+        "quizContent": "Contributor proposed a quiz refresh for the reading practice set."
+      },
+      "toast": {
+        "published": "Notification published.",
+        "submitted": "Notification submitted for leader approval.",
+        "approved": "Notification approved and published."
+      }
     }
   },
   "groupProfileConfig": {
@@ -260,12 +291,14 @@
       "finish": "Lưu và hoàn tất",
       "finishIncomplete": "Kiểm tra lại để hoàn tất",
       "enabled": "Đang bật",
-      "disabled": "Đang tắt"
+      "disabled": "Đang tắt",
+      "later": "Later"
     },
     "messages": {
       "basicsSaveError": "Không thể lưu thông tin nhóm.",
       "confirmSaveError": "Không thể hoàn tất cấu hình nhóm.",
-      "completed": "Cấu hình nhóm đã được cập nhật."
+      "completed": "Cấu hình nhóm đã được cập nhật.",
+      "basicsSaved": "Group basics saved."
     },
     "validation": {
       "groupName": "Vui lòng nhập tên nhóm.",
@@ -299,7 +332,9 @@
       "contributorDescription": "Phù hợp cho thành viên có thể đóng góp nội dung và hoạt động học.",
       "rulesEyebrow": "Nguyên tắc chung",
       "rulesHint": "Ghi nhịp học và quy ước chia sẻ tài liệu.",
-      "rulesPlaceholder": "Ví dụ: Check-in 2 buổi/tuần, đặt câu hỏi theo chủ đề và ghi rõ nguồn."
+      "rulesPlaceholder": "Ví dụ: Check-in 2 buổi/tuần, đặt câu hỏi theo chủ đề và ghi rõ nguồn.",
+      "groupNameEyebrow": "Group identity",
+      "rules": "Rules or shared notes"
     },
     "stepTwo": {
       "title": "Thiết lập hồ sơ học tập chung",
@@ -361,7 +396,8 @@
         "eyebrow": "Bảng điều khiển",
         "title": "Nhìn nhanh trước khi hoàn tất",
         "readyBadge": "Sẵn sàng"
-      }
+      },
+      "knowledgeHint": "The more specific the description is, the better Quizmate AI can suggest the right domain for your group."
     }
   },
   "groupWorkspace": {
@@ -475,7 +511,12 @@
       "openQuizTab": "Mở tab quiz",
       "cancel": "Đóng",
       "confirmAssign": "Giao ngay",
-      "assigning": "Đang giao..."
+      "assigning": "Đang giao...",
+      "snapshotGenerating": "Snapshot Generating",
+      "snapshotMissingMember": "Snapshot Missing Member",
+      "snapshotGenerateSuccess": "Snapshot Generate Success",
+      "snapshotGenerateFailed": "Snapshot Generate Failed",
+      "detailLeaderOnly": "Detail Leader Only"
     },
     "forms": {
       "loadingMaterials": "Đang tải tài liệu dùng chung...",
@@ -513,7 +554,11 @@
           "finished": "Đã hoàn thành",
           "playing": "Đang làm",
           "registered": "Đã đăng ký"
-        }
+        },
+        "startsInLabel": "Starts In Label",
+        "endsInLabel": "Ends In Label",
+        "joinNow": "Join Now",
+        "viewDetail": "View Detail"
       },
       "cancelDialogTitle": "Huỷ challenge?",
       "cancelDialogDescription": "Bạn có chắc muốn huỷ challenge này? Thành viên sẽ không còn tham gia và lịch challenge sẽ bị gỡ.",
@@ -561,7 +606,13 @@
       "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này.",
       "reviewInviteeNotice": "Bạn được mời review đề. Mở «Xem đề» → «Kiểm tra», xác nhận «Đề ổn». Challenge tự mở khi đủ điều kiện.",
       "reviewInviteeShortHint": "Bấm «Xem đề» ở khối Đề challenge rồi mở tab «Kiểm tra».",
-      "reviewQuizNotReadyHint": "Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau."
+      "reviewQuizNotReadyHint": "Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau.",
+      "sections": {
+        "liveNow": "Live Now",
+        "startingSoon": "Starting Soon",
+        "scheduled": "Scheduled",
+        "finished": "Finished"
+      }
     },
     "members": {
       "loading": "Đang tải danh sách thành viên...",
@@ -635,7 +686,8 @@
           "subtitle": "Xếp hạng theo số lượng quiz đã hoàn thành ít nhất 1 lần",
           "value": "{{count}} quiz"
         }
-      }
+      },
+      "note": "Only shared published content counts. Each quiz uses only the first official attempt to prevent spam."
     },
     "profile": {
       "noRules": "Chưa có nội quy bổ sung."
@@ -1032,7 +1084,10 @@
       "cannotOpenQuiz": "Không mở được quiz. Kiểm tra quyền hoặc thử lại.",
       "noWorkspace": "Không tìm thấy workspace",
       "noRoadmap": "Không tìm thấy roadmap",
-      "unableToDeleteData": "Không thể xóa dữ liệu workspace. Vui lòng thử lại."
+      "unableToDeleteData": "Không thể xóa dữ liệu workspace. Vui lòng thử lại.",
+      "memberSeatLimitUnknown": "Member Seat Limit Unknown",
+      "memberSeatLimitExceeded": "Nhóm đang vượt ${overLimitBy} slot thành viên so với giới hạn ${limit}. Hãy giảm thành viên hoặc hủy lời mời chờ trước khi mời thêm.",
+      "memberSeatLimitReached": "Nhóm đã dùng hết ${used}/${limit} slot thành viên. Hãy hủy ${pending > 0 ? 'lời mời chờ hoặc ' : ''}nâng cấp gói trước khi mời thêm."
     },
     "toast": {
       "inviteSent": "Gửi lời mời thành công!",
@@ -1098,7 +1153,17 @@
       "preLearningOptional": "Không bắt buộc, tùy theo mức độ hiện tại của bạn.",
       "peopleTitle": "Những người trong nhóm này",
       "peopleDescription": "Một cái nhìn nhanh để thành viên biết mình đang học cùng ai.",
-      "youBadge": "Bạn"
+      "youBadge": "Bạn",
+      "learningSnapshotEyebrow": "Learning Snapshot Eyebrow",
+      "learningSnapshotTitle": "Learning Snapshot Title",
+      "learningSnapshotLoading": "Learning Snapshot Loading",
+      "snapshotAttempts": "Snapshot Attempts",
+      "snapshotPassed": "Snapshot Passed",
+      "snapshotScore": "Snapshot Score",
+      "snapshotPassRate": "Snapshot Pass Rate",
+      "snapshotMinutes": "Snapshot Minutes",
+      "snapshotClass": "Snapshot Class",
+      "learningSnapshotEmpty": "Learning Snapshot Empty"
     },
     "profileGate": {
       "checkingTitle": "Đang kiểm tra profile nhóm...",
@@ -2230,7 +2295,15 @@
       "placeholder": "Viết bình luận… Dùng / để tag câu hỏi · Enter để gửi",
       "footerPrefix": "Enter gửi · Shift+Enter xuống hàng ·",
       "leaderCanDelete": "Leader có thể xóa mọi bình luận",
-      "memberCanDelete": "Chỉ có thể xóa bình luận của bạn"
+      "memberCanDelete": "Chỉ có thể xóa bình luận của bạn",
+      "replyPlaceholder": "Reply to {{name}}… Press Enter to send"
+    },
+    "reply": {
+      "originalUnavailable": "Original Unavailable",
+      "replyingTo": "Replying to {{name}}",
+      "emptyBody": "Empty Body",
+      "action": "Action",
+      "cancel": "Cancel"
     }
   },
   "questionDiscussion": {
@@ -2286,6 +2359,17 @@
       "explanationLabel": "Giải thích:",
       "commentsPerQuestion": "Bình luận theo câu hỏi",
       "commentsPerQuestionSubtitle": "Câu hỏi và bình luận nằm chung một luồng thảo luận."
+    },
+    "reply": {
+      "originalUnavailable": "Original Unavailable",
+      "replyingTo": "Replying to {{name}}",
+      "emptyBody": "Empty Body",
+      "action": "Action",
+      "cancel": "Cancel",
+      "placeholder": "Reply to {{name}}"
+    },
+    "errors": {
+      "tooManyLinks": "Mỗi bình luận chỉ được chứa tối đa ${commentMaxLinks} link."
     }
   },
   "groupSourceDetailView": {
@@ -2378,5 +2462,14 @@
       "pastDate": "Không chọn ngày giờ trong quá khứ.",
       "invalid": "Thời gian không hợp lệ."
     }
+  },
+  "challengeBracket": {
+    "championLabel": "Vô địch: {{name}}"
+  },
+  "challengeTeams": {
+    "winnerLabel": "Đội {{team}} chiến thắng",
+    "draw": "Draw",
+    "finished": "Finished",
+    "benchHint": "Bench Hint"
   }
 }

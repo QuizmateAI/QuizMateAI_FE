@@ -71,7 +71,23 @@
       "fallbackLink": "リダイレクトが自動的に開始されない場合はここをクリックしてください。",
       "vnpaySuccessMessage": "支払いが成功しました",
       "vnpayFailedMessage": "支払いに失敗しました(コード: {{code}})"
-    }
+    },
+    "previousPage": "Previous Page",
+    "nextPage": "Next Page",
+    "pageSize": "Page Size",
+    "formHasErrors": "Form Has Errors",
+    "delete": "Delete",
+    "deleting": "Deleting",
+    "showPassword": "Show Password",
+    "hidePassword": "Hide Password",
+    "operational": "Operational",
+    "offline": "Offline",
+    "notifications": "Notifications",
+    "changeLanguage": "Change Language",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "loading": "Loading",
+    "loadFailed": "Load Failed"
   },
   "validation": {
     "fullnameRequired": "氏名は必須です",
@@ -253,5 +269,225 @@
     "labels": {
       "membersUnit": "メンバー"
     }
+  },
+  "passwordStrength": {
+    "weak": "Weak",
+    "medium": "Medium",
+    "good": "Good",
+    "strong": "Strong"
+  },
+  "sidebarSections": {
+    "aiUsageCommerce": "AI Usage Commerce"
+  },
+  "revenue": {
+    "sparkline": {
+      "label": "Label",
+      "halfvsHalf": "Halfvs Half",
+      "empty": "Empty"
+    },
+    "legend": {
+      "total": "Total"
+    },
+    "kpi": {
+      "vsPrev": "Vs Prev",
+      "txCount": "Tx Count",
+      "subscription": "Subscription",
+      "credit": "Credit",
+      "slot": "Slot"
+    },
+    "chartEmpty": "Chart Empty"
+  },
+  "pnl": {
+    "range": {
+      "allTime": "All Time",
+      "now": "Now",
+      "tooltip": "Tooltip",
+      "label": "Label"
+    },
+    "rev": {
+      "subscription": "Subscription",
+      "credit": "Credit",
+      "slot": "Slot"
+    },
+    "cost": {
+      "userPaid": "User Paid",
+      "plan": "Plan",
+      "system": "System"
+    },
+    "hero": {
+      "label": "Label",
+      "margin": "Margin",
+      "formula": "Formula",
+      "aiCost": "AI Cost",
+      "profit": "Profit",
+      "loss": "Loss",
+      "aiCostRatio": "AI Cost Ratio",
+      "ofRevenue": "Of Revenue"
+    },
+    "title": "Title",
+    "description": "Description",
+    "bucketDay": "Bucket Day",
+    "bucketWeek": "Bucket Week",
+    "bucketMonth": "Bucket Month",
+    "kpi": {
+      "revenue": "Revenue",
+      "revenueHint": "Revenue Hint",
+      "aiCharged": "AI Charged",
+      "aiChargedHint": "AI Charged Hint",
+      "aiSystem": "AI System",
+      "aiSystemHint": "AI System Hint",
+      "net": "Net",
+      "netHint": "Net Hint"
+    },
+    "chart": {
+      "revenueTs": "Revenue Ts",
+      "revenueTsHint": "Revenue Ts Hint",
+      "empty": "Empty",
+      "revenue": "Revenue"
+    },
+    "pie": {
+      "revenue": "Revenue",
+      "revenueHint": "Revenue Hint",
+      "cost": "Cost",
+      "costHint": "Cost Hint"
+    },
+    "partialError": "Partial Error"
+  },
+  "challengeDetailView": {
+    "leaderRole": {
+      "canSelfReviewTitle": "Can Self Review Title",
+      "canSelfReviewHint": "Can Self Review Hint",
+      "waitingReviewerTitle": "Waiting Reviewer Title",
+      "waitingReviewerHint": "Waiting Reviewer Hint",
+      "declinedTitle": "Declined Title",
+      "switchToReviewerHint": "Switch To Reviewer Hint",
+      "noReviewerTitle": "No Reviewer Title",
+      "noReviewerHint": "No Reviewer Hint",
+      "switchToReviewer": "Switch To Reviewer",
+      "reviewerTitle": "Reviewer Title",
+      "cannotRejoinHint": "Cannot Rejoin Hint",
+      "canRejoinHint": "Can Rejoin Hint",
+      "lockedTitle": "Locked Title",
+      "lockedAction": "Locked Action",
+      "switchToParticipant": "Switch To Participant"
+    },
+    "reviewerConcern": {
+      "criticalTitle": "Critical Title",
+      "title": "Title",
+      "leaderCriticalHint": "Leader Critical Hint",
+      "leaderHint": "Leader Hint",
+      "othersHint": "Others Hint",
+      "resolve": "Resolve"
+    },
+    "participantsLabel": "Participants Label",
+    "registrationLabel": "Registration Label",
+    "reviewerPanel": {
+      "justReviewedBadge": "Just Reviewed Badge",
+      "antiSpamHint": "Anti Spam Hint"
+    },
+    "editDialog": {
+      "postponeOnlyHint": "Postpone Only Hint"
+    },
+    "openingTitle": "Opening Title",
+    "openingTimeoutHint": "Opening Timeout Hint"
+  },
+  "challengeLeaderboard": {
+    "podium": {
+      "champion": "Champion",
+      "silver": "Silver",
+      "bronze": "Bronze"
+    },
+    "podiumTitle": "Podium Title",
+    "pendingTitle": "Pending Title"
+  },
+  "createChallengeWizard": {
+    "schedule": {
+      "personalConfigDesc": "Personal Config Desc",
+      "personalCapacityHint": "Personal Capacity Hint",
+      "ruleDurationTitle": "Rule Duration Title",
+      "ruleDurationDesc": "Rule Duration Desc",
+      "ruleRankingTitle": "Rule Ranking Title",
+      "ruleRankingDesc": "Rule Ranking Desc",
+      "ruleLeaderTitle": "Rule Leader Title",
+      "ruleLeaderDesc": "Rule Leader Desc",
+      "personalTip": "Personal Tip"
+    }
+  },
+  "createGroupMockTestForm": {
+    "examName": {
+      "manualTitle": "Manual Title"
+    },
+    "structure": {
+      "manualNotice": "Manual Notice",
+      "matchedTemplate": "Matched Template"
+    },
+    "errors": {
+      "materialRequired": "Material Required"
+    },
+    "buttons": {
+      "manualTemplate": "Manual Template"
+    },
+    "toast": {
+      "generatedSuccess": "Generated Success"
+    }
+  },
+  "No description": "No description",
+  "groupDocumentsTab": {
+    "deleteDialogTitle": "Delete Dialog Title",
+    "deleteDialogDescription": "Delete Dialog Description",
+    "deleteDialogWarning": "Delete Dialog Warning",
+    "deleteDialogCancel": "Delete Dialog Cancel",
+    "deleteDialogDeleting": "Delete Dialog Deleting",
+    "deleteDialogConfirm": "Delete Dialog Confirm"
+  },
+  "groupWorkspaceProfileConfigMirror": {
+    "editConfigTitle": "Edit Config Title",
+    "editConfigDescription": "Edit Config Description",
+    "confirm": {
+      "updateTitle": "Update Title",
+      "updateDescription": "Update Description",
+      "saveUpdateButton": "Save Update Button"
+    },
+    "finishUpdateButton": "Finish Update Button",
+    "messages": {
+      "updated": "Updated"
+    }
+  },
+  "quizDetailView": {
+    "overview": {
+      "challengeStartModeDefault": "Challenge Start Mode Default",
+      "challengeStartModeLabel": "Challenge Start Mode Label"
+    }
+  },
+  "groupManage": {
+    "settings": {
+      "deleteSuccess": "Delete Success"
+    }
+  },
+  "groupWalletTab": {
+    "qmcDescriptionCompact": "Qmc Description Compact",
+    "availableCredits": "Available Credits",
+    "availableCreditsNote": "Available Credits Note",
+    "noWalletUpdateYet": "No Wallet Update Yet",
+    "noPlanCreditExpiry": "No Plan Credit Expiry",
+    "balanceTitle": "Balance Title",
+    "topUpDescriptionCompact": "Top Up Description Compact"
+  },
+  "challengeManualMatchEditor": {
+    "wizard": {
+      "exitDialog": {
+        "titleEdit": "Title Edit",
+        "titleCreate": "Title Create"
+      }
+    }
+  },
+  "quizResultPage": {
+    "toFlashcard": {
+      "workspaceMissing": "Workspace Missing",
+      "workspaceFixedHint": "Workspace Fixed Hint"
+    },
+    "refreshAssessmentQueued": "Refresh Assessment Queued",
+    "refreshAssessmentFail": "Refresh Assessment Fail",
+    "score": "Score"
   }
 }

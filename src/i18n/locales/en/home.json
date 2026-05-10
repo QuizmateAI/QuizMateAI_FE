@@ -213,6 +213,11 @@
       "materialRequired": "Please select at least one material.",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service"
+    },
+    "group": {
+      "memberSeatLimitReached": "Nhóm đã dùng hết ${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit}/${normalizedMemberSeatLimit} slot thành viên.",
+      "memberSeatLimitRemaining": "Còn ${Number.isFinite(normalizedMemberSeatRemaining) ? normalizedMemberSeatRemaining : 0} slot trong tổng ${normalizedMemberSeatLimit} slot thành viên.",
+      "created": "Created"
     }
   }
 }

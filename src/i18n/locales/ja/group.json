@@ -501,7 +501,12 @@
       "openQuizTab": "クイズタブを開く",
       "cancel": "キャンセル",
       "confirmAssign": "今すぐ割り当て",
-      "assigning": "割り当て中..."
+      "assigning": "割り当て中...",
+      "snapshotGenerating": "Snapshot Generating",
+      "snapshotMissingMember": "Snapshot Missing Member",
+      "snapshotGenerateSuccess": "Snapshot Generate Success",
+      "snapshotGenerateFailed": "Snapshot Generate Failed",
+      "detailLeaderOnly": "Detail Leader Only"
     },
     "forms": {
       "loadingMaterials": "共有ドキュメントを読み込み中...",
@@ -539,7 +544,11 @@
           "finished": "終了",
           "playing": "進行中",
           "registered": "登録済み"
-        }
+        },
+        "startsInLabel": "Starts In Label",
+        "endsInLabel": "Ends In Label",
+        "joinNow": "Join Now",
+        "viewDetail": "View Detail"
       },
       "cancelDialogTitle": "このチャレンジをキャンセルしますか?",
       "cancelDialogDescription": "本当にこのチャレンジをキャンセルしますか? メンバーは参加できなくなり、スケジュールは削除されます。",
@@ -587,7 +596,13 @@
       "reviewContributorCannotRegister": "あなたはマッチレビュアーとして割り当てられているため、このチャレンジに登録できません。",
       "reviewInviteeNotice": "あなたはこのチャレンジマッチをレビューするよう招待されました。「マッチを開く」 → Check タブを開く: マッチを OK としてマークするか、準備ができたら APPROVED 投票を提出してください。開始時刻にレビュー要件が満たされると、システムが自動的にチャレンジを開きます。",
       "reviewInviteeShortHint": "上のチャレンジマッチブロックの「マッチを開く」をクリックし、「Check」タブを開いてください。",
-      "reviewQuizNotReadyHint": "マッチはまだプレビューできません(例: まだ生成中)。後ほど再度お試しください。"
+      "reviewQuizNotReadyHint": "マッチはまだプレビューできません(例: まだ生成中)。後ほど再度お試しください。",
+      "sections": {
+        "liveNow": "Live Now",
+        "startingSoon": "Starting Soon",
+        "scheduled": "Scheduled",
+        "finished": "Finished"
+      }
     },
     "members": {
       "loading": "メンバーを読み込み中...",
@@ -711,6 +726,270 @@
       "groupProfile": "グループプロフィール",
       "upload": "アップロード",
       "inviteMember": "メンバーを招待"
+    },
+    "time": {
+      "notUpdated": "Not updated",
+      "noActivity": "No recent activity",
+      "justNow": "Just now",
+      "hoursAgo": "{{count}} hour(s) ago",
+      "daysAgo": "{{count}} day(s) ago"
+    },
+    "toast": {
+      "bootstrapCreating": "Creating group workspace...",
+      "bootstrapFailed": "Unable to create group workspace.",
+      "loadMaterialsFailed": "Unable to load the document list.",
+      "loadMembersFailed": "Unable to load group members.",
+      "inviteLeaderOnly": "Only leaders can invite members.",
+      "inviteSent": "Member invitation sent.",
+      "profileBeforeUpload": "Complete the group profile before uploading documents.",
+      "noUploadPermission": "You don't have permission to upload documents.",
+      "uploadSuccess": "Sent {{count}} document(s) for processing.",
+      "uploadFailed": "Document upload failed.",
+      "resetDataSuccess": "Data cleared to update group onboarding.",
+      "resetDataFailed": "Unable to clear workspace data.",
+      "grantUploadSuccess": "Upload permission granted to {{name}}.",
+      "revokeUploadSuccess": "Upload permission revoked from {{name}}.",
+      "updateUploadFailed": "Unable to update upload permission.",
+      "updateRoleSuccess": "Role updated for {{name}}.",
+      "updateRoleFailed": "Unable to update role.",
+      "removeConfirm": "Remove {{name}} from the group?",
+      "removeSuccess": "Removed {{name}} from the group.",
+      "removeFailed": "Unable to remove member from the group.",
+      "moderationUpdated": "Moderation status updated.",
+      "moderationFailed": "Unable to update moderation.",
+      "materialNameRequired": "Document name cannot be empty.",
+      "materialRenamed": "Document name updated.",
+      "materialRenameFailed": "Unable to rename document.",
+      "materialDeleteConfirm": "Delete the document \"{{name}}\"?",
+      "materialDeleted": "Document deleted.",
+      "materialDeleteFailed": "Unable to delete document.",
+      "quizNameRequired": "Please enter the quiz name.",
+      "quizCreated": "Created mock quiz for UI review.",
+      "quizCreateFailed": "Unable to create a new quiz.",
+      "replySent": "Reply sent in discussion.",
+      "replyFailed": "Unable to send reply.",
+      "threadReopened": "Discussion reopened.",
+      "threadResolved": "Discussion marked as resolved.",
+      "threadUpdateFailed": "Unable to update discussion.",
+      "profileUpdated": "Group profile updated.",
+      "downloadDemo": "Download demo for clickable review UI."
+    },
+    "metrics": {
+      "activeMembers": "Active members",
+      "activeMembersCaption": "Members with a steady weekly participation rhythm.",
+      "materialsInGroup": "Group documents",
+      "materialsInGroupCaption": "{{count}} document(s) currently in the warning queue.",
+      "accuracy": "Accuracy",
+      "accuracyCaption": "Current average score of the whole group.",
+      "roadmapProgress": "Roadmap progress",
+      "roadmapProgressCaption": "{{count}} item(s) blocked and need leader action.",
+      "completionRate": "Completion rate",
+      "completionRateCaption": "Average roadmap progress for the group.",
+      "scoreTrend": "Score trend",
+      "scoreTrendCaption": "Average score of completed attempts.",
+      "activeMembersCountCaption": "Members with at least 5 days of activity.",
+      "pendingReview": "Pending review",
+      "pendingReviewCaption": "Flagged documents waiting for moderation.",
+      "accuracyShort": "Accuracy",
+      "accuracyShortCaption": "Current average score.",
+      "roadmapLabel": "Roadmap",
+      "roadmapCaption": "Personal roadmap progress.",
+      "uploadOk": "Upload OK",
+      "uploadOkCaption": "{{warned}} warning • {{rejected}} reject",
+      "discussion": "Discussion",
+      "discussionCaption": "Active {{count}} day(s)"
+    },
+    "overview": {
+      "hubTitle": "Group management and study hub",
+      "hubDescription": "Review end-to-end for materials, moderation, quiz, discussion, performance dashboard and roadmap in a single shell.",
+      "profileComplete": "Profile complete",
+      "profileIncomplete": "Profile needs update",
+      "reviewMaterials": "Review materials",
+      "viewDashboard": "View dashboard",
+      "createQuiz": "Create quiz",
+      "hotspotsTitle": "Hotspots that need action",
+      "moderationQueue": "Moderation queue",
+      "moderationQueueDetail": "{{count}} document(s) need leader or contributor review.",
+      "openDiscussions": "Open discussions",
+      "openDiscussionsDetail": "{{count}} thread(s) unresolved, openable from quiz or result screens.",
+      "recentMaterialsTitle": "New materials and warning queue",
+      "recentMaterialsDescription": "Lane to manage member uploads and the moderation queue.",
+      "quizDiscussionsTitle": "Per-question quiz discussion",
+      "quizDiscussionsDescription": "Deep-link discussions opened from quiz results or the quiz studio.",
+      "repliesCount": "{{count}} reply/replies",
+      "threadResolved": "Resolved",
+      "threadOpen": "Open",
+      "newBadge": "{{count}} new",
+      "trackingBadge": "Tracking"
+    },
+    "materials": {
+      "title": "Member materials",
+      "description": "Manage documents uploaded in the group, filter by uploader and status, and view extracted details.",
+      "searchPlaceholder": "Search by document name or summary",
+      "filterAllStatus": "All statuses",
+      "filterAllOwners": "All uploaders",
+      "emptyTitle": "No documents match the filters",
+      "emptyDescription": "Try another status, uploader, or upload more documents to review.",
+      "uploadButton": "Upload document",
+      "noSummary": "No summary for this document yet.",
+      "viewDetail": "View detail",
+      "openModeration": "Open moderation",
+      "sourceLive": "Live",
+      "sourceMock": "Mock"
+    },
+    "moderation": {
+      "title": "Moderation queue",
+      "description": "Queue of documents that are flagged, rejected, or need re-upload. Each action pushes an event to the mock logs.",
+      "emptyTitle": "No documents need review",
+      "emptyDescription": "Moderation queue is empty. You can go back to the materials hub to view all documents.",
+      "openMaterialsHub": "Open materials hub",
+      "needsReview": "Document needs further review before being used in the group.",
+      "approve": "Approve",
+      "requestReupload": "Request re-upload",
+      "reject": "Reject",
+      "viewDetail": "View detail"
+    },
+    "quiz": {
+      "studioTitle": "Quiz studio",
+      "studioDescription": "Create a mock quiz to review the flow of studio, practice, exam, result, and per-question discussion.",
+      "namePlaceholder": "Quiz name",
+      "descriptionPlaceholder": "Quiz description",
+      "questionCountPlaceholder": "Question count",
+      "durationPlaceholder": "Duration (minutes)",
+      "passScorePlaceholder": "Pass score",
+      "intentPreLearning": "Pre-learning",
+      "intentReview": "Review",
+      "intentPostLearning": "Post-learning",
+      "createMockQuiz": "Create mock quiz",
+      "questionCountLabel": "{{count}} questions",
+      "minutesLabel": "{{count}} min",
+      "lastAttempt": "Last attempt",
+      "attemptPassed": "Passed",
+      "attemptFailed": "Not passed",
+      "practice": "Practice",
+      "exam": "Exam",
+      "discussionQuestion1": "Question 1 discussion",
+      "recentAttemptsTitle": "Recent attempts",
+      "recentAttemptsDescription": "Latest quiz attempt history in the group.",
+      "noAttempts": "No attempts yet in the mock review.",
+      "attemptModePractice": "Practice",
+      "attemptModeExam": "Exam",
+      "attemptOngoing": "Ongoing"
+    },
+    "members": {
+      "title": "Member UI by role",
+      "description": "Leaders manage the roster and upload permissions, contributors follow content lanes, members review personal progress.",
+      "uploadGranted": "Can upload",
+      "uploadReadOnly": "View only",
+      "accuracy": "Accuracy",
+      "roadmap": "Roadmap",
+      "discussion": "Discussion",
+      "revokeUpload": "Revoke upload",
+      "grantUpload": "Grant upload",
+      "removeMember": "Remove member",
+      "personalLane": "Personal lane: {{focus}}",
+      "personalLaneDefault": "Track progress, assigned quizzes, and followed discussions.",
+      "streakLabel": "{{count}} day streak"
+    },
+    "performance": {
+      "title": "Per-member performance review",
+      "description": "View accuracy, streak, roadmap progress, upload outcomes, recent logs, and discussion participation.",
+      "scoreTrendTitle": "Score trend",
+      "recentFocusTitle": "Recent highlights",
+      "lastActivity": "Last activity:",
+      "weekLabel": "W{{index}}"
+    },
+    "roadmap": {
+      "title": "Roadmap board",
+      "description": "Phases, knowledge, progress, owner, blockers, and quiz-material links to review the full group flow.",
+      "phases": "{{count}} phases",
+      "knowledges": "{{count}} knowledges",
+      "quizzes": "{{count}} quizzes",
+      "drillDown": "Drill-down roadmap",
+      "ownerUnassigned": "Unassigned",
+      "ownerLine": "Owner: {{owner}} • Progress {{progress}}%",
+      "blocked": "Blocked",
+      "onTrack": "On track",
+      "knowledgeLine": "Progress {{progress}}% • {{count}} related quizzes",
+      "practice": "Practice",
+      "material": "Material",
+      "detailEmptyTitle": "Roadmap not found",
+      "detailEmptyDescription": "Roadmap detail may not be seeded or synced yet.",
+      "backToRoadmap": "Back to roadmap",
+      "phaseProgressLine": "Progress {{progress}}% • {{count}} knowledge nodes",
+      "blockedBadge": "Blocked",
+      "healthyBadge": "Healthy",
+      "knowledgeDetailLine": "Progress {{progress}}% • {{materialCount}} material • {{quizCount}} quiz",
+      "viewMaterial": "View material",
+      "openQuiz": "Open quiz"
+    },
+    "logs": {
+      "title": "Activity logs",
+      "description": "Aggregated logs from live activity and mock events generated when moderation, discussion, or quiz change."
+    },
+    "materialDetail": {
+      "emptyTitle": "Document not found",
+      "emptyDescription": "Material detail may have been deleted or is not synced yet.",
+      "backToMaterials": "Back to materials",
+      "liveMaterial": "Live material",
+      "mockMaterial": "Mock material",
+      "title": "Manage uploaded document",
+      "description": "View extracted text, summary, moderation report, and perform rename / delete / review actions.",
+      "documentName": "Document name",
+      "saveName": "Save name",
+      "summary": "Summary",
+      "loadingExtract": "Loading extract info...",
+      "noSummary": "No summary yet.",
+      "extractedText": "Extracted text / preview",
+      "noPreview": "No preview yet.",
+      "metadata": "Metadata",
+      "uploader": "Uploader: {{name}}",
+      "role": "Role: {{role}}",
+      "uploaded": "Uploaded: {{time}}",
+      "type": "Type: {{type}}",
+      "moderationReport": "Moderation report",
+      "noModerationDetail": "No moderation detail yet.",
+      "approve": "Approve",
+      "requestReupload": "Request re-upload",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "discussionDetail": {
+      "emptyTitle": "Discussion not ready",
+      "emptyDescription": "The thread may not be initialized or the quiz/question no longer exists.",
+      "backToQuizHub": "Back to quiz hub",
+      "resolved": "Resolved",
+      "open": "Open",
+      "activityCount": "{{count}} activity",
+      "contextSubtitle": "{{title}} • Async discussion per quiz question for leader, contributor, and member to review together.",
+      "question": "Question",
+      "sampleAnswer": "Sample answer",
+      "reopenThread": "Reopen thread",
+      "markResolved": "Mark as resolved",
+      "newReplyTitle": "New reply",
+      "replyPlaceholder": "Write opinions, counter-arguments, or notes for the whole group to review...",
+      "sendReply": "Send reply"
+    },
+    "sidebar": {
+      "flowTitle": "Group workspace flow",
+      "flowDescription": "Navigate sections via `?section=` and keep detail routes separate for materials, discussion, and roadmap.",
+      "snapshot": "Snapshot",
+      "moderationQueue": "Moderation queue",
+      "flaggedDocs": "{{count}} flagged document(s)",
+      "discussion": "Discussion",
+      "unresolvedThreads": "{{count}} unresolved thread(s)",
+      "logs": "Logs",
+      "logEntries": "{{count}} entries"
+    },
+    "shell": {
+      "bootstrapping": "Initializing group workspace...",
+      "notFoundTitle": "Group workspace not found",
+      "notFoundDescription": "The workspace may not have been created or you no longer have access.",
+      "loadingData": "Loading group workspace data...",
+      "refresh": "Refresh",
+      "groupProfile": "Group profile",
+      "upload": "Upload",
+      "inviteMember": "Invite member"
     }
   },
   "groupWorkspacePage": {
@@ -795,7 +1074,10 @@
       "cannotOpenQuiz": "このクイズを開けませんでした。権限を確認するか再試行してください。",
       "noWorkspace": "ワークスペースが見つかりません",
       "noRoadmap": "ロードマップが見つかりません",
-      "unableToDeleteData": "ワークスペースデータを削除できません。再試行してください。"
+      "unableToDeleteData": "ワークスペースデータを削除できません。再試行してください。",
+      "memberSeatLimitUnknown": "Member Seat Limit Unknown",
+      "memberSeatLimitExceeded": "Nhóm đang vượt ${overLimitBy} slot thành viên so với giới hạn ${limit}. Hãy giảm thành viên hoặc hủy lời mời chờ trước khi mời thêm.",
+      "memberSeatLimitReached": "Nhóm đã dùng hết ${used}/${limit} slot thành viên. Hãy hủy ${pending > 0 ? 'lời mời chờ hoặc ' : ''}nâng cấp gói trước khi mời thêm."
     },
     "toast": {
       "inviteSent": "招待を正常に送信しました!",
@@ -861,7 +1143,17 @@
       "preLearningOptional": "現在のレベルに応じて任意。",
       "peopleTitle": "このグループの人々",
       "peopleDescription": "メンバーが誰と学習しているか分かるクイックスナップショット。",
-      "youBadge": "あなた"
+      "youBadge": "あなた",
+      "learningSnapshotEyebrow": "Learning Snapshot Eyebrow",
+      "learningSnapshotTitle": "Learning Snapshot Title",
+      "learningSnapshotLoading": "Learning Snapshot Loading",
+      "snapshotAttempts": "Snapshot Attempts",
+      "snapshotPassed": "Snapshot Passed",
+      "snapshotScore": "Snapshot Score",
+      "snapshotPassRate": "Snapshot Pass Rate",
+      "snapshotMinutes": "Snapshot Minutes",
+      "snapshotClass": "Snapshot Class",
+      "learningSnapshotEmpty": "Learning Snapshot Empty"
     },
     "profileGate": {
       "checkingTitle": "グループプロフィールを確認中...",
@@ -963,13 +1255,99 @@
       "teamLabel": "チームバトル",
       "teamDesc": "チームサイズを設定するか、マッチ開始時にシステムにチームを自動バランスさせます。",
       "soloLabel": "1v1 トーナメント",
-      "soloDesc": "4/8/16/32 スロットのブラケットを選択し、参加者数をブラケットに合わせます。"
+      "soloDesc": "4/8/16/32 スロットのブラケットを選択し、参加者数をブラケットに合わせます。",
+      "teamAutoBalanceLabel": "Pre-enroll, auto-balance",
+      "teamAutoBalanceDesc": "Unlimited slots. When the match starts, registered members are split into 2 balanced teams.",
+      "teamFixedSizeLabel": "Fixed members per team",
+      "teamFixedSizeDesc": "Registration is limited to 2 teams multiplied by the number of members per team."
     },
     "footer": {
       "cancel": "キャンセル",
       "back": "戻る",
       "next": "次へ",
       "submit": "チャレンジを作成"
+    },
+    "errors": {
+      "createFailed": "Unable to create challenge"
+    },
+    "sourceMode": {
+      "existingLabel": "Existing content",
+      "existingDesc": "Create a snapshot from an existing content set",
+      "newLabel": "Manual challenge",
+      "newDesc": "Create a draft challenge match and compose questions with the manual editor",
+      "manualLabel": "Manual challenge",
+      "manualDesc": "Create a draft challenge match and compose questions with the manual editor",
+      "aiLabel": "AI challenge",
+      "aiDesc": "Generate a draft challenge match with QuizMate AI"
+    },
+    "quizList": {
+      "sectionTitle": "Shared workspace content",
+      "countTitle": "Only shared (non-assigned) content can be used for a challenge",
+      "searchPlaceholder": "Search by name...",
+      "searchAriaLabel": "Search content",
+      "loading": "Loading list…",
+      "emptyNoQuizzes": "No shared content in this workspace yet",
+      "emptyNoEligible": "No shared content available for a challenge",
+      "emptyNoMatches": "No matches for your search",
+      "emptyNoQuizzesHint": "Create a content set in the workspace first, or choose \"Manual challenge\" or \"AI challenge\" above.",
+      "emptyNoEligibleHint": "Content assigned to specific members cannot be used. Publish it as shared for the whole group or remove the per-member assignment first.",
+      "emptyNoMatchesHint": "Try a different keyword or clear the search box.",
+      "questionCount": "{{count}} questions",
+      "durationMinutes": "{{minutes}} min"
+    },
+    "newQuizNotice": {
+      "leadBefore": "After creating the challenge, the detail page opens. Click ",
+      "composeLabel": "Compose match",
+      "leadAfter": " to launch the match editor.",
+      "hint": "Choose a future start time; after creation, use the manual editor to finish the match before publishing.",
+      "aiHint": "Choose a future start time; after creation, use QuizMate AI to generate the match content before publishing."
+    },
+    "schedule": {
+      "titleLabel": "Challenge name *",
+      "titlePlaceholder": "e.g. Chapter 3 knowledge check",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "A short description of the challenge...",
+      "teamConfigTitle": "Team battle configuration",
+      "teamConfigHint": "Choose how to lock slots before opening registration. The system always splits into {{count}} teams.",
+      "membersPerTeamLabel": "Members per team",
+      "registrationSlotsLabel": "Registration slots",
+      "participantUnit": "participants",
+      "personalConfigTitle": "Free-for-all configuration",
+      "personalCapacityLabel": "Participant limit",
+      "personalCapacityPlaceholder": "Unlimited",
+      "bracketConfigTitle": "1v1 bracket configuration",
+      "bracketConfigHint": "Choose the bracket type first. If registration is invite-only, the invited member count must match the bracket slots.",
+      "bracketSizeLabel": "Bracket size",
+      "bracketSizeOption": "{{count}} participants",
+      "bracketPublicHint": "With public registration, the system caps the bracket at {{count}} participants.",
+      "leaderParticipatesLabel": "I will take the match with everyone",
+      "leaderParticipatesDesc": "You get a slot in the participant list. After the match is published, you cannot preview questions (for fairness to members). While the match is still a draft (DRAFT), you can still author and test it."
+    },
+    "registration": {
+      "publicLabel": "Public",
+      "publicDesc": "Any group member can register",
+      "inviteLabel": "Invite only",
+      "inviteDesc": "Only invited members can join",
+      "memberSearchPlaceholder": "Search members...",
+      "selectedCount": "Selected {{count}} members",
+      "noMembers": "No members found",
+      "memberFallback": "Member"
+    },
+    "review": {
+      "challengeInfo": "Challenge info",
+      "fieldName": "Name:",
+      "fieldDescription": "Description:",
+      "fieldStart": "Start:",
+      "fieldEnd": "End:",
+      "quizHeading": "Match content",
+      "quizExistingSelected": "{{title}} (shared content snapshot)",
+      "quizNotChosen": "Not selected",
+      "quizNewNotice": "Manual challenge (author the questions in the challenge detail after creation)",
+      "quizAiNotice": "AI challenge (generate the questions in the challenge detail after creation)",
+      "snapshotNote": "The snapshot is not assigned per member; all challenge participants share this same content.",
+      "registrationHeading": "Registration",
+      "registrationPublic": "Public — any member can register",
+      "registrationInvite": "Invite only — {{count}} members invited"
     }
   },
   "challengeDetailView": {
@@ -990,7 +1368,84 @@
       "waiting": "待機中"
     },
     "snapshotPendingTitle": "チャレンジ問題を準備しています",
-    "snapshotPendingHint": "システムがチャレンジ問題を初期化中です。準備が整い次第、管理オプション（問題作成、レビュアー招待、公開）が表示されます。"
+    "snapshotPendingHint": "システムがチャレンジ問題を初期化中です。準備が整い次第、管理オプション（問題作成、レビュアー招待、公開）が表示されます。",
+    "errors": {
+      "generic": "Something went wrong",
+      "cannotStartAttempt": "Cannot start the attempt",
+      "cannotLoadDetail": "Cannot load challenge detail",
+      "missingRoundQuiz": "Server did not return the match quiz."
+    },
+    "cannotOpenTitle": "Cannot open challenge",
+    "waitingReviewerConfirm": "Waiting for reviewer confirmation",
+    "publishHints": {
+      "needDraftQuizContent": "The leader must compose the match content first.",
+      "needActiveQuiz": "The challenge match must be moved from draft to active before publishing the challenge.",
+      "needReviewer": "At least one reviewer is required before publishing the challenge.",
+      "needBothReviewers": "At least one reviewer must confirm the match before publishing.",
+      "needPrimaryReviewer": "At least one reviewer is required before publishing the challenge match.",
+      "needAssistantReviewer": "Additional reviewers can help check the match.",
+      "assistantConfirmedWaitingPrimary": "A reviewer has confirmed the match. The challenge can continue when publish requirements are met.",
+      "needReviewersConfirm": "At least one reviewer must confirm the match is OK before the leader can publish the challenge.",
+      "startTimePassed": "The challenge has reached its start time, so it can no longer be published.",
+      "afterPublishInfo": "After publishing, members will see the challenge and be able to register.",
+      "needReviewerWhenLeaderParticipates": "Leader is participating, so invite 1 or 2 reviewers before publishing the challenge."
+    },
+    "notPublishedBadge": "Not published",
+    "startLabel": "Start",
+    "endLabel": "End",
+    "participantCount": "{{count}} participants",
+    "registrationMode": {
+      "inviteOnly": "Invite only",
+      "public": "Public"
+    },
+    "quizChallengeLabel": "Challenge match",
+    "minutesShort": "{{count}} minutes",
+    "questionsShort": "questions",
+    "composeChallengeQuiz": "Compose match",
+    "draftQuizHint": "Create the match content first, then you can preview the challenge match.",
+    "leaderSetupFlowHint": "Leader composes the match, a reviewer confirms it, then the challenge can be published.",
+    "processingQuizTitle": "Challenge match is being generated",
+    "processingQuizHint": "The system is still generating questions for this challenge. Return here shortly to continue reviewing or editing the match.",
+    "processingQuizProgressLabel": "WebSocket progress",
+    "reviewerPanel": {
+      "orderHint": "All reviewers share the same review role.",
+      "primaryBadge": "Reviewer",
+      "assistantBadge": "Reviewer",
+      "lastViewedAt": "Opened the match at: {{time}}",
+      "lastViewedEmpty": "Has not opened the match yet",
+      "confirmedOkAt": "Confirmed match is OK at: {{time}}",
+      "confirmedOkEmpty": "Has not confirmed the match yet",
+      "pendingShort": "Not opened • Not confirmed",
+      "openedPendingShort": "Opened {{time}} • Not confirmed",
+      "confirmedShort": "Confirmed {{time}}",
+      "noEligibleMembersHint": "No eligible members to invite.",
+      "needTwoReviewersHint": "Only the primary reviewer is needed to publish.",
+      "setPrimary": "Set primary",
+      "inviteSentToast": "Review invitation sent. The system has emailed the reviewer.",
+      "invitationPendingShort": "Review invitation pending",
+      "invitationDeclinedShort": "Review invitation declined",
+      "participatingLeaderHint": "Leader is joining the challenge, so invite 1 or 2 reviewers here. All reviewers have the same role.",
+      "optionalHint": "Invite up to 2 reviewers if you want another pair of eyes before publishing. All reviewers have the same role.",
+      "reviewerBadge": "Reviewer",
+      "needReviewerWhenLeaderParticipates": "Leader is participating, so invite at least 1 reviewer. You can invite up to 2 reviewers.",
+      "optionalReviewersHint": "Reviewers are optional here. If invited, they can help check and clean up the match before you publish it.",
+      "publishedLockHint": "Challenge is already published — the reviewer list is locked and can no longer be edited."
+    },
+    "finishBlocked": {
+      "noParticipants": "No one has registered yet, so the challenge cannot be finished early.",
+      "pending": "{{count}} participant(s) have not submitted yet. Manual finish is only allowed once everyone has submitted."
+    },
+    "participantsTitle": "Participants ({{count}})",
+    "memberFallback": "Member",
+    "reviewInvitation": {
+      "title": "You were invited to review this challenge",
+      "body": "The leader selected you as a reviewer. If you accept, you can inspect the match before it is published and you will not be able to register as a participant in this challenge.",
+      "accept": "Accept review",
+      "decline": "Decline",
+      "withdrawAfterAccept": "Withdraw from review",
+      "withdrawConfirm": "Withdraw from reviewing this challenge? The leader will have to invite someone else and you may register as a participant if registration is still open.",
+      "withdrawDisabledHint": "You already confirmed “Match is OK”, so you can no longer withdraw."
+    }
   },
   "challengeLeaderboard": {
     "empty": "参加者はまだいません",
@@ -1020,7 +1475,33 @@
     "privateHeading": "非公開 — 招待のみ",
     "publicDescription": "誰でもこのグループを発見し参加リクエストを送れます。",
     "privateDescription": "直接招待を持つメンバーのみがこのグループにアクセスできます。",
-    "leaderOnlyControls": "リーダー専用コントロール"
+    "leaderOnlyControls": "リーダー専用コントロール",
+    "identityNote": "the group name anchors this room",
+    "governanceLane": "Governance lane",
+    "governanceLeader": "Leader access",
+    "governanceReadOnly": "Read only",
+    "governanceNote": "who can actively reshape the group",
+    "subjectAxis": "Subject axis",
+    "subjectNote": "the academic direction of this room",
+    "visibilityPublic": "Group is now Public",
+    "visibilityPrivate": "Group is now Private",
+    "visibilityFailed": "Failed to update visibility",
+    "governanceDeck": "Governance deck",
+    "identityAndGuardrails": "Identity and guardrails",
+    "heroTitle": "Shape the room without breaking the rhythm",
+    "heroDescription": "This surface is for naming the collective, clarifying its purpose, and protecting the lifecycle of the workspace.",
+    "controlNote": "Control note",
+    "controlNoteLeader": "Edit only what improves clarity. The best group settings feel invisible because everyone understands the room instantly.",
+    "controlNoteMember": "You can review how the group is configured here, while structural edits stay with the leader.",
+    "workspaceFingerprint": "Workspace fingerprint",
+    "nameIdentityMarkers": "Name and identity markers",
+    "guardrails": "Guardrails",
+    "guardrailsDescription": "Stable metadata that frames how the group is understood",
+    "changeAuthority": "Change authority",
+    "leaderAuthorityNote": "You can rename, reposition, or remove this group.",
+    "retireHeading": "Retire this group carefully",
+    "confirmTypePrefix": "Type",
+    "confirmTypeSuffix": "to confirm permanent removal."
   },
   "groupDocumentsTab": {
     "noDate": "日付なし",
@@ -1065,7 +1546,9 @@
     "issuesSectionTitle": "注意が必要な教材",
     "issueDefaultMessage": "この教材はグループライブラリに入れませんでした。",
     "issueOpenHint": "教材を開いて審査結果を検査します。",
-    "issuePillRejected": "却下"
+    "issuePillRejected": "却下",
+    "confirmDeleteMaterial": "Delete \"{{title}}\" from the group workspace?",
+    "confirmDeleteFallbackTitle": "this material"
   },
   "challengeScheduleFields": {
     "helper": "未来の時刻のみ選択してください。開始から終了までのウィンドウは少なくとも {{minutes}} 分必要です。ブラケットマッチはラウンド数に応じてより長いウィンドウが必要です。",
@@ -1079,5 +1562,904 @@
       "pastDate": "過去の日付や時刻を選択しないでください。",
       "invalid": "選択された時刻が無効です。"
     }
+  },
+  "challengeBracket": {
+    "championLabel": "Vô địch: {{name}}"
+  },
+  "challengeTeams": {
+    "winnerLabel": "Đội {{team}} chiến thắng",
+    "draw": "Draw",
+    "finished": "Finished",
+    "benchHint": "Bench Hint"
+  },
+  "groupDiscussionPanel": {
+    "reply": {
+      "originalUnavailable": "Original Unavailable",
+      "replyingTo": "Replying to {{name}}",
+      "emptyBody": "Empty Body",
+      "action": "Action",
+      "cancel": "Cancel"
+    },
+    "input": {
+      "replyPlaceholder": "Reply to {{name}}… Press Enter to send",
+      "placeholder": "Write a comment… Use / to tag a question · Enter to send",
+      "footerPrefix": "Enter to send · Shift+Enter for new line ·",
+      "leaderCanDelete": "Leader can delete any comment",
+      "memberCanDelete": "You can only delete your own comments"
+    },
+    "relative": {
+      "justNow": "just now",
+      "minutesAgo": "{{count}} minute(s) ago",
+      "hoursAgo": "{{count}} hour(s) ago"
+    },
+    "defaultUserName": "User",
+    "viewQuestionTooltip": "View this question",
+    "confirmDelete": "Confirm",
+    "deleteCommentTooltip": "Delete comment",
+    "empty": {
+      "title": "No comments yet",
+      "description": "Start the discussion! Use <1>/</1> to tag a specific question."
+    },
+    "header": {
+      "title": "General discussion",
+      "subtitle": "A shared thread for the whole group, with replies and question tags in one place.",
+      "live": "Live",
+      "offline": "Offline",
+      "hintPrefix": "Press",
+      "hintSuffix": "to tag a question"
+    },
+    "locked": {
+      "title": "Complete the quiz to join the discussion",
+      "description": "Finish the attempt first to exchange with other group members."
+    },
+    "guideline": {
+      "title": "General discussion guide",
+      "enterHint": "send message",
+      "shiftEnterHint": "new line",
+      "slashHintPrefix": "Type",
+      "slashHintSuffix": "to tag a question — members clicking the chip will jump to that question",
+      "leaderHint": "Leader can delete any comment",
+      "closeTooltip": "Close guide"
+    },
+    "suggestions": {
+      "questions": "Questions",
+      "questionsWithQuery": "Questions · \"{{query}}\"",
+      "shortcuts": "↑↓ navigate · Enter confirm · Esc close",
+      "countFiltered": "{{shown}} / {{total}} questions",
+      "countTotal": "{{total}} questions"
+    },
+    "tagsPreview": {
+      "label": "Inserted tags:"
+    }
+  },
+  "questionDiscussion": {
+    "reply": {
+      "originalUnavailable": "Original Unavailable",
+      "replyingTo": "Replying to {{name}}",
+      "emptyBody": "Empty Body",
+      "action": "Action",
+      "cancel": "Cancel",
+      "placeholder": "Reply to {{name}}"
+    },
+    "errors": {
+      "tooManyLinks": "Mỗi bình luận chỉ được chứa tối đa ${commentMaxLinks} link."
+    },
+    "shared": {
+      "relativeTime": {
+        "justNow": "just now",
+        "minutesAgo": "{{count}} minutes ago",
+        "hoursAgo": "{{count}} hours ago"
+      },
+      "userFallback": "User",
+      "composerNameFallback": "you",
+      "delete": "Delete",
+      "deleteCommentTitle": "Delete comment",
+      "sendTitle": "Send (Enter)",
+      "composerPlaceholder": "Comment as {{name}}",
+      "threadTitle": "Discussion for question {{index}}",
+      "emptyState": "No comments yet. Start the discussion for this question.",
+      "roles": {
+        "leader": "Leader",
+        "contributor": "Contributor"
+      }
+    },
+    "inline": {
+      "guide": {
+        "title": "Question discussion guide",
+        "dismissTitle": "Dismiss guide",
+        "enterToSend": "<strong>Enter</strong> to send a quick comment",
+        "shiftEnterNewLine": "<strong>Shift + Enter</strong> to start a new line",
+        "discussTopic": "Discuss the answers, solutions, or anything unclear about this question",
+        "hoverToDelete": "Hover over a comment to delete it (your comments only)"
+      },
+      "locked": {
+        "title": "Complete the quiz to join the discussion",
+        "subtitle": "Finish the quiz first so you can exchange ideas with other members about this question."
+      },
+      "attempted": "Attempted",
+      "footerShortcut": "Enter to send · Shift+Enter for new line",
+      "composerTools": {
+        "emoji": "Emoji",
+        "camera": "Camera",
+        "image": "Image",
+        "sticker": "Sticker"
+      }
+    },
+    "dialog": {
+      "lockedNotice": "Complete the quiz to join the discussion for this question.",
+      "questionBadge": "Question {{index}}",
+      "commentCount": "{{count}} comments",
+      "headerDescription": "Open a dedicated thread for this question so members can discuss answers, solutions, and anything unclear.",
+      "answersAndExplanation": "Answers and explanation",
+      "canViewNow": "Available to view now",
+      "lockedUntilFinish": "Locked until you finish the quiz",
+      "explanationLabel": "Explanation:",
+      "commentsPerQuestion": "Comments for this question",
+      "commentsPerQuestionSubtitle": "The question and its comments live in the same discussion thread."
+    }
+  },
+  "groupDashboard": {
+    "common": {
+      "memberFallback": "Member",
+      "group": "Group",
+      "system": "System",
+      "leaderDefault": "Leader"
+    },
+    "dateHelpers": {
+      "noDate": "No date",
+      "unknownTime": "Unknown time",
+      "today": "Today",
+      "oneDayAgo": "1 day ago",
+      "daysAgo": "{{count}} days ago",
+      "onDate": "On {{date}}",
+      "missingJoinDate": "Missing join date",
+      "joinedToday": "Joined today",
+      "joinedOneDayAgo": "Joined 1 day ago",
+      "joinedDaysAgo": "Joined {{count}} days ago",
+      "joinedOnDate": "Joined on {{date}}",
+      "noExpiry": "No expiry",
+      "expiresToday": "Expires today",
+      "expiresInOneDay": "Expires in 1 day",
+      "expiresInDays": "Expires in {{count}} days"
+    },
+    "logLabels": {
+      "groupCreated": "Group created",
+      "invitationSent": "Invitation sent",
+      "invitationPending": "Invitation active",
+      "invitationAccepted": "Invitation accepted",
+      "invitationExpired": "Invitation expired",
+      "memberJoined": "Member joined",
+      "quizCreated": "Quiz created",
+      "quizPublished": "Quiz published",
+      "quizAudienceUpdated": "Quiz assignment",
+      "quizSubmitted": "Quiz submitted",
+      "activity": "Activity"
+    },
+    "classification": {
+      "strong": "Strong",
+      "average": "Average",
+      "weak": "Needs support",
+      "atRisk": "At risk"
+    },
+    "attention": {
+      "openInvitationsTitle": "{{count}} invitation(s) still open",
+      "expiringSoonNote": "{{count}} invitation(s) expire soon.",
+      "keepQueueShort": "Keep the queue short and current.",
+      "missingContributorTitle": "No contributor assigned",
+      "missingContributorNote": "Add at least one contributor to share content ownership.",
+      "uploadReviewTitle": "{{name}} needs upload review",
+      "uploadReviewNote": "Contributor lane is set but source upload is still blocked.",
+      "justJoinedTitle": "{{name}} just joined",
+      "justJoinedNote": "Assign a first task early."
+    },
+    "watchStatus": {
+      "needsUploadReview": "Needs upload review",
+      "readyToContribute": "Ready to contribute",
+      "onboardingWindow": "Onboarding window",
+      "observeParticipation": "Observe participation"
+    },
+    "stats": {
+      "totalMembersLabel": "Total members",
+      "totalMembersNote": "full roster",
+      "newThisWeekLabel": "New this week",
+      "newThisWeekNote": "recent joiners",
+      "coordinationLanesLabel": "Coordination lanes",
+      "coordinationLanesNote": "{{percent}}% of roster",
+      "uploadReadyLabel": "Upload ready",
+      "uploadReadyNote": "{{percent}}% can add sources"
+    },
+    "compact": {
+      "systemDashboardEyebrow": "Group command center",
+      "titleWithGroup": "{{name}} overview",
+      "headlineSummary": "Use this tab for group-level operations: health signals, coordination gaps, invitations, and activity flow.",
+      "scope": {
+        "questionLabel": "This tab answers",
+        "questionValue": "What needs attention across the whole group?",
+        "groupHealthTitle": "Group health",
+        "groupHealthBody": "Invitation queue, role coverage, upload readiness, and recent activity.",
+        "attentionTitle": "Attention queue",
+        "attentionBody": "Highlights operational gaps before they become member-level work.",
+        "memberStatsTitle": "Member stats handoff",
+        "memberStatsBody": "Open member stats when you need per-person actions or learning detail."
+      },
+      "memberStatsCtaTitle": "Need per-member decisions?",
+      "memberStatsCtaBody": "Use Member stats for individual snapshots, quiz assignment, and member-specific follow-up.",
+      "learningIntelligenceEyebrow": "Learning intelligence",
+      "learningIntelligenceSummary": "Live aggregates from quiz attempts, scores, and AI classification — tap any card to inspect a member.",
+      "summaryLoadError": "Could not load learning summary. Try again later.",
+      "kpiQuizAttemptsLabel": "Quiz attempts",
+      "kpiQuizAttemptsNote": "all members",
+      "kpiCompletedLabel": "Completed",
+      "kpiCompletedNote": "submitted sets",
+      "kpiAvgScoreLabel": "Avg score",
+      "kpiAvgScoreNote": "per member w/ completions",
+      "kpiAvgAccuracyLabel": "Avg accuracy",
+      "kpiAvgAccuracyNote": "graded answers",
+      "scoreSpotlightTitle": "Score ranking",
+      "scoreSpotlightSubtitle": "Ranks {{pageSize}} members per page by average result from the latest snapshot.",
+      "noCompletedQuizData": "No completed quiz data yet.",
+      "activityChartSubtitle": "Recent log activity helps you see whether the group is moving or standing still.",
+      "roleChartSubtitle": "Mix of leaders, contributors, members, and execution coverage across the group.",
+      "memberCardsEyebrow": "Member stats cards",
+      "noActiveMembers": "No active members to analyze.",
+      "memberCardDone": "done",
+      "memberCardAvg": "avg",
+      "memberCardAcc": "acc",
+      "pageSummary": "Page {{page}} of {{totalPages}} · {{total}} members",
+      "openMemberStats": "Open member stats",
+      "kpiPassedLabel": "Passed",
+      "kpiPassedNote": "passed quiz attempts",
+      "kpiMinutesLabel": "Minutes spent",
+      "kpiMinutesNote": "tracked study time"
+    },
+    "snapshots": {
+      "generateSuccess": "Learning snapshots updated ({{generated}} new, {{skipped}} unchanged).",
+      "generateFailed": "Could not update learning snapshots.",
+      "generateDaily": "Update daily snapshots",
+      "generating": "Updating...",
+      "lastUpdated": "Updated",
+      "latestTitle": "Latest member snapshots",
+      "latestSubtitle": "Daily snapshot page {{page}}/{{totalPages}}.",
+      "openMemberStats": "Open member stats",
+      "loadingLatest": "Loading snapshots...",
+      "emptyLatest": "No snapshots yet. Update daily snapshots to generate data from quiz attempts.",
+      "attempts": "Attempts",
+      "passed": "Passed",
+      "score": "Score",
+      "passRate": "Pass rate",
+      "topPerformer": "Highest score",
+      "leadingClass": "Leading class",
+      "openHint": "Open to inspect learning detail.",
+      "noQuizData": "No quiz data yet",
+      "readyStatus": "Learning data ready",
+      "noQuizHint": "There are no completed quiz attempts to inspect yet."
+    },
+    "analyticsUpgrade": {
+      "title": "Workspace analytics",
+      "description": "Group learning dashboards use the same Workspace analytics entitlement as individual stats. Upgrade your plan to unlock member cards, charts, and drill-down views.",
+      "viewPlans": "View plans"
+    },
+    "detail": {
+      "loading": "Loading member…",
+      "tabAll": "All attempts",
+      "tabOfficial": "Official",
+      "tabPractice": "Practice",
+      "fetchingSignals": "Fetching learning signals…",
+      "uploads": "Uploads",
+      "attempts": "Attempts",
+      "completed": "Completed",
+      "avgScore": "Avg score",
+      "accuracy": "Accuracy",
+      "strongAreas": "Strong",
+      "growthAreas": "Growth areas",
+      "recentMoves": "Recent moves",
+      "noData": "No data."
+    },
+    "charts": {
+      "roleDistributionCompact": "Role distribution",
+      "weeklyTrendCompact": "7-day activity trend",
+      "recentWindow": "Last 7 days",
+      "noRoleData": "No member data yet.",
+      "noActivityLogData": "No activity log data yet.",
+      "roleDistributionTitle": "Role distribution chart",
+      "roleDistributionSubtitle": "Compare role load across leader, contributor, and member lanes.",
+      "weeklyChartTitle": "Weekly activity chart",
+      "weeklyChartSubtitle": "Track event volume from activity logs by day."
+    },
+    "hero": {
+      "eyebrow": "Group dashboard",
+      "description": "Focus on who needs follow-up, which invitations are still open, and what changed most recently.",
+      "invitationQueueLabel": "Invitation queue",
+      "leadersOnly": "leaders only",
+      "expiringSoon": "expiring soon",
+      "currentlyOpen": "currently open",
+      "activityThisWeekLabel": "Activity this week",
+      "recentEventsOnLog": "recent events on log",
+      "trackingBadge": "Tracking"
+    },
+    "attentionPanel": {
+      "title": "What needs attention",
+      "allGoodTitle": "No urgent gap right now",
+      "allGoodNote": "The roster looks stable. Keep watching the log and invitation queue."
+    },
+    "invitationsPanel": {
+      "title": "Current invitations",
+      "description": "See who was invited, when the invitation was sent, and which requests are close to expiry.",
+      "leadersOnlyNote": "Only leaders can review this queue.",
+      "loading": "Loading invitations...",
+      "empty": "No invitations waiting right now.",
+      "invitedBy": "Invited by",
+      "sent": "Sent",
+      "statusPending": "Status: pending"
+    },
+    "watchlist": {
+      "title": "Member watchlist",
+      "preparing": "Preparing watchlist...",
+      "empty": "No members to watch yet."
+    },
+    "activityLog": {
+      "title": "Group activity log",
+      "description": "A compact timeline of the most recent changes in the group.",
+      "loading": "Loading activity log...",
+      "empty": "No group activity recorded yet."
+    }
+  },
+  "groupWalletTab": {
+    "noDate": "No date",
+    "group": "Group",
+    "paidPlanActive": "Paid plan active",
+    "leaderOnlyEyebrow": "Group wallet",
+    "leaderOnlyTitle": "Leader access only",
+    "leaderOnlyDescription": "Only the group leader can manage the shared wallet, top up credits, and inspect purchase history for this workspace.",
+    "groupWalletEyebrow": "Group wallet",
+    "qmcDescription": "QMC means QuizMate Credit — the shared credit unit this group uses for quiz, flashcard, roadmap, and other AI actions.",
+    "qmcBadge": "QMC = QuizMate Credit",
+    "sharedByGroup": "Shared by the whole group",
+    "balanceEyebrow": "Group wallet balance",
+    "balanceSubtitle": "Available now for shared AI actions.",
+    "noPaidPlan": "No paid plan",
+    "expires": "Expires",
+    "managePlan": "Manage plan",
+    "choosePlan": "Choose plan",
+    "dataError": "Some wallet data could not be loaded. Refresh to try again.",
+    "balanceBreakdown": "Balance breakdown",
+    "regularCredits": "Regular credits",
+    "planCredits": "Plan credits",
+    "walletUpdated": "Wallet updated",
+    "planCreditsExpire": "Plan credits expire",
+    "topUpCredits": "Top up credits",
+    "topUpDescription": "Add more QMC to this shared wallet.",
+    "notAllowedBuyCredits": "This plan currently does not allow buying extra credits for the group.",
+    "noCreditPackages": "No credit packages are available right now.",
+    "bonusIncluded": "Includes +{{amount}} bonus QMC",
+    "topUpSharedWallet": "Top up the shared wallet",
+    "buyNow": "Buy now",
+    "purchaseHistory": "Purchase history",
+    "purchaseHistoryDescription": "Recent payments for this workspace plan and shared credits.",
+    "noPurchaseRecords": "No purchase records yet.",
+    "usageHistory": "Usage history",
+    "usageHistoryDescription": "Recent shared-wallet activity triggered by AI usage and credit movements.",
+    "noUsageRecords": "No usage records yet.",
+    "recent": "Recent",
+    "balanceAfter": "Balance after",
+    "pagination": {
+      "summary": "Showing {{start}} - {{end}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{page}} / {{totalPages}}"
+    },
+    "creditLabels": {
+      "WELCOME": "Welcome credits",
+      "TOPUP": "Top up",
+      "CONSUME": "Consume",
+      "RESERVE": "Reserved",
+      "RESERVE_CANCELLED": "Reserve released",
+      "REFUND": "Refund",
+      "ADJUST": "Adjustment",
+      "PLAN_BONUS": "Plan bonus",
+      "PLAN_EXPIRE_RESET": "Plan reset"
+    },
+    "creditSources": {
+      "SYSTEM": "System",
+      "PAYMENT": "Payment",
+      "AI_USAGE": "AI usage",
+      "USER_PLAN": "User plan",
+      "WORKSPACE_PLAN": "Group plan",
+      "ADMIN": "Admin"
+    },
+    "paymentTargets": {
+      "WORKSPACE_PLAN": "Group plan",
+      "WORKSPACE_CREDIT": "Group credits",
+      "WORKSPACE_SLOT": "Seat slot",
+      "USER_PLAN": "User plan",
+      "USER_CREDIT": "User credits"
+    },
+    "paymentStatus": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "uiActivity": {
+      "fallback": "Used an AI feature",
+      "defaultPrefix": "Used AI for: ",
+      "inWorkspace": "In workspace: {{name}}",
+      "processPdfPrefix": "Uploaded PDF: ",
+      "processPdfFallback": "Uploaded a PDF",
+      "processDocxPrefix": "Uploaded Word file: ",
+      "processDocxFallback": "Uploaded a Word file",
+      "processPptxPrefix": "Uploaded slides: ",
+      "processPptxFallback": "Uploaded slides",
+      "processXlsxPrefix": "Uploaded Excel file: ",
+      "processXlsxFallback": "Uploaded an Excel file",
+      "processImagePrefix": "Uploaded image: ",
+      "processImageFallback": "Uploaded an image",
+      "processAudioPrefix": "Uploaded audio: ",
+      "processAudioFallback": "Uploaded audio",
+      "processVideoPrefix": "Uploaded video: ",
+      "processVideoFallback": "Uploaded a video",
+      "generateQuizPrefix": "Generated quiz: ",
+      "generateQuizFallback": "Generated a quiz",
+      "generateFlashcardsPrefix": "Generated flashcards from: ",
+      "generateFlashcardsFallback": "Generated flashcards",
+      "generateMockTestPrefix": "Generated mock test: ",
+      "generateMockTestFallback": "Generated a mock test"
+    }
+  },
+  "roadmapQuizListView": {
+    "visibility": {
+      "communityPublicShort": "Public",
+      "communityPublicLong": "Shared with community",
+      "privateShort": "Private",
+      "privateLong": "Currently private"
+    },
+    "header": {
+      "communityExplorer": "Community Quiz",
+      "create": "Create"
+    },
+    "search": {
+      "placeholder": "Search quizzes..."
+    },
+    "statusFilter": {
+      "all": "All",
+      "ACTIVE": "Active",
+      "DRAFT": "Draft",
+      "COMPLETED": "Completed"
+    },
+    "statusLabels": {
+      "ACTIVE": "Active",
+      "DRAFT": "Draft",
+      "COMPLETED": "Completed",
+      "INACTIVE": "Inactive",
+      "PROCESSING": "Processing",
+      "ERROR": "Error"
+    },
+    "intentLabels": {
+      "PRE_LEARNING": "Pre-learning",
+      "POST_LEARNING": "Post-learning",
+      "PRACTICE": "Practice",
+      "REVIEW": "Review",
+      "MOCK_TEST": "Mock test"
+    },
+    "difficultyLevels": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "custom": "Custom"
+    },
+    "empty": {
+      "loading": "Loading quizzes...",
+      "noQuizYet": "No quizzes yet",
+      "noResults": "No matching quizzes",
+      "createQuiz": "Create quiz"
+    },
+    "feedback": {
+      "button": "Feedback"
+    },
+    "card": {
+      "aiLabel": "AI",
+      "manualLabel": "Manual quiz",
+      "timeDuration": "Duration",
+      "overallDifficulty": "Difficulty",
+      "minutes": "min",
+      "minutesShort": "min"
+    },
+    "roadmapOverview": {
+      "questions": "Questions",
+      "questionsHint": "questions",
+      "attempts": "Attempts",
+      "duration": "Duration",
+      "score": "Score",
+      "passScore": "Pass score",
+      "updatedOn": "Updated"
+    },
+    "examMode": {
+      "totalTimer": "Total time limit exam",
+      "perQuestion": "Per-question exam",
+      "totalTimerShort": "Total time limit",
+      "perQuestionShort": "Per question"
+    },
+    "processing": {
+      "label": "Generating quiz",
+      "hint": "The system is generating questions and configuring the quiz."
+    },
+    "result": {
+      "passed": "Passed",
+      "notPassed": "Not passed",
+      "notAttempted": "Not attempted"
+    },
+    "actions": {
+      "practice": "Practice",
+      "exam": "Exam",
+      "retakeExam": "Retake",
+      "makePublicShort": "Public",
+      "makePrivateShort": "Private",
+      "share": "Share",
+      "deleteQuiz": "Delete quiz",
+      "close": "Close",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "deleting": "Deleting..."
+    },
+    "dialog": {
+      "examTitle": "Exam",
+      "startExamPrompt": "Confirm starting in exam mode?",
+      "deleteTitle": "Delete quiz",
+      "deleteConfirm": "Are you sure?"
+    },
+    "errors": {
+      "deleteFail": "Failed to delete quiz"
+    }
+  },
+  "groupWorkspaceProfileConfigMirror": {
+    "learningModes": {
+      "studyNew": "Study New",
+      "review": "Group Review",
+      "mockTest": "Group Mock Test"
+    },
+    "seatLimit": {
+      "members": "{{count}} members",
+      "managed": "Managed by the active group plan"
+    },
+    "domainReason": {
+      "translation": "Matches the translation-focused direction your group described.",
+      "comparison": "Fits a comparison or bridge-style learning scope across two knowledge systems.",
+      "englishVietnamesePair": "Fits a shared learning scope centered on the English-Vietnamese language pair.",
+      "fallback1": "This is the closest match to the knowledge scope your group described.",
+      "fallback2": "This is a related area the AI inferred from the knowledge you entered.",
+      "fallback3": "This is a broader context that may still fit your group learning goal."
+    },
+    "summary": {
+      "modeNotSet": "Not set"
+    },
+    "confirmationSummary": {
+      "empty": "Not configured",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "required": "Required",
+      "notRequired": "Not required",
+      "identityTitle": "Group identity",
+      "groupNameLabel": "Group name",
+      "learningScopeTitle": "Learning scope",
+      "knowledgeLabel": "Shared knowledge scope",
+      "domainLabel": "Domain",
+      "modeLabel": "Learning mode",
+      "examLabel": "Exam name",
+      "groupSetupTitle": "Group setup",
+      "roadmapLabel": "Shared roadmap",
+      "entryLabel": "Entry assessment",
+      "operatingNotesTitle": "Operating notes",
+      "goalLabel": "Shared learning goal",
+      "rulesLabel": "Group rules"
+    },
+    "validation": {
+      "completeRequired": "Please complete the required fields before reviewing the final setup."
+    },
+    "stepOne": {
+      "previewEyebrow": "Quick overview",
+      "previewTitle": "This group will start with",
+      "previewDescription": "Review the display name, group size, and shared ground rules before moving to the learning profile.",
+      "previewSeatLimit": "Group size"
+    },
+    "confirm": {
+      "badge": "PROFILE CONFIRMATION",
+      "title": "Confirm this group profile",
+      "description": "Review the summary once more. After confirmation, this setup becomes the active profile for the group workspace.",
+      "finalReviewTitle": "Final review before applying to the group",
+      "finalReviewDescription": "You can still return to the wizard to revise the goal, rules, or learning scope before saving.",
+      "editHint": "You can still go back and edit before applying.",
+      "applyEyebrow": "This group profile will be applied",
+      "applyDescription": "Everything below will be saved as the current learning setup for this group workspace.",
+      "backToEdit": "Back to edit",
+      "confirmButton": "Confirm this profile"
+    }
+  },
+  "challengeManualMatchEditor": {
+    "eyebrow": "Manual challenge editor",
+    "title": "Compose manual challenge match",
+    "roundTitle": "Compose round {{round}} match",
+    "subtitle": "Update the match questions without switching to the regular quiz form.",
+    "roundSubtitle": "Update this round's questions without leaving the challenge screen.",
+    "back": "Back to challenge",
+    "draftBadge": "Challenge draft",
+    "meta": {
+      "challenge": "Challenge",
+      "start": "Start",
+      "end": "End"
+    },
+    "wizard": {
+      "header": {
+        "editTitle": "Compose manual challenge match",
+        "createTitle": "Create manual challenge match",
+        "editDescription": "Update the challenge questions, then save for review and publishing.",
+        "createDescription": "Configure the match and write the challenge questions.",
+        "exitEdit": "Back to challenge",
+        "exitCreate": "Back to challenge",
+        "submitEdit": "Save challenge match",
+        "submitCreate": "Save match draft",
+        "submitEditLoading": "Saving match...",
+        "submitCreateLoading": "Saving match...",
+        "editBanner": "Editing challenge match"
+      },
+      "step1": {
+        "title": "Challenge match setup",
+        "description": "Set the name, question count, and time limit for this challenge match.",
+        "nextButton": "Compose questions",
+        "errors": {
+          "titleRequired": "Challenge match name is required."
+        },
+        "fields": {
+          "titleLabel": "Match name",
+          "titlePlaceholder": "Enter challenge match name...",
+          "descriptionLabel": "Reviewer note",
+          "descriptionPlaceholder": "Short note for reviewers...",
+          "timerModeHintTotal": "One countdown timer for the whole attempt."
+        }
+      },
+      "stickyBar": {
+        "untitledMatch": "Manual challenge match"
+      },
+      "confirm": {
+        "exitEdit": "You have unsaved changes. Return to the challenge and discard them?",
+        "exitCreate": "You have unsaved changes. Return to the challenge now?"
+      },
+      "toasts": {
+        "loadError": "Could not load the challenge match.",
+        "saveUpdateSuccess": "Saved challenge match \"{{title}}\" successfully.",
+        "saveDraftSuccess": "Saved challenge match \"{{title}}\" as a draft.",
+        "saveError": "Could not save the challenge match."
+      }
+    }
+  },
+  "createGroupMockTestForm": {
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "errors": {
+      "missingExamName": "Please enter the exam name.",
+      "missingCustomPrompt": "Please enter your custom request.",
+      "generateFailed": "Failed to generate template. Please try again.",
+      "createMockTestFailed": "Failed to create mock test. Please try again.",
+      "genericGenerate": "An error occurred while generating the template.",
+      "materialsLoadFailed": "Failed to load materials.",
+      "workspaceIdMissing": "Could not determine the workspace.",
+      "questionTypesNotReady": "Question types are still loading. Please try again."
+    },
+    "header": {
+      "title": "Create Mock Test with AI"
+    },
+    "description": "AI will generate a suitable exam template. The leader can preview and then apply it to create a DRAFT mock test for the group.",
+    "steps": {
+      "basic": "1. Configuration",
+      "structure": "2. Structure",
+      "generating": "3. Generate Questions"
+    },
+    "scopeNotice": "Mock tests only generate single-answer multiple-choice questions. Listening, Writing, and Speaking are not supported, so the AI will skip them. The generated test is saved as DRAFT so the leader can publish it later.",
+    "tabs": {
+      "examName": "Exam name",
+      "custom": "Custom request"
+    },
+    "examName": {
+      "label": "Exam / test name",
+      "placeholder": "e.g., TOEIC 900, Mock Math HSG 2025, AWS SAA-C03...",
+      "hint": "AI will generate a template matching the structure and content of this exam."
+    },
+    "custom": {
+      "label": "Custom request",
+      "placeholder": "e.g., Create a 30-question test on Python basics, increasing difficulty, focus on syntax and error handling..."
+    },
+    "fields": {
+      "difficulty": "Difficulty",
+      "totalQuestions": "Number of questions",
+      "duration": "Duration (minutes)"
+    },
+    "materials": {
+      "title": "Reference materials",
+      "loading": "Loading materials...",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "empty": "No materials in this workspace yet. AI will generate questions from the exam name.",
+      "itemFallback": "Material #{{index}}"
+    },
+    "generating": {
+      "title": "Generating questions for the mock test...",
+      "hint": "This may take from 30 seconds to a few minutes depending on the number of questions. The test will be saved as DRAFT so you can publish it later."
+    },
+    "structure": {
+      "backToConfig": "Back to configuration",
+      "regenerate": "Regenerate"
+    },
+    "preview": {
+      "ready": "AI template is ready",
+      "regenerate": "Regenerate",
+      "examTitle": "Exam name",
+      "stats": {
+        "questionCount": "Questions",
+        "duration": "Duration",
+        "difficulty": "Difficulty"
+      },
+      "durationValue": "{{value}} minutes",
+      "structure": "Exam structure ({{count}} sections)",
+      "sectionFallback": "Section {{index}}",
+      "questionCountSuffix": "questions"
+    },
+    "fallbackTitle": "Mock Test",
+    "buttons": {
+      "cancel": "Cancel",
+      "generating": "Generating…",
+      "generate": "Generate template with AI",
+      "applying": "Creating Draft…",
+      "apply": "Apply & Create Draft",
+      "requestingSuggestion": "Generating suggestion...",
+      "requestSuggestion": "Get structure suggestion",
+      "creatingDraft": "Creating draft...",
+      "createDraft": "Create draft"
+    }
+  },
+  "groupProfileOverviewPanel": {
+    "toggle": {
+      "notConfigured": "Not configured",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "required": "Required",
+      "notRequired": "Not required"
+    },
+    "seatLimit": {
+      "members": "{{count}} members",
+      "basedOnPlan": "Based on active group plan"
+    },
+    "completion": {
+      "inProgress": "In progress",
+      "completed": "Completed"
+    },
+    "roadmapBadge": {
+      "on": "Shared roadmap on",
+      "off": "Shared roadmap off"
+    },
+    "emptyLabel": "Not configured yet",
+    "hero": {
+      "eyebrow": "Group profile snapshot",
+      "title": "A quick read of the group baseline before expanding the workspace",
+      "description": "Everything here reflects the live profile already saved for this group: direction, baseline rules, and the shared learning setup that the team is following."
+    },
+    "actionButton": "Edit",
+    "metrics": {
+      "setupStatus": {
+        "label": "Setup status",
+        "description": "Whether the baseline is ready for the team"
+      },
+      "learningMode": {
+        "label": "Learning mode",
+        "description": "Defines the default rhythm for roadmap and content"
+      },
+      "seatLimit": {
+        "label": "Seat limit",
+        "description": "Current capacity available for this group setup"
+      }
+    },
+    "fields": {
+      "groupName": "Group name",
+      "domain": "Domain",
+      "examName": "Exam name",
+      "profileProgress": "Profile progress",
+      "sharedRoadmap": "Shared roadmap",
+      "entryAssessment": "Entry assessment"
+    },
+    "coreSetup": {
+      "label": "Core setup",
+      "description": "These values define how the room identifies itself and the shared baseline the team is following."
+    },
+    "knowledge": {
+      "eyebrow": "Knowledge scope",
+      "title": "What this group is learning together"
+    },
+    "learningGoal": {
+      "eyebrow": "Learning goal",
+      "title": "What success should look like for the group"
+    },
+    "groupRules": {
+      "eyebrow": "Group rules",
+      "title": "Shared operating rules for new and current members"
+    }
+  },
+  "groupSourceDetailView": {
+    "imageAlt": "Document image",
+    "nodeLabels": {
+      "legal": "Legal",
+      "intent": "Intent",
+      "harmful": "Harmful",
+      "accuracy": "Accuracy",
+      "community": "Community"
+    },
+    "reviewApproved": "Approved this material for the group.",
+    "reviewRejected": "Rejected this material from the group.",
+    "reviewError": "Unable to review this material right now.",
+    "moderationLoading": "Loading moderation report...",
+    "leaderReviewActiveHint": "AI has finished processing this material. The leader needs to confirm before it appears in the shared sources.",
+    "leaderReviewQueueHint": "This material is waiting in the leader's approval queue for the group.",
+    "moderationDetailTitle": "Moderation details",
+    "reasonLabel": "Reason: ",
+    "suggestionLabel": "Suggestion: ",
+    "detectedTopicLabel": "Detected topic of the material: ",
+    "currentLevelLabel": "Current material level: ",
+    "requiredLevelLabel": " | Required level: ",
+    "leaderReviewPrompt": "Does the leader want to approve this material for the group?",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "roadmapCanvasView2": {
+    "groupPreLearningCreateSuccess": "Pre-learning creation request for the group roadmap has been submitted.",
+    "groupPreLearningCreateFail": "Unable to create pre-learning for the group roadmap.",
+    "feedbackLabel": "Feedback",
+    "roadmapFeedbackTitle": "Roadmap feedback",
+    "phaseFeedbackTitle": "Phase feedback",
+    "phaseReviewTitle": "AI review for the current phase",
+    "phaseReviewAssessedAt": "Assessed at",
+    "phaseLockedTitle": "This phase is locked",
+    "phaseLockedDesc": "Please unlock to continue",
+    "phaseUnlockFailed": "Unable to unlock this phase.",
+    "unlockingPhaseBtn": "Unlocking...",
+    "unlockPhaseBtn": "Unlock Phase",
+    "groupPreLearningQuestionCountLabel": "Number of pre-learning questions (20-25)",
+    "groupPreLearningCreateButton": "Create pre-learning",
+    "groupPreLearningTitle": "Roadmap-wide pre-learning",
+    "groupPreLearningEmptyHint": "Create an overall pre-learning quiz for the group roadmap aligned with the shared learning goal."
+  },
+  "groupPendingReviewPanel": {
+    "noDate": "No date",
+    "statusAiChecking": "AI is checking",
+    "statusWarningNeedsReview": "Warning, needs review",
+    "statusWarning": "Warning",
+    "statusReadyForLeaderReview": "Ready for leader review",
+    "statusProcessingFailed": "Processing failed",
+    "statusRejected": "Rejected",
+    "statusPending": "Pending",
+    "titleLeader": "Material review queue",
+    "titleMember": "Your recent uploads",
+    "descriptionLeader": "AI-checked group materials land here before they become visible in the shared source list.",
+    "descriptionMember": "Track the files you just submitted while AI finishes checking them for the group.",
+    "itemsCountSuffix": "item(s)",
+    "loadingQueue": "Loading material queue...",
+    "emptyLeader": "No material is waiting for leader review.",
+    "emptyMember": "No recent upload is being tracked in this session.",
+    "currentSessionTag": "Current session",
+    "untitledMaterial": "Untitled material",
+    "uploadedInGroupWorkspace": "Uploaded in group workspace",
+    "uploadProgressLabel": "Upload progress",
+    "viewDetailsButton": "View details",
+    "approveButton": "Approve",
+    "rejectButton": "Reject"
+  },
+  "groupSourcesPanel": {
+    "sourceProcessingTooltip": "The source is being processed, please wait.",
+    "cannotSelectTooltip": "This source cannot be selected",
+    "sourceIrrelevantTooltip": "This source is not relevant to learning",
+    "uploadErrorBadge": "Upload failed",
+    "warnContentBadge": "⚠ Content warning",
+    "irrelevantBadge": "Not relevant",
+    "uploadingBadge": "Uploading...",
+    "optionsAriaLabel": "Options"
   }
 }
