@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { getCommunityQuizDetail, submitCommunityQuizComment } from '@/api/QuizAPI';
 import { useToast } from '@/context/ToastContext';
 import CommunityQuizSignals from '@/pages/Users/Quiz/components/CommunityQuizSignals';
+import { countLinksInText, useCommentLimits } from '@/hooks/useSystemSettings';
 
 function extractApiData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
@@ -104,6 +105,7 @@ function CommentThread({
   readOnly = false,
   isDarkMode,
   t,
+  commentMaxLength,
 }) {
   const isReplyOpen = Number(activeReplyToId) === Number(comment?.commentId);
   const replyDraft = replyDrafts[String(comment?.commentId)] || '';
@@ -150,6 +152,7 @@ function CommentThread({
                   value={replyDraft}
                   onChange={(event) => onChangeReplyDraft(comment?.commentId, event.target.value)}
                   rows={3}
+                  maxLength={commentMaxLength}
                   placeholder={t('workspace.quiz.communityDetail.replyPlaceholder', 'Write a reply')}
                   className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-colors ${
                     isDarkMode
@@ -194,6 +197,7 @@ function CommentThread({
               readOnly={readOnly}
               isDarkMode={isDarkMode}
               t={t}
+              commentMaxLength={commentMaxLength}
             />
           ))}
         </div>
@@ -217,6 +221,7 @@ export default function CommunityQuizDetailDialog({
   readOnly = false,
 }) {
   const { showError, showSuccess } = useToast();
+  const { maxLength: commentMaxLength, maxLinks: commentMaxLinks } = useCommentLimits();
   const [loading, setLoading] = React.useState(false);
   const [detail, setDetail] = React.useState(null);
   const [error, setError] = React.useState('');
@@ -273,12 +278,17 @@ export default function CommunityQuizDetailDialog({
     const draftValue = parentCommentId == null
       ? commentDraft
       : replyDrafts[String(parentCommentId)] || '';
-    if (!draftValue.trim()) return;
+    const trimmed = draftValue.trim();
+    if (!trimmed) return;
+    if (countLinksInText(trimmed) > commentMaxLinks) {
+      showError(`Mỗi bình luận chỉ được chứa tối đa ${commentMaxLinks} link.`);
+      return;
+    }
     setSubmittingCommentId(parentCommentId ?? 0);
     try {
       await submitCommunityQuizComment(quizId, {
         parentCommentId,
-        body: draftValue.trim(),
+        body: trimmed,
       });
       showSuccess('Đã gửi comment community.');
       if (parentCommentId == null) {
@@ -293,7 +303,7 @@ export default function CommunityQuizDetailDialog({
     } finally {
       setSubmittingCommentId(null);
     }
-  }, [commentDraft, loadDetail, quizId, replyDrafts, showError, showSuccess]);
+  }, [commentDraft, commentMaxLinks, loadDetail, quizId, replyDrafts, showError, showSuccess]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -461,6 +471,7 @@ export default function CommunityQuizDetailDialog({
                     value={commentDraft}
                     onChange={(event) => setCommentDraft(event.target.value)}
                     rows={4}
+                    maxLength={commentMaxLength}
                     placeholder="Comment công khai để mọi người cùng thấy."
                     className={`w-full rounded-3xl border px-4 py-3 text-sm outline-none transition-colors ${
                       isDarkMode
@@ -468,6 +479,9 @@ export default function CommunityQuizDetailDialog({
                         : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500'
                     }`}
                   />
+                  <p className={`text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {commentDraft.length}/{commentMaxLength} ký tự · tối đa {commentMaxLinks} link
+                  </p>
                   <div className="flex justify-end">
                     <Button
                       type="button"
@@ -505,6 +519,7 @@ export default function CommunityQuizDetailDialog({
                     readOnly={readOnly}
                     isDarkMode={isDarkMode}
                     t={(key, fallback) => fallback}
+                    commentMaxLength={commentMaxLength}
                   />
                 ))}
               </div>

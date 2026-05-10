@@ -13,6 +13,7 @@ import { useInlineQuizRecommendations } from "./useInlineQuizRecommendations";
 import { getBloomSkillLabel, getQuizDifficultyLabel, getQuizQuestionTypeLabel } from "@/lib/quizQuestionTypes";
 import useWorkspaceMaterialSelection from "../useWorkspaceMaterialSelection";
 import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
+import { SYSTEM_SETTING_KEYS, useSystemSettingNumber } from "@/hooks/useSystemSettings";
 
 function resolvePersonalizationFocusTopic(preset) {
   const reviewTopic = String(preset?.reviewTopic || "").trim();
@@ -143,6 +144,8 @@ function CreateQuizForm({
     [selectedSourceItems]
   );
 
+  const maxQuestionsPerQuiz = useSystemSettingNumber(SYSTEM_SETTING_KEYS.MAX_QUESTIONS_PER_QUIZ);
+
   const {
     activeRecommendation,
     expandedRecId,
@@ -197,6 +200,7 @@ function CreateQuizForm({
     hasAdvanceQuizConfig: planEntitlements?.hasAdvanceQuizConfig ?? false,
     hasImageMaterials,
     i18nLanguage: i18n.language,
+    maxQuestionsPerQuiz,
     onCreateQuiz,
     quizTitleMaxLength,
     selectedMaterialIds,

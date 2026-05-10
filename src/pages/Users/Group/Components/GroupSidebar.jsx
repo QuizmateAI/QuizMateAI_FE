@@ -28,6 +28,9 @@ import EnglishFlag from '@/assets/UK_flag.svg';
 import JapanFlag from '@/assets/Japan_flag.svg';
 import { getBaseAppLanguage, appLanguageShortLabel } from '@/utils/appSupportedLanguages';
 
+const QUIZ_CHILD_MODE = { quizAi: 'ai', quizManual: 'manual', quizFromJson: 'paste' };
+const FLASHCARD_CHILD_MODE = { flashcardAi: 'ai', flashcardManual: 'manual', flashcardFromJson: 'paste' };
+
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard },
   { id: 'personalDashboard', icon: LayoutDashboard },
@@ -62,6 +65,10 @@ function GroupSidebar({
   onStudioSubAction,
   /** activeView từ studio (createQuiz, quiz, …) — để mở rộng đúng nhánh */
   studioActiveView = null,
+  /** Mục con đang được chọn cho nhánh Quiz (ai | manual | paste) — dùng để bôi sáng sub-item. */
+  studioQuizSubKey = null,
+  /** Mục con đang được chọn cho nhánh Flashcard (ai | manual | paste) — dùng để bôi sáng sub-item. */
+  studioFlashcardSubKey = null,
   groupName = '',
   wsConnected = false,
   memberCount = 0,
@@ -364,23 +371,38 @@ function GroupSidebar({
                   {subNavOpen
                     ? (
                       <div className={cn('space-y-0.5 border-l-2 py-0.5 ml-4 pl-2', isDarkMode ? 'border-slate-700' : 'border-slate-200')}>
-                        {childList.map((child) => (
-                          <button
-                            key={child.id}
-                            type="button"
-                            onClick={() => handleChildNavigate(item.id, child.id)}
-                            disabled={isDisabled}
-                            className={cn(
-                              'flex w-full items-center rounded-xl px-2 py-1.5 text-left text-[13px] font-medium transition-colors',
-                              isDarkMode
-                                ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-                              isDisabled && 'cursor-not-allowed opacity-50',
-                            )}
-                          >
-                            <span className={cn('truncate', fontClass)}>{t(`groupWorkspace.shell.nav.${child.id}`)}</span>
-                          </button>
-                        ))}
+                        {childList.map((child) => {
+                          const modeValue =
+                            item.id === 'quiz'
+                              ? QUIZ_CHILD_MODE[child.id]
+                              : item.id === 'flashcard'
+                                ? FLASHCARD_CHILD_MODE[child.id]
+                                : null;
+                          const subKey = item.id === 'quiz' ? studioQuizSubKey : studioFlashcardSubKey;
+                          const childActive = Boolean(modeValue && subKey && modeValue === subKey);
+                          return (
+                            <button
+                              key={child.id}
+                              type="button"
+                              onClick={() => handleChildNavigate(item.id, child.id)}
+                              disabled={isDisabled}
+                              aria-current={childActive ? 'page' : undefined}
+                              className={cn(
+                                'flex w-full items-center rounded-xl px-2 py-1.5 text-left text-[13px] font-medium transition-colors',
+                                childActive
+                                  ? isDarkMode
+                                    ? 'bg-blue-500/20 text-blue-100'
+                                    : 'bg-blue-50 text-blue-800'
+                                  : isDarkMode
+                                    ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                                isDisabled && 'cursor-not-allowed opacity-50',
+                              )}
+                            >
+                              <span className={cn('truncate', fontClass)}>{t(`groupWorkspace.shell.nav.${child.id}`)}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )
                     : null}

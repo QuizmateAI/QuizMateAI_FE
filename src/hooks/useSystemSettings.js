@@ -3,7 +3,6 @@ import { getAllSystemSettings } from '@/api/ManagementSystemAPI';
 
 export const SYSTEM_SETTING_KEYS = Object.freeze({
   MAX_QUESTIONS_PER_QUIZ: 'quiz.max_questions_per_quiz',
-  MAX_SAVED_TEMPLATES_PER_USER: 'mock_test.max_saved_templates_per_user',
   MAX_COMMENT_LENGTH: 'community.max_comment_length',
   MAX_LINKS_PER_COMMENT: 'community.max_links_per_comment',
   PRE_LEARNING_PASS_PERCENT: 'learning.pre_pass_score_percent',
@@ -14,7 +13,6 @@ export const SYSTEM_SETTING_KEYS = Object.freeze({
 // unreachable (network error, or the endpoint is admin-gated for some accounts).
 export const SYSTEM_SETTING_DEFAULTS = Object.freeze({
   [SYSTEM_SETTING_KEYS.MAX_QUESTIONS_PER_QUIZ]: 100,
-  [SYSTEM_SETTING_KEYS.MAX_SAVED_TEMPLATES_PER_USER]: 100,
   [SYSTEM_SETTING_KEYS.MAX_COMMENT_LENGTH]: 1200,
   [SYSTEM_SETTING_KEYS.MAX_LINKS_PER_COMMENT]: 2,
   [SYSTEM_SETTING_KEYS.PRE_LEARNING_PASS_PERCENT]: 80,

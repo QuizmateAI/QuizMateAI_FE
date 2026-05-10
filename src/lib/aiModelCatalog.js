@@ -59,6 +59,7 @@ export const AI_ACTION_LABEL_KEYS = {
   PREVIEW_QUIZ_STRUCTURE: 'aiActionPolicy.actions.previewQuizStructure.title',
   GENERATE_FLASHCARDS: 'aiActionPolicy.actions.generateFlashcards.title',
   GENERATE_MOCK_TEST: 'aiActionPolicy.actions.generateMockTest.title',
+  SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS: 'aiAudit.features.SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS',
   GENERATE_ROADMAP: 'aiProviders.actions.generateRoadmap',
   GENERATE_ROADMAP_PHASES: 'aiProviders.actions.generateRoadmapPhases',
   GENERATE_ROADMAP_PHASE_CONTENT: 'aiProviders.actions.generateRoadmapPhaseContent',

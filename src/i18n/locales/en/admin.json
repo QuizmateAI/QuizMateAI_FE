@@ -12,6 +12,7 @@
     "rbac": "RBAC System",
     "aiProviders": "AI Providers",
     "aiModels": "AI Models",
+    "systemAnalysisModel": "System Analysis Model",
     "aiCosts": "AI Costs",
     "aiAudit": "AI Audit",
     "subscriptions": "Subscriptions",
@@ -215,6 +216,7 @@
     "formulaSummary": "Each usage costs {{base}} credit flat, plus {{unit}} credit for every {{size}} {{mode}}. Partial units are rounded up.",
     "costMode": {
       "label": "Cost mode",
+      "lockedNote": "Cost mode is fixed by the system for each action and cannot be edited.",
       "FIXED": "Fixed",
       "PER_QUESTION": "Per question",
       "PER_ITEM": "Per item",
@@ -1117,6 +1119,26 @@
     "noDescription": "No description yet",
     "unassigned": "Not assigned to any plan",
     "empty": "No models match the current filters.",
+    "systemAnalysis": {
+      "title": "AI model for system analysis features",
+      "subtitle": "Pick one OpenAI model shared across internal analysis features. Changes apply instantly system-wide; no restart required.",
+      "affectedActions": "Applies to these features",
+      "modelLabel": "OpenAI model in use",
+      "currentLabel": "Current model",
+      "notConfigured": "— Not configured (fallback to plan) —",
+      "fallbackNotice": "Not configured — system is resolving model per user's plan.",
+      "noOpenAiActive": "No active OpenAI model found. Add or activate one first.",
+      "save": "Save",
+      "saving": "Saving...",
+      "reset": "Reset",
+      "updateSuccess": "System analysis model updated successfully.",
+      "actions": {
+        "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "Analyze knowledge content",
+        "SUGGEST_STUDY_PROFILE_FIELDS": "Suggest study profile fields",
+        "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Validate study profile consistency",
+        "SUGGEST_WORKSPACE_NAME": "Suggest workspace name"
+      }
+    },
     "stats": {
       "total": "Total models",
       "totalHint": "Models stored in the system catalog",
@@ -1500,6 +1522,7 @@
       "GENERATE_ROADMAP_PHASES": "Generate roadmap phases",
       "GENERATE_ROADMAP_PHASE_CONTENT": "Generate roadmap phase content",
       "SUGGEST_MOCK_TEST_STRUCTURE": "Suggest mock test structure",
+      "SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS": "Synthesize mock test from materials",
       "ROADMAP_REVIEW": "Roadmap review"
     }
   },

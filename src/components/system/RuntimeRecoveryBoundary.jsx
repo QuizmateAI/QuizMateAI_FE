@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { tryScheduleRuntimeRecovery } from '@/lib/runtimeRecovery';
+import { hardReloadWithCacheBust, tryScheduleRuntimeRecovery } from '@/lib/runtimeRecovery';
 
 const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
@@ -234,7 +234,7 @@ class RuntimeRecoveryBoundary extends Component {
   }
 
   handleReload = () => {
-    window.location.reload();
+    hardReloadWithCacheBust();
   };
 
   render() {

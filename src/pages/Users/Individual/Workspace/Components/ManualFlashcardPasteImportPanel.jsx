@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, Check, ClipboardPaste, Copy, Loader2, Sparkles, Upload } from "lucide-react";
+import { AlertCircle, Check, ClipboardPaste, Copy, Info, Loader2, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/context/ToastContext";
 import { getFlashcardPasteImportPromptTemplate } from "@/api/FlashcardAPI";
 import { unwrapApiData } from "@/utils/apiResponse";
@@ -50,10 +58,48 @@ function validateFlashcardJson(parsed, t) {
   };
 }
 
+function readDraftFromStorage(key) {
+  if (!key || typeof window === "undefined") return "";
+  try {
+    return window.sessionStorage.getItem(key) || "";
+  } catch {
+    return "";
+  }
+}
+
+function writeDraftToStorage(key, value) {
+  if (!key || typeof window === "undefined") return;
+  try {
+    if (value) {
+      window.sessionStorage.setItem(key, value);
+    } else {
+      window.sessionStorage.removeItem(key);
+    }
+  } catch {
+    // sessionStorage quota / disabled — ignore.
+  }
+}
+
 /**
  * Luồng dán JSON flashcard — giống quiz: (1) prompt template từ BE / fallback, (2) dán JSON → áp dụng nháp.
  */
-function ManualFlashcardPasteImportPanel({ isDarkMode = false, onApply, disabled = false }) {
+function ManualFlashcardPasteImportPanel({
+  isDarkMode = false,
+  onApply,
+  disabled = false,
+  applyButtonLabel,
+  applyingLabel,
+  /**
+   * Key sessionStorage để lưu nội dung JSON đang gõ — chống mất khi user thoát
+   * giữa chừng. Truyền null/undefined để tắt persistence (default).
+   */
+  draftStorageKey = null,
+  /**
+   * Khi true: hiển thị dialog xác nhận (disclaimer AI) trước khi tạo, giống
+   * luồng quiz. Default false — apply ngay (dùng cho luồng merge vào draft).
+   */
+  requireConfirmation = false,
+}) {
   const { t } = useTranslation();
   const { showSuccess, showError, showWarning } = useToast();
 
@@ -64,7 +110,13 @@ function ManualFlashcardPasteImportPanel({ isDarkMode = false, onApply, disabled
   const copyTimerRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const [raw, setRaw] = useState("");
+  const [raw, setRaw] = useState(() => readDraftFromStorage(draftStorageKey));
+  const [applying, setApplying] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    writeDraftToStorage(draftStorageKey, raw);
+  }, [raw, draftStorageKey]);
 
   const displayPrompt = useMemo(() => {
     const fromApi = String(template?.content || "").trim();
@@ -169,10 +221,31 @@ function ManualFlashcardPasteImportPanel({ isDarkMode = false, onApply, disabled
     [showError, showSuccess, t],
   );
 
+  const submitApply = useCallback(async () => {
+    if (!parsed || disabled || applying) return;
+    let result;
+    try {
+      setApplying(true);
+      result = onApply?.({ flashcardSetName: parsed.name, items: parsed.items });
+      if (result && typeof result.then === "function") {
+        await result;
+      }
+      setRaw("");
+      setConfirmOpen(false);
+    } catch {
+      // Caller hiển thị toast — giữ nguyên raw để user sửa hoặc thử lại.
+    } finally {
+      setApplying(false);
+    }
+  }, [applying, disabled, onApply, parsed]);
+
   const handleApply = () => {
-    if (!parsed || disabled) return;
-    onApply?.({ flashcardSetName: parsed.name, items: parsed.items });
-    setRaw("");
+    if (!parsed || disabled || applying) return;
+    if (requireConfirmation) {
+      setConfirmOpen(true);
+      return;
+    }
+    void submitApply();
   };
 
   const cardClass = cn(
@@ -314,13 +387,80 @@ function ManualFlashcardPasteImportPanel({ isDarkMode = false, onApply, disabled
         <Button
           type="button"
           variant="outline"
-          disabled={disabled || !parsed || previewCount === 0}
+          disabled={disabled || !parsed || previewCount === 0 || applying}
           className="w-full rounded-xl"
           onClick={handleApply}
         >
-          {t("workspace.flashcard.pasteImport.apply")}
+          {applying ? (
+            <>
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              {applyingLabel || t("workspace.flashcard.pasteImport.creating", "Đang tạo...")}
+            </>
+          ) : (
+            applyButtonLabel || t("workspace.flashcard.pasteImport.apply")
+          )}
         </Button>
       </section>
+
+      {requireConfirmation ? (
+        <section
+          className={cn(
+            "rounded-xl border p-3 text-xs",
+            isDarkMode ? "border-amber-900/60 bg-amber-950/30 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-800",
+          )}
+        >
+          <div className="flex items-start gap-2">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <strong className="font-semibold">
+                {t("workspace.flashcard.pasteImport.disclaimer.heading", "Lưu ý: nội dung do bên thứ 3 sinh ra.")}
+              </strong>{" "}
+              {t(
+                "workspace.flashcard.pasteImport.disclaimer.body",
+                "QuizMateAI KHÔNG kiểm duyệt và KHÔNG dùng AI để xác minh chất lượng thẻ trong JSON này. Bạn chịu trách nhiệm về tính chính xác và bản quyền của nội dung.",
+              )}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {requireConfirmation ? (
+        <Dialog open={confirmOpen} onOpenChange={(open) => !applying && setConfirmOpen(open)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {t("workspace.flashcard.pasteImport.confirmDialog.title", "Xác nhận tạo flashcard từ JSON")}
+              </DialogTitle>
+              <DialogDescription className="pt-2 text-sm">
+                {t(
+                  "workspace.flashcard.pasteImport.confirmDialog.body",
+                  "Bạn xác nhận đã đọc và đồng ý: nội dung flashcard này do công cụ AI bên thứ 3 (ChatGPT / NotebookLM / ...) sinh ra. QuizMateAI KHÔNG xác minh tính chính xác và KHÔNG chịu trách nhiệm về sai sót, vi phạm bản quyền hoặc nội dung không phù hợp.",
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmOpen(false)}
+                disabled={applying}
+              >
+                {t("common.cancel", "Đóng")}
+              </Button>
+              <Button type="button" onClick={() => void submitApply()} disabled={applying}>
+                {applying ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    {applyingLabel || t("workspace.flashcard.pasteImport.creating", "Đang tạo...")}
+                  </>
+                ) : (
+                  t("workspace.flashcard.pasteImport.confirmDialog.confirm", "Tôi hiểu, tạo flashcard")
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </div>
   );
 }

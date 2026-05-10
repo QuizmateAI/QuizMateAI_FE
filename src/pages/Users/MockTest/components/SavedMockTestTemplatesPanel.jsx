@@ -19,8 +19,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SYSTEM_SETTING_KEYS, useSystemSettingNumber } from '@/hooks/useSystemSettings';
 import { useSavedMockTestTemplates } from '../hooks/useSavedMockTestTemplates';
+
+// Khớp default của BE (mock_test.max_saved_templates_per_user). Không tune qua UI nữa
+// — nếu cần thay đổi giới hạn, sửa cả ở đây và BE MockTestSavedTemplateService.
+const MAX_SAVED_TEMPLATES = 100;
 
 /**
  * Panel hien thi kho saved templates cua user TRONG workspace.
@@ -41,7 +44,7 @@ export function SavedMockTestTemplatesPanel({
   isDarkMode = false,
 }) {
   const { t } = useTranslation();
-  const maxTemplates = useSystemSettingNumber(SYSTEM_SETTING_KEYS.MAX_SAVED_TEMPLATES_PER_USER);
+  const maxTemplates = MAX_SAVED_TEMPLATES;
   const {
     templates,
     isLoading,

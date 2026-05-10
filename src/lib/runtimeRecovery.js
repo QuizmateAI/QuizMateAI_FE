@@ -1,5 +1,7 @@
 const RUNTIME_RECOVERY_STORAGE_KEY = 'quizmate.runtimeRecovery';
 export const RUNTIME_RECOVERY_TTL_MS = 30_000;
+export const RUNTIME_RECOVERY_MAX_ATTEMPTS = 2;
+export const RUNTIME_RECOVERY_CACHE_BUST_PARAM = '_qmv';
 
 const RECOVERABLE_RUNTIME_ERROR_PATTERN =
   /(chunkloaderror|loading chunk [\w-]+ failed|loading css chunk [\w-]+ failed|failed to fetch dynamically imported module|failed to load module script|importing a module script failed)/i;
@@ -87,9 +89,12 @@ export function readRuntimeRecoveryAttempt(storage = getSessionStorage()) {
       return null;
     }
 
+    const parsedCount = Number(parsedValue.count);
+
     return {
       url: String(parsedValue.url || ''),
       ts: Number(parsedValue.ts || 0),
+      count: Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 1,
     };
   } catch {
     return null;
@@ -138,18 +143,54 @@ function hasRecentAttempt(attempt, currentUrl, now) {
   return attempt.url === currentUrl && now - attempt.ts < RUNTIME_RECOVERY_TTL_MS;
 }
 
-function defaultReload() {
+function defaultSoftReload() {
   window.location.reload();
+}
+
+function defaultHardReload() {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set(RUNTIME_RECOVERY_CACHE_BUST_PARAM, String(Date.now()));
+    window.location.replace(url.toString());
+  } catch {
+    window.location.reload();
+  }
+}
+
+export function hardReloadWithCacheBust() {
+  defaultHardReload();
+}
+
+export function stripCacheBustParamFromUrl() {
+  if (typeof window === 'undefined' || !window.history?.replaceState) {
+    return;
+  }
+
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(RUNTIME_RECOVERY_CACHE_BUST_PARAM)) {
+      return;
+    }
+
+    url.searchParams.delete(RUNTIME_RECOVERY_CACHE_BUST_PARAM);
+    const search = url.searchParams.toString();
+    const cleaned = `${url.pathname}${search ? `?${search}` : ''}${url.hash}`;
+    window.history.replaceState(window.history.state, '', cleaned);
+  } catch {
+    // Non-fatal cleanup; continue.
+  }
 }
 
 export function tryScheduleRuntimeRecovery(
   error,
   {
     storage = getSessionStorage(),
-    reload = defaultReload,
+    softReload = defaultSoftReload,
+    hardReload = defaultHardReload,
     reloadDelayMs = 120,
     currentUrl = getCurrentUrl(),
     now = Date.now(),
+    maxAttempts = RUNTIME_RECOVERY_MAX_ATTEMPTS,
   } = {},
 ) {
   if (!isRecoverableRuntimeError(error) || !storage) {
@@ -157,16 +198,25 @@ export function tryScheduleRuntimeRecovery(
   }
 
   const lastAttempt = readRuntimeRecoveryAttempt(storage);
-  if (hasRecentAttempt(lastAttempt, currentUrl, now)) {
+  const isRecent = hasRecentAttempt(lastAttempt, currentUrl, now);
+  const previousCount = isRecent ? lastAttempt.count : 0;
+  const nextCount = previousCount + 1;
+
+  if (nextCount > maxAttempts) {
     return false;
   }
 
-  writeRuntimeRecoveryAttempt({ url: currentUrl, ts: now }, storage);
+  writeRuntimeRecoveryAttempt(
+    { url: currentUrl, ts: now, count: nextCount },
+    storage,
+  );
+
+  // Attempt 1: plain reload — relies on Cache-Control: no-cache on index.html.
+  // Attempt 2: hard reload with cache-bust query — bypasses any stubborn cache.
+  const reload = nextCount === 1 ? softReload : hardReload;
 
   if (reloadDelayMs > 0) {
-    window.setTimeout(() => {
-      reload();
-    }, reloadDelayMs);
+    window.setTimeout(reload, reloadDelayMs);
   } else {
     reload();
   }
@@ -184,6 +234,8 @@ export function installRuntimeRecoveryListeners() {
   if (removeRuntimeRecoveryListeners) {
     return removeRuntimeRecoveryListeners;
   }
+
+  stripCacheBustParamFromUrl();
 
   const handleWindowError = (event) => {
     tryScheduleRuntimeRecovery(event?.error ?? event?.target ?? event);

@@ -210,6 +210,7 @@ function ChallengeDetailContent({
   myAcceptedReviewContributor,
   myPendingReviewInvitation,
   myReviewContributor,
+  myReviewContributorRecord,
   onBack,
   openEditDialog,
   publishRequirementHint,
@@ -710,7 +711,7 @@ function ChallengeDetailContent({
               isLeader={isLeader}
               isPublished={isPublished}
               isDarkMode={isDarkMode}
-              myReviewContributor={myReviewContributor}
+              myReviewContributor={myReviewContributorRecord}
               actionLoading={actionLoading}
               handleSwitchLeaderToReviewer={handleSwitchLeaderToReviewer}
               handleSwitchLeaderToParticipant={handleSwitchLeaderToParticipant}

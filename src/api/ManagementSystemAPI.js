@@ -6,9 +6,14 @@ export const getMyPermissions = async () => {
   return response;
 };
 
-// Lấy danh sách users (có hỗ trợ phân trang)
-export const getAllUsers = async (page = 0, size = 10) => {
-  const response = await api.get(`/management/users?page=${page}&size=${size}`);
+// Lấy danh sách users (có hỗ trợ phân trang + tìm kiếm theo username/email/fullName)
+export const getAllUsers = async (page = 0, size = 10, keyword = '') => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  const trimmed = (keyword ?? '').trim();
+  if (trimmed) params.append('keyword', trimmed);
+  const response = await api.get(`/management/users?${params.toString()}`);
   return response;
 };
 

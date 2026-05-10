@@ -12,6 +12,7 @@
     "rbac": "RBAC システム",
     "aiProviders": "AI プロバイダー",
     "aiModels": "AI モデル",
+    "systemAnalysisModel": "システム分析モデル",
     "aiCosts": "AI コスト",
     "aiAudit": "AI 監査",
     "subscriptions": "サブスクリプション",
@@ -215,6 +216,7 @@
     "formulaSummary": "1 回の利用ごとに固定 {{base}} クレジット、加えて {{size}} {{mode}} ごとに {{unit}} クレジット。端数は切り上げられます。",
     "costMode": {
       "label": "コストモード",
+      "lockedNote": "コストモードはアクションごとにシステムで固定されており、編集できません。",
       "FIXED": "固定",
       "PER_QUESTION": "問題単位",
       "PER_ITEM": "項目単位",
@@ -1117,6 +1119,26 @@
     "noDescription": "説明はまだありません",
     "unassigned": "どのプランにも割り当てられていません",
     "empty": "現在のフィルターに一致するモデルはありません。",
+    "systemAnalysis": {
+      "title": "システム分析機能用 AI モデル",
+      "subtitle": "内部分析機能で共通利用する OpenAI モデルを 1 つ選択します。変更は即時システム全体に適用され、再起動は不要です。",
+      "affectedActions": "適用される機能",
+      "modelLabel": "使用する OpenAI モデル",
+      "currentLabel": "現在のモデル",
+      "notConfigured": "— 未設定 (プランに応じてフォールバック) —",
+      "fallbackNotice": "未設定 — システムはユーザーのプランに従ってモデルを解決中です。",
+      "noOpenAiActive": "アクティブな OpenAI モデルがありません。追加または有効化してください。",
+      "save": "保存",
+      "saving": "保存中...",
+      "reset": "リセット",
+      "updateSuccess": "システム分析モデルを更新しました。",
+      "actions": {
+        "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "知識内容の分析",
+        "SUGGEST_STUDY_PROFILE_FIELDS": "学習プロファイル分野の提案",
+        "VALIDATE_STUDY_PROFILE_CONSISTENCY": "学習プロファイル整合性の検証",
+        "SUGGEST_WORKSPACE_NAME": "ワークスペース名の提案"
+      }
+    },
     "stats": {
       "total": "総モデル数",
       "totalHint": "システムカタログに保存されているモデル",
@@ -1498,6 +1520,7 @@
       "VALIDATE_STUDY_PROFILE_CONSISTENCY": "プロフィール整合性を検証",
       "PREVIEW_QUIZ_STRUCTURE": "クイズ構造をプレビュー",
       "SUGGEST_MOCK_TEST_STRUCTURE": "模擬試験構造を提案",
+      "SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS": "教材から模擬試験を合成",
       "ROADMAP_REVIEW": "ロードマップレビュー"
     }
   },

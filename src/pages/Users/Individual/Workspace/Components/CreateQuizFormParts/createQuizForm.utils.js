@@ -261,6 +261,7 @@ export const buildAiValidationState = ({
   difficultyDefs,
   minimumAiDurationMinutes,
   hasAdvanceQuizConfig,
+  maxQuestionsPerQuiz,
   questionTypeUnit,
   questionTypeDefinitions,
   questionUnit,
@@ -291,9 +292,12 @@ export const buildAiValidationState = ({
   const normalizedQuizTitleMaxLength = Number(quizTitleMaxLength);
   const hasQuizTitleMaxLength = Number.isFinite(normalizedQuizTitleMaxLength)
     && normalizedQuizTitleMaxLength > 0;
+  const resolvedMaxQuestions = Number.isFinite(Number(maxQuestionsPerQuiz)) && Number(maxQuestionsPerQuiz) > 0
+    ? Number(maxQuestionsPerQuiz)
+    : AI_MAXIMUM_QUESTION_COUNT;
   const hasValidTotalQuestions = Number.isFinite(normalizedTotalQuestions)
     && normalizedTotalQuestions >= AI_MINIMUM_QUESTION_COUNT
-    && normalizedTotalQuestions <= AI_MAXIMUM_QUESTION_COUNT;
+    && normalizedTotalQuestions <= resolvedMaxQuestions;
   const normalizedDuration = Number(aiDuration);
 
   if (!aiName.trim()) {
@@ -319,7 +323,7 @@ export const buildAiValidationState = ({
       "aiTotalQuestions",
       t("workspace.quiz.validation.totalQuestionsRange", {
         min: AI_MINIMUM_QUESTION_COUNT,
-        max: AI_MAXIMUM_QUESTION_COUNT,
+        max: resolvedMaxQuestions,
       })
     );
   }

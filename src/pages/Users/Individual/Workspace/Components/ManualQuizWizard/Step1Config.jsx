@@ -21,7 +21,7 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
   const { t } = useTranslation();
   const [errors, setErrors] = React.useState({});
   const isChallengeSurface = surface === "challenge";
-  const maxQuestions = useSystemSettingNumber(SYSTEM_SETTING_KEYS.maxQuestions_PER_QUIZ);
+  const maxQuestions = useSystemSettingNumber(SYSTEM_SETTING_KEYS.MAX_QUESTIONS_PER_QUIZ);
 
   const set = (field, value) => {
     onConfigChange({ ...config, [field]: value });

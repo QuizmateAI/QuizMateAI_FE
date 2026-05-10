@@ -180,6 +180,7 @@ export const useCreateQuizAiForm = ({
   hasAdvanceQuizConfig,
   hasImageMaterials,
   i18nLanguage,
+  maxQuestionsPerQuiz,
   onCreateQuiz,
   quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
   selectedMaterialIds,
@@ -188,6 +189,10 @@ export const useCreateQuizAiForm = ({
   existingQuizId = null,
   seedQuizTitle = '',
 }) => {
+  const resolvedMaxQuestionsPerQuiz = useMemo(() => {
+    const parsed = Number(maxQuestionsPerQuiz);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : AI_MAXIMUM_QUESTION_COUNT;
+  }, [maxQuestionsPerQuiz]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [insufficientCreditError, setInsufficientCreditError] = useState(false);
@@ -271,9 +276,9 @@ export const useCreateQuizAiForm = ({
     return (
       Number.isFinite(totalQuestions)
       && totalQuestions >= AI_MINIMUM_QUESTION_COUNT
-      && totalQuestions <= AI_MAXIMUM_QUESTION_COUNT
+      && totalQuestions <= resolvedMaxQuestionsPerQuiz
     );
-  }, [aiTotalQuestions]);
+  }, [aiTotalQuestions, resolvedMaxQuestionsPerQuiz]);
 
   const hasAiDurationMinimumMismatch = useMemo(() => (
     aiTimerMode
@@ -609,6 +614,7 @@ export const useCreateQuizAiForm = ({
     customDifficulty,
     difficultyDefs,
     hasAdvanceQuizConfig,
+    maxQuestionsPerQuiz: resolvedMaxQuestionsPerQuiz,
     minimumAiDurationMinutes,
     questionTypeUnit,
     questionTypeDefinitions: qTypes,
@@ -634,6 +640,7 @@ export const useCreateQuizAiForm = ({
     difficultyDefs,
     editableStructureItems,
     hasAdvanceQuizConfig,
+    resolvedMaxQuestionsPerQuiz,
     minimumAiDurationMinutes,
     questionTypeUnit,
     qTypes,
@@ -793,9 +800,9 @@ export const useCreateQuizAiForm = ({
 
   const handleAiTotalQuestionsBlur = useCallback(() => {
     setAiTotalQuestions((previousValue) => (
-      clampNumber(previousValue, AI_MINIMUM_QUESTION_COUNT, AI_MAXIMUM_QUESTION_COUNT)
+      clampNumber(previousValue, AI_MINIMUM_QUESTION_COUNT, resolvedMaxQuestionsPerQuiz)
     ));
-  }, []);
+  }, [resolvedMaxQuestionsPerQuiz]);
 
   const handleAiDurationChange = useCallback((value) => {
     setAiDuration(normalizeIntegerInput(value));
@@ -1606,6 +1613,7 @@ export const useCreateQuizAiForm = ({
       editableStructureItems,
       structureDifficultyOptions: STRUCTURE_DIFFICULTY_OPTIONS,
       canFetchStructurePreview,
+      maxQuestionsPerQuiz: resolvedMaxQuestionsPerQuiz,
       minimumAiDurationMinutes,
       qTypes,
       quizTitleMaxLength,

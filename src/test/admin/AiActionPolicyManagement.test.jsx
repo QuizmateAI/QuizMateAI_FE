@@ -14,6 +14,7 @@ vi.mock('react-i18next', () => ({
         'aiActionPolicy.displayName': 'Display name',
         'aiActionPolicy.description': 'Description',
         'aiActionPolicy.costMode.label': 'Cost mode',
+        'aiActionPolicy.costMode.lockedNote': 'Cost mode is fixed by the system.',
         'aiActionPolicy.actionKey': 'Action key',
         'aiActionPolicy.active': 'Active',
         'aiActionPolicy.unitField': 'Unit',
@@ -82,6 +83,13 @@ vi.mock('@/api/ManagementSystemAPI', () => ({
   updateAiActionPolicy: vi.fn(),
 }));
 
+vi.mock('@/hooks/useAiFeatureCatalog', () => ({
+  useAiFeatureCatalog: () => ({
+    catalog: { userPaid: ['GENERATE_FLASHCARDS'], system: [], planBased: [] },
+    isLoading: false,
+  }),
+}));
+
 describe('AiActionPolicyManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -132,5 +140,22 @@ describe('AiActionPolicyManagement', () => {
         unitSize: 1000,
       }));
     });
+  });
+
+  it('omits costMode from the update payload because it is system-fixed', async () => {
+    render(<AiActionPolicyManagement />);
+
+    fireEvent.click(await screen.findByTitle('Edit'));
+
+    expect(screen.getByText('Cost mode is fixed by the system.')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(updateAiActionPolicy).toHaveBeenCalledTimes(1);
+    });
+    const [, payload] = updateAiActionPolicy.mock.calls[0];
+    expect(payload).not.toHaveProperty('costMode');
   });
 });

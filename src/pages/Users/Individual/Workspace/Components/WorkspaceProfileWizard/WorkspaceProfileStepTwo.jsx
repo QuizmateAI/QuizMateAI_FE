@@ -210,8 +210,9 @@ function WorkspaceProfileStepTwo({
     translateStepTwo('workspaceProfileStepTwo.beginnerFallbackScope', 'this knowledge')
   );
   const isJapaneseBeginnerScope = isJapaneseLearningScope(values.knowledgeInput, values.inferredDomain);
-  const requireStrengthFields =
-      values.workspacePurpose === 'REVIEW' && !isBeginnerMode;
+  // Strengths/weaknesses are optional for every mode — keep the prop for layout symmetry
+  // with other required fields, but always pass false so no asterisk renders.
+  const requireStrengthFields = false;
   const hasStrengthWeaknessContext =
       values.strongAreas.trim().length > 0 && values.weakAreas.trim().length > 0;
   const beginnerStrongSuggestions = isBeginnerMode
@@ -265,11 +266,14 @@ function WorkspaceProfileStepTwo({
   const effectiveWeakSuggestions = isBeginnerMode
     ? mergeUniqueSuggestions(beginnerWeakSuggestions, fieldSuggestions?.weakAreaSuggestions)
     : fieldSuggestions?.weakAreaSuggestions;
-  const effectiveLearningGoalSuggestions = hasStrengthWeaknessContext
-    ? fieldSuggestions?.learningGoalSuggestions
+  // Strengths/weaknesses are optional, so AI learning-goal suggestions unlock as soon as
+  // the user provides their current level. For beginners we still merge in the canned
+  // starter goals so the chip list stays useful even before AI returns anything specific.
+  const effectiveLearningGoalSuggestions = !hasCurrentLevel
+    ? []
     : isBeginnerMode
-      ? beginnerLearningGoalSuggestions
-      : [];
+      ? mergeUniqueSuggestions(beginnerLearningGoalSuggestions, fieldSuggestions?.learningGoalSuggestions)
+      : fieldSuggestions?.learningGoalSuggestions;
   const strongAreasPlaceholder = isBeginnerMode
     ? translateStepTwo(
       'workspaceProfileStepTwo.beginnerStrongAreasPlaceholder',
@@ -461,25 +465,17 @@ function WorkspaceProfileStepTwo({
                   required
               >
 
-                {!hasStrengthWeaknessContext ? (
+                {!hasCurrentLevel ? (
                     <div className="mb-4">
                       <GuidanceNote
                           isDarkMode={isDarkMode}
                           title={translateStepTwo(
-                              isBeginnerMode
-                                ? 'workspaceProfileStepTwo.beginnerWaitForGoalTitle'
-                                : 'workspaceProfileStepTwo.waitForGoalTitle',
-                              isBeginnerMode
-                                ? 'You can still set learning goals from the start'
-                                : 'Add strong and weak points for Quizmate AI to suggest goals'
+                              'workspaceProfileStepTwo.waitForGoalTitle',
+                              'Fill in your current level so Quizmate AI can suggest goals'
                           )}
                           description={translateStepTwo(
-                              isBeginnerMode
-                                ? 'workspaceProfileStepTwo.beginnerWaitForGoalDescription'
-                                : 'workspaceProfileStepTwo.waitForGoalDescription',
-                              isBeginnerMode
-                                ? `If you don't yet have clearly defined strong or weak points in ${beginnerScopeLabel}, briefly describe that you are building a basic foundation. Quizmate AI can still suggest goals to get you started in the right direction.`
-                                : 'Once you have the current level, strong and weak points in context, Quizmate AI will suggest more specific learning goals. You can also enter goals according to your actual needs.',
+                              'workspaceProfileStepTwo.waitForGoalDescription',
+                              'Once your current level is filled in, Quizmate AI will suggest more specific learning goals. You can still type your own.',
                               { scope: beginnerScopeLabel }
                           )}
                       />
@@ -494,7 +490,7 @@ function WorkspaceProfileStepTwo({
                     placeholder={learningGoalPlaceholder}
                     className={inputClass}
                  />
-                {(hasStrengthWeaknessContext || isBeginnerMode) ? (
+                {hasCurrentLevel ? (
                      <SuggestionChips
                         suggestions={effectiveLearningGoalSuggestions}
                         isDarkMode={isDarkMode}

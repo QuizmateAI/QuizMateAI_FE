@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -32,6 +32,22 @@ import {
   getIndividualWorkspaceQuestionStats,
   getIndividualWorkspaceQuizStats,
 } from "@/api/WorkspaceAPI";
+import { getAppNumberLocale } from "@/utils/appSupportedLanguages";
+import {
+  BLOOM_COLORS,
+  DIFFICULTY_KEYS,
+  fmtAccuracy,
+  fmtDateTime,
+  fmtNumber,
+  fmtScore,
+  fmtSeconds,
+  getRenderableBloomBuckets,
+  hasQuestionStatsData,
+  hasQuizStatsData,
+  pct,
+  pickQuestionInsightBucket,
+  pickQuizInsightItem,
+} from "./questionStats.utils";
 
 const ATTEMPT_MODES = [
   { value: "OFFICIAL", labelKey: "workspace.questionStats.modeOfficial" },
@@ -163,6 +179,7 @@ function translateLabel(label, t, bucketType) {
   if (bloomTranslated) return bloomTranslated;
   return label || t("workspace.questionStats.unknown");
 }
+
 
 function getRenderableBloomBuckets(buckets = []) {
   const bucketMap = Object.fromEntries(
@@ -1092,36 +1109,49 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
       setLoading(true);
       setError(null);
 
-      try {
-        const results = await Promise.all(
-          ATTEMPT_MODES.map(async (mode) => {
-            const [questionData, quizData] = await Promise.all([
-              fetchQuestionModeStats(mode.value),
-              fetchQuizModeStats(mode.value),
-            ]);
-            return [mode.value, questionData, quizData];
-          }),
-        );
+      // allSettled so one failing mode doesn't blank the whole dashboard.
+      const settled = await Promise.allSettled(
+        ATTEMPT_MODES.map(async (mode) => {
+          const [questionData, quizData] = await Promise.all([
+            fetchQuestionModeStats(mode.value),
+            fetchQuizModeStats(mode.value),
+          ]);
+          return [mode.value, questionData, quizData];
+        }),
+      );
 
-        if (cancelled) return;
+      if (cancelled) return;
 
-        const nextQuestionStatsByMode = {};
-        const nextQuizStatsByMode = {};
+      const nextQuestionStatsByMode = {};
+      const nextQuizStatsByMode = {};
+      let firstError = null;
 
-        results.forEach(([modeValue, questionData, quizData]) => {
+      settled.forEach((result, index) => {
+        const modeValue = ATTEMPT_MODES[index].value;
+        if (result.status === "fulfilled") {
+          const [, questionData, quizData] = result.value;
           nextQuestionStatsByMode[modeValue] = questionData;
           nextQuizStatsByMode[modeValue] = quizData;
-        });
+        } else {
+          nextQuestionStatsByMode[modeValue] = null;
+          nextQuizStatsByMode[modeValue] = null;
+          if (!firstError) firstError = result.reason;
+        }
+      });
 
-        setQuestionStatsByMode(nextQuestionStatsByMode);
-        setQuizStatsByMode(nextQuizStatsByMode);
-      } catch (err) {
-        if (cancelled) return;
-        const apiMsg = err?.response?.data?.message || err?.response?.data?.error || "";
-        setError(apiMsg || err?.message || t("workspace.questionStats.loadError"));
-      } finally {
-        if (!cancelled) setLoading(false);
+      setQuestionStatsByMode(nextQuestionStatsByMode);
+      setQuizStatsByMode(nextQuizStatsByMode);
+
+      const allFailed = settled.every((result) => result.status === "rejected");
+      if (allFailed && firstError) {
+        const apiMsg = firstError?.response?.data?.message
+          || firstError?.response?.data?.error
+          || "";
+        // Use sentinel when no upstream message; render layer translates it.
+        setError(apiMsg || firstError?.message || "__GENERIC_LOAD_ERROR__");
       }
+
+      setLoading(false);
     };
 
     loadAllModes();
@@ -1129,7 +1159,7 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
     return () => {
       cancelled = true;
     };
-  }, [fetchQuestionModeStats, fetchQuizModeStats, t, workspaceId]);
+  }, [fetchQuestionModeStats, fetchQuizModeStats, workspaceId]);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -1144,15 +1174,19 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
     return () => observer.disconnect();
   }, []);
 
-  const surfaceHasData = (modeValue, surfaceValue) => (
+  const surfaceHasData = useCallback((modeValue, surfaceValue) => (
     surfaceValue === "QUIZ"
       ? hasQuizStatsData(quizStatsByMode[modeValue])
       : hasQuestionStatsData(questionStatsByMode[modeValue])
-  );
+  ), [questionStatsByMode, quizStatsByMode]);
 
-  const activeModes = ATTEMPT_MODES.filter((mode) => surfaceHasData(mode.value, surface));
-  const fallbackModes = ATTEMPT_MODES.filter((mode) => surfaceHasData(mode.value, "QUESTION") || surfaceHasData(mode.value, "QUIZ"));
-  const availableModes = activeModes.length > 0 ? activeModes : fallbackModes;
+  const availableModes = useMemo(() => {
+    const activeModes = ATTEMPT_MODES.filter((mode) => surfaceHasData(mode.value, surface));
+    if (activeModes.length > 0) return activeModes;
+    return ATTEMPT_MODES.filter(
+      (mode) => surfaceHasData(mode.value, "QUESTION") || surfaceHasData(mode.value, "QUIZ"),
+    );
+  }, [surface, surfaceHasData]);
 
   useEffect(() => {
     if (loading) return;
@@ -1198,10 +1232,13 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
   }
 
   if (error) {
+    const errorMessage = error === "__GENERIC_LOAD_ERROR__"
+      ? t("workspace.questionStats.loadError")
+      : error;
     return (
       <StatePanel
         icon={AlertCircle}
-        message={error}
+        message={errorMessage}
         isDarkMode={isDarkMode}
         iconClassName="text-rose-500"
         action={(
@@ -1298,7 +1335,7 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
             t={t}
             containerWidth={containerWidth}
             selectedModeLabel={selectedModeLabel}
-            locale={i18n.language?.startsWith("en") ? "en-US" : "vi-VN"}
+            locale={getAppNumberLocale(i18n.language)}
           />
         ) : (
           <QuestionStatsContent

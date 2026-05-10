@@ -30,6 +30,7 @@ import {
 } from "@/api/QuizAPI";
 import { cn } from "@/lib/utils";
 import { validateQuizPasteImportJson } from "@/utils/validateQuizPasteImportJson";
+import { SYSTEM_SETTING_KEYS, useSystemSettingNumber } from "@/hooks/useSystemSettings";
 
 /**
  * Paste-import quiz flow:
@@ -218,14 +219,16 @@ function ManualQuizPasteImportPanel({
   const jsonCopyTimerRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  const maxQuestionsPerQuiz = useSystemSettingNumber(SYSTEM_SETTING_KEYS.MAX_QUESTIONS_PER_QUIZ);
+
   const localValidation = useMemo(
     () =>
       validateQuizPasteImportJson(jsonText, {
         t,
         templateKey: template?.key ?? null,
-        maxQuestions: 100,
+        maxQuestions: maxQuestionsPerQuiz,
       }),
-    [jsonText, t, template?.key],
+    [jsonText, t, template?.key, maxQuestionsPerQuiz],
   );
 
   useEffect(() => {

@@ -153,10 +153,18 @@ const SETTING_TITLES = {
   'learning.pre_pass_score_percent': 'Điểm pass Pre-learning (%)',
   'learning.post_pass_score_percent': 'Điểm pass Post-learning (%)',
   'quiz.max_questions_per_quiz': 'Số câu hỏi tối đa / quiz',
-  'mock_test.max_saved_templates_per_user': 'Số template tối đa / user',
   'community.max_comment_length': 'Độ dài tối đa của comment',
   'community.max_links_per_comment': 'Số link tối đa / comment',
 };
+
+// Setting keys ẩn khỏi danh sách generic. Lý do:
+//  - system.analysis.ai_model_id: có panel riêng tại /super-admin/system-analysis-model
+//    để chọn từ dropdown OpenAI model, không phù hợp UI generic số/tiền.
+//  - mock_test.max_saved_templates_per_user: BE giữ default 100, không cần admin tune.
+const HIDDEN_SETTING_KEYS = new Set([
+  'system.analysis.ai_model_id',
+  'mock_test.max_saved_templates_per_user',
+]);
 
 /**
  * Trả về title friendly cho 1 setting key. Fallback: humanize key (vd "user.welcome_credit_units"
@@ -289,6 +297,7 @@ function SystemSettingManagement() {
 
   const normalizedSettings = useMemo(() => (
     [...settings]
+      .filter((setting) => !HIDDEN_SETTING_KEYS.has(setting.key))
       .map((setting) => ({
         ...setting,
         category: getSettingCategory(setting.key),

@@ -125,7 +125,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     : null;
   const selectedBracketSize = Number(bracketSize);
   const hasValidBracketSize = BRACKET_SIZE_OPTIONS.includes(selectedBracketSize);
-  const inviteParticipantCount = sanitizedSelectedUserIds.length + (leaderParticipates ? 1 : 0);
+  const leaderParticipatesEffective = sourceMode === CHALLENGE_SOURCE_MODES.MANUAL_CHALLENGE_QUIZ ? false : leaderParticipates;
+  const inviteParticipantCount = sanitizedSelectedUserIds.length + (leaderParticipatesEffective ? 1 : 0);
 
   const modeConfigIssue = useMemo(() => {
     if (matchMode === 'FREE_FOR_ALL' && !hasValidCapacityLimit) {
@@ -212,6 +213,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const selectedQuiz = challengeEligibleQuizzes.find((q) => q.quizId === validSelectedQuizId);
   const isExistingSourceMode = sourceMode === CHALLENGE_SOURCE_MODES.EXISTING_SNAPSHOT;
   const isAiSourceMode = sourceMode === CHALLENGE_SOURCE_MODES.AI_CHALLENGE_QUIZ;
+  const isManualSourceMode = sourceMode === CHALLENGE_SOURCE_MODES.MANUAL_CHALLENGE_QUIZ;
 
   const toggleMember = useCallback((userId) => {
     setSelectedUserIds((prev) =>
@@ -256,7 +258,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         endTime: combineToBackendPayload(endDate, endTime),
         sourceQuizId: createSourceMode === CHALLENGE_SOURCE_MODES.EXISTING_SNAPSHOT ? validSelectedQuizId : null,
         invitedUserIds: registrationMode === 'INVITE_ONLY' ? sanitizedSelectedUserIds : [],
-        leaderParticipates,
+        leaderParticipates: leaderParticipatesEffective,
         matchMode,
         teamCount: matchMode === 'TEAM_BATTLE' ? TEAM_COUNT : null,
         teamSplitStrategy: matchMode === 'TEAM_BATTLE' ? 'RANDOM' : null,
@@ -750,26 +752,28 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               validationIssues={schedIssues}
             />
 
-            <label
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${
-                isDarkMode ? 'border-slate-600 bg-slate-800/40' : 'border-gray-200 bg-gray-50'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={leaderParticipates}
-                onChange={(e) => setLeaderParticipates(e.target.checked)}
-                className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300"
-              />
-              <span>
-                <span className={`block text-sm font-medium ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
-                  {t('createChallengeWizard.schedule.leaderParticipatesLabel', 'I will take the match with everyone')}
+            {!isManualSourceMode && (
+              <label
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${
+                  isDarkMode ? 'border-slate-600 bg-slate-800/40' : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={leaderParticipates}
+                  onChange={(e) => setLeaderParticipates(e.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300"
+                />
+                <span>
+                  <span className={`block text-sm font-medium ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                    {t('createChallengeWizard.schedule.leaderParticipatesLabel', 'I will take the match with everyone')}
+                  </span>
+                  <span className={`mt-1 block text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                    {t('createChallengeWizard.schedule.leaderParticipatesDesc', 'You get a slot in the participant list. After the match is published, you cannot preview questions (for fairness to members). While the match is still a draft (DRAFT), you can still author and test it.')}
+                  </span>
                 </span>
-                <span className={`mt-1 block text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                  {t('createChallengeWizard.schedule.leaderParticipatesDesc', 'You get a slot in the participant list. After the match is published, you cannot preview questions (for fairness to members). While the match is still a draft (DRAFT), you can still author and test it.')}
-                </span>
-              </span>
-            </label>
+              </label>
+            )}
           </div>
         ); }
 

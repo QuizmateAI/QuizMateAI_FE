@@ -74,7 +74,9 @@ const RbacManagement = lazy(() => import('./pages/SuperAdmin/RbacManagement'));
 const AiAuditManagement = lazy(() => import('./pages/SuperAdmin/AiAuditManagement'));
 const AiProvidersOverview = lazy(() => import('./pages/SuperAdmin/AiProvidersOverview'));
 const AiModelsManagement = lazy(() => import('./pages/SuperAdmin/AiModelsManagement'));
+const SystemAnalysisModelManagement = lazy(() => import('./pages/SuperAdmin/SystemAnalysisModelManagement'));
 const AiCostManagement = lazy(() => import('./pages/SuperAdmin/AiCostManagement'));
+const PnlOverview = lazy(() => import('./pages/SuperAdmin/PnlOverview'));
 const UserDetailPage = lazy(() => import('./pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./pages/SuperAdmin/GroupDetailPage'));
 const FeedbackManagementLayout = lazy(() => import('./pages/SuperAdmin/FeedbackManagementLayout'));
@@ -177,8 +179,10 @@ function MainRoutes() {
                     <Route path="permission-requests" element={<PermissionRequestsPage />} />
                     <Route path="ai-providers" element={<AiProvidersOverview />} />
                     <Route path="ai-models" element={<AiModelsManagement />} />
+                    <Route path="system-analysis-model" element={<SystemAnalysisModelManagement />} />
                     <Route path="ai-costs" element={<AiCostManagement />} />
                     <Route path="ai-audit" element={<AiAuditManagement />} />
+                    <Route path="pnl-overview" element={<PnlOverview />} />
                     <Route path="users/:userId" element={<UserDetailPage />} />
                     <Route path="users" element={<UserManagement />} />
                     <Route path="groups/:workspaceId" element={<GroupDetailPage />} />

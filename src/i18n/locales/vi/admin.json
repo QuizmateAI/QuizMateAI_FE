@@ -15,6 +15,7 @@
     "creditPackages": "Gói tín dụng",
     "revenueGrowth": "Doanh thu & Tăng trưởng",
     "aiModels": "Mô hình AI",
+    "systemAnalysisModel": "Model phân tích hệ thống",
     "aiCosts": "Chi phí AI",
     "aiAudit": "AI Audit",
     "payments": "Lịch sử giao dịch",
@@ -215,6 +216,7 @@
     "formulaSummary": "Mỗi lần sử dụng tốn {{base}} credit cố định, cộng thêm {{unit}} credit cho mỗi {{size}} {{mode}}. Phần lẻ được làm tròn lên.",
     "costMode": {
       "label": "Cách tính phí",
+      "lockedNote": "Cách tính phí được hệ thống quy định cố định cho từng chức năng và không thể chỉnh sửa.",
       "FIXED": "Cố định",
       "PER_QUESTION": "Theo câu hỏi",
       "PER_ITEM": "Theo mục",
@@ -1147,6 +1149,26 @@
     "noDescription": "Chưa có mô tả",
     "unassigned": "Chưa gán gói nào",
     "empty": "Chưa có model nào phù hợp với bộ lọc hiện tại.",
+    "systemAnalysis": {
+      "title": "Model AI cho phân tích hệ thống",
+      "subtitle": "Chọn 1 model OpenAI dùng chung cho các tính năng phân tích nội bộ. Đổi model sẽ áp dụng tức thì cho toàn hệ thống, không cần restart.",
+      "affectedActions": "Áp dụng cho các tính năng",
+      "modelLabel": "Model OpenAI áp dụng",
+      "currentLabel": "Model đang dùng",
+      "notConfigured": "— Chưa cấu hình (fallback theo plan) —",
+      "fallbackNotice": "Chưa cấu hình – hệ thống đang resolve theo plan của user.",
+      "noOpenAiActive": "Không có model OpenAI nào đang ACTIVE. Thêm hoặc kích hoạt model trước.",
+      "save": "Lưu cấu hình",
+      "saving": "Đang lưu...",
+      "reset": "Đặt lại",
+      "updateSuccess": "Cập nhật model phân tích hệ thống thành công.",
+      "actions": {
+        "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "Phân tích nội dung kiến thức",
+        "SUGGEST_STUDY_PROFILE_FIELDS": "Gợi ý lĩnh vực study profile",
+        "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Validate consistency study profile",
+        "SUGGEST_WORKSPACE_NAME": "Gợi ý tên workspace"
+      }
+    },
     "stats": {
       "total": "Tổng model",
       "totalHint": "Danh mục model đang lưu trong hệ thống",
@@ -1530,6 +1552,7 @@
       "GENERATE_ROADMAP_PHASES": "Tạo phase roadmap",
       "GENERATE_ROADMAP_PHASE_CONTENT": "Tạo nội dung phase roadmap",
       "SUGGEST_MOCK_TEST_STRUCTURE": "Gợi ý cấu trúc đề thi thử",
+      "SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS": "Tổng hợp đề thi từ tài liệu",
       "ROADMAP_REVIEW": "Đánh giá roadmap"
     }
   },

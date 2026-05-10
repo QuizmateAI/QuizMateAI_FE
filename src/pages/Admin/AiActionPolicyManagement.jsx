@@ -71,7 +71,6 @@ const ACTION_META = {
   PROCESS_VIDEO: { icon: Video, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-950/40', category: 'process', i18nKey: 'processVideo' },
 };
 
-const COST_MODE_OPTIONS = ['FIXED', 'PER_QUESTION', 'PER_ITEM', 'PER_PAGE', 'PER_WORD', 'PER_CELL', 'PER_SECOND'];
 const DIGIT_ONLY_PATTERN = /\D+/g;
 
 function extractData(res) {
@@ -89,8 +88,10 @@ function parseWholeNumberInput(value, fallback = 0) {
 }
 
 function normalizeCostForm(form) {
+  // costMode is system-fixed per action key — never sent in the update payload.
+  const { costMode: _costMode, ...editable } = form;
   return {
-    ...form,
+    ...editable,
     baseCreditCost: Math.max(0, parseWholeNumberInput(form.baseCreditCost, 0)),
     unitCreditCost: Math.max(0, parseWholeNumberInput(form.unitCreditCost, 0)),
     unitSize: Math.max(1, parseWholeNumberInput(form.unitSize, 1)),
@@ -637,20 +638,13 @@ export default function AiActionPolicyManagement() {
                     <p className={`text-xs ${dk ? 'text-slate-500' : 'text-gray-500'}`}>
                       {editLabels?.metricLabel || getPolicyTitle(editPolicy, t)}
                     </p>
+                    <p className={`text-xs italic ${dk ? 'text-slate-500' : 'text-gray-500'}`}>
+                      {t('aiActionPolicy.costMode.lockedNote')}
+                    </p>
                   </div>
-                  <select
-                    value={form.costMode ?? 'FIXED'}
-                    onChange={(event) => setForm((prev) => ({ ...prev, costMode: event.target.value }))}
-                    className={`h-11 w-full rounded-lg border px-3 text-sm font-medium sm:w-56 ${
-                      dk ? 'border-slate-700 bg-slate-950 text-white' : 'border-gray-200 bg-white text-gray-900 shadow-sm'
-                    }`}
-                  >
-                    {COST_MODE_OPTIONS.map((mode) => (
-                      <option key={mode} value={mode}>
-                        {t(`aiActionPolicy.costMode.${mode}`, mode)}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="sm:w-56">
+                    <CostModeBadge costMode={form.costMode ?? 'FIXED'} isDarkMode={dk} t={t} />
+                  </div>
                 </div>
 
                 <div className="grid gap-4 px-4 py-4 md:grid-cols-3">

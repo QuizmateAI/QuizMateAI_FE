@@ -7,7 +7,7 @@ import App from './App.jsx'
 import { DarkModeProvider } from './hooks/useDarkMode'
 import { i18nReady, preloadLanguage } from './i18n'
 import { RuntimeRecoveryScreen } from '@/components/system/RuntimeRecoveryBoundary'
-import { installRuntimeRecoveryListeners, tryScheduleRuntimeRecovery } from '@/lib/runtimeRecovery'
+import { hardReloadWithCacheBust, installRuntimeRecoveryListeners, tryScheduleRuntimeRecovery } from '@/lib/runtimeRecovery'
 // IMPORTANT: import api so its module-level configureRefresh wires up before the
 // token bootstrap below tries to call it.
 import './api/api'
@@ -62,7 +62,7 @@ async function bootstrap() {
       <RuntimeRecoveryScreen
         error={error}
         isReloading={isReloading}
-        onReload={() => window.location.reload()}
+        onReload={hardReloadWithCacheBust}
       />,
     )
   }

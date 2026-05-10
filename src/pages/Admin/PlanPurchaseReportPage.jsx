@@ -77,6 +77,19 @@ function formatCompactVnd(value) {
   return `${sign}${abs}`;
 }
 
+// Tiền gốc (base) là phí cố định không liên quan AI cost → coi như lời khóa sẵn.
+// Pool credit (= revenue − base) là phần user dùng cho AI; biên thật chỉ tính ở đây.
+// Bỏ qua field BE estimatedMarginVnd (= revenue − COGS) vì over-state khi gói có base+credit.
+function getCreditRevenue(row) {
+  const revenue = Number(row?.revenueVnd) || 0;
+  const base = Number(row?.baseRevenueVnd) || 0;
+  return revenue - base;
+}
+
+function getEffectiveMargin(row) {
+  return getCreditRevenue(row) - (Number(row?.aiProviderCostVnd) || 0);
+}
+
 function ChartCard({ isDarkMode, title, subtitle, summary, children }) {
   return (
     <div
@@ -103,6 +116,44 @@ function ChartCard({ isDarkMode, title, subtitle, summary, children }) {
 function formatScope(value) {
   if (value == null || value === '') return '—';
   return String(value);
+}
+
+function formatPaidAt(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return { date: String(value), time: '' };
+  const date = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  return { date, time };
+}
+
+const USER_AVATAR_PALETTES = [
+  'from-ocean-400 to-ocean-700',
+  'from-emerald-400 to-teal-600',
+  'from-indigo-400 to-purple-600',
+  'from-amber-400 to-orange-600',
+  'from-rose-400 to-pink-600',
+  'from-cyan-400 to-sky-600',
+  'from-violet-400 to-fuchsia-600',
+];
+
+function getUserAvatar(email, username) {
+  const source = String(email || username || '').trim();
+  if (!source) return { initials: '?', accent: 'from-slate-400 to-slate-600' };
+  const local = (source.split('@')[0] || source).toLowerCase();
+  const parts = local.split(/[._\-+]/).filter(Boolean);
+  let initials;
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    initials = (parts[0][0] + parts[1][0]).toUpperCase();
+  } else {
+    initials = local.slice(0, 2).toUpperCase() || '?';
+  }
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash * 31 + source.charCodeAt(i)) | 0;
+  }
+  const accent = USER_AVATAR_PALETTES[Math.abs(hash) % USER_AVATAR_PALETTES.length];
+  return { initials, accent };
 }
 
 function getPlanInitials(planCode, fallbackName) {
@@ -147,7 +198,7 @@ function comparePlans(a, b, sortKey) {
         return Number(row?.baseRevenueVnd) || 0;
       case 'margin_desc':
       case 'margin_asc':
-        return Number(row?.estimatedMarginVnd) || 0;
+        return getEffectiveMargin(row);
       case 'revenue_asc':
       case 'revenue_desc':
       default:
@@ -303,8 +354,10 @@ export default function PlanPurchaseReportPage() {
         const base = Number(row?.baseRevenueVnd) || 0;
         const revenue = Number(row?.revenueVnd) || 0;
         const cogs = Number(row?.aiProviderCostVnd) || 0;
-        const margin = Number(row?.estimatedMarginVnd) || 0;
-        const marginPct = revenue > 0 ? (margin / revenue) * 100 : 0;
+        const margin = getEffectiveMargin(row);
+        // Tỷ lệ lời chia trên pool credit (không phải tổng doanh thu) vì base là lời cố định.
+        const creditDenominator = getCreditRevenue(row);
+        const marginPct = creditDenominator > 0 ? (margin / creditDenominator) * 100 : 0;
         const baseName = row?.planCode || row?.planDisplayName || `#${row?.planCatalogId}`;
         // Nếu filter 'current' thì không cần đuôi version (mỗi family chỉ 1 row).
         const showVersionSuffix = chartVersionFilter !== 'current'
@@ -398,7 +451,6 @@ export default function PlanPurchaseReportPage() {
         baseRevenueVnd: acc.baseRevenueVnd + (Number(row?.baseRevenueVnd) || 0),
         revenueVnd: acc.revenueVnd + (Number(row?.revenueVnd) || 0),
         aiProviderCostVnd: acc.aiProviderCostVnd + (Number(row?.aiProviderCostVnd) || 0),
-        estimatedMarginVnd: acc.estimatedMarginVnd + (Number(row?.estimatedMarginVnd) || 0),
       }),
       {
         purchaseCount: 0,
@@ -406,11 +458,14 @@ export default function PlanPurchaseReportPage() {
         baseRevenueVnd: 0,
         revenueVnd: 0,
         aiProviderCostVnd: 0,
-        estimatedMarginVnd: 0,
       },
     ),
     [filteredPlans],
   );
+
+  // Biên/credit tổng được derive từ filteredTotals (revenue − base − cogs) để khớp với cell formula.
+  const filteredTotalsCredit = filteredTotals.revenueVnd - filteredTotals.baseRevenueVnd;
+  const filteredTotalsMargin = filteredTotalsCredit - filteredTotals.aiProviderCostVnd;
 
   const buyersPageData = buyersQuery.data ?? {};
   const buyers = Array.isArray(buyersPageData.content) ? buyersPageData.content : [];
@@ -441,10 +496,6 @@ export default function PlanPurchaseReportPage() {
       <SuperAdminPageHeader
         eyebrow="Commerce"
         title={t('planPurchases.title', 'Báo cáo gói & biên lợi nhuận')}
-        description={t(
-          'planPurchases.subtitle',
-          'Doanh thu là tổng tiền thanh toán gói (COMPLETED). Giá catalog = phần credit + giá gốc; COGS AI và biên vẫn theo snapshot plan trong cùng khoảng thời gian.',
-        )}
         actions={(
           <div className="flex items-center gap-2">
             <RevenueSparkline
@@ -599,9 +650,9 @@ export default function PlanPurchaseReportPage() {
               <ChartCard
                 isDarkMode={isDarkMode}
                 title={t('planPurchases.chart.margin', 'Lợi nhuận biên theo gói')}
-                subtitle={t('planPurchases.chart.marginHint', 'Doanh thu trừ COGS AI. Đỏ = âm, xanh = dương.')}
-                summary={`${formatVnd(chartTotals.margin)} / ${formatVnd(chartTotals.revenue)} (${
-                  chartTotals.revenue > 0 ? ((chartTotals.margin / chartTotals.revenue) * 100).toFixed(1) : '0.0'
+                subtitle={t('planPurchases.chart.marginHint', 'Credit trừ COGS AI (lời còn lại từ pool credit). Đỏ = âm, xanh = dương.')}
+                summary={`${formatVnd(chartTotals.margin)} / ${formatVnd(chartTotals.credit)} credit (${
+                  chartTotals.credit > 0 ? ((chartTotals.margin / chartTotals.credit) * 100).toFixed(1) : '0.0'
                 }%)`}
               >
                 <ResponsiveContainer width="100%" height={260}>
@@ -878,10 +929,10 @@ export default function PlanPurchaseReportPage() {
                   </TableRow>
                 ) : (
                   pagedPlans.map((row) => {
-                    const margin = Number(row?.estimatedMarginVnd);
-                    const marginNeg = Number.isFinite(margin) && margin < 0;
-                    const revenue = Number(row?.revenueVnd) || 0;
-                    const marginPct = revenue > 0 && Number.isFinite(margin) ? (margin / revenue) * 100 : null;
+                    const margin = getEffectiveMargin(row);
+                    const marginNeg = margin < 0;
+                    const credit = getCreditRevenue(row);
+                    const marginPct = credit > 0 ? (margin / credit) * 100 : null;
                     const isCurrent = row?.planIsCurrent !== false;
                     const initials = getPlanInitials(row?.planCode, row?.planDisplayName);
                     const accent = getPlanFamilyAccent(row?.planCode);
@@ -946,7 +997,7 @@ export default function PlanPurchaseReportPage() {
                           <div className={`tabular-nums font-semibold ${
                             marginNeg ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-300'
                           }`}>
-                            {formatVnd(row.estimatedMarginVnd)}
+                            {formatVnd(margin)}
                           </div>
                           {marginPct != null ? (
                             <div className={`text-[11px] tabular-nums ${
@@ -1000,19 +1051,19 @@ export default function PlanPurchaseReportPage() {
                     <TableCell className={`text-right tabular-nums ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>{formatVnd(filteredTotals.aiProviderCostVnd)}</TableCell>
                     <TableCell className="text-right">
                       <div className={`tabular-nums font-bold ${
-                        filteredTotals.estimatedMarginVnd < 0
+                        filteredTotalsMargin < 0
                           ? 'text-rose-600 dark:text-rose-400'
                           : 'text-emerald-700 dark:text-emerald-300'
                       }`}>
-                        {formatVnd(filteredTotals.estimatedMarginVnd)}
+                        {formatVnd(filteredTotalsMargin)}
                       </div>
-                      {filteredTotals.revenueVnd > 0 ? (
+                      {filteredTotalsCredit > 0 ? (
                         <div className={`text-[11px] tabular-nums ${
-                          filteredTotals.estimatedMarginVnd < 0
+                          filteredTotalsMargin < 0
                             ? (isDarkMode ? 'text-rose-400/80' : 'text-rose-500/80')
                             : (isDarkMode ? 'text-emerald-400/80' : 'text-emerald-600/80')
                         }`}>
-                          {((filteredTotals.estimatedMarginVnd / filteredTotals.revenueVnd) * 100).toFixed(2)}%
+                          {((filteredTotalsMargin / filteredTotalsCredit) * 100).toFixed(2)}%
                         </div>
                       ) : null}
                     </TableCell>
@@ -1039,96 +1090,202 @@ export default function PlanPurchaseReportPage() {
       )}
 
       <Dialog open={buyerPlanId != null} onOpenChange={(open) => !open && closeBuyers()}>
-        <DialogContent className={`max-w-3xl max-h-[85vh] overflow-y-auto ${isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : ''}`}>
+        <DialogContent className={`max-w-4xl max-h-[88vh] overflow-y-auto ${isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : ''}`}>
           <DialogHeader>
-            <DialogTitle>{t('planPurchases.buyersTitle', 'Người thanh toán')}: {buyerPlanLabel}</DialogTitle>
-            <DialogDescription className={isDarkMode ? 'text-slate-400' : ''}>
-              {t('planPurchases.buyersHint', 'Các giao dịch COMPLETED cho plan này trong khoảng lọc.')}
-            </DialogDescription>
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md"
+                style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #1f77a8 100%)' }}
+                aria-hidden
+              >
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-base font-bold leading-tight">
+                  <span className={isDarkMode ? 'text-slate-100' : 'text-slate-900'}>
+                    {t('planPurchases.buyersTitle', 'Người thanh toán')}
+                  </span>
+                  <span className={`ml-2 text-sm font-semibold ${isDarkMode ? 'text-ocean-300' : 'text-ocean-600'}`}>
+                    {buyerPlanLabel}
+                  </span>
+                </DialogTitle>
+                <DialogDescription className={`mt-1 ${isDarkMode ? 'text-slate-400' : ''}`}>
+                  {t('planPurchases.buyersHint', 'Các giao dịch COMPLETED cho plan này trong khoảng lọc.')}
+                </DialogDescription>
+              </div>
+            </div>
+            {!buyersQuery.isLoading && buyers.length > 0 ? (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className={`rounded-xl border px-3 py-2 ${
+                  isDarkMode ? 'border-slate-800 bg-slate-950/40' : 'border-slate-200 bg-slate-50'
+                }`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wide ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {t('planPurchases.buyers.totalRecords', 'Tổng giao dịch')}
+                  </div>
+                  <div className={`mt-0.5 text-base font-bold tabular-nums ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {Number(buyersPageData.totalElements || buyers.length).toLocaleString('vi-VN')}
+                  </div>
+                </div>
+                <div className={`rounded-xl border px-3 py-2 ${
+                  isDarkMode ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-emerald-200 bg-emerald-50'
+                }`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wide ${isDarkMode ? 'text-emerald-300/80' : 'text-emerald-600'}`}>
+                    {t('planPurchases.buyers.activeOnPage', 'Còn hạn (trang này)')}
+                  </div>
+                  <div className={`mt-0.5 text-base font-bold tabular-nums ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                    {buyers.filter((b) => b.planIsActive === true).length.toLocaleString('vi-VN')}
+                    <span className={`ml-1 text-xs font-medium ${isDarkMode ? 'text-emerald-400/70' : 'text-emerald-600/70'}`}>
+                      / {buyers.length}
+                    </span>
+                  </div>
+                </div>
+                <div className={`rounded-xl border px-3 py-2 ${
+                  isDarkMode ? 'border-ocean-500/30 bg-ocean-500/5' : 'border-ocean-200 bg-ocean-50/60'
+                }`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wide ${isDarkMode ? 'text-ocean-300/80' : 'text-ocean-600'}`}>
+                    {t('planPurchases.buyers.pageRevenue', 'Doanh thu trang này')}
+                  </div>
+                  <div className={`mt-0.5 text-base font-bold tabular-nums ${isDarkMode ? 'text-ocean-200' : 'text-ocean-700'}`}>
+                    {formatVnd(buyers.reduce((s, b) => s + (Number(b.amountVnd) || 0), 0))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </DialogHeader>
           {buyersQuery.isLoading ? (
             <ListSpinner />
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>{t('planPurchases.buyers.email', 'Email')}</TableHead>
-                    <TableHead>{t('planPurchases.buyers.amount', 'Số tiền')}</TableHead>
-                    <TableHead>{t('planPurchases.buyers.status', 'Tình trạng')}</TableHead>
-                    <TableHead>{t('planPurchases.buyers.paidAt', 'Thanh toán')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {buyers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-slate-500 py-8">
-                        {t('planPurchases.buyersEmpty', 'Không có bản ghi.')}
-                      </TableCell>
+              <div className={`overflow-hidden rounded-xl border ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                <Table>
+                  <TableHeader>
+                    <TableRow className={`${isDarkMode ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/40' : 'bg-slate-50/80 hover:bg-slate-50/80'}`}>
+                      <TableHead className="w-[60px]">ID</TableHead>
+                      <TableHead>{t('planPurchases.buyers.email', 'Email')}</TableHead>
+                      <TableHead className="text-right">{t('planPurchases.buyers.amount', 'Số tiền')}</TableHead>
+                      <TableHead>{t('planPurchases.buyers.status', 'Tình trạng')}</TableHead>
+                      <TableHead>{t('planPurchases.buyers.paidAt', 'Thanh toán')}</TableHead>
                     </TableRow>
-                  ) : (
-                    buyers.map((b) => {
-                      // Tính trạng thái plan cho user/workspace này: còn hạn / hết hạn + version
-                      const isActive = b.planIsActive === true;
-                      const isExpired = b.planIsActive === false;
-                      const versionMismatch = Number.isFinite(Number(b.purchasedPlanVersion))
-                        && Number.isFinite(Number(b.currentPlanVersion))
-                        && b.purchasedPlanVersion !== b.currentPlanVersion;
-                      const expiresAtLabel = b.planExpiresAt
-                        ? new Date(b.planExpiresAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                        : null;
-                      return (
-                        <TableRow key={b.paymentId}>
-                          <TableCell className="tabular-nums">{b.payerUserId}</TableCell>
-                          <TableCell>
-                            <div className="font-medium">{b.payerEmail || '—'}</div>
-                            <div className="text-xs text-slate-500">{b.payerUsername}</div>
-                          </TableCell>
-                          <TableCell className="tabular-nums">{formatVnd(b.amountVnd)}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <span className="flex items-center gap-1.5">
-                                {isActive ? (
-                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                    isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
-                                  }`}>
-                                    {t('planPurchases.buyers.active', 'Còn hạn')}
-                                  </span>
-                                ) : isExpired ? (
-                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                    isDarkMode ? 'bg-rose-500/15 text-rose-300' : 'bg-rose-100 text-rose-700'
-                                  }`}>
-                                    {t('planPurchases.buyers.expired', 'Hết hạn')}
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-slate-400">—</span>
-                                )}
-                                {Number.isFinite(Number(b.purchasedPlanVersion)) ? (
-                                  <span className={`rounded px-1 py-0.5 text-[10px] font-bold ${
-                                    versionMismatch
-                                      ? (isDarkMode ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-700')
-                                      : (isDarkMode ? 'bg-indigo-500/15 text-indigo-300' : 'bg-indigo-100 text-indigo-700')
-                                  }`}>
-                                    v{b.purchasedPlanVersion}
-                                    {versionMismatch ? ` → v${b.currentPlanVersion} hiện tại` : ''}
+                  </TableHeader>
+                  <TableBody>
+                    {buyers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className={`py-12 text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                          <div className="flex flex-col items-center gap-2">
+                            <Users className={`h-8 w-8 ${isDarkMode ? 'text-slate-700' : 'text-slate-300'}`} />
+                            <span className="text-sm">{t('planPurchases.buyersEmpty', 'Không có bản ghi.')}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      buyers.map((b) => {
+                        const isActive = b.planIsActive === true;
+                        const isExpired = b.planIsActive === false;
+                        const versionMismatch = Number.isFinite(Number(b.purchasedPlanVersion))
+                          && Number.isFinite(Number(b.currentPlanVersion))
+                          && b.purchasedPlanVersion !== b.currentPlanVersion;
+                        const expiresAtLabel = b.planExpiresAt
+                          ? new Date(b.planExpiresAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                          : null;
+                        const paidAt = formatPaidAt(b.paidAt || b.recordedAt);
+                        const avatar = getUserAvatar(b.payerEmail, b.payerUsername);
+                        return (
+                          <TableRow key={b.paymentId} className={isDarkMode ? 'border-slate-800' : ''}>
+                            <TableCell className={`tabular-nums font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                              {b.payerUserId}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatar.accent} text-[11px] font-bold text-white shadow-sm`}
+                                  aria-hidden
+                                >
+                                  {avatar.initials}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className={`truncate text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                    {b.payerEmail || '—'}
+                                  </div>
+                                  {b.payerUsername ? (
+                                    <div className={`truncate text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                      @{b.payerUsername}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className={`tabular-nums text-sm font-bold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                                {formatVnd(b.amountVnd)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {isActive ? (
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                      isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
+                                    }`}>
+                                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                      {t('planPurchases.buyers.active', 'Còn hạn')}
+                                    </span>
+                                  ) : isExpired ? (
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                      isDarkMode ? 'bg-rose-500/15 text-rose-300' : 'bg-rose-100 text-rose-700'
+                                    }`}>
+                                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                                      {t('planPurchases.buyers.expired', 'Hết hạn')}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400">—</span>
+                                  )}
+                                  {Number.isFinite(Number(b.purchasedPlanVersion)) ? (
+                                    <span
+                                      title={versionMismatch
+                                        ? t('planPurchases.buyers.versionMismatchTip', 'Đã có version mới hơn — gói cũ vẫn còn hiệu lực')
+                                        : t('planPurchases.buyers.versionMatchTip', 'Đang là version hiện tại')}
+                                      className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                                        versionMismatch
+                                          ? (isDarkMode ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-700')
+                                          : (isDarkMode ? 'bg-ocean-500/15 text-ocean-200' : 'bg-ocean-50 text-ocean-700')
+                                      }`}
+                                    >
+                                      v{b.purchasedPlanVersion}
+                                      {versionMismatch ? ` → v${b.currentPlanVersion}` : ''}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {expiresAtLabel ? (
+                                  <span className={`text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                    {t('planPurchases.buyers.expiresAt', 'Hết hạn')}:{' '}
+                                    <span className="tabular-nums font-medium">{expiresAtLabel}</span>
                                   </span>
                                 ) : null}
-                              </span>
-                              {expiresAtLabel ? (
-                                <span className="text-[11px] text-slate-500">
-                                  {t('planPurchases.buyers.expiresAt', 'Hết hạn')}: {expiresAtLabel}
-                                </span>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">{b.paidAt || b.recordedAt || '—'}</TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {paidAt ? (
+                                <div className="flex flex-col leading-tight">
+                                  <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                    {paidAt.date}
+                                  </span>
+                                  {paidAt.time ? (
+                                    <span className={`text-[11px] tabular-nums ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                      {paidAt.time}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <span className="text-sm text-slate-400">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
               <AdminPagination
                 currentPage={buyerPage}
                 totalPages={Number(buyersPageData.totalPages || 0)}
@@ -1144,67 +1301,170 @@ export default function PlanPurchaseReportPage() {
 
       {/* Credit buyers modal — danh sách người mua của 1 credit package (hoặc CUSTOM) */}
       <Dialog open={creditBuyerCtx != null} onOpenChange={(open) => !open && closeCreditBuyers()}>
-        <DialogContent className={`max-w-3xl max-h-[85vh] overflow-y-auto ${isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : ''}`}>
+        <DialogContent className={`max-w-4xl max-h-[88vh] overflow-y-auto ${isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : ''}`}>
           <DialogHeader>
-            <DialogTitle>
-              {t('planPurchases.creditBuyers.title', 'Người mua credit')}: {creditBuyerCtx?.label || ''}
-            </DialogTitle>
-            <DialogDescription className={isDarkMode ? 'text-slate-400' : ''}>
-              {t('planPurchases.creditBuyers.hint', 'Các giao dịch COMPLETED cho gói credit này trong khoảng lọc.')}
-            </DialogDescription>
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md"
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' }}
+                aria-hidden
+              >
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-base font-bold leading-tight">
+                  <span className={isDarkMode ? 'text-slate-100' : 'text-slate-900'}>
+                    {t('planPurchases.creditBuyers.title', 'Người mua credit')}
+                  </span>
+                  <span className={`ml-2 text-sm font-semibold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                    {creditBuyerCtx?.label || ''}
+                  </span>
+                </DialogTitle>
+                <DialogDescription className={`mt-1 ${isDarkMode ? 'text-slate-400' : ''}`}>
+                  {t('planPurchases.creditBuyers.hint', 'Các giao dịch COMPLETED cho gói credit này trong khoảng lọc.')}
+                </DialogDescription>
+              </div>
+            </div>
+            {!creditBuyersQuery.isLoading && (creditBuyersQuery.data?.content ?? []).length > 0 ? (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className={`rounded-xl border px-3 py-2 ${
+                  isDarkMode ? 'border-slate-800 bg-slate-950/40' : 'border-slate-200 bg-slate-50'
+                }`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wide ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {t('planPurchases.buyers.totalRecords', 'Tổng giao dịch')}
+                  </div>
+                  <div className={`mt-0.5 text-base font-bold tabular-nums ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {Number(creditBuyersQuery.data?.totalElements || (creditBuyersQuery.data?.content ?? []).length).toLocaleString('vi-VN')}
+                  </div>
+                </div>
+                <div className={`rounded-xl border px-3 py-2 ${
+                  isDarkMode ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-emerald-200 bg-emerald-50'
+                }`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wide ${isDarkMode ? 'text-emerald-300/80' : 'text-emerald-600'}`}>
+                    {t('planPurchases.creditBuyers.creditsOnPage', 'Credit (trang này)')}
+                  </div>
+                  <div className={`mt-0.5 text-base font-bold tabular-nums ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                    {(creditBuyersQuery.data?.content ?? []).reduce((s, b) => s + (Number(b.creditsReceived) || 0), 0).toLocaleString('vi-VN')}
+                  </div>
+                </div>
+                <div className={`rounded-xl border px-3 py-2 ${
+                  isDarkMode ? 'border-ocean-500/30 bg-ocean-500/5' : 'border-ocean-200 bg-ocean-50/60'
+                }`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wide ${isDarkMode ? 'text-ocean-300/80' : 'text-ocean-600'}`}>
+                    {t('planPurchases.buyers.pageRevenue', 'Doanh thu trang này')}
+                  </div>
+                  <div className={`mt-0.5 text-base font-bold tabular-nums ${isDarkMode ? 'text-ocean-200' : 'text-ocean-700'}`}>
+                    {formatVnd((creditBuyersQuery.data?.content ?? []).reduce((s, b) => s + (Number(b.amountVnd) || 0), 0))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </DialogHeader>
           {creditBuyersQuery.isLoading ? (
             <ListSpinner />
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>{t('planPurchases.buyers.email', 'Email')}</TableHead>
-                    <TableHead>{t('planPurchases.buyers.amount', 'Số tiền')}</TableHead>
-                    <TableHead>{t('planPurchases.creditBuyers.creditsReceived', 'Credit nhận')}</TableHead>
-                    <TableHead>{t('planPurchases.creditBuyers.scope', 'Phạm vi')}</TableHead>
-                    <TableHead>{t('planPurchases.buyers.paidAt', 'Thanh toán')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(creditBuyersQuery.data?.content ?? []).length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-slate-500 py-8">
-                        {t('planPurchases.buyersEmpty', 'Không có bản ghi.')}
-                      </TableCell>
+              <div className={`overflow-hidden rounded-xl border ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                <Table>
+                  <TableHeader>
+                    <TableRow className={`${isDarkMode ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/40' : 'bg-slate-50/80 hover:bg-slate-50/80'}`}>
+                      <TableHead className="w-[60px]">ID</TableHead>
+                      <TableHead>{t('planPurchases.buyers.email', 'Email')}</TableHead>
+                      <TableHead className="text-right">{t('planPurchases.buyers.amount', 'Số tiền')}</TableHead>
+                      <TableHead className="text-right">{t('planPurchases.creditBuyers.creditsReceived', 'Credit nhận')}</TableHead>
+                      <TableHead>{t('planPurchases.creditBuyers.scope', 'Phạm vi')}</TableHead>
+                      <TableHead>{t('planPurchases.buyers.paidAt', 'Thanh toán')}</TableHead>
                     </TableRow>
-                  ) : (
-                    (creditBuyersQuery.data?.content ?? []).map((b) => (
-                      <TableRow key={b.paymentId}>
-                        <TableCell className="tabular-nums">{b.payerUserId}</TableCell>
-                        <TableCell>
-                          <div className="font-medium">{b.payerEmail || '—'}</div>
-                          <div className="text-xs text-slate-500">{b.payerUsername}</div>
+                  </TableHeader>
+                  <TableBody>
+                    {(creditBuyersQuery.data?.content ?? []).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className={`py-12 text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                          <div className="flex flex-col items-center gap-2">
+                            <Users className={`h-8 w-8 ${isDarkMode ? 'text-slate-700' : 'text-slate-300'}`} />
+                            <span className="text-sm">{t('planPurchases.buyersEmpty', 'Không có bản ghi.')}</span>
+                          </div>
                         </TableCell>
-                        <TableCell className="tabular-nums">{formatVnd(b.amountVnd)}</TableCell>
-                        <TableCell className="tabular-nums">
-                          {Number(b.creditsReceived || 0).toLocaleString('vi-VN')} credit
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                            b.paymentTargetType === 'WORKSPACE_CREDIT'
-                              ? (isDarkMode ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-100 text-violet-700')
-                              : (isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-100 text-cyan-700')
-                          }`}>
-                            {b.paymentTargetType === 'WORKSPACE_CREDIT' ? 'Nhóm' : 'Cá nhân'}
-                          </span>
-                          {b.billedWorkspaceName ? (
-                            <div className="mt-0.5 text-[11px] text-slate-500">{b.billedWorkspaceName}</div>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="text-sm">{b.paidAt || b.recordedAt || '—'}</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      (creditBuyersQuery.data?.content ?? []).map((b) => {
+                        const paidAt = formatPaidAt(b.paidAt || b.recordedAt);
+                        const avatar = getUserAvatar(b.payerEmail, b.payerUsername);
+                        return (
+                          <TableRow key={b.paymentId} className={isDarkMode ? 'border-slate-800' : ''}>
+                            <TableCell className={`tabular-nums font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                              {b.payerUserId}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatar.accent} text-[11px] font-bold text-white shadow-sm`}
+                                  aria-hidden
+                                >
+                                  {avatar.initials}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className={`truncate text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                    {b.payerEmail || '—'}
+                                  </div>
+                                  {b.payerUsername ? (
+                                    <div className={`truncate text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                      @{b.payerUsername}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className={`tabular-nums text-sm font-bold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                                {formatVnd(b.amountVnd)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className={`tabular-nums text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                {Number(b.creditsReceived || 0).toLocaleString('vi-VN')}
+                              </span>
+                              <span className={`ml-1 text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                credit
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                b.paymentTargetType === 'WORKSPACE_CREDIT'
+                                  ? (isDarkMode ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-100 text-violet-700')
+                                  : (isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-100 text-cyan-700')
+                              }`}>
+                                {b.paymentTargetType === 'WORKSPACE_CREDIT' ? 'Nhóm' : 'Cá nhân'}
+                              </span>
+                              {b.billedWorkspaceName ? (
+                                <div className={`mt-0.5 text-[11px] truncate ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                  {b.billedWorkspaceName}
+                                </div>
+                              ) : null}
+                            </TableCell>
+                            <TableCell>
+                              {paidAt ? (
+                                <div className="flex flex-col leading-tight">
+                                  <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                    {paidAt.date}
+                                  </span>
+                                  {paidAt.time ? (
+                                    <span className={`text-[11px] tabular-nums ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                      {paidAt.time}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <span className="text-sm text-slate-400">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
               <AdminPagination
                 currentPage={creditBuyerPage}
                 totalPages={Number(creditBuyersQuery.data?.totalPages || 0)}
