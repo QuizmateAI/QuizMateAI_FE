@@ -4,7 +4,6 @@ import {
   BarChart3,
   ClipboardList,
   Edit2,
-  MessageSquareText,
   Plus,
   RefreshCw,
   Save,
@@ -119,11 +118,6 @@ function normalizeDraft(form) {
         }))
       : [createBlankQuestion(1)],
   };
-}
-
-function formatPercent(value) {
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? `${numericValue.toFixed(2)}%` : '0.00%';
 }
 
 function formatRating(value) {
@@ -646,7 +640,7 @@ function FeedbackManagement() {
         )}
       />
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-3">
           <MetricCard
             title={t('feedbackManagement.metrics.totalRequests', 'Total requests')}
             value={overview?.totalRequests ?? 0}
@@ -666,13 +660,6 @@ function FeedbackManagement() {
             value={formatRating(overview?.averageRating)}
             helper={t('feedbackManagement.metrics.averageRatingHelper', 'Across submitted feedback')}
             icon={BarChart3}
-            isDarkMode={isDarkMode}
-          />
-          <MetricCard
-            title={t('feedbackManagement.metrics.satisfactionRate', 'Satisfaction rate')}
-            value={formatPercent(overview?.satisfactionRate)}
-            helper={`${formatPercent(overview?.responseRate)} ${t('feedbackManagement.metrics.responseRateSuffix', 'response rate')}`}
-            icon={MessageSquareText}
             isDarkMode={isDarkMode}
           />
         </div>

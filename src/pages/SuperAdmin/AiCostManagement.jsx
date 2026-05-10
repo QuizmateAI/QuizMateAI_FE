@@ -349,9 +349,11 @@ function AiCostManagement() {
         getAiCostRequests({ ...query, page, size: pageSize }),
       ]);
       const requestPage = extractData(requestResponse) || {};
+      const rawRequests = Array.isArray(requestPage.content) ? requestPage.content : [];
+      const requests = rawRequests.filter((row) => Number(row?.providerCostVnd || 0) > 0);
       return {
         summary: extractData(summaryResponse),
-        requests: Array.isArray(requestPage.content) ? requestPage.content : [],
+        requests,
         pageInfo: {
           totalPages: Number(requestPage.totalPages || 0),
           totalElements: Number(requestPage.totalElements || 0),

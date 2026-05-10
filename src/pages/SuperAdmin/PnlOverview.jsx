@@ -283,9 +283,9 @@ function PnlOverview() {
 
   // AI cost breakdown
   const costBreakdown = useMemo(() => ([
-    { name: t('pnl.cost.userPaid', 'USER_PAID (user trả từng lần)'), value: aiCostUserPaidEstimate, color: COLOR_COST_USER_PAID },
-    { name: t('pnl.cost.plan', 'PLAN_BASED (gói thuê bao)'), value: aiCostPlan, color: COLOR_COST_PLAN },
-    { name: t('pnl.cost.system', 'SYSTEM (hệ thống chịu)'), value: aiCostSystem, color: COLOR_COST_SYSTEM },
+    { name: t('pnl.cost.userPaid', 'User trả từng lần'), value: aiCostUserPaidEstimate, color: COLOR_COST_USER_PAID },
+    { name: t('pnl.cost.plan', 'Gói thuê bao'), value: aiCostPlan, color: COLOR_COST_PLAN },
+    { name: t('pnl.cost.system', 'Hệ thống chịu'), value: aiCostSystem, color: COLOR_COST_SYSTEM },
   ]), [aiCostUserPaidEstimate, aiCostPlan, aiCostSystem, t]);
 
   const revenueChartData = useMemo(
@@ -549,60 +549,12 @@ function PnlOverview() {
             />
             <PieCard
               title={t('pnl.pie.cost', 'Cơ cấu chi phí AI')}
-              subtitle={t('pnl.pie.costHint', 'USER_PAID = ước lượng (charged − planCost).')}
+              subtitle={t('pnl.pie.costHint', 'Phần user trả = ước lượng (đã thu − chi phí gói).')}
               summary={formatVnd(aiCostTotal)}
               data={costBreakdown}
               isDarkMode={isDarkMode}
               emptyText={t('pnl.chart.empty', 'Không có dữ liệu cho khoảng này.')}
             />
-          </div>
-
-          <div
-            className={`rounded-2xl border p-4 ${
-              isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
-            }`}
-          >
-            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-              {t('pnl.formula.title', 'Cách tính lời ròng')}
-            </h3>
-            <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {t(
-                'pnl.formula.hint',
-                'Cộng/trừ trên cùng một khoảng thời gian. Phần PLAN_BASED đã được tách khỏi USER_PAID để tránh đếm trùng.',
-              )}
-            </p>
-            <div className="mt-3 space-y-1 font-mono text-[12px] leading-6">
-              <div className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                <span style={{ color: COLOR_REVENUE }}>+ {formatVnd(revenueTotal)}</span>{' '}
-                <span className="text-slate-500">— {t('pnl.formula.revenue', 'Doanh thu (Sub + Credit + Slot)')}</span>
-              </div>
-              <div className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                <span style={{ color: COLOR_COST_USER_PAID }}>− {formatVnd(aiCostUserPaidEstimate)}</span>{' '}
-                <span className="text-slate-500">— {t('pnl.formula.userPaid', 'USER_PAID (ước lượng)')}</span>
-              </div>
-              <div className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                <span style={{ color: COLOR_COST_PLAN }}>− {formatVnd(aiCostPlan)}</span>{' '}
-                <span className="text-slate-500">— {t('pnl.formula.plan', 'PLAN_BASED (gói thuê bao)')}</span>
-              </div>
-              <div className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                <span style={{ color: COLOR_COST_SYSTEM }}>− {formatVnd(aiCostSystem)}</span>{' '}
-                <span className="text-slate-500">— {t('pnl.formula.system', 'SYSTEM (hệ thống chịu)')}</span>
-              </div>
-              <div className={`mt-2 border-t pt-2 ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-                <span
-                  className={`font-bold ${
-                    netPositive
-                      ? (isDarkMode ? 'text-emerald-300' : 'text-emerald-600')
-                      : (isDarkMode ? 'text-rose-300' : 'text-rose-600')
-                  }`}
-                >
-                  = {formatVnd(netVnd)}
-                </span>{' '}
-                <span className="text-slate-500">
-                  — {netPositive ? t('pnl.formula.netPositive', 'Lời ròng') : t('pnl.formula.netNegative', 'Lỗ ròng')}
-                </span>
-              </div>
-            </div>
           </div>
 
           {(tsQuery.error || costQuery.error || auditQuery.error) ? (
