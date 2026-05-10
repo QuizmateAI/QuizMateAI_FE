@@ -935,7 +935,6 @@ function UploadSourceDialogBase({
                     const suggestionId = getSuggestionId(item);
                     const isChecked = selectedSuggestionIds.includes(suggestionId);
                     const isImportable = isSuggestionImportable(item);
-                    const relevanceScore = Number(item?.relevanceScore ?? 0);
                     return (
                       <div
                         key={Number.isInteger(suggestionId) && suggestionId > 0 ? suggestionId : `${item?.link || "item"}_${index}`}
@@ -968,9 +967,6 @@ function UploadSourceDialogBase({
                               <p className={`text-sm font-semibold leading-5 ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
                                 {item?.title || t("workspace.upload.untitled")}
                               </p>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${isDarkMode ? "border-slate-700 text-slate-300" : "border-slate-300 text-slate-600"}`}>
-                                {`${t("workspace.upload.relevanceRate")} : ${relevanceScore}%`}
-                              </span>
                             </div>
                             <p className={`text-xs mt-1 line-clamp-2 leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
                               {item?.snippet || item?.link}
