@@ -5,7 +5,6 @@ import {
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
-  ClipboardPaste,
   Clock3,
   CreditCard,
   FolderOpen,
@@ -122,7 +121,7 @@ function FlashcardListView({
 
   const studioSubKey = String(studioSubFilter || "").toLowerCase();
   const studioCreateLocked =
-    studioSubKey === "ai" || studioSubKey === "manual" || studioSubKey === "paste";
+    studioSubKey === "ai" || studioSubKey === "manual";
 
   const {
     data: flashcards = [],
@@ -149,7 +148,7 @@ function FlashcardListView({
   const list = useMemo(() => {
     const raw = flashcards || [];
     const f = String(studioSubFilter || "").toLowerCase();
-    if (f !== "ai" && f !== "manual" && f !== "paste") return raw;
+    if (f !== "ai" && f !== "manual") return raw;
     return raw.filter((item) => flashcardMatchesStudioSubFilter(item, f));
   }, [flashcards, studioSubFilter]);
 
@@ -179,11 +178,6 @@ function FlashcardListView({
           onClick: () => onCreateManualFlashcard?.(),
           Icon: PenLine,
           defaultLabel: t("workspace.flashcard.createMenu.manual", "Tạo thủ công"),
-        },
-        paste: {
-          onClick: () => onCreateManualFlashcard?.(),
-          Icon: ClipboardPaste,
-          defaultLabel: t("workspace.shell.nav.flashcardFromJson", "Tạo từ JSON"),
         },
       };
       const cfg = map[studioSubKey];

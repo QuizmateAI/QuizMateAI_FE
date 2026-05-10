@@ -2761,6 +2761,7 @@
       "result": "Result",
       "notAvailable": "N/A",
       "processing": "Generating quiz",
+      "processingHint": "AI is processing your content...",
       "examModeTotal": "Exam with total time limit",
       "examModePerQuestion": "Exam per question",
       "examModeTotalShort": "Total time limit",

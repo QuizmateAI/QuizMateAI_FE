@@ -29,7 +29,7 @@ import JapanFlag from '@/assets/Japan_flag.svg';
 import { getBaseAppLanguage, appLanguageShortLabel } from '@/utils/appSupportedLanguages';
 
 const QUIZ_CHILD_MODE = { quizAi: 'ai', quizManual: 'manual', quizFromJson: 'paste' };
-const FLASHCARD_CHILD_MODE = { flashcardAi: 'ai', flashcardManual: 'manual', flashcardFromJson: 'paste' };
+const FLASHCARD_CHILD_MODE = { flashcardAi: 'ai', flashcardManual: 'manual' };
 
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard },
@@ -44,7 +44,7 @@ const NAV_ITEMS = [
   {
     id: 'flashcard',
     icon: BookOpen,
-    children: [{ id: 'flashcardAi' }, { id: 'flashcardManual' }, { id: 'flashcardFromJson' }],
+    children: [{ id: 'flashcardAi' }, { id: 'flashcardManual' }],
   },
   { id: 'mockTest', icon: ClipboardList },
   { id: 'challenge', icon: Swords },

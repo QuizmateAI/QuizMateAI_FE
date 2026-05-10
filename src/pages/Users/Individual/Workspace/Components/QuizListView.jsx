@@ -1599,12 +1599,16 @@ function QuizListView({
                       onViewQuiz?.(quiz);
                     }
                   }}
-                  className={`group flex ${isProcessing ? "" : "h-[228px]"} flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                  className={`group flex h-[228px] flex-col rounded-[24px] border px-5 py-4 transition-all duration-200 ${
                     isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
                   } ${
-                    isDarkMode
-                      ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
-                      : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
+                    isProcessing
+                      ? isDarkMode
+                        ? "border-sky-500/30 bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(8,47,73,0.55)_100%)] shadow-[0_28px_72px_-34px_rgba(56,189,248,0.35)]"
+                        : "border-sky-200/90 bg-[linear-gradient(180deg,#ffffff_0%,#eff6ff_100%)] shadow-[0_28px_72px_-34px_rgba(56,189,248,0.45)]"
+                      : isDarkMode
+                        ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
+                        : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -1685,12 +1689,64 @@ function QuizListView({
                   </div>
 
                   {isProcessing ? (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-end gap-3">
-                        <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{Math.round(processingPercent)}%</span>
+                    <div className="mt-3 flex flex-1 flex-col">
+                      <div className="flex items-center gap-3">
+                        <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                          isDarkMode ? "bg-sky-500/15 ring-1 ring-sky-400/25" : "bg-sky-100 ring-1 ring-sky-200/80"
+                        }`}>
+                          <Loader2 className={`h-5 w-5 animate-spin ${isDarkMode ? "text-sky-300" : "text-sky-600"}`} strokeWidth={2.5} />
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className={`truncate text-[13px] font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                            {t("quizListView.cards.processing", "Đang tạo quiz")}
+                          </span>
+                          <span className={`truncate text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                            {t("quizListView.cards.processingHint", "AI đang xử lý nội dung của bạn...")}
+                          </span>
+                        </div>
+                        <div className={`flex shrink-0 items-baseline gap-0.5 ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                          <span className="text-[26px] font-bold leading-none tracking-tight tabular-nums">
+                            {Math.round(processingPercent)}
+                          </span>
+                          <span className="text-sm font-semibold">%</span>
+                        </div>
                       </div>
-                      <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
-                        <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
+
+                      <div className={`relative mt-4 h-2.5 overflow-hidden rounded-full ${
+                        isDarkMode ? "bg-slate-800" : "bg-slate-200/70"
+                      }`}>
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-cyan-400 transition-[width] duration-700"
+                          style={{ width: `${processingBarWidth}%` }}
+                        >
+                          <div className="absolute inset-0 bg-glitter-sheen bg-[length:220%_100%] animate-glitter-sheen" />
+                        </div>
+                      </div>
+
+                      <div className={`mt-auto flex items-center justify-between gap-2 pt-3 text-[11px] ${
+                        isDarkMode ? "text-slate-400" : "text-slate-500"
+                      }`}>
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                          {createdAtLabel ? (
+                            <>
+                              <Clock className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate whitespace-nowrap">{createdAtLabel}</span>
+                            </>
+                          ) : null}
+                        </span>
+                        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold ${
+                          isDarkMode ? "border-sky-500/30 bg-sky-500/10 text-sky-300" : "border-sky-200 bg-sky-50 text-sky-700"
+                        }`}>
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
+                              isDarkMode ? "bg-sky-400" : "bg-sky-500"
+                            }`} />
+                            <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
+                              isDarkMode ? "bg-sky-400" : "bg-sky-500"
+                            }`} />
+                          </span>
+                          {t("quizListView.status.PROCESSING", "Đang tạo")}
+                        </span>
                       </div>
                     </div>
                   ) : null}
