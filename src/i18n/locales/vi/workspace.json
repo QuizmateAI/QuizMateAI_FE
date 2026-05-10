@@ -806,6 +806,13 @@
           "removeSampleAnswer": "Xóa đáp án mẫu này?",
           "removePair": "Xóa cặp ghép này?"
         },
+        "exitDialog": {
+          "titleCreate": "Rời khỏi trình tạo quiz?",
+          "titleEdit": "Hủy chỉnh sửa quiz?",
+          "titleClone": "Hủy tạo quiz tương tự?",
+          "keepEditing": "Tiếp tục chỉnh sửa",
+          "confirmExit": "Rời khỏi"
+        },
         "toasts": {
           "loadError": "Không thể tải dữ liệu quiz.",
           "saveError": "Có lỗi khi lưu quiz.",
@@ -1996,6 +2003,7 @@
         "creating": "Đang tạo...",
         "createSuccess": "Đã tạo bộ flashcard «{{name}}».",
         "createError": "Có lỗi khi tạo flashcard từ JSON đã dán.",
+        "draftSaveSuccess": "Đã nhập {{count}} thẻ vào bộ nháp «{{name}}».",
         "defaultName": "Flashcard từ JSON",
         "disclaimer": {
           "heading": "Lưu ý: nội dung do bên thứ 3 sinh ra.",

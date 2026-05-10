@@ -45,7 +45,6 @@ import {
   hasQuestionStatsData,
   hasQuizStatsData,
   pct,
-  pickQuestionInsightBucket,
   pickQuizInsightItem,
 } from "./questionStats.utils";
 
@@ -69,67 +68,6 @@ const SURFACE_OPTIONS = [
     icon: ClipboardList,
   },
 ];
-
-const DIFFICULTY_KEYS = ["EASY", "MEDIUM", "HARD", "CUSTOM", "UNSPECIFIED"];
-// UNSPECIFIED dat cuoi de cau hoi thieu metadata van duoc dem vao chart, nhung tach biet
-// truc quan voi cac muc Bloom hop le.
-const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "APPLY", "UNSPECIFIED"];
-
-const BLOOM_COLORS = {
-  REMEMBER: { main: "#6366f1" },
-  UNDERSTAND: { main: "#06b6d4" },
-  APPLY: { main: "#22c55e" },
-  ANALYZE: { main: "#f59e0b" },
-  EVALUATE: { main: "#ef4444" },
-  UNSPECIFIED: { main: "#94a3b8" },
-};
-
-function pct(value, total) {
-  if (!total || total <= 0) return 0;
-  return Math.round((Number(value || 0) / total) * 100);
-}
-
-function fmtAccuracy(accuracy) {
-  if (accuracy == null) return "0%";
-  return `${Math.round(Number(accuracy) * 100)}%`;
-}
-
-function fmtNumber(value) {
-  return Number(value ?? 0).toLocaleString();
-}
-
-function fmtScore(value) {
-  if (value == null || Number.isNaN(Number(value))) return "0";
-  return Number(value).toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
-  });
-}
-
-function fmtSeconds(value, t) {
-  const totalSeconds = Math.round(Number(value || 0));
-  if (!totalSeconds) return t("workspace.questionStats.noDuration");
-
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  if (minutes <= 0) return `${seconds}s`;
-  if (seconds === 0) return `${minutes}m`;
-  return `${minutes}m ${seconds}s`;
-}
-
-function fmtDateTime(value, locale = "vi-VN") {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "—";
-  return parsed.toLocaleString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function panelClasses(isDarkMode) {
   return isDarkMode
@@ -178,54 +116,6 @@ function translateLabel(label, t, bucketType) {
   const bloomTranslated = t(`workspace.questionStats.bloom.${upper}`, "");
   if (bloomTranslated) return bloomTranslated;
   return label || t("workspace.questionStats.unknown");
-}
-
-
-function getRenderableBloomBuckets(buckets = []) {
-  const bucketMap = Object.fromEntries(
-    (buckets || []).map((bucket) => [String(bucket?.label || "").toUpperCase(), bucket])
-  );
-  return BLOOM_ORDER.map((key) => bucketMap[key]).filter(Boolean);
-}
-
-function pickQuizInsightItem(items = [], type = "best") {
-  const candidates = items.filter((item) => Number(item?.totalAttempts || 0) > 0);
-  if (candidates.length === 0) return null;
-
-  const sorted = [...candidates].sort((left, right) => {
-    const accuracyDiff = Number(right?.averageAccuracy ?? 0) - Number(left?.averageAccuracy ?? 0);
-    if (Math.abs(accuracyDiff) > 0.0001) return accuracyDiff;
-    const scoreDiff = Number(right?.averageScore ?? 0) - Number(left?.averageScore ?? 0);
-    if (Math.abs(scoreDiff) > 0.0001) return scoreDiff;
-    return Number(right?.totalAttempts ?? 0) - Number(left?.totalAttempts ?? 0);
-  });
-
-  return type === "worst" ? sorted[sorted.length - 1] : sorted[0];
-}
-
-function hasQuestionStatsData(stats) {
-  if (!stats) return false;
-
-  const current = stats.currentQuestionStats;
-  const lifetime = stats.lifetimeQuestionAttemptStats;
-
-  const attemptedQuestions = Number(current?.attemptedQuestionsInMode || 0);
-  const gradedQuestions = Number(current?.gradedQuestionsInMode || 0);
-  const totalQuestionAttempts = Number(lifetime?.totalQuestionAttempts ?? lifetime?.totalAttempts ?? 0);
-
-  return attemptedQuestions > 0 || gradedQuestions > 0 || totalQuestionAttempts > 0;
-}
-
-function hasQuizStatsData(stats) {
-  if (!stats) return false;
-
-  const current = stats.currentQuizStats;
-  const lifetime = stats.lifetimeQuizAttemptStats;
-
-  const attemptedQuizzes = Number(current?.attemptedQuizzesInMode || 0);
-  const totalQuizAttempts = Number(lifetime?.totalQuizAttempts || 0);
-
-  return attemptedQuizzes > 0 || totalQuizAttempts > 0;
 }
 
 function chartColors(isDarkMode) {

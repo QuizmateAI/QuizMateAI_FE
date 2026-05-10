@@ -1185,6 +1185,8 @@ function GroupWorkspacePage() {
     if (!viewQuizIdParam || isCreating || !resolvedWorkspaceId) return;
     const qid = Number(viewQuizIdParam);
     if (!Number.isInteger(qid) || qid <= 0) return;
+    // Đã có quiz đang mở khớp viewQuizId → khỏi load lại; sync effect sẽ giữ URL.
+    if (Number(selectedQuiz?.quizId) === qid && activeView === 'quizDetail') return;
 
     setActiveView('quizDetail');
 
@@ -1197,10 +1199,8 @@ function GroupWorkspacePage() {
         if (cancelled || !quiz?.quizId) return;
         setSelectedQuiz(quiz);
         setQuizDetailFromChallengeReview(true);
-        const next = new URLSearchParams(searchParams);
-        next.delete('viewQuizId');
-        /* Giữ challengeEventId trên URL (nếu có) để nút quay lại từ quiz snapshot về đúng challenge */
-        setSearchParams(next, { replace: true });
+        // Giữ viewQuizId trên URL để reload không mất state. Sync effect bên dưới
+        // sẽ xóa khi user rời quizDetail (back ra list / chuyển section).
       } catch (e) {
         console.error('viewQuizId', e);
         if (!cancelled) {
@@ -1217,7 +1217,25 @@ function GroupWorkspacePage() {
     return () => {
       cancelled = true;
     };
-  }, [viewQuizIdParam, resolvedWorkspaceId, isCreating, searchParams, setSearchParams, showError, currentLang, t]);
+  }, [viewQuizIdParam, resolvedWorkspaceId, isCreating, searchParams, setSearchParams, showError, currentLang, t, selectedQuiz?.quizId, activeView]);
+
+  // Sync URL ?viewQuizId từ (activeView, selectedQuiz). Chỉ SET — không tự xóa.
+  // Lý do: khi user click "Xem đề" thì navigate đặt viewQuizId vào URL, ngay sau đó
+  // load effect kịp setActiveView('quizDetail'). Nếu sync effect tự xóa viewQuizId
+  // dựa vào activeView cũ (chưa update kịp), sẽ race và xóa nhầm — gây bug "click
+  // Xem đề lại ra UI quiz list/AI panel" (URL mất viewQuizId trước khi load effect đọc).
+  // Khi user back ra list, URL còn viewQuizId vẫn an toàn vì load effect có guard
+  // không reload nếu selectedQuiz đã khớp; nếu họ muốn xóa thì navigate (handler back) tự xóa.
+  useEffect(() => {
+    if (activeView !== 'quizDetail') return;
+    const qid = Number(selectedQuiz?.quizId);
+    if (!Number.isInteger(qid) || qid <= 0) return;
+    const targetId = String(qid);
+    if (searchParams.get('viewQuizId') === targetId) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('viewQuizId', targetId);
+    setSearchParams(next, { replace: true });
+  }, [activeView, selectedQuiz?.quizId, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (activeSection !== 'roadmap') return;

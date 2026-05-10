@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star, Pencil,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
@@ -205,6 +205,7 @@ function QuizDetailView({
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [loading, setLoading] = useState(true);
@@ -217,8 +218,25 @@ function QuizDetailView({
   const [currentStatus, setCurrentStatus] = useState(quiz?.status || "DRAFT");
   const [quizMeta, setQuizMeta] = useState(null);
   
-  // Tab states
-  const [activeTab, setActiveTab] = useState("overview"); // overview, review (group), questions, history
+  // Tab states — persist qua URL ?tab=... để reload không mất context.
+  const VALID_TABS = React.useMemo(
+    () => new Set(["overview", "review", "questions", "history", "discussion"]),
+    [],
+  );
+  const initialTabFromUrl = (() => {
+    const t = searchParams.get("tab");
+    return t && VALID_TABS.has(t) ? t : "overview";
+  })();
+  const [activeTab, setActiveTabState] = useState(initialTabFromUrl); // overview, review (group), questions, history
+  const setActiveTab = useCallback((next) => {
+    setActiveTabState(next);
+    setSearchParams((prev) => {
+      const sp = new URLSearchParams(prev);
+      if (!next || next === "overview") sp.delete("tab");
+      else sp.set("tab", next);
+      return sp;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   // Personal history (bản thân) — dùng để gate chế độ luyện tập: null = đang tải
@@ -1177,7 +1195,13 @@ function QuizDetailView({
             isLeader={isGroupLeader}
             isReviewer={challengeSnapshotReviewMode && !isGroupLeader}
             challengeSnapshotReviewMode={challengeSnapshotReviewMode}
-            onQuestionDeleted={fetchFullDetail}
+            onQuestionDeleted={async () => {
+              // Cache TTL = 15s; nếu không clear thì refetch trả về danh sách
+              // còn nguyên câu vừa xóa → user thấy danh sách không đổi và lần
+              // xóa thứ 2 trỏ vào câu sai. Phải clear trước khi refetch.
+              quizDetailCache.clear();
+              await fetchFullDetail();
+            }}
           />
         )}
 

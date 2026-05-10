@@ -808,6 +808,13 @@
           "removeSampleAnswer": "このサンプル回答を削除しますか?",
           "removePair": "このマッチングペアを削除しますか?"
         },
+        "exitDialog": {
+          "titleCreate": "クイズビルダーを離れますか?",
+          "titleEdit": "クイズの編集をキャンセルしますか?",
+          "titleClone": "類似クイズの作成をキャンセルしますか?",
+          "keepEditing": "編集を続ける",
+          "confirmExit": "離れる"
+        },
         "toasts": {
           "loadError": "クイズデータを読み込めません。",
           "saveError": "クイズの保存中にエラーが発生しました。",
@@ -2018,6 +2025,7 @@
         "creating": "作成中...",
         "createSuccess": "フラッシュカード「{{name}}」を作成しました。",
         "createError": "貼り付けた JSON からフラッシュカードを作成できませんでした。",
+        "draftSaveSuccess": "下書き「{{name}}」に {{count}} 枚のカードをインポートしました。",
         "defaultName": "JSON から作ったフラッシュカード",
         "disclaimer": {
           "heading": "注意: コンテンツは第三者により生成されています。",
