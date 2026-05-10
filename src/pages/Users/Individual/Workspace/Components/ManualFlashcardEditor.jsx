@@ -73,7 +73,7 @@ function ManualFlashcardEditor({
 }) {
   const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
-  const { addToast } = useToast();
+  const { showSuccess, showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const isEditMode = Boolean(editingSetId);
@@ -124,10 +124,7 @@ function ManualFlashcardEditor({
       } catch (err) {
         if (cancelled) return;
         console.error("[ManualFlashcardEditor] load detail error", err);
-        addToast?.({
-          type: "error",
-          message: t("workspace.flashcard.manualEditor.loadError", "Không thể tải bộ flashcard."),
-        });
+        showError(t("workspace.flashcard.manualEditor.loadError", "Không thể tải bộ flashcard."));
         onBack?.();
       } finally {
         if (!cancelled) setInitialLoading(false);
@@ -135,7 +132,7 @@ function ManualFlashcardEditor({
     })();
 
     return () => { cancelled = true; };
-  }, [editingSetId, isEditMode, addToast, onBack, t]);
+  }, [editingSetId, isEditMode, showError, onBack, t]);
 
   const invalidateList = useCallback(async () => {
     const normalizedContextId = Number(contextId) || 0;
@@ -224,13 +221,13 @@ function ManualFlashcardEditor({
             || err?.data?.message
             || err?.message
             || t("workspace.flashcard.manualEditor.toasts.saveError", "Có lỗi khi lưu bộ flashcard."));
-        addToast?.({ type: "error", message: msg });
+        showError(msg);
       }
       throw err;
     } finally {
       inflightSaveRef.current = null;
     }
-  }, [addToast, buildPayloadItems, invalidateList, resolvedWorkspaceId, t]);
+  }, [showError, buildPayloadItems, invalidateList, resolvedWorkspaceId, t]);
 
   /** Hủy debounce timer đang chờ (nếu có). */
   const cancelPendingAutoSave = useCallback(() => {
@@ -310,7 +307,7 @@ function ManualFlashcardEditor({
     scheduleAutoSave();
   }, [scheduleAutoSave]);
 
-  const handleJsonPasteApply = useCallback(({ flashcardSetName: jsonName, items: jsonItems }) => {
+  const handleJsonPasteApply = useCallback(async ({ flashcardSetName: jsonName, items: jsonItems }) => {
     const capped = (jsonItems || []).slice(0, MAX_ITEMS);
     const mapped = capped.map((row) => ({
       localId: makeLocalId(),
@@ -318,24 +315,49 @@ function ManualFlashcardEditor({
       frontContent: String(row.frontContent || "").slice(0, MAX_FRONT_LENGTH),
       backContent: String(row.backContent || "").slice(0, MAX_BACK_LENGTH),
     }));
-    setSetName((prev) => (
-      String(prev || "").trim()
-        ? String(prev).slice(0, MAX_SET_NAME_LENGTH)
-        : String(jsonName || "").slice(0, MAX_SET_NAME_LENGTH)
-    ));
-    setItems(mapped.length > 0 ? mapped : [createEmptyItem()]);
+    const newItems = mapped.length > 0 ? mapped : [createEmptyItem()];
+    const existingName = String(setNameRef.current || "").trim();
+    const finalName = existingName
+      ? existingName.slice(0, MAX_SET_NAME_LENGTH)
+      : String(jsonName || "").slice(0, MAX_SET_NAME_LENGTH);
+
+    // Sync state + refs so performSave reads the new JSON content immediately
+    // (refs only update via useEffect after re-render, which is too late).
+    setSetName(finalName);
+    setItems(newItems);
     setPasteImportPhase(false);
-    window.setTimeout(() => scheduleAutoSave(), 0);
-  }, [scheduleAutoSave]);
+    setNameRef.current = finalName;
+    itemsRef.current = newItems;
+
+    // Cancel any pending debounced auto-save — we save now, not in 1.5s.
+    cancelPendingAutoSave();
+    setSaving(true);
+    try {
+      const saved = await performSave({ silent: false, activate: false });
+      if (saved) {
+        const displayName = (saved.flashcardSetName && String(saved.flashcardSetName).trim())
+          || finalName
+          || t("workspace.flashcard.untitled", "Flashcard không có tiêu đề");
+        const itemCount = (Array.isArray(saved.items) ? saved.items.length : null) ?? mapped.length;
+        showSuccess(
+          t("workspace.flashcard.pasteImport.draftSaveSuccess", {
+            name: displayName,
+            count: itemCount,
+            defaultValue: `Đã nhập ${itemCount} thẻ vào bộ nháp "${displayName}".`,
+          }),
+        );
+      }
+    } finally {
+      // Errors bubble up — the paste panel keeps the raw JSON text for retry.
+      setSaving(false);
+    }
+  }, [showSuccess, cancelPendingAutoSave, performSave, t]);
 
   // Mode paste-only (sidebar "paste"): tạo + kích hoạt nguyên tử, bỏ qua draft editor — giống luồng quiz.
   const handleJsonPasteCreate = useCallback(async ({ flashcardSetName: jsonName, items: jsonItems }) => {
     if (activating) return;
     if (!resolvedWorkspaceId) {
-      addToast?.({
-        type: "error",
-        message: t("workspace.flashcard.manualEditor.validation.workspaceMissing", "Thiếu thông tin workspace."),
-      });
+      showError(t("workspace.flashcard.manualEditor.validation.workspaceMissing", "Thiếu thông tin workspace."));
       throw new Error("WORKSPACE_MISSING");
     }
     const cleanedItems = (jsonItems || [])
@@ -346,10 +368,7 @@ function ManualFlashcardEditor({
       }))
       .filter((it) => it.frontContent && it.backContent);
     if (cleanedItems.length === 0) {
-      addToast?.({
-        type: "error",
-        message: t("workspace.flashcard.pasteImport.errors.noValidPairs"),
-      });
+      showError(t("workspace.flashcard.pasteImport.errors.noValidPairs"));
       throw new Error("NO_VALID_PAIRS");
     }
     const cleanedName = String(jsonName || "")
@@ -368,13 +387,12 @@ function ManualFlashcardEditor({
       const created = unwrapApiData(res) || {};
       const displayName = (created.flashcardSetName && String(created.flashcardSetName).trim())
         || finalName;
-      addToast?.({
-        type: "success",
-        message: t("workspace.flashcard.pasteImport.createSuccess", {
+      showSuccess(
+        t("workspace.flashcard.pasteImport.createSuccess", {
           name: displayName,
           defaultValue: `Đã tạo bộ flashcard «${displayName}».`,
         }),
-      });
+      );
       await invalidateList();
       onActivated?.({ ...created, status: "ACTIVE" });
     } catch (err) {
@@ -382,12 +400,12 @@ function ManualFlashcardEditor({
         || err?.data?.message
         || err?.message
         || t("workspace.flashcard.pasteImport.createError", "Có lỗi khi tạo flashcard từ JSON đã dán.");
-      addToast?.({ type: "error", message: msg });
+      showError(msg);
       throw err;
     } finally {
       setActivating(false);
     }
-  }, [activating, addToast, invalidateList, onActivated, resolvedWorkspaceId, t]);
+  }, [activating, showError, showSuccess, invalidateList, onActivated, resolvedWorkspaceId, t]);
 
   /** Manual Save Draft: flush pending, save ngay (với toast). */
   const handleManualSaveDraft = useCallback(async () => {
@@ -399,9 +417,8 @@ function ManualFlashcardEditor({
       if (saved) {
         const displayName = (saved.flashcardSetName && saved.flashcardSetName.trim())
           || t("workspace.flashcard.untitled", "Flashcard không có tiêu đề");
-        addToast?.({
-          type: "success",
-          message: wasCreate
+        showSuccess(
+          wasCreate
             ? t("workspace.flashcard.manualEditor.toasts.saveCreateSuccess", {
                 name: displayName,
                 defaultValue: `Đã tạo bộ flashcard "${displayName}" ở trạng thái bản nháp.`,
@@ -410,14 +427,14 @@ function ManualFlashcardEditor({
                 name: displayName,
                 defaultValue: `Đã lưu bộ flashcard "${displayName}".`,
               }),
-        });
+        );
         if (wasCreate) onCreated?.(saved);
         else onSaved?.(saved);
       }
     } catch { /* saveState=error, toast đã hiển thị */ } finally {
       setSaving(false);
     }
-  }, [addToast, cancelPendingAutoSave, onCreated, onSaved, performSave, t]);
+  }, [showSuccess, cancelPendingAutoSave, onCreated, onSaved, performSave, t]);
 
   const activateValidationError = useMemo(() => {
     if ((setName || "").length > MAX_SET_NAME_LENGTH) {
@@ -445,7 +462,7 @@ function ManualFlashcardEditor({
   /** Tạo flashcard (activate). Atomic: BE accept activate=true ở bulk endpoint. */
   const handleActivate = useCallback(async () => {
     if (activateValidationError) {
-      addToast?.({ type: "error", message: activateValidationError });
+      showError(activateValidationError);
       return;
     }
     cancelPendingAutoSave();
@@ -459,19 +476,18 @@ function ManualFlashcardEditor({
         };
         const displayName = (saved.flashcardSetName && saved.flashcardSetName.trim())
           || t("workspace.flashcard.untitled", "Flashcard không có tiêu đề");
-        addToast?.({
-          type: "success",
-          message: t("workspace.flashcard.manualEditor.toasts.activateSuccess", {
-              name: displayName,
-              defaultValue: `Đã kích hoạt bộ flashcard "${displayName}".`,
-            }),
-          });
+        showSuccess(
+          t("workspace.flashcard.manualEditor.toasts.activateSuccess", {
+            name: displayName,
+            defaultValue: `Đã kích hoạt bộ flashcard "${displayName}".`,
+          }),
+        );
         onActivated?.(activatedSet);
       }
     } catch { /* toast đã hiển thị */ } finally {
       setActivating(false);
     }
-  }, [activateValidationError, addToast, cancelPendingAutoSave, onActivated, performSave, t]);
+  }, [activateValidationError, showSuccess, showError, cancelPendingAutoSave, onActivated, performSave, t]);
 
   /** Back: flush pending trước khi navigate. */
   const handleBack = useCallback(async () => {

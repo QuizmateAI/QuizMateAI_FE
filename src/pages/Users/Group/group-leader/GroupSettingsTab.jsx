@@ -19,6 +19,7 @@ import { updateWorkspace } from '@/api/WorkspaceAPI';
 import { toggleVisibility as apiToggleVisibility, deleteGroup as apiDeleteGroup } from '@/api/GroupAPI';
 import { getCurrentUser } from '@/lib/currentUser';
 import GroupSettingsActionsCard from '../Components/GroupSettingsActionsCard';
+import WorkspaceReviewBanPanel from '../Components/WorkspaceReviewBanPanel';
 
 function GroupSettingsTab({
   isDarkMode,
@@ -693,6 +694,10 @@ function GroupSettingsTab({
               </div>
             </div>
           </div>
+
+          {isLeader && group?.workspaceId ? (
+            <WorkspaceReviewBanPanel workspaceId={group.workspaceId} isDarkMode={isDarkMode} />
+          ) : null}
 
           {isLeader ? (
             <div className={`rounded-[30px] border p-6 ${isDarkMode ? 'border-red-400/20 bg-red-500/10 text-white' : 'border-red-200 bg-red-50/80 text-slate-900'}`}>

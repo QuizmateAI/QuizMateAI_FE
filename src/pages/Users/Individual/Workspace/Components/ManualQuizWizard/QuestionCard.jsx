@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Trash2, Lock, Unlock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -87,6 +87,34 @@ function QuestionCard({
   const { t } = useTranslation();
   const cardId = `question-${question.id}`;
   const status = getCardStatus(question);
+
+  const [durationDraft, setDurationDraft] = useState(String(question.duration ?? 60));
+  const [lastSyncedDuration, setLastSyncedDuration] = useState(question.duration);
+  const [durationDirty, setDurationDirty] = useState(false);
+
+  // Pattern "adjust state during render" (React docs): khi prop duration đổi mà user không
+  // đang sửa dở (dirty=false), đồng bộ draft theo prop. Nếu đang dirty (vd sibling card
+  // rebalance trong khi user đang gõ) thì giữ nguyên bản nháp tới khi user blur/Enter.
+  if (question.duration !== lastSyncedDuration && !durationDirty) {
+    setLastSyncedDuration(question.duration);
+    setDurationDraft(String(question.duration ?? 60));
+  }
+
+  const resetDurationDraft = () => {
+    setDurationDirty(false);
+    setDurationDraft(String(question.duration ?? 60));
+  };
+
+  const commitDurationDraft = () => {
+    const trimmed = durationDraft.trim();
+    const parsed = Number(trimmed);
+    if (trimmed === "" || !Number.isFinite(parsed) || parsed === Number(question.duration)) {
+      resetDurationDraft();
+      return;
+    }
+    setDurationDirty(false);
+    onDurationChange?.(question.id, trimmed);
+  };
 
   const questionTypeOptions = QUESTION_TYPE_VALUES.map((value) => ({
     value,
@@ -182,8 +210,19 @@ function QuestionCard({
                 type="number"
                 min="5"
                 step="5"
-                value={question.duration ?? 60}
-                onChange={(event) => onDurationChange?.(question.id, event.target.value)}
+                value={durationDraft}
+                onChange={(event) => {
+                  setDurationDirty(true);
+                  setDurationDraft(event.target.value);
+                }}
+                onBlur={commitDurationDraft}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitDurationDraft();
+                    event.currentTarget.blur();
+                  }
+                }}
                 aria-label={t("workspace.quiz.manualWizard.questionCard.durationLabel", "Giây")}
                 className={cn(INPUT_CLS(isDarkMode), "w-full text-center")}
               />

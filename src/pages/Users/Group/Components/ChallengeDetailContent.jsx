@@ -218,6 +218,7 @@ function ChallengeDetailContent({
   resolveReviewMemberUserId,
   reviewerInviteLimitReached,
   reviewerPick,
+  bannedReviewerIds,
   roundStatusClass,
   setCancelDialogOpen,
   setEditDescription,
@@ -690,9 +691,11 @@ function ChallengeDetailContent({
               </div>
             </div>
             <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {detail.leaderParticipates
-                ? t('challengeDetailView.reviewerPanel.participatingLeaderHint', 'Leader is joining the challenge, so invite 1 or 2 reviewers here. All reviewers have the same role.')
-                : t('challengeDetailView.reviewerPanel.optionalHint', 'Invite up to 2 reviewers if you want another pair of eyes before publishing. All reviewers have the same role.')}
+              {isPublished
+                ? t('challengeDetailView.reviewerPanel.publishedLockHint', 'Challenge is already published — the reviewer list is locked and can no longer be edited.')
+                : detail.leaderParticipates
+                  ? t('challengeDetailView.reviewerPanel.participatingLeaderHint', 'Leader is joining the challenge, so invite 1 or 2 reviewers here. All reviewers have the same role.')
+                  : t('challengeDetailView.reviewerPanel.optionalHint', 'Invite up to 2 reviewers if you want another pair of eyes before publishing. All reviewers have the same role.')}
             </p>
 
             {/* Banner: reviewer raise "đề chưa ổn" — leader cần xử lý */}
@@ -759,92 +762,105 @@ function ChallengeDetailContent({
                           {getReviewerStatusCopy(c, t)}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveReviewer(c.userId)}
-                        disabled={!!actionLoading}
-                        className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                          isDarkMode
-                            ? 'text-red-300 hover:bg-red-500/20'
-                            : 'text-red-600 hover:bg-red-50'
-                        }`}
-                      >
-                        {actionLoading === `rev-${c.userId}` ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <UserMinus className="h-3.5 w-3.5" />
-                        )}
-                        {t('groupWorkspace.challenge.reviewContributorRemove')}
-                      </button>
+                      {!isPublished && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveReviewer(c.userId)}
+                          disabled={!!actionLoading}
+                          className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                            isDarkMode
+                              ? 'text-red-300 hover:bg-red-500/20'
+                              : 'text-red-600 hover:bg-red-50'
+                          }`}
+                        >
+                          {actionLoading === `rev-${c.userId}` ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <UserMinus className="h-3.5 w-3.5" />
+                          )}
+                          {t('groupWorkspace.challenge.reviewContributorRemove')}
+                        </button>
+                      )}
                     </li>
                   );
                 })}
               </ul>
             )}
-            <div className="mt-3 flex flex-wrap items-end gap-2">
-              <div className="min-w-[240px] flex-1">
-                <label className={`mb-1 block text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  {t('groupWorkspace.challenge.reviewContributorPickLabel')}
-                </label>
-                <MemberPickerDropdown
-                  value={reviewerPick}
-                  onChange={setReviewerPick}
-                  disabled={reviewerInviteLimitReached}
-                  isDarkMode={isDarkMode}
-                  placeholder={t('groupWorkspace.challenge.reviewContributorPickPlaceholder')}
-                  emptyHint={t('challengeDetailView.reviewerPanel.noEligibleMembersHint', 'No eligible members available.')}
-                  members={addableReviewMembers.map((m) => {
-                    const id = String(resolveReviewMemberUserId(m));
-                    // Anti-spam: nếu user vừa review challenge ngay trước đó → disable + warning.
-                    const justReviewed = (detail.previousReviewerUserIds || [])
-                      .map((uid) => String(uid))
-                      .includes(id);
-                    return {
-                      id,
-                      label: getUserDisplayLabel(m, m.email || id),
-                      subLabel: m.email || m.username || '',
-                      avatarUrl: m.avatarUrl || m.profilePicture || m.avatar || null,
-                      disabled: justReviewed,
-                      warning: justReviewed
-                        ? t('challengeDetailView.reviewerPanel.justReviewedBadge', 'Vừa review')
-                        : null,
-                    };
-                  })}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleInviteReviewer}
-                disabled={
-                  !reviewerPick
-                  || !!actionLoading
-                  || reviewerInviteLimitReached
-                }
-                className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
-              >
-                {actionLoading === 'addReviewer' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                {t('groupWorkspace.challenge.reviewContributorAdd')}
-              </button>
-            </div>
-            {addableReviewMembers.length === 0 && (
-              <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                {t('challengeDetailView.reviewerPanel.noEligibleMembersHint', 'No eligible members are available to invite. Existing reviewers, registered participants, and the participating leader are filtered out here.')}
-              </p>
-            )}
-            {(detail.previousReviewerUserIds || []).length > 0 && (
-              <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-rose-300' : 'text-rose-600'}`}>
-                {t(
-                  'challengeDetailView.reviewerPanel.antiSpamHint',
-                  'Member có nhãn "Vừa review" đã review challenge ngay trước đó — không invite được để chia đều việc review.',
+            {!isPublished && (
+              <>
+                <div className="mt-3 flex flex-wrap items-end gap-2">
+                  <div className="min-w-[240px] flex-1">
+                    <label className={`mb-1 block text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                      {t('groupWorkspace.challenge.reviewContributorPickLabel')}
+                    </label>
+                    <MemberPickerDropdown
+                      value={reviewerPick}
+                      onChange={setReviewerPick}
+                      disabled={reviewerInviteLimitReached}
+                      isDarkMode={isDarkMode}
+                      placeholder={t('groupWorkspace.challenge.reviewContributorPickPlaceholder')}
+                      emptyHint={t('challengeDetailView.reviewerPanel.noEligibleMembersHint', 'No eligible members available.')}
+                      members={addableReviewMembers.map((m) => {
+                        const id = String(resolveReviewMemberUserId(m));
+                        // Anti-spam: nếu user vừa review challenge ngay trước đó → disable + warning.
+                        const justReviewed = (detail.previousReviewerUserIds || [])
+                          .map((uid) => String(uid))
+                          .includes(id);
+                        // User bị ban review trong workspace → disable + warning, BE cũng reject invite.
+                        const isBanned = bannedReviewerIds && bannedReviewerIds.has(Number(id));
+                        const disabled = justReviewed || isBanned;
+                        let warning = null;
+                        if (isBanned) {
+                          warning = t('workspace.quiz.reviewBan.bannedBadge', 'Đã bị block — không mời được');
+                        } else if (justReviewed) {
+                          warning = t('challengeDetailView.reviewerPanel.justReviewedBadge', 'Vừa review');
+                        }
+                        return {
+                          id,
+                          label: getUserDisplayLabel(m, m.email || id),
+                          subLabel: m.email || m.username || '',
+                          avatarUrl: m.avatarUrl || m.profilePicture || m.avatar || null,
+                          disabled,
+                          warning,
+                        };
+                      })}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleInviteReviewer}
+                    disabled={
+                      !reviewerPick
+                      || !!actionLoading
+                      || reviewerInviteLimitReached
+                    }
+                    className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    {actionLoading === 'addReviewer' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                    {t('groupWorkspace.challenge.reviewContributorAdd')}
+                  </button>
+                </div>
+                {addableReviewMembers.length === 0 && (
+                  <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {t('challengeDetailView.reviewerPanel.noEligibleMembersHint', 'No eligible members are available to invite. Existing reviewers, registered participants, and the participating leader are filtered out here.')}
+                  </p>
                 )}
-              </p>
-            )}
-            {detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && (
-              <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                {detail.leaderParticipates
-                  ? t('challengeDetailView.reviewerPanel.needReviewerWhenLeaderParticipates', 'Leader is participating, so invite 1 reviewer at minimum. You can invite up to 2 reviewers.')
-                  : t('challengeDetailView.reviewerPanel.optionalReviewersHint', 'Reviewers are optional here. If invited, they can help check and clean up the match before you publish it.')}
-              </p>
+                {(detail.previousReviewerUserIds || []).length > 0 && (
+                  <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-rose-300' : 'text-rose-600'}`}>
+                    {t(
+                      'challengeDetailView.reviewerPanel.antiSpamHint',
+                      'Member có nhãn "Vừa review" đã review challenge ngay trước đó — không invite được để chia đều việc review.',
+                    )}
+                  </p>
+                )}
+                {detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && (
+                  <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {detail.leaderParticipates
+                      ? t('challengeDetailView.reviewerPanel.needReviewerWhenLeaderParticipates', 'Leader is participating, so invite 1 reviewer at minimum. You can invite up to 2 reviewers.')
+                      : t('challengeDetailView.reviewerPanel.optionalReviewersHint', 'Reviewers are optional here. If invited, they can help check and clean up the match before you publish it.')}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
@@ -905,6 +921,34 @@ function ChallengeDetailContent({
             {!canPreviewSnapshotQuiz && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-900'}`}>
                 {t('groupWorkspace.challenge.reviewQuizNotReadyHint', 'The match is not ready to preview yet (for example still generating). Please try again later.',
+                )}
+              </p>
+            )}
+            {!myReviewContributorRecord?.reviewCompleteOkAt ? (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!window.confirm(t(
+                      'challengeDetailView.reviewInvitation.withdrawConfirm',
+                      'Hủy nhận review đề challenge này? Leader sẽ phải mời người khác và bạn có thể đăng ký tham gia challenge nếu chưa khóa.',
+                    ))) return;
+                    handleDeclineReviewInvitation();
+                  }}
+                  disabled={!!actionLoading}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    isDarkMode ? 'border-cyan-300/40 text-cyan-100 hover:bg-cyan-500/10' : 'border-cyan-300 text-cyan-800 hover:bg-cyan-100'
+                  }`}
+                >
+                  {actionLoading === 'declineReviewInvite' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                  {t('challengeDetailView.reviewInvitation.withdrawAfterAccept', 'Hủy nhận review')}
+                </button>
+              </div>
+            ) : (
+              <p className={`mt-3 text-xs italic ${isDarkMode ? 'text-cyan-300/80' : 'text-cyan-700/80'}`}>
+                {t(
+                  'challengeDetailView.reviewInvitation.withdrawDisabledHint',
+                  'Bạn đã xác nhận «Đề ổn» nên không thể hủy review nữa.',
                 )}
               </p>
             )}

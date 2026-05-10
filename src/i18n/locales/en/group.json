@@ -1908,7 +1908,8 @@
       "optionalHint": "Invite up to 2 reviewers if you want another pair of eyes before publishing. All reviewers have the same role.",
       "reviewerBadge": "Reviewer",
       "needReviewerWhenLeaderParticipates": "Leader is participating, so invite at least 1 reviewer. You can invite up to 2 reviewers.",
-      "optionalReviewersHint": "Reviewers are optional here. If invited, they can help check and clean up the match before you publish it."
+      "optionalReviewersHint": "Reviewers are optional here. If invited, they can help check and clean up the match before you publish it.",
+      "publishedLockHint": "Challenge is already published — the reviewer list is locked and can no longer be edited."
     },
     "actions": {
       "publish": "Publish challenge",
@@ -1935,7 +1936,10 @@
       "title": "You were invited to review this challenge",
       "body": "The leader selected you as a reviewer. If you accept, you can inspect the match before it is published and you will not be able to register as a participant in this challenge.",
       "accept": "Accept review",
-      "decline": "Decline"
+      "decline": "Decline",
+      "withdrawAfterAccept": "Withdraw from review",
+      "withdrawConfirm": "Withdraw from reviewing this challenge? The leader will have to invite someone else and you may register as a participant if registration is still open.",
+      "withdrawDisabledHint": "You already confirmed “Match is OK”, so you can no longer withdraw."
     }
   },
   "challengeManualMatchEditor": {

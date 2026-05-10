@@ -29,12 +29,18 @@ vi.mock('@/api/ChallengeAPI', () => ({
   startChallengeAttempt: vi.fn(),
   cancelChallenge: vi.fn(),
   updateChallenge: vi.fn(),
+  finishChallenge: vi.fn(),
   removeQuizReviewContributor: vi.fn(),
   publishChallenge: vi.fn(),
   batchInviteQuizReviewers: vi.fn(),
   startChallenge: vi.fn(),
   acceptQuizReviewInvitation: vi.fn(),
   declineQuizReviewInvitation: vi.fn(),
+  updateLeaderParticipation: vi.fn(),
+}));
+
+vi.mock('@/api/WorkspaceReviewBanAPI', () => ({
+  listWorkspaceReviewBans: vi.fn(() => Promise.resolve({ data: { data: [] } })),
 }));
 
 vi.mock('@/api/GroupAPI', () => ({

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import Step1Config from "./Step1Config";
 import Step2Questions from "./Step2Questions";
+import ExitConfirmDialog from "./ExitConfirmDialog";
 import { buildDefaultAnswers, parseMatchingPairs } from "./AnswerEditor";
 import { createManualQuizBulk, updateManualQuizBulk, getQuizFull } from "@/api/QuizAPI";
 import { getQuestionTypes } from "@/api/AIAPI";
@@ -259,6 +260,7 @@ function ManualQuizWizard({
   const [questionTypes, setQuestionTypes] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState(null);
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
   const initialSnapshotRef = useRef(serializeWizardState(DEFAULT_CONFIG, []));
 
   // Loading state for edit/clone mode — show spinner while fetching quiz data
@@ -384,21 +386,28 @@ function ManualQuizWizard({
       onBack?.();
       return;
     }
+    setExitDialogOpen(true);
+  }, [hasUnsavedChanges, onBack]);
 
-    const confirmMessage = isEditMode
-      ? isChallengeSurface
-        ? t("challengeManualMatchEditor.wizard.confirm.exitEdit", "Bạn có thay đổi chưa lưu. Quay lại challenge và bỏ thay đổi?")
-        : t("workspace.quiz.manualWizard.confirm.exitEdit", "Bạn có thay đổi chưa lưu. Hủy chỉnh sửa và quay lại?")
-      : isCloneMode
-        ? t("workspace.quiz.manualWizard.confirm.exitClone", "Bạn có thay đổi chưa lưu. Hủy tạo quiz tương tự và quay lại?")
-        : isChallengeSurface
-          ? t("challengeManualMatchEditor.wizard.confirm.exitCreate", "Bạn có thay đổi chưa lưu. Quay lại challenge ngay bây giờ?")
-          : t("workspace.quiz.manualWizard.confirm.exitCreate", "Bạn có thay đổi chưa lưu. Quay lại ngay bây giờ? Bản nháp local sẽ vẫn được giữ.");
+  const exitDialogTitle = isEditMode
+    ? isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.exitDialog.titleEdit", "Bỏ thay đổi và quay lại?")
+      : t("workspace.quiz.manualWizard.exitDialog.titleEdit", "Hủy chỉnh sửa quiz?")
+    : isCloneMode
+      ? t("workspace.quiz.manualWizard.exitDialog.titleClone", "Hủy tạo quiz tương tự?")
+      : isChallengeSurface
+        ? t("challengeManualMatchEditor.wizard.exitDialog.titleCreate", "Quay lại challenge?")
+        : t("workspace.quiz.manualWizard.exitDialog.titleCreate", "Rời khỏi trình tạo quiz?");
 
-    if (window.confirm(confirmMessage)) {
-      onBack?.();
-    }
-  }, [hasUnsavedChanges, isEditMode, isCloneMode, isChallengeSurface, onBack, t]);
+  const exitDialogDescription = isEditMode
+    ? isChallengeSurface
+      ? t("challengeManualMatchEditor.wizard.confirm.exitEdit", "Bạn có thay đổi chưa lưu. Quay lại challenge và bỏ thay đổi?")
+      : t("workspace.quiz.manualWizard.confirm.exitEdit", "Bạn có thay đổi chưa lưu. Hủy chỉnh sửa và quay lại?")
+    : isCloneMode
+      ? t("workspace.quiz.manualWizard.confirm.exitClone", "Bạn có thay đổi chưa lưu. Hủy tạo quiz tương tự và quay lại?")
+      : isChallengeSurface
+        ? t("challengeManualMatchEditor.wizard.confirm.exitCreate", "Bạn có thay đổi chưa lưu. Quay lại challenge ngay bây giờ?")
+        : t("workspace.quiz.manualWizard.confirm.exitCreate", "Bạn có thay đổi chưa lưu. Quay lại ngay bây giờ? Bản nháp local sẽ vẫn được giữ.");
 
   const handleGoToStep2 = useCallback(() => {
     setQuestions((prev) => syncQuestionsToCount(prev, config));
@@ -631,6 +640,18 @@ function ManualQuizWizard({
           />
         )}
       </div>
+
+      <ExitConfirmDialog
+        open={exitDialogOpen}
+        title={exitDialogTitle}
+        description={exitDialogDescription}
+        onCancel={() => setExitDialogOpen(false)}
+        onConfirm={() => {
+          setExitDialogOpen(false);
+          onBack?.();
+        }}
+        surface={surface}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
@@ -36,6 +36,8 @@ import GroupQuizReviewPanel from "@/pages/Users/Group/Components/GroupQuizReview
 import GroupDiscussionPanel from "@/pages/Users/Group/Components/GroupDiscussionPanel";
 import QuestionDiscussionDialog from "@/pages/Users/Group/Components/QuestionDiscussionDialog";
 import QuizToFlashcardDialog from "@/pages/Users/Quiz/components/QuizToFlashcardDialog";
+import CommunityQuizDetailDialog from "@/pages/Users/Quiz/components/CommunityQuizDetailDialog";
+import CommunityQuizFeedbackDialog from "@/pages/Users/Quiz/components/CommunityQuizFeedbackDialog";
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/components/math/MixedMathText";
 import { hasQuizCompleted } from "@/utils/quizAttemptTracker";
@@ -205,6 +207,7 @@ function QuizDetailView({
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [loading, setLoading] = useState(true);
@@ -217,8 +220,25 @@ function QuizDetailView({
   const [currentStatus, setCurrentStatus] = useState(quiz?.status || "DRAFT");
   const [quizMeta, setQuizMeta] = useState(null);
   
-  // Tab states
-  const [activeTab, setActiveTab] = useState("overview"); // overview, review (group), questions, history
+  // Tab states — persist qua URL ?tab=... để reload không mất context.
+  const VALID_TABS = React.useMemo(
+    () => new Set(["overview", "review", "questions", "history", "discussion"]),
+    [],
+  );
+  const initialTabFromUrl = (() => {
+    const t = searchParams.get("tab");
+    return t && VALID_TABS.has(t) ? t : "overview";
+  })();
+  const [activeTab, setActiveTabState] = useState(initialTabFromUrl); // overview, review (group), questions, history
+  const setActiveTab = useCallback((next) => {
+    setActiveTabState(next);
+    setSearchParams((prev) => {
+      const sp = new URLSearchParams(prev);
+      if (!next || next === "overview") sp.delete("tab");
+      else sp.set("tab", next);
+      return sp;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   // Personal history (bản thân) — dùng để gate chế độ luyện tập: null = đang tải
@@ -240,8 +260,8 @@ function QuizDetailView({
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
-  const [, setCommunityDetailOpen] = useState(false);
-  const [, setCommunityFeedbackOpen] = useState(false);
+  const [communityDetailOpen, setCommunityDetailOpen] = useState(false);
+  const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
   const detailRequestRunRef = React.useRef(0);
   const attemptHistoryProbeKeyRef = React.useRef(null);
   const [, setConfirmDuplicateOpen] = useState(false);
@@ -1274,7 +1294,13 @@ function QuizDetailView({
             isLeader={isGroupLeader}
             isReviewer={challengeSnapshotReviewMode && !isGroupLeader}
             challengeSnapshotReviewMode={challengeSnapshotReviewMode}
-            onQuestionDeleted={fetchFullDetail}
+            onQuestionDeleted={async () => {
+              // Cache TTL = 15s; nếu không clear thì refetch trả về danh sách
+              // còn nguyên câu vừa xóa → user thấy danh sách không đổi và lần
+              // xóa thứ 2 trỏ vào câu sai. Phải clear trước khi refetch.
+              quizDetailCache.clear();
+              await fetchFullDetail();
+            }}
           />
         )}
 
@@ -2280,6 +2306,48 @@ function QuizDetailView({
           }
         }}
       />
+
+      {showCommunitySignals ? (
+        <CommunityQuizDetailDialog
+          open={communityDetailOpen}
+          onOpenChange={setCommunityDetailOpen}
+          quizId={isCommunityClone ? communitySourceQuizId : effectiveQuiz?.quizId}
+          isDarkMode={isDarkMode}
+          fontClass={fontClass}
+          title={effectiveQuiz?.title}
+          description={
+            effectiveQuiz?.communityShared === true
+              ? t("workspace.quiz.communityDetail.ownerSummary", "Theo dõi feedback và discussion công khai của quiz bạn đã chia sẻ.")
+              : t("workspace.quiz.communityDetail.cloneSummary", "Xem rating và discussion gốc của community quiz này, rồi gửi feedback sau khi làm xong bản clone của bạn.")
+          }
+        />
+      ) : null}
+
+      {isCommunityClone ? (
+        <CommunityQuizFeedbackDialog
+          open={communityFeedbackOpen}
+          onOpenChange={setCommunityFeedbackOpen}
+          sourceQuizId={communitySourceQuizId}
+          clonedQuizId={effectiveQuiz?.quizId}
+          initialRating={effectiveQuiz?.communityFeedbackRating ?? null}
+          initialComment={effectiveQuiz?.communityFeedbackComment ?? ""}
+          isDarkMode={isDarkMode}
+          title={
+            effectiveQuiz?.communityFeedbackSubmitted
+              ? t("workspace.quiz.communityDetail.updateFeedback", "Cập nhật feedback community")
+              : t("workspace.quiz.communityDetail.leaveFeedback", "Gửi feedback community")
+          }
+          description={t("workspace.quiz.communityFeedback.description", "Đánh giá quiz community sau khi bạn hoàn thành bản clone này.")}
+          onSubmitted={async ({ rating, comment }) => {
+            setQuizMeta((prev) => ({
+              ...(prev || effectiveQuiz),
+              communityFeedbackSubmitted: true,
+              communityFeedbackRating: rating,
+              communityFeedbackComment: comment,
+            }));
+          }}
+        />
+      ) : null}
     </div>
   );
 }

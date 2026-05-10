@@ -1881,7 +1881,8 @@
       "optionalHint": "Bạn có thể mời tối đa 2 reviewer nếu muốn có thêm người kiểm tra trước khi publish. Tất cả reviewer có cùng vai trò.",
       "reviewerBadge": "Reviewer",
       "needReviewerWhenLeaderParticipates": "Leader đang tham gia, nên cần mời ít nhất 1 reviewer. Bạn có thể mời tối đa 2 reviewer.",
-      "optionalReviewersHint": "Reviewer là tùy chọn. Nếu được mời, họ có thể giúp kiểm tra và dọn nội dung trước khi bạn publish đề challenge."
+      "optionalReviewersHint": "Reviewer là tùy chọn. Nếu được mời, họ có thể giúp kiểm tra và dọn nội dung trước khi bạn publish đề challenge.",
+      "publishedLockHint": "Challenge đã publish — danh sách reviewer đã khóa, không thể thêm hoặc gỡ."
     },
     "actions": {
       "publish": "Xuất bản challenge",
@@ -1908,7 +1909,10 @@
       "title": "Bạn được mời review đề challenge này",
       "body": "Leader đã chọn bạn làm reviewer. Nếu đồng ý, bạn sẽ được xem đề trước để kiểm tra và bạn sẽ không thể đăng ký tham gia challenge này như thí sinh.",
       "accept": "Đồng ý review",
-      "decline": "Từ chối"
+      "decline": "Từ chối",
+      "withdrawAfterAccept": "Hủy nhận review",
+      "withdrawConfirm": "Hủy nhận review đề challenge này? Leader sẽ phải mời người khác và bạn có thể đăng ký tham gia challenge nếu chưa khóa.",
+      "withdrawDisabledHint": "Bạn đã xác nhận «Đề ổn» nên không thể hủy review nữa."
     }
   },
   "challengeManualMatchEditor": {

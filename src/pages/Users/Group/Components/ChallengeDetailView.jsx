@@ -21,6 +21,7 @@ import {
   declineQuizReviewInvitation,
   updateLeaderParticipation,
 } from '../../../../api/ChallengeAPI';
+import { listWorkspaceReviewBans } from '../../../../api/WorkspaceReviewBanAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
 import ChallengeDetailContent from './ChallengeDetailContent';
@@ -285,6 +286,20 @@ export default function ChallengeDetailView({
       workspaceId && isLeader && detail?.status === 'SCHEDULED' && Number(detail?.snapshotQuizId) > 0,
     ),
   });
+
+  // Reviewer bị ban trong workspace — chặn không hiện trong picker (BE cũng
+  // reject invite → đây chỉ là affordance UI để leader biết trước).
+  const { data: workspaceBans = [] } = useQuery({
+    queryKey: ['workspace-review-bans', workspaceId],
+    queryFn: async () => {
+      const res = await listWorkspaceReviewBans(workspaceId);
+      return res.data?.data ?? res.data ?? [];
+    },
+    enabled: Boolean(workspaceId && isLeader),
+  });
+  const bannedReviewerIds = useMemo(() => {
+    return new Set((workspaceBans || []).map((b) => Number(b?.userId)).filter(Boolean));
+  }, [workspaceBans]);
 
   const reviewerContributorIds = useMemo(() => {
     const list = detail?.reviewContributors;
@@ -987,6 +1002,7 @@ export default function ChallengeDetailView({
       resolveReviewMemberUserId={resolveReviewMemberUserId}
       reviewerInviteLimitReached={reviewerInviteLimitReached}
       reviewerPick={reviewerPick}
+      bannedReviewerIds={bannedReviewerIds}
       roundStatusClass={roundStatusClass}
       setCancelDialogOpen={setCancelDialogOpen}
       setEditDescription={setEditDescription}

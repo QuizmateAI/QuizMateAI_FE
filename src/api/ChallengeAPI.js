@@ -180,3 +180,12 @@ export const clearSnapshotConcern = async (workspaceId, quizId, reviewerUserId =
   const url = reviewerUserId ? `${path}?reviewerUserId=${reviewerUserId}` : path;
   return await api.post(url);
 };
+
+/**
+ * Leader xem nhật ký các câu hỏi đã bị xóa khỏi snapshot (có ai xóa, lý do,
+ * snippet content). Dùng để audit reviewer khi auto-concern bị bật.
+ * Endpoint: GET /api/group/{workspaceId}/quizzes/{quizId}/question-deletions
+ */
+export const listSnapshotDeletionAudits = async (workspaceId, quizId) => {
+  return await api.get(`/group/${workspaceId}/quizzes/${quizId}/question-deletions`);
+};
