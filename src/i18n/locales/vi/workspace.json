@@ -149,11 +149,11 @@
         "analysisHighlightsTitle": "Quizmate AI đã kiểm tra",
         "analysisRefinementTitle": "Bạn có thể nhập lại theo hướng này",
         "vipBadge": "VIP",
-        "studyNewLockedDescription": "Tính năng này cần gói có quyền tạo roadmap.",
-        "studyNewLockedHint": "Gói hiện tại chưa có quyền tạo roadmap, vui lòng nâng cấp đề sử dụng tính năng này.",
-        "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
-        "enableRoadmap": "Có, tạo lộ trình kèm theo",
-        "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại"
+        "studyNewLockedDescription": "Tính năng này cần gói có quyền tạo roadmap gợi ý.",
+        "studyNewLockedHint": "Gói hiện tại chưa có quyền tạo roadmap gợi ý, vui lòng nâng cấp để sử dụng tính năng này.",
+        "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình gợi ý không?",
+        "enableRoadmap": "Có, tạo lộ trình gợi ý kèm theo",
+        "skipRoadmap": "Không cần lộ trình gợi ý, chỉ cấu hình các phần còn lại"
       },
       "stepTwo": {
         "title": "Mô tả trạng thái hiện tại của bạn",
@@ -518,8 +518,6 @@
       "lifetimeAccuracy": "Độ chính xác tổng thể",
       "byDifficulty": "Theo độ khó",
       "byBloom": "Theo mức Bloom",
-      "radarTitle": "Ma trận kỹ năng",
-      "radarSubtitle": "Điểm mạnh và các phần cần cải thiện",
       "difficulty": {
         "EASY": "Dễ",
         "MEDIUM": "Trung bình",
@@ -558,10 +556,6 @@
       "quizName": "Tên quiz",
       "bestScore": "Điểm cao nhất",
       "latestAttempt": "Lần làm gần nhất",
-      "strongArea": "Điểm mạnh hiện tại",
-      "strongAreaDesc": "Làm thêm câu hỏi để hệ thống nhận ra nhóm kiến thức bạn đang làm tốt nhất.",
-      "needsFocus": "Cần ưu tiên ôn lại",
-      "needsFocusDesc": "Tiếp tục làm bài để xác định chính xác phần kiến thức cần tập trung hơn.",
       "bestQuiz": "Quiz làm tốt nhất",
       "bestQuizDesc": "Hoàn thành thêm quiz để xác định bộ quiz bạn đang có kết quả tốt nhất.",
       "reviewQuiz": "Quiz nên xem lại",
@@ -1103,7 +1097,13 @@
         "easy": "Dễ",
         "medium": "Trung bình",
         "hard": "Khó",
-        "custom": "Tùy chỉnh (Tự cấu hình)"
+        "custom": "Tùy chỉnh (Tự cấu hình)",
+        "balance": "Tiêu chuẩn"
+      },
+      "advancedDifficultyPresets": {
+        "BALANCED": "Tiêu chuẩn",
+        "EASY_FOCUS": "Thiên về câu dễ",
+        "HARD_FOCUS": "Thiên về câu khó"
       },
       "bloomLevels": {
         "remember": "Ghi nhớ",

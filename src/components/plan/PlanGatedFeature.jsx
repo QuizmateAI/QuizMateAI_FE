@@ -34,6 +34,8 @@ export default function PlanGatedFeature({
   upgradeState,
   upgradeLabel = "Upgrade",
   badgeLabel = "VIP",
+  fullWidth = false,
+  badgeInset = false,
 }) {
   const navigate = useNavigate();
   const { showWarning } = useToast();
@@ -74,9 +76,14 @@ export default function PlanGatedFeature({
     return <>{children}</>;
   }
 
+  const wrapperDisplayClass = fullWidth ? "flex w-full" : "inline-flex max-w-full";
+  const badgePositionClass = badgeInset
+    ? "absolute right-2 top-2 z-10 pointer-events-none"
+    : "absolute -right-2 -top-2 z-10 pointer-events-none";
+
   return (
     <div
-      className={`relative inline-flex max-w-full ${className}`}
+      className={`relative ${wrapperDisplayClass} ${className}`}
       onClick={handleLockedClick}
       role="button"
       tabIndex={0}
@@ -88,11 +95,11 @@ export default function PlanGatedFeature({
       }}
       aria-label={featureName ? `Feature "${featureName}" requires a higher plan` : "Feature requires a higher plan"}
     >
-      <div className="pointer-events-none select-none opacity-50 grayscale-[0.35]">
+      <div className={`pointer-events-none select-none opacity-50 grayscale-[0.35] ${fullWidth ? "w-full" : ""}`}>
         {children}
       </div>
 
-      <div className="absolute -right-2 -top-2 z-10 pointer-events-none">
+      <div className={badgePositionClass}>
         <div
           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] shadow-sm ${
             isDarkMode
