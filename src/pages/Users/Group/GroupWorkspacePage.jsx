@@ -192,8 +192,10 @@ function GroupWorkspacePage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
-  /** Tab khởi tạo màn Quiz khi mở từ sidebar (AI / thủ công / dán JSON). */
+  /** Lọc danh sách Quiz theo mục con sidebar: ai | manual | paste. Đồng thời gợi ý tab khi mở form tạo quiz từ list. */
   const [groupSidebarQuizCreateMode, setGroupSidebarQuizCreateMode] = useState(null);
+  /** Lọc danh sách Flashcard theo mục con sidebar: ai | manual | paste. */
+  const [groupSidebarFlashcardSubFilter, setGroupSidebarFlashcardSubFilter] = useState(null);
 
   // Section navigation via URL
   const legacySectionMap = { flashcardQuiz: 'quiz' };
@@ -235,6 +237,7 @@ function GroupWorkspacePage() {
 
     // Reset sub-views when changing sections
     setGroupSidebarQuizCreateMode(null);
+    setGroupSidebarFlashcardSubFilter(null);
     setActiveView(null);
     setSelectedQuiz(null);
     setQuizDetailFromChallengeReview(false);
@@ -2810,6 +2813,12 @@ function GroupWorkspacePage() {
     if (actionKey === 'createQuiz') {
       setGroupSidebarQuizCreateMode(null);
     }
+    if (actionKey === 'quiz') {
+      setGroupSidebarQuizCreateMode(null);
+    }
+    if (actionKey === 'flashcard') {
+      setGroupSidebarFlashcardSubFilter(null);
+    }
 
     setActiveView(actionKey);
   }, [
@@ -2892,15 +2901,18 @@ function GroupWorkspacePage() {
       };
       const mode = modeByChild[childId] ?? null;
       setGroupSidebarQuizCreateMode(mode);
-      setActiveView(mode ? 'createQuiz' : 'quiz');
+      setGroupSidebarFlashcardSubFilter(null);
+      setActiveView('quiz');
     } else if (parentId === 'flashcard') {
-      setGroupSidebarQuizCreateMode(null);
-      const viewByChild = {
-        flashcardAi: 'createFlashcard',
-        flashcardManual: 'createManualFlashcard',
-        flashcardFromJson: 'createManualFlashcard',
+      const fcModeByChild = {
+        flashcardAi: 'ai',
+        flashcardManual: 'manual',
+        flashcardFromJson: 'paste',
       };
-      setActiveView(viewByChild[childId] || 'flashcard');
+      const fcMode = fcModeByChild[childId] ?? null;
+      setGroupSidebarQuizCreateMode(null);
+      setGroupSidebarFlashcardSubFilter(fcMode);
+      setActiveView('flashcard');
     }
 
     setIsMobileSidebarOpen(false);
@@ -3958,6 +3970,7 @@ function GroupWorkspacePage() {
             : null,
         challengeSnapshotReviewMode: quizDetailFromChallengeReview,
         groupSidebarQuizCreateMode,
+        groupSidebarFlashcardSubFilter,
       }}
     />
   );
@@ -4207,6 +4220,13 @@ function GroupWorkspacePage() {
     return <GroupBootstrapLoading isDarkMode={isDarkMode} pageShellClass={pageShellClass} />;
   }
 
+  const studioQuizSubKeyForSidebar = ['quiz', 'createQuiz', 'quizDetail', 'editQuiz'].includes(String(activeView || ''))
+    ? groupSidebarQuizCreateMode
+    : null;
+  const studioFlashcardSubKeyForSidebar = ['flashcard', 'createFlashcard', 'createManualFlashcard', 'flashcardDetail'].includes(String(activeView || ''))
+    ? groupSidebarFlashcardSubFilter
+    : null;
+
   return (
     <div className={`h-screen overflow-hidden transition-colors duration-300 ${pageShellClass}`}>
       <div className="flex h-full min-h-0 w-full gap-2 px-2 py-2">
@@ -4218,6 +4238,8 @@ function GroupWorkspacePage() {
             onSectionChange={setActiveSection}
             onStudioSubAction={navigateGroupStudioSubItem}
             studioActiveView={activeView}
+            studioQuizSubKey={studioQuizSubKeyForSidebar}
+            studioFlashcardSubKey={studioFlashcardSubKeyForSidebar}
             groupName={currentGroupName}
             wsConnected={wsConnected}
             memberCount={members.length}
@@ -4239,6 +4261,8 @@ function GroupWorkspacePage() {
           onSectionChange={setActiveSection}
           onStudioSubAction={navigateGroupStudioSubItem}
           studioActiveView={activeView}
+          studioQuizSubKey={studioQuizSubKeyForSidebar}
+          studioFlashcardSubKey={studioFlashcardSubKeyForSidebar}
           groupName={currentGroupName}
           wsConnected={wsConnected}
           memberCount={members.length}

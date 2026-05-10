@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Clock3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { workspaceSurface } from "./workspaceShellTheme";
+import { getAppNumberLocale } from "@/utils/appSupportedLanguages";
 
 function formatSourceType(source) {
   const type = String(source?.type ?? source?.materialType ?? "").toLowerCase();
@@ -22,7 +23,7 @@ function formatRelativeTime(value, language) {
     0,
     Math.round((Date.now() - date.getTime()) / 60000),
   );
-  const locale = language === "en" ? "en-US" : "vi-VN";
+  const locale = getAppNumberLocale(language);
   const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
   if (diffMinutes < 60) return formatter.format(-diffMinutes, "minute");

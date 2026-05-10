@@ -385,6 +385,7 @@ function IndividualWorkspaceProfileConfigDialog({
   const [isProfileConfirmView, setIsProfileConfirmView] = React.useState(false);
   const [isApplyingConfirmedProfile, setIsApplyingConfirmedProfile] = React.useState(false);
   const [confirmProfileError, setConfirmProfileError] = React.useState('');
+  const stepScrollRef = React.useRef(null);
   const confirmationTitle = t(
     'individualWorkspaceProfileConfigDialog.confirmProfile.title',
     'Confirm using this profile'
@@ -411,6 +412,14 @@ function IndividualWorkspaceProfileConfigDialog({
       setConfirmProfileError('');
     }
   }, [open]);
+
+  React.useEffect(() => {
+    if (!open || isProfileConfirmView) return;
+    const node = stepScrollRef.current;
+    if (node) {
+      node.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [wizard.step, open, isProfileConfirmView]);
 
   function handleCloseProfileConfirm() {
     if (isApplyingConfirmedProfile) {
@@ -749,7 +758,7 @@ function IndividualWorkspaceProfileConfigDialog({
           </div>
         </DialogHeader>
 
-        <div className="overflow-y-auto px-5 py-5 sm:px-7">
+        <div ref={stepScrollRef} className="overflow-y-auto px-5 py-5 sm:px-7">
           <div key={wizard.step} className={stepTransitionClass}>
             {renderStep()}
           </div>

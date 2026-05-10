@@ -613,13 +613,9 @@ export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transacti
             <br />
             <span>{isCreditPurchase ? copy.creditReady : planName}</span>
           </h2>
-          {isCreditPurchase ? (
+          {isCreditPurchase && (
             <p className="mt-2 text-sm font-medium text-white/90">
               {copy.creditSuccessSub}
-            </p>
-          ) : (
-            <p className="mt-2 text-sm font-medium text-white/90">
-              {copy.validUntil} <span className="font-black">{validUntil || copy.updating}</span>, {copy.autoRenew}
             </p>
           )}
         </div>

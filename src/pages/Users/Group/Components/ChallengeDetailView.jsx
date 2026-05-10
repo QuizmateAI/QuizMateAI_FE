@@ -733,6 +733,11 @@ export default function ChallengeDetailView({
   );
   const reviewerInviteLimitReached = activeReviewContributors.length >= MAX_SNAPSHOT_REVIEW_INVITES;
   const myReviewContributor = Boolean(detail.myReviewContributorForSnapshot);
+  // Object lookup tu reviewContributors list de lay lastViewedAt / reviewCompleteOkAt cua user hien tai;
+  // BE field `myReviewContributorForSnapshot` chi la boolean nen khong dung de gate "Quay lai tham gia thi".
+  const myReviewContributorRecord = reviewContributors.find(
+    (c) => Number(c?.userId) === Number(currentUserId),
+  ) || null;
   const myReviewInvitationStatus = String(detail.myReviewInvitationStatus || '').toUpperCase();
   const myAcceptedReviewContributor = myReviewContributor && myReviewInvitationStatus === 'ACCEPTED';
   const myPendingReviewInvitation = myReviewContributor && (!myReviewInvitationStatus || myReviewInvitationStatus === 'PENDING');
@@ -974,6 +979,7 @@ export default function ChallengeDetailView({
       myAcceptedReviewContributor={myAcceptedReviewContributor}
       myPendingReviewInvitation={myPendingReviewInvitation}
       myReviewContributor={myReviewContributor}
+      myReviewContributorRecord={myReviewContributorRecord}
       onBack={onBack}
       openEditDialog={openEditDialog}
       publishRequirementHint={publishRequirementHint}

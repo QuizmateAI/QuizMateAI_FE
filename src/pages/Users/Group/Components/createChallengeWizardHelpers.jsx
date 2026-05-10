@@ -8,8 +8,10 @@ export function getQuizSummaryLine(q) {
 }
 
 export function isQuizEligibleForChallengeSource(quiz) {
+  // Chi nhan DRAFT — quiz nhap chua publish, phu hop lam nguon clone cho challenge.
+  // ACTIVE quiz dang dung cho hoc tap regular, tranh khoa lai trong challenge window.
   const status = String(quiz?.status || '').toUpperCase();
-  if (status && status !== 'ACTIVE') return false;
+  if (status !== 'DRAFT') return false;
   const mode = String(quiz?.groupAudienceMode ?? '').toUpperCase();
   if (mode === 'SELECTED_MEMBERS') return false;
   const assignees = quiz?.assignedUserIds;

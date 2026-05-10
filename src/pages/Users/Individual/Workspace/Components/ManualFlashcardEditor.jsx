@@ -328,6 +328,67 @@ function ManualFlashcardEditor({
     window.setTimeout(() => scheduleAutoSave(), 0);
   }, [scheduleAutoSave]);
 
+  // Mode paste-only (sidebar "paste"): tạo + kích hoạt nguyên tử, bỏ qua draft editor — giống luồng quiz.
+  const handleJsonPasteCreate = useCallback(async ({ flashcardSetName: jsonName, items: jsonItems }) => {
+    if (activating) return;
+    if (!resolvedWorkspaceId) {
+      addToast?.({
+        type: "error",
+        message: t("workspace.flashcard.manualEditor.validation.workspaceMissing", "Thiếu thông tin workspace."),
+      });
+      throw new Error("WORKSPACE_MISSING");
+    }
+    const cleanedItems = (jsonItems || [])
+      .slice(0, MAX_ITEMS)
+      .map((row) => ({
+        frontContent: String(row.frontContent || "").slice(0, MAX_FRONT_LENGTH).trim(),
+        backContent: String(row.backContent || "").slice(0, MAX_BACK_LENGTH).trim(),
+      }))
+      .filter((it) => it.frontContent && it.backContent);
+    if (cleanedItems.length === 0) {
+      addToast?.({
+        type: "error",
+        message: t("workspace.flashcard.pasteImport.errors.noValidPairs"),
+      });
+      throw new Error("NO_VALID_PAIRS");
+    }
+    const cleanedName = String(jsonName || "")
+      .slice(0, MAX_SET_NAME_LENGTH)
+      .trim();
+    const finalName = cleanedName || t("workspace.flashcard.pasteImport.defaultName", "Flashcard từ JSON");
+
+    setActivating(true);
+    try {
+      const res = await createManualFlashcardBulk({
+        workspaceId: resolvedWorkspaceId,
+        flashcardSetName: finalName,
+        items: cleanedItems,
+        activate: true,
+      });
+      const created = unwrapApiData(res) || {};
+      const displayName = (created.flashcardSetName && String(created.flashcardSetName).trim())
+        || finalName;
+      addToast?.({
+        type: "success",
+        message: t("workspace.flashcard.pasteImport.createSuccess", {
+          name: displayName,
+          defaultValue: `Đã tạo bộ flashcard «${displayName}».`,
+        }),
+      });
+      await invalidateList();
+      onActivated?.({ ...created, status: "ACTIVE" });
+    } catch (err) {
+      const msg = err?.response?.data?.message
+        || err?.data?.message
+        || err?.message
+        || t("workspace.flashcard.pasteImport.createError", "Có lỗi khi tạo flashcard từ JSON đã dán.");
+      addToast?.({ type: "error", message: msg });
+      throw err;
+    } finally {
+      setActivating(false);
+    }
+  }, [activating, addToast, invalidateList, onActivated, resolvedWorkspaceId, t]);
+
   /** Manual Save Draft: flush pending, save ngay (với toast). */
   const handleManualSaveDraft = useCallback(async () => {
     cancelPendingAutoSave();
@@ -444,6 +505,18 @@ function ManualFlashcardEditor({
     onBack?.();
   }, [activating, cancelPendingAutoSave, hasAnyContent, onBack, performSave, saveState, saving, t]);
 
+  const pasteOnlyLayout = !isEditMode && normalizedManualEntry === "paste" && pasteImportPhase;
+
+  // Lưu nội dung JSON đang gõ (paste-only mode) vào sessionStorage để user
+  // không mất dữ liệu nếu rời trang trước khi bấm "Tạo flashcard từ JSON".
+  const pasteDraftStorageKey = useMemo(() => {
+    if (!pasteOnlyLayout) return null;
+    const scope = String(contextType || "INDIVIDUAL").toUpperCase();
+    const id = Number(contextId || workspaceId) || 0;
+    if (!id) return null;
+    return `quizmate:flashcard-paste-draft:${scope}:${id}`;
+  }, [contextId, contextType, pasteOnlyLayout, workspaceId]);
+
   if (initialLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -490,13 +563,13 @@ function ManualFlashcardEditor({
     }
   })();
 
-  const disableActions = saving || activating || (!isEditMode && normalizedManualEntry === "paste" && pasteImportPhase);
+  const isBusy = saving || activating;
+  const disableActions = isBusy || (!isEditMode && normalizedManualEntry === "paste" && pasteImportPhase);
 
   const shouldShowPasteImportPanel =
     !isEditMode
     && normalizedManualEntry !== "manual"
     && (normalizedManualEntry == null || pasteImportPhase);
-  const pasteOnlyLayout = !isEditMode && normalizedManualEntry === "paste" && pasteImportPhase;
 
   return (
     <div className={`flex h-full flex-col ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
@@ -524,25 +597,27 @@ function ManualFlashcardEditor({
             <span>{saveIndicator.label}</span>
           </div>
         ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleManualSaveDraft}
-          disabled={disableActions}
-          className={`h-9 rounded-full px-4 ${isDarkMode ? "border-slate-600 text-slate-200 hover:bg-slate-800" : ""}`}
-        >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-1.5 h-4 w-4" />
-          )}
-          <span className="text-sm font-semibold">
-            {saving
-              ? t("workspace.flashcard.manualEditor.saving", "Đang lưu...")
-              : t("workspace.flashcard.manualEditor.save", "Lưu bản nháp")}
-          </span>
-        </Button>
-        {canActivate ? (
+        {pasteOnlyLayout ? null : (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleManualSaveDraft}
+            disabled={disableActions}
+            className={`h-9 rounded-full px-4 ${isDarkMode ? "border-slate-600 text-slate-200 hover:bg-slate-800" : ""}`}
+          >
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1.5 h-4 w-4" />
+            )}
+            <span className="text-sm font-semibold">
+              {saving
+                ? t("workspace.flashcard.manualEditor.saving", "Đang lưu...")
+                : t("workspace.flashcard.manualEditor.save", "Lưu bản nháp")}
+            </span>
+          </Button>
+        )}
+        {canActivate && !pasteOnlyLayout ? (
           <Button
             type="button"
             onClick={handleActivate}
@@ -568,8 +643,12 @@ function ManualFlashcardEditor({
         {pasteOnlyLayout ? (
           <ManualFlashcardPasteImportPanel
             isDarkMode={isDarkMode}
-            disabled={disableActions}
-            onApply={handleJsonPasteApply}
+            disabled={isBusy}
+            onApply={handleJsonPasteCreate}
+            applyButtonLabel={t("workspace.flashcard.pasteImport.create", "Tạo flashcard từ JSON")}
+            applyingLabel={t("workspace.flashcard.pasteImport.creating", "Đang tạo...")}
+            draftStorageKey={pasteDraftStorageKey}
+            requireConfirmation
           />
         ) : (
           <>
@@ -599,7 +678,7 @@ function ManualFlashcardEditor({
               <div className="mb-5">
                 <ManualFlashcardPasteImportPanel
                   isDarkMode={isDarkMode}
-                  disabled={disableActions}
+                  disabled={isBusy}
                   onApply={handleJsonPasteApply}
                 />
               </div>

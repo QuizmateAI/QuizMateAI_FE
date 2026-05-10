@@ -34,7 +34,7 @@ function DeferredPanel({ children }) {
 }
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onRefreshRoadmapPhases: _onRefreshRoadmapPhases, onCreateRoadmapPreLearning, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest: _onEditMockTest, onSaveMockTest, selectedPostLearning: _selectedPostLearning = null, onViewPostLearning, readOnly = false, canCreateQuiz = true, canConvertQuizToFlashcard = false, canCreateFlashcard = true, canCreateMockTest = true, canCreateRoadmap = true, canPublishQuiz = true, canAssignQuizAudience = true, role = "MEMBER", planEntitlements = null, quizTitleMaxLength = null, currentPlanSummaryOverride = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, isGeneratingRoadmapPhases = false, isGeneratingRoadmapPreLearning = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad, hasRoadmap = false, groupSidebarQuizCreateMode = null }) {
+function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onRefreshRoadmapPhases: _onRefreshRoadmapPhases, onCreateRoadmapPreLearning, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest: _onEditMockTest, onSaveMockTest, selectedPostLearning: _selectedPostLearning = null, onViewPostLearning, readOnly = false, canCreateQuiz = true, canConvertQuizToFlashcard = false, canCreateFlashcard = true, canCreateMockTest = true, canCreateRoadmap = true, canPublishQuiz = true, canAssignQuizAudience = true, role = "MEMBER", planEntitlements = null, quizTitleMaxLength = null, currentPlanSummaryOverride = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, isGeneratingRoadmapPhases = false, isGeneratingRoadmapPreLearning = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad, hasRoadmap = false, groupSidebarQuizCreateMode = null, groupSidebarFlashcardSubFilter = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -198,10 +198,11 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             groupCurrentUserId={groupWorkspaceCurrentUserId}
             quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
             quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
+            studioSubFilter={groupSidebarQuizCreateMode}
           />
         );
       case "flashcard":
-        return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onCreateManualFlashcard={canCreateFlashcard ? () => onChangeView?.("createManualFlashcard") : undefined} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateFlashcard} disableCreate={!canCreateFlashcard} />;
+        return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onCreateManualFlashcard={canCreateFlashcard ? () => onChangeView?.("createManualFlashcard") : undefined} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateFlashcard} disableCreate={!canCreateFlashcard} studioSubFilter={groupSidebarFlashcardSubFilter} />;
       case "mockTest":
         return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={!canCreateMockTest} disableCreate={!canCreateMockTest || !planEntitlements?.hasAdvanceQuizConfig} quizGenerationTaskByQuizId={quizGenerationTaskByQuizId} quizGenerationProgressByQuizId={quizGenerationProgressByQuizId} />;
       case "ranking":
@@ -414,11 +415,19 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       case "createManualFlashcard":
         return (
           <LazyManualFlashcardEditor
+            key={`group-manual-fc-${groupSidebarFlashcardSubFilter || "default"}`}
             isDarkMode={isDarkMode}
             workspaceId={workspaceId}
             contextType="GROUP"
             contextId={workspaceId}
             canActivate={Boolean(canCreateFlashcard)}
+            manualEntryMode={
+              groupSidebarFlashcardSubFilter === "manual"
+                ? "manual"
+                : groupSidebarFlashcardSubFilter === "paste"
+                  ? "paste"
+                  : null
+            }
             onCreated={onCreateFlashcard}
             onActivated={(saved) => {
               // Sau khi kích hoạt → mở detail view để leader/member xem flip cards như AI flashcard.

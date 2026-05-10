@@ -99,6 +99,7 @@ const FEATURE_LABEL_KEYS = {
   VALIDATE_STUDY_PROFILE_CONSISTENCY: 'aiAudit.features.VALIDATE_STUDY_PROFILE_CONSISTENCY',
   PREVIEW_QUIZ_STRUCTURE: 'aiAudit.features.PREVIEW_QUIZ_STRUCTURE',
   SUGGEST_MOCK_TEST_STRUCTURE: 'aiAudit.features.SUGGEST_MOCK_TEST_STRUCTURE',
+  SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS: 'aiAudit.features.SYNTHESIZE_MOCKTEST_TEMPLATE_FROM_MATERIALS',
   ROADMAP_REVIEW: 'aiAudit.features.ROADMAP_REVIEW',
 };
 
@@ -339,13 +340,26 @@ function getAuthToken() {
   }
 }
 
-function MetricCard({ icon: Icon, label, value, tone, isDarkMode, subtext, helpText, sparklinePoints, sparklineKey, sparklineColor }) {
+function MetricCard({ icon: Icon, label, value, tone, isDarkMode, subtext, helpText, sparklinePoints, sparklineKey, sparklineColor, onClick, active }) {
   const hasSparkline = Array.isArray(sparklinePoints) && sparklinePoints.length > 1 && sparklineKey;
   const sparklineId = `mc-spark-${String(label || 'kpi').replace(/\s+/g, '-')}`;
+  const interactive = typeof onClick === 'function';
+  const baseClass = `rounded-xl border shadow-sm transition-all ${
+    isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'
+  }`;
+  const interactiveClass = interactive
+    ? ` cursor-pointer ${isDarkMode ? 'hover:border-slate-600 hover:shadow-md' : 'hover:border-slate-300 hover:shadow-md'}`
+    : '';
+  const activeClass = active ? ' ring-2 ring-[#0455BF] border-[#0455BF]' : '';
   return (
-    <Card className={`rounded-xl border shadow-sm transition-colors ${
-      isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'
-    }`}>
+    <Card
+      className={`${baseClass}${interactiveClass}${activeClass}`}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={interactive ? onClick : undefined}
+      onKeyDown={interactive ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
+      aria-pressed={interactive ? Boolean(active) : undefined}
+    >
       <CardContent className="p-3.5">
         <div className="flex items-start justify-between gap-2">
           <p className={`flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
@@ -614,6 +628,16 @@ function AiAuditManagement() {
     setPage(0);
   };
 
+  // Click KPI card "Chi phí hệ thống" / "Chi phí theo gói" → toggle category filter.
+  // Click lại lần 2 vào cùng card đang active → bỏ filter.
+  const handleCategoryToggle = (nextCategory) => {
+    setFilters((prev) => ({
+      ...prev,
+      category: prev.category === nextCategory ? '' : nextCategory,
+    }));
+    setPage(0);
+  };
+
   // Filter Dialog handlers — sync draft với filters khi mở dialog, commit về filters khi Apply.
   const handleOpenFilterDialog = () => {
     setDraftFilters({ ...filters });
@@ -749,11 +773,13 @@ function AiAuditManagement() {
           isDarkMode={isDarkMode}
           helpText={t(
             'aiAudit.metrics.systemCostHelp',
-            'Chi phí provider của các tính năng AI hệ thống — phần này QuizMate trả, người dùng không bị tính phí.',
+            'Chi phí provider của các tính năng AI hệ thống — phần này QuizMate trả, người dùng không bị tính phí. Click để lọc request thuộc nhóm này.',
           )}
           sparklinePoints={dailyBuckets}
           sparklineKey="systemCostVnd"
           sparklineColor="#f59e0b"
+          onClick={() => handleCategoryToggle('SYSTEM')}
+          active={filters.category === 'SYSTEM'}
         />
         <MetricCard
           icon={Wallet}
@@ -763,11 +789,13 @@ function AiAuditManagement() {
           isDarkMode={isDarkMode}
           helpText={t(
             'aiAudit.metrics.planCostHelp',
-            'Chi phí provider của các tính năng AI nằm trong gói trả phí — đối ứng với doanh thu thu được từ người dùng.',
+            'Chi phí provider của các tính năng AI nằm trong gói trả phí — đối ứng với doanh thu thu được từ người dùng. Click để lọc request thuộc nhóm này.',
           )}
           sparklinePoints={dailyBuckets}
           sparklineKey="planCostVnd"
           sparklineColor="#10b981"
+          onClick={() => handleCategoryToggle('PLAN_BASED')}
+          active={filters.category === 'PLAN_BASED'}
         />
       </div>
 

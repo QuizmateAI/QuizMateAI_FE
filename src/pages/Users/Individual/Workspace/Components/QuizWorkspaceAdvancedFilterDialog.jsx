@@ -1,5 +1,5 @@
 import React, { useEffect, useState, startTransition } from "react";
-import { ChevronDown, Info } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -78,8 +78,6 @@ export default function QuizWorkspaceAdvancedFilterDialog({
       setDraft(normalizeWorkspaceQuizAdvFilters(appliedFiltersSnapshot ?? SNAPSHOT_DEFAULT_FILTERS));
     });
   }, [open, digest, appliedFiltersSnapshot]);
-
-  const mutedHint = cn("leading-relaxed", isDarkMode ? "text-slate-400" : "text-slate-600");
 
   const labelCls = cn(
     "mb-2 block text-[13px] font-semibold tracking-tight",
@@ -261,28 +259,6 @@ export default function QuizWorkspaceAdvancedFilterDialog({
                 </option>
               ))}
             </FilterShell>
-            <div
-              className={cn(
-                "mt-3 flex gap-3 rounded-xl border px-3.5 py-3 text-[12px] sm:text-[13px]",
-                isDarkMode
-                  ? "border-slate-700/80 bg-slate-950/50 text-slate-400"
-                  : "border-blue-100/90 bg-blue-50/55 text-slate-600",
-              )}
-            >
-              <Info
-                className={cn(
-                  "mt-0.5 h-4 w-4 shrink-0",
-                  isDarkMode ? "text-blue-400" : "text-blue-600",
-                )}
-                aria-hidden
-              />
-              <p className={cn("min-w-0 flex-1", mutedHint)}>
-                {t(
-                  "quizListView.workspaceFilterDialog.bloomHint",
-                  "Matches only when the quiz payload includes Bloom metadata (some items may omit it).",
-                )}
-              </p>
-            </div>
           </FilterPanel>
 
           <FilterPanel isDarkMode={isDarkMode}>

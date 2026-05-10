@@ -1279,7 +1279,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     }));
   });
 
-  it('requires strengths and weaknesses for REVIEW', async () => {
+  it('treats strengths and weaknesses as optional even in REVIEW mode', async () => {
     setupApiMocks({
       analysisResponse: createAnalysisResponse(['Probability & Statistics', 'Mathematics', 'STEM']),
     });
@@ -1305,8 +1305,8 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText(i18n.t('workspace.profileConfig.validation.strongAreasRequired'))).toBeInTheDocument();
-    expect(screen.getByText(i18n.t('workspace.profileConfig.validation.weakAreasRequired'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.validation.strongAreasRequired'))).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.validation.weakAreasRequired'))).not.toBeInTheDocument();
   });
 
   it('returns from step 2 to step 1 without saving again when nothing changed', async () => {

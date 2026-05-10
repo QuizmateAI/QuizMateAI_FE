@@ -123,6 +123,7 @@ function CreateQuizAiFormContent({
     editableStructureItems,
     structureDifficultyOptions,
     canFetchStructurePreview,
+    maxQuestionsPerQuiz = 100,
     quizTitleMaxLength,
   } = state;
   const {
@@ -644,7 +645,7 @@ function CreateQuizAiFormContent({
               onChange={(event) => handleAiTotalQuestionsChange(event.target.value)}
               onBlur={handleAiTotalQuestionsBlur}
               min={10}
-              max={100}
+              max={maxQuestionsPerQuiz}
             />
             {fieldErrors.aiTotalQuestions && (
               <p className="mt-1 text-xs text-red-500">{fieldErrors.aiTotalQuestions}</p>
@@ -653,7 +654,7 @@ function CreateQuizAiFormContent({
               <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 {t("workspace.quiz.validation.totalQuestionsRangeHint", {
                   min: 10,
-                  max: 100,
+                  max: maxQuestionsPerQuiz,
                 })}
               </p>
             )}

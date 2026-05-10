@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -37,6 +37,22 @@ import {
   getIndividualWorkspaceQuestionStats,
   getIndividualWorkspaceQuizStats,
 } from "@/api/WorkspaceAPI";
+import { getAppNumberLocale } from "@/utils/appSupportedLanguages";
+import {
+  BLOOM_COLORS,
+  DIFFICULTY_KEYS,
+  fmtAccuracy,
+  fmtDateTime,
+  fmtNumber,
+  fmtScore,
+  fmtSeconds,
+  getRenderableBloomBuckets,
+  hasQuestionStatsData,
+  hasQuizStatsData,
+  pct,
+  pickQuestionInsightBucket,
+  pickQuizInsightItem,
+} from "./questionStats.utils";
 
 const ATTEMPT_MODES = [
   { value: "OFFICIAL", labelKey: "workspace.questionStats.modeOfficial" },
@@ -58,64 +74,6 @@ const SURFACE_OPTIONS = [
     icon: ClipboardList,
   },
 ];
-
-const DIFFICULTY_KEYS = ["EASY", "MEDIUM", "HARD", "CUSTOM", "UNSPECIFIED"];
-const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "APPLY"];
-
-const BLOOM_COLORS = {
-  REMEMBER: { main: "#6366f1" },
-  UNDERSTAND: { main: "#06b6d4" },
-  APPLY: { main: "#22c55e" },
-  ANALYZE: { main: "#f59e0b" },
-  EVALUATE: { main: "#ef4444" },
-};
-
-function pct(value, total) {
-  if (!total || total <= 0) return 0;
-  return Math.round((Number(value || 0) / total) * 100);
-}
-
-function fmtAccuracy(accuracy) {
-  if (accuracy == null) return "0%";
-  return `${Math.round(Number(accuracy) * 100)}%`;
-}
-
-function fmtNumber(value) {
-  return Number(value ?? 0).toLocaleString();
-}
-
-function fmtScore(value) {
-  if (value == null || Number.isNaN(Number(value))) return "0";
-  return Number(value).toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
-  });
-}
-
-function fmtSeconds(value, t) {
-  const totalSeconds = Math.round(Number(value || 0));
-  if (!totalSeconds) return t("workspace.questionStats.noDuration");
-
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  if (minutes <= 0) return `${seconds}s`;
-  if (seconds === 0) return `${minutes}m`;
-  return `${minutes}m ${seconds}s`;
-}
-
-function fmtDateTime(value, locale = "vi-VN") {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "—";
-  return parsed.toLocaleString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function panelClasses(isDarkMode) {
   return isDarkMode
@@ -164,73 +122,6 @@ function translateLabel(label, t, bucketType) {
   const bloomTranslated = t(`workspace.questionStats.bloom.${upper}`, "");
   if (bloomTranslated) return bloomTranslated;
   return label || t("workspace.questionStats.unknown");
-}
-
-function getRenderableBloomBuckets(buckets = []) {
-  const available = buckets.filter((bucket) => String(bucket?.label || "").toUpperCase() !== "UNSPECIFIED");
-  const bucketMap = Object.fromEntries(available.map((bucket) => [String(bucket?.label || "").toUpperCase(), bucket]));
-  return BLOOM_ORDER.map((key) => bucketMap[key]).filter(Boolean);
-}
-
-function getQuestionBucketAttemptCount(bucket) {
-  return Number(bucket?.attemptedQuestionsInMode ?? bucket?.gradedQuestionsInMode ?? 0);
-}
-
-function getQuestionBucketAccuracy(bucket) {
-  return Number(bucket?.accuracyInMode ?? 0);
-}
-
-function pickQuestionInsightBucket(buckets = [], type = "best") {
-  const candidates = buckets.filter((bucket) => getQuestionBucketAttemptCount(bucket) > 0);
-  if (candidates.length === 0) return null;
-
-  const sorted = [...candidates].sort((left, right) => {
-    const accuracyDiff = getQuestionBucketAccuracy(right) - getQuestionBucketAccuracy(left);
-    if (Math.abs(accuracyDiff) > 0.0001) return accuracyDiff;
-    return getQuestionBucketAttemptCount(right) - getQuestionBucketAttemptCount(left);
-  });
-
-  return type === "worst" ? sorted[sorted.length - 1] : sorted[0];
-}
-
-function pickQuizInsightItem(items = [], type = "best") {
-  const candidates = items.filter((item) => Number(item?.totalAttempts || 0) > 0);
-  if (candidates.length === 0) return null;
-
-  const sorted = [...candidates].sort((left, right) => {
-    const accuracyDiff = Number(right?.averageAccuracy ?? 0) - Number(left?.averageAccuracy ?? 0);
-    if (Math.abs(accuracyDiff) > 0.0001) return accuracyDiff;
-    const scoreDiff = Number(right?.averageScore ?? 0) - Number(left?.averageScore ?? 0);
-    if (Math.abs(scoreDiff) > 0.0001) return scoreDiff;
-    return Number(right?.totalAttempts ?? 0) - Number(left?.totalAttempts ?? 0);
-  });
-
-  return type === "worst" ? sorted[sorted.length - 1] : sorted[0];
-}
-
-function hasQuestionStatsData(stats) {
-  if (!stats) return false;
-
-  const current = stats.currentQuestionStats;
-  const lifetime = stats.lifetimeQuestionAttemptStats;
-
-  const attemptedQuestions = Number(current?.attemptedQuestionsInMode || 0);
-  const gradedQuestions = Number(current?.gradedQuestionsInMode || 0);
-  const totalQuestionAttempts = Number(lifetime?.totalQuestionAttempts ?? lifetime?.totalAttempts ?? 0);
-
-  return attemptedQuestions > 0 || gradedQuestions > 0 || totalQuestionAttempts > 0;
-}
-
-function hasQuizStatsData(stats) {
-  if (!stats) return false;
-
-  const current = stats.currentQuizStats;
-  const lifetime = stats.lifetimeQuizAttemptStats;
-
-  const attemptedQuizzes = Number(current?.attemptedQuizzesInMode || 0);
-  const totalQuizAttempts = Number(lifetime?.totalQuizAttempts || 0);
-
-  return attemptedQuizzes > 0 || totalQuizAttempts > 0;
 }
 
 function chartColors(isDarkMode) {
@@ -1175,36 +1066,49 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
       setLoading(true);
       setError(null);
 
-      try {
-        const results = await Promise.all(
-          ATTEMPT_MODES.map(async (mode) => {
-            const [questionData, quizData] = await Promise.all([
-              fetchQuestionModeStats(mode.value),
-              fetchQuizModeStats(mode.value),
-            ]);
-            return [mode.value, questionData, quizData];
-          }),
-        );
+      // allSettled so one failing mode doesn't blank the whole dashboard.
+      const settled = await Promise.allSettled(
+        ATTEMPT_MODES.map(async (mode) => {
+          const [questionData, quizData] = await Promise.all([
+            fetchQuestionModeStats(mode.value),
+            fetchQuizModeStats(mode.value),
+          ]);
+          return [mode.value, questionData, quizData];
+        }),
+      );
 
-        if (cancelled) return;
+      if (cancelled) return;
 
-        const nextQuestionStatsByMode = {};
-        const nextQuizStatsByMode = {};
+      const nextQuestionStatsByMode = {};
+      const nextQuizStatsByMode = {};
+      let firstError = null;
 
-        results.forEach(([modeValue, questionData, quizData]) => {
+      settled.forEach((result, index) => {
+        const modeValue = ATTEMPT_MODES[index].value;
+        if (result.status === "fulfilled") {
+          const [, questionData, quizData] = result.value;
           nextQuestionStatsByMode[modeValue] = questionData;
           nextQuizStatsByMode[modeValue] = quizData;
-        });
+        } else {
+          nextQuestionStatsByMode[modeValue] = null;
+          nextQuizStatsByMode[modeValue] = null;
+          if (!firstError) firstError = result.reason;
+        }
+      });
 
-        setQuestionStatsByMode(nextQuestionStatsByMode);
-        setQuizStatsByMode(nextQuizStatsByMode);
-      } catch (err) {
-        if (cancelled) return;
-        const apiMsg = err?.response?.data?.message || err?.response?.data?.error || "";
-        setError(apiMsg || err?.message || t("workspace.questionStats.loadError"));
-      } finally {
-        if (!cancelled) setLoading(false);
+      setQuestionStatsByMode(nextQuestionStatsByMode);
+      setQuizStatsByMode(nextQuizStatsByMode);
+
+      const allFailed = settled.every((result) => result.status === "rejected");
+      if (allFailed && firstError) {
+        const apiMsg = firstError?.response?.data?.message
+          || firstError?.response?.data?.error
+          || "";
+        // Use sentinel when no upstream message; render layer translates it.
+        setError(apiMsg || firstError?.message || "__GENERIC_LOAD_ERROR__");
       }
+
+      setLoading(false);
     };
 
     loadAllModes();
@@ -1212,7 +1116,7 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
     return () => {
       cancelled = true;
     };
-  }, [fetchQuestionModeStats, fetchQuizModeStats, t, workspaceId]);
+  }, [fetchQuestionModeStats, fetchQuizModeStats, workspaceId]);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -1227,15 +1131,19 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
     return () => observer.disconnect();
   }, []);
 
-  const surfaceHasData = (modeValue, surfaceValue) => (
+  const surfaceHasData = useCallback((modeValue, surfaceValue) => (
     surfaceValue === "QUIZ"
       ? hasQuizStatsData(quizStatsByMode[modeValue])
       : hasQuestionStatsData(questionStatsByMode[modeValue])
-  );
+  ), [questionStatsByMode, quizStatsByMode]);
 
-  const activeModes = ATTEMPT_MODES.filter((mode) => surfaceHasData(mode.value, surface));
-  const fallbackModes = ATTEMPT_MODES.filter((mode) => surfaceHasData(mode.value, "QUESTION") || surfaceHasData(mode.value, "QUIZ"));
-  const availableModes = activeModes.length > 0 ? activeModes : fallbackModes;
+  const availableModes = useMemo(() => {
+    const activeModes = ATTEMPT_MODES.filter((mode) => surfaceHasData(mode.value, surface));
+    if (activeModes.length > 0) return activeModes;
+    return ATTEMPT_MODES.filter(
+      (mode) => surfaceHasData(mode.value, "QUESTION") || surfaceHasData(mode.value, "QUIZ"),
+    );
+  }, [surface, surfaceHasData]);
 
   useEffect(() => {
     if (loading) return;
@@ -1281,10 +1189,13 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
   }
 
   if (error) {
+    const errorMessage = error === "__GENERIC_LOAD_ERROR__"
+      ? t("workspace.questionStats.loadError")
+      : error;
     return (
       <StatePanel
         icon={AlertCircle}
-        message={error}
+        message={errorMessage}
         isDarkMode={isDarkMode}
         iconClassName="text-rose-500"
         action={(
@@ -1381,7 +1292,7 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
             t={t}
             containerWidth={containerWidth}
             selectedModeLabel={selectedModeLabel}
-            locale={i18n.language?.startsWith("en") ? "en-US" : "vi-VN"}
+            locale={getAppNumberLocale(i18n.language)}
           />
         ) : (
           <QuestionStatsContent

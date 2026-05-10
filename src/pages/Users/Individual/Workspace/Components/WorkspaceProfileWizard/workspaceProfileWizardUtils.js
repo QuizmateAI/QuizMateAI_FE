@@ -478,23 +478,17 @@ export function buildConsistencyPayload(values) {
   };
 }
 export function shouldRunLiveConsistency(values) {
-  const beginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
   const hasReadyKnowledge = Boolean(getSelectedKnowledgeForAi(values));
   const hasReadyDomain = Boolean(getSelectedDomainForAi(values));
   const hasReadyCurrentLevel = Boolean(getReadyLiveFieldValue('currentLevel', values.currentLevel));
   const hasReadyLearningGoal = Boolean(getReadyLiveFieldValue('learningGoal', values.learningGoal));
-  const hasReadyStrongAreas = Boolean(getReadyLiveFieldValue('strongAreas', values.strongAreas));
-  const hasReadyWeakAreas = Boolean(getReadyLiveFieldValue('weakAreas', values.weakAreas));
+  // Strengths/weaknesses are optional — don't gate the consistency check on them.
   return Boolean(
     hasReadyKnowledge
     && hasReadyDomain
     && values.workspacePurpose
     && hasReadyCurrentLevel
     && hasReadyLearningGoal
-    && (
-      beginnerMode
-      || (hasReadyStrongAreas && hasReadyWeakAreas)
-    )
   );
 }
 export function buildConsistencyFingerprint(values) {
@@ -804,14 +798,11 @@ export function validateWorkspaceProfileStep({
     } else if (learningGoalError) {
       nextErrors.learningGoal = learningGoalError;
     }
-    if (values.workspacePurpose === 'REVIEW' && !beginnerMode && !values.strongAreas.trim()) {
-      nextErrors.strongAreas = t('workspace.profileConfig.validation.strongAreasRequired');
-    } else if (values.strongAreas.trim() && strongAreasError) {
+    // Strengths/weaknesses are optional in every mode; only validate format if filled.
+    if (values.strongAreas.trim() && strongAreasError) {
       nextErrors.strongAreas = strongAreasError;
     }
-    if (values.workspacePurpose === 'REVIEW' && !beginnerMode && !values.weakAreas.trim()) {
-      nextErrors.weakAreas = t('workspace.profileConfig.validation.weakAreasRequired');
-    } else if (values.weakAreas.trim() && weakAreasError) {
+    if (values.weakAreas.trim() && weakAreasError) {
       nextErrors.weakAreas = weakAreasError;
     }
   }

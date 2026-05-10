@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, RefreshCw, MoreHorizontal, Shield, Ban, CheckCircle2, Eye, Trash2 } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Shield, Ban, CheckCircle2, Eye, Trash2, Loader2 } from 'lucide-react';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -70,9 +71,17 @@ function UserManagement() {
   const queryClient = useQueryClient();
   const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 200);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
+  const [isManualRefetch, setIsManualRefetch] = useState(false);
   const isSuperAdminContext = basePath === '/super-admin';
+
+  // Khi user gõ keyword mới → reset về page 0 để tránh "Page out of range".
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0);
+  };
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
@@ -92,8 +101,9 @@ function UserManagement() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: [...ADMIN_USERS_QUERY_KEY, page, size],
-    queryFn: async () => normalizeUserListResponse(await getAllUsers(page, size), size),
+    queryKey: [...ADMIN_USERS_QUERY_KEY, page, size, debouncedSearchTerm],
+    queryFn: async () =>
+      normalizeUserListResponse(await getAllUsers(page, size, debouncedSearchTerm), size),
     placeholderData: (previous) => previous,
   });
 
@@ -179,14 +189,8 @@ function UserManagement() {
     });
   };
 
-  // Lọc users theo search term và chỉ hiển thị role USER (ẩn ADMIN và SUPER_ADMIN)
-  const filteredUsers = users
-    .filter(user => user.role === 'USER')
-    .filter(user => 
-      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  // BE đã lọc theo keyword (username/email/fullName). FE chỉ ẩn ADMIN/SUPER_ADMIN khỏi danh sách.
+  const filteredUsers = users.filter(user => user.role === 'USER');
 
   // Format ngày tạo
   const formatDate = (dateString) => {
@@ -220,11 +224,18 @@ function UserManagement() {
         title={t('userPage.title')}
         actions={(
           <Button
-            onClick={() => refetch()}
-            disabled={isFetching}
+            onClick={async () => {
+              setIsManualRefetch(true);
+              try {
+                await refetch();
+              } finally {
+                setIsManualRefetch(false);
+              }
+            }}
+            disabled={isManualRefetch}
             className="h-10 rounded-2xl bg-[#0455BF] px-4 text-white hover:bg-[#03449a]"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isManualRefetch ? 'animate-spin' : ''}`} />
             {t('userPage.refresh')}
           </Button>
         )}
@@ -249,14 +260,17 @@ function UserManagement() {
           </CardTitle>
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder={t('userPage.searchPlaceholder')} 
-              className={`pl-10 h-11 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 ${
+            <Input
+              placeholder={t('userPage.searchPlaceholder')}
+              className={`pl-10 pr-10 h-11 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 ${
                 isDarkMode ? 'text-white placeholder:text-slate-500' : 'text-slate-900'
               }`}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
+            {isFetching && !isManualRefetch && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+            )}
           </div>
         </CardHeader>
         

@@ -71,16 +71,16 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+      <nav className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
         {SUPER_ADMIN_MENU_SECTIONS.map((section) => (
-          <div key={section.id} className="space-y-2">
+          <div key={section.id} className="space-y-1">
             {!collapsed ? (
-              <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
+              <p className="px-3 pt-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
                 {t(section.labelKey, section.defaultLabel)}
               </p>
             ) : null}
 
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {section.items.map((item) => {
                 const active = isSuperAdminItemActive(item, location.pathname);
                 const Icon = item.icon;
@@ -92,7 +92,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
                     onClick={() => goTo(item.to)}
                     title={collapsed ? t(item.labelKey, item.defaultLabel) : undefined}
                     className={cn(
-                      'group relative flex w-full items-center gap-3 rounded-[20px] px-3 py-3 text-left text-sm font-medium transition-all',
+                      'group relative flex w-full items-center gap-2.5 rounded-2xl px-2.5 py-1.5 text-left text-sm font-medium transition-all',
                       collapsed ? 'justify-center' : 'justify-start',
                       active
                         ? 'bg-[#EEF4FF] text-[#0455BF] shadow-[0_18px_32px_-24px_rgba(4,85,191,0.55)] ring-1 ring-[#B9D4FF] dark:bg-[#0B1731] dark:text-sky-300 dark:ring-[#1E3A8A]'
@@ -100,17 +100,17 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
                     )}
                   >
                     {active && !collapsed ? (
-                      <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-[#0455BF] dark:bg-sky-300" />
+                      <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[#0455BF] dark:bg-sky-300" />
                     ) : null}
                     <div
                       className={cn(
-                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors',
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors',
                         active
                           ? 'bg-white text-[#0455BF] dark:bg-slate-950 dark:text-sky-300'
                           : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-slate-950 dark:group-hover:text-white',
                       )}
                     >
-                      <Icon className="h-[18px] w-[18px]" />
+                      <Icon className="h-[16px] w-[16px]" />
                     </div>
                     {!collapsed ? (
                       <div className="min-w-0">
@@ -125,12 +125,12 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
         ))}
       </nav>
 
-      <div className="border-t border-slate-200/70 p-3 dark:border-slate-800/70">
+      <div className="border-t border-slate-200/70 p-2 dark:border-slate-800/70">
         <button
           type="button"
           onClick={handleLogout}
           className={cn(
-            'flex w-full items-center gap-3 rounded-[20px] border border-rose-200 bg-rose-50 px-3 py-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/15',
+            'flex w-full items-center gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/15',
             collapsed && 'justify-center',
           )}
           title={collapsed ? t('sidebar.logout') : undefined}
