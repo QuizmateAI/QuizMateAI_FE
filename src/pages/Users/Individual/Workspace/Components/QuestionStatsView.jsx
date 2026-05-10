@@ -1188,36 +1188,38 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
     );
   }, [surface, surfaceHasData]);
 
-  useEffect(() => {
-    if (loading) return;
-
+  // Tự động chuyển surface/attemptMode khi không có data — dùng pattern "adjust state during
+  // render" (React docs) thay vì useEffect: setState gọi đồng bộ trong effect bị eslint-rule
+  // react-hooks/set-state-in-effect chặn vì gây cascading render.
+  if (!loading) {
     const surfaceHasAnyData = surface === "QUIZ"
       ? ATTEMPT_MODES.some((mode) => hasQuizStatsData(quizStatsByMode[mode.value]))
       : ATTEMPT_MODES.some((mode) => hasQuestionStatsData(questionStatsByMode[mode.value]));
 
+    let switchedSurface = false;
     if (!surfaceHasAnyData) {
       const canUseQuiz = ATTEMPT_MODES.some((mode) => hasQuizStatsData(quizStatsByMode[mode.value]));
       const canUseQuestion = ATTEMPT_MODES.some((mode) => hasQuestionStatsData(questionStatsByMode[mode.value]));
       if (surface === "QUESTION" && canUseQuiz) {
         setSurface("QUIZ");
-        return;
-      }
-      if (surface === "QUIZ" && canUseQuestion) {
+        switchedSurface = true;
+      } else if (surface === "QUIZ" && canUseQuestion) {
         setSurface("QUESTION");
-        return;
+        switchedSurface = true;
       }
     }
 
-    if (availableModes.length === 0) {
-      setAttemptMode("ALL");
-      return;
+    // Sau khi setSurface, render kế tiếp sẽ tính lại availableModes — nên skip nhánh attemptMode
+    // ở render hiện tại để tránh chọn fallback dựa trên availableModes cũ.
+    if (!switchedSurface) {
+      if (availableModes.length === 0) {
+        if (attemptMode !== "ALL") setAttemptMode("ALL");
+      } else if (!availableModes.some((mode) => mode.value === attemptMode)) {
+        const fallbackMode = availableModes.find((mode) => mode.value === "ALL") || availableModes[0];
+        setAttemptMode(fallbackMode.value);
+      }
     }
-
-    if (!availableModes.some((mode) => mode.value === attemptMode)) {
-      const fallbackMode = availableModes.find((mode) => mode.value === "ALL") || availableModes[0];
-      setAttemptMode(fallbackMode.value);
-    }
-  }, [attemptMode, availableModes, loading, questionStatsByMode, quizStatsByMode, surface]);
+  }
 
   if (loading) {
     return (
