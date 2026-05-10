@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ArrowUpDown,
   BadgeCheck,
@@ -141,9 +141,14 @@ export default function PlanVersionsPreview() {
     return next;
   }, [filteredPlans, tableSort]);
 
-  useEffect(() => {
+  // Reset trang về 0 khi filter/sort đổi — pattern "adjust state during render" (React docs)
+  // thay vì useEffect → tránh cascading render mà eslint-rule react-hooks/set-state-in-effect cảnh báo.
+  const filterKey = `${tableSearch}|${tableGroupFilter}|${tableStatusFilter}|${tableSort}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setTablePage(0);
-  }, [tableSearch, tableGroupFilter, tableStatusFilter, tableSort]);
+  }
 
   const totalPlanRows = sortedPlans.length;
   const totalPlanPages = Math.max(1, Math.ceil(totalPlanRows / TABLE_PAGE_SIZE));

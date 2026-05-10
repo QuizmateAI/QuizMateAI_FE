@@ -431,9 +431,13 @@ export default function PlanPurchaseReportPage() {
   }, [filteredPlans, tableSort]);
 
   // Reset trang về 0 khi filter/search/sort/dataset thay đổi để tránh page index out of range.
-  useEffect(() => {
+  // Dùng pattern "adjust state during render" (React docs) thay vì useEffect → tránh cascading render.
+  const filterKey = `${tableSearch}|${tableGroupFilter}|${tableStatusFilter}|${tableSort}|${plans.length}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setTablePage(0);
-  }, [tableSearch, tableGroupFilter, tableStatusFilter, tableSort, plans.length]);
+  }
 
   const totalPlanRows = sortedPlans.length;
   const totalPlanPages = Math.max(1, Math.ceil(totalPlanRows / TABLE_PAGE_SIZE));
