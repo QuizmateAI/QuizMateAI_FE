@@ -460,13 +460,7 @@ function ChatPanel({
             contextType="WORKSPACE"
             contextId={workspaceId}
             canActivate
-            manualEntryMode={
-              workspaceSidebarFlashcardSubFilter === "manual"
-                ? "manual"
-                : workspaceSidebarFlashcardSubFilter === "paste"
-                  ? "paste"
-                  : null
-            }
+            manualEntryMode="manual"
             onCreated={onCreateFlashcard}
             onActivated={(saved) => {
               // Sau khi kích hoạt → mở detail view (giống luồng AI flashcard: flip UI).

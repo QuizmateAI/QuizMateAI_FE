@@ -2752,6 +2752,7 @@
       "result": "結果",
       "notAvailable": "N/A",
       "processing": "クイズを生成中",
+      "processingHint": "AIがコンテンツを処理しています...",
       "examModeTotal": "総時間制限試験",
       "examModePerQuestion": "問題ごとの試験",
       "examModeTotalShort": "総時間制限",

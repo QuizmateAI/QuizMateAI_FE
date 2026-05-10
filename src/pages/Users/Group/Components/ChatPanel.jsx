@@ -421,13 +421,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             contextType="GROUP"
             contextId={workspaceId}
             canActivate={Boolean(canCreateFlashcard)}
-            manualEntryMode={
-              groupSidebarFlashcardSubFilter === "manual"
-                ? "manual"
-                : groupSidebarFlashcardSubFilter === "paste"
-                  ? "paste"
-                  : null
-            }
+            manualEntryMode="manual"
             onCreated={onCreateFlashcard}
             onActivated={(saved) => {
               // Sau khi kích hoạt → mở detail view để leader/member xem flip cards như AI flashcard.

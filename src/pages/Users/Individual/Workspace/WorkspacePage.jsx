@@ -2096,7 +2096,6 @@ function WorkspacePage() {
       const fcModeByChild = {
         flashcardAi: "ai",
         flashcardManual: "manual",
-        flashcardFromJson: "paste",
       };
       const fcMode = fcModeByChild[childId] ?? null;
       setWorkspaceSidebarFlashcardSubFilter(fcMode);

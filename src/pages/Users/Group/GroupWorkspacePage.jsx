@@ -164,6 +164,19 @@ const GROUP_SECTIONS_REQUIRE_MATERIALS = new Set([
   'challenge',
 ]);
 
+// Query params bound to a sub-view inside a section (quiz detail, challenge detail,
+// challenge draft editor, ...). When the user switches section we must drop them,
+// otherwise the URL re-triggers the previous sub-view (e.g. ?viewQuizId=412&tab=review
+// reopens QuizDetail review tab on top of the Documents section).
+const SUBVIEW_SCOPED_QUERY_PARAMS = new Set([
+  'viewQuizId',
+  'tab',
+  'challengeEventId',
+  'challengeDraftQuizId',
+  'challengeDraft',
+  'challengeRound',
+]);
+
 function GroupWorkspacePage() {
   const queryClient = useQueryClient();
   const { workspaceId } = useParams();
@@ -229,7 +242,7 @@ function GroupWorkspacePage() {
 
     const preservedQuery = {};
     for (const [key, value] of searchParams.entries()) {
-      if (!key || key === 'section') continue;
+      if (!key || key === 'section' || SUBVIEW_SCOPED_QUERY_PARAMS.has(key)) continue;
       preservedQuery[key] = value;
     }
 
@@ -2897,7 +2910,7 @@ function GroupWorkspacePage() {
 
     const preservedQuery = {};
     for (const [key, value] of searchParams.entries()) {
-      if (!key || key === 'section') continue;
+      if (!key || key === 'section' || SUBVIEW_SCOPED_QUERY_PARAMS.has(key)) continue;
       preservedQuery[key] = value;
     }
 
@@ -2925,7 +2938,6 @@ function GroupWorkspacePage() {
       const fcModeByChild = {
         flashcardAi: 'ai',
         flashcardManual: 'manual',
-        flashcardFromJson: 'paste',
       };
       const fcMode = fcModeByChild[childId] ?? null;
       setGroupSidebarQuizCreateMode(null);

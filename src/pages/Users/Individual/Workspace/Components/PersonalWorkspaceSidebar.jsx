@@ -51,7 +51,7 @@ const NAV_ITEMS = [
   {
     key: "flashcard",
     icon: CreditCard,
-    children: [{ key: "flashcardAi" }, { key: "flashcardManual" }, { key: "flashcardFromJson" }],
+    children: [{ key: "flashcardAi" }, { key: "flashcardManual" }],
   },
   { key: "mockTest", icon: NotebookTabs },
   { key: "quizCollection", icon: Archive },
@@ -59,7 +59,7 @@ const NAV_ITEMS = [
 ];
 
 const QUIZ_CHILD_MODE = { quizAi: "ai", quizManual: "manual", quizFromJson: "paste" };
-const FLASHCARD_CHILD_MODE = { flashcardAi: "ai", flashcardManual: "manual", flashcardFromJson: "paste" };
+const FLASHCARD_CHILD_MODE = { flashcardAi: "ai", flashcardManual: "manual" };
 
 const MOBILE_NAV_ITEM_KEYS = new Set(["sources", "roadmap", "quiz"]);
 const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((item) => MOBILE_NAV_ITEM_KEYS.has(item.key));
