@@ -25,13 +25,17 @@ const LEAF_TYPE_COLOR = {
   OTHER: '#94a3b8',         // gray
 };
 
-const TRUNK_HEIGHT = 8;
-const TRUNK_RADIUS_BOTTOM = 0.4;
-const TRUNK_RADIUS_TOP = 0.25;
-const BRANCH_BASE_LENGTH = 3;
-const BRANCH_LEAF_LENGTH = 0.25;   // moi leaf dai them
-const BRANCH_THICKNESS = 0.12;
-const LEAF_RADIUS = 0.15;
+const TRUNK_HEIGHT = 10;
+const TRUNK_RADIUS_BOTTOM = 0.5;
+const TRUNK_RADIUS_TOP = 0.3;
+const BRANCH_START_LOW = 0.35;     // 35% trunk - start of branching
+const BRANCH_START_HIGH = 0.95;    // 95% trunk - top of canopy
+const BRANCH_BASE_LENGTH = 2.5;
+const BRANCH_LEAF_LENGTH = 0.18;   // moi leaf dai them (giam de canh ko qua dai)
+const BRANCH_THICKNESS = 0.13;
+const BRANCH_BEND = 0.4;            // do uon cong cua nhanh (organic look)
+const LEAF_RADIUS = 0.16;
+const LEAF_CLUSTER_RADIUS = 0.9;    // ban kinh cum la o ngon canh
 const LEAF_DISABLED_OPACITY = 0.25;
 
 // --------------------------------------------------------------------------
@@ -62,27 +66,36 @@ function Trunk() {
 }
 
 // --------------------------------------------------------------------------
-// Branch (cylinder from trunk surface upward+outward)
+// Branch (organic curved tube — TubeGeometry along Catmull-Rom curve)
 // --------------------------------------------------------------------------
 function Branch({ branch, onSelect, isSelected }) {
-  const { start, end, thickness, isEnabled } = branch;
-  const { midpoint, quaternion, length } = useMemo(
-    () => cylinderTransform(start, end),
-    [start, end]
-  );
-  const color = isSelected ? '#d97706' : '#6d4c41';
+  const { start, end, thickness, isEnabled, _bendOffset } = branch;
+
+  const geometry = useMemo(() => {
+    const startVec = new THREE.Vector3(...start);
+    const endVec = new THREE.Vector3(...end);
+    // Mid point voi bend offset — canh cong len tu nhien (chong gravity)
+    const mid = new THREE.Vector3().lerpVectors(startVec, endVec, 0.5);
+    mid.y += BRANCH_BEND * (_bendOffset ?? 1);  // bend upward
+    // 1/3 va 2/3 cho curve muot hon
+    const q1 = new THREE.Vector3().lerpVectors(startVec, mid, 0.5);
+    const q3 = new THREE.Vector3().lerpVectors(mid, endVec, 0.5);
+    const curve = new THREE.CatmullRomCurve3([startVec, q1, mid, q3, endVec]);
+    return new THREE.TubeGeometry(curve, 16, thickness, 8, false);
+  }, [start, end, thickness, _bendOffset]);
+
+  const color = isSelected ? '#d97706' : '#5d3f2f';
   return (
     <mesh
-      position={midpoint}
-      quaternion={quaternion}
+      geometry={geometry}
       onClick={(e) => { e.stopPropagation(); onSelect?.(branch); }}
       onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { document.body.style.cursor = 'auto'; }}
+      castShadow
     >
-      <cylinderGeometry args={[thickness * 0.6, thickness, length, 8]} />
       <meshStandardMaterial
         color={color}
-        roughness={0.8}
+        roughness={0.85}
         transparent={!isEnabled}
         opacity={isEnabled ? 1 : 0.35}
       />
@@ -148,10 +161,14 @@ function computeTreeGeometry(nodes) {
 
   const total = branches.length;
   const computedBranches = branches.map((branch, i) => {
-    // Distribute branches around trunk theo spiral
+    // Pseudo-random seeded by nodeId cho consistency giua renders
+    const seed = (branch.nodeId * 9301 + 49297) % 233280;
+    const rand = (n) => ((seed * (n + 1)) % 233280) / 233280;
+
     const t = total > 1 ? i / (total - 1) : 0.5;
-    const angle = i * 2.39996;  // golden angle ~ phyllotaxis
-    const heightOnTrunk = 0.25 + 0.7 * t; // 25%-95% trunk height
+    const angle = i * 2.39996;  // golden angle phyllotaxis
+    // Spread starts theo trunk height: 35%-95%, voi jitter
+    const heightOnTrunk = BRANCH_START_LOW + (BRANCH_START_HIGH - BRANCH_START_LOW) * t + (rand(1) - 0.5) * 0.05;
     const y0 = heightOnTrunk * TRUNK_HEIGHT;
     const surfaceR = TRUNK_RADIUS_BOTTOM * (1 - heightOnTrunk * 0.4);
     const start = [
@@ -161,9 +178,15 @@ function computeTreeGeometry(nodes) {
     ];
 
     const leafCount = (leavesByParent.get(branch.nodeId) || []).length;
-    const branchLength = BRANCH_BASE_LENGTH + leafCount * BRANCH_LEAF_LENGTH;
-    // Tilt: upper branches more horizontal, lower more upward
-    const tilt = (0.5 + 0.3 * (1 - t)) * Math.PI / 2; // 0.5*PI/2 = 45deg, more up at bottom
+    // Length variation: ±25% random
+    const lengthVariation = 0.75 + rand(2) * 0.5;
+    const branchLength = (BRANCH_BASE_LENGTH + leafCount * BRANCH_LEAF_LENGTH) * lengthVariation;
+
+    // Tilt: canh duoi ngang hon, canh tren cao vot len (tren = nhieu vot up,
+    // duoi = trai dai ra ngoai). Khac voi version cu — fix direction.
+    // tilt = 0 = horizontal, PI/2 = vertical
+    const baseTilt = Math.PI / 5 + t * Math.PI / 3;  // 36deg to 96deg (giua-ngang den thang dung)
+    const tilt = baseTilt + (rand(3) - 0.5) * 0.25;  // ±7deg jitter
     const horizontalR = Math.cos(tilt);
     const verticalR = Math.sin(tilt);
     const end = [
@@ -176,30 +199,54 @@ function computeTreeGeometry(nodes) {
       ...branch,
       start,
       end,
-      thickness: BRANCH_THICKNESS * (1 + leafCount * 0.02),
+      thickness: BRANCH_THICKNESS * (0.85 + leafCount * 0.015),
       _angle: angle,
       _length: branchLength,
+      _bendOffset: 0.7 + rand(4) * 0.6,  // 0.7-1.3 — uon nhieu it khac nhau
     };
   });
 
-  // Compute leaf positions: distribute along parent branch + small jitter
+  // Compute leaf positions: cluster bong tron quanh ngon canh (Fibonacci sphere)
   const computedLeaves = [];
   for (const branch of computedBranches) {
     const branchLeaves = leavesByParent.get(branch.nodeId) || [];
+    const endVec = new THREE.Vector3(...branch.end);
+    const startVec = new THREE.Vector3(...branch.start);
+    const branchDir = new THREE.Vector3().subVectors(endVec, startVec).normalize();
+
     branchLeaves.forEach((leaf, idx) => {
-      // Distribute leaves o nửa cuối branch + ngon
-      const t = branchLeaves.length === 1 ? 0.9 : 0.5 + 0.5 * (idx / (branchLeaves.length - 1));
-      const lx = branch.start[0] + t * (branch.end[0] - branch.start[0]);
-      const ly = branch.start[1] + t * (branch.end[1] - branch.start[1]);
-      const lz = branch.start[2] + t * (branch.end[2] - branch.start[2]);
-      // Small radial jitter
-      const jitterAngle = (idx * 1.7) % (Math.PI * 2);
-      const jitterR = 0.15;
-      const basePos = [
-        lx + jitterR * Math.cos(jitterAngle),
-        ly + jitterR * 0.3 * Math.sin(jitterAngle * 2),
-        lz + jitterR * Math.sin(jitterAngle),
-      ];
+      const n = branchLeaves.length;
+      // 70% leaves clusters tai ngon, 30% rai doc canh
+      const clusterAtTip = idx >= Math.floor(n * 0.3);
+
+      let basePos;
+      if (clusterAtTip) {
+        const cIdx = idx - Math.floor(n * 0.3);
+        const cTotal = Math.max(1, n - Math.floor(n * 0.3));
+        // Fibonacci sphere — phan bo deu tren mat cau
+        const phi = Math.acos(1 - 2 * (cIdx + 0.5) / cTotal);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * cIdx;
+        const r = LEAF_CLUSTER_RADIUS * (0.6 + 0.4 * ((idx * 7) % 10) / 10);
+        const sphX = r * Math.sin(phi) * Math.cos(theta);
+        const sphY = r * Math.sin(phi) * Math.sin(theta);
+        const sphZ = r * Math.cos(phi);
+        basePos = [
+          endVec.x + sphX,
+          endVec.y + Math.abs(sphY) * 0.8,  // bias upward (la tu nhien hut ve ngon canh)
+          endVec.z + sphZ,
+        ];
+      } else {
+        // Rai doc nua sau cua canh — nhung leaf gan goc cua canh
+        const tAlong = 0.55 + 0.4 * (idx / Math.max(1, Math.floor(n * 0.3)));
+        const along = new THREE.Vector3().lerpVectors(startVec, endVec, tAlong);
+        const jitterAngle = (idx * 2.39996) % (Math.PI * 2);
+        const jitterR = 0.3;
+        basePos = [
+          along.x + jitterR * Math.cos(jitterAngle),
+          along.y + jitterR * 0.3 * Math.sin(jitterAngle * 2),
+          along.z + jitterR * Math.sin(jitterAngle),
+        ];
+      }
       computedLeaves.push({ ...leaf, _basePos: basePos, _parentBranch: branch });
     });
   }
