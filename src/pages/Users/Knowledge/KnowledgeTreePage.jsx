@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Loader2, ArrowLeft, RefreshCw, Box, GitBranch } from 'lucide-react';
 
 import {
   extractAndPersistKnowledgeTree,
@@ -10,6 +10,7 @@ import {
   toggleSubtree,
 } from '@/api/KnowledgeTreeAPI';
 import TreeViewer from '@/components/knowledgeTree/TreeViewer';
+import TreeViewer3D from '@/components/knowledgeTree/TreeViewer3D';
 import ExtractionStatus from '@/components/knowledgeTree/ExtractionStatus';
 import ObservabilityPanel from '@/components/knowledgeTree/ObservabilityPanel';
 import LeafDetail from '@/components/knowledgeTree/LeafDetail';
@@ -33,6 +34,8 @@ export default function KnowledgeTreePage() {
   const queryClient = useQueryClient();
   const [taskId, setTaskId] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
+  // 3D la mac dinh — visualization sinh dong nhu cay that.
+  const [viewMode, setViewMode] = useState('3d');
 
   const treeQuery = useQuery({
     queryKey: ['knowledgeTree', materialId],
@@ -121,15 +124,45 @@ export default function KnowledgeTreePage() {
         </div>
         <div className="flex items-center gap-2">
           {tree && (
-            <button
-              type="button"
-              onClick={handleExtract}
-              disabled={extractMutation.isPending || isExtracting}
-              className="flex items-center gap-2 rounded border bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-            >
-              <RefreshCw size={14} className={extractMutation.isPending ? 'animate-spin' : ''} />
-              Re-extract
-            </button>
+            <>
+              {/* View mode toggle */}
+              <div className="flex items-center rounded border bg-white overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('3d')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-sm transition ${
+                    viewMode === '3d'
+                      ? 'bg-emerald-600 text-white'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                  title="Hiển thị dạng cây 3D"
+                >
+                  <Box size={14} /> 3D
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('2d')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-sm transition ${
+                    viewMode === '2d'
+                      ? 'bg-sky-600 text-white'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                  title="Hiển thị dạng graph 2D"
+                >
+                  <GitBranch size={14} /> 2D
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleExtract}
+                disabled={extractMutation.isPending || isExtracting}
+                className="flex items-center gap-2 rounded border bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={extractMutation.isPending ? 'animate-spin' : ''} />
+                Re-extract
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -188,7 +221,13 @@ export default function KnowledgeTreePage() {
               <Loader2 className="animate-spin" /> Đang tải cây...
             </div>
           )}
-          {tree && (
+          {tree && viewMode === '3d' && (
+            <TreeViewer3D
+              nodes={nodes}
+              onNodeClick={handleNodeClick}
+            />
+          )}
+          {tree && viewMode === '2d' && (
             <TreeViewer
               nodes={nodes}
               onNodeClick={handleNodeClick}
