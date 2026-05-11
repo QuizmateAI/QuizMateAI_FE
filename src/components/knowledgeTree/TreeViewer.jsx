@@ -23,7 +23,10 @@ const LEAF_HEIGHT = 95;
 function layoutWithDagre(rfNodes, rfEdges) {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 80, marginx: 20, marginy: 20 });
+  // Top-Bottom layout: branches (depth 0) o tren, leaves (depth 1) o duoi.
+  // nodesep tang de tranh leaves chong cheo khi nhieu sibling (1 branch 10+ leaves).
+  // ranksep tang de tach hang branch va hang leaf ro hon.
+  g.setGraph({ rankdir: 'TB', nodesep: 30, ranksep: 100, marginx: 40, marginy: 40 });
 
   rfNodes.forEach((node) => {
     g.setNode(node.id, {
@@ -112,17 +115,17 @@ export default function TreeViewer({ nodes, onNodeClick, onNodeToggle }) {
       position: { x: 0, y: 0 }, // dagre will reassign
     }));
 
+    // BE return parentNodeId (qua @JsonProperty getter) — old field parentNode bi @JsonIgnore.
     const rfEdges = nodes
-      .filter((node) => node.parentNode != null)
+      .filter((node) => node.parentNodeId != null)
       .map((node) => ({
-        id: `e-${node.parentNode?.nodeId ?? 'root'}-${node.nodeId}`,
-        source: String(node.parentNode?.nodeId ?? node.parentNodeId ?? ''),
+        id: `e-${node.parentNodeId}-${node.nodeId}`,
+        source: String(node.parentNodeId),
         target: String(node.nodeId),
         type: 'smoothstep',
         animated: false,
         style: { stroke: '#94a3b8', strokeWidth: 1.5 },
-      }))
-      .filter((e) => e.source && e.source !== '');
+      }));
 
     const laidOut = layoutWithDagre(rfNodes, rfEdges);
     return { rfNodes: laidOut, rfEdges };
@@ -164,6 +167,9 @@ export default function TreeViewer({ nodes, onNodeClick, onNodeToggle }) {
         onNodeDoubleClick={handleNodeDoubleClick}
         nodesDraggable={false}
         fitView
+        fitViewOptions={{ padding: 0.2, minZoom: 0.05, maxZoom: 1.5 }}
+        minZoom={0.05}
+        maxZoom={2}
         attributionPosition="bottom-left"
       >
         <Background gap={16} size={1} color="#e2e8f0" />
