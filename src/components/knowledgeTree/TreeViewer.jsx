@@ -1,152 +1,166 @@
-import { useCallback, useMemo, useEffect } from 'react';
-import ReactFlow, {
-  Background,
-  Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
-} from 'reactflow';
-import dagre from 'dagre';
-import 'reactflow/dist/style.css';
+import { useMemo, useState } from 'react';
+import { ChevronRight, FileText } from 'lucide-react';
 
 // ============================================================================
-// TreeViewer — render cay kien thuc qua React Flow + dagre auto-layout.
-//
-// Input: nodes[] flat (BRANCH | LEAF) + parent_node_id self-ref. Build edge
-// list tu parent_node_id, run dagre layout (top-bottom), feed React Flow.
+// TreeViewer — collapsible chapter/branch accordion.
+// Click branch row -> drop down leaves underneath.
+// Replaces previous React Flow graph view — better UX for 44 branches +
+// 410 leaves (graph view qua nhieu node thanh hang ngang khong doc duoc).
 // ============================================================================
 
-const NODE_WIDTH = 220;
-const BRANCH_HEIGHT = 70;
-const LEAF_HEIGHT = 95;
+const LEAF_TYPE_COLOR = {
+  DEFINITION: { dot: '#10b981', bg: '#d1fae5', text: '#065f46', label: 'Định nghĩa' },
+  RULE: { dot: '#3b82f6', bg: '#dbeafe', text: '#1e40af', label: 'Quy tắc' },
+  FORMULA: { dot: '#ef4444', bg: '#fee2e2', text: '#991b1b', label: 'Công thức' },
+  EXAMPLE: { dot: '#f97316', bg: '#ffedd5', text: '#9a3412', label: 'Ví dụ' },
+  PROCEDURE: { dot: '#a855f7', bg: '#f3e8ff', text: '#6b21a8', label: 'Quy trình' },
+  CONCEPT: { dot: '#06b6d4', bg: '#cffafe', text: '#155e75', label: 'Khái niệm' },
+  OTHER: { dot: '#94a3b8', bg: '#f1f5f9', text: '#475569', label: 'Khác' },
+};
 
-function layoutWithDagre(rfNodes, rfEdges) {
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  // Top-Bottom layout: branches (depth 0) o tren, leaves (depth 1) o duoi.
-  // nodesep tang de tranh leaves chong cheo khi nhieu sibling (1 branch 10+ leaves).
-  // ranksep tang de tach hang branch va hang leaf ro hon.
-  g.setGraph({ rankdir: 'TB', nodesep: 30, ranksep: 100, marginx: 40, marginy: 40 });
-
-  rfNodes.forEach((node) => {
-    g.setNode(node.id, {
-      width: NODE_WIDTH,
-      height: node.data?.nodeType === 'LEAF' ? LEAF_HEIGHT : BRANCH_HEIGHT,
-    });
-  });
-  rfEdges.forEach((edge) => g.setEdge(edge.source, edge.target));
-
-  dagre.layout(g);
-
-  return rfNodes.map((node) => {
-    const pos = g.node(node.id);
-    return {
-      ...node,
-      position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - (node.data?.nodeType === 'LEAF' ? LEAF_HEIGHT : BRANCH_HEIGHT) / 2 },
-    };
-  });
+function PageRange({ start, end }) {
+  if (start == null) return null;
+  const text = start === end ? `trang ${start}` : `trang ${start}-${end}`;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+      <FileText size={11} /> {text}
+    </span>
+  );
 }
 
-function nodeStyle(node) {
-  const isLeaf = node.data?.nodeType === 'LEAF';
-  const enabled = node.data?.isEnabled !== false;
-  const base = {
-    padding: 10,
-    borderRadius: 8,
-    fontSize: 12,
-    width: NODE_WIDTH,
-    border: '1px solid',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-    opacity: enabled ? 1 : 0.45,
-  };
-  if (isLeaf) {
-    return {
-      ...base,
-      background: '#fef9f0',
-      borderColor: enabled ? '#f59e0b' : '#fcd34d',
-      color: '#78350f',
-    };
-  }
-  return {
-    ...base,
-    background: '#e0f2fe',
-    borderColor: enabled ? '#0284c7' : '#7dd3fc',
-    color: '#075985',
-    fontWeight: 600,
-  };
+function LeafTypeBadge({ type }) {
+  const cfg = LEAF_TYPE_COLOR[type] || LEAF_TYPE_COLOR.OTHER;
+  return (
+    <span
+      style={{ background: cfg.bg, color: cfg.text }}
+      className="px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap"
+    >
+      {cfg.label}
+    </span>
+  );
 }
 
-function buildNodeLabel(node) {
-  const title = node.title || '(untitled)';
-  const isLeaf = node.nodeType === 'LEAF';
-  const pageBadge = node.pageStart === node.pageEnd
-    ? `trang ${node.pageStart}`
-    : `trang ${node.pageStart}-${node.pageEnd}`;
-
-  if (isLeaf) {
-    const typeBadge = node.leafType && node.leafType !== 'OTHER' ? node.leafType : null;
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div style={{ fontWeight: 600, lineHeight: 1.2 }}>{title}</div>
-        <div style={{ display: 'flex', gap: 6, fontSize: 10, color: '#92400e' }}>
-          <span>📄 {pageBadge}</span>
-          {typeBadge && <span style={{ background: '#fed7aa', padding: '0 6px', borderRadius: 4 }}>{typeBadge}</span>}
+function LeafRow({ leaf, onClick }) {
+  const cfg = LEAF_TYPE_COLOR[leaf.leafType] || LEAF_TYPE_COLOR.OTHER;
+  return (
+    <button
+      type="button"
+      onClick={() => onClick?.(leaf)}
+      className={`w-full text-left flex items-start gap-3 px-6 py-2 hover:bg-slate-50 border-l-2 transition ${
+        leaf.isEnabled ? 'border-transparent' : 'opacity-50 border-slate-300'
+      }`}
+    >
+      <span
+        style={{ background: cfg.dot }}
+        className="mt-1.5 w-2 h-2 rounded-full shrink-0"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-slate-800 break-words">{leaf.title}</span>
+          <LeafTypeBadge type={leaf.leafType} />
+        </div>
+        {leaf.summary && (
+          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{leaf.summary}</p>
+        )}
+        <div className="mt-1">
+          <PageRange start={leaf.pageStart} end={leaf.pageEnd} />
         </div>
       </div>
-    );
-  }
+    </button>
+  );
+}
+
+function BranchRow({ branch, leaves, expanded, onToggle, onLeafClick, onBranchClick }) {
+  const leafCount = leaves.length;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <div style={{ fontWeight: 700, lineHeight: 1.2 }}>{title}</div>
-      <div style={{ fontSize: 10, color: '#0369a1' }}>📚 {pageBadge}</div>
+    <div className={`border-b ${branch.isEnabled ? '' : 'opacity-50'}`}>
+      <div className="flex items-center w-full hover:bg-sky-50 transition">
+        <button
+          type="button"
+          onClick={() => onToggle(branch.nodeId)}
+          className="flex items-center gap-2 px-3 py-3 flex-1 text-left"
+          title={expanded ? 'Thu gọn' : 'Mở rộng'}
+        >
+          <ChevronRight
+            size={16}
+            className={`text-slate-500 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-800 break-words">{branch.title}</span>
+              <span className="text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-medium">
+                {leafCount} {leafCount === 1 ? 'lá' : 'lá'}
+              </span>
+            </div>
+            <div className="mt-0.5">
+              <PageRange start={branch.pageStart} end={branch.pageEnd} />
+            </div>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => onBranchClick?.(branch)}
+          className="px-3 py-3 text-xs text-slate-500 hover:text-slate-800 border-l"
+          title="Xem chi tiết cành"
+        >
+          ⋯
+        </button>
+      </div>
+      {expanded && (
+        <div className="bg-slate-50/50">
+          {leaves.length === 0 ? (
+            <p className="px-6 py-3 text-xs text-slate-400 italic">Cành này chưa có lá kiến thức.</p>
+          ) : (
+            leaves.map((leaf) => (
+              <LeafRow key={leaf.nodeId} leaf={leaf} onClick={onLeafClick} />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 export default function TreeViewer({ nodes, onNodeClick, onNodeToggle }) {
-  const initialFlowData = useMemo(() => {
-    if (!nodes || nodes.length === 0) return { rfNodes: [], rfEdges: [] };
+  const [expandedBranches, setExpandedBranches] = useState(() => new Set());
 
-    const rfNodes = nodes.map((node) => ({
-      id: String(node.nodeId),
-      data: { ...node, label: buildNodeLabel(node) },
-      style: nodeStyle({ data: node }),
-      position: { x: 0, y: 0 }, // dagre will reassign
-    }));
+  const { branches, leavesByBranch } = useMemo(() => {
+    const list = nodes || [];
+    const b = list.filter((n) => n.nodeType === 'BRANCH');
+    // Sort branches theo orderIndex (BE da save thu tu xuat hien trong PDF)
+    b.sort((x, y) => (x.orderIndex ?? 0) - (y.orderIndex ?? 0));
 
-    // BE return parentNodeId (qua @JsonProperty getter) — old field parentNode bi @JsonIgnore.
-    const rfEdges = nodes
-      .filter((node) => node.parentNodeId != null)
-      .map((node) => ({
-        id: `e-${node.parentNodeId}-${node.nodeId}`,
-        source: String(node.parentNodeId),
-        target: String(node.nodeId),
-        type: 'smoothstep',
-        animated: false,
-        style: { stroke: '#94a3b8', strokeWidth: 1.5 },
-      }));
-
-    const laidOut = layoutWithDagre(rfNodes, rfEdges);
-    return { rfNodes: laidOut, rfEdges };
+    const byParent = new Map();
+    for (const leaf of list) {
+      if (leaf.nodeType !== 'LEAF') continue;
+      const pid = leaf.parentNodeId;
+      if (pid == null) continue;
+      if (!byParent.has(pid)) byParent.set(pid, []);
+      byParent.get(pid).push(leaf);
+    }
+    // Sort leaves trong moi branch theo orderIndex
+    for (const arr of byParent.values()) {
+      arr.sort((x, y) => (x.orderIndex ?? 0) - (y.orderIndex ?? 0));
+    }
+    return { branches: b, leavesByBranch: byParent };
   }, [nodes]);
 
-  const [rfNodes, setRfNodes, onNodesChange] = useNodesState(initialFlowData.rfNodes);
-  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState(initialFlowData.rfEdges);
+  const toggleBranch = (branchId) => {
+    setExpandedBranches((prev) => {
+      const next = new Set(prev);
+      if (next.has(branchId)) next.delete(branchId);
+      else next.add(branchId);
+      return next;
+    });
+  };
 
-  // Re-layout when source nodes change (toggle, refresh)
-  useEffect(() => {
-    setRfNodes(initialFlowData.rfNodes);
-    setRfEdges(initialFlowData.rfEdges);
-  }, [initialFlowData, setRfNodes, setRfEdges]);
+  const expandAll = () => {
+    setExpandedBranches(new Set(branches.map((b) => b.nodeId)));
+  };
 
-  const handleNodeClick = useCallback((_event, node) => {
-    if (onNodeClick) onNodeClick(node.data);
-  }, [onNodeClick]);
-
-  const handleNodeDoubleClick = useCallback((_event, node) => {
-    if (onNodeToggle) onNodeToggle(node.data);
-  }, [onNodeToggle]);
+  const collapseAll = () => {
+    setExpandedBranches(new Set());
+  };
 
   if (!nodes || nodes.length === 0) {
     return (
@@ -156,30 +170,49 @@ export default function TreeViewer({ nodes, onNodeClick, onNodeToggle }) {
     );
   }
 
+  const totalLeaves = Array.from(leavesByBranch.values()).reduce((s, arr) => s + arr.length, 0);
+
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: 500 }}>
-      <ReactFlow
-        nodes={rfNodes.map(n => ({ ...n, data: { ...n.data, label: buildNodeLabel(n.data) }, style: nodeStyle(n) }))}
-        edges={rfEdges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeClick={handleNodeClick}
-        onNodeDoubleClick={handleNodeDoubleClick}
-        nodesDraggable={false}
-        fitView
-        fitViewOptions={{ padding: 0.2, minZoom: 0.05, maxZoom: 1.5 }}
-        minZoom={0.05}
-        maxZoom={2}
-        attributionPosition="bottom-left"
-      >
-        <Background gap={16} size={1} color="#e2e8f0" />
-        <Controls showInteractive={false} />
-        <MiniMap
-          nodeColor={(n) => (n.data?.nodeType === 'LEAF' ? '#fbbf24' : '#0ea5e9')}
-          maskColor="rgba(241, 245, 249, 0.6)"
-          style={{ background: '#f8fafc' }}
-        />
-      </ReactFlow>
+    <div className="flex flex-col h-full bg-white">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between border-b px-4 py-2 bg-slate-50">
+        <div className="text-sm text-slate-600">
+          <span className="font-semibold text-slate-800">{branches.length}</span> chương ·{' '}
+          <span className="font-semibold text-slate-800">{totalLeaves}</span> lá kiến thức
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={expandAll}
+            className="text-xs text-sky-600 hover:text-sky-800 hover:underline"
+          >
+            Mở tất cả
+          </button>
+          <span className="text-slate-300">|</span>
+          <button
+            type="button"
+            onClick={collapseAll}
+            className="text-xs text-sky-600 hover:text-sky-800 hover:underline"
+          >
+            Thu gọn tất cả
+          </button>
+        </div>
+      </div>
+
+      {/* Branches list */}
+      <div className="flex-1 overflow-y-auto">
+        {branches.map((branch) => (
+          <BranchRow
+            key={branch.nodeId}
+            branch={branch}
+            leaves={leavesByBranch.get(branch.nodeId) || []}
+            expanded={expandedBranches.has(branch.nodeId)}
+            onToggle={toggleBranch}
+            onLeafClick={onNodeClick}
+            onBranchClick={onNodeClick}
+          />
+        ))}
+      </div>
     </div>
   );
 }
