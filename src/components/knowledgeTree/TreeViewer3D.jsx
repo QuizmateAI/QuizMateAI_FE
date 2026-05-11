@@ -1,7 +1,12 @@
-import { useMemo, useRef, useState } from 'react';
+import { Suspense, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls, useGLTF, Html } from '@react-three/drei';
 import * as THREE from 'three';
+
+// Path tu public/ — Vite serve as static. User can replace voi .glb tree khac.
+const TREE_MODEL_PATH = '/models/birch_tree.glb';
+// Skip preload neu user chua convert .blend -> .glb (model se 404, fallback to procedural).
+try { useGLTF.preload(TREE_MODEL_PATH); } catch (_) { /* silently skip */ }
 
 // ============================================================================
 // TreeViewer3D — 3D organic tree visualization.
@@ -54,15 +59,39 @@ function cylinderTransform(start, end) {
 }
 
 // --------------------------------------------------------------------------
-// Trunk
+// Trunk (procedural fallback)
 // --------------------------------------------------------------------------
-function Trunk() {
+function ProceduralTrunk() {
   return (
     <mesh position={[0, TRUNK_HEIGHT / 2, 0]} castShadow receiveShadow>
       <cylinderGeometry args={[TRUNK_RADIUS_TOP, TRUNK_RADIUS_BOTTOM, TRUNK_HEIGHT, 12]} />
       <meshStandardMaterial color="#5d4037" roughness={0.9} />
     </mesh>
   );
+}
+
+// --------------------------------------------------------------------------
+// GLTF tree model (loaded from public/models/birch_tree.glb)
+// User must export .blend -> .glb via Blender hoac online converter.
+// --------------------------------------------------------------------------
+function GLTFTreeModel({ onLoaded }) {
+  const gltf = useGLTF(TREE_MODEL_PATH);
+  const ref = useRef();
+
+  // Once-mounted: report bounding box len parent de leaves position trong canopy
+  useMemo(() => {
+    if (gltf?.scene && onLoaded) {
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+      onLoaded({ size, center, scene: gltf.scene });
+    }
+  }, [gltf, onLoaded]);
+
+  if (!gltf?.scene) return null;
+  return <primitive ref={ref} object={gltf.scene} dispose={null} />;
 }
 
 // --------------------------------------------------------------------------
@@ -145,8 +174,11 @@ function Leaf({ leaf, onSelect, isSelected }) {
 
 // --------------------------------------------------------------------------
 // Layout: compute branch + leaf positions from flat nodes[]
+// modelMeta (optional): { size, center } cua loaded GLTF tree —
+//   khi co model, leaves cluster trong canopy bounding box thay vi
+//   procedural branch tips.
 // --------------------------------------------------------------------------
-function computeTreeGeometry(nodes) {
+function computeTreeGeometry(nodes, modelMeta) {
   const branches = nodes.filter((n) => n.nodeType === 'BRANCH');
   const leaves = nodes.filter((n) => n.nodeType === 'LEAF');
 
@@ -206,6 +238,16 @@ function computeTreeGeometry(nodes) {
     };
   });
 
+  // Khi co GLTF model, leaves position trong canopy bounding box cua model
+  // (upper 60% theo height). Khong follow procedural branches nua.
+  const useModelCanopy = !!modelMeta;
+  const canopyCenter = useModelCanopy ? modelMeta.center.clone() : null;
+  const canopySize = useModelCanopy ? modelMeta.size.clone() : null;
+  if (useModelCanopy) {
+    // Canopy: upper half cua model
+    canopyCenter.y = modelMeta.center.y + canopySize.y * 0.15;
+  }
+
   // Compute leaf positions: cluster bong tron quanh ngon canh (Fibonacci sphere)
   const computedLeaves = [];
   for (const branch of computedBranches) {
@@ -215,6 +257,25 @@ function computeTreeGeometry(nodes) {
     const branchDir = new THREE.Vector3().subVectors(endVec, startVec).normalize();
 
     branchLeaves.forEach((leaf, idx) => {
+      // GLTF mode: leaves rai trong canopy ellipsoid cua model loaded
+      if (useModelCanopy) {
+        const totalLeaves = leaves.length;
+        const globalIdx = computedLeaves.length;
+        // Fibonacci sphere global cho all leaves de phan bo deu trong canopy
+        const phi = Math.acos(1 - 2 * (globalIdx + 0.5) / totalLeaves);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * globalIdx;
+        // Scale ellipsoid theo canopy size
+        const rx = canopySize.x * 0.35;
+        const ry = canopySize.y * 0.3;
+        const rz = canopySize.z * 0.35;
+        // Random shrink 0.6-1.0 cho cluster bushy
+        const shrink = 0.6 + ((leaf.nodeId * 13) % 41) / 100;
+        const lx = canopyCenter.x + rx * shrink * Math.sin(phi) * Math.cos(theta);
+        const ly = canopyCenter.y + ry * shrink * Math.cos(phi);
+        const lz = canopyCenter.z + rz * shrink * Math.sin(phi) * Math.sin(theta);
+        computedLeaves.push({ ...leaf, _basePos: [lx, ly, lz], _parentBranch: branch });
+        return;
+      }
       const n = branchLeaves.length;
       // 70% leaves clusters tai ngon, 30% rai doc canh
       const clusterAtTip = idx >= Math.floor(n * 0.3);
@@ -257,10 +318,12 @@ function computeTreeGeometry(nodes) {
 // --------------------------------------------------------------------------
 // Main scene
 // --------------------------------------------------------------------------
-function TreeScene({ nodes, selectedNodeId, onNodeClick }) {
+function TreeScene({ nodes, selectedNodeId, onNodeClick, useGLTFModel }) {
+  const [modelMeta, setModelMeta] = useState(null);
+
   const { computedBranches, computedLeaves } = useMemo(
-    () => computeTreeGeometry(nodes || []),
-    [nodes]
+    () => computeTreeGeometry(nodes || [], modelMeta),
+    [nodes, modelMeta]
   );
 
   return (
@@ -281,16 +344,23 @@ function TreeScene({ nodes, selectedNodeId, onNodeClick }) {
         <meshStandardMaterial color="#e7e5e4" roughness={0.95} />
       </mesh>
 
-      <Trunk />
-
-      {computedBranches.map((branch) => (
-        <Branch
-          key={`b-${branch.nodeId}`}
-          branch={branch}
-          onSelect={onNodeClick}
-          isSelected={selectedNodeId === branch.nodeId}
-        />
-      ))}
+      {useGLTFModel ? (
+        <Suspense fallback={<ProceduralTrunk />}>
+          <GLTFTreeModel onLoaded={setModelMeta} />
+        </Suspense>
+      ) : (
+        <>
+          <ProceduralTrunk />
+          {computedBranches.map((branch) => (
+            <Branch
+              key={`b-${branch.nodeId}`}
+              branch={branch}
+              onSelect={onNodeClick}
+              isSelected={selectedNodeId === branch.nodeId}
+            />
+          ))}
+        </>
+      )}
 
       {computedLeaves.map((leaf) => (
         <Leaf
@@ -306,7 +376,7 @@ function TreeScene({ nodes, selectedNodeId, onNodeClick }) {
         dampingFactor={0.1}
         minDistance={5}
         maxDistance={50}
-        target={[0, TRUNK_HEIGHT / 2, 0]}
+        target={[0, modelMeta ? modelMeta.center.y : TRUNK_HEIGHT / 2, 0]}
       />
     </>
   );
@@ -317,6 +387,10 @@ function TreeScene({ nodes, selectedNodeId, onNodeClick }) {
 // --------------------------------------------------------------------------
 export default function TreeViewer3D({ nodes, onNodeClick }) {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
+  // GLTF model thu nhe — neu .glb 404, scene fall back to procedural automatically.
+  // User toggle qua URL query ?model=procedural to force procedural mode.
+  const useGLTFModel = typeof window !== 'undefined'
+    && !window.location.search.includes('model=procedural');
 
   if (!nodes || nodes.length === 0) {
     return (
@@ -342,6 +416,7 @@ export default function TreeViewer3D({ nodes, onNodeClick }) {
           nodes={nodes}
           selectedNodeId={selectedNodeId}
           onNodeClick={handleClick}
+          useGLTFModel={useGLTFModel}
         />
       </Canvas>
 
