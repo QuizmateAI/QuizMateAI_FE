@@ -39,8 +39,8 @@ const BRANCH_BASE_LENGTH = 2.5;
 const BRANCH_LEAF_LENGTH = 0.18;   // moi leaf dai them (giam de canh ko qua dai)
 const BRANCH_THICKNESS = 0.13;
 const BRANCH_BEND = 0.4;            // do uon cong cua nhanh (organic look)
-const LEAF_RADIUS = 0.16;
-const LEAF_CLUSTER_RADIUS = 0.9;    // ban kinh cum la o ngon canh
+const LEAF_RADIUS = 0.08;            // nho hon de mix tu nhien voi foliage model
+const LEAF_CLUSTER_RADIUS = 0.9;    // ban kinh cum la o ngon canh (procedural mode)
 const LEAF_DISABLED_OPACITY = 0.25;
 
 // --------------------------------------------------------------------------
@@ -72,22 +72,52 @@ function ProceduralTrunk() {
 
 // --------------------------------------------------------------------------
 // GLTF tree model (loaded from public/models/birch_tree.glb)
-// User must export .blend -> .glb via Blender hoac online converter.
+// Sample candidate positions tu mesh vertices de gan leaves doc canh.
 // --------------------------------------------------------------------------
 function GLTFTreeModel({ onLoaded }) {
   const gltf = useGLTF(TREE_MODEL_PATH);
   const ref = useRef();
 
-  // Once-mounted: report bounding box len parent de leaves position trong canopy
   useMemo(() => {
-    if (gltf?.scene && onLoaded) {
-      const box = new THREE.Box3().setFromObject(gltf.scene);
-      const size = new THREE.Vector3();
-      const center = new THREE.Vector3();
-      box.getSize(size);
-      box.getCenter(center);
-      onLoaded({ size, center, scene: gltf.scene });
-    }
+    if (!gltf?.scene || !onLoaded) return;
+
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    // Sample candidate positions tu TAT CA mesh vertices trong scene.
+    // Filter: chi giu vertices o upper 70% (skip trunk base + ground area).
+    // Stride: skip de tranh 100k+ candidates.
+    const candidates = [];
+    const minY = box.min.y + size.y * 0.3;  // skip trunk base
+    const tempVec = new THREE.Vector3();
+
+    gltf.scene.updateMatrixWorld(true);
+    gltf.scene.traverse((child) => {
+      if (!child.isMesh) return;
+      const geom = child.geometry;
+      const posAttr = geom?.attributes?.position;
+      if (!posAttr) return;
+
+      // Sample ~1500 candidate points tu mesh nay
+      const stride = Math.max(1, Math.floor(posAttr.count / 1500));
+      for (let i = 0; i < posAttr.count; i += stride) {
+        tempVec.fromBufferAttribute(posAttr, i);
+        const worldPos = tempVec.clone().applyMatrix4(child.matrixWorld);
+        if (worldPos.y < minY) continue;  // chi giu canopy
+        candidates.push(worldPos);
+      }
+    });
+
+    // Shuffle deterministically de leaves spread out (khong tao thanh chum cuc bo)
+    candidates.sort((a, b) =>
+      (a.x * 7.31 + a.y * 11.7 + a.z * 13.9) -
+      (b.x * 7.31 + b.y * 11.7 + b.z * 13.9)
+    );
+
+    onLoaded({ size, center, candidates, scene: gltf.scene });
   }, [gltf, onLoaded]);
 
   if (!gltf?.scene) return null;
@@ -238,14 +268,22 @@ function computeTreeGeometry(nodes, modelMeta) {
     };
   });
 
-  // Khi co GLTF model, leaves position trong canopy bounding box cua model
-  // (upper 60% theo height). Khong follow procedural branches nua.
-  const useModelCanopy = !!modelMeta;
-  const canopyCenter = useModelCanopy ? modelMeta.center.clone() : null;
-  const canopySize = useModelCanopy ? modelMeta.size.clone() : null;
-  if (useModelCanopy) {
-    // Canopy: upper half cua model
-    canopyCenter.y = modelMeta.center.y + canopySize.y * 0.15;
+  // Khi co GLTF model + candidates: leaves snap vao vertex thuc tren mesh cay.
+  const useModelCandidates = !!modelMeta?.candidates?.length;
+  if (useModelCandidates) {
+    // Distribute leaves DEU tren cac candidate positions cua mesh.
+    // Stride lon hon de leaves khong cum 1 cho, spread khap canopy.
+    const candidates = modelMeta.candidates;
+    const computedLeavesFromModel = leaves.map((leaf, idx) => {
+      const cIdx = (idx * 7 + leaf.nodeId * 3) % candidates.length;
+      const pos = candidates[cIdx];
+      return {
+        ...leaf,
+        _basePos: [pos.x, pos.y, pos.z],
+        _parentBranch: null,
+      };
+    });
+    return { computedBranches: [], computedLeaves: computedLeavesFromModel };
   }
 
   // Compute leaf positions: cluster bong tron quanh ngon canh (Fibonacci sphere)
@@ -257,25 +295,6 @@ function computeTreeGeometry(nodes, modelMeta) {
     const branchDir = new THREE.Vector3().subVectors(endVec, startVec).normalize();
 
     branchLeaves.forEach((leaf, idx) => {
-      // GLTF mode: leaves rai trong canopy ellipsoid cua model loaded
-      if (useModelCanopy) {
-        const totalLeaves = leaves.length;
-        const globalIdx = computedLeaves.length;
-        // Fibonacci sphere global cho all leaves de phan bo deu trong canopy
-        const phi = Math.acos(1 - 2 * (globalIdx + 0.5) / totalLeaves);
-        const theta = Math.PI * (1 + Math.sqrt(5)) * globalIdx;
-        // Scale ellipsoid theo canopy size
-        const rx = canopySize.x * 0.35;
-        const ry = canopySize.y * 0.3;
-        const rz = canopySize.z * 0.35;
-        // Random shrink 0.6-1.0 cho cluster bushy
-        const shrink = 0.6 + ((leaf.nodeId * 13) % 41) / 100;
-        const lx = canopyCenter.x + rx * shrink * Math.sin(phi) * Math.cos(theta);
-        const ly = canopyCenter.y + ry * shrink * Math.cos(phi);
-        const lz = canopyCenter.z + rz * shrink * Math.sin(phi) * Math.sin(theta);
-        computedLeaves.push({ ...leaf, _basePos: [lx, ly, lz], _parentBranch: branch });
-        return;
-      }
       const n = branchLeaves.length;
       // 70% leaves clusters tai ngon, 30% rai doc canh
       const clusterAtTip = idx >= Math.floor(n * 0.3);
