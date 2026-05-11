@@ -37,6 +37,7 @@ const WorkspacePage = lazy(loadWorkspacePage);
 const GroupWorkspacePage = lazy(loadGroupWorkspacePage);
 const GroupManagementPage = lazy(() => import('./pages/Users/Group/group-leader/GroupManagementPage'));
 const AcceptInvitationPage = lazy(() => import('./pages/Users/Group/AcceptInvitationPage'));
+const KnowledgeTreePage = lazy(() => import('./pages/Users/Knowledge/KnowledgeTreePage'));
 
 // Admin
 const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
@@ -168,6 +169,7 @@ function MainRoutes() {
                 <Route path="/quizzes/exams/:quizId" element={<ExamQuizPage />} />
                 <Route path="/quizzes/mock-tests/:quizId/exam" element={<MockTestExamPage />} />
                 <Route path="/quizzes/results/:attemptId" element={<QuizResultPage />} />
+                <Route path="/knowledge-trees/material/:materialId" element={<KnowledgeTreePage />} />
             </Route>
 
             {/* Route dành riêng cho Super Admin */}
