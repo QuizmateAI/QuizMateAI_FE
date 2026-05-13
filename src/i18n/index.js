@@ -114,6 +114,26 @@ function getSavedLanguage() {
   return normalizeLanguage(window.localStorage.getItem('app_language'));
 }
 
+/**
+ * Cho phép share link đa ngôn ngữ qua `?lang=` (ví dụ `/policies?lang=ja`).
+ * Trả về null nếu không có query hoặc value không hợp lệ — caller fallback
+ * sang localStorage / default.
+ */
+function getLanguageFromUrl() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get('lang');
+    if (!lang) return null;
+    const normalized = String(lang).trim().toLowerCase();
+    return localeNamespaceLoaders[`./locales/${normalized}/common.json`]
+      ? normalized
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function syncDocumentLanguage(language) {
   if (typeof document === 'undefined') return;
   document.documentElement.lang = normalizeLanguage(language);
@@ -245,7 +265,15 @@ export function hasRouteNamespacesLoaded(pathname, language = i18n.language ?? g
   return areNamespacesLoaded(language, getRouteNamespaces(pathname || getCurrentPathname()));
 }
 
-const initialLanguage = getSavedLanguage();
+const urlLanguage = getLanguageFromUrl();
+const initialLanguage = urlLanguage ?? getSavedLanguage();
+
+// Nếu user vào qua share link `?lang=`, persist luôn để các navigation
+// sau giữ nguyên ngôn ngữ (không bị localStorage cũ ghi đè khi reload).
+if (urlLanguage && typeof window !== 'undefined') {
+  window.localStorage.setItem('app_language', urlLanguage);
+}
+
 syncDocumentLanguage(initialLanguage);
 
 export const i18nReady = (async () => {
