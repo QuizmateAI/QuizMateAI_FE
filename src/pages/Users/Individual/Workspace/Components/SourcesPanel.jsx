@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 import { cn } from "@/lib/utils";
-import SourceDetailView from "./SourceDetailView";
+import InlineMaterialWorkspace from "@/components/material/InlineMaterialWorkspace";
 import {
   Check,
   FileText,
@@ -379,6 +379,20 @@ function SourcesPanel({
     }
     clearSelection();
   };
+
+  // Inline material view replaces popup: when viewingSource set, render
+  // InlineMaterialWorkspace full-bleed (no padding) — PDF + optional tree panel.
+  if (viewingSource) {
+    return (
+      <section className={cn("h-full overflow-hidden", isDarkMode ? "text-slate-100" : "text-slate-900")}>
+        <InlineMaterialWorkspace
+          source={viewingSource}
+          isDarkMode={isDarkMode}
+          onBack={() => setViewingSource(null)}
+        />
+      </section>
+    );
+  }
 
   return (
     <section
@@ -780,23 +794,9 @@ function SourcesPanel({
         </div>
       )}
 
-      <Dialog
-        open={Boolean(viewingSource)}
-        onOpenChange={(open) => {
-          if (!open) setViewingSource(null);
-        }}
-      >
-        <DialogContent className="flex h-[88vh] min-h-0 max-w-5xl flex-col overflow-hidden p-0">
-          {viewingSource ? (
-            <SourceDetailView
-              isDarkMode={isDarkMode}
-              source={viewingSource}
-              onBack={() => setViewingSource(null)}
-              onSourceUpdated={onSourceUpdated}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      {/* Note: viewingSource handled inline at top of component via InlineMaterialWorkspace.
+          SourceDetailView (modal) is no longer used for the main click — but import retained
+          for potential future use (e.g. non-PDF materials may still want detailed extracted-text view). */}
 
       <Dialog
         open={Boolean(renameDialog)}

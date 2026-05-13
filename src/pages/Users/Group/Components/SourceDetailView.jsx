@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { getExtractedText, getExtractedSummary, getMaterialContent, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
 import { MaterialContentRenderer } from "@/components/features/material/MaterialContentRenderer";
+import KnowledgeTreeButton from "@/components/knowledgeTree/KnowledgeTreeButton";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 const IMAGE_URL_REGEX = /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -427,6 +428,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
         <p className={`text-base font-medium truncate flex-1 ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
           {currentSource.name}
         </p>
+        <KnowledgeTreeButton materialId={currentSource.id} size="xs" />
       </div>
 
       {/* Nội dung chi tiết */}

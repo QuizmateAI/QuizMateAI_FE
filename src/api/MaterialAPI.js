@@ -6,6 +6,10 @@ const MATERIAL_REVIEW_TIMEOUT_MS = 60000;
 // timeout makes the UI think the upload failed even though the server may
 // still finish it, which leads to duplicate re-uploads.
 const MATERIAL_UPLOAD_TIMEOUT_MS = 120000; // 2 phút timeout
+// RAG ask: Python /rag/ask + Gemini có thể mất tới 2 phút khi cold start (reranker model
+// load + Gemini API latency). FE timeout cao hơn BE (120s) để BE timeout trước với error
+// message clear hơn.
+const MATERIAL_ASK_TIMEOUT_MS = 130000;
 
 function buildMultipartConfig(workspaceId, options = {}) {
   const { onUploadProgress, timeout = MATERIAL_UPLOAD_TIMEOUT_MS } = options;
@@ -97,6 +101,34 @@ export const reviewGroupMaterial = async (materialId, isApproved) => {
 // Lấy danh sách tài liệu group đang chờ leader duyệt
 export const getPendingGroupMaterials = async (workspaceId) => {
   const response = await api.get(`/materials/workspace/${workspaceId}/pending-review`);
+  return response;
+};
+
+// Hỏi AI dựa trên material — wraps POST /materials/ask
+// Args: { question, workspaceId (required), materialId?, topK?, maxContextChars?, workspaceProfile? }
+// Response forward từ Python /rag/ask: { question, answer, chunks_used, sources, chunk_contexts }
+export const askMaterial = async ({
+  question,
+  workspaceId,
+  materialId,
+  topK,
+  maxContextChars,
+  workspaceProfile,
+}) => {
+  if (!question || !question.trim()) {
+    throw new Error('Câu hỏi không được để trống');
+  }
+  if (!workspaceId) {
+    throw new Error('workspaceId là bắt buộc');
+  }
+  const body = { question: question.trim(), workspaceId: Number(workspaceId) };
+  if (materialId != null) body.materialId = Number(materialId);
+  if (topK != null) body.topK = topK;
+  if (maxContextChars != null) body.maxContextChars = maxContextChars;
+  if (workspaceProfile) body.workspaceProfile = workspaceProfile;
+  const response = await api.post('/materials/ask', body, {
+    timeout: MATERIAL_ASK_TIMEOUT_MS,
+  });
   return response;
 };
 

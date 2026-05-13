@@ -3,6 +3,7 @@ import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown } from "
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import HomeButton from "@/components/ui/HomeButton";
+import KnowledgeTreeButton from "@/components/knowledgeTree/KnowledgeTreeButton";
 import { getExtractedText, getExtractedSummary, getMaterialContent, getModerationReportDetail, getTaskStatusByTaskId, reviewMaterial } from "@/api/MaterialAPI";
 import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
 import { MaterialContentRenderer } from "@/components/features/material/MaterialContentRenderer";
@@ -582,6 +583,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
         <p className={`text-base font-medium truncate flex-1 ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
           {currentSource.name}
         </p>
+        <KnowledgeTreeButton materialId={currentSource.id} size="xs" />
       </div>
 
       {/* Nội dung chi tiết */}

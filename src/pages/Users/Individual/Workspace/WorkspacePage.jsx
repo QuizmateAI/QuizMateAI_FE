@@ -263,6 +263,8 @@ function WorkspacePage() {
   const skipRoadmapStoredRestoreRef = useRef(false);
   const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
   const [accessHistory, setAccessHistory] = useState([]);
+  // True khi user open inline material view trong SourcesPanel — hide sidebar de lay them man hinh.
+  const [isMaterialDetailViewActive, setIsMaterialDetailViewActive] = useState(false);
 
   // Upload dialog state. Auto-open only when the first fetch returns no materials.
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -2725,6 +2727,7 @@ function WorkspacePage() {
     workspacePurpose: getProfilePurpose(workspaceProfile),
     selectedSourceIds,
     onSelectedSourceIdsChange: setSelectedSourceIds,
+    onMaterialDetailViewChange: setIsMaterialDetailViewActive,
     onToggleMaterialSelection: handleToggleMaterialSelection,
     selectedRoadmapPhaseId,
     selectedRoadmapKnowledgeId,
@@ -2886,27 +2889,31 @@ function WorkspacePage() {
       )}
     >
       <div className="flex h-full min-h-0 overflow-hidden transition-colors duration-200">
-        <PersonalWorkspaceSidebar
-          isDarkMode={isDarkMode}
-          workspaceTitle={personalSidebarTitle}
-          activeView={activeView || "sources"}
-          onNavigate={handleStudioAction}
-          onStudioSubAction={navigatePersonalStudioSubItem}
-          onOpenProfile={handleWorkspaceProfileClick}
-          onToggleLanguage={toggleLanguage}
-          onToggleDarkMode={toggleDarkMode}
-          onEditWorkspace={handleEditWorkspaceFromSidebar}
-          wsConnected={wsConnected}
-          walletRefreshToken={walletRealtimeTick}
-          disabledMap={personalSidebarDisabledMap}
-          lockReasonMap={personalSidebarLockReasonMap}
-          badgeMap={personalSidebarBadgeMap}
-          isMobile={isMobileViewport}
-          mobileOpen={isMobileSidebarOpen}
-          onCloseMobile={handleCloseMobileSidebar}
-          studioQuizSubKey={studioQuizSubKeyForSidebar}
-          studioFlashcardSubKey={studioFlashcardSubKeyForSidebar}
-        />
+        {/* Auto-hide sidebar khi user vao inline material view — chiem them dien tich man hinh.
+            Material detail view tu render header voi back button nen khong can sidebar nav. */}
+        {!isMaterialDetailViewActive && (
+          <PersonalWorkspaceSidebar
+            isDarkMode={isDarkMode}
+            workspaceTitle={personalSidebarTitle}
+            activeView={activeView || "sources"}
+            onNavigate={handleStudioAction}
+            onStudioSubAction={navigatePersonalStudioSubItem}
+            onOpenProfile={handleWorkspaceProfileClick}
+            onToggleLanguage={toggleLanguage}
+            onToggleDarkMode={toggleDarkMode}
+            onEditWorkspace={handleEditWorkspaceFromSidebar}
+            wsConnected={wsConnected}
+            walletRefreshToken={walletRealtimeTick}
+            disabledMap={personalSidebarDisabledMap}
+            lockReasonMap={personalSidebarLockReasonMap}
+            badgeMap={personalSidebarBadgeMap}
+            isMobile={isMobileViewport}
+            mobileOpen={isMobileSidebarOpen}
+            onCloseMobile={handleCloseMobileSidebar}
+            studioQuizSubKey={studioQuizSubKeyForSidebar}
+            studioFlashcardSubKey={studioFlashcardSubKeyForSidebar}
+          />
+        )}
 
         <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-200">
           {isMobileViewport ? (
