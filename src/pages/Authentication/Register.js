@@ -3,12 +3,11 @@ import { checkEmail, checkUsername, register, sendOTP, verifyOTP } from '@/api/A
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { markAuthAvailabilityUnavailable, mayBeAuthAvailabilityUnavailable } from '@/lib/authAvailabilityBloom';
 import { getEmailViolationKey } from '@/utils/emailValidation';
+import { validateNewPassword } from '@/utils/passwordValidation';
 import i18n from '@/i18n';
 
 // Regex theo BE: username phải chứa cả chữ và số, cho phép . _ @ -
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;
-// Regex theo BE: password phải chứa cả chữ và số
-const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 const AVAILABILITY_DEBOUNCE_MS = 250;
 const AVAILABILITY_CACHE_TTL_MS = 60 * 1000;
 
@@ -356,12 +355,9 @@ export const useRegister = (setView, t) => {
     }
 
     // Password validation
-    if (!trimmed.password) {
-      errors.password = t('validation.passwordRequired');
-    } else if (trimmed.password.length < 8) {
-      errors.password = t('validation.passwordLength');
-    } else if (!PASSWORD_REGEX.test(trimmed.password)) {
-      errors.password = t('validation.passwordFormat');
+    const passwordError = validateNewPassword(trimmed.password);
+    if (passwordError) {
+      errors.password = t(passwordError.messageKey, { defaultValue: passwordError.fallback });
     }
 
     // Confirm Password validation

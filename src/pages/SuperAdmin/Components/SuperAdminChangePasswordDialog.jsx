@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { changePassword } from '@/api/ProfileAPI';
 import { useToast } from '@/context/ToastContext';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { validateNewPassword } from '@/utils/passwordValidation';
 
 const EMPTY_FORM = { oldPassword: '', newPassword: '', confirmNewPassword: '' };
 const EMPTY_VISIBILITY = { old: false, new: false, confirm: false };
@@ -85,8 +86,9 @@ export default function SuperAdminChangePasswordDialog({ open, onOpenChange }) {
       showError(t('superAdminLayout.changePassword.fieldsRequired'));
       return;
     }
-    if (newPassword.length < 6) {
-      showError(t('superAdminLayout.changePassword.tooShort'));
+    const passwordError = validateNewPassword(newPassword);
+    if (passwordError) {
+      showError(t(passwordError.messageKey, { defaultValue: passwordError.fallback }));
       return;
     }
     if (newPassword !== confirmNewPassword) {

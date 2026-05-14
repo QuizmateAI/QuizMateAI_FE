@@ -56,6 +56,7 @@ import {
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { PASSWORD_MIN_LENGTH, validateNewPassword } from '@/utils/passwordValidation';
 import {
   filterRemovedLearningConfigPermissionCodes,
   filterRemovedLearningConfigPermissions,
@@ -171,8 +172,17 @@ function AdminManagement() {
       showError(msg);
       return;
     }
-    if (formData.password.length < 6) {
-      const msg = t('adminManagement.form.passwordTooShort');
+    const passwordError = validateNewPassword(formData.password);
+    if (passwordError) {
+      const msg = t(passwordError.messageKey, { defaultValue: passwordError.fallback });
+      setError(msg);
+      showError(msg);
+      return;
+    }
+    // BE: fullName required + max 255. UI cũ ghi "Optional" sai — bắt buộc check.
+    const trimmedFullName = (formData.fullName || '').trim();
+    if (!trimmedFullName) {
+      const msg = t('adminManagement.form.fullNameRequired', { defaultValue: 'Họ tên là bắt buộc' });
       setError(msg);
       showError(msg);
       return;
@@ -183,7 +193,7 @@ function AdminManagement() {
       email: formData.email,
       password: formData.password,
       confirmPassword: formData.confirmPassword,
-      fullName: formData.fullName || undefined,
+      fullName: trimmedFullName,
     });
   };
 
@@ -573,11 +583,11 @@ function AdminManagement() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateAdmin} className="space-y-4">
-            <div><Label>{t('adminManagement.form.username')} *</Label><Input required minLength={3} value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder={t('adminManagement.form.usernamePlaceholder', 'admin_username')} className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.username')} *</Label><Input required minLength={3} maxLength={50} value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder={t('adminManagement.form.usernamePlaceholder', 'admin_username')} className="mt-1" /></div>
             <div><Label>{t('adminManagement.form.email')} *</Label><Input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder={t('adminManagement.form.emailPlaceholder', 'admin@example.com')} className="mt-1" /></div>
-            <div><Label>{t('adminManagement.form.password')} *</Label><Input required type="password" minLength={6} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder={t('adminManagement.form.passwordPlaceholder', 'At least 6 characters')} className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.password')} *</Label><Input required type="password" minLength={PASSWORD_MIN_LENGTH} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder={t('adminManagement.form.passwordPlaceholder', { defaultValue: `Ít nhất ${PASSWORD_MIN_LENGTH} ký tự, chứa cả chữ và số` })} className="mt-1" /></div>
             <div><Label>{t('adminManagement.form.confirmPassword')} *</Label><Input required type="password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} placeholder={t('adminManagement.form.confirmPasswordPlaceholder', 'Re-enter password')} className="mt-1" /></div>
-            <div><Label>{t('adminManagement.form.fullNameOptional', 'Full Name (Optional)')}</Label><Input value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder={t('adminManagement.form.fullNamePlaceholder', 'Admin Name')} className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.fullName', 'Full Name')} *</Label><Input required maxLength={255} value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder={t('adminManagement.form.fullNamePlaceholder', 'Admin Name')} className="mt-1" /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t('auth.cancel')}</Button>
               <Button type="submit" disabled={isSubmitting}>{isSubmitting ? t('adminManagement.form.creating', 'Creating...') : t('adminManagement.form.submit')}</Button>

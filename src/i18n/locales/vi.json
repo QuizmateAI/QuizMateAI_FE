@@ -3921,6 +3921,7 @@
   },
   "error": {
     "unknown": "Có lỗi xảy ra. Vui lòng thử lại.",
+    "rateLimited": "Quá nhiều yêu cầu, vui lòng thử lại sau ít phút.",
     "internalServer": "Hệ thống đang bận hoặc gặp sự cố. Vui lòng thử lại sau.",
     "userNotExisted": "Người dùng không tồn tại.",
     "wrongPass": "Mật khẩu không đúng.",

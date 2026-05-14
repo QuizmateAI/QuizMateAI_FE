@@ -113,6 +113,7 @@
   "error": {
     "unknown": "An error occurred. Please try again.",
     "requestTimeout": "The request is taking longer than expected. Please wait a moment and try again.",
+    "rateLimited": "Too many requests. Please try again in a few minutes.",
     "missingAuthToken": "Authentication token is missing",
     "missingFeedbackLogEndpoint": "Feedback log endpoint not found",
     "internalServer": "The system is busy or unavailable. Please try again later.",

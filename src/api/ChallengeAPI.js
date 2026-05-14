@@ -40,8 +40,15 @@ export const finishChallenge = async (workspaceId, eventId) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/finish`);
 };
 
+// BE ChallengeInviteRequest: userIds max 100. Slice defensive ở API level —
+// caller hiện tại không vượt biên, nhưng tránh 400 cho future caller.
+export const CHALLENGE_INVITE_USER_IDS_MAX = 100;
+
 export const inviteToChallenge = async (workspaceId, eventId, userIds) => {
-  return await api.post(`/group/${workspaceId}/challenges/${eventId}/invite`, { userIds });
+  const safeUserIds = Array.isArray(userIds)
+    ? userIds.slice(0, CHALLENGE_INVITE_USER_IDS_MAX)
+    : [];
+  return await api.post(`/group/${workspaceId}/challenges/${eventId}/invite`, { userIds: safeUserIds });
 };
 
 export const registerForChallenge = async (workspaceId, eventId) => {
@@ -81,14 +88,23 @@ export const addQuizReviewContributor = async (workspaceId, quizId, body) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}`, body);
 };
 
+// BE BatchInviteQuizReviewersRequest: invitations max 2 items.
+export const BATCH_REVIEWER_INVITATIONS_MAX = 2;
+
 /**
  * Gửi đồng loạt lời mời reviewer (tối đa 2 người) → BE gửi email song song.
  * body = { invitations: [{ userId }, ...] }
+ *
+ * UI ở ChallengeDetailView guard `activeContributorCount >=
+ * MAX_SNAPSHOT_REVIEW_INVITES` rồi, slice ở đây chỉ là defensive layer.
  */
 export const batchInviteQuizReviewers = async (workspaceId, quizId, invitations) => {
+  const safeInvitations = Array.isArray(invitations)
+    ? invitations.slice(0, BATCH_REVIEWER_INVITATIONS_MAX)
+    : [];
   return await api.post(
     `/group/${workspaceId}/quiz-review-contributors/${quizId}/invite-batch`,
-    { invitations },
+    { invitations: safeInvitations },
   );
 };
 

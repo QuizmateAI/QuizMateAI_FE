@@ -418,12 +418,32 @@ export function isFeedbackAnswerFilled(question, answerValue) {
   return typeof answerValue === 'string' && answerValue.trim().length > 0;
 }
 
+// BE bound (FeedbackSubmitRequest): comment ≤ 2000, answers ≤ 50,
+// answerText ≤ 4000, selectedOptions ≤ 50, mỗi option ≤ 256 ký tự.
+// Form questions là dynamic từ BE — UI không gắn maxLength theo bound. Truncate
+// defensive ở payload builder để tránh 400 do paste/copy overflow.
+export const FEEDBACK_COMMENT_MAX_LENGTH = 2000;
+export const FEEDBACK_ANSWERS_MAX_COUNT = 50;
+export const FEEDBACK_ANSWER_TEXT_MAX_LENGTH = 4000;
+export const FEEDBACK_SELECTED_OPTIONS_MAX_COUNT = 50;
+export const FEEDBACK_SELECTED_OPTION_MAX_LENGTH = 256;
+
+function truncateString(value, maxLength) {
+  const str = typeof value === 'string' ? value : String(value ?? '');
+  return str.length > maxLength ? str.slice(0, maxLength) : str;
+}
+
 export function buildFeedbackSubmissionPayload(questions, answersByQuestionId) {
   let overallRating = null;
   let satisfied = null;
   let comment = null;
 
   const answers = questions.reduce((result, question) => {
+    if (result.length >= FEEDBACK_ANSWERS_MAX_COUNT) {
+      // Form vượt 50 câu — drop câu thừa thay vì để BE reject 400.
+      return result;
+    }
+
     const rawAnswer = answersByQuestionId?.[question.questionId];
     if (!isFeedbackAnswerFilled(question, rawAnswer)) {
       return result;
@@ -444,15 +464,17 @@ export function buildFeedbackSubmissionPayload(questions, answersByQuestionId) {
         satisfied = Boolean(rawAnswer);
       }
     } else if (questionType === 'SINGLE_CHOICE') {
-      payload.selectedOption = String(rawAnswer).trim();
+      payload.selectedOption = truncateString(String(rawAnswer).trim(), FEEDBACK_SELECTED_OPTION_MAX_LENGTH);
     } else if (questionType === 'MULTIPLE_CHOICE') {
       payload.selectedOptions = (Array.isArray(rawAnswer) ? rawAnswer : [])
         .filter((value) => typeof value === 'string' && value.trim().length > 0)
-        .map((value) => value.trim());
+        .slice(0, FEEDBACK_SELECTED_OPTIONS_MAX_COUNT)
+        .map((value) => truncateString(value.trim(), FEEDBACK_SELECTED_OPTION_MAX_LENGTH));
     } else {
-      payload.answerText = String(rawAnswer).trim();
+      payload.answerText = truncateString(String(rawAnswer).trim(), FEEDBACK_ANSWER_TEXT_MAX_LENGTH);
       if (!comment) {
-        comment = payload.answerText;
+        // Top-level comment field — BE limit 2000 (chặt hơn answerText 4000).
+        comment = truncateString(payload.answerText, FEEDBACK_COMMENT_MAX_LENGTH);
       }
     }
 
