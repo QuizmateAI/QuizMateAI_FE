@@ -30,6 +30,8 @@ import {
 import ProfileTopbar from "./Components/ProfileTopbar";
 import { getAvatarLetter } from "./Components/profileHelpers";
 import { cycleAppLanguage, getBaseAppLanguage } from "@/utils/appSupportedLanguages";
+import { validateAvatarFile } from "@/utils/uploadValidation";
+import { validateNewPassword } from "@/utils/passwordValidation";
 
 const DEFAULT_PROFILE = {
   email: "",
@@ -210,15 +212,13 @@ function ProfilePage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      showMessage("error", t("profile.invalidFileType"));
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      showMessage("error", t("profile.fileTooLarge"));
-      event.target.value = "";
+    // BE chỉ chấp nhận JPEG/PNG/WebP/GIF (no SVG) + max 5MB và sniff bytes
+    // bằng Tika, nên FE check trước để báo lỗi inline cho UX tốt.
+    const result = validateAvatarFile(file);
+    if (!result.ok) {
+      const key = result.code === 'TOO_LARGE' ? 'profile.fileTooLarge' : 'profile.invalidFileType';
+      showMessage('error', t(key, { defaultValue: result.message }));
+      event.target.value = '';
       return;
     }
 
@@ -282,8 +282,9 @@ function ProfilePage() {
       showMessage("error", t("profile.passwordMismatch"));
       return;
     }
-    if (newPassword.length < 6) {
-      showMessage("error", t("profile.passwordTooShort"));
+    const passwordError = validateNewPassword(newPassword);
+    if (passwordError) {
+      showMessage("error", t(passwordError.messageKey, { defaultValue: passwordError.fallback }));
       return;
     }
 

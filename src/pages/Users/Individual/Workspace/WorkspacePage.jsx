@@ -55,7 +55,10 @@ import { getQuizCollectionsByWorkspace } from "@/api/QuizCollectionAPI";
 import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { cycleAppLanguage, getBaseAppLanguage } from "@/utils/appSupportedLanguages";
+import {
+  cycleAppLanguage,
+  getBaseAppLanguage,
+} from "@/utils/appSupportedLanguages";
 import {
   WORKSPACE_ROUTE_SEGMENTS,
   buildWorkspacePath,
@@ -80,24 +83,19 @@ const LazyUploadSourceDialog = React.lazy(
 );
 const LazyRoadmapPhaseGenerateDialog = React.lazy(
   () =>
-    import(
-      "@/pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog"
-    ),
+    import("@/pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog"),
 );
 const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(
   () =>
-    import(
-      "@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"
-    ),
+    import("@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"),
 );
 const LazyIndividualWorkspaceProfileOverviewDialog = React.lazy(
   () =>
-    import(
-      "@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog"
-    ),
+    import("@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog"),
 );
 const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(
-  () => import("@/components/features/workspace/WorkspaceOnboardingUpdateGuardDialog"),
+  () =>
+    import("@/components/features/workspace/WorkspaceOnboardingUpdateGuardDialog"),
 );
 const LazyRoadmapConfigEditDialog = React.lazy(
   () => import("@/components/features/workspace/RoadmapConfigEditDialog"),
@@ -147,7 +145,9 @@ function hasSavedBasicProfileStep(profileData) {
   }
 
   const explicitStep = Number(profileData?.currentStep);
-  const setupStatus = String(profileData?.workspaceSetupStatus || "").toUpperCase();
+  const setupStatus = String(
+    profileData?.workspaceSetupStatus || "",
+  ).toUpperCase();
   const profileStatus = String(profileData?.profileStatus || "").toUpperCase();
 
   if (explicitStep >= 2) return true;
@@ -156,16 +156,16 @@ function hasSavedBasicProfileStep(profileData) {
 
   return Boolean(
     getProfilePurpose(profileData) &&
-      hasTextValue(
-        profileData?.knowledgeInput ??
-          profileData?.knowledge ??
-          profileData?.customKnowledge,
-      ) &&
-      hasTextValue(
-        profileData?.inferredDomain ??
-          profileData?.domain ??
-          profileData?.customDomain,
-      ),
+    hasTextValue(
+      profileData?.knowledgeInput ??
+        profileData?.knowledge ??
+        profileData?.customKnowledge,
+    ) &&
+    hasTextValue(
+      profileData?.inferredDomain ??
+        profileData?.domain ??
+        profileData?.customDomain,
+    ),
   );
 }
 
@@ -199,7 +199,11 @@ function WorkspaceDialogSkeleton() {
 }
 
 function DeferredWorkspaceDialog({ children }) {
-  return <React.Suspense fallback={<WorkspaceDialogSkeleton />}>{children}</React.Suspense>;
+  return (
+    <React.Suspense fallback={<WorkspaceDialogSkeleton />}>
+      {children}
+    </React.Suspense>
+  );
 }
 
 function WorkspacePage() {
@@ -227,12 +231,13 @@ function WorkspacePage() {
   // Mở dialog ngay khi user đến từ HomePage với ý định tạo mới / chỉnh profile →
   // không chờ Promise.all fetch workspace/sources/profile (2-4s) rồi mới setState.
   // Useful effect phía dưới vẫn có thể đóng lại nếu profile thật sự đã configured.
-  const [profileConfigOpen, setProfileConfigOpen] = useState(
-    () => Boolean(location.state?.openProfileConfig || location.state?.continueProfileSetup),
+  const [profileConfigOpen, setProfileConfigOpen] = useState(() =>
+    Boolean(
+      location.state?.openProfileConfig || location.state?.continueProfileSetup,
+    ),
   );
-  const [profileConfigInitialLoading, setProfileConfigInitialLoading] = useState(
-    () => Boolean(location.state?.continueProfileSetup),
-  );
+  const [profileConfigInitialLoading, setProfileConfigInitialLoading] =
+    useState(() => Boolean(location.state?.continueProfileSetup));
   const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
   const [isProfileUpdateMode, setIsProfileUpdateMode] = useState(false);
@@ -262,8 +267,17 @@ function WorkspacePage() {
   const lastLoadedSourcesWorkspaceIdRef = useRef(null);
   const skipRoadmapStoredRestoreRef = useRef(false);
   const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
-  const [accessHistory, setAccessHistory] = useState([]);
+  const [selectedSourceId, setSelectedSourceId] = useState(() => {
+    if (!workspaceId) return null;
 
+    const prefix = buildWorkspacePath(workspaceId);
+    if (!location.pathname.startsWith(prefix)) return null;
+
+    const subPath = location.pathname.slice(prefix.length).replace(/^\/+/, "");
+    const { sourceId } = resolveWorkspaceViewFromSubPath(subPath);
+    return Number.isInteger(sourceId) && sourceId > 0 ? sourceId : null;
+  });
+  const [accessHistory, setAccessHistory] = useState([]);
   // Upload dialog state. Auto-open only when the first fetch returns no materials.
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -289,9 +303,13 @@ function WorkspacePage() {
   });
 
   /** Tab khởi tạo màn tạo quiz khi mở từ sidebar (AI / thủ công / JSON). */
-  const [workspaceSidebarQuizCreateMode, setWorkspaceSidebarQuizCreateMode] = useState(null);
+  const [workspaceSidebarQuizCreateMode, setWorkspaceSidebarQuizCreateMode] =
+    useState(null);
   /** Lọc danh sách flashcard theo mục con sidebar: ai | manual | paste */
-  const [workspaceSidebarFlashcardSubFilter, setWorkspaceSidebarFlashcardSubFilter] = useState(null);
+  const [
+    workspaceSidebarFlashcardSubFilter,
+    setWorkspaceSidebarFlashcardSubFilter,
+  ] = useState(null);
 
   // Selected quiz state for detail and edit flows
   const [selectedQuiz, setSelectedQuiz] = useState(null);
@@ -300,7 +318,9 @@ function WorkspacePage() {
     if (!workspaceId) return null;
     const prefix = buildWorkspacePath(workspaceId);
     if (location.pathname.startsWith(prefix)) {
-      const subPath = location.pathname.slice(prefix.length).replace(/^\/+/, "");
+      const subPath = location.pathname
+        .slice(prefix.length)
+        .replace(/^\/+/, "");
       const { collectionId } = resolveWorkspaceViewFromSubPath(subPath);
       if (collectionId) return { collectionId };
     }
@@ -313,7 +333,9 @@ function WorkspacePage() {
     if (!workspaceId) return null;
     const prefix = buildWorkspacePath(workspaceId);
     if (location.pathname.startsWith(prefix)) {
-      const subPath = location.pathname.slice(prefix.length).replace(/^\/+/, "");
+      const subPath = location.pathname
+        .slice(prefix.length)
+        .replace(/^\/+/, "");
       const { mockTestId } = resolveWorkspaceViewFromSubPath(subPath);
       if (mockTestId) return { quizId: mockTestId };
     }
@@ -356,7 +378,8 @@ function WorkspacePage() {
   );
 
   const readStoredRoadmapSelection = useCallback(() => {
-    if (!roadmapSelectionStorageKey || typeof window === "undefined") return null;
+    if (!roadmapSelectionStorageKey || typeof window === "undefined")
+      return null;
 
     try {
       const rawValue = window.localStorage.getItem(roadmapSelectionStorageKey);
@@ -397,10 +420,14 @@ function WorkspacePage() {
     if (storedSelection?.roadmapId) {
       setRoadmapAiRoadmapId((current) => current || storedSelection.roadmapId);
     }
-    if (Number.isInteger(storedSelection?.phaseId) && storedSelection.phaseId > 0) {
+    if (
+      Number.isInteger(storedSelection?.phaseId) &&
+      storedSelection.phaseId > 0
+    ) {
       setSelectedRoadmapPhaseId(storedSelection.phaseId);
       setSelectedRoadmapKnowledgeId(
-        Number.isInteger(storedSelection?.knowledgeId) && storedSelection.knowledgeId > 0
+        Number.isInteger(storedSelection?.knowledgeId) &&
+          storedSelection.knowledgeId > 0
           ? storedSelection.knowledgeId
           : null,
       );
@@ -416,8 +443,10 @@ function WorkspacePage() {
     const normalizedRoadmapId = Number(roadmapAiRoadmapId);
     const normalizedPhaseId = Number(selectedRoadmapPhaseId);
     const normalizedKnowledgeId = Number(selectedRoadmapKnowledgeId);
-    const hasSelectedPhase = Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0;
-    const hasSelectedKnowledge = Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0;
+    const hasSelectedPhase =
+      Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0;
+    const hasSelectedKnowledge =
+      Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0;
 
     if (!hasSelectedPhase && !hasSelectedKnowledge) {
       return;
@@ -431,14 +460,8 @@ function WorkspacePage() {
             Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
               ? normalizedRoadmapId
               : null,
-          phaseId:
-            hasSelectedPhase
-              ? normalizedPhaseId
-              : null,
-          knowledgeId:
-            hasSelectedKnowledge
-              ? normalizedKnowledgeId
-              : null,
+          phaseId: hasSelectedPhase ? normalizedPhaseId : null,
+          knowledgeId: hasSelectedKnowledge ? normalizedKnowledgeId : null,
         }),
       );
     } catch {
@@ -500,11 +523,12 @@ function WorkspacePage() {
 
     const syncExistingWorkspaceContent = async () => {
       try {
-        const [quizResponse, flashcardResponse, collectionResponse] = await Promise.all([
-          getQuizzesByScope("WORKSPACE", Number(workspaceId)),
-          getFlashcardsByScope("WORKSPACE", Number(workspaceId)),
-          getQuizCollectionsByWorkspace(Number(workspaceId)),
-        ]);
+        const [quizResponse, flashcardResponse, collectionResponse] =
+          await Promise.all([
+            getQuizzesByScope("WORKSPACE", Number(workspaceId)),
+            getFlashcardsByScope("WORKSPACE", Number(workspaceId)),
+            getQuizCollectionsByWorkspace(Number(workspaceId)),
+          ]);
 
         if (cancelled) return;
 
@@ -541,7 +565,8 @@ function WorkspacePage() {
         }).length;
 
         const mockTestCount = allQuizzes.filter(
-          (quiz) => String(quiz?.quizIntent || "").toUpperCase() === "MOCK_TEST",
+          (quiz) =>
+            String(quiz?.quizIntent || "").toUpperCase() === "MOCK_TEST",
         ).length;
 
         setHasExistingWorkspaceQuiz(workspaceQuizzes.length > 0);
@@ -626,13 +651,14 @@ function WorkspacePage() {
   // 3) roadmap structure không bị missing
   const passRoadmapCondition1 = resolvedRoadmapEnabled;
   const passRoadmapCondition3 = !isRoadmapStructureMissing;
-  const shouldDisableRoadmapForStudio = canCreateRoadmap === false
-    ? true
-    : hasRoadmapPhases
-    ? false
-    : !hasAtLeastOneActiveSource ||
-      !passRoadmapCondition1 ||
-      !passRoadmapCondition3;
+  const shouldDisableRoadmapForStudio =
+    canCreateRoadmap === false
+      ? true
+      : hasRoadmapPhases
+        ? false
+        : !hasAtLeastOneActiveSource ||
+          !passRoadmapCondition1 ||
+          !passRoadmapCondition3;
 
   const isStudyNewRoadmap =
     canCreateRoadmap !== false &&
@@ -700,6 +726,7 @@ function WorkspacePage() {
       quizId,
       collectionId,
       mockTestId,
+      sourceId,
       backTarget,
       phaseId: mappedPhaseId,
       knowledgeId: mappedKnowledgeId,
@@ -765,17 +792,19 @@ function WorkspacePage() {
           ? mappedPhaseId
           : shouldKeepCenterSelection
             ? null
-            : Number.isInteger(storedSelection?.phaseId) && storedSelection.phaseId > 0
-            ? storedSelection.phaseId
-            : null;
+            : Number.isInteger(storedSelection?.phaseId) &&
+                storedSelection.phaseId > 0
+              ? storedSelection.phaseId
+              : null;
       const resolvedKnowledgeId =
         Number.isInteger(mappedKnowledgeId) && mappedKnowledgeId > 0
           ? mappedKnowledgeId
           : shouldKeepCenterSelection
             ? null
-            : Number.isInteger(storedSelection?.knowledgeId) && storedSelection.knowledgeId > 0
-            ? storedSelection.knowledgeId
-            : null;
+            : Number.isInteger(storedSelection?.knowledgeId) &&
+                storedSelection.knowledgeId > 0
+              ? storedSelection.knowledgeId
+              : null;
 
       if (Number.isInteger(mappedPhaseId) && mappedPhaseId > 0) {
         setSelectedRoadmapPhaseId(mappedPhaseId);
@@ -785,16 +814,17 @@ function WorkspacePage() {
 
       setSelectedRoadmapKnowledgeId(
         Number.isInteger(resolvedPhaseId) && resolvedPhaseId > 0
-          ? (Number.isInteger(resolvedKnowledgeId) && resolvedKnowledgeId > 0
+          ? Number.isInteger(resolvedKnowledgeId) && resolvedKnowledgeId > 0
             ? resolvedKnowledgeId
-            : null)
+            : null
           : null,
       );
 
       const resolvedRoadmapId =
         Number.isInteger(mappedRoadmapId) && mappedRoadmapId > 0
           ? mappedRoadmapId
-          : Number.isInteger(storedSelection?.roadmapId) && storedSelection.roadmapId > 0
+          : Number.isInteger(storedSelection?.roadmapId) &&
+              storedSelection.roadmapId > 0
             ? storedSelection.roadmapId
             : null;
       if (Number.isInteger(resolvedRoadmapId) && resolvedRoadmapId > 0) {
@@ -824,6 +854,15 @@ function WorkspacePage() {
       });
     }
 
+    if (mappedView === "sources") {
+      const normalizedSourceId = Number(sourceId);
+      setSelectedSourceId(
+        Number.isInteger(normalizedSourceId) && normalizedSourceId > 0
+          ? normalizedSourceId
+          : null,
+      );
+    }
+
     setActiveView((prev) => (prev === mappedView ? prev : mappedView));
   }, [getWorkspaceSubPath, location.search, readStoredRoadmapSelection]);
 
@@ -836,6 +875,7 @@ function WorkspacePage() {
       quizBackTarget,
       selectedMockTest,
       selectedCollection,
+      selectedSourceId,
     );
 
     if (activeView === "roadmap") {
@@ -865,12 +905,23 @@ function WorkspacePage() {
     const currentSubPath = getWorkspaceSubPath();
 
     const isQuizDeepLink =
-      new RegExp(`^${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath) ||
-      new RegExp(`^${workspaceRoadmapsPath}/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath) ||
-      new RegExp(`^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+(?:/${workspaceKnowledgesPath}/\\d+)?/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath);
+      new RegExp(`^${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(
+        currentSubPath,
+      ) ||
+      new RegExp(
+        `^${workspaceRoadmapsPath}/${workspaceQuizzesPath}/\\d+(?:/edit)?$`,
+      ).test(currentSubPath) ||
+      new RegExp(
+        `^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+(?:/${workspaceKnowledgesPath}/\\d+)?/${workspaceQuizzesPath}/\\d+(?:/edit)?$`,
+      ).test(currentSubPath);
 
-    const isMockTestDeepLink = new RegExp(`^${workspaceMockTestsPath}/\\d+$`).test(currentSubPath);
-    const isCollectionDeepLink = new RegExp(`^${workspaceCollectionsPath}/\\d+(?:/advanced-practice)?$`).test(currentSubPath);
+    const isMockTestDeepLink = new RegExp(
+      `^${workspaceMockTestsPath}/\\d+$`,
+    ).test(currentSubPath);
+    const isCollectionDeepLink = new RegExp(
+      `^${workspaceCollectionsPath}/\\d+(?:/advanced-practice)?$`,
+    ).test(currentSubPath);
+    const isSourceDeepLink = new RegExp(`^sources/\\d+$`).test(currentSubPath);
 
     const isQuizDetailView =
       activeView === "quizDetail" || activeView === "editQuiz";
@@ -895,9 +946,15 @@ function WorkspacePage() {
     }
 
     if (isMockTestDeepLink && activeView === "mockTestDetail") {
-      const { mockTestId: routeMockTestId } = resolveWorkspaceViewFromSubPath(currentSubPath);
+      const { mockTestId: routeMockTestId } =
+        resolveWorkspaceViewFromSubPath(currentSubPath);
       const currentMockTestId = Number(selectedMockTest?.quizId);
-      if (Number.isInteger(routeMockTestId) && routeMockTestId > 0 && currentMockTestId !== routeMockTestId) return;
+      if (
+        Number.isInteger(routeMockTestId) &&
+        routeMockTestId > 0 &&
+        currentMockTestId !== routeMockTestId
+      )
+        return;
     }
 
     if (
@@ -905,9 +962,30 @@ function WorkspacePage() {
       (activeView === "quizCollectionDetail" ||
         activeView === "quizCollectionAdvancedPractice")
     ) {
-      const { collectionId: routeCollectionId } = resolveWorkspaceViewFromSubPath(currentSubPath);
+      const { collectionId: routeCollectionId } =
+        resolveWorkspaceViewFromSubPath(currentSubPath);
       const currentCollectionId = Number(selectedCollection?.collectionId);
-      if (Number.isInteger(routeCollectionId) && routeCollectionId > 0 && currentCollectionId !== routeCollectionId) return;
+      if (
+        Number.isInteger(routeCollectionId) &&
+        routeCollectionId > 0 &&
+        currentCollectionId !== routeCollectionId
+      )
+        return;
+    }
+
+    if (isSourceDeepLink && activeView === "sources") {
+      const { sourceId: routeSourceId } =
+        resolveWorkspaceViewFromSubPath(currentSubPath);
+      const currentSelectedSourceId = Number(selectedSourceId);
+      if (
+        Number.isInteger(routeSourceId) &&
+        routeSourceId > 0 &&
+        Number.isInteger(currentSelectedSourceId) &&
+        currentSelectedSourceId > 0 &&
+        currentSelectedSourceId !== routeSourceId
+      ) {
+        return;
+      }
     }
 
     if (currentSubPath === mappedPath) return;
@@ -921,6 +999,7 @@ function WorkspacePage() {
     selectedQuiz,
     selectedMockTest,
     selectedCollection,
+    selectedSourceId,
     selectedRoadmapPhaseId,
     selectedRoadmapKnowledgeId,
     roadmapAiRoadmapId,
@@ -947,15 +1026,18 @@ function WorkspacePage() {
     return applyResolvedWorkspaceProfile(profileData);
   }, [applyResolvedWorkspaceProfile, workspaceId]);
 
-  const confirmWorkspaceProfileData = useCallback(async (options = {}) => {
-    if (!workspaceId) return null;
+  const confirmWorkspaceProfileData = useCallback(
+    async (options = {}) => {
+      if (!workspaceId) return null;
 
-    const confirmedProfile = extractProfileData(
-      await confirmIndividualWorkspaceProfile(workspaceId, options),
-    );
+      const confirmedProfile = extractProfileData(
+        await confirmIndividualWorkspaceProfile(workspaceId, options),
+      );
 
-    return applyResolvedWorkspaceProfile(confirmedProfile);
-  }, [applyResolvedWorkspaceProfile, workspaceId]);
+      return applyResolvedWorkspaceProfile(confirmedProfile);
+    },
+    [applyResolvedWorkspaceProfile, workspaceId],
+  );
 
   const closeProfileDialogs = useCallback(() => {
     setProfileConfigOpen(false);
@@ -987,7 +1069,7 @@ function WorkspacePage() {
       queryClient.setQueriesData({ queryKey: ["workspaces"] }, (old) => {
         if (!old?.workspaces) return old;
         const filtered = old.workspaces.filter(
-          (ws) => Number(ws.workspaceId) !== numericId
+          (ws) => Number(ws.workspaceId) !== numericId,
         );
         if (filtered.length === old.workspaces.length) return old;
         return { ...old, workspaces: filtered };
@@ -1135,10 +1217,7 @@ function WorkspacePage() {
     }
 
     const routeView = getCurrentWorkspaceRouteView();
-    if (
-      routeView &&
-      !["overview", "sources", "roadmap"].includes(routeView)
-    ) {
+    if (routeView && !["overview", "sources", "roadmap"].includes(routeView)) {
       return;
     }
     React.startTransition(() => {
@@ -1316,7 +1395,9 @@ function WorkspacePage() {
     let isMounted = true;
     setProfileConfigInitialLoading(Boolean(continueProfileSetup));
 
-    fetchWorkspaceDetail(workspaceId).catch(logSwallowed('WorkspacePage.initialFetch'));
+    fetchWorkspaceDetail(workspaceId).catch(
+      logSwallowed("WorkspacePage.initialFetch"),
+    );
 
     const loadInitialData = async () => {
       try {
@@ -1403,8 +1484,9 @@ function WorkspacePage() {
       if (open) {
         // Refetch the profile on open so the dialog uses the latest data.
 
-        loadWorkspaceProfileData()
-          .catch(logSwallowed('WorkspacePage.profileConfig'));
+        loadWorkspaceProfileData().catch(
+          logSwallowed("WorkspacePage.profileConfig"),
+        );
       } else {
         setIsProfileUpdateMode(false);
 
@@ -1445,7 +1527,7 @@ function WorkspacePage() {
           refreshWorkspacePersonalization(),
         ])
 
-          .catch(logSwallowed('WorkspacePage.overviewRefresh'));
+          .catch(logSwallowed("WorkspacePage.overviewRefresh"));
       } else if (location.state?.openProfileConfig) {
         navigateToWorkspaceRoot();
       }
@@ -1558,16 +1640,21 @@ function WorkspacePage() {
       resetRoadmapRuntimeState,
       loadWorkspaceProfileData,
       bumpRoadmapReloadToken,
-      ],
-    );
+    ],
+  );
 
   const handleSuggestRoadmapConfig = useCallback(async () => {
     const normalizedWorkspaceId = Number(workspaceId);
-    if (!Number.isInteger(normalizedWorkspaceId) || normalizedWorkspaceId <= 0) {
+    if (
+      !Number.isInteger(normalizedWorkspaceId) ||
+      normalizedWorkspaceId <= 0
+    ) {
       throw new Error("No workspace found");
     }
 
-    const response = await suggestIndividualRoadmapConfig(normalizedWorkspaceId);
+    const response = await suggestIndividualRoadmapConfig(
+      normalizedWorkspaceId,
+    );
     return response?.data?.data ?? response?.data ?? response ?? null;
   }, [workspaceId]);
 
@@ -1653,7 +1740,9 @@ function WorkspacePage() {
 
       bumpRoadmapReloadToken();
 
-      await fetchWorkspaceDetail(workspaceId).catch(logSwallowed('WorkspacePage.postRoadmap'));
+      await fetchWorkspaceDetail(workspaceId).catch(
+        logSwallowed("WorkspacePage.postRoadmap"),
+      );
 
       await loadWorkspaceProfileData();
 
@@ -1723,10 +1812,7 @@ function WorkspacePage() {
         if (currentStep === 2) {
           savedProfile = applyResolvedWorkspaceProfile(
             extractProfileData(
-              await saveIndividualWorkspacePersonalInfoStep(
-                workspaceId,
-                data,
-              ),
+              await saveIndividualWorkspacePersonalInfoStep(workspaceId, data),
             ),
           );
 
@@ -1757,72 +1843,67 @@ function WorkspacePage() {
         throw error;
       }
     },
-    [
-      applyResolvedWorkspaceProfile,
+    [applyResolvedWorkspaceProfile, workspaceId, showSuccess, t, showError],
+  );
 
-      workspaceId,
+  const handleConfirmProfileConfig = useCallback(
+    async (options = {}) => {
+      if (!workspaceId) return;
+
+      try {
+        await confirmWorkspaceProfileData(options);
+
+        closeProfileDialogs();
+
+        fetchWorkspaceDetail(workspaceId).catch(
+          logSwallowed("WorkspacePage.postProfileClose"),
+        );
+
+        if (sources.length === 0) {
+          setUploadDialogOpen(true);
+        }
+
+        showSuccess(
+          translateOrFallback(
+            t,
+
+            "workspace.profileConfig.messages.finishSuccess",
+
+            "Hoàn thành thiết lập workspace thành công.",
+          ),
+        );
+
+        navigateToWorkspaceRoot();
+      } catch (error) {
+        console.error("Failed to confirm profile:", error);
+
+        showError(
+          error?.message || "Không thể xác nhận onboarding. Vui lòng thử lại.",
+        );
+
+        throw error;
+      }
+    },
+    [
+      closeProfileDialogs,
+
+      confirmWorkspaceProfileData,
+
+      fetchWorkspaceDetail,
+
+      navigateToWorkspaceRoot,
+
+      showError,
 
       showSuccess,
 
+      sources.length,
+
       t,
 
-      showError,
+      workspaceId,
     ],
   );
-
-  const handleConfirmProfileConfig = useCallback(async (options = {}) => {
-    if (!workspaceId) return;
-
-    try {
-      await confirmWorkspaceProfileData(options);
-
-      closeProfileDialogs();
-
-      fetchWorkspaceDetail(workspaceId).catch(logSwallowed('WorkspacePage.postProfileClose'));
-
-      if (sources.length === 0) {
-        setUploadDialogOpen(true);
-      }
-
-      showSuccess(
-        translateOrFallback(
-          t,
-
-          "workspace.profileConfig.messages.finishSuccess",
-
-          "Hoàn thành thiết lập workspace thành công.",
-        ),
-      );
-
-      navigateToWorkspaceRoot();
-    } catch (error) {
-      console.error("Failed to confirm profile:", error);
-
-      showError(
-        error?.message || "Không thể xác nhận onboarding. Vui lòng thử lại.",
-      );
-
-      throw error;
-    }
-  }, [
-    closeProfileDialogs,
-
-    confirmWorkspaceProfileData,
-
-    fetchWorkspaceDetail,
-
-    navigateToWorkspaceRoot,
-
-    showError,
-
-    showSuccess,
-
-    sources.length,
-
-    t,
-
-    workspaceId,
-  ]);
 
   // Chặn back navigation quay lại màn hình onboarding sau khi đã hoàn thành
 
@@ -1877,13 +1958,16 @@ function WorkspacePage() {
     async (sourceId) => {
       try {
         await deleteMaterial(sourceId);
+        if (Number(selectedSourceId) === Number(sourceId)) {
+          setSelectedSourceId(null);
+        }
 
         fetchSources();
       } catch (error) {
         console.error("Failed to delete material:", error);
       }
     },
-    [fetchSources],
+    [fetchSources, selectedSourceId],
   );
 
   // Delete multiple materials in parallel
@@ -1897,12 +1981,16 @@ function WorkspacePage() {
 
         await Promise.all(deletePromises);
 
+        if (sourceIds.some((id) => Number(id) === Number(selectedSourceId))) {
+          setSelectedSourceId(null);
+        }
+
         fetchSources();
       } catch (error) {
         console.error("Failed to delete materials:", error);
       }
     },
-    [fetchSources],
+    [fetchSources, selectedSourceId],
   );
 
   // Track recent list-view access history
@@ -1938,19 +2026,20 @@ function WorkspacePage() {
         actionKey === "questionStats" &&
         !planEntitlements.hasWorkspaceAnalytics
       ) {
-        setPlanUpgradeFeatureName(t("workspace.shell.featureNames.questionStats"));
+        setPlanUpgradeFeatureName(
+          t("workspace.shell.featureNames.questionStats"),
+        );
         setPlanUpgradeModalOpen(true);
         return;
       }
 
       // Source-gated: yêu cầu tài liệu trước khi mở các khu vực phụ thuộc sources.
-      const requiresSources = (
+      const requiresSources =
         (actionKey === "roadmap" && shouldDisableRoadmapForStudio) ||
         (actionKey === "quiz" && shouldDisableQuiz) ||
         (actionKey === "flashcard" && shouldDisableFlashcard) ||
         (actionKey === "mockTest" && shouldDisableMockTest) ||
-        (actionKey === "quizCollection" && shouldDisableQuizCollection)
-      );
+        (actionKey === "quizCollection" && shouldDisableQuizCollection);
       if (requiresSources) {
         showWarning(t("workspace.shell.lockToast.sources"));
         if (activeView !== "sources") {
@@ -1960,6 +2049,10 @@ function WorkspacePage() {
       }
 
       if (actionKey === activeView) {
+        if (actionKey === "sources") {
+          setSelectedSourceId(null);
+          return;
+        }
         if (actionKey === "quiz") {
           setWorkspaceSidebarQuizCreateMode(null);
           return;
@@ -2022,6 +2115,10 @@ function WorkspacePage() {
         setSelectedRoadmapPhaseId(null);
         setSelectedRoadmapKnowledgeId(null);
       }
+
+      if (actionKey !== "sources") {
+        setSelectedSourceId(null);
+      }
     },
     [
       activeView,
@@ -2038,129 +2135,135 @@ function WorkspacePage() {
     ],
   );
 
-  const navigatePersonalStudioSubItem = useCallback(({ parentId, childId }) => {
-    setIsMobileSidebarOpen(false);
+  const navigatePersonalStudioSubItem = useCallback(
+    ({ parentId, childId }) => {
+      setIsMobileSidebarOpen(false);
 
-    if (parentId === "roadmap" && canCreateRoadmap === false) {
-      setPlanUpgradeFeatureName(t("workspace.shell.featureNames.roadmap"));
-      setPlanUpgradeModalOpen(true);
-      return;
-    }
-
-    const requiresSources = (
-      (parentId === "roadmap" && shouldDisableRoadmapForStudio) ||
-      (parentId === "quiz" && shouldDisableQuiz) ||
-      (parentId === "flashcard" && shouldDisableFlashcard)
-    );
-    if (requiresSources) {
-      showWarning(t("workspace.shell.lockToast.sources"));
-      if (activeView !== "sources") {
-        setActiveView("sources");
+      if (parentId === "roadmap" && canCreateRoadmap === false) {
+        setPlanUpgradeFeatureName(t("workspace.shell.featureNames.roadmap"));
+        setPlanUpgradeModalOpen(true);
+        return;
       }
-      return;
-    }
 
-    if (parentId === "quiz" && shouldDisableCreateQuiz) {
-      showWarning(t("workspace.shell.lockToast.sources"));
-      return;
-    }
-
-    if (parentId === "flashcard" && shouldDisableCreateFlashcard) {
-      showWarning(t("workspace.shell.lockToast.sources"));
-      return;
-    }
-
-    setQuizBackTarget(null);
-    if (parentId !== "quizCollection") {
-      setSelectedCollection(null);
-    }
-    if (parentId !== "roadmap") {
-      setSelectedRoadmapPhaseId(null);
-      setSelectedRoadmapKnowledgeId(null);
-    }
-
-    if (parentId === "quiz") {
-      const modeByChild = {
-        quizAi: "ai",
-        quizManual: "manual",
-        quizFromJson: "paste",
-      };
-      const mode = modeByChild[childId] ?? null;
-      setWorkspaceSidebarQuizCreateMode(mode);
-      setActiveView("quiz");
-      addAccessHistory("quiz", "quiz", "quiz");
-      return;
-    }
-
-    if (parentId === "flashcard") {
-      const fcModeByChild = {
-        flashcardAi: "ai",
-        flashcardManual: "manual",
-      };
-      const fcMode = fcModeByChild[childId] ?? null;
-      setWorkspaceSidebarFlashcardSubFilter(fcMode);
-      setActiveView("flashcard");
-      addAccessHistory("flashcard", "flashcard", "flashcard");
-      return;
-    }
-  }, [
-    activeView,
-    addAccessHistory,
-    canCreateRoadmap,
-    shouldDisableCreateFlashcard,
-    shouldDisableCreateQuiz,
-    shouldDisableFlashcard,
-    shouldDisableQuiz,
-    shouldDisableRoadmapForStudio,
-    showWarning,
-    t,
-  ]);
-
-  const handleSelectRoadmapPhase = useCallback((phaseId, options = {}) => {
-    if (options?.focusRoadmapCenter) {
-      skipRoadmapStoredRestoreRef.current = true;
-
-      if (roadmapSelectionStorageKey && typeof window !== "undefined") {
-        try {
-          window.localStorage.removeItem(roadmapSelectionStorageKey);
-        } catch {
-          // Bo qua loi storage de tranh anh huong luong dieu huong.
+      const requiresSources =
+        (parentId === "roadmap" && shouldDisableRoadmapForStudio) ||
+        (parentId === "quiz" && shouldDisableQuiz) ||
+        (parentId === "flashcard" && shouldDisableFlashcard);
+      if (requiresSources) {
+        showWarning(t("workspace.shell.lockToast.sources"));
+        if (activeView !== "sources") {
+          setActiveView("sources");
         }
+        return;
       }
 
-      setSelectedRoadmapPhaseId(null);
-      setSelectedRoadmapKnowledgeId(null);
+      if (parentId === "quiz" && shouldDisableCreateQuiz) {
+        showWarning(t("workspace.shell.lockToast.sources"));
+        return;
+      }
+
+      if (parentId === "flashcard" && shouldDisableCreateFlashcard) {
+        showWarning(t("workspace.shell.lockToast.sources"));
+        return;
+      }
+
+      setQuizBackTarget(null);
+      if (parentId !== "quizCollection") {
+        setSelectedCollection(null);
+      }
+      if (parentId !== "roadmap") {
+        setSelectedRoadmapPhaseId(null);
+        setSelectedRoadmapKnowledgeId(null);
+      }
+
+      if (parentId === "quiz") {
+        const modeByChild = {
+          quizAi: "ai",
+          quizManual: "manual",
+          quizFromJson: "paste",
+        };
+        const mode = modeByChild[childId] ?? null;
+        setWorkspaceSidebarQuizCreateMode(mode);
+        setActiveView("quiz");
+        addAccessHistory("quiz", "quiz", "quiz");
+        return;
+      }
+
+      if (parentId === "flashcard") {
+        const fcModeByChild = {
+          flashcardAi: "ai",
+          flashcardManual: "manual",
+        };
+        const fcMode = fcModeByChild[childId] ?? null;
+        setWorkspaceSidebarFlashcardSubFilter(fcMode);
+        setActiveView("flashcard");
+        addAccessHistory("flashcard", "flashcard", "flashcard");
+        return;
+      }
+    },
+    [
+      activeView,
+      addAccessHistory,
+      canCreateRoadmap,
+      shouldDisableCreateFlashcard,
+      shouldDisableCreateQuiz,
+      shouldDisableFlashcard,
+      shouldDisableQuiz,
+      shouldDisableRoadmapForStudio,
+      showWarning,
+      t,
+    ],
+  );
+
+  const handleSelectRoadmapPhase = useCallback(
+    (phaseId, options = {}) => {
+      if (options?.focusRoadmapCenter) {
+        skipRoadmapStoredRestoreRef.current = true;
+
+        if (roadmapSelectionStorageKey && typeof window !== "undefined") {
+          try {
+            window.localStorage.removeItem(roadmapSelectionStorageKey);
+          } catch {
+            // Bo qua loi storage de tranh anh huong luong dieu huong.
+          }
+        }
+
+        setSelectedRoadmapPhaseId(null);
+        setSelectedRoadmapKnowledgeId(null);
+
+        if (options?.preserveActiveView) return;
+
+        setSelectedQuiz(null);
+        setQuizBackTarget(null);
+        setActiveView("roadmap");
+        return;
+      }
+
+      const normalizedPhaseId = Number(phaseId);
+      const normalizedKnowledgeId = Number(options?.knowledgeId);
+
+      if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0)
+        return;
+
+      setSelectedRoadmapPhaseId(normalizedPhaseId);
+      setSelectedRoadmapKnowledgeId(
+        Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
+          ? normalizedKnowledgeId
+          : null,
+      );
+
+      // Giữ nguyên view hiện tại khi chỉ auto-chọn phase nền, tránh bị kéo khỏi quiz lúc reload.
 
       if (options?.preserveActiveView) return;
 
       setSelectedQuiz(null);
+
       setQuizBackTarget(null);
+
       setActiveView("roadmap");
-      return;
-    }
-
-    const normalizedPhaseId = Number(phaseId);
-    const normalizedKnowledgeId = Number(options?.knowledgeId);
-
-    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
-
-    setSelectedRoadmapPhaseId(normalizedPhaseId);
-    setSelectedRoadmapKnowledgeId(
-      Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
-        ? normalizedKnowledgeId
-        : null,
-    );
-
-    // Giữ nguyên view hiện tại khi chỉ auto-chọn phase nền, tránh bị kéo khỏi quiz lúc reload.
-
-    if (options?.preserveActiveView) return;
-
-    setSelectedQuiz(null);
-
-    setQuizBackTarget(null);
-
-    setActiveView("roadmap");
-  }, [roadmapSelectionStorageKey]);
+    },
+    [roadmapSelectionStorageKey],
+  );
 
   // Handle quiz creation callback after the multi-step API completes
 
@@ -2191,9 +2294,13 @@ function WorkspacePage() {
 
       showSuccess(
         shouldShare
-          ? t("workspace.quiz.sharedToCommunitySuccess", "Quiz shared to the community.",
+          ? t(
+              "workspace.quiz.sharedToCommunitySuccess",
+              "Quiz shared to the community.",
             )
-          : t("workspace.quiz.unsharedFromCommunitySuccess", "Quiz moved back to private.",
+          : t(
+              "workspace.quiz.unsharedFromCommunitySuccess",
+              "Quiz moved back to private.",
             ),
       );
     },
@@ -2209,7 +2316,8 @@ function WorkspacePage() {
       Number.isInteger(Number(rawBackTarget?.knowledgeId)) &&
       Number(rawBackTarget.knowledgeId) > 0
         ? Number(rawBackTarget.knowledgeId)
-        : Number.isInteger(normalizedQuizKnowledgeId) && normalizedQuizKnowledgeId > 0
+        : Number.isInteger(normalizedQuizKnowledgeId) &&
+            normalizedQuizKnowledgeId > 0
           ? normalizedQuizKnowledgeId
           : null;
 
@@ -2268,31 +2376,39 @@ function WorkspacePage() {
     setActiveView("editQuiz");
   }, []);
 
-  const handleCreateSimilarQuiz = useCallback(async (quiz) => {
-    const quizId = Number(quiz?.quizId);
-    if (!Number.isInteger(quizId) || quizId <= 0) return;
+  const handleCreateSimilarQuiz = useCallback(
+    async (quiz) => {
+      const quizId = Number(quiz?.quizId);
+      if (!Number.isInteger(quizId) || quizId <= 0) return;
 
-    try {
-      const res = await duplicateQuiz(quizId);
-      const duplicatedQuiz = res?.data?.data ?? res?.data;
+      try {
+        const res = await duplicateQuiz(quizId);
+        const duplicatedQuiz = res?.data?.data ?? res?.data;
 
-      if (!duplicatedQuiz?.quizId) {
-        throw new Error(t("workspace.quiz.detail.duplicate.toastError", "Không thể sao chép quiz."));
+        if (!duplicatedQuiz?.quizId) {
+          throw new Error(
+            t(
+              "workspace.quiz.detail.duplicate.toastError",
+              "Không thể sao chép quiz.",
+            ),
+          );
+        }
+
+        showSuccess(
+          t(
+            "workspace.quiz.detail.duplicate.toastSuccess",
+            "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
+          ),
+        );
+        setSelectedQuiz(duplicatedQuiz);
+        setQuizBackTarget(null);
+        setActiveView("editQuiz");
+      } catch (error) {
+        showError(getErrorMessage(t, error));
       }
-
-      showSuccess(
-        t(
-          "workspace.quiz.detail.duplicate.toastSuccess",
-          "Đã sao chép quiz sang bản nháp MANUAL. Bạn có thể chỉnh sửa ngay.",
-        ),
-      );
-      setSelectedQuiz(duplicatedQuiz);
-      setQuizBackTarget(null);
-      setActiveView("editQuiz");
-    } catch (error) {
-      showError(getErrorMessage(t, error));
-    }
-  }, [showError, showSuccess, t]);
+    },
+    [showError, showSuccess, t],
+  );
 
   // Save quiz edits and return to detail view
 
@@ -2335,56 +2451,70 @@ function WorkspacePage() {
 
   // Handle flashcard creation callback after the API flow finishes
 
-  const handleCreateFlashcard = useCallback(async (createdFlashcard = null) => {
-    const scopeId = Number(workspaceId) || 0;
-    const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
-    const flashcardSetId = Number(
-      createdFlashcard?.flashcardSetId ??
-      createdFlashcard?.id ??
-      createdFlashcard?.data?.flashcardSetId,
-    );
+  const handleCreateFlashcard = useCallback(
+    async (createdFlashcard = null) => {
+      const scopeId = Number(workspaceId) || 0;
+      const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
+      const flashcardSetId = Number(
+        createdFlashcard?.flashcardSetId ??
+          createdFlashcard?.id ??
+          createdFlashcard?.data?.flashcardSetId,
+      );
 
-    if (scopeId > 0 && Number.isInteger(flashcardSetId) && flashcardSetId > 0) {
-      const createdPayload = createdFlashcard?.data || createdFlashcard || {};
-      queryClient.setQueryData(queryKey, (previousItems = []) => {
-        const safePreviousItems = Array.isArray(previousItems) ? previousItems : [];
+      if (
+        scopeId > 0 &&
+        Number.isInteger(flashcardSetId) &&
+        flashcardSetId > 0
+      ) {
+        const createdPayload = createdFlashcard?.data || createdFlashcard || {};
+        queryClient.setQueryData(queryKey, (previousItems = []) => {
+          const safePreviousItems = Array.isArray(previousItems)
+            ? previousItems
+            : [];
 
-        if (
-          safePreviousItems.some(
-            (item) => Number(item?.flashcardSetId ?? item?.id) === flashcardSetId,
-          )
-        ) {
-          return safePreviousItems;
-        }
+          if (
+            safePreviousItems.some(
+              (item) =>
+                Number(item?.flashcardSetId ?? item?.id) === flashcardSetId,
+            )
+          ) {
+            return safePreviousItems;
+          }
 
-        const nowIso = new Date().toISOString();
-        const optimisticItem = {
-          flashcardSetId,
-          flashcardSetName:
-            createdPayload?.flashcardSetName ||
-            createdPayload?.name ||
-            `${t("workspace.flashcard.createTitle")} #${flashcardSetId}`,
-          status: String(createdPayload?.status || "DRAFT").toUpperCase(),
-          createVia: createdPayload?.createVia || "AI",
-          itemCount: Number(createdPayload?.itemCount ?? 0),
-          taskId: createdPayload?.taskId ?? createdPayload?.websocketTaskId ?? null,
-          websocketTaskId: createdPayload?.websocketTaskId ?? createdPayload?.taskId ?? null,
-          percent: createdPayload?.percent ?? createdPayload?.progressPercent ?? 0,
-          progressPercent: createdPayload?.progressPercent ?? createdPayload?.percent ?? 0,
-          processingObject: createdPayload?.processingObject,
-          createdAt: createdPayload?.createdAt || nowIso,
-          updatedAt: createdPayload?.updatedAt || nowIso,
-        };
+          const nowIso = new Date().toISOString();
+          const optimisticItem = {
+            flashcardSetId,
+            flashcardSetName:
+              createdPayload?.flashcardSetName ||
+              createdPayload?.name ||
+              `${t("workspace.flashcard.createTitle")} #${flashcardSetId}`,
+            status: String(createdPayload?.status || "DRAFT").toUpperCase(),
+            createVia: createdPayload?.createVia || "AI",
+            itemCount: Number(createdPayload?.itemCount ?? 0),
+            taskId:
+              createdPayload?.taskId ?? createdPayload?.websocketTaskId ?? null,
+            websocketTaskId:
+              createdPayload?.websocketTaskId ?? createdPayload?.taskId ?? null,
+            percent:
+              createdPayload?.percent ?? createdPayload?.progressPercent ?? 0,
+            progressPercent:
+              createdPayload?.progressPercent ?? createdPayload?.percent ?? 0,
+            processingObject: createdPayload?.processingObject,
+            createdAt: createdPayload?.createdAt || nowIso,
+            updatedAt: createdPayload?.updatedAt || nowIso,
+          };
 
-        return [optimisticItem, ...safePreviousItems];
-      });
-    }
+          return [optimisticItem, ...safePreviousItems];
+        });
+      }
 
-    void queryClient.invalidateQueries({ queryKey });
+      void queryClient.invalidateQueries({ queryKey });
 
-    // Return to the list view so it can refresh
-    setActiveView("flashcard");
-  }, [queryClient, t, workspaceId]);
+      // Return to the list view so it can refresh
+      setActiveView("flashcard");
+    },
+    [queryClient, t, workspaceId],
+  );
 
   // Open flashcard detail from the list
 
@@ -2396,44 +2526,56 @@ function WorkspacePage() {
 
   // Delete a flashcard set via API
 
-  const handleDeleteFlashcard = useCallback(async (flashcard) => {
-    if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
+  const handleDeleteFlashcard = useCallback(
+    async (flashcard) => {
+      if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
 
-    const flashcardSetId = Number(
-      flashcard?.flashcardSetId ?? flashcard?.id ?? flashcard?.flashcardId,
-    );
-    if (!Number.isInteger(flashcardSetId) || flashcardSetId <= 0) {
-      showError(t("workspace.flashcard.deleteFailed", "Không thể xóa bộ flashcard này."));
-      return;
-    }
-
-    const scopeId = Number(workspaceId) || 0;
-    const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
-
-    try {
-      await deleteFlashcardSet(flashcardSetId);
-
-      queryClient.setQueryData(queryKey, (previousItems = []) => {
-        if (!Array.isArray(previousItems)) return previousItems;
-        return previousItems.filter(
-          (item) => Number(item?.flashcardSetId ?? item?.id ?? item?.flashcardId) !== flashcardSetId,
+      const flashcardSetId = Number(
+        flashcard?.flashcardSetId ?? flashcard?.id ?? flashcard?.flashcardId,
+      );
+      if (!Number.isInteger(flashcardSetId) || flashcardSetId <= 0) {
+        showError(
+          t(
+            "workspace.flashcard.deleteFailed",
+            "Không thể xóa bộ flashcard này.",
+          ),
         );
-      });
-      void queryClient.invalidateQueries({ queryKey });
-      setSelectedFlashcard((current) => (
-        Number(current?.flashcardSetId ?? current?.id ?? current?.flashcardId) === flashcardSetId
-          ? null
-          : current
-      ));
+        return;
+      }
 
-      // Return to the list view so it can refresh
+      const scopeId = Number(workspaceId) || 0;
+      const queryKey = ["workspace-flashcards", "WORKSPACE", scopeId];
 
-      setActiveView("flashcard");
-    } catch (err) {
-      console.error("Delete flashcard failed:", err);
-      showError(getErrorMessage(t, err));
-    }
-  }, [queryClient, showError, t, workspaceId]);
+      try {
+        await deleteFlashcardSet(flashcardSetId);
+
+        queryClient.setQueryData(queryKey, (previousItems = []) => {
+          if (!Array.isArray(previousItems)) return previousItems;
+          return previousItems.filter(
+            (item) =>
+              Number(item?.flashcardSetId ?? item?.id ?? item?.flashcardId) !==
+              flashcardSetId,
+          );
+        });
+        void queryClient.invalidateQueries({ queryKey });
+        setSelectedFlashcard((current) =>
+          Number(
+            current?.flashcardSetId ?? current?.id ?? current?.flashcardId,
+          ) === flashcardSetId
+            ? null
+            : current,
+        );
+
+        // Return to the list view so it can refresh
+
+        setActiveView("flashcard");
+      } catch (err) {
+        console.error("Delete flashcard failed:", err);
+        showError(getErrorMessage(t, err));
+      }
+    },
+    [queryClient, showError, t, workspaceId],
+  );
 
   // Create a roadmap for the individual workspace
 
@@ -2531,10 +2673,9 @@ function WorkspacePage() {
       setActiveView("postLearning");
 
       if (workspaceId) {
-        navigate(
-          buildWorkspacePath(workspaceId, workspacePostLearningsPath),
-          { replace: true },
-        );
+        navigate(buildWorkspacePath(workspaceId, workspacePostLearningsPath), {
+          replace: true,
+        });
       }
 
       return;
@@ -2581,23 +2722,20 @@ function WorkspacePage() {
     }
 
     setActiveView(nextView);
-  }, [
-    activeView,
-    navigate,
-    quizBackTarget,
-    roadmapAiRoadmapId,
-    workspaceId,
-  ]);
+  }, [activeView, navigate, quizBackTarget, roadmapAiRoadmapId, workspaceId]);
 
   // Return to the mock-test list after creation succeeds
 
-  const handleCreateMockTest = useCallback(async (data) => {
-    if (data) {
-      trackQuizGenerationStart(data);
-    }
-    invalidateMockTestQueries();
-    setActiveView("mockTest");
-  }, [invalidateMockTestQueries, trackQuizGenerationStart]);
+  const handleCreateMockTest = useCallback(
+    async (data) => {
+      if (data) {
+        trackQuizGenerationStart(data);
+      }
+      invalidateMockTestQueries();
+      setActiveView("mockTest");
+    },
+    [invalidateMockTestQueries, trackQuizGenerationStart],
+  );
 
   const handleCreatePostLearning = useCallback(async (payload) => {
     const quizId = Number(payload?.quizId);
@@ -2677,6 +2815,23 @@ function WorkspacePage() {
     );
   }, []);
 
+  const handleViewSource = useCallback((sourceId) => {
+    const normalizedSourceId = Number(sourceId);
+    if (!Number.isInteger(normalizedSourceId) || normalizedSourceId <= 0)
+      return;
+    setActiveView("sources");
+    setSelectedSourceId(normalizedSourceId);
+  }, []);
+
+  const handleCloseSourceDetail = useCallback(() => {
+    setActiveView("sources");
+    setSelectedSourceId(null);
+
+    if (workspaceId) {
+      navigate(buildWorkspacePath(workspaceId, "sources"), { replace: true });
+    }
+  }, [navigate, workspaceId]);
+
   const activeSourceIds = useMemo(
     () =>
       sources
@@ -2724,8 +2879,11 @@ function WorkspacePage() {
       "",
     workspacePurpose: getProfilePurpose(workspaceProfile),
     selectedSourceIds,
+    selectedSourceId,
     onSelectedSourceIdsChange: setSelectedSourceIds,
     onToggleMaterialSelection: handleToggleMaterialSelection,
+    onViewSource: handleViewSource,
+    onCloseSourceDetail: handleCloseSourceDetail,
     selectedRoadmapPhaseId,
     selectedRoadmapKnowledgeId,
     activeView,
@@ -2805,73 +2963,103 @@ function WorkspacePage() {
   };
 
   // Stabilize props truyền vào PersonalWorkspaceSidebar để memo() hoạt động hiệu quả.
-  const personalSidebarTitle = (
-    currentWorkspace?.displayTitle
-    || currentWorkspace?.title
-    || currentWorkspace?.name
-    || ""
+  const personalSidebarTitle =
+    currentWorkspace?.displayTitle ||
+    currentWorkspace?.title ||
+    currentWorkspace?.name ||
+    "";
+  const handleEditWorkspaceFromSidebar = useCallback(
+    async (data) => {
+      await editWorkspace(Number(workspaceId), data);
+    },
+    [editWorkspace, workspaceId],
   );
-  const handleEditWorkspaceFromSidebar = useCallback(async (data) => {
-    await editWorkspace(Number(workspaceId), data);
-  }, [editWorkspace, workspaceId]);
-  const personalSidebarDisabledMap = useMemo(() => ({
-    roadmap: shouldDisableRoadmapForStudio,
-    quiz: shouldDisableQuiz,
-    flashcard: shouldDisableFlashcard,
-    mockTest: shouldDisableMockTest,
-    quizCollection: shouldDisableQuizCollection,
-    questionStats: !planEntitlements.hasWorkspaceAnalytics,
-  }), [
-    shouldDisableRoadmapForStudio,
-    shouldDisableQuiz,
-    shouldDisableFlashcard,
-    shouldDisableMockTest,
-    shouldDisableQuizCollection,
-    planEntitlements.hasWorkspaceAnalytics,
-  ]);
+  const personalSidebarDisabledMap = useMemo(
+    () => ({
+      roadmap: shouldDisableRoadmapForStudio,
+      quiz: shouldDisableQuiz,
+      flashcard: shouldDisableFlashcard,
+      mockTest: shouldDisableMockTest,
+      quizCollection: shouldDisableQuizCollection,
+      questionStats: !planEntitlements.hasWorkspaceAnalytics,
+    }),
+    [
+      shouldDisableRoadmapForStudio,
+      shouldDisableQuiz,
+      shouldDisableFlashcard,
+      shouldDisableMockTest,
+      shouldDisableQuizCollection,
+      planEntitlements.hasWorkspaceAnalytics,
+    ],
+  );
   // Phân biệt lý do khoá: "plan" cần nâng cấp gói, "sources" cần tải tài liệu.
   // Roadmap có cả 2 trường hợp → ưu tiên "plan" khi user chưa có quyền tạo roadmap.
-  const personalSidebarLockReasonMap = useMemo(() => ({
-    roadmap: !canCreateRoadmap
-      ? "plan"
-      : shouldDisableRoadmapForStudio
-        ? "sources"
+  const personalSidebarLockReasonMap = useMemo(
+    () => ({
+      roadmap: !canCreateRoadmap
+        ? "plan"
+        : shouldDisableRoadmapForStudio
+          ? "sources"
+          : undefined,
+      quiz: shouldDisableQuiz ? "sources" : undefined,
+      flashcard: shouldDisableFlashcard ? "sources" : undefined,
+      mockTest: shouldDisableMockTest ? "sources" : undefined,
+      quizCollection: shouldDisableQuizCollection ? "sources" : undefined,
+      questionStats: !planEntitlements.hasWorkspaceAnalytics
+        ? "plan"
         : undefined,
-    quiz: shouldDisableQuiz ? "sources" : undefined,
-    flashcard: shouldDisableFlashcard ? "sources" : undefined,
-    mockTest: shouldDisableMockTest ? "sources" : undefined,
-    quizCollection: shouldDisableQuizCollection ? "sources" : undefined,
-    questionStats: !planEntitlements.hasWorkspaceAnalytics ? "plan" : undefined,
-  }), [
-    canCreateRoadmap,
-    shouldDisableRoadmapForStudio,
-    shouldDisableQuiz,
-    shouldDisableFlashcard,
-    shouldDisableMockTest,
-    shouldDisableQuizCollection,
-    planEntitlements.hasWorkspaceAnalytics,
-  ]);
-  const personalSidebarBadgeMap = useMemo(() => ({
-    sources: sources.length || undefined,
-    quiz: totalQuizCount || undefined,
-    flashcard: totalFlashcardCount || undefined,
-    mockTest: totalMockTestCount || undefined,
-    quizCollection: totalQuizCollectionCount || undefined,
-  }), [sources.length, totalQuizCount, totalFlashcardCount, totalMockTestCount, totalQuizCollectionCount]);
+    }),
+    [
+      canCreateRoadmap,
+      shouldDisableRoadmapForStudio,
+      shouldDisableQuiz,
+      shouldDisableFlashcard,
+      shouldDisableMockTest,
+      shouldDisableQuizCollection,
+      planEntitlements.hasWorkspaceAnalytics,
+    ],
+  );
+  const personalSidebarBadgeMap = useMemo(
+    () => ({
+      sources: sources.length || undefined,
+      quiz: totalQuizCount || undefined,
+      flashcard: totalFlashcardCount || undefined,
+      mockTest: totalMockTestCount || undefined,
+      quizCollection: totalQuizCollectionCount || undefined,
+    }),
+    [
+      sources.length,
+      totalQuizCount,
+      totalFlashcardCount,
+      totalMockTestCount,
+      totalQuizCollectionCount,
+    ],
+  );
   const handleCloseMobileSidebar = useCallback(() => {
     setIsMobileSidebarOpen(false);
   }, []);
 
   const studioQuizSubKeyForSidebar = useMemo(() => {
     const v = String(activeView || "");
-    return ["quiz", "createQuiz", "quizDetail", "editQuiz", "communityQuiz"].includes(v)
+    return [
+      "quiz",
+      "createQuiz",
+      "quizDetail",
+      "editQuiz",
+      "communityQuiz",
+    ].includes(v)
       ? workspaceSidebarQuizCreateMode
       : null;
   }, [activeView, workspaceSidebarQuizCreateMode]);
 
   const studioFlashcardSubKeyForSidebar = useMemo(() => {
     const v = String(activeView || "");
-    return ["flashcard", "createFlashcard", "createManualFlashcard", "flashcardDetail"].includes(v)
+    return [
+      "flashcard",
+      "createFlashcard",
+      "createManualFlashcard",
+      "flashcardDetail",
+    ].includes(v)
       ? workspaceSidebarFlashcardSubFilter
       : null;
   }, [activeView, workspaceSidebarFlashcardSubFilter]);
@@ -2982,13 +3170,17 @@ function WorkspacePage() {
             uploadedMaterials={sources}
             workspaceId={workspaceId}
             forceStartAtStepOne={
-              isProfileUpdateMode
-              || (openProfileConfig
-                && !isProfileConfigured
-                && !continueProfileSetup
-                && !hasSavedBasicProfileStep(workspaceProfile))
+              isProfileUpdateMode ||
+              (openProfileConfig &&
+                !isProfileConfigured &&
+                !continueProfileSetup &&
+                !hasSavedBasicProfileStep(workspaceProfile))
             }
-            initialProfileLoading={profileConfigOpen && continueProfileSetup && profileConfigInitialLoading}
+            initialProfileLoading={
+              profileConfigOpen &&
+              continueProfileSetup &&
+              profileConfigInitialLoading
+            }
           />
         </DeferredWorkspaceDialog>
       ) : null}

@@ -1535,7 +1535,7 @@
     },
     "hero": {
       "badge": "✨ Đột phá học tập cùng AI",
-      "titlePart1": "Chinh phục kiến thức cùng",
+      "titlePart1": "Làm quen với người bạn học mới của bạn:",
       "titlePart2": "QuizMate AI",
       "subtitle": "Biến mọi tài liệu thành bài trắc nghiệm chỉ trong tích tắc. Tải lên tài liệu học tập (PDF, DOC, hoặc Youtube URL) để AI tự động tạo các bộ câu hỏi tương tác và tùy chỉnh theo cách học của riêng bạn.",
       "startLearning": "Bắt đầu học ngay",
@@ -3921,6 +3921,7 @@
   },
   "error": {
     "unknown": "Có lỗi xảy ra. Vui lòng thử lại.",
+    "rateLimited": "Quá nhiều yêu cầu, vui lòng thử lại sau ít phút.",
     "internalServer": "Hệ thống đang bận hoặc gặp sự cố. Vui lòng thử lại sau.",
     "userNotExisted": "Người dùng không tồn tại.",
     "wrongPass": "Mật khẩu không đúng.",

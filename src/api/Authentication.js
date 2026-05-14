@@ -153,7 +153,7 @@ export const googleLogin = async (idToken) => {
  * @returns {Promise} Response xác nhận gửi OTP
  */
 export const sendOTP = async (email) => {
-    const response = await api.post(`/auth/send-otp?email=${encodeURIComponent(email)}`, undefined, {
+    const response = await api.post('/auth/send-otp', { email }, {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
     });
     return response;
@@ -211,8 +211,8 @@ const isOtpVerifySuccess = (response) => {
  */
 export const verifyOTP = async (email, otp) => {
     const response = await api.post(
-        `/auth/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`,
-        undefined,
+        '/auth/verify-otp',
+        { email, otp },
         {
             timeout: AUTH_REQUEST_TIMEOUT_MS,
         },
@@ -232,15 +232,19 @@ export const verifyOTP = async (email, otp) => {
 };
 
 /**
- * Đổi mật khẩu mới
+ * Đổi mật khẩu mới — BE verify OTP atomically trong cùng request.
+ * Không được gọi {@link verifyOTP} trước hàm này vì verify sẽ consume OTP
+ * → request reset tiếp theo sẽ trả 401 vì OTP đã invalid.
+ *
  * @param {string} email - Email tài khoản
- * @param {string} newPassword - Mật khẩu mới
+ * @param {string} otp - OTP nhận qua email
+ * @param {string} newPassword - Mật khẩu mới (min 9 ký tự, chứa chữ + số)
  * @returns {Promise} Response xác nhận đổi mật khẩu thành công
  */
-export const resetPassword = async (email, newPassword) => {
+export const resetPassword = async (email, otp, newPassword) => {
     const response = await api.post(
-        `/auth/reset-password?email=${encodeURIComponent(email)}&newPassword=${encodeURIComponent(newPassword)}`,
-        undefined,
+        '/auth/reset-password',
+        { email, otp, newPassword },
         {
             timeout: AUTH_REQUEST_TIMEOUT_MS,
         },

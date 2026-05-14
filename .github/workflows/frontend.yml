@@ -66,23 +66,24 @@ jobs:
       # Upload index.html with no-store so browsers always fetch latest after deploy
       - name: Upload index.html (no-cache)
         run: |
-          aws s3 cp dist/index.html s3://quizmateai.io.vn/index.html \
+          aws s3 cp dist/index.html s3://quizmateai-prod/index.html \
             --cache-control "no-store" \
             --content-type "text/html; charset=utf-8"
 
       # Upload all hashed assets with long-lived immutable cache
       - name: Upload static assets (immutable cache)
         run: |
-          aws s3 sync dist s3://quizmateai.io.vn \
+          aws s3 sync dist s3://quizmateai-prod \
             --exclude "index.html" \
             --cache-control "public, max-age=31536000, immutable" \
             --delete
 
-      - name: Invalidate CloudFront
-        uses: chetan/invalidate-cloudfront-action@v2
-        env:
-          DISTRIBUTION: ${{ secrets.CLOUDFRONT_ID }}
-          PATHS: "/*"
-          AWS_REGION: us-east-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+      # Purge Cloudflare cache so visitors get fresh index.html on next request.
+      # CloudFront is replaced by a Cloudflare Worker that proxies to S3.
+      - name: Purge Cloudflare cache
+        run: |
+          curl -fsS -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'

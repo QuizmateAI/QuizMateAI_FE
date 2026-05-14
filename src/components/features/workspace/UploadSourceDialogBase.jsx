@@ -32,6 +32,7 @@ import {
 } from "@/api/AIAPI";
 import { useToast } from "@/context/ToastContext";
 import PlanUpgradeModal from "@/components/plan/PlanUpgradeModal";
+import { validateMaterialFile } from "@/utils/uploadValidation";
 
 // Map MIME type prefix/patterns to entitlement keys
 const MIME_TO_ENTITLEMENT = {
@@ -75,15 +76,19 @@ function getEntitlementKeyForFile(file) {
   return ext ? EXT_TO_ENTITLEMENT[ext] : null;
 }
 
+// BE Tika sniff whitelist là OOXML modern only (DOCX/XLSX/PPTX, không có
+// .doc/.xls/.ppt) + PDF/text/image/audio/video. Accept attr không list các
+// extension cũ để file picker không cho chọn — tránh UX "chọn được nhưng
+// upload xong báo lỗi".
 function buildAcceptString(ent) {
-  if (!ent) return ".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.png,.mp3,.mp4";
+  if (!ent) return ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp3,.wav,.mp4";
   const parts = [];
   if (ent.canUploadPdf) parts.push(".pdf");
-  if (ent.canUploadWord) parts.push(".docx", ".doc");
-  if (ent.canUploadSlide) parts.push(".pptx", ".ppt");
-  if (ent.canUploadExcel) parts.push(".xlsx", ".xls");
+  if (ent.canUploadWord) parts.push(".docx");
+  if (ent.canUploadSlide) parts.push(".pptx");
+  if (ent.canUploadExcel) parts.push(".xlsx");
   if (ent.canUploadText) parts.push(".txt");
-  if (ent.canUploadImage) parts.push(".png", ".jpg", ".jpeg");
+  if (ent.canUploadImage) parts.push(".png", ".jpg", ".jpeg", ".gif", ".webp");
   if (ent.canUploadAudio) parts.push(".mp3", ".wav");
   if (ent.canUploadVideo) parts.push(".mp4");
   return parts.join(",") || ".pdf";
@@ -174,15 +179,25 @@ function UploadSourceDialogBase({
 
   const filterAndNotifyFiles = (files) => {
     const allowed = [];
-    let hadBlocked = false;
+    let hadPlanBlocked = false;
+    const invalidMimeMessages = [];
     for (const file of files) {
+      // BE Tika sniff sẽ reject — check sớm ở client để báo lỗi tức thì.
+      const mimeCheck = validateMaterialFile(file);
+      if (!mimeCheck.ok) {
+        invalidMimeMessages.push(mimeCheck.message);
+        continue;
+      }
       if (isFileAllowed(file)) {
         allowed.push(file);
       } else {
-        hadBlocked = true;
+        hadPlanBlocked = true;
       }
     }
-    if (hadBlocked) {
+    if (invalidMimeMessages.length > 0) {
+      showError(invalidMimeMessages[0]);
+    }
+    if (hadPlanBlocked) {
       setPlanBlockedFeature("Loại tệp này");
       setPlanBlockedModalOpen(true);
     }

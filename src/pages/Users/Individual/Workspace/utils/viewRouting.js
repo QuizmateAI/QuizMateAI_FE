@@ -69,6 +69,16 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 		return { view: directView, quizId: null, backTarget: null };
 	}
 
+	const sourceDetailFallbackMatch = subPath.match(new RegExp(`^sources/(\\d+)$`));
+	if (sourceDetailFallbackMatch) {
+		return {
+			view: "sources",
+			sourceId: Number(sourceDetailFallbackMatch[1]),
+			quizId: null,
+			backTarget: null,
+		};
+	}
+
 	const roadmapQuizEditMatch = subPath.match(
 		new RegExp(`^${roadmaps}/(\\d+)/${phases}/(\\d+)(?:/${knowledges}/(\\d+))?/${quizzes}/(\\d+)/edit$`),
 	);
@@ -159,7 +169,24 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 	};
 }
 
-export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget, selectedMockTest, selectedCollection) {
+export function buildWorkspacePathForView(
+	view,
+	selectedQuiz,
+	quizBackTarget,
+	selectedMockTest,
+	selectedCollection,
+	selectedSource,
+) {
+	if (view === "sources") {
+		const normalizedSourceId = Number(
+			selectedSource?.id ?? selectedSource?.sourceId ?? selectedSource,
+		);
+		if (Number.isInteger(normalizedSourceId) && normalizedSourceId > 0) {
+			return `sources/${normalizedSourceId}`;
+		}
+		return "sources";
+	}
+
 	if (view === "quizDetail" && selectedQuiz?.quizId) {
 		if (quizBackTarget?.view === "roadmap") {
 			const normalizedRoadmapId = Number(quizBackTarget?.roadmapId);

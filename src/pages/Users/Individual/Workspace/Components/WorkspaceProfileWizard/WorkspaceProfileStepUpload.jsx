@@ -10,6 +10,8 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/context/ToastContext';
+import { MATERIAL_ACCEPT_ATTR, validateMaterialFile } from '@/utils/uploadValidation';
 import { evaluateMaterialFit } from './mockProfileWizardData';
 
 function createCopy(t) {
@@ -205,6 +207,7 @@ function WorkspaceProfileStepUpload({
 }) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
+  const { showError } = useToast();
   const copy = createCopy(t);
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
   const surfaceClass = isDarkMode
@@ -263,10 +266,28 @@ function WorkspaceProfileStepUpload({
     [reviewItems, values, selectedExam]
   );
 
+  function partitionByMaterialMime(files) {
+    const valid = [];
+    const invalidMessages = [];
+    for (const file of files) {
+      const result = validateMaterialFile(file);
+      if (result.ok) {
+        valid.push(file);
+      } else {
+        invalidMessages.push(result.message);
+      }
+    }
+    return { valid, invalidMessages };
+  }
+
   function handleFileSelection(event) {
     const nextFiles = Array.from(event.target.files || []);
-    if (nextFiles.length > 0) {
-      onAddFiles(nextFiles);
+    const { valid, invalidMessages } = partitionByMaterialMime(nextFiles);
+    if (invalidMessages.length > 0) {
+      showError(invalidMessages[0]);
+    }
+    if (valid.length > 0) {
+      onAddFiles(valid);
     }
     event.target.value = '';
   }
@@ -276,8 +297,12 @@ function WorkspaceProfileStepUpload({
     setDragOver(false);
     if (disabled || uploading) return;
     const nextFiles = Array.from(event.dataTransfer.files || []);
-    if (nextFiles.length > 0) {
-      onAddFiles(nextFiles);
+    const { valid, invalidMessages } = partitionByMaterialMime(nextFiles);
+    if (invalidMessages.length > 0) {
+      showError(invalidMessages[0]);
+    }
+    if (valid.length > 0) {
+      onAddFiles(valid);
     }
   }
 
@@ -414,7 +439,7 @@ function WorkspaceProfileStepUpload({
           multiple
           aria-label={copy.fileInputAria}
           className="sr-only"
-          accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.png,.jpg,.jpeg,.mp3,.mp4"
+          accept={MATERIAL_ACCEPT_ATTR}
           onChange={handleFileSelection}
         />
 

@@ -4,6 +4,8 @@ import { clearUserCache } from '@/utils/userCache';
 import { clearPlanPurchaseState } from '@/utils/planPurchaseState';
 import { clearCurrentUser } from '@/lib/currentUser';
 import { emitPlanUpgrade } from '@/lib/planUpgradeBus';
+import { emitRateLimit } from '@/lib/rateLimitBus';
+import { applyPaginationBounds } from '@/utils/pagination';
 import {
   clearTokens,
   configureRefresh,
@@ -91,6 +93,11 @@ api.interceptors.request.use(
       /* no-op: thiếu header chỉ khiến BE fallback sang User-Agent hash */
     }
 
+    // BE enforce `1 ≤ size ≤ 100` và `page ≥ 0`, trả 400 khi vượt biên.
+    // Clamp ở client để tránh user-facing 400 do default state hoặc UI bug.
+    // Opt-out per-request bằng `skipPaginationClamp: true` trong config.
+    applyPaginationBounds(config);
+
     if (config.skipAuthHeader) {
       if (config.headers) {
         delete config.headers.Authorization;
@@ -101,6 +108,7 @@ api.interceptors.request.use(
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 JWT Token in Request:', token);
     }
     return config;
   },
@@ -243,6 +251,26 @@ api.interceptors.response.use(
         code: 'REQUEST_TIMEOUT',
         message: i18n.t('error.requestTimeout'),
         data: error?.response?.data,
+      });
+    }
+
+    // BE rate-limit trả 429 với body text/plain "Too Many Requests".
+    // Emit qua bus để bridge component show toast (caller vẫn nhận reject như
+    // thường — có thể opt-out global toast bằng `skipRateLimitToast: true`).
+    if (status === 429) {
+      const rawBody = error.response?.data;
+      const messageFromBody = typeof rawBody === 'string' && rawBody.trim() ? rawBody.trim() : null;
+      if (!originalRequest?.skipRateLimitToast) {
+        emitRateLimit({
+          url: originalRequest?.url,
+          message: messageFromBody,
+        });
+      }
+      return Promise.reject({
+        statusCode: 429,
+        code: 'RATE_LIMITED',
+        message: i18n.t('error.rateLimited', { defaultValue: 'Quá nhiều yêu cầu, vui lòng thử lại sau ít phút.' }),
+        data: rawBody,
       });
     }
 

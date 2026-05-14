@@ -1,4 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 import { cn } from "@/lib/utils";
-import SourceDetailView from "./SourceDetailView";
+import InlineMaterialWorkspace from "@/components/material/InlineMaterialWorkspace";
 import {
   Check,
   FileText,
@@ -39,11 +40,32 @@ function classifySourceType(type) {
   if (lower.includes("vimeo")) return "vimeo";
   if (lower === "url" || lower.startsWith("link")) return "url";
   if (lower.includes("pdf")) return "pdf";
-  if (lower.includes("wordprocessingml") || lower.includes("msword") || lower === "doc" || lower === "docx") return "docx";
-  if (lower.includes("spreadsheetml") || lower.includes("excel") || lower === "xls" || lower === "xlsx" || lower === "csv" || lower.includes("csv")) return "xlsx";
-  if (lower.includes("presentationml") || lower.includes("powerpoint") || lower === "ppt" || lower === "pptx") return "pptx";
+  if (
+    lower.includes("wordprocessingml") ||
+    lower.includes("msword") ||
+    lower === "doc" ||
+    lower === "docx"
+  )
+    return "docx";
+  if (
+    lower.includes("spreadsheetml") ||
+    lower.includes("excel") ||
+    lower === "xls" ||
+    lower === "xlsx" ||
+    lower === "csv" ||
+    lower.includes("csv")
+  )
+    return "xlsx";
+  if (
+    lower.includes("presentationml") ||
+    lower.includes("powerpoint") ||
+    lower === "ppt" ||
+    lower === "pptx"
+  )
+    return "pptx";
   if (lower.includes("markdown") || lower === "md") return "markdown";
-  if (lower === "text/plain" || lower === "txt" || lower.startsWith("text/")) return "text";
+  if (lower === "text/plain" || lower === "txt" || lower.startsWith("text/"))
+    return "text";
   if (lower.startsWith("image/") || lower.includes("image")) return "image";
   if (lower.startsWith("audio/") || lower.includes("audio")) return "audio";
   if (lower.startsWith("video/") || lower.includes("video")) return "video";
@@ -52,37 +74,62 @@ function classifySourceType(type) {
 
 function formatFileType(type) {
   switch (classifySourceType(type)) {
-    case "youtube": return "URL";
-    case "vimeo": return "URL";
-    case "url": return "URL";
-    case "pdf": return "PDF";
-    case "docx": return "DOCX";
-    case "xlsx": return "XLSX";
-    case "pptx": return "PPTX";
-    case "markdown": return "MD";
-    case "text": return "TXT";
-    case "image": return "IMAGE";
-    case "audio": return "AUDIO";
-    case "video": return "VIDEO";
-    default: return "FILE";
+    case "youtube":
+      return "URL";
+    case "vimeo":
+      return "URL";
+    case "url":
+      return "URL";
+    case "pdf":
+      return "PDF";
+    case "docx":
+      return "DOCX";
+    case "xlsx":
+      return "XLSX";
+    case "pptx":
+      return "PPTX";
+    case "markdown":
+      return "MD";
+    case "text":
+      return "TXT";
+    case "image":
+      return "IMAGE";
+    case "audio":
+      return "AUDIO";
+    case "video":
+      return "VIDEO";
+    default:
+      return "FILE";
   }
 }
 
 function getSourceIcon(type) {
   switch (classifySourceType(type)) {
-    case "youtube": return Youtube;
-    case "vimeo": return Film;
-    case "url": return Link2;
-    case "pdf": return FileText;
-    case "docx": return FileType;
-    case "xlsx": return FileSpreadsheet;
-    case "pptx": return Presentation;
+    case "youtube":
+      return Youtube;
+    case "vimeo":
+      return Film;
+    case "url":
+      return Link2;
+    case "pdf":
+      return FileText;
+    case "docx":
+      return FileType;
+    case "xlsx":
+      return FileSpreadsheet;
+    case "pptx":
+      return Presentation;
     case "markdown":
-    case "text": return FileText;
-    case "image": return Image;
-    case "audio": return Headphones;
-    case "video": return Film;
-    default: return FileText;
+    case "text":
+      return FileText;
+    case "image":
+      return Image;
+    case "audio":
+      return Headphones;
+    case "video":
+      return Film;
+    default:
+      return FileText;
   }
 }
 
@@ -91,53 +138,125 @@ function getSourceTypeTone(type, isDarkMode = false) {
   switch (classifySourceType(type)) {
     case "youtube":
       return isDarkMode
-        ? { icon: "text-rose-400", badge: "border-rose-700/40 bg-rose-950/40 text-rose-300" }
-        : { icon: "text-rose-500", badge: "border-rose-200 bg-rose-50 text-rose-700" };
+        ? {
+            icon: "text-rose-400",
+            badge: "border-rose-700/40 bg-rose-950/40 text-rose-300",
+          }
+        : {
+            icon: "text-rose-500",
+            badge: "border-rose-200 bg-rose-50 text-rose-700",
+          };
     case "vimeo":
       return isDarkMode
-        ? { icon: "text-sky-400", badge: "border-sky-700/40 bg-sky-950/40 text-sky-300" }
-        : { icon: "text-sky-500", badge: "border-sky-200 bg-sky-50 text-sky-700" };
+        ? {
+            icon: "text-sky-400",
+            badge: "border-sky-700/40 bg-sky-950/40 text-sky-300",
+          }
+        : {
+            icon: "text-sky-500",
+            badge: "border-sky-200 bg-sky-50 text-sky-700",
+          };
     case "url":
       return isDarkMode
-        ? { icon: "text-blue-400", badge: "border-blue-700/40 bg-blue-950/40 text-blue-300" }
-        : { icon: "text-blue-500", badge: "border-blue-200 bg-blue-50 text-blue-700" };
+        ? {
+            icon: "text-blue-400",
+            badge: "border-blue-700/40 bg-blue-950/40 text-blue-300",
+          }
+        : {
+            icon: "text-blue-500",
+            badge: "border-blue-200 bg-blue-50 text-blue-700",
+          };
     case "pdf":
       return isDarkMode
-        ? { icon: "text-red-400", badge: "border-red-800/40 bg-red-950/40 text-red-300" }
-        : { icon: "text-red-500", badge: "border-red-200 bg-red-50 text-red-700" };
+        ? {
+            icon: "text-red-400",
+            badge: "border-red-800/40 bg-red-950/40 text-red-300",
+          }
+        : {
+            icon: "text-red-500",
+            badge: "border-red-200 bg-red-50 text-red-700",
+          };
     case "docx":
       return isDarkMode
-        ? { icon: "text-blue-400", badge: "border-blue-800/40 bg-blue-950/40 text-blue-300" }
-        : { icon: "text-blue-600", badge: "border-blue-200 bg-blue-50 text-blue-700" };
+        ? {
+            icon: "text-blue-400",
+            badge: "border-blue-800/40 bg-blue-950/40 text-blue-300",
+          }
+        : {
+            icon: "text-blue-600",
+            badge: "border-blue-200 bg-blue-50 text-blue-700",
+          };
     case "xlsx":
       return isDarkMode
-        ? { icon: "text-emerald-400", badge: "border-emerald-800/40 bg-emerald-950/40 text-emerald-300" }
-        : { icon: "text-emerald-600", badge: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+        ? {
+            icon: "text-emerald-400",
+            badge: "border-emerald-800/40 bg-emerald-950/40 text-emerald-300",
+          }
+        : {
+            icon: "text-emerald-600",
+            badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
+          };
     case "pptx":
       return isDarkMode
-        ? { icon: "text-orange-400", badge: "border-orange-800/40 bg-orange-950/40 text-orange-300" }
-        : { icon: "text-orange-500", badge: "border-orange-200 bg-orange-50 text-orange-700" };
+        ? {
+            icon: "text-orange-400",
+            badge: "border-orange-800/40 bg-orange-950/40 text-orange-300",
+          }
+        : {
+            icon: "text-orange-500",
+            badge: "border-orange-200 bg-orange-50 text-orange-700",
+          };
     case "markdown":
     case "text":
       return isDarkMode
-        ? { icon: "text-slate-300", badge: "border-slate-700 bg-slate-800/60 text-slate-200" }
-        : { icon: "text-slate-600", badge: "border-slate-200 bg-slate-100 text-slate-700" };
+        ? {
+            icon: "text-slate-300",
+            badge: "border-slate-700 bg-slate-800/60 text-slate-200",
+          }
+        : {
+            icon: "text-slate-600",
+            badge: "border-slate-200 bg-slate-100 text-slate-700",
+          };
     case "image":
       return isDarkMode
-        ? { icon: "text-green-400", badge: "border-green-800/40 bg-green-950/40 text-green-300" }
-        : { icon: "text-green-500", badge: "border-green-200 bg-green-50 text-green-700" };
+        ? {
+            icon: "text-green-400",
+            badge: "border-green-800/40 bg-green-950/40 text-green-300",
+          }
+        : {
+            icon: "text-green-500",
+            badge: "border-green-200 bg-green-50 text-green-700",
+          };
     case "audio":
       return isDarkMode
-        ? { icon: "text-purple-400", badge: "border-purple-800/40 bg-purple-950/40 text-purple-300" }
-        : { icon: "text-purple-500", badge: "border-purple-200 bg-purple-50 text-purple-700" };
+        ? {
+            icon: "text-purple-400",
+            badge: "border-purple-800/40 bg-purple-950/40 text-purple-300",
+          }
+        : {
+            icon: "text-purple-500",
+            badge: "border-purple-200 bg-purple-50 text-purple-700",
+          };
     case "video":
       return isDarkMode
-        ? { icon: "text-fuchsia-400", badge: "border-fuchsia-800/40 bg-fuchsia-950/40 text-fuchsia-300" }
-        : { icon: "text-fuchsia-500", badge: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700" };
+        ? {
+            icon: "text-fuchsia-400",
+            badge: "border-fuchsia-800/40 bg-fuchsia-950/40 text-fuchsia-300",
+          }
+        : {
+            icon: "text-fuchsia-500",
+            badge: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
+          };
     default:
       return isDarkMode
-        ? { icon: "text-slate-400", badge: "border-slate-700 bg-slate-800/60 text-slate-300" }
-        : { icon: "text-slate-500", badge: "border-slate-200 bg-slate-100 text-slate-700" };
+        ? {
+            icon: "text-slate-400",
+            badge: "border-slate-700 bg-slate-800/60 text-slate-300",
+          }
+        : {
+            icon: "text-slate-500",
+            badge: "border-slate-200 bg-slate-100 text-slate-700",
+          };
   }
 }
 
@@ -150,9 +269,17 @@ function canOpenSourceDetail(source) {
 
 function canSelectSource(source) {
   const status = String(source?.status || "").toUpperCase();
-  return !["REJECT", "REJECTED", "WARN", "WARNED", "ERROR", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(
-    status,
-  );
+  return ![
+    "REJECT",
+    "REJECTED",
+    "WARN",
+    "WARNED",
+    "ERROR",
+    "PROCESSING",
+    "UPLOADING",
+    "PENDING",
+    "QUEUED",
+  ].includes(status);
 }
 
 function canDeleteSource(source) {
@@ -168,7 +295,9 @@ function isWarnSource(source) {
 function getSourceStatusTone(status, isDarkMode = false) {
   const normalizedStatus = String(status || "ACTIVE").toUpperCase();
 
-  if (["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(normalizedStatus)) {
+  if (
+    ["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(normalizedStatus)
+  ) {
     return isDarkMode
       ? "border border-amber-700/60 bg-amber-950/35 text-amber-200"
       : "border border-amber-200 bg-amber-50 text-amber-700";
@@ -207,9 +336,18 @@ function formatUploadTime(uploadedAt, locale = "vi-VN") {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return locale.startsWith("en") ? "Just now" : "Vừa xong";
-    if (diffMins < 60) return locale.startsWith("en") ? `${diffMins}m ago` : `${diffMins} phút trước`;
-    if (diffHours < 24) return locale.startsWith("en") ? `${diffHours}h ago` : `${diffHours} giờ trước`;
-    if (diffDays < 7) return locale.startsWith("en") ? `${diffDays}d ago` : `${diffDays} ngày trước`;
+    if (diffMins < 60)
+      return locale.startsWith("en")
+        ? `${diffMins}m ago`
+        : `${diffMins} phút trước`;
+    if (diffHours < 24)
+      return locale.startsWith("en")
+        ? `${diffHours}h ago`
+        : `${diffHours} giờ trước`;
+    if (diffDays < 7)
+      return locale.startsWith("en")
+        ? `${diffDays}d ago`
+        : `${diffDays} ngày trước`;
 
     return new Intl.DateTimeFormat(locale, {
       day: "2-digit",
@@ -243,8 +381,11 @@ function SourcesPanel({
   onShareSource,
   onSourceUpdated,
   selectedIds: controlledSelectedIds,
+  selectedSourceId = null,
   onSelectionChange,
   onDetailViewChange,
+  onViewSource,
+  onCloseSourceDetail,
   forceCloseDetail = false,
   progressTracking = null,
 }) {
@@ -254,11 +395,12 @@ function SourcesPanel({
 
   const [search, setSearch] = useState("");
   const [internalSelectedIds, setInternalSelectedIds] = useState([]);
-  const [viewingSource, setViewingSource] = useState(null);
   const [renameDialog, setRenameDialog] = useState(null);
   const [renameInput, setRenameInput] = useState("");
   const [renameLoading, setRenameLoading] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
+  const [renderedSource, setRenderedSource] = useState(null);
+  const [isClosingDetail, setIsClosingDetail] = useState(false);
   const deferredSearch = useDeferredValue(search);
 
   const selectedIds =
@@ -294,18 +436,57 @@ function SourcesPanel({
     );
   }, [deferredSearch, sources]);
 
+  const resolvedSelectedSource = useMemo(() => {
+    const normalizedSelectedSourceId = Number(selectedSourceId);
+    if (
+      !Number.isInteger(normalizedSelectedSourceId) ||
+      normalizedSelectedSourceId <= 0
+    ) {
+      return null;
+    }
+
+    return (
+      sources.find((source) => {
+        const sourceId = Number(source?.id ?? source?.materialId);
+        return sourceId === normalizedSelectedSourceId;
+      }) || null
+    );
+  }, [selectedSourceId, sources]);
+
   const uploadTimeLabel = t("workspace.shell.uploadTimeLabel", "Thời gian");
 
   useEffect(() => {
-    onDetailViewChange?.(Boolean(viewingSource));
+    onDetailViewChange?.(Boolean(renderedSource));
     return () => onDetailViewChange?.(false);
-  }, [onDetailViewChange, viewingSource]);
+  }, [onDetailViewChange, renderedSource]);
 
   useEffect(() => {
     if (forceCloseDetail) {
-      setViewingSource(null);
+      setRenderedSource(null);
+      setIsClosingDetail(false);
     }
   }, [forceCloseDetail]);
+
+  useEffect(() => {
+    if (resolvedSelectedSource) {
+      setRenderedSource(resolvedSelectedSource);
+      setIsClosingDetail(false);
+      return undefined;
+    }
+
+    if (!renderedSource) {
+      setIsClosingDetail(false);
+      return undefined;
+    }
+
+    setIsClosingDetail(true);
+    const closeTimer = window.setTimeout(() => {
+      setRenderedSource(null);
+      setIsClosingDetail(false);
+    }, 220);
+
+    return () => window.clearTimeout(closeTimer);
+  }, [renderedSource, resolvedSelectedSource]);
 
   const setSelected = (nextValue) => {
     if (typeof onSelectionChange === "function") {
@@ -383,420 +564,517 @@ function SourcesPanel({
   return (
     <section
       className={cn(
-        "h-full overflow-y-auto px-6 pb-8 pt-6 transition-colors duration-200",
+        "relative h-full overflow-hidden transition-colors duration-200",
         isDarkMode ? "text-slate-100" : "text-slate-900",
       )}
     >
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-3 border-b pb-5 transition-colors duration-200",
-          isDarkMode ? "border-slate-700/80" : "border-slate-200",
-        )}
-      >
-        <HomeButton
-          size="sm"
-          rounded
-          className={cn(
-            "h-11 px-4 transition-colors duration-200 ease-out",
-            isDarkMode
-              ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
-              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-          )}
-        />
-        <div className="min-w-0 flex-1">
-          <h2
-            className={cn(
-              "truncate text-2xl font-semibold",
-              isDarkMode ? "text-slate-100" : "text-slate-900",
-              fontClass,
-            )}
-          >
-            {t("workspace.shell.sourcesHeadline", "Source library for this workspace")}
-          </h2>
-          <p className={cn("mt-1 text-sm", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-            {t(
-              "workspace.shell.sourcesHint",
-              "Search, preview, select, and curate the exact materials that power roadmap, quiz, and flashcard generation.",
-            )}
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          onClick={onAddSource}
-          className={cn(
-            "h-11 rounded-full px-5 transition-colors duration-200 ease-out",
-            isDarkMode
-              ? "bg-slate-100 text-slate-900 hover:bg-white"
-              : "bg-slate-900 text-white hover:bg-slate-800",
-          )}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {t("workspace.shell.addSource", "Add source")}
-        </Button>
-      </div>
-
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-3 border-b py-4 transition-colors duration-200",
-          isDarkMode ? "border-slate-700/80" : "border-slate-200",
-        )}
-      >
+      <div className="h-full overflow-y-auto px-6 pb-8 pt-6">
         <div
           className={cn(
-            "flex min-w-[280px] flex-1 items-center gap-3 rounded-full border px-4 transition-colors duration-200",
-            isDarkMode
-              ? "border-slate-700 bg-slate-900"
-              : "border-slate-200 bg-white",
+            "flex flex-wrap items-center gap-3 border-b pb-5 transition-colors duration-200",
+            isDarkMode ? "border-slate-700/80" : "border-slate-200",
           )}
         >
-          <Search className={cn("h-4 w-4", isDarkMode ? "text-slate-500" : "text-slate-400")} />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={t("workspace.sources.searchPlaceholder", "Search sources...")}
+          <HomeButton
+            size="sm"
+            rounded
             className={cn(
-              "border-0 bg-transparent px-0 shadow-none focus-visible:ring-0",
+              "h-11 px-4 transition-colors duration-200 ease-out",
               isDarkMode
-                ? "text-slate-100 placeholder:text-slate-500"
-                : "text-slate-900 placeholder:text-slate-400",
+                ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
             )}
           />
-        </div>
+          <div className="min-w-0 flex-1">
+            <h2
+              className={cn(
+                "truncate text-2xl font-semibold",
+                isDarkMode ? "text-slate-100" : "text-slate-900",
+                fontClass,
+              )}
+            >
+              {t(
+                "workspace.shell.sourcesHeadline",
+                "Source library for this workspace",
+              )}
+            </h2>
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                isDarkMode ? "text-slate-400" : "text-slate-500",
+              )}
+            >
+              {t(
+                "workspace.shell.sourcesHint",
+                "Search, preview, select, and curate the exact materials that power roadmap, quiz, and flashcard generation.",
+              )}
+            </p>
+          </div>
 
-        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
-            variant="outline"
-            className={toolbarButtonClass}
-            onClick={selectAll}
+            onClick={onAddSource}
+            className={cn(
+              "h-11 rounded-full px-5 transition-colors duration-200 ease-out",
+              isDarkMode
+                ? "bg-slate-100 text-slate-900 hover:bg-white"
+                : "bg-slate-900 text-white hover:bg-slate-800",
+            )}
           >
-            {t("workspace.sources.selectAll")}
+            <Plus className="mr-2 h-4 w-4" />
+            {t("workspace.shell.addSource", "Add source")}
           </Button>
+        </div>
 
-          {selectedIds.length > 0 ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={toolbarButtonClass}
-                onClick={clearSelection}
-              >
-                <X className="mr-2 h-4 w-4" />
-                {t("workspace.shell.clearSelection", "Clear")}
-              </Button>
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-3 border-b py-4 transition-colors duration-200",
+            isDarkMode ? "border-slate-700/80" : "border-slate-200",
+          )}
+        >
+          <div
+            className={cn(
+              "flex min-w-[280px] flex-1 items-center gap-3 rounded-full border px-4 transition-colors duration-200",
+              isDarkMode
+                ? "border-slate-700 bg-slate-900"
+                : "border-slate-200 bg-white",
+            )}
+          >
+            <Search
+              className={cn(
+                "h-4 w-4",
+                isDarkMode ? "text-slate-500" : "text-slate-400",
+              )}
+            />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t(
+                "workspace.sources.searchPlaceholder",
+                "Search sources...",
+              )}
+              className={cn(
+                "border-0 bg-transparent px-0 shadow-none focus-visible:ring-0",
+                isDarkMode
+                  ? "text-slate-100 placeholder:text-slate-500"
+                  : "text-slate-900 placeholder:text-slate-400",
+              )}
+            />
+          </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                className={toolbarButtonClass}
-                onClick={handleDeleteSelected}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {t("workspace.shell.deleteSelected", "Delete selected")}
-              </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className={toolbarButtonClass}
+              onClick={selectAll}
+            >
+              {t("workspace.sources.selectAll")}
+            </Button>
 
-              {typeof onShareSource === "function" ? (
+            {selectedIds.length > 0 ? (
+              <>
                 <Button
                   type="button"
                   variant="outline"
                   className={toolbarButtonClass}
-                  onClick={() => onShareSource?.(selectedIds)}
+                  onClick={clearSelection}
                 >
-                  <Share2 className="mr-2 h-4 w-4" />
-                  {t("workspace.shell.shareSelected", "Share selected")}
+                  <X className="mr-2 h-4 w-4" />
+                  {t("workspace.shell.clearSelection", "Clear")}
                 </Button>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      </div>
 
-      <div
-        className={cn(
-          "py-3 text-xs font-semibold uppercase tracking-[0.18em]",
-          isDarkMode ? "text-slate-500" : "text-slate-400",
-        )}
-      >
-        {selectedIds.length > 0
-          ? `${selectedIds.length} ${t("workspace.shell.selectedBadge", "Selected")}`
-          : t("workspace.sources.title", "Sources")}
-      </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={toolbarButtonClass}
+                  onClick={handleDeleteSelected}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {t("workspace.shell.deleteSelected", "Delete selected")}
+                </Button>
 
-      {filteredSources.length > 0 ? (
-        <div className={cn("divide-y", isDarkMode ? "divide-slate-800" : "divide-slate-200")}>
-          {filteredSources.map((source, index) => {
-            const sourceId = Number(source?.id ?? source?.materialId);
-            const normalizedStatus = String(source?.status || "").toUpperCase();
-            const isSelected =
-              Number.isInteger(sourceId) && selectedIds.includes(sourceId);
-            const isSelectable =
-              Number.isInteger(sourceId) && canSelectSource(source);
-            const sourceType = source?.type ?? source?.materialType;
-            const Icon = getSourceIcon(sourceType);
-            const tone = getSourceTypeTone(sourceType, isDarkMode);
-
-            return (
-              <article
-                key={source?.id ?? source?.materialId ?? `source:${index}`}
-                className="grid gap-4 py-5 lg:grid-cols-[minmax(0,1fr)_auto]"
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <button
+                {typeof onShareSource === "function" ? (
+                  <Button
                     type="button"
-                    disabled={!isSelectable}
-                    onClick={() => isSelectable && toggleSelection(sourceId)}
-                    className={cn(
-                      "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ease-out",
-                      isSelected
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : isDarkMode
-                          ? "border-slate-700 bg-slate-900 text-slate-500"
-                          : "border-slate-300 bg-white text-slate-400",
-                    )}
-                    aria-label={
-                      isSelected
-                        ? t("workspace.shell.unselectSource", "Unselect source")
-                        : t("workspace.shell.selectSource", "Select source")
-                    }
+                    variant="outline"
+                    className={toolbarButtonClass}
+                    onClick={() => onShareSource?.(selectedIds)}
                   >
-                    {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
-                  </button>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    {t("workspace.shell.shareSelected", "Share selected")}
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        </div>
 
-                  <div
-                    className={cn(
-                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-colors duration-200",
-                      isDarkMode
-                        ? "border-slate-700 bg-slate-900"
-                        : "border-slate-200 bg-slate-50",
-                    )}
-                  >
-                    <Icon className={cn("h-4.5 w-4.5", tone.icon)} />
-                  </div>
+        <div
+          className={cn(
+            "py-3 text-xs font-semibold uppercase tracking-[0.18em]",
+            isDarkMode ? "text-slate-500" : "text-slate-400",
+          )}
+        >
+          {selectedIds.length > 0
+            ? `${selectedIds.length} ${t("workspace.shell.selectedBadge", "Selected")}`
+            : t("workspace.sources.title", "Sources")}
+        </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-h-11 flex-wrap items-center gap-2">
-                      <p
-                        className={cn(
-                          "truncate text-base font-semibold",
-                          isDarkMode ? "text-slate-100" : "text-slate-900",
-                          fontClass,
-                        )}
-                      >
-                        {source?.name ||
-                          source?.title ||
-                          t("workspace.shell.untitledSource", "Untitled source")}
-                      </p>
-                      <span
-                        className={cn(
-                          "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors duration-200",
-                          tone.badge,
-                        )}
-                      >
-                        {formatFileType(sourceType)}
-                      </span>
-                      {normalizedStatus !== "ACTIVE" && (
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSourceStatusTone(source?.status, isDarkMode)}`}
-                        >
-                          {getSourceStatusLabel(source?.status, t)}
-                        </span>
+        {filteredSources.length > 0 ? (
+          <div
+            className={cn(
+              "divide-y",
+              isDarkMode ? "divide-slate-800" : "divide-slate-200",
+            )}
+          >
+            {filteredSources.map((source, index) => {
+              const sourceId = Number(source?.id ?? source?.materialId);
+              const normalizedStatus = String(
+                source?.status || "",
+              ).toUpperCase();
+              const isSelected =
+                Number.isInteger(sourceId) && selectedIds.includes(sourceId);
+              const isSelectable =
+                Number.isInteger(sourceId) && canSelectSource(source);
+              const sourceType = source?.type ?? source?.materialType;
+              const Icon = getSourceIcon(sourceType);
+              const tone = getSourceTypeTone(sourceType, isDarkMode);
+
+              return (
+                <article
+                  key={source?.id ?? source?.materialId ?? `source:${index}`}
+                  className="grid gap-4 py-5 lg:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <button
+                      type="button"
+                      disabled={!isSelectable}
+                      onClick={() => isSelectable && toggleSelection(sourceId)}
+                      className={cn(
+                        "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ease-out",
+                        isSelected
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : isDarkMode
+                            ? "border-slate-700 bg-slate-900 text-slate-500"
+                            : "border-slate-300 bg-white text-slate-400",
                       )}
-                      {source?.uploadedAt && (
+                      aria-label={
+                        isSelected
+                          ? t(
+                              "workspace.shell.unselectSource",
+                              "Unselect source",
+                            )
+                          : t("workspace.shell.selectSource", "Select source")
+                      }
+                    >
+                      {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
+                    </button>
+
+                    <div
+                      className={cn(
+                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-colors duration-200",
+                        isDarkMode
+                          ? "border-slate-700 bg-slate-900"
+                          : "border-slate-200 bg-slate-50",
+                      )}
+                    >
+                      <Icon className={cn("h-4.5 w-4.5", tone.icon)} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-h-11 flex-wrap items-center gap-2">
+                        <p
+                          className={cn(
+                            "truncate text-base font-semibold",
+                            isDarkMode ? "text-slate-100" : "text-slate-900",
+                            fontClass,
+                          )}
+                        >
+                          {source?.name ||
+                            source?.title ||
+                            t(
+                              "workspace.shell.untitledSource",
+                              "Untitled source",
+                            )}
+                        </p>
                         <span
                           className={cn(
-                            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-200",
-                            isDarkMode
-                              ? "border-slate-700 bg-slate-950 text-slate-400"
-                              : "border-slate-200 bg-slate-50 text-slate-500",
+                            "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors duration-200",
+                            tone.badge,
                           )}
-                          title={new Intl.DateTimeFormat(i18n.language === "en" ? "en-US" : "vi-VN", {
-                            dateStyle: "full",
-                            timeStyle: "short",
-                          }).format(new Date(source.uploadedAt))}
                         >
-                          {uploadTimeLabel}: {formatUploadTime(source.uploadedAt, i18n.language === "en" ? "en-US" : "vi-VN")}
+                          {formatFileType(sourceType)}
                         </span>
-                      )}
-                    </div>
-                    {(() => {
-                      if (!isActivelyProcessing(source?.status)) return null;
-                      const rawPercent = Number(
-                        progressTracking?.getMaterialProgress?.(sourceId) ?? 0,
-                      );
-                      const percent = Math.max(
-                        0,
-                        Math.min(100, Number.isFinite(rawPercent) ? rawPercent : 0),
-                      );
-                      const percentLabel = Math.round(percent);
-                      const normalizedStatus = String(source?.status || "").toUpperCase();
-                      const statusLine = percentLabel < 100
-                        ? (normalizedStatus === "UPLOADING"
-                          ? t("workspace.shell.uploadProgress.uploading", "Uploading")
-                          : t("workspace.shell.uploadProgress.processing", "AI is analyzing"))
-                        : t("workspace.shell.uploadProgress.finalizing", "Finalizing");
-                      return (
-                        <div className="mt-3 space-y-1.5">
-                          <div className="flex items-center justify-between gap-3 text-[11px]">
-                            <span className={cn(
-                              "inline-flex items-center gap-1.5 font-medium",
-                              isDarkMode ? "text-slate-300" : "text-slate-600",
-                            )}>
-                              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
-                              {statusLine}
-                            </span>
-                            <span
-                              className={cn(
-                                "font-mono font-semibold tabular-nums",
-                                isDarkMode ? "text-amber-200" : "text-amber-700",
-                              )}
-                            >
-                              {percentLabel}%
-                            </span>
-                          </div>
-                          <div
-                            className={cn(
-                              "relative h-1.5 overflow-hidden rounded-full",
-                              isDarkMode ? "bg-slate-800" : "bg-slate-200",
-                            )}
-                            role="progressbar"
-                            aria-valuenow={percentLabel}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
+                        {normalizedStatus !== "ACTIVE" && (
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSourceStatusTone(source?.status, isDarkMode)}`}
                           >
+                            {getSourceStatusLabel(source?.status, t)}
+                          </span>
+                        )}
+                        {source?.uploadedAt && (
+                          <span
+                            className={cn(
+                              "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-200",
+                              isDarkMode
+                                ? "border-slate-700 bg-slate-950 text-slate-400"
+                                : "border-slate-200 bg-slate-50 text-slate-500",
+                            )}
+                            title={new Intl.DateTimeFormat(
+                              i18n.language === "en" ? "en-US" : "vi-VN",
+                              {
+                                dateStyle: "full",
+                                timeStyle: "short",
+                              },
+                            ).format(new Date(source.uploadedAt))}
+                          >
+                            {uploadTimeLabel}:{" "}
+                            {formatUploadTime(
+                              source.uploadedAt,
+                              i18n.language === "en" ? "en-US" : "vi-VN",
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      {(() => {
+                        if (!isActivelyProcessing(source?.status)) return null;
+                        const rawPercent = Number(
+                          progressTracking?.getMaterialProgress?.(sourceId) ??
+                            0,
+                        );
+                        const percent = Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Number.isFinite(rawPercent) ? rawPercent : 0,
+                          ),
+                        );
+                        const percentLabel = Math.round(percent);
+                        const normalizedStatus = String(
+                          source?.status || "",
+                        ).toUpperCase();
+                        const statusLine =
+                          percentLabel < 100
+                            ? normalizedStatus === "UPLOADING"
+                              ? t(
+                                  "workspace.shell.uploadProgress.uploading",
+                                  "Uploading",
+                                )
+                              : t(
+                                  "workspace.shell.uploadProgress.processing",
+                                  "AI is analyzing",
+                                )
+                            : t(
+                                "workspace.shell.uploadProgress.finalizing",
+                                "Finalizing",
+                              );
+                        return (
+                          <div className="mt-3 space-y-1.5">
+                            <div className="flex items-center justify-between gap-3 text-[11px]">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 font-medium",
+                                  isDarkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-600",
+                                )}
+                              >
+                                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                {statusLine}
+                              </span>
+                              <span
+                                className={cn(
+                                  "font-mono font-semibold tabular-nums",
+                                  isDarkMode
+                                    ? "text-amber-200"
+                                    : "text-amber-700",
+                                )}
+                              >
+                                {percentLabel}%
+                              </span>
+                            </div>
                             <div
                               className={cn(
-                                "absolute inset-y-0 left-0 rounded-full transition-[width] duration-200 ease-linear",
-                                isDarkMode ? "bg-amber-400" : "bg-amber-500",
+                                "relative h-1.5 overflow-hidden rounded-full",
+                                isDarkMode ? "bg-slate-800" : "bg-slate-200",
                               )}
-                              style={{ width: `${percent}%` }}
-                            />
+                              role="progressbar"
+                              aria-valuenow={percentLabel}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                            >
+                              <div
+                                className={cn(
+                                  "absolute inset-y-0 left-0 rounded-full transition-[width] duration-200 ease-linear",
+                                  isDarkMode ? "bg-amber-400" : "bg-amber-500",
+                                )}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            <p
+                              className={cn(
+                                "text-[11px] leading-4",
+                                isDarkMode
+                                  ? "text-slate-400"
+                                  : "text-slate-500",
+                              )}
+                            >
+                              {t(
+                                "workspace.shell.uploadProgress.rejectionNotice",
+                                "Hệ thống sẽ từ chối đối với các tài liệu không liên quan",
+                              )}
+                            </p>
                           </div>
-                          <p
-                            className={cn(
-                              "text-[11px] leading-4",
-                              isDarkMode ? "text-slate-400" : "text-slate-500",
-                            )}
-                          >
-                            {t(
-                              "workspace.shell.uploadProgress.rejectionNotice",
-                              "Hệ thống sẽ từ chối đối với các tài liệu không liên quan",
-                            )}
-                          </p>
-                        </div>
-                      );
-                    })()}
-                    {/*<p className={cn("mt-2 line-clamp-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-600")}>*/}
-                    {/*  {source?.description ||*/}
-                    {/*    source?.summary ||*/}
-                    {/*    t(*/}
-                    {/*      "workspace.shell.sourceFallbackSummary",*/}
-                    {/*      "Use this source as context for roadmap, quiz, and flashcard generation.",*/}
-                    {/*    )}*/}
-                    {/*</p>*/}
+                        );
+                      })()}
+                      {/*<p className={cn("mt-2 line-clamp-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-600")}>*/}
+                      {/*  {source?.description ||*/}
+                      {/*    source?.summary ||*/}
+                      {/*    t(*/}
+                      {/*      "workspace.shell.sourceFallbackSummary",*/}
+                      {/*      "Use this source as context for roadmap, quiz, and flashcard generation.",*/}
+                      {/*    )}*/}
+                      {/*</p>*/}
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      actionButtonClass,
-                      isWarnSource(source)
-                        ? isDarkMode
-                          ? "border-amber-600/70 bg-amber-950/40 text-amber-200 hover:bg-amber-900/40 hover:text-amber-100"
-                          : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                        : null,
-                    )}
-                    onClick={() =>
-                      canOpenSourceDetail(source) && setViewingSource(source)
-                    }
-                    disabled={!canOpenSourceDetail(source)}
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    {isWarnSource(source)
-                      ? t("workspace.shell.warningSource", "Cảnh báo")
-                      : t("workspace.shell.previewSource", "Preview")}
-                  </Button>
+                  <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        actionButtonClass,
+                        isWarnSource(source)
+                          ? isDarkMode
+                            ? "border-amber-600/70 bg-amber-950/40 text-amber-200 hover:bg-amber-900/40 hover:text-amber-100"
+                            : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          : null,
+                      )}
+                      onClick={() =>
+                        canOpenSourceDetail(source) && onViewSource?.(sourceId)
+                      }
+                      disabled={!canOpenSourceDetail(source)}
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      {isWarnSource(source)
+                        ? t("workspace.shell.warningSource", "Cảnh báo")
+                        : t("workspace.shell.previewSource", "Preview")}
+                    </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className={iconButtonClass}
-                    onClick={() => openRenameDialog(source)}
-                    aria-label={t("workspace.sources.menuRename")}
-                  >
-                    <PencilLine className="h-4 w-4" />
-                  </Button>
-
-                  {typeof onShareSource === "function" ? (
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
                       className={iconButtonClass}
-                      onClick={() => onShareSource?.(source)}
-                      aria-label={t("workspace.shell.shareSource", "Share source")}
+                      onClick={() => openRenameDialog(source)}
+                      aria-label={t("workspace.sources.menuRename")}
                     >
-                      <Share2 className="h-4 w-4" />
+                      <PencilLine className="h-4 w-4" />
                     </Button>
-                  ) : null}
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className={iconButtonClass}
-                    aria-label={t("workspace.shell.deleteSourceTitle", "Delete source")}
-                    disabled={!canDeleteSource(source)}
-                    onClick={() =>
-                      setDeleteDialog({
-                        id: sourceId,
-                        name: source?.name || source?.title,
-                      })
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
-          <FileText className={cn("mb-3 h-12 w-12", isDarkMode ? "text-slate-600" : "text-slate-300")} />
-          <p className={cn("text-base font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900", fontClass)}>
-            {t("workspace.shell.noSourcesFound", "No sources match this filter")}
-          </p>
-          <p className={cn("mt-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-            {t(
-              "workspace.shell.noSourcesFoundHint",
-              "Try another keyword or upload a new document.",
-            )}
-          </p>
-        </div>
-      )}
+                    {typeof onShareSource === "function" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className={iconButtonClass}
+                        onClick={() => onShareSource?.(source)}
+                        aria-label={t(
+                          "workspace.shell.shareSource",
+                          "Share source",
+                        )}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
 
-      <Dialog
-        open={Boolean(viewingSource)}
-        onOpenChange={(open) => {
-          if (!open) setViewingSource(null);
-        }}
-      >
-        <DialogContent className="flex h-[88vh] min-h-0 max-w-5xl flex-col overflow-hidden p-0">
-          {viewingSource ? (
-            <SourceDetailView
-              isDarkMode={isDarkMode}
-              source={viewingSource}
-              onBack={() => setViewingSource(null)}
-              onSourceUpdated={onSourceUpdated}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className={iconButtonClass}
+                      aria-label={t(
+                        "workspace.shell.deleteSourceTitle",
+                        "Delete source",
+                      )}
+                      disabled={!canDeleteSource(source)}
+                      onClick={() =>
+                        setDeleteDialog({
+                          id: sourceId,
+                          name: source?.name || source?.title,
+                        })
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
+            <FileText
+              className={cn(
+                "mb-3 h-12 w-12",
+                isDarkMode ? "text-slate-600" : "text-slate-300",
+              )}
             />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+            <p
+              className={cn(
+                "text-base font-semibold",
+                isDarkMode ? "text-slate-100" : "text-slate-900",
+                fontClass,
+              )}
+            >
+              {t(
+                "workspace.shell.noSourcesFound",
+                "No sources match this filter",
+              )}
+            </p>
+            <p
+              className={cn(
+                "mt-2 text-sm",
+                isDarkMode ? "text-slate-400" : "text-slate-500",
+              )}
+            >
+              {t(
+                "workspace.shell.noSourcesFoundHint",
+                "Try another keyword or upload a new document.",
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {renderedSource && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className={cn(
+                "fixed inset-0 z-[120] h-screen w-screen overflow-hidden will-change-transform will-change-opacity",
+                isDarkMode ? "bg-slate-950" : "bg-white",
+                isClosingDetail
+                  ? "workspace-source-detail-zoom-out pointer-events-none"
+                  : "workspace-source-detail-zoom-in",
+              )}
+            >
+              <InlineMaterialWorkspace
+                source={renderedSource}
+                isDarkMode={isDarkMode}
+                onBack={() => {
+                  if (isClosingDetail) return;
+                  onCloseSourceDetail?.();
+                }}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {/* Note: source detail is handled inline at top of component via InlineMaterialWorkspace.
+          SourceDetailView (modal) is no longer used for the main click — but import retained
+          for potential future use (e.g. non-PDF materials may still want detailed extracted-text view). */}
 
       <Dialog
         open={Boolean(renameDialog)}
@@ -816,17 +1094,29 @@ function SourcesPanel({
               <p className={`text-lg font-semibold ${fontClass}`}>
                 {t("workspace.sources.menuRename")}
               </p>
-              <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                {t("workspace.shell.renameHint", "Update the source name shown across the workspace.")}
+              <p
+                className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}
+              >
+                {t(
+                  "workspace.shell.renameHint",
+                  "Update the source name shown across the workspace.",
+                )}
               </p>
             </div>
             <Input
               value={renameInput}
               onChange={(event) => setRenameInput(event.target.value)}
-              placeholder={t("workspace.shell.renamePlaceholder", "New source name")}
+              placeholder={t(
+                "workspace.shell.renamePlaceholder",
+                "New source name",
+              )}
             />
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setRenameDialog(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRenameDialog(null)}
+              >
                 {t("common.cancel", "Cancel")}
               </Button>
               <Button
@@ -861,20 +1151,37 @@ function SourcesPanel({
               <p className={`text-lg font-semibold ${fontClass}`}>
                 {t("workspace.shell.deleteSourceTitle", "Delete source")}
               </p>
-              <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+              <p
+                className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}
+              >
                 {deleteDialog?.name
-                  ? t("workspace.shell.deleteSourceHint", "Remove {{name}} from this workspace.", {
-                      name: deleteDialog.name,
-                      defaultValue: `Remove ${deleteDialog.name} from this workspace.`,
-                    })
-                  : t("workspace.shell.deleteSourceHintFallback", "Remove this source from the workspace.")}
+                  ? t(
+                      "workspace.shell.deleteSourceHint",
+                      "Remove {{name}} from this workspace.",
+                      {
+                        name: deleteDialog.name,
+                        defaultValue: `Remove ${deleteDialog.name} from this workspace.`,
+                      },
+                    )
+                  : t(
+                      "workspace.shell.deleteSourceHintFallback",
+                      "Remove this source from the workspace.",
+                    )}
               </p>
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setDeleteDialog(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDeleteDialog(null)}
+              >
                 {t("common.cancel", "Cancel")}
               </Button>
-              <Button type="button" variant="destructive" onClick={handleDelete}>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+              >
                 {t("common.delete", "Delete")}
               </Button>
             </div>

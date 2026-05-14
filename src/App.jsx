@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { ProtectedRoute, PublicRoute } from './pages/Route/protectedRoute';
 import HomeTabRedirect from './pages/Route/HomeTabRedirect';
 import { ToastProvider } from '@/context/ToastContext';
+import RateLimitToastBridge from '@/components/system/RateLimitToastBridge';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -22,8 +23,16 @@ import './App.css';
 const LaunchingPage = lazy(() => import('./pages/LaunchingPage/LaunchingPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
 const LoginPage = lazy(() => import('./pages/Authentication/LoginPage'));
+const AdminLoginPage = lazy(() => import('./pages/Authentication/AdminLoginPage'));
 const RegisterPage = lazy(() => import('./pages/Authentication/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/Authentication/ForgotPasswordPage'));
+
+// Detect admin subdomain once at module load.
+// `admin.quizmateai.io.vn` → dùng UI rút gọn cho management console (xem AdminLoginPage).
+// Bất kỳ subdomain khác (kể cả localhost dev) → user-facing LoginPage.
+const isAdminSubdomain =
+  typeof window !== 'undefined' &&
+  window.location.hostname.toLowerCase().startsWith('admin.');
 const HomePage = lazy(loadHomePage);
 const ProfilePage = lazy(() => import('./pages/Users/Profile/ProfilePage'));
 const PlanPage = lazy(() => import('./pages/Users/Plan/PlanPage'));
@@ -37,6 +46,7 @@ const WorkspacePage = lazy(loadWorkspacePage);
 const GroupWorkspacePage = lazy(loadGroupWorkspacePage);
 const GroupManagementPage = lazy(() => import('./pages/Users/Group/group-leader/GroupManagementPage'));
 const AcceptInvitationPage = lazy(() => import('./pages/Users/Group/AcceptInvitationPage'));
+const KnowledgeTreePage = lazy(() => import('./pages/Users/Knowledge/KnowledgeTreePage'));
 
 // Admin
 const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
@@ -129,10 +139,18 @@ function MainRoutes() {
 
 
             <Route element={<PublicRoute />}>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                {/* Trên subdomain admin.*, route gốc đi thẳng vào login quản trị —
+                    không có landing/register/forgot. User flow giữ nguyên trên domain chính. */}
+                <Route path="/" element={isAdminSubdomain ? <AdminLoginPage /> : <LandingPage />} />
+                <Route path="/login" element={isAdminSubdomain ? <AdminLoginPage /> : <LoginPage />} />
+                <Route
+                    path="/register"
+                    element={isAdminSubdomain ? <Navigate to="/login" replace /> : <RegisterPage />}
+                />
+                <Route
+                    path="/forgot-password"
+                    element={isAdminSubdomain ? <Navigate to="/login" replace /> : <ForgotPasswordPage />}
+                />
             </Route>
 
             {/* Route cần đăng nhập (User) - Super Admin, Admin không được vào */}
@@ -168,6 +186,7 @@ function MainRoutes() {
                 <Route path="/quizzes/exams/:quizId" element={<ExamQuizPage />} />
                 <Route path="/quizzes/mock-tests/:quizId/exam" element={<MockTestExamPage />} />
                 <Route path="/quizzes/results/:attemptId" element={<QuizResultPage />} />
+                <Route path="/knowledge-trees/material/:materialId" element={<KnowledgeTreePage />} />
             </Route>
 
             {/* Route dành riêng cho Super Admin */}
@@ -327,6 +346,7 @@ function AppContent() {
 function App() {
     return (
         <ToastProvider>
+            <RateLimitToastBridge />
             <RuntimeRecoveryBoundary>
                 <Router>
                     <RouteMetaManager />
