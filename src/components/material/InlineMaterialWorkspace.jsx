@@ -7,19 +7,48 @@ import {
   Headphones,
   Highlighter,
   MessageSquareText,
-  Maximize2,
-  MoreHorizontal,
   Network,
   Pencil,
   Sparkles,
   X,
-  PanelRightClose,
   FileText,
 } from "lucide-react";
 
 import MaterialPdfViewer from "./MaterialPdfViewer";
 import EmbeddedKnowledgeTree from "./EmbeddedKnowledgeTree";
 import AskAIPanel from "./AskAIPanel";
+import ListenPlayer from "./ListenPlayer";
+
+const HIGHLIGHT_COLORS = [
+  {
+    id: "yellow",
+    label: "Vàng",
+    swatch: "linear-gradient(135deg, #FDE68A, #F59E0B)",
+    ring: "#F59E0B",
+    paint: "rgba(253, 224, 71, 0.55)",
+  },
+  {
+    id: "blue",
+    label: "Xanh dương",
+    swatch: "linear-gradient(135deg, #BFDBFE, #3B82F6)",
+    ring: "#3B82F6",
+    paint: "rgba(147, 197, 253, 0.55)",
+  },
+  {
+    id: "pink",
+    label: "Hồng",
+    swatch: "linear-gradient(135deg, #FBCFE8, #EC4899)",
+    ring: "#EC4899",
+    paint: "rgba(244, 114, 182, 0.5)",
+  },
+  {
+    id: "green",
+    label: "Xanh lá",
+    swatch: "linear-gradient(135deg, #BBF7D0, #22C55E)",
+    ring: "#22C55E",
+    paint: "rgba(134, 239, 172, 0.55)",
+  },
+];
 import {
   createMaterialNote,
   deleteMaterialNote,
@@ -90,19 +119,47 @@ function createAnnotationId() {
   return `annotation:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function sanitizeSelectionRects(rects) {
+  if (!Array.isArray(rects)) return [];
+  return rects
+    .map((rect) => {
+      if (!rect || typeof rect !== "object") return null;
+      const leftRatio = Number(rect.leftRatio);
+      const topRatio = Number(rect.topRatio);
+      const widthRatio = Number(rect.widthRatio);
+      const heightRatio = Number(rect.heightRatio);
+      if (
+        !Number.isFinite(leftRatio) ||
+        !Number.isFinite(topRatio) ||
+        !Number.isFinite(widthRatio) ||
+        !Number.isFinite(heightRatio)
+      ) {
+        return null;
+      }
+      return { leftRatio, topRatio, widthRatio, heightRatio };
+    })
+    .filter(Boolean);
+}
+
 function mapMaterialNoteToAnnotation(note, fallbackPage = 1) {
   const isHighlight = note?.noteType === "HIGHLIGHT";
+  const selectionRects = sanitizeSelectionRects(note?.selectionRects);
+  const page = Math.max(1, Number(note?.pageNumber) || fallbackPage);
+  const topRatio =
+    typeof note?.topRatio === "number" && Number.isFinite(note.topRatio)
+      ? note.topRatio
+      : 0.12;
   return {
     id: note?.noteId ? `server-note:${note.noteId}` : createAnnotationId(),
     noteId: note?.noteId,
     kind: "note",
-    page: fallbackPage,
+    page,
     excerpt: isHighlight
       ? note?.highlightedText || "Đoạn đã đánh dấu"
       : note?.title || "Ghi chú tự do",
-    topRatio: 0.12,
+    topRatio,
     source: isHighlight ? "server-highlight" : "floating",
-    selectionRects: [],
+    selectionRects,
     content: note?.content || "",
     title: note?.title || "",
     noteType: note?.noteType || "NORMAL",
@@ -124,6 +181,10 @@ function buildCreateNotePayload(materialId, annotation) {
       highlightedText: annotation.excerpt || annotation.highlightedText || "",
       startOffset: annotation.startOffset ?? null,
       endOffset: annotation.endOffset ?? null,
+      pageNumber: Number(annotation.page) || null,
+      topRatio:
+        typeof annotation.topRatio === "number" ? annotation.topRatio : null,
+      selectionRects: sanitizeSelectionRects(annotation.selectionRects),
     };
   }
 
@@ -132,6 +193,9 @@ function buildCreateNotePayload(materialId, annotation) {
     noteType: "NORMAL",
     title: annotation.title || "Ghi chú tự do",
     content: annotation.content || "",
+    pageNumber: Number(annotation.page) || null,
+    topRatio:
+      typeof annotation.topRatio === "number" ? annotation.topRatio : null,
   };
 }
 
@@ -213,11 +277,16 @@ function ToolPill({ icon: Icon, label, active, onClick, isDarkMode }) {
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
         active
-          ? "bg-gradient-to-br from-amber-300 to-amber-500 text-amber-900 shadow-[0_4px_10px_-4px_rgba(245,158,11,0.45)]"
+          ? "text-white shadow-[0_4px_10px_-4px_rgba(37,99,235,0.55)]"
           : isDarkMode
             ? "text-slate-300 hover:bg-slate-800 hover:text-cyan-300"
             : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
       }`}
+      style={
+        active
+          ? { background: "linear-gradient(135deg, #1E3A8A 0%, #2563EB 60%, #06B6D4 100%)" }
+          : undefined
+      }
     >
       {Icon && <Icon size={13} />}
       {label}
@@ -297,10 +366,10 @@ export default function InlineMaterialWorkspace({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [activeTool, setActiveTool] = useState("highlight");
+  const [highlightColorId, setHighlightColorId] = useState("yellow");
   const [annotations, setAnnotations] = useState([]);
   const [draftAnnotation, setDraftAnnotation] = useState(null);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
-  const [annotationLayouts, setAnnotationLayouts] = useState({});
   const [notesError, setNotesError] = useState(null);
   const pdfRef = useRef(null);
 
@@ -434,10 +503,6 @@ export default function InlineMaterialWorkspace({
     setSelectedAnnotationId(nextDraftId);
   }, []);
 
-  const handleAnnotationLayoutChange = useCallback((layouts) => {
-    setAnnotationLayouts(layouts);
-  }, []);
-
   const handleAnnotationResolve = useCallback((annotationId, patch) => {
     setAnnotations((previous) =>
       previous.map((annotation) =>
@@ -452,27 +517,24 @@ export default function InlineMaterialWorkspace({
     setSidebarView("notes");
   }, []);
 
-  const handleDraftContentChange = useCallback((content) => {
-    pdfRef.current?.updateDraftContent?.(content);
-  }, []);
-
-  const handleSaveDraft = useCallback(() => {
-    pdfRef.current?.saveDraftAnnotation?.();
-  }, []);
-
   const handleFloatingNoteSave = useCallback(
-    async (content) => {
+    async (payload) => {
       if (!materialId) return;
+      const rawContent =
+        typeof payload === "string" ? payload : payload?.content;
+      const rawTitle = typeof payload === "string" ? "" : payload?.title;
+      const trimmedTitle = String(rawTitle || "").trim();
+      const title = trimmedTitle || "Không có tiêu đề";
       const annotation = {
         id: createAnnotationId(),
         kind: "note",
         page: currentPage,
-        excerpt: "Ghi chú tự do",
+        excerpt: title,
         topRatio: 0.12,
         source: "floating",
         selectionRects: [],
-        content: String(content || "").trim(),
-        title: "Ghi chú tự do",
+        content: String(rawContent || "").trim(),
+        title,
         noteType: "NORMAL",
         createdAt: new Date().toISOString(),
       };
@@ -500,31 +562,42 @@ export default function InlineMaterialWorkspace({
     [currentPage, materialId],
   );
 
-  const handleUpdateAnnotation = useCallback((annotationId, content) => {
-    const nextContent = String(content || "").trim();
+  const handleUpdateAnnotation = useCallback((annotationId, payload) => {
+    const isObject = payload && typeof payload === "object";
+    const rawContent = isObject ? payload.content : payload;
+    const nextContent = String(rawContent || "").trim();
+    const titleUpdated = isObject && "title" in payload;
+    const trimmedTitle = titleUpdated
+      ? String(payload.title || "").trim()
+      : "";
+    const nextTitle = titleUpdated
+      ? trimmedTitle || "Không có tiêu đề"
+      : null;
     let targetNoteId = null;
 
     setAnnotations((previous) =>
       previous.map((annotation) => {
         if (annotation.id !== annotationId) return annotation;
         targetNoteId = annotation.noteId;
-        return { ...annotation, content: nextContent };
+        const updated = { ...annotation, content: nextContent };
+        if (titleUpdated) {
+          updated.title = nextTitle;
+          if (annotation.noteType !== "HIGHLIGHT") {
+            updated.excerpt = nextTitle;
+          }
+        }
+        return updated;
       }),
     );
 
     if (targetNoteId) {
       setNotesError(null);
-      updateMaterialNote(targetNoteId, { content: nextContent }).catch(
-        (error) => {
-          setNotesError(error?.message || "Không cập nhật được ghi chú");
-        },
-      );
+      const body = { content: nextContent };
+      if (titleUpdated) body.title = nextTitle;
+      updateMaterialNote(targetNoteId, body).catch((error) => {
+        setNotesError(error?.message || "Không cập nhật được ghi chú");
+      });
     }
-  }, []);
-
-  const handleNotesWheel = useCallback((event) => {
-    event.preventDefault();
-    pdfRef.current?.scrollByDelta?.(event.deltaY);
   }, []);
 
   const handleDeleteAnnotation = useCallback(
@@ -567,28 +640,26 @@ export default function InlineMaterialWorkspace({
     [],
   );
 
-  const sortedAnnotations = useMemo(() => {
-    const annotationItems = draftAnnotation
-      ? [draftAnnotation, ...annotations]
-      : [...annotations];
-
-    return annotationItems.sort((left, right) => {
-      const pageDiff = Number(left.page || 0) - Number(right.page || 0);
-      if (pageDiff !== 0) return pageDiff;
-
-      const topDiff =
-        Number(left.topRatio || 0) - Number(right.topRatio || 0);
-      if (topDiff !== 0) return topDiff;
-
-      if (left.status === "draft" && right.status !== "draft") return -1;
-      if (right.status === "draft" && left.status !== "draft") return 1;
-
-      return (
-        new Date(left.createdAt || 0).getTime() -
-        new Date(right.createdAt || 0).getTime()
-      );
-    });
-  }, [annotations, draftAnnotation]);
+  // Sidebar Ghi chú = chỉ NORMAL note (ghi chú tự do). HIGHLIGHT hiện trong
+  // PDF viewer (dưới đoạn đã bôi). Sort theo createdAt giảm dần — note mới
+  // nhất ở trên cùng, không phụ thuộc trang/scroll PDF.
+  const sidebarNotes = useMemo(
+    () =>
+      annotations
+        .filter(
+          (annotation) =>
+            annotation.kind !== "emoji" &&
+            (annotation.noteType === "NORMAL" ||
+              annotation.source === "floating"),
+        )
+        .slice()
+        .sort(
+          (left, right) =>
+            new Date(right.createdAt || 0).getTime() -
+            new Date(left.createdAt || 0).getTime(),
+        ),
+    [annotations],
+  );
   const sidebarTabIndex = Math.max(0, sidebarTabs.indexOf(sidebarView));
   const viewerAnnotations = useMemo(
     () => (draftAnnotation ? [draftAnnotation, ...annotations] : annotations),
@@ -657,7 +728,73 @@ export default function InlineMaterialWorkspace({
           </div>
         </div>
 
-        <div className="flex-1 min-w-2" />
+        {/* CENTER AREA - inline strip when highlight/listen tool is active */}
+        <div className="flex-1 min-w-2 flex items-center justify-center">
+          {showPdf && activeTool === "listen" && (
+            <ListenPlayer
+              isDarkMode={isDarkMode}
+              currentPage={currentPage}
+            />
+          )}
+          {showPdf && activeTool === "highlight" && (
+            <div
+              className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border ${
+                isDarkMode
+                  ? "bg-blue-500/10 border-blue-500/30"
+                  : "bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200/70 shadow-[0_2px_8px_-2px_rgba(37,99,235,0.25)]"
+              }`}
+            >
+              <span
+                className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                  isDarkMode ? "text-blue-300" : "text-blue-700"
+                }`}
+              >
+                Màu
+              </span>
+              <div className="flex items-center gap-1">
+                {HIGHLIGHT_COLORS.map((color) => {
+                  const isActive = color.id === highlightColorId;
+                  return (
+                    <button
+                      key={color.id}
+                      type="button"
+                      onClick={() => setHighlightColorId(color.id)}
+                      title={color.label}
+                      className={`relative w-6 h-6 rounded-md transition transform ${
+                        isActive ? "scale-110" : "hover:scale-110"
+                      }`}
+                      style={{
+                        background: color.swatch,
+                        outline: isActive ? `2px solid ${color.ring}` : "none",
+                        outlineOffset: isActive ? "1.5px" : "0",
+                      }}
+                    >
+                      {isActive && (
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <Check
+                            size={12}
+                            className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]"
+                            strokeWidth={3}
+                          />
+                        </span>
+                      )}
+                      <span className="sr-only">{color.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <span
+                className={`hidden md:inline-flex items-center text-[10px] font-semibold pl-1.5 border-l ${
+                  isDarkMode
+                    ? "text-blue-200/70 border-blue-500/30"
+                    : "text-blue-700/80 border-blue-200"
+                }`}
+              >
+                Tô chữ trên PDF để đánh dấu
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* TOOL PILLS - moved up from old sub-toolbar */}
         {showPdf && (
@@ -701,16 +838,6 @@ export default function InlineMaterialWorkspace({
           />
         )}
 
-        <IconBtn
-          isDarkMode={isDarkMode}
-          title="Toàn màn hình"
-          onClick={() => setSidebarView((v) => (v === null ? "tree" : null))}
-        >
-          {treeOpen ? <Maximize2 size={16} /> : <PanelRightClose size={16} />}
-        </IconBtn>
-        <IconBtn isDarkMode={isDarkMode} title="Thêm">
-          <MoreHorizontal size={16} />
-        </IconBtn>
       </div>
 
       {/* MAIN READING AREA */}
@@ -740,8 +867,9 @@ export default function InlineMaterialWorkspace({
               onAnnotationCreate={handleAnnotationCreate}
               onAnnotationSelect={handleAnnotationSelect}
               onAnnotationDraftChange={handleAnnotationDraftChange}
-              onAnnotationLayoutChange={handleAnnotationLayoutChange}
               onAnnotationResolve={handleAnnotationResolve}
+              onAnnotationUpdate={handleUpdateAnnotation}
+              onAnnotationDelete={handleDeleteAnnotation}
               hideToolbar
             />
           ) : (
@@ -795,23 +923,25 @@ export default function InlineMaterialWorkspace({
                   : "bg-white/70 backdrop-blur border border-blue-100 shadow-sm"
               }`}
             >
-              {/* Sliding active indicator */}
+              {/* Sliding active indicator - tree=ocean blue, notes=orange, chat=green */}
               <div
-                className="absolute top-1 bottom-1 rounded-lg transition-all duration-300 ease-out shadow-[0_4px_12px_-4px_rgba(37,99,235,0.5)]"
+                className="absolute top-1 bottom-1 rounded-lg transition-all duration-300 ease-out"
                 style={{
                   left: "0.25rem",
                   width: "calc((100% - 0.5rem) / 3)",
                   transform: `translateX(${sidebarTabIndex * 100}%)`,
                   background:
                     sidebarView === "chat"
-                      ? "linear-gradient(135deg, #2563EB, #06B6D4)"
+                      ? "linear-gradient(135deg, #16A34A, #4ADE80)"
                       : sidebarView === "notes"
                         ? "linear-gradient(135deg, #F97316, #FB923C)"
-                        : "linear-gradient(135deg, #FFFFFF, #F0F7FF)",
-                  border:
-                    sidebarView === "tree" && !isDarkMode
-                      ? "1px solid #DBEAFE"
-                      : "none",
+                        : "linear-gradient(135deg, #1E3A8A, #2563EB)",
+                  boxShadow:
+                    sidebarView === "chat"
+                      ? "0 4px 12px -4px rgba(22, 163, 74, 0.55)"
+                      : sidebarView === "notes"
+                        ? "0 4px 12px -4px rgba(249, 115, 22, 0.55)"
+                        : "0 4px 12px -4px rgba(37, 99, 235, 0.55)",
                 }}
               />
 
@@ -835,23 +965,10 @@ export default function InlineMaterialWorkspace({
                 active={sidebarView === "chat"}
                 onClick={() => setSidebarView("chat")}
                 isDarkMode={isDarkMode}
-                accent
               >
                 <Sparkles size={13} className="-mt-px" />
                 Hỏi AI
               </SegmentBtn>
-              <button
-                type="button"
-                onClick={() => setSidebarView(null)}
-                title="Đóng sidebar"
-                className={`absolute -right-1 -top-1 w-5 h-5 rounded-full inline-flex items-center justify-center transition shadow-md ${
-                  isDarkMode
-                    ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                    : "bg-white text-slate-500 hover:text-rose-600 border border-slate-200"
-                }`}
-              >
-                <X size={11} strokeWidth={3} />
-              </button>
             </div>
           </div>
 
@@ -884,19 +1001,14 @@ export default function InlineMaterialWorkspace({
             {sidebarView === "notes" && (
               <NotesPanel
                 isDarkMode={isDarkMode}
-                annotations={sortedAnnotations}
-                annotationLayouts={annotationLayouts}
-                totalPages={totalPages}
+                annotations={sidebarNotes}
                 notesError={notesError}
                 selectedAnnotationId={selectedAnnotationId}
                 onSelectAnnotation={handleOpenAnnotation}
                 onCreateNote={handleCreateSidebarNote}
                 onCreateFloatingNote={handleFloatingNoteSave}
-                onDraftChange={handleDraftContentChange}
-                onSaveDraft={handleSaveDraft}
                 onUpdateAnnotation={handleUpdateAnnotation}
                 onDeleteAnnotation={handleDeleteAnnotation}
-                onWheel={handleNotesWheel}
               />
             )}
           </div>
@@ -906,7 +1018,7 @@ export default function InlineMaterialWorkspace({
   );
 }
 
-function SegmentBtn({ active, onClick, isDarkMode, children, accent = false }) {
+function SegmentBtn({ active, onClick, isDarkMode, children }) {
   // Keep labels above the sliding indicator; the indicator handles the active layout.
   return (
     <button
@@ -914,11 +1026,7 @@ function SegmentBtn({ active, onClick, isDarkMode, children, accent = false }) {
       onClick={onClick}
       className={`relative z-10 flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-extrabold transition-colors duration-200 ${
         active
-          ? accent
-            ? "text-white"
-            : isDarkMode
-              ? "text-slate-100"
-              : "text-blue-700"
+          ? "text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]"
           : isDarkMode
             ? "text-slate-400 hover:text-slate-200"
             : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
@@ -932,69 +1040,22 @@ function SegmentBtn({ active, onClick, isDarkMode, children, accent = false }) {
 function NotesPanel({
   isDarkMode,
   annotations,
-  annotationLayouts,
-  totalPages,
   notesError,
   selectedAnnotationId,
   onSelectAnnotation,
   onCreateNote,
   onCreateFloatingNote,
-  onDraftChange,
-  onSaveDraft,
   onUpdateAnnotation,
   onDeleteAnnotation,
-  onWheel,
 }) {
   const [editingAnnotationId, setEditingAnnotationId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState("");
   const [editingContent, setEditingContent] = useState("");
   const [floatingNote, setFloatingNote] = useState(null);
   const floatingNoteElementRef = useRef(null);
   const floatingDragRef = useRef(null);
+  const panelRef = useRef(null);
   const hasAnnotations = annotations.length > 0;
-  const positionedAnnotations = useMemo(() => {
-    const fallbackPageUnit = 220;
-    const sidebarOffset = 64;
-    const minimumGap = 20;
-    const layout = annotations.reduce(
-      (result, annotation) => {
-        const liveLayout = annotationLayouts?.[annotation.id];
-        const pagePosition =
-          Math.max(1, Number(annotation.page || 1)) - 1 +
-          Number(annotation.topRatio || 0);
-        const isEditing = editingAnnotationId === annotation.id;
-        const estimatedHeight =
-          annotation.status === "draft" || isEditing
-            ? 340
-            : annotation.kind === "emoji"
-              ? 138
-              : 214;
-        const baseTop =
-          typeof liveLayout?.top === "number"
-            ? Math.round(liveLayout.top - sidebarOffset)
-            : Math.round(pagePosition * fallbackPageUnit);
-        const top = Math.max(
-          baseTop,
-          result.previousBottom == null
-            ? baseTop
-            : result.previousBottom + minimumGap,
-        );
-
-        return {
-          previousBottom: top + estimatedHeight,
-          items: [...result.items, { annotation, top }],
-        };
-      },
-      { previousBottom: null, items: [] },
-    );
-
-    return {
-      items: layout.items,
-      trackHeight: Math.max(
-        (Math.max(1, Number(totalPages || 1)) * fallbackPageUnit) + 120,
-        Number(layout.previousBottom || 0) + 32,
-      ),
-    };
-  }, [annotationLayouts, annotations, editingAnnotationId, totalPages]);
 
   const startFloatingNoteDrag = useCallback((event) => {
     if (!floatingNote) return;
@@ -1053,7 +1114,7 @@ function NotesPanel({
   }, [floatingNote != null]);
 
   return (
-    <div className="relative flex h-full flex-col" onWheel={onWheel}>
+    <div ref={panelRef} className="relative flex h-full flex-col">
       {notesError ? (
         <div
           className={`mx-4 mt-2 rounded-2xl border px-3 py-2 text-xs font-medium ${
@@ -1065,215 +1126,225 @@ function NotesPanel({
           {notesError}
         </div>
       ) : null}
-      <div className="relative flex-1 overflow-hidden px-4 pb-20">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden px-4 pb-24 pt-2">
         {hasAnnotations ? (
-          <div
-            className="relative h-full pb-4"
-            style={{ minHeight: `${positionedAnnotations.trackHeight}px` }}
-          >
-            <div
-              aria-hidden="true"
-              className={`absolute bottom-0 left-6 top-0 w-px ${
-                isDarkMode ? "bg-slate-800" : "bg-blue-100"
-              }`}
-            />
-            {positionedAnnotations.items.map(({ annotation, top }) => {
+          <div className="flex flex-col gap-3 pb-4">
+            {annotations.map((annotation) => {
               const isSelected = annotation.id === selectedAnnotationId;
-              const isEmoji = annotation.kind === "emoji";
-              const isDraft = annotation.status === "draft";
               const isEditing = editingAnnotationId === annotation.id;
+              const isHighlight = annotation.noteType === "HIGHLIGHT";
+              const noteTitle = isHighlight
+                ? annotation.title || "Đoạn đã đánh dấu"
+                : annotation.title || "Không có tiêu đề";
+              const highlightedText =
+                annotation.highlightedText || annotation.excerpt || "";
 
               return (
                 <div
-	                  key={annotation.id}
-                    data-annotation-interactive="true"
-	                  className="absolute left-0 right-0"
-                  style={{ top: `${top}px` }}
+                  key={annotation.id}
+                  data-annotation-interactive="true"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelectAnnotation(annotation.id)}
+                  onKeyDown={(event) => {
+                    if (event.target?.closest?.("textarea,input,button")) {
+                      return;
+                    }
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    onSelectAnnotation(annotation.id);
+                  }}
+                  className={`relative w-full overflow-hidden rounded-2xl border p-4 pr-20 text-left shadow-sm transition ${
+                    isSelected
+                      ? isDarkMode
+                        ? isHighlight
+                          ? "border-amber-400 bg-slate-900"
+                          : "border-blue-500 bg-slate-900"
+                        : isHighlight
+                          ? "border-amber-400 bg-amber-50/40"
+                          : "border-blue-400 bg-white"
+                      : isDarkMode
+                        ? isHighlight
+                          ? "border-amber-500/30 bg-slate-900 hover:border-amber-400/60"
+                          : "border-slate-800 bg-slate-900 hover:border-blue-500/60"
+                        : isHighlight
+                          ? "border-amber-200 bg-white hover:border-amber-300"
+                          : "border-slate-200 bg-white hover:border-blue-200"
+                  }`}
                 >
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => onSelectAnnotation(annotation.id)}
-                    onKeyDown={(event) => {
-                      if (
-                        event.target?.closest?.("textarea,input,button")
-                      ) {
-                        return;
+                  {/* Left accent bar for highlight notes */}
+                  {isHighlight && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-0 h-full w-1"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%)",
+                      }}
+                    />
+                  )}
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ${
+                        isHighlight ? "" : "bg-orange-500"
+                      }`}
+                      style={
+                        isHighlight
+                          ? {
+                              background:
+                                "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)",
+                            }
+                          : undefined
                       }
-                      if (event.key !== "Enter" && event.key !== " ") return;
-                      event.preventDefault();
-                      onSelectAnnotation(annotation.id);
-                    }}
-                    className={`w-full rounded-[26px] border bg-white p-4 pr-20 text-left shadow-sm transition ${
-                      isSelected
-                        ? "border-blue-400 text-slate-900"
-                        : "border-slate-200 text-slate-900 hover:border-blue-200"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        aria-hidden="true"
-                        className={`mt-5 h-px w-5 shrink-0 ${
-                          isDarkMode ? "bg-slate-700" : "bg-blue-200"
-                        }`}
-                      />
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
-                        {isEmoji ? annotation.emoji : "N"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-sm font-semibold">
-	                            {isEmoji
-                              ? "Biểu tượng"
-	                              : isDraft
-	                                ? "Ghi chú mới"
-	                                : "Ghi chú"}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            {isDraft ? (
-                              <span
-                                className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${
-                                  isDarkMode
-                                    ? "bg-amber-500/15 text-amber-200"
-                                    : "bg-amber-100 text-amber-700"
-                                }`}
-                              >
-                                Đang soạn
-                              </span>
-                            ) : null}
-                            <span
-                              className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${
-                                isDarkMode
-                                  ? "bg-slate-800 text-slate-300"
-                                  : "bg-slate-100 text-slate-500"
-                              }`}
-                            >
-                              Trang {annotation.page}
-                            </span>
-                          </div>
-                        </div>
-                        <p
-                          className={`mt-1 line-clamp-3 text-xs leading-5 ${
-                            isDarkMode ? "text-slate-400" : "text-slate-500"
+                    >
+                      {isHighlight ? <Highlighter size={15} /> : "N"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {isHighlight && (
+                        <span
+                          className={`mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                            isDarkMode
+                              ? "bg-amber-500/15 text-amber-300"
+                              : "bg-amber-100 text-amber-800"
                           }`}
                         >
-                          {annotation.excerpt}
+                          <Highlighter size={9} strokeWidth={3} />
+                          Đánh dấu
+                        </span>
+                      )}
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) =>
+                            setEditingTitle(event.target.value)
+                          }
+                          placeholder="Tên ghi chú (không bắt buộc)"
+                          className={`w-full rounded-lg border px-2.5 py-1.5 text-sm font-semibold outline-none transition ${
+                            isDarkMode
+                              ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
+                              : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400"
+                          }`}
+                        />
+                      ) : (
+                        <p
+                          className={`truncate text-sm font-semibold ${
+                            isDarkMode ? "text-slate-100" : "text-slate-900"
+                          }`}
+                        >
+                          {noteTitle}
                         </p>
-                        {isDraft ? (
-                          <>
-                            <textarea
-                              value={annotation.content || ""}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                onDraftChange(event.target.value)
-                              }
-                              placeholder="Viết ghi chú tại đây..."
-                              className={`mt-4 min-h-[136px] w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                      )}
+                      {isHighlight && highlightedText && !isEditing && (
+                        <blockquote
+                          className={`mt-2 border-l-2 pl-2.5 text-xs italic leading-5 line-clamp-2 ${
+                            isDarkMode
+                              ? "border-amber-500/60 text-amber-100/80"
+                              : "border-amber-400 text-slate-700"
+                          }`}
+                        >
+                          <span
+                            className="rounded px-0.5"
+                            style={{
+                              backgroundColor: isDarkMode
+                                ? "rgba(252, 211, 77, 0.18)"
+                                : "rgba(253, 224, 71, 0.55)",
+                            }}
+                          >
+                            {highlightedText}
+                          </span>
+                        </blockquote>
+                      )}
+                      {isEditing ? (
+                        <>
+                          <textarea
+                            value={editingContent}
+                            autoFocus
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              setEditingContent(event.target.value)
+                            }
+                            placeholder="Nội dung ghi chú..."
+                            className={`mt-3 min-h-[112px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition ${
+                              isDarkMode
+                                ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
+                                : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400"
+                            }`}
+                          />
+                          <div className="mt-3 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setEditingAnnotationId(null);
+                                setEditingTitle("");
+                                setEditingContent("");
+                              }}
+                              className={`text-xs font-semibold transition ${
                                 isDarkMode
-                                  ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
-                                  : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400"
+                                  ? "text-slate-400 hover:text-white"
+                                  : "text-slate-500 hover:text-slate-700"
                               }`}
-                            />
-                            <div className="mt-4 flex items-center justify-end gap-3">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  onDeleteAnnotation(annotation.id);
-                                }}
-                                className={`text-sm font-semibold transition ${
-                                  isDarkMode
-                                    ? "text-slate-300 hover:text-white"
-                                    : "text-blue-600 hover:text-blue-700"
-                                }`}
-                              >
-                                Hủy
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  onSaveDraft();
-                                }}
-                                disabled={!annotation.content?.trim()}
-                                className={`rounded-full px-5 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                                  isDarkMode
-                                    ? "bg-slate-700 text-slate-100"
-                                    : "bg-slate-200 text-slate-600"
-                                }`}
-                              >
-                                Lưu ghi chú
-                              </button>
-                            </div>
-                          </>
-                        ) : isEditing ? (
-                          <>
-                            <textarea
-                              value={editingContent}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setEditingContent(event.target.value)
-                              }
-                              className={`mt-4 min-h-[112px] w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onUpdateAnnotation(annotation.id, {
+                                  title: editingTitle,
+                                  content: editingContent,
+                                });
+                                setEditingAnnotationId(null);
+                                setEditingTitle("");
+                                setEditingContent("");
+                              }}
+                              disabled={!editingContent.trim()}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                                 isDarkMode
-                                  ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
-                                  : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400"
+                                  ? "bg-blue-500 text-white hover:bg-blue-400"
+                                  : "bg-blue-600 text-white hover:bg-blue-700"
                               }`}
-                            />
-                            <div className="mt-4 flex items-center justify-end gap-3">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setEditingAnnotationId(null);
-                                  setEditingContent("");
-                                }}
-                                className={`text-sm font-semibold transition ${
-                                  isDarkMode
-                                    ? "text-slate-300 hover:text-white"
-                                    : "text-blue-600 hover:text-blue-700"
-                                }`}
-                              >
-                                Hủy
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  onUpdateAnnotation(
-                                    annotation.id,
-                                    editingContent,
-                                  );
-                                  setEditingAnnotationId(null);
-                                  setEditingContent("");
-                                }}
-                                disabled={!editingContent.trim()}
-                                className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                                  isDarkMode
-                                    ? "bg-blue-500 text-white hover:bg-blue-400"
-                                    : "bg-blue-600 text-white hover:bg-blue-700"
-                                }`}
-                              >
-                                <Check size={15} />
-                                Lưu
-                              </button>
-                            </div>
-                          </>
-                        ) : !isEmoji ? (
-                          <p className="mt-3 whitespace-pre-wrap text-sm leading-6">
-                            {annotation.content}
-                          </p>
-                        ) : null}
-                      </div>
+                            >
+                              <Check size={13} />
+                              Lưu
+                            </button>
+                          </div>
+                        </>
+                      ) : annotation.content ? (
+                        <p
+                          className={`mt-2 whitespace-pre-wrap break-words text-sm leading-6 ${
+                            isDarkMode ? "text-slate-300" : "text-slate-700"
+                          }`}
+                        >
+                          {annotation.content}
+                        </p>
+                      ) : (
+                        <p
+                          className={`mt-2 text-xs italic ${
+                            isDarkMode ? "text-slate-500" : "text-slate-400"
+                          }`}
+                        >
+                          (Chưa có nội dung)
+                        </p>
+                      )}
                     </div>
                   </div>
-                  {!isDraft && !isEmoji && !isEditing ? (
+                  {!isEditing ? (
                     <button
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
                         onSelectAnnotation(annotation.id);
                         setEditingAnnotationId(annotation.id);
+                        setEditingTitle(
+                          annotation.title &&
+                            annotation.title !== "Không có tiêu đề"
+                            ? annotation.title
+                            : "",
+                        );
                         setEditingContent(annotation.content || "");
                       }}
                       className={`absolute right-11 top-3 flex h-8 w-8 items-center justify-center rounded-full transition ${
@@ -1292,6 +1363,7 @@ function NotesPanel({
                       event.stopPropagation();
                       if (annotation.id === editingAnnotationId) {
                         setEditingAnnotationId(null);
+                        setEditingTitle("");
                         setEditingContent("");
                       }
                       onDeleteAnnotation(annotation.id);
@@ -1316,10 +1388,10 @@ function NotesPanel({
             }`}
           >
             <MessageSquareText className="mb-3 h-12 w-12 opacity-35" />
-            <p className="text-base font-semibold">Chưa có ghi chú nào</p>
+            <p className="text-base font-semibold">Chưa có ghi chú tự do nào</p>
             <p className="mt-2 text-sm leading-6">
-              Di chuột hoặc quét nội dung trong tài liệu để đặt ghi chú và biểu
-              tượng.
+              Nhấn nút "+" ở góc phải dưới để tạo ghi chú mới. Ghi chú gắn với
+              đoạn bôi đen sẽ hiện ngay dưới đoạn đó trong tài liệu.
             </p>
           </div>
         )}
@@ -1330,11 +1402,26 @@ function NotesPanel({
         data-annotation-interactive="true"
         onClick={() => {
           onCreateNote();
+          const width = 320;
+          const height = 280;
+          const FAB_RIGHT = 20;
+          const FAB_BOTTOM = 20;
+          const FAB_SIZE = 48;
+          const GAP = 12;
+          const panel = panelRef.current;
+          const panelWidth = panel?.clientWidth || 440;
+          const panelHeight = panel?.clientHeight || 640;
+          const x = Math.max(12, panelWidth - FAB_RIGHT - width);
+          const y = Math.max(
+            12,
+            panelHeight - FAB_BOTTOM - FAB_SIZE - GAP - height,
+          );
           setFloatingNote({
-            x: 42,
-            y: 84,
-            width: 300,
-            height: 220,
+            x,
+            y,
+            width,
+            height,
+            title: "",
             content: "",
           });
         }}
@@ -1366,31 +1453,42 @@ function NotesPanel({
           }}
         >
           <div
-            className={`flex cursor-move items-center justify-between border-b px-4 py-3 ${
-              isDarkMode ? "border-slate-800" : "border-slate-100"
-            }`}
+            className="flex cursor-move items-center justify-end px-2 pt-2"
             onPointerDown={startFloatingNoteDrag}
             onPointerMove={handleFloatingNoteDrag}
             onPointerUp={stopFloatingNoteDrag}
             onPointerCancel={stopFloatingNoteDrag}
           >
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <MessageSquareText className="h-4 w-4 text-blue-500" />
-              Ghi chú mới
-            </div>
             <button
               type="button"
               onClick={() => setFloatingNote(null)}
-              className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
+              className={`flex h-6 w-6 items-center justify-center rounded-full transition ${
                 isDarkMode
                   ? "text-slate-400 hover:bg-slate-800 hover:text-white"
                   : "text-slate-400 hover:bg-slate-100 hover:text-rose-600"
               }`}
               title="Đóng"
             >
-              <X size={15} />
+              <X size={14} />
             </button>
           </div>
+          <input
+            type="text"
+            value={floatingNote.title || ""}
+            onChange={(event) =>
+              setFloatingNote((previous) =>
+                previous
+                  ? { ...previous, title: event.target.value }
+                  : previous,
+              )
+            }
+            placeholder="Tên ghi chú (không bắt buộc)"
+            className={`flex-shrink-0 px-4 py-2 text-sm font-bold outline-none border-b ${
+              isDarkMode
+                ? "bg-slate-900 text-slate-100 border-slate-800 placeholder:text-slate-500"
+                : "bg-white text-slate-900 border-slate-100 placeholder:text-slate-400"
+            }`}
+          />
           <textarea
             value={floatingNote.content}
             onChange={(event) =>
@@ -1400,7 +1498,7 @@ function NotesPanel({
                   : previous,
               )
             }
-            placeholder="Nhập ghi chú..."
+            placeholder="Nhập nội dung ghi chú..."
             className={`min-h-0 flex-1 resize-none px-4 py-3 text-sm outline-none ${
               isDarkMode
                 ? "bg-slate-900 text-slate-100 placeholder:text-slate-500"
@@ -1423,7 +1521,10 @@ function NotesPanel({
               type="button"
               disabled={!floatingNote.content.trim()}
               onClick={() => {
-                onCreateFloatingNote(floatingNote.content);
+                onCreateFloatingNote({
+                  title: floatingNote.title,
+                  content: floatingNote.content,
+                });
                 setFloatingNote(null);
               }}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${

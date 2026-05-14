@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Highlighter,
   Loader2,
   MessageSquarePlus,
   SmilePlus,
@@ -20,6 +21,8 @@ import {
 } from "lucide-react";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+
+import HighlightNotePopover from "./HighlightNotePopover";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -192,8 +195,44 @@ function buildAnchorFromPoint(pageShell, pageNum, clientY) {
   };
 }
 
+// Merge rect cùng 1 line thành 1 bounding rect — PDF.js render mỗi word/span là
+// 1 rect riêng, một paragraph dài có thể >100 rect. Coalesce theo line giảm
+// xuống ~số dòng, giữ visual gần như y hệt mà payload nhẹ + không vượt BE limit.
+function coalesceRectsByLine(rects) {
+  if (!Array.isArray(rects) || rects.length === 0) return [];
+  const sorted = [...rects].sort((a, b) => a.topRatio - b.topRatio);
+  const lines = [];
+  for (const rect of sorted) {
+    const midY = rect.topRatio + rect.heightRatio / 2;
+    const tolerance = Math.max(rect.heightRatio, 0.005) * 0.6;
+    const merged = lines.find((line) => {
+      const lineMidY = line.topRatio + line.heightRatio / 2;
+      return Math.abs(midY - lineMidY) <= tolerance;
+    });
+    if (merged) {
+      const left = Math.min(merged.leftRatio, rect.leftRatio);
+      const top = Math.min(merged.topRatio, rect.topRatio);
+      const right = Math.max(
+        merged.leftRatio + merged.widthRatio,
+        rect.leftRatio + rect.widthRatio,
+      );
+      const bottom = Math.max(
+        merged.topRatio + merged.heightRatio,
+        rect.topRatio + rect.heightRatio,
+      );
+      merged.leftRatio = left;
+      merged.topRatio = top;
+      merged.widthRatio = right - left;
+      merged.heightRatio = bottom - top;
+    } else {
+      lines.push({ ...rect });
+    }
+  }
+  return lines;
+}
+
 function buildSelectionRects(range, pageRect) {
-  return Array.from(range.getClientRects())
+  const raw = Array.from(range.getClientRects())
     .filter(
       (rect) =>
         rect.width > 0 &&
@@ -203,6 +242,7 @@ function buildSelectionRects(range, pageRect) {
     )
     .map((rect) => buildRectRatio(rect, pageRect))
     .filter((rect) => rect.widthRatio > 0.002 && rect.heightRatio > 0.002);
+  return coalesceRectsByLine(raw);
 }
 
 function buildAnchorFromSelection(selection) {
@@ -257,7 +297,7 @@ function AnnotationRail({ topRatio, isDarkMode, onNote, onEmoji }) {
   return (
     <div
       data-annotation-rail="true"
-      className="absolute right-3 top-0 z-20 flex -translate-y-1/2 flex-col gap-2"
+      className="absolute -right-3 top-0 z-20 flex -translate-y-1/2 flex-col gap-2"
       style={{ top: `${topRatio * 100}%` }}
       onMouseMove={(event) => event.stopPropagation()}
     >
@@ -349,6 +389,8 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
     onAnnotationDraftChange,
     onAnnotationLayoutChange,
     onAnnotationResolve,
+    onAnnotationUpdate,
+    onAnnotationDelete,
   },
   ref,
 ) {
@@ -896,11 +938,13 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
               ).map((pageNum) => {
                 const highlighted = isHighlighted(pageNum);
                 const flashed = flashedPage === pageNum;
+                // NORMAL note (source: floating) hiển thị trong sidebar, không render
+                // trên PDF. HIGHLIGHT (mọi source khác) đều render — bao gồm cả
+                // server-highlight đã load từ BE (có selectionRects nguyên gốc).
                 const pageAnnotations = annotations.filter(
                   (annotation) =>
                     annotation.page === pageNum &&
-                    annotation.source !== "floating" &&
-                    annotation.source !== "server-highlight",
+                    annotation.source !== "floating",
                 );
                 const visibleAnchor =
                   activeAnchor?.page === pageNum ? activeAnchor : null;
@@ -908,6 +952,15 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
                   annotationsEnabled && emojiPicker?.page === pageNum
                     ? emojiPicker
                     : null;
+                // Ẩn rail khi hover sát một annotation đang hiện ở mép phải
+                // (button highlight + rail dùng chung cột bên phải nên dễ chồng).
+                const anchorOverlapsAnnotation =
+                  visibleAnchor &&
+                  pageAnnotations.some((annotation) => {
+                    const ratio = Number(annotation.topRatio);
+                    if (!Number.isFinite(ratio)) return false;
+                    return Math.abs(ratio - visibleAnchor.topRatio) < 0.04;
+                  });
 
                 return (
                   <div
@@ -1009,7 +1062,8 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
 
                     {annotationsEnabled &&
                     visibleAnchor &&
-                    !visibleEmojiPicker ? (
+                    !visibleEmojiPicker &&
+                    !anchorOverlapsAnnotation ? (
                       <AnnotationRail
                         topRatio={visibleAnchor.topRatio}
                         isDarkMode={isDarkMode}
@@ -1039,7 +1093,24 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
 
                     {pageAnnotations.map((annotation) => {
                       const isEmoji = annotation.kind === "emoji";
+                      const isHighlightNote =
+                        annotation.noteType === "HIGHLIGHT";
                       const isSelected = annotation.id === selectedAnnotationId;
+
+                      let buttonClass;
+                      if (isSelected) {
+                        buttonClass = isDarkMode
+                          ? "border-blue-500 bg-blue-500 text-white"
+                          : "border-blue-500 bg-blue-600 text-white";
+                      } else if (isHighlightNote) {
+                        buttonClass = isDarkMode
+                          ? "border-amber-500/60 bg-amber-500/15 text-amber-300 hover:border-amber-400 hover:bg-amber-500/25"
+                          : "border-amber-300 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100";
+                      } else {
+                        buttonClass = isDarkMode
+                          ? "border-slate-700 bg-slate-900 text-slate-100 hover:border-blue-500 hover:bg-slate-800"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50";
+                      }
 
                       return (
                         <div
@@ -1050,21 +1121,21 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
                           <button
                             type="button"
                             onClick={() => handleAnnotationClick(annotation)}
-                            className={`flex h-10 min-w-[40px] -translate-y-1/2 items-center justify-center rounded-2xl border px-3 shadow-lg transition ${
-                              isSelected
-                                ? isDarkMode
-                                  ? "border-blue-500 bg-blue-500 text-white"
-                                  : "border-blue-500 bg-blue-600 text-white"
-                                : isDarkMode
-                                  ? "border-slate-700 bg-slate-900 text-slate-100 hover:border-blue-500 hover:bg-slate-800"
-                                  : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50"
-                            }`}
-                            title={isEmoji ? "Emoji cho dòng này" : "Ghi chú"}
+                            className={`flex h-10 min-w-[40px] -translate-y-1/2 items-center justify-center rounded-2xl border px-3 shadow-lg transition ${buttonClass}`}
+                            title={
+                              isEmoji
+                                ? "Emoji cho dòng này"
+                                : isHighlightNote
+                                  ? "Ghi chú đánh dấu"
+                                  : "Ghi chú"
+                            }
                           >
                             {isEmoji ? (
                               <span className="text-lg leading-none">
                                 {annotation.emoji}
                               </span>
+                            ) : isHighlightNote ? (
+                              <Highlighter className="h-4 w-4" />
                             ) : (
                               <MessageSquarePlus className="h-4 w-4" />
                             )}
@@ -1072,6 +1143,54 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
                         </div>
                       );
                     })}
+
+                    {pageAnnotations
+                      .filter(
+                        (annotation) =>
+                          annotation.kind !== "emoji" &&
+                          (annotation.status === "draft" ||
+                            annotation.id === selectedAnnotationId),
+                      )
+                      .map((annotation) => {
+                        const isDraft = annotation.status === "draft";
+                        return (
+                          <HighlightNotePopover
+                            key={`popover-${annotation.id}`}
+                            annotation={annotation}
+                            isDarkMode={isDarkMode}
+                            isDraft={isDraft}
+                            onChangeContent={(content) => {
+                              setDraftComposer((previous) => {
+                                if (!previous) return previous;
+                                const next = { ...previous, content };
+                                onAnnotationDraftChange?.(next);
+                                return next;
+                              });
+                            }}
+                            onSaveDraft={() => {
+                              if (!draftComposer?.content?.trim()) return;
+                              createAnnotationFromAnchor(
+                                "note",
+                                draftComposer,
+                                draftComposer.content,
+                              );
+                            }}
+                            onCancelDraft={() => {
+                              setDraftComposer(null);
+                              setEmojiPicker(null);
+                              setSelectionAnchor(null);
+                              setHoverAnchor(null);
+                              clearNativeSelection();
+                              onAnnotationDraftChange?.(null);
+                            }}
+                            onUpdate={(id, content) =>
+                              onAnnotationUpdate?.(id, content)
+                            }
+                            onDelete={(id) => onAnnotationDelete?.(id)}
+                            onClose={() => onAnnotationSelect?.(null)}
+                          />
+                        );
+                      })}
                   </div>
                 );
               })}
