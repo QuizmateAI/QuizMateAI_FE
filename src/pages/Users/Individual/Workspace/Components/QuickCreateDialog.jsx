@@ -11,6 +11,13 @@ const TYPE_CONFIG = {
   knowledge: { icon: BookOpen, color: "text-violet-500" },
 };
 
+// BE bound (RoadmapPhaseCreateRequest): title max 255, description max 2000,
+// studyDurationInDay required + > 0. FE pre-check để báo lỗi inline thay vì
+// đợi 400 từ server.
+const TITLE_MAX_LENGTH = 255;
+const DESCRIPTION_MAX_LENGTH = 2000;
+const STUDY_DURATION_MIN_DAY = 1;
+
 /**
  * QuickCreateDialog — popup tạo nhanh Roadmap / Phase / Knowledge
  * @param {boolean} open - Trạng thái hiển thị dialog
@@ -46,15 +53,43 @@ function QuickCreateDialog({ open, onOpenChange, type = "roadmap", isDarkMode = 
 
   // Xử lý submit tạo mới
   const handleSubmit = async () => {
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedTitle) {
       setError(t("workspace.quiz.quickCreate.titleRequired"));
       return;
     }
+    if (trimmedTitle.length > TITLE_MAX_LENGTH) {
+      setError(t("workspace.quiz.quickCreate.titleTooLong", {
+        max: TITLE_MAX_LENGTH,
+        defaultValue: `Tiêu đề không được vượt quá ${TITLE_MAX_LENGTH} ký tự.`,
+      }));
+      return;
+    }
+    if (trimmedDescription.length > DESCRIPTION_MAX_LENGTH) {
+      setError(t("workspace.quiz.quickCreate.descriptionTooLong", {
+        max: DESCRIPTION_MAX_LENGTH,
+        defaultValue: `Mô tả không được vượt quá ${DESCRIPTION_MAX_LENGTH} ký tự.`,
+      }));
+      return;
+    }
+    if (type === "phase") {
+      const numericDuration = Number(studyDurationInDay);
+      if (!Number.isInteger(numericDuration) || numericDuration < STUDY_DURATION_MIN_DAY) {
+        setError(t("workspace.quiz.quickCreate.studyDurationInvalid", {
+          min: STUDY_DURATION_MIN_DAY,
+          defaultValue: `Số ngày học phải là số nguyên ≥ ${STUDY_DURATION_MIN_DAY}.`,
+        }));
+        return;
+      }
+    }
+
     setSubmitting(true);
     setError("");
     try {
-      const data = { title: title.trim(), description: description.trim() };
-      if (type === "phase") data.studyDurationInDay = studyDurationInDay;
+      const data = { title: trimmedTitle, description: trimmedDescription };
+      if (type === "phase") data.studyDurationInDay = Number(studyDurationInDay);
       const res = await createFn(data);
       const newItem = res?.data || res;
       onCreated?.(newItem);
@@ -96,6 +131,7 @@ function QuickCreateDialog({ open, onOpenChange, type = "roadmap", isDarkMode = 
               placeholder={t(`workspace.quiz.quickCreate.${type}.namePlaceholder`)}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={TITLE_MAX_LENGTH}
               autoFocus
             />
           </div>
@@ -108,6 +144,7 @@ function QuickCreateDialog({ open, onOpenChange, type = "roadmap", isDarkMode = 
               placeholder={t(`workspace.quiz.quickCreate.${type}.descPlaceholder`)}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              maxLength={DESCRIPTION_MAX_LENGTH}
             />
           </div>
 
@@ -120,7 +157,7 @@ function QuickCreateDialog({ open, onOpenChange, type = "roadmap", isDarkMode = 
                 className={inputCls}
                 value={studyDurationInDay}
                 onChange={(e) => setStudyDurationInDay(Number(e.target.value))}
-                min={1}
+                min={STUDY_DURATION_MIN_DAY}
               />
             </div>
           )}
