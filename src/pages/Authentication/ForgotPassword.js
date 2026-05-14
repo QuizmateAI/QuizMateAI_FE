@@ -3,6 +3,7 @@ import i18n from '@/i18n';
 import { checkEmail, sendOTP, resetPassword } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { getEmailViolationKey, isEmailValid } from '@/utils/emailValidation';
+import { validateNewPassword } from '@/utils/passwordValidation';
 
 // Xác thực định dạng email
 export const validateEmail = (email) => {
@@ -166,14 +167,9 @@ export const useForgotPassword = (setView, t) => {
       return;
     }
 
-    // BE: "Mật khẩu phải nhiều hơn 8 ký tự" → min 9.
-    if (trimmedNewPassword.length < 9) {
-      setFieldErrors({ newPassword: t('validation.passwordLength') || 'Password must be more than 8 characters' });
-      return;
-    }
-
-    if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(trimmedNewPassword)) {
-      setFieldErrors({ newPassword: t('validation.passwordFormat') || 'Password must contain both letters and numbers' });
+    const passwordError = validateNewPassword(trimmedNewPassword);
+    if (passwordError) {
+      setFieldErrors({ newPassword: t(passwordError.messageKey, { defaultValue: passwordError.fallback }) });
       return;
     }
 

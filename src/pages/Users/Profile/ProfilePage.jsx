@@ -31,6 +31,7 @@ import ProfileTopbar from "./Components/ProfileTopbar";
 import { getAvatarLetter } from "./Components/profileHelpers";
 import { cycleAppLanguage, getBaseAppLanguage } from "@/utils/appSupportedLanguages";
 import { validateAvatarFile } from "@/utils/uploadValidation";
+import { validateNewPassword } from "@/utils/passwordValidation";
 
 const DEFAULT_PROFILE = {
   email: "",
@@ -281,8 +282,9 @@ function ProfilePage() {
       showMessage("error", t("profile.passwordMismatch"));
       return;
     }
-    if (newPassword.length < 6) {
-      showMessage("error", t("profile.passwordTooShort"));
+    const passwordError = validateNewPassword(newPassword);
+    if (passwordError) {
+      showMessage("error", t(passwordError.messageKey, { defaultValue: passwordError.fallback }));
       return;
     }
 
