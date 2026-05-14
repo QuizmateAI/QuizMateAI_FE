@@ -97,6 +97,7 @@
   "error": {
     "unknown": "Có lỗi xảy ra. Vui lòng thử lại.",
     "requestTimeout": "Yêu cầu đang xử lý lâu hơn dự kiến. Vui lòng đợi thêm một chút rồi kiểm tra lại.",
+    "rateLimited": "Quá nhiều yêu cầu, vui lòng thử lại sau ít phút.",
     "missingAuthToken": "Thiếu token đăng nhập",
     "missingFeedbackLogEndpoint": "Không tìm thấy endpoint feedback log",
     "internalServer": "Hệ thống đang bận hoặc gặp sự cố. Vui lòng thử lại sau.",

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { ProtectedRoute, PublicRoute } from './pages/Route/protectedRoute';
 import HomeTabRedirect from './pages/Route/HomeTabRedirect';
 import { ToastProvider } from '@/context/ToastContext';
+import RateLimitToastBridge from '@/components/system/RateLimitToastBridge';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -327,6 +328,7 @@ function AppContent() {
 function App() {
     return (
         <ToastProvider>
+            <RateLimitToastBridge />
             <RuntimeRecoveryBoundary>
                 <Router>
                     <RouteMetaManager />

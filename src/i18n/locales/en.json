@@ -4050,6 +4050,7 @@
   },
   "error": {
     "unknown": "An error occurred. Please try again.",
+    "rateLimited": "Too many requests. Please try again in a few minutes.",
     "internalServer": "The system is busy or unavailable. Please try again later.",
     "userNotExisted": "User does not exist.",
     "wrongPass": "Incorrect password.",
