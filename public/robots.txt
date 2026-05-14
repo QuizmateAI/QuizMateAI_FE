@@ -1,0 +1,42 @@
+# Quizmate AI — robots.txt
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+
+# Public pages — let crawlers in.
+Allow: /
+Allow: /policies
+Allow: /policies/
+
+# Auth pages: meta robots already noindex; allow crawling so Google
+# can read that directive (do not Disallow here, otherwise Google
+# may index based on backlinks without seeing the noindex tag).
+Allow: /login
+Allow: /register
+Allow: /forgot-password
+
+# Private / authenticated areas — no SEO value.
+Disallow: /admin
+Disallow: /super-admin
+Disallow: /home
+Disallow: /workspaces
+Disallow: /group-workspaces
+Disallow: /groups
+Disallow: /quizzes
+Disallow: /plans
+Disallow: /wallets
+Disallow: /profiles
+Disallow: /payments
+Disallow: /feedbacks
+Disallow: /accept-invite
+
+# Payment provider return shims (BE callback shape — never user-facing).
+Disallow: /api/
+
+# Internal preview routes used by FE devs only.
+Disallow: /__preview/
+
+# Allow language-variant URLs so hreflang clusters validate.
+Allow: /*?lang=
+
+Sitemap: https://quizmateai.io.vn/sitemap.xml
