@@ -118,8 +118,11 @@ function ChatPanel({
   onShareSource,
   onSourceUpdated,
   selectedSourceIds = [],
+  selectedSourceId = null,
   onSelectedSourceIdsChange,
   onMaterialDetailViewChange,
+  onViewSource,
+  onCloseSourceDetail,
   selectedRoadmapPhaseId = null,
   selectedRoadmapKnowledgeId = null,
   onRoadmapPhaseFocus,
@@ -264,8 +267,11 @@ function ChatPanel({
             onShareSource={onShareSource}
             onSourceUpdated={onSourceUpdated}
             selectedIds={selectedSourceIds}
+            selectedSourceId={selectedSourceId}
             onSelectionChange={onSelectedSourceIdsChange}
             onDetailViewChange={onMaterialDetailViewChange}
+            onViewSource={onViewSource}
+            onCloseSourceDetail={onCloseSourceDetail}
             progressTracking={progressTracking}
           />
         );

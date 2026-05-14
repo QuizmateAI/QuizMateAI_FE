@@ -28,6 +28,17 @@ describe('workspace viewRouting', () => {
     });
   });
 
+  it('resolves source detail routes and builds the canonical source detail path', () => {
+    expect(resolveWorkspaceViewFromSubPath('sources/9')).toEqual({
+      view: 'sources',
+      sourceId: 9,
+      quizId: null,
+      backTarget: null,
+    });
+
+    expect(buildWorkspacePathForView('sources', null, null, null, null, { id: 9 })).toBe('sources/9');
+  });
+
   it('resolves roadmap route with knowledge segment', () => {
     expect(resolveWorkspaceViewFromSubPath('roadmaps/77/phases/11/knowledges/9')).toEqual({
       view: 'roadmap',
