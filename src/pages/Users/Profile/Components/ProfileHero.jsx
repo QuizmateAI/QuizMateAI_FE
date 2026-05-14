@@ -19,6 +19,7 @@ import {
   getPlanLabel,
   getPlanTone,
 } from "./profileHelpers";
+import { AVATAR_ACCEPT_ATTR } from "@/utils/uploadValidation";
 
 function PlanChip({ currentPlanSummary }) {
   const { t } = useTranslation();
@@ -171,7 +172,7 @@ export default function ProfileHero({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={AVATAR_ACCEPT_ATTR}
               onChange={onAvatarChange}
               className="hidden"
             />
