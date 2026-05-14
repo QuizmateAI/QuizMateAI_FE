@@ -11,20 +11,23 @@ const budgets = [
   { label: 'workspace route chunk', prefix: 'WorkspacePage-', maxBytes: 265 * 1024 },
   { label: 'group workspace route chunk', prefix: 'GroupWorkspacePage-', maxBytes: 225 * 1024 },
   { label: 'shared UI vendor chunk', prefix: 'vendor-ui-', maxBytes: 125 * 1024 },
-  { label: 'vi public locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-landing-', 'i18n-vi-plan-', 'i18n-vi-wallet-'], maxBytes: 26 * 1024 },
-  { label: 'en public locale payload', prefixes: ['i18n-en-common-', 'i18n-en-landing-', 'i18n-en-plan-', 'i18n-en-wallet-'], maxBytes: 26 * 1024 },
+  // Recalibrated after deliberate i18n key expansion (admin metrics, plan purchases,
+  // community quiz management, password strength, revenue/P&L labels, etc.).
+  // Each budget keeps ~3-5 % headroom over current chunk size as a regression guard.
+  { label: 'vi public locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-landing-', 'i18n-vi-plan-', 'i18n-vi-wallet-'], maxBytes: 36 * 1024 },
+  { label: 'en public locale payload', prefixes: ['i18n-en-common-', 'i18n-en-landing-', 'i18n-en-plan-', 'i18n-en-wallet-'], maxBytes: 32 * 1024 },
   { label: 'vi auth locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-auth-'], maxBytes: 27 * 1024 },
   { label: 'en auth locale payload', prefixes: ['i18n-en-common-', 'i18n-en-auth-'], maxBytes: 27 * 1024 },
   { label: 'vi home locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-home-', 'i18n-vi-grouphome-'], maxBytes: 52 * 1024 },
   { label: 'en home locale payload', prefixes: ['i18n-en-common-', 'i18n-en-home-', 'i18n-en-grouphome-'], maxBytes: 44 * 1024 },
   // Workspace namespace JSON is intentionally large (quiz/mock flows, profile wizard).
   // Group payloads sum workspace + group + wallet namespace chunks loaded on `/group-workspaces`.
-  { label: 'vi workspace locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-'], maxBytes: 192 * 1024 },
-  { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 168 * 1024 },
-  { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-', 'i18n-vi-group-', 'i18n-vi-grouphome-', 'i18n-vi-wallet-'], maxBytes: 286 * 1024 },
-  { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-', 'i18n-en-group-', 'i18n-en-grouphome-', 'i18n-en-wallet-'], maxBytes: 256 * 1024 },
-  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-', 'i18n-vi-wallet-'], maxBytes: 96 * 1024 },
-  { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-', 'i18n-en-wallet-'], maxBytes: 82 * 1024 },
+  { label: 'vi workspace locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-'], maxBytes: 210 * 1024 },
+  { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 184 * 1024 },
+  { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-', 'i18n-vi-group-', 'i18n-vi-grouphome-', 'i18n-vi-wallet-'], maxBytes: 312 * 1024 },
+  { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-', 'i18n-en-group-', 'i18n-en-grouphome-', 'i18n-en-wallet-'], maxBytes: 276 * 1024 },
+  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-', 'i18n-vi-wallet-'], maxBytes: 116 * 1024 },
+  { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-', 'i18n-en-wallet-'], maxBytes: 100 * 1024 },
 ];
 
 function formatKb(bytes) {
