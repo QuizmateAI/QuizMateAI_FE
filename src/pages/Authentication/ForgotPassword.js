@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import i18n from '@/i18n';
-import { checkEmail, sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
+import { checkEmail, sendOTP, resetPassword } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { getEmailViolationKey, isEmailValid } from '@/utils/emailValidation';
 
@@ -116,12 +116,11 @@ export const useForgotPassword = (setView, t) => {
     }
   };
 
-  const handleVerifyOTP = async (e) => {
+  const handleVerifyOTP = (e) => {
     e.preventDefault();
     setError('');
     setFieldErrors({});
-    
-    // Trim OTP trước khi gửi
+
     const trimmedOtp = forgotPasswordData.otp.trim();
     setForgotPasswordData(prev => ({ ...prev, otp: trimmedOtp }));
 
@@ -129,20 +128,10 @@ export const useForgotPassword = (setView, t) => {
       setFieldErrors({ otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Please enter the OTP code' });
       return;
     }
-    
-    setIsLoading(true);
-    
-    try {
-      const response = await verifyOTP(forgotPasswordData.email.trim(), trimmedOtp);
-      if (response.statusCode === 200 || response.statusCode === 0) {
-        setSuccessMessage(t('auth.otpVerified') || 'OTP verified successfully');
-        setForgotPasswordStep('newPassword');
-      }
-    } catch (err) {
-      setError(err.message || t('auth.verifyOTPFailed') || 'OTP verification failed, code is invalid or expired');
-    } finally {
-      setIsLoading(false);
-    }
+
+    // BE verify OTP atomic trong /reset-password. Gọi /verify-otp ở đây sẽ
+    // consume OTP và làm /reset-password sau đó trả 401.
+    setForgotPasswordStep('newPassword');
   };
 
   const handleResendOTP = async () => {
@@ -168,34 +157,41 @@ export const useForgotPassword = (setView, t) => {
     e.preventDefault();
     setError('');
     setFieldErrors({});
-    
+
     const trimmedNewPassword = forgotPasswordData.newPassword;
     const trimmedConfirmNewPassword = forgotPasswordData.confirmNewPassword;
-    
+
     if (trimmedNewPassword !== trimmedConfirmNewPassword) {
       setFieldErrors({ confirmNewPassword: t('auth.passwordMismatch') || 'Password confirmation does not match' });
       return;
     }
-    
-    // Validate mật khẩu mới theo quy tắc BE
-    if (trimmedNewPassword.length < 8) {
+
+    // BE: "Mật khẩu phải nhiều hơn 8 ký tự" → min 9.
+    if (trimmedNewPassword.length < 9) {
       setFieldErrors({ newPassword: t('validation.passwordLength') || 'Password must be more than 8 characters' });
       return;
     }
-    
+
     if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(trimmedNewPassword)) {
       setFieldErrors({ newPassword: t('validation.passwordFormat') || 'Password must contain both letters and numbers' });
       return;
     }
-    
+
+    const trimmedEmail = forgotPasswordData.email.trim();
+    const trimmedOtp = forgotPasswordData.otp.trim();
+
+    if (!trimmedOtp) {
+      // Hiếm khi xảy ra (đã validate ở step otp), nhưng phòng user thao tác trực tiếp state.
+      setForgotPasswordStep('otp');
+      setFieldErrors({ otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Please enter the OTP code' });
+      return;
+    }
+
     setIsLoading(true);
-    
+
     try {
-      const response = await resetPassword(
-        forgotPasswordData.email.trim(),
-        trimmedNewPassword
-      );
-      
+      const response = await resetPassword(trimmedEmail, trimmedOtp, trimmedNewPassword);
+
       if (response.statusCode === 200 || response.statusCode === 0) {
         setSuccessMessage(t('auth.resetPasswordSuccess') || 'Password reset successful, please login');
         setTimeout(() => {
@@ -206,7 +202,29 @@ export const useForgotPassword = (setView, t) => {
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || t('auth.resetPasswordFailed') || 'Failed to reset password');
+      // OTP sai/hết hạn → quay về step OTP cho user nhập lại.
+      if (err?.statusCode === 401) {
+        setForgotPasswordStep('otp');
+        setFieldErrors({ otp: err.message || t('auth.verifyOTPFailed') || 'OTP verification failed, code is invalid or expired' });
+        return;
+      }
+      // Password validation từ BE (400).
+      if (err?.statusCode === 400) {
+        setFieldErrors({ newPassword: err.message || t('validation.passwordFormat') || 'Password is invalid' });
+        return;
+      }
+      // OTP rate-limit per-email.
+      if (err?.statusCode === 1055) {
+        setError(err.message || t('auth.otpRateLimited') || 'Quá nhiều yêu cầu OTP cho email này, vui lòng thử lại sau');
+        return;
+      }
+      // Email không tồn tại (đã check ở step email, hiếm khi rơi vào nhánh này).
+      if (err?.statusCode === 1001) {
+        setForgotPasswordStep('email');
+        setFieldErrors({ email: err.message || t('auth.accountNotFound') || 'Account does not exist' });
+        return;
+      }
+      setError(err?.message || t('auth.resetPasswordFailed') || 'Failed to reset password');
     } finally {
       setIsLoading(false);
     }

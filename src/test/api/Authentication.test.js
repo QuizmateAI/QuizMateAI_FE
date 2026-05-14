@@ -113,7 +113,7 @@ describe('Authentication API request timeouts', () => {
     });
     await sendOTP('super-admin@quizmate.ai');
     await verifyOTP('super-admin@quizmate.ai', '123456');
-    await resetPassword('super-admin@quizmate.ai', 'NewPassword123');
+    await resetPassword('super-admin@quizmate.ai', '123456', 'NewPassword123');
 
     expect(api.post).toHaveBeenNthCalledWith(
       1,
@@ -128,8 +128,8 @@ describe('Authentication API request timeouts', () => {
 
     expect(api.post).toHaveBeenNthCalledWith(
       2,
-      '/auth/send-otp?email=super-admin%40quizmate.ai',
-      undefined,
+      '/auth/send-otp',
+      { email: 'super-admin@quizmate.ai' },
       expect.objectContaining({
         timeout: AUTH_REQUEST_TIMEOUT_MS,
       }),
@@ -137,8 +137,8 @@ describe('Authentication API request timeouts', () => {
 
     expect(api.post).toHaveBeenNthCalledWith(
       3,
-      '/auth/verify-otp?email=super-admin%40quizmate.ai&otp=123456',
-      undefined,
+      '/auth/verify-otp',
+      { email: 'super-admin@quizmate.ai', otp: '123456' },
       expect.objectContaining({
         timeout: AUTH_REQUEST_TIMEOUT_MS,
       }),
@@ -146,8 +146,8 @@ describe('Authentication API request timeouts', () => {
 
     expect(api.post).toHaveBeenNthCalledWith(
       4,
-      '/auth/reset-password?email=super-admin%40quizmate.ai&newPassword=NewPassword123',
-      undefined,
+      '/auth/reset-password',
+      { email: 'super-admin@quizmate.ai', otp: '123456', newPassword: 'NewPassword123' },
       expect.objectContaining({
         timeout: AUTH_REQUEST_TIMEOUT_MS,
       }),
