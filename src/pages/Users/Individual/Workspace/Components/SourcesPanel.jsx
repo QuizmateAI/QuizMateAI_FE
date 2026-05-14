@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 import { cn } from "@/lib/utils";
-import InlineMaterialWorkspace from "@/components/material/InlineMaterialWorkspace";
+
+// Lazy-load InlineMaterialWorkspace: pulls react-pdf + react-markdown + remark-gfm
+// (~400 kB uncompressed) — only needed once user opens a source detail view.
+const InlineMaterialWorkspace = React.lazy(
+  () => import("@/components/material/InlineMaterialWorkspace"),
+);
 import {
   Check,
   FileText,
@@ -1059,14 +1064,27 @@ function SourcesPanel({
                   : "workspace-source-detail-zoom-in",
               )}
             >
-              <InlineMaterialWorkspace
-                source={renderedSource}
-                isDarkMode={isDarkMode}
-                onBack={() => {
-                  if (isClosingDetail) return;
-                  onCloseSourceDetail?.();
-                }}
-              />
+              <React.Suspense
+                fallback={
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div
+                      className={cn(
+                        "h-10 w-10 animate-spin rounded-full border-[3px] border-t-transparent",
+                        isDarkMode ? "border-slate-600" : "border-slate-300",
+                      )}
+                    />
+                  </div>
+                }
+              >
+                <InlineMaterialWorkspace
+                  source={renderedSource}
+                  isDarkMode={isDarkMode}
+                  onBack={() => {
+                    if (isClosingDetail) return;
+                    onCloseSourceDetail?.();
+                  }}
+                />
+              </React.Suspense>
             </div>,
             document.body,
           )
