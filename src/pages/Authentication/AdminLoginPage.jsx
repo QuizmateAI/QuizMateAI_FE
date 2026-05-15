@@ -20,6 +20,10 @@ export default function AdminLoginPage() {
   const { isDarkMode } = useDarkMode();
   // Passing a fallback `t` để không lỗi nếu i18n không inject — strings ở đây là VN hardcoded.
   const tFallback = (_key, fallback) => fallback;
+  // Management console entry: chỉ chấp nhận ADMIN + SUPER_ADMIN. USER thường
+  // dù gõ đúng credential cũng bị FE reject (xem useLogin/Authentication.login).
+  // BE side đã có SubdomainGuardFilter cho subdomain admin.*, FE gate này là
+  // lớp UX phụ để báo lỗi rõ ràng và tránh persist token user vào console.
   const {
     loginData,
     showPassword,
@@ -29,7 +33,7 @@ export default function AdminLoginPage() {
     handleLoginChange,
     handleLoginSubmit,
     setShowPassword,
-  } = useLogin(navigate, location, tFallback);
+  } = useLogin(navigate, location, tFallback, { allowedRoles: ['ADMIN', 'SUPER_ADMIN'] });
 
   return (
     <div

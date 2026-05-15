@@ -78,14 +78,50 @@ function clearAuthState() {
     queryClient.clear();
 }
 
+// Error code FE dùng để phân biệt "BE trả 200 nhưng role không được login tại entry này".
+// LoginPage/AdminLoginPage map code này sang message thân thiện.
+export const ROLE_NOT_ALLOWED_CODE = 'ROLE_NOT_ALLOWED';
+
+class RoleNotAllowedError extends Error {
+    constructor(role) {
+        super('Role is not allowed at this entry point');
+        this.name = 'RoleNotAllowedError';
+        this.code = ROLE_NOT_ALLOWED_CODE;
+        this.role = role;
+    }
+}
+
+/**
+ * BE đã tạo session + set refresh cookie tại thời điểm trả 200, kể cả khi FE
+ * sau đó từ chối role. Gọi /auth/logout với access token vừa nhận để revoke
+ * server-side session và clear refresh cookie — tránh tình trạng cookie tồn
+ * tại lơ lửng và bị silent-refresh ở request kế tiếp.
+ */
+async function revokeOrphanSession(accessToken) {
+    if (!accessToken) return;
+    try {
+        await api.post('/auth/logout', null, {
+            skipAuthRedirect: true,
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+    } catch {
+        /* best-effort — không block UX */
+    }
+}
+
 /**
  * Đăng nhập tài khoản
  * @param {Object} credentials - Thông tin đăng nhập
  * @param {string} credentials.username - Tên đăng nhập
  * @param {string} credentials.password - Mật khẩu
+ * @param {Object} [options]
+ * @param {string[]} [options.allowedRoles] - Whitelist role được phép tại entry
+ *   này (vd LoginPage user-facing chỉ ['USER']; AdminLoginPage ['ADMIN','SUPER_ADMIN']).
+ *   Nếu role BE trả về không nằm trong list: throw RoleNotAllowedError,
+ *   KHÔNG persist token / user, và gọi BE logout để dọn session.
  * @returns {Promise} Response chứa token và thông tin user
  */
-export const login = async (credentials) => {
+export const login = async (credentials, { allowedRoles } = {}) => {
     const response = await api.post('/auth/login', credentials, {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
     });
@@ -95,6 +131,12 @@ export const login = async (credentials) => {
     // (browser tự handle, JS không đụng được).
     if (response.statusCode === 200 || response.statusCode === 0) {
         const { accessToken, userID, username, role, email, authProvider } = response.data;
+
+        if (allowedRoles && !allowedRoles.includes(role)) {
+            await revokeOrphanSession(accessToken);
+            throw new RoleNotAllowedError(role);
+        }
+
         setTokens({ accessToken });
         setCurrentUser({ userID, username, role, email, authProvider });
         // Cache profile + subscription từ BE (lần load sau chỉ verify token)
@@ -128,9 +170,11 @@ export const checkEmail = async (email) => {
 /**
  * Đăng nhập bằng Google
  * @param {string} idToken - Google Credential/Access Token
+ * @param {Object} [options]
+ * @param {string[]} [options.allowedRoles] - xem {@link login}.
  * @returns {Promise} Response chứa token và thông tin user
  */
-export const googleLogin = async (idToken) => {
+export const googleLogin = async (idToken, { allowedRoles } = {}) => {
     const response = await api.post('/auth/google-login', { idToken }, {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
     });
@@ -138,6 +182,12 @@ export const googleLogin = async (idToken) => {
     // See login() above — access in RAM, refresh in cookie.
     if (response.statusCode === 200 || response.statusCode === 0) {
         const { accessToken, userID, username, role, email, authProvider } = response.data;
+
+        if (allowedRoles && !allowedRoles.includes(role)) {
+            await revokeOrphanSession(accessToken);
+            throw new RoleNotAllowedError(role);
+        }
+
         setTokens({ accessToken });
         setCurrentUser({ userID, username, role, email, authProvider });
         saveLoginDataToCache(response.data);

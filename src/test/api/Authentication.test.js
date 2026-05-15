@@ -9,7 +9,26 @@ import {
   resetPassword,
   sendOTP,
   verifyOTP,
+  ROLE_NOT_ALLOWED_CODE,
 } from '@/api/Authentication';
+import { setTokens } from '@/utils/tokenStorage';
+import { setCurrentUser } from '@/lib/currentUser';
+
+vi.mock('@/utils/tokenStorage', async () => {
+  const actual = await vi.importActual('@/utils/tokenStorage');
+  return {
+    ...actual,
+    setTokens: vi.fn(),
+  };
+});
+
+vi.mock('@/lib/currentUser', async () => {
+  const actual = await vi.importActual('@/lib/currentUser');
+  return {
+    ...actual,
+    setCurrentUser: vi.fn(),
+  };
+});
 
 vi.mock('@/api/api', () => ({
   default: {
@@ -152,5 +171,84 @@ describe('Authentication API request timeouts', () => {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
       }),
     );
+  });
+});
+
+describe('Authentication role gate (login / googleLogin)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it('rejects login with ROLE_NOT_ALLOWED when BE role is not in allowedRoles and does not persist tokens', async () => {
+    api.post.mockImplementation((url) => {
+      if (url === '/auth/login') {
+        return Promise.resolve(successfulLoginResponse); // role = SUPER_ADMIN
+      }
+      if (url === '/auth/logout') {
+        return Promise.resolve({ statusCode: 200, message: 'OK', data: null });
+      }
+      return Promise.resolve({ statusCode: 200, data: null });
+    });
+
+    await expect(
+      login({ username: 'SUPER_ADMIN', password: 'Password123' }, { allowedRoles: ['USER'] }),
+    ).rejects.toMatchObject({ code: ROLE_NOT_ALLOWED_CODE, role: 'SUPER_ADMIN' });
+
+    expect(setTokens).not.toHaveBeenCalled();
+    expect(setCurrentUser).not.toHaveBeenCalled();
+    // BE logout MUST be called with the freshly received access token so the
+    // refresh cookie that BE has already set gets revoked server-side.
+    expect(api.post).toHaveBeenCalledWith(
+      '/auth/logout',
+      null,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer access-token',
+        }),
+      }),
+    );
+  });
+
+  it('rejects googleLogin with ROLE_NOT_ALLOWED when role is not allowed', async () => {
+    api.post.mockImplementation((url) => {
+      if (url === '/auth/google-login') {
+        return Promise.resolve(successfulLoginResponse);
+      }
+      if (url === '/auth/logout') {
+        return Promise.resolve({ statusCode: 200, data: null });
+      }
+      return Promise.resolve({ statusCode: 200, data: null });
+    });
+
+    await expect(
+      googleLogin('google-id-token', { allowedRoles: ['USER'] }),
+    ).rejects.toMatchObject({ code: ROLE_NOT_ALLOWED_CODE, role: 'SUPER_ADMIN' });
+
+    expect(setTokens).not.toHaveBeenCalled();
+    expect(setCurrentUser).not.toHaveBeenCalled();
+  });
+
+  it('persists tokens when role is in allowedRoles', async () => {
+    api.post.mockResolvedValue(successfulLoginResponse); // role = SUPER_ADMIN
+
+    await login(
+      { username: 'SUPER_ADMIN', password: 'Password123' },
+      { allowedRoles: ['ADMIN', 'SUPER_ADMIN'] },
+    );
+
+    expect(setTokens).toHaveBeenCalledWith({ accessToken: 'access-token' });
+    expect(setCurrentUser).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'SUPER_ADMIN', userID: 7 }),
+    );
+  });
+
+  it('persists tokens when allowedRoles is omitted (backward compat)', async () => {
+    api.post.mockResolvedValue(successfulLoginResponse);
+
+    await login({ username: 'any', password: 'pw' });
+
+    expect(setTokens).toHaveBeenCalledTimes(1);
+    expect(setCurrentUser).toHaveBeenCalledTimes(1);
   });
 });
