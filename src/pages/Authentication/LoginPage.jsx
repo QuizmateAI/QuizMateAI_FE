@@ -207,7 +207,9 @@ const LoginPageContent = () => {
 
   const [view, setView] = useState(location.state?.view || 'login');
 
-  const loginHook = useLogin(navigate, location, t);
+  // User-facing login entry: chỉ chấp nhận USER role. ADMIN / SUPER_ADMIN
+  // muốn đăng nhập phải qua subdomain admin.* (xem AdminLoginPage).
+  const loginHook = useLogin(navigate, location, t, { allowedRoles: ['USER'] });
   const registerHook = useRegister(setView, t);
   const forgotPasswordHook = useForgotPassword(setView, t);
 

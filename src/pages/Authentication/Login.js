@@ -1,8 +1,21 @@
 import { useState } from 'react';
-import { login, googleLogin } from '@/api/Authentication';
+import { login, googleLogin, ROLE_NOT_ALLOWED_CODE } from '@/api/Authentication';
 import { preloadGroupWorkspacePage, preloadHomePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 
-export const useLogin = (navigate, location, t) => {
+/**
+ * Hook đăng nhập dùng chung giữa LoginPage (user-facing) và AdminLoginPage
+ * (management console).
+ *
+ * @param {Function} navigate - react-router navigate
+ * @param {Object} location - react-router location
+ * @param {Function} t - i18n translator (or fallback (_, def) => def)
+ * @param {Object} [options]
+ * @param {string[]} [options.allowedRoles] - Whitelist role được phép login tại
+ *   entry này. LoginPage truyền ['USER']; AdminLoginPage truyền
+ *   ['ADMIN','SUPER_ADMIN']. Nếu role BE trả về không khớp, error mismatch
+ *   được show và token KHÔNG được persist (xem Authentication.login).
+ */
+export const useLogin = (navigate, location, t, { allowedRoles } = {}) => {
   const [loginData, setLoginData] = useState({
     username: '',
     password: '',
@@ -71,6 +84,22 @@ export const useLogin = (navigate, location, t) => {
     return navigate('/home');
   };
 
+  const resolveRoleMismatchMessage = () => {
+    // LoginPage user-facing chỉ accept USER → admin/superadmin nhập sai entry.
+    // AdminLoginPage chỉ accept ADMIN/SUPER_ADMIN → user thường nhập sai entry.
+    const onlyUser = allowedRoles?.length === 1 && allowedRoles[0] === 'USER';
+    if (onlyUser) {
+      return t(
+        'auth.roleNotAllowedForUserLogin',
+        'Tài khoản quản trị không được phép đăng nhập tại đây. Vui lòng dùng cổng quản trị.',
+      );
+    }
+    return t(
+      'auth.roleNotAllowedForAdminLogin',
+      'Tài khoản user thường không được phép đăng nhập vào cổng quản trị.',
+    );
+  };
+
   const handleLoginSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -95,12 +124,16 @@ export const useLogin = (navigate, location, t) => {
     setIsLoading(true);
 
     try {
-      const response = await login(trimmed);
+      const response = await login(trimmed, { allowedRoles });
       if (response.statusCode === 200 || response.statusCode === 0) {
         navigateByRole(response.data.role);
       }
     } catch (err) {
-      setError(err.message || t('auth.loginFailed'));
+      if (err?.code === ROLE_NOT_ALLOWED_CODE) {
+        setError(resolveRoleMismatchMessage());
+      } else {
+        setError(err.message || t('auth.loginFailed'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -110,13 +143,17 @@ export const useLogin = (navigate, location, t) => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await googleLogin(credentialResponse.credential);
+      const response = await googleLogin(credentialResponse.credential, { allowedRoles });
       if (response.statusCode === 200 || response.statusCode === 0) {
         navigateByRole(response.data.role);
       }
     } catch (err) {
-      setError(t('auth.loginGoogleFailed'));
-      console.error(err);
+      if (err?.code === ROLE_NOT_ALLOWED_CODE) {
+        setError(resolveRoleMismatchMessage());
+      } else {
+        setError(t('auth.loginGoogleFailed'));
+        console.error(err);
+      }
     } finally {
       setIsLoading(false);
     }
