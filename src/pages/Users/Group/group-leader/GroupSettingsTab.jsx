@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -16,7 +16,9 @@ import {
   Trash2,
 } from 'lucide-react';
 import { updateWorkspace } from '@/api/WorkspaceAPI';
-import { toggleVisibility as apiToggleVisibility, deleteGroup as apiDeleteGroup } from '@/api/GroupAPI';
+import { deleteGroup as apiDeleteGroup, setGroupJoinPolicy as apiSetGroupJoinPolicy, setGroupVisibility as apiSetGroupVisibility } from '@/api/GroupAPI';
+import { getErrorMessage } from '@/utils/getErrorMessage';
+import { useToast } from '@/context/ToastContext';
 import { getCurrentUser } from '@/lib/currentUser';
 import GroupSettingsActionsCard from '../Components/GroupSettingsActionsCard';
 import WorkspaceReviewBanPanel from '../Components/WorkspaceReviewBanPanel';
@@ -49,10 +51,30 @@ function GroupSettingsTab({
   const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [visibilityMsg, setVisibilityMsg] = useState('');
 
+  // Join policy state:
+  //   `joinPolicy`      — giá trị đang áp dụng (server-truth)
+  //   `joinPolicyDraft` — selection user đang chọn (chưa lưu)
+  // Save button enable khi draft != joinPolicy. Cancel để revert draft.
+  const [joinPolicy, setJoinPolicy] = useState(
+    String(group?.joinPolicy || 'FREE').toUpperCase(),
+  );
+  const [joinPolicyDraft, setJoinPolicyDraft] = useState(
+    String(group?.joinPolicy || 'FREE').toUpperCase(),
+  );
+  const [joinPolicyError, setJoinPolicyError] = useState('');
+  // Token tăng dần cho mỗi save attempt — khi nhiều save đan vào nhau, chỉ
+  // attempt mới nhất được phép rollback. Tránh save A return muộn (3s) ghi
+  // đè state mà save B vừa update.
+  const latestSaveIdRef = useRef(0);
+  const { showSuccess, showError } = useToast();
+
   useEffect(() => {
     if (!group) return;
     setGroupName(group.groupName || '');
     setIsPublic(Boolean(group.isPublic));
+    const nextPolicy = String(group?.joinPolicy || 'FREE').toUpperCase();
+    setJoinPolicy(nextPolicy);
+    setJoinPolicyDraft(nextPolicy);
   }, [group]);
 
   const shellClass = isDarkMode
@@ -103,9 +125,10 @@ function GroupSettingsTab({
     if (visibilityLoading || !group?.workspaceId) return;
     setVisibilityLoading(true);
     setVisibilityMsg('');
+    const nextIsPublic = !isPublic;
     try {
-      const res = await apiToggleVisibility(group.workspaceId);
-      const newValue = res?.data?.data?.isPublic ?? !isPublic;
+      const res = await apiSetGroupVisibility(group.workspaceId, nextIsPublic);
+      const newValue = res?.data?.data?.isPublic ?? nextIsPublic;
       setIsPublic(newValue);
       setVisibilityMsg(
         newValue
@@ -120,6 +143,58 @@ function GroupSettingsTab({
       setVisibilityLoading(false);
     }
   }, [group, isPublic, visibilityLoading, t]);
+
+  // Chỉ update draft state — KHÔNG call BE. User phải bấm Save mới chuyển.
+  // KHÔNG block bởi `joinPolicyLoading`: nếu đang chờ BE từ save trước, user
+  // vẫn được tự do đổi sang option khác và Save lại — đó là behavior optimistic.
+  const handleSelectJoinPolicyDraft = useCallback((nextPolicy) => {
+    const normalized = String(nextPolicy || '').toUpperCase();
+    if (normalized !== 'FREE' && normalized !== 'REQUEST_APPROVAL') return;
+    if (normalized === joinPolicyDraft) return;
+    setJoinPolicyDraft(normalized);
+    if (joinPolicyError) setJoinPolicyError('');
+  }, [joinPolicyDraft, joinPolicyError]);
+
+  const handleCancelJoinPolicyDraft = useCallback(() => {
+    setJoinPolicyDraft(joinPolicy);
+    setJoinPolicyError('');
+  }, [joinPolicy]);
+
+  const handleSaveJoinPolicy = useCallback(async () => {
+    if (!group?.workspaceId) return;
+    if (joinPolicyDraft === joinPolicy) return;
+
+    // Cấp token cho attempt này. Khi response về, chỉ attempt mới nhất
+    // (ref === myId) mới được phép rollback/clear loading — tránh A return
+    // muộn ghi đè state mà B vừa update (race condition).
+    const myId = latestSaveIdRef.current + 1;
+    latestSaveIdRef.current = myId;
+
+    const previousSaved = joinPolicy;
+    const nextSaved = joinPolicyDraft;
+
+    setJoinPolicy(nextSaved);
+    setJoinPolicyError('');
+    showSuccess(
+      nextSaved === 'REQUEST_APPROVAL'
+        ? t('groupSettingsTab.joinPolicy.savedApproval')
+        : t('groupSettingsTab.joinPolicy.savedFree'),
+    );
+
+    try {
+      await apiSetGroupJoinPolicy(group.workspaceId, nextSaved);
+    } catch (err) {
+      // Chỉ rollback nếu attempt này vẫn là mới nhất; nếu user đã save tiếp
+      // sang giá trị khác, để nó thắng — không phá state.
+      if (latestSaveIdRef.current === myId) {
+        setJoinPolicy(previousSaved);
+        setJoinPolicyDraft(previousSaved);
+        const message = getErrorMessage(t, err) || t('groupSettingsTab.joinPolicy.saveFailed');
+        setJoinPolicyError(message);
+        showError(message);
+      }
+    }
+  }, [group, joinPolicy, joinPolicyDraft, showError, showSuccess, t]);
 
   const handleSave = useCallback(async () => {
     if (!groupName.trim()) {
@@ -302,6 +377,100 @@ function GroupSettingsTab({
                 {visibilityMsg}
               </p>
             )}
+
+            {/* Join policy — chỉ hiển thị khi nhóm public. Private không cần
+                policy vì luôn yêu cầu invite/request. */}
+            {isPublic ? (
+              <div className={`mt-4 rounded-xl border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50/60'}`}>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className={`h-4 w-4 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`} />
+                  <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {t('groupSettingsTab.joinPolicy.title')}
+                  </h4>
+                </div>
+                <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {t('groupSettingsTab.joinPolicy.subtitle')}
+                </p>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup">
+                  {(['FREE', 'REQUEST_APPROVAL']).map((policy) => {
+                    const isDraft = joinPolicyDraft === policy;     // user đang chọn (highlight)
+                    const isSaved = joinPolicy === policy;          // server-truth (badge)
+                    const Icon = policy === 'FREE' ? Globe : ShieldCheck;
+                    return (
+                      <button
+                        key={policy}
+                        type="button"
+                        role="radio"
+                        aria-checked={isDraft}
+                        onClick={() => handleSelectJoinPolicyDraft(policy)}
+                        className={`flex items-start gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                          isDraft
+                            ? (isDarkMode
+                              ? 'border-blue-400 bg-blue-500/15 text-blue-100'
+                              : 'border-blue-500 bg-blue-50 text-blue-900')
+                            : (isDarkMode
+                              ? 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/20 hover:bg-white/[0.06]'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50')
+                        }`}
+                      >
+                        <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${isDraft ? (isDarkMode ? 'text-blue-200' : 'text-blue-700') : ''}`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold leading-tight">
+                              {t(`groupSettingsTab.joinPolicy.options.${policy}.label`)}
+                            </p>
+                            {isSaved ? (
+                              <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                isDarkMode ? 'bg-emerald-400/20 text-emerald-200' : 'bg-emerald-100 text-emerald-700'
+                              }`}>
+                                <Check className="mr-0.5 h-3 w-3" />
+                                {t('groupSettingsTab.joinPolicy.currentLabel')}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className={`mt-0.5 text-xs leading-snug ${isDraft ? '' : (isDarkMode ? 'text-slate-400' : 'text-slate-500')}`}>
+                            {t(`groupSettingsTab.joinPolicy.options.${policy}.hint`)}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Save / Cancel footer — hiện khi user đã đổi draft. Khi
+                    draft == saved, footer ẩn (chỉ hint "Không thay đổi"). */}
+                {joinPolicyDraft !== joinPolicy ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveJoinPolicy}
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                        isDarkMode ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {t('groupSettingsTab.joinPolicy.saveButton')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelJoinPolicyDraft}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+                        isDarkMode
+                          ? 'border-white/15 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]'
+                          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {t('groupSettingsTab.joinPolicy.cancelButton')}
+                    </button>
+                  </div>
+                ) : null}
+
+                {joinPolicyError ? (
+                  <p className="mt-2 text-xs font-medium text-red-500">{joinPolicyError}</p>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         )}
 

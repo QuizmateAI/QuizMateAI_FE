@@ -210,7 +210,22 @@
     "quizAttemptNotPaused": "Lượt làm quiz không ở trạng thái tạm dừng.",
     "quizAttemptTimeExpired": "Đã hết thời gian làm bài.",
     "questionNotInQuiz": "Câu hỏi không thuộc bài quiz này.",
-    "answerNotBelongToQuestion": "Đáp án không thuộc câu hỏi."
+    "answerNotBelongToQuestion": "Đáp án không thuộc câu hỏi.",
+    "announcementNotFound": "Không tìm thấy thông báo.",
+    "announcementTitleEmpty": "Tiêu đề thông báo không được để trống.",
+    "announcementContentEmpty": "Nội dung thông báo không được để trống.",
+    "joinRequestNotFound": "Không tìm thấy yêu cầu tham gia.",
+    "joinRequestAlreadyPending": "Bạn đã có yêu cầu đang chờ duyệt cho nhóm này.",
+    "joinRequestAlreadyMember": "Bạn đã là thành viên của nhóm này.",
+    "joinRequestPublicGroup": "Nhóm công khai không cần yêu cầu, vui lòng tham gia trực tiếp.",
+    "joinRequestInvalidState": "Yêu cầu đã được xử lý, không thể thay đổi.",
+    "assignmentNotFound": "Không tìm thấy bài giao.",
+    "assignmentTitleEmpty": "Tiêu đề bài giao không được để trống.",
+    "assignmentInvalidResource": "Tài nguyên bài giao không hợp lệ hoặc đã bị xóa.",
+    "assignmentResourceNotOwned": "Tài nguyên không thuộc nhóm này, không thể giao.",
+    "assignmentInvalidAudience": "Danh sách người nhận không hợp lệ.",
+    "assignmentDueAtPast": "Hạn nộp phải ở trong tương lai.",
+    "assignmentTargetNotFound": "Bạn không nằm trong danh sách nhận bài giao này."
   },
   "header": {
     "systemTitle": "Hệ thống QuizMate AI",
@@ -490,5 +505,26 @@
     "refreshAssessmentQueued": "Refresh Assessment Queued",
     "refreshAssessmentFail": "Refresh Assessment Fail",
     "score": "Score"
+  },
+  "notification": {
+    "title": "Thông báo",
+    "close": "Đóng",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "loadMore": "Xem thêm",
+    "loading": "Đang tải thông báo...",
+    "retry": "Thử lại",
+    "error": "Không thể tải thông báo.",
+    "fallbackTitle": "Thông báo mới",
+    "unreadCountLabel": "{{count}} thông báo chưa đọc",
+    "empty": {
+      "title": "Chưa có thông báo nào",
+      "body": "Bạn sẽ thấy các thông báo mới từ nhóm và hệ thống ở đây."
+    },
+    "relativeTime": {
+      "justNow": "Vừa xong",
+      "minutesAgo": "{{count}} phút trước",
+      "hoursAgo": "{{count}} giờ trước",
+      "daysAgo": "{{count}} ngày trước"
+    }
   }
 }

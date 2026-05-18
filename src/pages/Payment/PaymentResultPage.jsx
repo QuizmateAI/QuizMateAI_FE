@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
 import UserProfilePopover from '@/components/features/users/UserProfilePopover';
+import NotificationBell from '@/components/features/users/NotificationBell';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { createPlanSummaryFromPurchase, useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { getPaymentByOrderId, getPurchaseableCreditPackages } from '@/api/ManagementSystemAPI';
@@ -541,6 +542,7 @@ export default function PaymentResultPage() {
               </div>
             ) : null}
           </div>
+          <NotificationBell isDarkMode={isDarkMode} />
           <UserProfilePopover isDarkMode={isDarkMode} />
         </div>
       </header>

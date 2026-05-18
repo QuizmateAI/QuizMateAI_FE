@@ -6,6 +6,7 @@ import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import UserProfilePopover from "@/components/features/users/UserProfilePopover";
+import NotificationBell from "@/components/features/users/NotificationBell";
 
 function ProfileHeader() {
   const { t, i18n } = useTranslation();
@@ -52,6 +53,7 @@ function ProfileHeader() {
       </div>
 
       <div className="flex items-center gap-2">
+        <NotificationBell isDarkMode={isDarkMode} />
         <UserProfilePopover isDarkMode={isDarkMode} />
       </div>
     </header>

@@ -210,7 +210,22 @@
     "quizAttemptNotPaused": "クイズ受験は一時停止されていません。",
     "quizAttemptTimeExpired": "クイズの制限時間が切れました。",
     "questionNotInQuiz": "問題はこのクイズに属していません。",
-    "answerNotBelongToQuestion": "回答はこの問題に属していません。"
+    "answerNotBelongToQuestion": "回答はこの問題に属していません。",
+    "announcementNotFound": "お知らせが見つかりません。",
+    "announcementTitleEmpty": "お知らせのタイトルは必須です。",
+    "announcementContentEmpty": "お知らせの内容は必須です。",
+    "joinRequestNotFound": "参加リクエストが見つかりません。",
+    "joinRequestAlreadyPending": "このグループへの保留中の参加リクエストが既にあります。",
+    "joinRequestAlreadyMember": "このグループのメンバーです。",
+    "joinRequestPublicGroup": "公開グループのため、リクエストせず直接参加してください。",
+    "joinRequestInvalidState": "このリクエストは既に処理されており、変更できません。",
+    "assignmentNotFound": "課題が見つかりません。",
+    "assignmentTitleEmpty": "課題のタイトルは必須です。",
+    "assignmentInvalidResource": "課題のリソースが無効か削除されています。",
+    "assignmentResourceNotOwned": "このリソースはグループに属さず、割り当てできません。",
+    "assignmentInvalidAudience": "対象者リストが無効です。",
+    "assignmentDueAtPast": "期限は未来の日時を指定してください。",
+    "assignmentTargetNotFound": "あなたはこの課題の対象者ではありません。"
   },
   "header": {
     "systemTitle": "QuizMate AI システム",
@@ -490,5 +505,26 @@
     "refreshAssessmentQueued": "Refresh Assessment Queued",
     "refreshAssessmentFail": "Refresh Assessment Fail",
     "score": "Score"
+  },
+  "notification": {
+    "title": "通知",
+    "close": "閉じる",
+    "markAllRead": "すべて既読にする",
+    "loadMore": "もっと見る",
+    "loading": "通知を読み込み中...",
+    "retry": "再試行",
+    "error": "通知を読み込めませんでした。",
+    "fallbackTitle": "新しい通知",
+    "unreadCountLabel": "未読 {{count}} 件",
+    "empty": {
+      "title": "新しい通知はありません",
+      "body": "グループやシステムからの新しい通知はここに表示されます。"
+    },
+    "relativeTime": {
+      "justNow": "たった今",
+      "minutesAgo": "{{count}} 分前",
+      "hoursAgo": "{{count}} 時間前",
+      "daysAgo": "{{count}} 日前"
+    }
   }
 }

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ListSpinner from '@/components/ui/ListSpinner';
 import UserProfilePopover from '@/components/features/users/UserProfilePopover';
+import NotificationBell from '@/components/features/users/NotificationBell';
 import CreditIconImage from '@/components/ui/CreditIconImage';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
@@ -273,6 +274,7 @@ export default function CreditPaymentPage() {
                 </div>
               )}
             </div>
+            <NotificationBell isDarkMode={isDarkMode} />
             <UserProfilePopover isDarkMode={isDarkMode} />
           </div>
         </div>

@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
-  Bell,
   BookOpen,
   Brain,
   ClipboardList,
   FolderOpen,
   LayoutDashboard,
   Map,
+  Megaphone,
   Moon,
   PenLine,
   Settings,
@@ -34,6 +34,7 @@ const FLASHCARD_CHILD_MODE = { flashcardAi: 'ai', flashcardManual: 'manual' };
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard },
   { id: 'personalDashboard', icon: LayoutDashboard },
+  { id: 'announcements', icon: Megaphone },
   { id: 'documents', icon: FolderOpen },
   { id: 'roadmap', icon: Map },
   {
@@ -49,7 +50,6 @@ const NAV_ITEMS = [
   { id: 'mockTest', icon: ClipboardList },
   { id: 'challenge', icon: Swords },
   { id: 'ranking', icon: BarChart3 },
-  { id: 'notifications', icon: Bell },
   { id: 'members', icon: Users },
   { id: 'memberStats', icon: Brain },
   { id: 'wallet', icon: Wallet },

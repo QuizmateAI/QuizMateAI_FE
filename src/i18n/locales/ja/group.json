@@ -128,6 +128,7 @@
           "content": "コンテンツ",
           "materials": "教材",
           "insights": "インサイト",
+          "communication": "通知・課題",
           "admin": "管理"
         },
         "items": {
@@ -178,6 +179,14 @@
           "VIEW_MEMBER_DASHBOARD": {
             "label": "メンバーダッシュボードを表示",
             "description": "メンバー統計と分析を開きます。"
+          },
+          "MANAGE_ANNOUNCEMENT": {
+            "label": "お知らせを管理",
+            "description": "全メンバー向けのお知らせを作成・編集・ピン留めします。"
+          },
+          "MANAGE_ASSIGNMENT": {
+            "label": "課題を管理",
+            "description": "クイズ、教材、フラッシュカードを割り当て、提出状況を追跡します。"
           },
           "MANAGE_MEMBERS": {
             "label": "メンバーを管理",
@@ -416,6 +425,8 @@
       "nav": {
         "dashboard": "ダッシュボード",
         "personalDashboard": "個人ダッシュボード",
+        "announcements": "グループお知らせ",
+        "assignments": "課題",
         "documents": "ドキュメント",
         "roadmap": "ロードマップ",
         "quiz": "クイズ",
@@ -429,7 +440,7 @@
         "mockTest": "模擬試験",
         "challenge": "チャレンジ",
         "ranking": "ランキング",
-        "notifications": "通知",
+        "notifications": "アクティビティログ",
         "members": "メンバー",
         "memberStats": "メンバー統計",
         "wallet": "ウォレット",
@@ -437,6 +448,167 @@
       },
       "expandSidebar": "サイドバーを展開",
       "collapseSidebar": "サイドバーを折りたたみ"
+    },
+    "announcements": {
+      "title": "グループお知らせ",
+      "totalLabel": "お知らせ {{count}} 件",
+      "unreadLabel": "未読 {{count}} 件",
+      "createButton": "お知らせを作成",
+      "loadMore": "もっと見る",
+      "loading": "お知らせを読み込み中...",
+      "retry": "再試行",
+      "error": "お知らせを読み込めませんでした。再試行してください。",
+      "pinned": "固定中",
+      "edited": "編集済み",
+      "itemActions": "お知らせの操作",
+      "readMore": "もっと読む",
+      "collapse": "折りたたむ",
+      "unknownAuthor": "作成者不明",
+      "untitledFallback": "(タイトルなし)",
+      "deleteConfirmTitle": "このお知らせを削除しますか？",
+      "deleteConfirmBody": "お知らせ「{{title}}」をグループから削除します。この操作は取り消せません。",
+      "empty": {
+        "title": "お知らせはまだありません",
+        "bodyLeader": "最初のお知らせを投稿して、メンバー全員に重要な情報を共有しましょう。",
+        "bodyMember": "リーダーまたは権限を委任されたメンバーが投稿すると、ここに表示されます。"
+      },
+      "relativeTime": {
+        "justNow": "たった今",
+        "minutesAgo": "{{count}} 分前",
+        "hoursAgo": "{{count}} 時間前",
+        "daysAgo": "{{count}} 日前"
+      },
+      "form": {
+        "createTitle": "新しいお知らせ",
+        "editTitle": "お知らせを編集",
+        "description": "お知らせはアクティブなメンバー全員に配信され、通知が送信されます。",
+        "titleLabel": "タイトル",
+        "titlePlaceholder": "例: 今週の小テスト日程",
+        "contentLabel": "本文",
+        "contentPlaceholder": "詳細、指示、メンバーへの注意事項などを記入してください...",
+        "pinnedLabel": "このお知らせを固定する",
+        "pinnedHint": "固定したお知らせは常に一覧の先頭に表示されます。",
+        "publishButton": "お知らせを公開",
+        "saveButton": "変更を保存",
+        "errors": {
+          "titleRequired": "タイトルを入力してください。",
+          "titleTooShort": "タイトルは{{min}}文字以上で入力してください。",
+          "titleTooLong": "タイトルは{{max}}文字以内で入力してください。",
+          "contentRequired": "本文を入力してください。",
+          "contentTooShort": "本文は{{min}}文字以上で入力してください。",
+          "contentTooLong": "本文は{{max}}文字以内で入力してください。",
+          "submit": "お知らせを保存できませんでした。再試行してください。"
+        }
+      },
+      "toasts": {
+        "created": "お知らせを公開しました。",
+        "updated": "お知らせを更新しました。",
+        "deleted": "お知らせを削除しました。",
+        "deleteFailed": "お知らせを削除できませんでした。"
+      }
+    },
+    "assignments": {
+      "title": "課題",
+      "leaderSubtitle": "このグループには現在 {{count}} 件の課題があります",
+      "memberSubtitle": "提出済み {{submitted}}/{{count}} 件",
+      "createButton": "新しい課題",
+      "loadMore": "もっと見る",
+      "loading": "課題を読み込み中...",
+      "retry": "再試行",
+      "error": "課題を読み込めませんでした。再試行してください。",
+      "itemActions": "課題の操作",
+      "untitledFallback": "(タイトルなし)",
+      "noDueDate": "期限なし",
+      "overdueShort": "期限超過",
+      "overdueDays": "{{count}} 日超過",
+      "dueInMinutes": "残り {{count}} 分",
+      "dueInHours": "残り {{count}} 時間",
+      "dueInDays": "残り {{count}} 日",
+      "progressLabel": "提出 {{submitted}}/{{total}}",
+      "assignedBy": "出題者: {{name}}",
+      "submitted": "提出済み",
+      "markSubmitted": "提出済みにする",
+      "deleteConfirmTitle": "この課題を削除しますか？",
+      "deleteConfirmBody": "課題「{{title}}」をグループから削除します。この操作は取り消せません。",
+      "tabs": {
+        "manage": "管理",
+        "mine": "自分の"
+      },
+      "empty": {
+        "leaderTitle": "課題はまだありません",
+        "leaderBody": "クイズ、教材、フラッシュカードを割り当てて提出状況を追跡しましょう。",
+        "memberTitle": "課題はまだありません",
+        "memberBody": "リーダーから課題が割り当てられると、ここに表示されます。"
+      },
+      "quizPanel": {
+        "title": "このクイズの課題",
+        "subtitle": "{{count}} 件の課題",
+        "emptyTitle": "まだ誰にも割り当てられていません",
+        "emptyBody": "「新しい課題」をクリックして、このクイズをメンバーに割り当て、締切を設定してください。"
+      },
+      "resourceTypes": {
+        "QUIZ": "クイズ",
+        "MATERIAL": "教材",
+        "FLASHCARD_SET": "フラッシュカード"
+      },
+      "audienceTypes": {
+        "ALL_MEMBERS": {
+          "label": "全メンバー",
+          "hint": "アクティブな全メンバー",
+          "short": "全員"
+        },
+        "SPECIFIC_MEMBERS": {
+          "label": "特定のメンバー",
+          "hint": "受信者を個別に選択",
+          "short": "選択メンバー"
+        }
+      },
+      "form": {
+        "createTitle": "新しい課題",
+        "editTitle": "課題を編集",
+        "createDescription": "コンテンツ、対象者、期限を選びます。対象者には通知が送信されます。",
+        "editDescription": "タイトル、説明、期限のみ編集可能です。コンテンツと対象者は混乱を避けるため変更できません。",
+        "resourceSection": "出題内容",
+        "resourcePickLabel": "具体的に選択",
+        "resourcePlaceholder": "-- 選択 --",
+        "resourceLoading": "読み込み中...",
+        "resourceEmpty": "このグループに利用可能なものがありません",
+        "resourceLoadFailed": "一覧を読み込めませんでした。再試行してください。",
+        "titleLabel": "タイトル",
+        "titlePlaceholder": "例: 今週のクイズを完了する",
+        "descriptionLabel": "説明",
+        "descriptionPlaceholder": "指示、注意事項、採点基準など...",
+        "dueAtLabel": "期限 (任意)",
+        "dueAtHint": "厳格な期限がなければ空のままで構いません。",
+        "audienceSection": "対象者",
+        "memberSearchPlaceholder": "名前またはメールで検索...",
+        "memberLoading": "メンバーを読み込み中...",
+        "memberLoadFailed": "メンバーを読み込めませんでした。",
+        "memberEmpty": "該当するメンバーがいません。",
+        "memberSelectedCount": "{{count}} 名選択中",
+        "assignButton": "割り当てる",
+        "saveButton": "変更を保存",
+        "errors": {
+          "titleRequired": "タイトルを入力してください。",
+          "titleTooShort": "タイトルは{{min}}文字以上で入力してください。",
+          "titleTooLong": "タイトルは{{max}}文字以内で入力してください。",
+          "descriptionTooLong": "説明は{{max}}文字以内で入力してください。",
+          "dueAtInvalid": "期限が無効です。",
+          "dueAtPast": "期限は未来の日時を指定してください。",
+          "resourceTypeRequired": "コンテンツの種類を選択してください。",
+          "resourceIdRequired": "コンテンツを選択してください。",
+          "audienceEmpty": "少なくとも 1 名のメンバーを選択してください。",
+          "submit": "課題を保存できませんでした。再試行してください。"
+        }
+      },
+      "toasts": {
+        "created": "課題を作成しました。",
+        "updated": "課題を更新しました。",
+        "deleted": "課題を削除しました。",
+        "deleteFailed": "課題を削除できませんでした。",
+        "submitted": "提出済みにしました。",
+        "submitFailed": "提出済みにできませんでした。"
+      }
     },
     "studio": {
       "systemDashboard": "概要",
@@ -681,6 +853,56 @@
     },
     "profile": {
       "noRules": "追加ルールはまだありません。"
+    }
+  },
+  "groupJoinRequest": {
+    "submit": {
+      "title": "グループへの参加申請",
+      "description": "参加申請を送信します。リーダーが確認して判断します。",
+      "descriptionWithName": "「{{name}}」への参加申請を送信します。リーダーが確認して判断します。",
+      "messageLabel": "リーダーへのメッセージ",
+      "messageOptional": "任意",
+      "messagePlaceholder": "簡単な自己紹介や参加理由を記入してください...",
+      "submitButton": "申請を送信",
+      "errors": {
+        "messageTooLong": "メッセージは{{max}}文字以内で入力してください。",
+        "submit": "申請を送信できませんでした。再試行してください。"
+      }
+    },
+    "decision": {
+      "approveTitle": "参加申請を承認",
+      "rejectTitle": "参加申請を却下",
+      "approveDescription": "{{name}}さんの申請を承認しますか？メンバーとして追加されます。",
+      "rejectDescription": "{{name}}さんの申請を却下しますか？後で再申請できます。",
+      "requesterMessage": "申請者のメッセージ",
+      "noteLabel": "判断ノート",
+      "noteOptional": "任意",
+      "noteApprovePlaceholder": "歓迎のメッセージや初期ガイドなど...",
+      "noteRejectPlaceholder": "必要であれば短い説明...",
+      "approveButton": "承認",
+      "rejectButton": "却下",
+      "errors": {
+        "noteTooLong": "ノートは{{max}}文字以内で入力してください。",
+        "submit": "申請を処理できませんでした。再試行してください。"
+      }
+    },
+    "panel": {
+      "title": "参加申請",
+      "titleWithCount": "参加申請 ({{count}})",
+      "loading": "申請を読み込み中...",
+      "loadMore": "もっと見る",
+      "retry": "再試行",
+      "empty": "保留中の申請はありません。",
+      "error": "参加申請を読み込めませんでした。",
+      "requestedAt": "送信: {{time}}",
+      "unknownRequester": "申請者不明",
+      "approveAction": "承認",
+      "rejectAction": "却下"
+    },
+    "toasts": {
+      "approved": "申請を承認しました。",
+      "rejected": "申請を却下しました。",
+      "decisionFailed": "申請を処理できませんでした。"
     }
   },
   "groupReview": {
@@ -1467,8 +1689,29 @@
     "identityNeedsSetup": "セットアップが必要",
     "generalInfo": "一般グループ情報",
     "groupVisibility": "グループ表示範囲",
-    "compactPublicHint": "誰でもこのグループを発見できます。",
+    "compactPublicHint": "コミュニティまたは 12 桁のグループコードで誰でもこのグループを発見できます。",
     "compactPrivateHint": "招待されたメンバーのみ参加可能。",
+    "joinPolicy": {
+      "title": "公開時の参加方法",
+      "subtitle": "メンバーがグループを発見した後、どのように参加するか選択してください。",
+      "currentLabel": "現在の設定",
+      "saveButton": "変更を保存",
+      "cancelButton": "キャンセル",
+      "saving": "保存中...",
+      "savedFree": "自由参加に切り替えました。",
+      "savedApproval": "承認制に切り替えました。",
+      "saveFailed": "ポリシーを保存できませんでした。再試行するか接続を確認してください。",
+      "options": {
+        "FREE": {
+          "label": "自由参加",
+          "hint": "ワンクリックで参加。承認不要。"
+        },
+        "REQUEST_APPROVAL": {
+          "label": "リーダー承認",
+          "hint": "メンバーが申請し、リーダーが承認して参加します。"
+        }
+      }
+    },
     "publicBadge": "公開",
     "privateBadge": "非公開",
     "publicHeading": "公開 — 発見可能",

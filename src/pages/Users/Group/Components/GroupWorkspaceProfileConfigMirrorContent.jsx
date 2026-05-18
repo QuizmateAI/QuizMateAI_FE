@@ -1,5 +1,7 @@
 import {
   AlertTriangle,
+  BookOpen,
+  BrainCircuit,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -7,7 +9,12 @@ import {
   Compass,
   Loader2,
   RefreshCw,
+  ScrollText,
+  ShieldCheck,
   Sparkles,
+  Tag,
+  Target,
+  Users,
   X,
 } from 'lucide-react';
 import {
@@ -25,6 +32,62 @@ function FieldError({ message }) {
   if (!message) return null;
   return <p className="group-profile-field-error mt-2 text-xs font-medium text-rose-500">{message}</p>;
 }
+
+const CONFIRM_SECTION_META = {
+  identity: {
+    icon: Users,
+    light: {
+      ring: 'border-cyan-200/80 bg-[linear-gradient(160deg,#ffffff_0%,#ecfeff_60%,#e0f2fe_100%)]',
+      header: 'bg-cyan-100 text-cyan-700 ring-1 ring-cyan-200',
+      title: 'text-cyan-900',
+      itemIcon: 'bg-white text-cyan-700 ring-1 ring-cyan-200',
+    },
+    dark: {
+      ring: 'border-cyan-400/20 bg-[linear-gradient(160deg,rgba(8,47,73,0.6),rgba(15,23,42,0.92))]',
+      header: 'bg-cyan-500/15 text-cyan-200 ring-1 ring-cyan-400/30',
+      title: 'text-cyan-100',
+      itemIcon: 'bg-slate-900/80 text-cyan-200 ring-1 ring-cyan-400/30',
+    },
+  },
+  learning: {
+    icon: BrainCircuit,
+    light: {
+      ring: 'border-emerald-200/80 bg-[linear-gradient(160deg,#ffffff_0%,#ecfdf5_60%,#d1fae5_100%)]',
+      header: 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200',
+      title: 'text-emerald-900',
+      itemIcon: 'bg-white text-emerald-700 ring-1 ring-emerald-200',
+    },
+    dark: {
+      ring: 'border-emerald-400/20 bg-[linear-gradient(160deg,rgba(6,78,59,0.5),rgba(15,23,42,0.92))]',
+      header: 'bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-400/30',
+      title: 'text-emerald-100',
+      itemIcon: 'bg-slate-900/80 text-emerald-200 ring-1 ring-emerald-400/30',
+    },
+  },
+  notes: {
+    icon: ScrollText,
+    light: {
+      ring: 'border-violet-200/80 bg-[linear-gradient(160deg,#ffffff_0%,#f5f3ff_60%,#ede9fe_100%)]',
+      header: 'bg-violet-100 text-violet-700 ring-1 ring-violet-200',
+      title: 'text-violet-900',
+      itemIcon: 'bg-white text-violet-700 ring-1 ring-violet-200',
+    },
+    dark: {
+      ring: 'border-violet-400/20 bg-[linear-gradient(160deg,rgba(46,16,101,0.5),rgba(15,23,42,0.92))]',
+      header: 'bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/30',
+      title: 'text-violet-100',
+      itemIcon: 'bg-slate-900/80 text-violet-200 ring-1 ring-violet-400/30',
+    },
+  },
+};
+
+const CONFIRM_ITEM_ICON = {
+  groupName: Tag,
+  knowledge: BookOpen,
+  domain: Compass,
+  goal: Target,
+  rules: ShieldCheck,
+};
 
 function GroupWorkspaceProfileConfigMirrorContent({
   LEARNING_MODES: _LEARNING_MODES,
@@ -275,75 +338,92 @@ function GroupWorkspaceProfileConfigMirrorContent({
               <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
             </div>
           ) : showProfileConfirm ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className={cn(
-                'rounded-[20px] border px-4 py-3',
-                isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)]'
-              )}>
-                <p className={cn('text-sm leading-6', confirmMutedClass)}>
-                  {t(
-                    'groupWorkspaceProfileConfigMirror.confirm.editHint',
-                    'You can still go back and edit before applying.'
-                  )}
-                </p>
-              </div>
-
-              <div className={cn(
-                'rounded-[26px] border px-5 py-5 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.28)]',
+                'rounded-[28px] border px-5 py-6 shadow-[0_28px_60px_-42px_rgba(15,23,42,0.32)] sm:px-6',
                 isDarkMode
-                  ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]'
-                  : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(180deg,var(--design-30)_0%,#f4f9ff_100%)]'
+                  ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.78))]'
+                  : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)]'
               )}>
-                <div className="border-b border-inherit pb-4">
-                  <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
-                    {t('groupWorkspaceProfileConfigMirror.confirm.applyEyebrow', 'This group profile will be applied')}
-                  </p>
-                  <p className={cn('mt-2 text-sm leading-6', confirmMutedClass)}>
-                    {t(
-                      'groupWorkspaceProfileConfigMirror.confirm.applyDescription',
-                      'Everything below will be saved as the current learning setup for this group workspace.'
-                    )}
-                  </p>
+                <div className={cn('flex items-start gap-3 border-b pb-5', sectionDividerClass)}>
+                  <div className={cn(
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+                    isDarkMode
+                      ? 'bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(16,185,129,0.18))] text-emerald-200 ring-1 ring-emerald-400/30'
+                      : 'bg-[linear-gradient(135deg,#cffafe,#d1fae5)] text-emerald-700 ring-1 ring-emerald-200'
+                  )}>
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', confirmLabelClass)}>
+                      {t('groupWorkspaceProfileConfigMirror.confirm.applyEyebrow', 'This group profile will be applied')}
+                    </p>
+                    <p className={cn('mt-1.5 text-sm leading-6', confirmMutedClass)}>
+                      {t(
+                        'groupWorkspaceProfileConfigMirror.confirm.applyDescription',
+                        'Everything below will be saved as the current learning setup for this group workspace.'
+                      )}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                  {confirmationSummarySections.map((section) => (
-                    <section
-                      key={section.id}
-                      className={cn(
-                        'rounded-[24px] border px-4 py-4 shadow-[0_18px_36px_-30px_rgba(14,165,233,0.18)] sm:px-5',
-                        section.spanClass,
-                        isDarkMode
-                          ? 'border-cyan-400/15 bg-slate-950/70'
-                          : 'border-cyan-300 bg-white'
-                      )}
-                    >
-                      <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
-                        {section.title}
-                      </p>
-
-                      <div className={cn('mt-4', section.itemsGridClass || 'space-y-3')}>
-                        {section.items.map((item) => (
-                          <div
-                            key={item.id}
-                            className={cn(
-                              'rounded-[20px] border px-3.5 py-3.5 shadow-sm',
-                              isDarkMode
-                                ? 'border-white/10 bg-white/[0.04]'
-                                : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)]'
-                            )}
-                          >
-                            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
-                              {item.label}
-                            </p>
-                            <p className={cn('mt-1.5 text-sm font-semibold leading-6', isDarkMode ? 'text-slate-100' : 'text-slate-900')}>
-                              {item.value}
-                            </p>
+                  {confirmationSummarySections.map((section) => {
+                    const meta = CONFIRM_SECTION_META[section.id] || CONFIRM_SECTION_META.identity;
+                    const tone = isDarkMode ? meta.dark : meta.light;
+                    const SectionIcon = meta.icon;
+                    return (
+                      <section
+                        key={section.id}
+                        className={cn(
+                          'group/section rounded-[24px] border px-4 py-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.22)] transition-transform duration-200 hover:-translate-y-0.5 sm:px-5',
+                          section.spanClass,
+                          tone.ring
+                        )}
+                      >
+                        <header className="flex items-center gap-3">
+                          <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', tone.header)}>
+                            <SectionIcon className="h-5 w-5" />
                           </div>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
+                          <p className={cn('text-[12px] font-bold uppercase tracking-[0.12em]', tone.title)}>
+                            {section.title}
+                          </p>
+                        </header>
+
+                        <div className={cn('mt-4', section.itemsGridClass || 'space-y-3')}>
+                          {section.items.map((item) => {
+                            const ItemIcon = CONFIRM_ITEM_ICON[item.id] || Sparkles;
+                            return (
+                              <div
+                                key={item.id}
+                                className={cn(
+                                  'flex items-start gap-3 rounded-2xl border px-3.5 py-3 transition-colors duration-200',
+                                  isDarkMode
+                                    ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.06]'
+                                    : 'border-white/90 bg-white/95 hover:bg-white shadow-[0_10px_20px_-18px_rgba(15,23,42,0.15)]'
+                                )}
+                              >
+                                <div className={cn(
+                                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                                  tone.itemIcon
+                                )}>
+                                  <ItemIcon className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className={cn('text-[10.5px] font-semibold uppercase tracking-[0.1em]', confirmLabelClass)}>
+                                    {item.label}
+                                  </p>
+                                  <p className={cn('mt-1 break-words text-sm font-semibold leading-6', isDarkMode ? 'text-slate-100' : 'text-slate-900')}>
+                                    {item.value}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
               </div>
             </div>

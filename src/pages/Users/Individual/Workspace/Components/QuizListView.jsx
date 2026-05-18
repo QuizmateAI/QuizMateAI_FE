@@ -300,6 +300,9 @@ function QuizListView({
   quizGenerationProgressByQuizId = null,
   /** Sidebar AI / manual / JSON — lọc danh sách workspace */
   studioSubFilter = null,
+  /** Group only: Map<quizId, {dueAt, assignmentId}> chứa các assignment PENDING của user hiện tại.
+   * Dùng để hiển thị badge "Được giao" trên card quiz. */
+  assignedQuizMap = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -1767,20 +1770,44 @@ function QuizListView({
                               <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
                             </div>
                           ) : null}
-                          {shouldShowInlineStatusBadge || shouldShowAttemptStatusBadge ? (
-                            <div className="flex shrink-0 flex-nowrap items-center gap-1.5 whitespace-nowrap">
-                              {shouldShowInlineStatusBadge ? (
-                                <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
-                                  {statusLabel}
-                                </span>
-                              ) : null}
-                              {shouldShowAttemptStatusBadge ? (
-                                <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${attemptStatusClassName}`}>
-                                  {attemptStatusLabel}
-                                </span>
-                              ) : null}
-                            </div>
-                          ) : null}
+                          {(() => {
+                            const assignmentMeta = assignedQuizMap?.get?.(Number(quiz?.quizId)) || null;
+                            const showAssignmentBadge = Boolean(assignmentMeta) && normalizedStatus === "ACTIVE" && !myAttempted;
+                            const dueAtTime = assignmentMeta?.dueAt ? new Date(assignmentMeta.dueAt).getTime() : null;
+                            const isOverdue = Number.isFinite(dueAtTime) && dueAtTime < Date.now();
+                            const assignmentBadgeLabel = !showAssignmentBadge
+                              ? ""
+                              : isOverdue
+                                ? t("quizListView.cards.assignmentOverdue", "Quá hạn")
+                                : t("quizListView.cards.assignmentAssigned", "Được giao");
+                            const assignmentBadgeClass = isOverdue
+                              ? (isDarkMode ? "bg-red-950/40 text-red-300" : "bg-red-100 text-red-700")
+                              : (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700");
+                            const showAny = shouldShowInlineStatusBadge || shouldShowAttemptStatusBadge || showAssignmentBadge;
+                            if (!showAny) return null;
+                            return (
+                              <div className="flex shrink-0 flex-nowrap items-center gap-1.5 whitespace-nowrap">
+                                {shouldShowInlineStatusBadge ? (
+                                  <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                                    {statusLabel}
+                                  </span>
+                                ) : null}
+                                {shouldShowAttemptStatusBadge ? (
+                                  <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${attemptStatusClassName}`}>
+                                    {attemptStatusLabel}
+                                  </span>
+                                ) : null}
+                                {showAssignmentBadge ? (
+                                  <span
+                                    className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${assignmentBadgeClass}`}
+                                    title={assignmentMeta?.dueAt ? new Date(assignmentMeta.dueAt).toLocaleString() : undefined}
+                                  >
+                                    {assignmentBadgeLabel}
+                                  </span>
+                                ) : null}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     ) : null}

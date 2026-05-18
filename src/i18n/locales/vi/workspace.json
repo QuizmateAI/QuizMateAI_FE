@@ -1916,7 +1916,11 @@
         "overview": "Tổng quan",
         "review": "Kiểm tra",
         "questions": "Câu hỏi",
-        "history": "Lịch sử làm bài"
+        "history": "Lịch sử làm bài",
+        "assignments": "Bài đã giao"
+      },
+      "assignment": {
+        "assignButton": "Giao bài"
       },
       "reviewBan": {
         "bannedBadge": "Banned Badge",
@@ -2933,7 +2937,9 @@
       "deleteQuiz": "Xóa quiz",
       "feedback": "Phản hồi",
       "share": "Chia sẻ",
-      "noTitle": "—"
+      "noTitle": "—",
+      "assignmentAssigned": "Được giao",
+      "assignmentOverdue": "Quá hạn"
     },
     "empty": {
       "loading": "Đang tải...",

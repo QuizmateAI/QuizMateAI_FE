@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserProfilePopover from "@/components/features/users/UserProfilePopover";
+import NotificationBell from "@/components/features/users/NotificationBell";
 import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -236,6 +237,7 @@ export default function WalletPage() {
                 </div>
               )}
             </div>
+            <NotificationBell isDarkMode={isDarkMode} />
             <UserProfilePopover isDarkMode={isDarkMode} />
           </div>
         </div>

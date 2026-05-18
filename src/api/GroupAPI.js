@@ -266,9 +266,25 @@ export const removeMember = async (workspaceId, memberId) => {
   return response;
 };
 
-// Leader bật/tắt chế độ public của nhóm
-export const toggleVisibility = async (workspaceId) => {
-  const response = await api.put(`/group/${workspaceId}/visibility`);
+// Leader bật/tắt visibility (public/private). Độc lập với joinPolicy:
+//   - isPublic=true  → nhóm hiển thị trong danh sách public
+//   - isPublic=false → nhóm private, chỉ invite mới vào
+export const setGroupVisibility = async (workspaceId, isPublic) => {
+  if (workspaceId == null) throw new Error('Missing workspaceId');
+  const response = await api.put(`/group/${workspaceId}/visibility`, { isPublic: Boolean(isPublic) });
+  return response;
+};
+
+// Leader đổi `joinPolicy` cho nhóm public. Độc lập với isPublic:
+//   - FREE              → member click "Tham gia" thì vào ngay
+//   - REQUEST_APPROVAL  → member click "Xin tham gia" → leader duyệt mới được vào
+export const setGroupJoinPolicy = async (workspaceId, joinPolicy) => {
+  if (workspaceId == null) throw new Error('Missing workspaceId');
+  const normalized = String(joinPolicy || '').toUpperCase();
+  if (normalized !== 'FREE' && normalized !== 'REQUEST_APPROVAL') {
+    throw new Error('Invalid joinPolicy');
+  }
+  const response = await api.put(`/group/${workspaceId}/join-policy`, { joinPolicy: normalized });
   return response;
 };
 

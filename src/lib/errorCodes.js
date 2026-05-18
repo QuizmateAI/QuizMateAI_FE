@@ -227,6 +227,27 @@ const ERROR_CODES = {
   // ========== USERNAME / EMAIL VALIDATION ==========
   2001: 'error.usernameInvalidFormat',
   2002: 'error.emailInvalidFormat',
+
+  // ========== ANNOUNCEMENT ==========
+  1350: 'error.announcementNotFound',
+  1351: 'error.announcementTitleEmpty',
+  1352: 'error.announcementContentEmpty',
+
+  // ========== JOIN REQUEST ==========
+  1360: 'error.joinRequestNotFound',
+  1361: 'error.joinRequestAlreadyPending',
+  1362: 'error.joinRequestAlreadyMember',
+  1363: 'error.joinRequestPublicGroup',
+  1364: 'error.joinRequestInvalidState',
+
+  // ========== ASSIGNMENT ==========
+  1370: 'error.assignmentNotFound',
+  1371: 'error.assignmentTitleEmpty',
+  1372: 'error.assignmentInvalidResource',
+  1373: 'error.assignmentResourceNotOwned',
+  1374: 'error.assignmentInvalidAudience',
+  1375: 'error.assignmentDueAtPast',
+  1376: 'error.assignmentTargetNotFound',
 };
 
 export default ERROR_CODES;

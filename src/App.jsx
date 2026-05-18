@@ -6,6 +6,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import RateLimitToastBridge from '@/components/system/RateLimitToastBridge';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import RouteMetaManager from '@/components/seo/RouteMetaManager';
 import RuntimeRecoveryBoundary from '@/components/system/RuntimeRecoveryBoundary';
@@ -330,14 +331,16 @@ function AppContent() {
     return (
         <NavigationLoadingProvider>
             <UserProfileProvider>
-                <Suspense fallback={<LoadingSpinner />}>
-                    <RouteNamespaceGate>
-                        <MainRoutes />
-                    </RouteNamespaceGate>
-                </Suspense>
-                <Suspense fallback={null}>
-                    <FeedbackAutoPrompt />
-                </Suspense>
+                <NotificationProvider>
+                    <Suspense fallback={<LoadingSpinner />}>
+                        <RouteNamespaceGate>
+                            <MainRoutes />
+                        </RouteNamespaceGate>
+                    </Suspense>
+                    <Suspense fallback={null}>
+                        <FeedbackAutoPrompt />
+                    </Suspense>
+                </NotificationProvider>
             </UserProfileProvider>
         </NavigationLoadingProvider>
     );

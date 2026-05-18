@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
+import { useMyJoinRequests } from '@/pages/Users/Group/hooks/useGroupJoinRequests';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
   preloadGroupWorkspaceCreateFlow,
@@ -44,8 +45,10 @@ const LazyCommunityGroupBoard = lazy(() => import("@/pages/Users/Home/Components
 const LazyEditWorkspaceDialog = lazy(() => import("@/pages/Users/Home/Components/EditWorkspaceDialog"));
 const LazyDeleteWorkspaceDialog = lazy(() => import("@/pages/Users/Home/Components/DeleteWorkspaceDialog"));
 const LazyUserProfilePopover = lazy(() => import("@/components/features/users/UserProfilePopover"));
+const LazyNotificationBell = lazy(() => import("@/components/features/users/NotificationBell"));
 const LazyQuickProfileConfigDialog = lazy(() => import("@/pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"));
 const LazyGroupWorkspaceCreateWizard = lazy(() => import("@/pages/Users/Group/Components/GroupWorkspaceProfileConfigDialog"));
+const LazyJoinRequestSubmitDialog = lazy(() => import("@/pages/Users/Group/Components/joinRequests/JoinRequestSubmitDialog"));
 
 function formatNumber(value, locale) {
   try {
@@ -235,6 +238,8 @@ function HomePage() {
   const [communitySearchQuery, setCommunitySearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [joiningPublicGroupId, setJoiningPublicGroupId] = useState(null);
+  // Mục tiêu request gia nhập nhóm private. `null` = đóng dialog.
+  const [pendingJoinRequestGroup, setPendingJoinRequestGroup] = useState(null);
   const [creatingWorkspaceKind] = useState(null); // 'individual' | 'group' | null
   // Quick-create flow: mở dialog step-1 ngay <100ms trên HomePage, BE createWorkspace
   // chạy song song. Các bước onboarding tiếp theo chạy trong cùng dialog; chỉ navigate sau confirm.
@@ -424,6 +429,24 @@ function HomePage() {
     navigate(buildGroupWorkspacePath(group.workspaceId));
   };
 
+  // Hook submit join-request cho nhóm private — mount ở cấp page để dialog
+  // mở/đóng không reset state ngay khi component dialog unmount.
+  const { submit: submitJoinRequestForGroup } = useMyJoinRequests();
+
+  const handleRequestJoinPrivateGroup = (group) => {
+    if (!group?.workspaceId) return;
+    setPendingJoinRequestGroup(group);
+  };
+
+  const handleSubmitPrivateJoinRequest = async ({ message }) => {
+    if (!pendingJoinRequestGroup?.workspaceId) return;
+    await submitJoinRequestForGroup(pendingJoinRequestGroup.workspaceId, { message });
+    showSuccess(t('home.groupHub.requestSubmitSuccess') || 'Đã gửi yêu cầu tham gia');
+    // Refetch public groups để khi BE thêm field `myJoinRequestStatus=PENDING` thì
+    // button đổi trạng thái sang "Đang chờ duyệt" mà không cần reload trang.
+    void fetchPublicGroups();
+  };
+
   const handleJoinPublicGroup = async (group) => {
     const workspaceId = group?.workspaceId;
     if (!workspaceId) {
@@ -580,6 +603,7 @@ function HomePage() {
             searchQuery={communitySearchQuery}
             isDarkMode={isDarkMode}
             onJoinGroup={handleJoinPublicGroup}
+            onRequestJoinGroup={handleRequestJoinPrivateGroup}
             onOpenGroup={handleOpenExistingGroup}
             onCreateGroup={handleOpenCreateGroup}
             joiningWorkspaceId={joiningPublicGroupId}
@@ -753,6 +777,9 @@ function HomePage() {
             <Menu className="w-5 h-5 text-gray-600" />
           </button> */}
           
+          <Suspense fallback={<div className={`h-9 w-9 rounded-full ${isDarkMode ? 'bg-slate-900' : 'bg-gray-100'}`} />}>
+            <LazyNotificationBell isDarkMode={isDarkMode} />
+          </Suspense>
           <Suspense fallback={<div className={`h-10 w-10 rounded-full ${isDarkMode ? 'bg-slate-900' : 'bg-gray-100'}`} />}>
             <LazyUserProfilePopover isDarkMode={isDarkMode} />
           </Suspense>
@@ -895,6 +922,17 @@ function HomePage() {
             workspace={selectedWorkspace}
             onDelete={handleDelete}
             isDarkMode={isDarkMode}
+          />
+        </Suspense>
+      ) : null}
+      {pendingJoinRequestGroup ? (
+        <Suspense fallback={null}>
+          <LazyJoinRequestSubmitDialog
+            open
+            onOpenChange={(next) => { if (!next) setPendingJoinRequestGroup(null); }}
+            groupName={pendingJoinRequestGroup?.groupName || ''}
+            isDarkMode={isDarkMode}
+            onSubmit={handleSubmitPrivateJoinRequest}
           />
         </Suspense>
       ) : null}

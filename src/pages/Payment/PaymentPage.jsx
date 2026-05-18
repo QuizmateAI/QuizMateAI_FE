@@ -12,6 +12,7 @@ import PaymentSidebar from './components/PaymentSidebar';
 import PaymentMethods from './components/PaymentMethods';
 import usePaymentCheckout from './hooks/usePaymentCheckout';
 import UserProfilePopover from '@/components/features/users/UserProfilePopover';
+import NotificationBell from '@/components/features/users/NotificationBell';
 import { getPlanById, getWorkspaceSlotInfo } from '@/api/PaymentAPI';
 import { useGroup } from '@/hooks/useGroup';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
@@ -273,7 +274,8 @@ export default function PaymentPage() {
                 </div>
               )}
             </div>
-            
+
+            <NotificationBell isDarkMode={isDarkMode} />
             <UserProfilePopover isDarkMode={isDarkMode} />
           </div>
         </div>

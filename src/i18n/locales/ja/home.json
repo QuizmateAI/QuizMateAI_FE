@@ -19,7 +19,7 @@
     },
     "search": {
       "workspacePlaceholder": "ワークスペースを検索...",
-      "groupPlaceholder": "グループを検索...",
+      "groupPlaceholder": "名前またはグループコード (12 桁) で検索...",
       "noResults": "結果が見つかりません",
       "clear": "検索をクリア"
     },
@@ -141,6 +141,15 @@
       "full": "満員",
       "joinSuccess": "グループに参加しました。",
       "joinError": "このグループに参加できません。",
+      "requestJoin": "参加申請",
+      "requestPending": "承認待ち",
+      "requestSubmitSuccess": "申請を送信しました。リーダーの承認をお待ちください。",
+      "requireApproval": "承認制",
+      "groupCode": {
+        "label": "グループコード",
+        "copyAria": "グループコード {{code}} をコピー",
+        "copied": "コピー済み"
+      },
       "emptyTitle": "公開グループはまだありません",
       "emptyDescription": "公開グループが利用可能になると、ここから確認して直接参加できます。",
       "emptyCardDescription": "このグループにはまだ短い説明が追加されていません。",

@@ -128,6 +128,7 @@
           "content": "Content",
           "materials": "Materials",
           "insights": "Insights",
+          "communication": "Communication & Assignments",
           "admin": "Administration"
         },
         "items": {
@@ -178,6 +179,14 @@
           "VIEW_MEMBER_DASHBOARD": {
             "label": "View member dashboard",
             "description": "Open member stats and analytics."
+          },
+          "MANAGE_ANNOUNCEMENT": {
+            "label": "Manage announcements",
+            "description": "Create, edit, and pin announcements broadcast to all members."
+          },
+          "MANAGE_ASSIGNMENT": {
+            "label": "Manage assignments",
+            "description": "Assign quizzes, materials, or flashcards and track submission progress."
           },
           "MANAGE_MEMBERS": {
             "label": "Manage members",
@@ -416,6 +425,8 @@
       "nav": {
         "dashboard": "Dashboard",
         "personalDashboard": "Personal dashboard",
+        "announcements": "Group announcements",
+        "assignments": "Assignments",
         "documents": "Documents",
         "roadmap": "Roadmap",
         "quiz": "Quiz",
@@ -429,7 +440,7 @@
         "mockTest": "Mock test",
         "challenge": "Challenge",
         "ranking": "Ranking",
-        "notifications": "Notifications",
+        "notifications": "Activity log",
         "members": "Members",
         "memberStats": "Member stats",
         "wallet": "Wallet",
@@ -437,6 +448,169 @@
       },
       "expandSidebar": "Expand sidebar",
       "collapseSidebar": "Collapse sidebar"
+    },
+    "announcements": {
+      "title": "Group announcements",
+      "totalLabel_one": "{{count}} announcement",
+      "totalLabel_other": "{{count}} announcements",
+      "totalLabel": "{{count}} announcements",
+      "unreadLabel": "{{count}} unread",
+      "createButton": "New announcement",
+      "loadMore": "Load more",
+      "loading": "Loading announcements...",
+      "retry": "Retry",
+      "error": "Could not load announcements. Please try again.",
+      "pinned": "Pinned",
+      "edited": "edited",
+      "itemActions": "Announcement actions",
+      "readMore": "Read more",
+      "collapse": "Collapse",
+      "unknownAuthor": "Unknown author",
+      "untitledFallback": "(Untitled)",
+      "deleteConfirmTitle": "Delete this announcement?",
+      "deleteConfirmBody": "The announcement \"{{title}}\" will be removed from the group. This cannot be undone.",
+      "empty": {
+        "title": "No announcements yet",
+        "bodyLeader": "Post the first announcement to share important news with everyone in the group.",
+        "bodyMember": "When your leader or a delegate posts an announcement, it will show up here."
+      },
+      "relativeTime": {
+        "justNow": "Just now",
+        "minutesAgo": "{{count}} minutes ago",
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} days ago"
+      },
+      "form": {
+        "createTitle": "New announcement",
+        "editTitle": "Edit announcement",
+        "description": "Announcements broadcast to every active member and trigger a notification.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g. Quiz schedule this week",
+        "contentLabel": "Content",
+        "contentPlaceholder": "Provide details, instructions, or notes for the group...",
+        "pinnedLabel": "Pin this announcement",
+        "pinnedHint": "Pinned announcements always appear on top.",
+        "publishButton": "Publish announcement",
+        "saveButton": "Save changes",
+        "errors": {
+          "titleRequired": "Please enter a title.",
+          "titleTooShort": "Title must be at least {{min}} characters.",
+          "titleTooLong": "Title cannot exceed {{max}} characters.",
+          "contentRequired": "Please enter content.",
+          "contentTooShort": "Content must be at least {{min}} characters.",
+          "contentTooLong": "Content cannot exceed {{max}} characters.",
+          "submit": "Could not save announcement. Please try again."
+        }
+      },
+      "toasts": {
+        "created": "Announcement published.",
+        "updated": "Announcement updated.",
+        "deleted": "Announcement deleted.",
+        "deleteFailed": "Could not delete announcement."
+      }
+    },
+    "assignments": {
+      "title": "Assignments",
+      "leaderSubtitle": "{{count}} active assignments in this group",
+      "memberSubtitle": "Submitted {{submitted}}/{{count}} assignments",
+      "createButton": "New assignment",
+      "loadMore": "Load more",
+      "loading": "Loading assignments...",
+      "retry": "Retry",
+      "error": "Could not load assignments. Please try again.",
+      "itemActions": "Assignment actions",
+      "untitledFallback": "(Untitled)",
+      "noDueDate": "No due date",
+      "overdueShort": "Overdue",
+      "overdueDays": "{{count}} day(s) overdue",
+      "dueInMinutes": "Due in {{count}} min",
+      "dueInHours": "Due in {{count}} hours",
+      "dueInDays": "Due in {{count}} days",
+      "progressLabel": "Submitted {{submitted}}/{{total}}",
+      "assignedBy": "Assigned by {{name}}",
+      "submitted": "Submitted",
+      "markSubmitted": "Mark as submitted",
+      "deleteConfirmTitle": "Delete this assignment?",
+      "deleteConfirmBody": "Assignment \"{{title}}\" will be removed from the group. This cannot be undone.",
+      "tabs": {
+        "manage": "Manage",
+        "mine": "Mine"
+      },
+      "empty": {
+        "leaderTitle": "No assignments yet",
+        "leaderBody": "Assign a quiz, material, or flashcard set to members and track submission progress.",
+        "memberTitle": "No assignments yet",
+        "memberBody": "When your leader assigns work to you, it will show up here."
+      },
+      "quizPanel": {
+        "title": "Assignments for this quiz",
+        "subtitle": "{{count}} assignment(s)",
+        "emptyTitle": "Not assigned to anyone yet",
+        "emptyBody": "Click \"New assignment\" to send this quiz to members and set a deadline."
+      },
+      "resourceTypes": {
+        "QUIZ": "Quiz",
+        "MATERIAL": "Material",
+        "FLASHCARD_SET": "Flashcard"
+      },
+      "audienceTypes": {
+        "ALL_MEMBERS": {
+          "label": "All members",
+          "hint": "Every active member",
+          "short": "Everyone"
+        },
+        "SPECIFIC_MEMBERS": {
+          "label": "Specific members",
+          "hint": "Pick exactly who receives this",
+          "short": "Selected members"
+        }
+      },
+      "form": {
+        "createTitle": "New assignment",
+        "editTitle": "Edit assignment",
+        "createDescription": "Pick the content, recipients, and an optional due date. Each recipient gets a notification.",
+        "editDescription": "Only title, description, and due date can be changed. Content and recipients are locked to avoid confusion with already-submitted work.",
+        "resourceSection": "Assigned content",
+        "resourcePickLabel": "Pick specific item",
+        "resourcePlaceholder": "-- Select --",
+        "resourceLoading": "Loading...",
+        "resourceEmpty": "Nothing available in this group",
+        "resourceLoadFailed": "Could not load list. Please try again.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g. Complete this week's quiz",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Instructions, notes, or grading criteria...",
+        "dueAtLabel": "Due date (optional)",
+        "dueAtHint": "Leave blank if there is no hard deadline.",
+        "audienceSection": "Recipients",
+        "memberSearchPlaceholder": "Search by name or email...",
+        "memberLoading": "Loading members...",
+        "memberLoadFailed": "Could not load members.",
+        "memberEmpty": "No matching members.",
+        "memberSelectedCount": "{{count}} member(s) selected",
+        "assignButton": "Assign",
+        "saveButton": "Save changes",
+        "errors": {
+          "titleRequired": "Please enter a title.",
+          "titleTooShort": "Title must be at least {{min}} characters.",
+          "titleTooLong": "Title cannot exceed {{max}} characters.",
+          "descriptionTooLong": "Description cannot exceed {{max}} characters.",
+          "dueAtInvalid": "Invalid due date.",
+          "dueAtPast": "Due date must be in the future.",
+          "resourceTypeRequired": "Please pick a content type.",
+          "resourceIdRequired": "Please pick a specific item.",
+          "audienceEmpty": "Please select at least one member.",
+          "submit": "Could not save assignment. Please try again."
+        }
+      },
+      "toasts": {
+        "created": "Assignment created.",
+        "updated": "Assignment updated.",
+        "deleted": "Assignment deleted.",
+        "deleteFailed": "Could not delete assignment.",
+        "submitted": "Marked as submitted.",
+        "submitFailed": "Could not mark as submitted."
+      }
     },
     "studio": {
       "systemDashboard": "Overview",
@@ -681,6 +855,56 @@
     },
     "profile": {
       "noRules": "No additional rules yet."
+    }
+  },
+  "groupJoinRequest": {
+    "submit": {
+      "title": "Request to join group",
+      "description": "Send a request to join. The leader will review and decide.",
+      "descriptionWithName": "Send a request to join \"{{name}}\". The leader will review and decide.",
+      "messageLabel": "Message to the leader",
+      "messageOptional": "optional",
+      "messagePlaceholder": "Briefly introduce yourself or your reason for joining...",
+      "submitButton": "Send request",
+      "errors": {
+        "messageTooLong": "Message cannot exceed {{max}} characters.",
+        "submit": "Could not send request. Please try again."
+      }
+    },
+    "decision": {
+      "approveTitle": "Approve join request",
+      "rejectTitle": "Reject join request",
+      "approveDescription": "Approve {{name}}'s request? They will be added as a member.",
+      "rejectDescription": "Reject {{name}}'s request? They can resubmit later.",
+      "requesterMessage": "Requester message",
+      "noteLabel": "Decision note",
+      "noteOptional": "optional",
+      "noteApprovePlaceholder": "Welcome message or onboarding hints...",
+      "noteRejectPlaceholder": "Short explanation if needed...",
+      "approveButton": "Approve",
+      "rejectButton": "Reject",
+      "errors": {
+        "noteTooLong": "Note cannot exceed {{max}} characters.",
+        "submit": "Could not process the request. Please try again."
+      }
+    },
+    "panel": {
+      "title": "Join requests",
+      "titleWithCount": "Join requests ({{count}})",
+      "loading": "Loading requests...",
+      "loadMore": "Load more",
+      "retry": "Retry",
+      "empty": "No pending requests.",
+      "error": "Could not load join requests.",
+      "requestedAt": "Sent at {{time}}",
+      "unknownRequester": "Unknown requester",
+      "approveAction": "Approve",
+      "rejectAction": "Reject"
+    },
+    "toasts": {
+      "approved": "Request approved.",
+      "rejected": "Request rejected.",
+      "decisionFailed": "Could not process the request."
     }
   },
   "groupReview": {
@@ -2057,8 +2281,29 @@
     "visibilityFailed": "Failed to update visibility",
     "generalInfo": "General group information",
     "groupVisibility": "Group Visibility",
-    "compactPublicHint": "Anyone can discover this group.",
+    "compactPublicHint": "Anyone can discover this group in the community or via its 12-character code.",
     "compactPrivateHint": "Only invited members can join.",
+    "joinPolicy": {
+      "title": "How people join when the group is public",
+      "subtitle": "Pick how new members enter the group after discovering it.",
+      "currentLabel": "Current",
+      "saveButton": "Save changes",
+      "cancelButton": "Cancel",
+      "saving": "Saving...",
+      "savedFree": "Switched to Free join.",
+      "savedApproval": "Switched to Leader approval.",
+      "saveFailed": "Could not save the policy. Please retry or check your connection.",
+      "options": {
+        "FREE": {
+          "label": "Free join",
+          "hint": "One click in — no approval needed."
+        },
+        "REQUEST_APPROVAL": {
+          "label": "Leader approval",
+          "hint": "Member sends a request; the leader approves to let them in."
+        }
+      }
+    },
     "governanceDeck": "Governance deck",
     "identityAndGuardrails": "Identity and guardrails",
     "heroTitle": "Shape the room without breaking the rhythm",

@@ -128,6 +128,7 @@
           "content": "Nội dung",
           "materials": "Tài liệu",
           "insights": "Phân tích",
+          "communication": "Giao tiếp & Phân công",
           "admin": "Quản trị"
         },
         "items": {
@@ -179,6 +180,14 @@
             "label": "Xem dashboard thành viên",
             "description": "Mở thống kê và phân tích của thành viên."
           },
+          "MANAGE_ANNOUNCEMENT": {
+            "label": "Quản lý thông báo",
+            "description": "Tạo, chỉnh sửa và ghim thông báo gửi tới mọi thành viên."
+          },
+          "MANAGE_ASSIGNMENT": {
+            "label": "Quản lý bài giao",
+            "description": "Giao quiz, tài liệu hoặc flashcard và theo dõi tiến độ nộp bài."
+          },
           "MANAGE_MEMBERS": {
             "label": "Quản lý thành viên",
             "description": "Mời, xóa và quản lý quyền của thành viên."
@@ -209,7 +218,7 @@
         "subtitle": "Mở từng nhóm cấu hình ở dạng dialog để giữ trang gọn.",
         "profile": {
           "title": "Hồ sơ nhóm",
-          "subtitle": "Tên, mục tiêu, knowledge và rules."
+          "subtitle": "Tên, mục tiêu, kiến thức và quy tắc."
         },
         "rankingPoints": {
           "title": "Cấu hình điểm RP",
@@ -292,20 +301,20 @@
       "finishIncomplete": "Kiểm tra lại để hoàn tất",
       "enabled": "Đang bật",
       "disabled": "Đang tắt",
-      "later": "Later"
+      "later": "Để sau"
     },
     "messages": {
       "basicsSaveError": "Không thể lưu thông tin nhóm.",
       "confirmSaveError": "Không thể hoàn tất cấu hình nhóm.",
       "completed": "Cấu hình nhóm đã được cập nhật.",
-      "basicsSaved": "Group basics saved."
+      "basicsSaved": "Đã lưu thông tin cơ bản của nhóm."
     },
     "validation": {
       "groupName": "Vui lòng nhập tên nhóm.",
       "knowledge": "Vui lòng mô tả phạm vi kiến thức chung.",
       "analysisLoading": "Quizmate AI đang phân tích lĩnh vực. Vui lòng đợi một chút.",
       "analysisError": "Quizmate AI chưa suy ra được lĩnh vực. Hãy thử phân tích lại.",
-      "analysisMissing": "Vui lòng nhập knowledge để Quizmate AI suy ra lĩnh vực.",
+      "analysisMissing": "Vui lòng nhập kiến thức để Quizmate AI suy ra lĩnh vực.",
       "domain": "Vui lòng chọn một lĩnh vực từ gợi ý của Quizmate AI.",
       "learningMode": "Vui lòng chọn chế độ học tập.",
       "groupGoal": "Vui lòng nhập mục tiêu học tập của nhóm.",
@@ -318,7 +327,7 @@
       },
       "learning": {
         "title": "Hồ sơ học tập chung",
-        "description": "Knowledge, domain và nhịp học chung của nhóm"
+        "description": "Kiến thức, lĩnh vực và nhịp học chung của nhóm"
       }
     },
     "stepOne": {
@@ -333,52 +342,52 @@
       "rulesEyebrow": "Nguyên tắc chung",
       "rulesHint": "Ghi nhịp học và quy ước chia sẻ tài liệu.",
       "rulesPlaceholder": "Ví dụ: Check-in 2 buổi/tuần, đặt câu hỏi theo chủ đề và ghi rõ nguồn.",
-      "groupNameEyebrow": "Group identity",
-      "rules": "Rules or shared notes"
+      "groupNameEyebrow": "Định danh nhóm",
+      "rules": "Quy tắc hoặc ghi chú chung"
     },
     "stepTwo": {
       "title": "Thiết lập hồ sơ học tập chung",
-      "description": "Định nghĩa knowledge, domain và nhịp học chung.",
+      "description": "Định nghĩa kiến thức, lĩnh vực và nhịp học chung của nhóm.",
       "workflow": {
         "eyebrow": "Thiết kế nhanh",
         "title": "Hoàn thiện cấu hình chỉ trong 3 lựa chọn",
-        "description": "Mô tả phạm vi học, chọn domain AI và bật tùy chọn phù hợp.",
-        "describeTitle": "Mô tả knowledge",
+        "description": "Mô tả phạm vi học, chọn lĩnh vực AI và bật tùy chọn phù hợp.",
+        "describeTitle": "Mô tả kiến thức",
         "describeDescription": "Nói ngắn gọn nhóm đang học gì hoặc đang hướng tới mục tiêu nào.",
-        "domainTitle": "Chốt domain",
-        "domainDescription": "Chọn baseline phù hợp để AI hiểu đúng workspace của nhóm.",
+        "domainTitle": "Chốt lĩnh vực",
+        "domainDescription": "Chọn nền tảng phù hợp để AI hiểu đúng không gian làm việc của nhóm.",
         "modeTitle": "Chọn cách học",
         "modeDescription": "Xác định nhóm ưu tiên học mới hay ôn tập."
       },
-      "knowledgeLabel": "Knowledge chung của nhóm",
+      "knowledgeLabel": "Kiến thức chung của nhóm",
       "knowledgePlaceholder": "Ví dụ: Ôn JLPT N3 theo ngữ pháp, từ vựng và luyện đọc.",
-      "domainSuggestions": "Domain được Quizmate AI gợi ý",
-      "selectedDomain": "Domain đang dùng cho nhóm",
-      "selectedDomainHint": "Domain này sẽ làm baseline chung để AI gợi ý roadmap, quiz và hoạt động học.",
+      "domainSuggestions": "Lĩnh vực được Quizmate AI gợi ý",
+      "selectedDomain": "Lĩnh vực đang dùng cho nhóm",
+      "selectedDomainHint": "Lĩnh vực này sẽ làm nền tảng chung để AI gợi ý lộ trình, bài quiz và hoạt động học.",
       "learningMode": "Chế độ học tập",
       "modePrompt": "Chọn nhịp học chính của nhóm",
-      "studyNewDescription": "Phù hợp khi nhóm đang bắt đầu kiến thức mới và muốn có roadmap rõ ràng.",
-      "reviewDescription": "Phù hợp khi nhóm đã học qua, muốn ôn tập có hệ thống và vẫn có thể tạo mock test khi cần.",
-      "mockTestDescription": "Phù hợp khi nhóm cần luyện đề và theo dõi tiến độ bằng bài test.",
+      "studyNewDescription": "Phù hợp khi nhóm đang bắt đầu kiến thức mới và muốn có lộ trình rõ ràng.",
+      "reviewDescription": "Phù hợp khi nhóm đã học qua, muốn ôn tập có hệ thống và vẫn có thể tạo bài luyện đề khi cần.",
+      "mockTestDescription": "Phù hợp khi nhóm cần luyện đề và theo dõi tiến độ bằng bài kiểm tra thử.",
       "examName": "Tên kỳ thi",
       "examNamePlaceholder": "Ví dụ: JLPT N3 tháng 12",
       "groupGoal": "Mục tiêu học tập của nhóm",
       "groupGoalPlaceholder": "Ví dụ: Trong 8 tuần hoàn thành 20 chủ điểm ngữ pháp và 1500 từ vựng.",
       "learningSwitches": "Tùy chọn học tập",
-      "learningSwitchesHint": "Bật roadmap hoặc đánh giá đầu vào nếu cần.",
+      "learningSwitchesHint": "Bật lộ trình hoặc đánh giá đầu vào nếu cần.",
       "analysis": {
-        "loading": "Quizmate AI đang phân tích knowledge để gợi ý domain phù hợp.",
-        "error": "Quizmate AI chưa thể gợi ý domain đáng tin cậy. Bạn có thể thử lại ngay.",
-        "interpretingLabel": "AI đang hiểu knowledge này là",
-        "tooBroad": "Knowledge còn rộng. Hãy mô tả rõ đối tượng học và mục tiêu hơn.",
-        "emptyDomainTitle": "Chưa có domain khả dụng",
-        "emptyDomainDescription": "Chưa có domain từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử lại."
+        "loading": "Quizmate AI đang phân tích kiến thức để gợi ý lĩnh vực phù hợp.",
+        "error": "Quizmate AI chưa thể gợi ý lĩnh vực đáng tin cậy. Bạn có thể thử lại ngay.",
+        "interpretingLabel": "AI đang hiểu kiến thức này là",
+        "tooBroad": "Kiến thức còn rộng. Hãy mô tả rõ đối tượng học và mục tiêu hơn.",
+        "emptyDomainTitle": "Chưa có lĩnh vực khả dụng",
+        "emptyDomainDescription": "Chưa có lĩnh vực từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử lại."
       },
       "roadmap": {
-        "title": "Bật roadmap chung",
+        "title": "Bật lộ trình chung",
         "description": "Tạo khung học tập chung để cả nhóm có nhịp học rõ ràng hơn.",
-        "studyNewDescription": "Chế độ này mặc định bật roadmap để nhóm có lộ trình học kiến thức mới rõ ràng hơn.",
-        "studyNewBadge": "Roadmap mặc định bật",
+        "studyNewDescription": "Chế độ này mặc định bật lộ trình để nhóm có hành trình học kiến thức mới rõ ràng hơn.",
+        "studyNewBadge": "Lộ trình mặc định bật",
         "defaultOn": "Mặc định bật"
       },
       "entryAssessment": {
@@ -397,7 +406,7 @@
         "title": "Nhìn nhanh trước khi hoàn tất",
         "readyBadge": "Sẵn sàng"
       },
-      "knowledgeHint": "The more specific the description is, the better Quizmate AI can suggest the right domain for your group."
+      "knowledgeHint": "Mô tả càng cụ thể, Quizmate AI càng dễ gợi ý đúng lĩnh vực phù hợp cho nhóm của bạn."
     }
   },
   "groupWorkspace": {
@@ -416,6 +425,8 @@
       "nav": {
         "dashboard": "Tổng quan",
         "personalDashboard": "Dashboard cá nhân",
+        "announcements": "Thông báo nhóm",
+        "assignments": "Giao bài",
         "documents": "Tài liệu",
         "roadmap": "Lộ trình",
         "quiz": "Bài kiểm tra",
@@ -429,7 +440,7 @@
         "mockTest": "Đề thi thử",
         "challenge": "Thử thách",
         "ranking": "Xếp hạng",
-        "notifications": "Thông báo",
+        "notifications": "Nhật ký hoạt động",
         "members": "Thành viên",
         "memberStats": "Thống kê thành viên",
         "wallet": "Ví",
@@ -437,6 +448,169 @@
       },
       "expandSidebar": "Mở rộng sidebar",
       "collapseSidebar": "Thu gọn sidebar"
+    },
+    "announcements": {
+      "title": "Thông báo nhóm",
+      "totalLabel_one": "{{count}} thông báo",
+      "totalLabel_other": "{{count}} thông báo",
+      "totalLabel": "{{count}} thông báo",
+      "unreadLabel": "{{count}} chưa đọc",
+      "createButton": "Tạo thông báo",
+      "loadMore": "Tải thêm",
+      "loading": "Đang tải thông báo...",
+      "retry": "Thử lại",
+      "error": "Không thể tải thông báo. Vui lòng thử lại.",
+      "pinned": "Đã ghim",
+      "edited": "đã chỉnh sửa",
+      "itemActions": "Tác vụ thông báo",
+      "readMore": "Đọc thêm",
+      "collapse": "Thu gọn",
+      "unknownAuthor": "Không rõ người tạo",
+      "untitledFallback": "(Không có tiêu đề)",
+      "deleteConfirmTitle": "Xóa thông báo này?",
+      "deleteConfirmBody": "Thông báo \"{{title}}\" sẽ bị xóa khỏi nhóm. Hành động này không thể hoàn tác.",
+      "empty": {
+        "title": "Chưa có thông báo nào",
+        "bodyLeader": "Hãy tạo thông báo đầu tiên để chia sẻ tin tức quan trọng tới mọi thành viên trong nhóm.",
+        "bodyMember": "Khi trưởng nhóm hoặc người được giao quyền đăng thông báo, bạn sẽ thấy chúng tại đây."
+      },
+      "relativeTime": {
+        "justNow": "Vừa xong",
+        "minutesAgo": "{{count}} phút trước",
+        "hoursAgo": "{{count}} giờ trước",
+        "daysAgo": "{{count}} ngày trước"
+      },
+      "form": {
+        "createTitle": "Tạo thông báo mới",
+        "editTitle": "Chỉnh sửa thông báo",
+        "description": "Thông báo sẽ hiển thị cho mọi thành viên đang hoạt động và đẩy notification cho họ.",
+        "titleLabel": "Tiêu đề",
+        "titlePlaceholder": "Ví dụ: Lịch kiểm tra tuần này",
+        "contentLabel": "Nội dung",
+        "contentPlaceholder": "Mô tả chi tiết, hướng dẫn hoặc lưu ý cho cả nhóm...",
+        "pinnedLabel": "Ghim thông báo",
+        "pinnedHint": "Thông báo ghim luôn nằm trên cùng danh sách.",
+        "publishButton": "Đăng thông báo",
+        "saveButton": "Lưu thay đổi",
+        "errors": {
+          "titleRequired": "Vui lòng nhập tiêu đề.",
+          "titleTooShort": "Tiêu đề phải có ít nhất {{min}} ký tự.",
+          "titleTooLong": "Tiêu đề không vượt quá {{max}} ký tự.",
+          "contentRequired": "Vui lòng nhập nội dung.",
+          "contentTooShort": "Nội dung phải có ít nhất {{min}} ký tự.",
+          "contentTooLong": "Nội dung không vượt quá {{max}} ký tự.",
+          "submit": "Không thể lưu thông báo. Vui lòng thử lại."
+        }
+      },
+      "toasts": {
+        "created": "Đã đăng thông báo.",
+        "updated": "Đã cập nhật thông báo.",
+        "deleted": "Đã xóa thông báo.",
+        "deleteFailed": "Xóa thông báo thất bại."
+      }
+    },
+    "assignments": {
+      "title": "Giao bài",
+      "leaderSubtitle": "{{count}} bài đang giao trong nhóm",
+      "memberSubtitle": "Đã nộp {{submitted}}/{{count}} bài giao",
+      "createButton": "Giao bài mới",
+      "loadMore": "Tải thêm",
+      "loading": "Đang tải bài giao...",
+      "retry": "Thử lại",
+      "error": "Không thể tải bài giao. Vui lòng thử lại.",
+      "itemActions": "Tác vụ bài giao",
+      "untitledFallback": "(Không có tiêu đề)",
+      "noDueDate": "Không có hạn",
+      "overdueShort": "Đã quá hạn",
+      "overdueDays": "Quá hạn {{count}} ngày",
+      "dueInMinutes": "Còn {{count}} phút",
+      "dueInHours": "Còn {{count}} giờ",
+      "dueInDays": "Còn {{count}} ngày",
+      "progressLabel": "Đã nộp {{submitted}}/{{total}}",
+      "assignedBy": "Người giao: {{name}}",
+      "submitted": "Đã nộp",
+      "markSubmitted": "Đánh dấu đã nộp",
+      "deleteConfirmTitle": "Xóa bài giao này?",
+      "deleteConfirmBody": "Bài giao \"{{title}}\" sẽ bị xóa khỏi nhóm. Hành động này không thể hoàn tác.",
+      "tabs": {
+        "manage": "Quản lý",
+        "mine": "Của tôi"
+      },
+      "empty": {
+        "leaderTitle": "Chưa giao bài nào",
+        "leaderBody": "Giao quiz, tài liệu hoặc flashcard cho thành viên và theo dõi tiến độ nộp.",
+        "memberTitle": "Chưa có bài giao nào",
+        "memberBody": "Khi trưởng nhóm giao bài cho bạn, chúng sẽ xuất hiện ở đây."
+      },
+      "quizPanel": {
+        "title": "Bài đã giao cho quiz này",
+        "subtitle": "{{count}} bài giao",
+        "emptyTitle": "Chưa giao quiz này cho ai",
+        "emptyBody": "Bấm \"Giao bài mới\" để gửi quiz này tới thành viên và đặt hạn nộp."
+      },
+      "resourceTypes": {
+        "QUIZ": "Quiz",
+        "MATERIAL": "Tài liệu",
+        "FLASHCARD_SET": "Flashcard"
+      },
+      "audienceTypes": {
+        "ALL_MEMBERS": {
+          "label": "Tất cả thành viên",
+          "hint": "Mọi thành viên đang hoạt động",
+          "short": "Toàn nhóm"
+        },
+        "SPECIFIC_MEMBERS": {
+          "label": "Một số thành viên",
+          "hint": "Chọn cụ thể từng người",
+          "short": "Một số thành viên"
+        }
+      },
+      "form": {
+        "createTitle": "Giao bài mới",
+        "editTitle": "Chỉnh sửa bài giao",
+        "createDescription": "Chọn nội dung muốn giao, người nhận và hạn nộp. Hệ thống sẽ gửi thông báo cho từng người được giao.",
+        "editDescription": "Chỉ chỉnh sửa được tiêu đề, mô tả và hạn nộp. Nội dung và người nhận không thay đổi để tránh nhầm lẫn với bài đã nộp.",
+        "resourceSection": "Nội dung giao",
+        "resourcePickLabel": "Chọn cụ thể",
+        "resourcePlaceholder": "-- Chọn --",
+        "resourceLoading": "Đang tải...",
+        "resourceEmpty": "Không có lựa chọn nào trong nhóm",
+        "resourceLoadFailed": "Không tải được danh sách. Vui lòng thử lại.",
+        "titleLabel": "Tiêu đề",
+        "titlePlaceholder": "Ví dụ: Hoàn thành quiz tuần này",
+        "descriptionLabel": "Mô tả",
+        "descriptionPlaceholder": "Hướng dẫn thêm, lưu ý hoặc tiêu chí chấm điểm...",
+        "dueAtLabel": "Hạn nộp (tùy chọn)",
+        "dueAtHint": "Để trống nếu không cần hạn nộp cứng.",
+        "audienceSection": "Người nhận",
+        "memberSearchPlaceholder": "Tìm theo tên hoặc email...",
+        "memberLoading": "Đang tải thành viên...",
+        "memberLoadFailed": "Không tải được danh sách thành viên.",
+        "memberEmpty": "Không có thành viên phù hợp.",
+        "memberSelectedCount": "Đã chọn {{count}} thành viên",
+        "assignButton": "Giao bài",
+        "saveButton": "Lưu thay đổi",
+        "errors": {
+          "titleRequired": "Vui lòng nhập tiêu đề.",
+          "titleTooShort": "Tiêu đề phải có ít nhất {{min}} ký tự.",
+          "titleTooLong": "Tiêu đề không vượt quá {{max}} ký tự.",
+          "descriptionTooLong": "Mô tả không vượt quá {{max}} ký tự.",
+          "dueAtInvalid": "Hạn nộp không hợp lệ.",
+          "dueAtPast": "Hạn nộp phải ở trong tương lai.",
+          "resourceTypeRequired": "Vui lòng chọn loại nội dung.",
+          "resourceIdRequired": "Vui lòng chọn nội dung cụ thể.",
+          "audienceEmpty": "Vui lòng chọn ít nhất một thành viên.",
+          "submit": "Không thể lưu bài giao. Vui lòng thử lại."
+        }
+      },
+      "toasts": {
+        "created": "Đã giao bài.",
+        "updated": "Đã cập nhật bài giao.",
+        "deleted": "Đã xóa bài giao.",
+        "deleteFailed": "Xóa bài giao thất bại.",
+        "submitted": "Đã đánh dấu nộp bài.",
+        "submitFailed": "Không thể đánh dấu nộp bài."
+      }
     },
     "header": {
       "groupPlan": {
@@ -691,6 +865,56 @@
     },
     "profile": {
       "noRules": "Chưa có nội quy bổ sung."
+    }
+  },
+  "groupJoinRequest": {
+    "submit": {
+      "title": "Yêu cầu tham gia nhóm",
+      "description": "Gửi yêu cầu tham gia. Trưởng nhóm sẽ xem và duyệt.",
+      "descriptionWithName": "Gửi yêu cầu tham gia nhóm \"{{name}}\". Trưởng nhóm sẽ xem và duyệt.",
+      "messageLabel": "Lời nhắn (cho trưởng nhóm)",
+      "messageOptional": "không bắt buộc",
+      "messagePlaceholder": "Giới thiệu ngắn về bạn hoặc lý do muốn tham gia...",
+      "submitButton": "Gửi yêu cầu",
+      "errors": {
+        "messageTooLong": "Lời nhắn không vượt quá {{max}} ký tự.",
+        "submit": "Không gửi được yêu cầu. Vui lòng thử lại."
+      }
+    },
+    "decision": {
+      "approveTitle": "Duyệt yêu cầu tham gia",
+      "rejectTitle": "Từ chối yêu cầu tham gia",
+      "approveDescription": "Duyệt yêu cầu của {{name}}? Người này sẽ được thêm vào nhóm với vai trò thành viên.",
+      "rejectDescription": "Từ chối yêu cầu của {{name}}? Người này có thể gửi lại yêu cầu sau.",
+      "requesterMessage": "Lời nhắn của người yêu cầu",
+      "noteLabel": "Ghi chú quyết định",
+      "noteOptional": "không bắt buộc",
+      "noteApprovePlaceholder": "Lời chào mừng hoặc hướng dẫn ban đầu...",
+      "noteRejectPlaceholder": "Giải thích ngắn nếu cần...",
+      "approveButton": "Duyệt",
+      "rejectButton": "Từ chối",
+      "errors": {
+        "noteTooLong": "Ghi chú không vượt quá {{max}} ký tự.",
+        "submit": "Không xử lý được yêu cầu. Vui lòng thử lại."
+      }
+    },
+    "panel": {
+      "title": "Yêu cầu tham gia",
+      "titleWithCount": "Yêu cầu tham gia ({{count}})",
+      "loading": "Đang tải yêu cầu...",
+      "loadMore": "Tải thêm",
+      "retry": "Thử lại",
+      "empty": "Không có yêu cầu nào đang chờ.",
+      "error": "Không tải được danh sách yêu cầu.",
+      "requestedAt": "Gửi lúc {{time}}",
+      "unknownRequester": "Không rõ người yêu cầu",
+      "approveAction": "Duyệt",
+      "rejectAction": "Từ chối"
+    },
+    "toasts": {
+      "approved": "Đã duyệt yêu cầu.",
+      "rejected": "Đã từ chối yêu cầu.",
+      "decisionFailed": "Không xử lý được yêu cầu."
     }
   },
   "groupReview": {
@@ -2067,8 +2291,29 @@
     "visibilityFailed": "Cập nhật thất bại",
     "generalInfo": "Thông tin chung nhóm",
     "groupVisibility": "Chế độ hiển thị nhóm",
-    "compactPublicHint": "Mọi người có thể tìm thấy nhóm này.",
+    "compactPublicHint": "Mọi người có thể tìm thấy nhóm này trong cộng đồng hoặc bằng mã nhóm 12 ký tự.",
     "compactPrivateHint": "Chỉ thành viên được mời mới có thể tham gia.",
+    "joinPolicy": {
+      "title": "Cách tham gia khi nhóm công khai",
+      "subtitle": "Chọn cách thành viên mới vào nhóm sau khi tìm thấy.",
+      "currentLabel": "Đang áp dụng",
+      "saveButton": "Lưu thay đổi",
+      "cancelButton": "Hủy",
+      "saving": "Đang lưu...",
+      "savedFree": "Đã chuyển sang Tham gia tự do.",
+      "savedApproval": "Đã chuyển sang Cần trưởng nhóm duyệt.",
+      "saveFailed": "Không lưu được cấu hình. Vui lòng thử lại sau hoặc kiểm tra kết nối.",
+      "options": {
+        "FREE": {
+          "label": "Tham gia tự do",
+          "hint": "Bấm là vào ngay, không cần duyệt."
+        },
+        "REQUEST_APPROVAL": {
+          "label": "Cần trưởng nhóm duyệt",
+          "hint": "Thành viên gửi yêu cầu, trưởng nhóm phê duyệt mới vào được."
+        }
+      }
+    },
     "governanceDeck": "Boong quản trị",
     "identityAndGuardrails": "Nhận diện và quy chuẩn",
     "heroTitle": "Tinh chỉnh không gian mà vẫn giữ đúng nhịp vận hành",

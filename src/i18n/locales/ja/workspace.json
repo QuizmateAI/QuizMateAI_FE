@@ -1882,7 +1882,11 @@
         "history": "履歴",
         "overview": "概要",
         "questions": "問題",
-        "review": "チェック"
+        "review": "チェック",
+        "assignments": "課題"
+      },
+      "assignment": {
+        "assignButton": "課題として配布"
       },
       "confirm": "確認",
       "continue": "続ける",
@@ -2932,7 +2936,9 @@
       "deleteQuiz": "クイズを削除",
       "feedback": "フィードバック",
       "share": "共有",
-      "noTitle": "—"
+      "noTitle": "—",
+      "assignmentAssigned": "課題",
+      "assignmentOverdue": "期限切れ"
     },
     "empty": {
       "loading": "読み込み中...",
