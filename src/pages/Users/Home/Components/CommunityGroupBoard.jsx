@@ -1,7 +1,9 @@
-import React, { useDeferredValue, useMemo, useState } from "react";
+import React, { useCallback, useDeferredValue, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   BookOpen,
+  ClipboardCheck,
+  ClipboardCopy,
   Compass,
   FileText,
   Layers3,
@@ -164,12 +166,61 @@ function DetailRow({ label, value, isDarkMode }) {
   );
 }
 
+// === BE CONTRACT FE đang giả định (cập nhật khi BE confirm) ===========
+// Shape mở rộng cho `GroupResponse` (ở /api/group/public, /workspace/me, ...):
+//   {
+//     workspaceId: number;
+//     groupName: string;
+//     ...existing fields...
+//     isPublic: boolean;                                  // (legacy, vẫn chấp nhận)
+//     joinPolicy?: 'FREE' | 'REQUEST_APPROVAL';           // mới — phân biệt 2 loại public
+//     groupCode?: string;                                 // mới — 12 ký tự alnum, unique toàn hệ thống
+//     myJoinRequestStatus?: 'PENDING'                     // mới — viewer's request state với group này
+//                          | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+//   }
+// Note BE generate `groupCode`: BE phải đảm bảo unique (DB constraint), 12 ký
+// tự alphanumeric (FE chỉ format display, không validate uniqueness). Search
+// theo `groupCode` exact-match (case-insensitive, strip non-alnum) là sufficient.
+// =====================================================================
+
+// Group code BE gen 12 ký tự unique — display format: `XXXX-XXXX-XXXX` (4-4-4)
+// để dễ đọc/copy. Regex linh hoạt: BE có thể dùng alphanumeric upper, BE
+// implementation decide; FE chỉ format khi display, value lưu nguyên bản 12 ký tự.
+function formatGroupCode(rawCode) {
+  const code = String(rawCode || "").replace(/[^A-Za-z0-9]/g, "");
+  if (code.length !== 12) return rawCode || "";
+  return `${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8, 12)}`;
+}
+
+// Detect input pattern khả nghi là group code (12 chữ/số liền, có thể có dấu
+// gạch ngang xen kẽ do user copy-paste lại). Dùng để hint cho BE search rằng
+// đây có thể là code lookup; BE quyết định strategy (exact match vs fuzzy).
+function looksLikeGroupCode(rawInput) {
+  const cleaned = String(rawInput || "").replace(/[^A-Za-z0-9]/g, "");
+  return cleaned.length === 12;
+}
+
+// Resolve join flow theo `joinPolicy` mới của BE; fallback `isPublic` boolean
+// legacy nếu BE chưa trả `joinPolicy`. Khi BE add field xong, FE tự nhận diện.
+//  - REQUEST_APPROVAL → mở dialog xin duyệt
+//  - FREE             → join trực tiếp (legacy isPublic=true)
+//  - Không có policy + isPublic=false → request flow (legacy private)
+function resolveJoinFlow(group) {
+  const policy = String(group?.joinPolicy || "").toUpperCase();
+  if (policy === "REQUEST_APPROVAL") return "request";
+  if (policy === "FREE") return "free";
+  // Legacy: chỉ có boolean isPublic
+  if (group?.isPublic === false) return "request";
+  return "free";
+}
+
 function CommunityGroupBoard({
   groups = [],
   loading,
   searchQuery = "",
   isDarkMode,
   onJoinGroup,
+  onRequestJoinGroup,
   onOpenGroup,
   onCreateGroup,
   joiningWorkspaceId = null,
@@ -179,27 +230,56 @@ function CommunityGroupBoard({
   const locale = currentLang === "en" ? "en-US" : "vi-VN";
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [copiedCodeId, setCopiedCodeId] = useState(null);
+
+  // Copy group code → clipboard với feedback ngắn 1.5s.
+  const handleCopyCode = useCallback(async (event, group) => {
+    event?.stopPropagation?.();
+    const rawCode = String(group?.groupCode || "").trim();
+    if (!rawCode || typeof navigator === "undefined" || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(rawCode);
+      setCopiedCodeId(group?.workspaceId);
+      setTimeout(() => {
+        setCopiedCodeId((current) => (current === group?.workspaceId ? null : current));
+      }, 1500);
+    } catch {
+      /* ignore — fallback: user select text manually */
+    }
+  }, []);
 
   const filteredGroups = useMemo(() => {
-    if (!deferredSearchQuery.trim()) {
+    const trimmed = deferredSearchQuery.trim();
+    if (!trimmed) {
       return groups;
     }
 
-    const q = deferredSearchQuery.toLowerCase();
-    return groups.filter((group) =>
-      [
+    const q = trimmed.toLowerCase();
+    // Nếu input giống groupCode 12 ký tự — match exact (case-insensitive,
+    // bỏ qua dấu gạch ngang user paste vào). BE sẽ là source of truth khi
+    // adopt /search endpoint, FE filter giữ làm fallback nhanh.
+    const looksLikeCode = looksLikeGroupCode(trimmed);
+    const normalizedCode = trimmed.replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+
+    return groups.filter((group) => {
+      if (looksLikeCode && group?.groupCode) {
+        const storedCode = String(group.groupCode).replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+        if (storedCode === normalizedCode) return true;
+      }
+      const haystack = [
         group?.groupName,
         group?.description,
         group?.domain,
         group?.knowledge,
         group?.examName,
         group?.groupLearningGoal,
+        group?.groupCode,
       ]
         .filter(Boolean)
         .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
+        .toLowerCase();
+      return haystack.includes(q);
+    });
   }, [deferredSearchQuery, groups]);
 
   if (loading) {
@@ -280,7 +360,18 @@ function CommunityGroupBoard({
                   const learningModeLabel = formatGroupLearningMode(group?.learningMode, currentLang);
                   const description = group?.description || group?.groupLearningGoal || group?.knowledge;
                   const isJoining = joiningWorkspaceId === group?.workspaceId;
-                  const isJoinDisabled = !group?.joined && !group?.joinable;
+                  // BE 2 model:
+                  //   - mới: joinPolicy ∈ {FREE, REQUEST_APPROVAL}
+                  //   - cũ:  chỉ có isPublic boolean
+                  // resolveJoinFlow chọn route dispatch; với REQUEST_APPROVAL,
+                  // bỏ qua `joinable=false` (BE có thể đánh dấu để chặn /join,
+                  // nhưng /join-request vẫn hợp lệ).
+                  const joinFlow = resolveJoinFlow(group);
+                  const isRequestFlow = joinFlow === 'request';
+                  const hasPendingRequest = String(group?.myJoinRequestStatus || '').toUpperCase() === 'PENDING';
+                  const isJoinDisabled = !group?.joined && !group?.joinable && !isRequestFlow;
+                  const groupCode = group?.groupCode || null;
+                  const isCodeCopied = copiedCodeId === group?.workspaceId;
                   const capacitySummary = buildCapacitySummary(group, t);
 
                   return (
@@ -329,6 +420,14 @@ function CommunityGroupBoard({
                           }`}>
                             {t("home.groupHub.full")}
                           </span>
+                        ) : isRequestFlow ? (
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                            isDarkMode
+                              ? "bg-violet-500/12 text-violet-200 ring-1 ring-inset ring-violet-400/20"
+                              : "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200"
+                          }`}>
+                            {t("home.groupHub.requireApproval")}
+                          </span>
                         ) : (
                           <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
                             isDarkMode
@@ -366,6 +465,38 @@ function CommunityGroupBoard({
                         </p>
                       ) : null}
 
+                      {groupCode ? (
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={(event) => handleCopyCode(event, group)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleCopyCode(event, group);
+                            }
+                          }}
+                          aria-label={t("home.groupHub.groupCode.copyAria", { code: formatGroupCode(groupCode) })}
+                          className={`mt-3 inline-flex items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-[11px] cursor-pointer transition-colors ${
+                            isDarkMode
+                              ? "border-slate-700 bg-slate-950/60 text-slate-300 hover:border-blue-500 hover:text-blue-300"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:text-blue-700"
+                          }`}
+                        >
+                          {isCodeCopied ? (
+                            <ClipboardCheck className="h-3 w-3 text-emerald-500" />
+                          ) : (
+                            <ClipboardCopy className="h-3 w-3 opacity-60" />
+                          )}
+                          <span className="tracking-wider">{formatGroupCode(groupCode)}</span>
+                          {isCodeCopied ? (
+                            <span className={`ml-1 text-[10px] font-sans ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>
+                              {t("home.groupHub.groupCode.copied")}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+
                       <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
                         <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
                           {t("home.groupHub.viewDetails")}
@@ -378,18 +509,22 @@ function CommunityGroupBoard({
                               onOpenGroup?.(group);
                               return;
                             }
-                            if (isJoinDisabled) {
+                            if (isJoinDisabled || hasPendingRequest) {
+                              return;
+                            }
+                            if (isRequestFlow) {
+                              onRequestJoinGroup?.(group);
                               return;
                             }
                             onJoinGroup?.(group);
                           }}
-                          disabled={isJoining || isJoinDisabled}
+                          disabled={isJoining || isJoinDisabled || hasPendingRequest}
                           className={`h-9 rounded-full px-4 text-sm ${
                             group?.joined
                               ? isDarkMode
                                 ? "bg-slate-800 text-white hover:bg-slate-700"
                                 : "bg-slate-900 text-white hover:bg-slate-800"
-                              : isJoinDisabled
+                              : (isJoinDisabled || hasPendingRequest)
                                 ? isDarkMode
                                   ? "bg-slate-800 text-slate-500"
                                   : "bg-slate-200 text-slate-400"
@@ -399,9 +534,13 @@ function CommunityGroupBoard({
                           {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowUpRight className="mr-2 h-4 w-4" />}
                           {group?.joined
                             ? t("home.group.viewWorkspace")
-                            : isJoinDisabled
-                              ? t("home.groupHub.full")
-                              : t("home.groupHub.join")}
+                            : hasPendingRequest
+                              ? t("home.groupHub.requestPending")
+                              : isJoinDisabled
+                                ? t("home.groupHub.full")
+                                : isRequestFlow
+                                  ? t("home.groupHub.requestJoin")
+                                  : t("home.groupHub.join")}
                         </Button>
                       </div>
                     </button>
@@ -530,41 +669,59 @@ function CommunityGroupBoard({
               >
                 {t("home.group.viewWorkspace")}
               </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  if (!selectedGroup) return;
-                  const group = selectedGroup;
-                  if (group?.joined) {
-                    setSelectedGroup(null);
-                    onOpenGroup?.(group);
-                    return;
-                  }
-                  if (!group?.joinable) {
-                    return;
-                  }
-                  onJoinGroup?.(group);
-                }}
-                disabled={joiningWorkspaceId === selectedGroup?.workspaceId || !selectedGroup?.joinable}
-                className={`rounded-full ${
-                  !selectedGroup?.joinable
-                    ? isDarkMode
-                      ? "bg-slate-800 text-slate-500"
-                      : "bg-slate-200 text-slate-400"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
-              >
-                {joiningWorkspaceId === selectedGroup?.workspaceId ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowUpRight className="mr-2 h-4 w-4" />
-                )}
-                {selectedGroup?.joined
-                  ? t("home.group.viewWorkspace")
-                  : !selectedGroup?.joinable
-                    ? t("home.groupHub.full")
-                    : t("home.groupHub.join")}
-              </Button>
+              {(() => {
+                // Áp dụng cùng logic joinFlow như card list — đảm bảo UI dialog
+                // và card luôn nhất quán về flow dispatch (FREE vs REQUEST_APPROVAL).
+                const detailJoinFlow = resolveJoinFlow(selectedGroup);
+                const detailIsRequest = detailJoinFlow === 'request';
+                const detailHasPending = String(selectedGroup?.myJoinRequestStatus || '').toUpperCase() === 'PENDING';
+                const detailDisabled = !selectedGroup?.joined && !selectedGroup?.joinable && !detailIsRequest;
+                const detailIsLoading = joiningWorkspaceId === selectedGroup?.workspaceId;
+                return (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedGroup) return;
+                      const group = selectedGroup;
+                      if (group?.joined) {
+                        setSelectedGroup(null);
+                        onOpenGroup?.(group);
+                        return;
+                      }
+                      if (detailDisabled || detailHasPending) return;
+                      setSelectedGroup(null);
+                      if (detailIsRequest) {
+                        onRequestJoinGroup?.(group);
+                        return;
+                      }
+                      onJoinGroup?.(group);
+                    }}
+                    disabled={detailIsLoading || detailDisabled || detailHasPending}
+                    className={`rounded-full ${
+                      (detailDisabled || detailHasPending)
+                        ? isDarkMode
+                          ? "bg-slate-800 text-slate-500"
+                          : "bg-slate-200 text-slate-400"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {detailIsLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                    )}
+                    {selectedGroup?.joined
+                      ? t("home.group.viewWorkspace")
+                      : detailHasPending
+                        ? t("home.groupHub.requestPending")
+                        : detailDisabled
+                          ? t("home.groupHub.full")
+                          : detailIsRequest
+                            ? t("home.groupHub.requestJoin")
+                            : t("home.groupHub.join")}
+                  </Button>
+                );
+              })()}
             </div>
           </DialogFooter>
         </DialogContent>

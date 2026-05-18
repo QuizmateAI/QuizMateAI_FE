@@ -25,6 +25,7 @@ import ListSpinner from "@/components/ui/ListSpinner";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserProfilePopover from "@/components/features/users/UserProfilePopover";
+import NotificationBell from "@/components/features/users/NotificationBell";
 import CreditIconImage from "@/components/ui/CreditIconImage";
 import { getActiveGroupPlan, getActiveUserPlans } from "@/api/ManagementSystemAPI";
 import { getWorkspaceCurrentPlan } from "@/api/WorkspaceAPI";
@@ -706,6 +707,7 @@ export default function PlanPage() {
               </span>
             </Button>
             {settingsMenu}
+            <NotificationBell isDarkMode={isDarkMode} />
             <UserProfilePopover isDarkMode={isDarkMode} />
           </div>
         </div>

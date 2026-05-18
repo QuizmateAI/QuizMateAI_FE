@@ -12,6 +12,8 @@ export function resolveGroupUiPermissions({
   fallbackCanPublishQuiz = false,
   fallbackCanAssignQuizAudience = false,
   fallbackCanConvertQuizToFlashcard = false,
+  fallbackCanManageAnnouncement = false,
+  fallbackCanManageAssignment = false,
 } = {}) {
   const canCreateQuiz = myGroupPermissions?.canCreateQuiz ?? fallbackCanCreateQuiz;
   const canCreateFlashcard = myGroupPermissions?.canCreateFlashcard ?? fallbackCanCreateFlashcard;
@@ -40,5 +42,7 @@ export function resolveGroupUiPermissions({
     canUploadSource: myGroupPermissions?.canUpload ?? fallbackCanUploadSource,
     canManageMembers: myGroupPermissions?.canManageMembers ?? fallbackCanManageMembers,
     canViewMemberDashboard: myGroupPermissions?.canViewMemberDashboard ?? fallbackCanViewMemberDashboard,
+    canManageAnnouncement: myGroupPermissions?.canManageAnnouncement ?? fallbackCanManageAnnouncement,
+    canManageAssignment: myGroupPermissions?.canManageAssignment ?? fallbackCanManageAssignment,
   };
 }

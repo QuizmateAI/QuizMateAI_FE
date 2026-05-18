@@ -5,7 +5,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star, Pencil,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare, Eye, Lock, Copy,
+  Share2, UserPlus, MessageSquare, Eye, Lock, Copy, Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logSwallowed } from "@/utils/logSwallowed";
@@ -33,6 +33,9 @@ import UserDisplayName from "@/components/features/users/UserDisplayName";
 import GroupQuizReviewPanel from "@/pages/Users/Group/Components/GroupQuizReviewPanel";
 import GroupDiscussionPanel from "@/pages/Users/Group/Components/GroupDiscussionPanel";
 import QuestionDiscussionDialog from "@/pages/Users/Group/Components/QuestionDiscussionDialog";
+import QuizAssignmentsPanel from "@/pages/Users/Group/Components/assignments/QuizAssignmentsPanel";
+import AssignmentFormDialog from "@/pages/Users/Group/Components/assignments/AssignmentFormDialog";
+import { createAssignment as createAssignmentAPI } from "@/api/AssignmentAPI";
 import QuizToFlashcardDialog from "@/pages/Users/Quiz/components/QuizToFlashcardDialog";
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/components/math/MixedMathText";
@@ -194,6 +197,8 @@ function QuizDetailView({
   canEditQuiz = isGroupLeader,
   canPublishQuiz = isGroupLeader,
   canAssignQuizAudience = isGroupLeader,
+  canManageAssignment = isGroupLeader,
+  currentUserId = null,
   /** Leader: ẩn chính mình khỏi danh sách giao quiz riêng */
   groupAudiencePickerExcludeUserId = null,
   onGroupQuizUpdated,
@@ -220,7 +225,7 @@ function QuizDetailView({
   
   // Tab states — persist qua URL ?tab=... để reload không mất context.
   const VALID_TABS = React.useMemo(
-    () => new Set(["overview", "review", "questions", "history", "discussion"]),
+    () => new Set(["overview", "review", "questions", "history", "discussion", "assignments"]),
     [],
   );
   const initialTabFromUrl = (() => {
@@ -256,6 +261,11 @@ function QuizDetailView({
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  // Giao bài (assignment) dialog — chỉ leader / quyền MANAGE_ASSIGNMENT sau khi quiz ACTIVE.
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
+  // Mỗi lần tạo assignment mới, bump key này để QuizAssignmentsPanel refetch list.
+  // Panel có instance hook riêng nên không share state với dialog ở đây.
+  const [assignmentsRefreshKey, setAssignmentsRefreshKey] = useState(0);
   const detailRequestRunRef = React.useRef(0);
   const attemptHistoryProbeKeyRef = React.useRef(null);
 
@@ -636,6 +646,19 @@ function QuizDetailView({
       cancelled = true;
     };
   }, [audienceOpen, _contextId, groupAudiencePickerExcludeUserId]);
+
+  const handleCreateAssignment = useCallback(async (values) => {
+    if (!_contextId) throw new Error("Missing workspaceId");
+    const res = await createAssignmentAPI(_contextId, values);
+    const created = unwrapApiData(res);
+    setAssignmentsRefreshKey((k) => k + 1);
+    addToast?.({
+      type: "success",
+      message: t("groupWorkspace.assignments.toasts.created"),
+    });
+    if (activeTab !== "assignments") setActiveTab("assignments");
+    return created;
+  }, [_contextId, addToast, activeTab, setActiveTab, t]);
 
   const handlePublishGroupQuiz = useCallback(async () => {
     if (!quiz?.quizId) return;
@@ -1018,6 +1041,15 @@ function QuizDetailView({
               <span className="text-sm">{t("workspace.quiz.distribution", "Distribution")}</span>
             </Button>
           )}
+          {_contextType === "GROUP" && canManageAssignment && String(currentStatus || "").toUpperCase() === "ACTIVE" && !challengeSnapshotReviewMode && !fairPlayRestricts && (
+            <Button
+              className="rounded-full h-9 px-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setAssignmentDialogOpen(true)}
+            >
+              <Send className="w-4 h-4" />
+              <span className="text-sm">{t("workspace.quiz.assignment.assignButton", "Giao bài")}</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1161,6 +1193,19 @@ function QuizDetailView({
             <MessageSquare className="w-4 h-4" /> {t("quizDetailView.tabs.discussion", "Discussion")}
           </button>
         )}
+        {_contextType === "GROUP" && canManageAssignment && !isChallengeSnapshotReview && !fairPlayRestricts && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("assignments")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "assignments"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <Send className="w-4 h-4" /> {t("workspace.quiz.tabs.assignments", "Bài đã giao")}
+          </button>
+        )}
       </div>
 
       {/* Tab Thảo luận — full-height, không padding wrapper */}
@@ -1202,6 +1247,21 @@ function QuizDetailView({
               quizDetailCache.clear();
               await fetchFullDetail();
             }}
+          />
+        )}
+
+        {/* Group — tab Bài đã giao: danh sách assignment thuộc quiz này */}
+        {activeTab === "assignments" && _contextType === "GROUP" && canManageAssignment && (
+          <QuizAssignmentsPanel
+            workspaceId={_contextId}
+            quizId={quiz?.quizId}
+            quizTitle={effectiveQuiz?.title || ""}
+            isDarkMode={isDarkMode}
+            currentUserId={currentUserId}
+            isLeader={isGroupLeader}
+            canManageAssignment={canManageAssignment}
+            refreshKey={assignmentsRefreshKey}
+            onOpenCreateDialog={() => setAssignmentDialogOpen(true)}
           />
         )}
 
@@ -2133,6 +2193,20 @@ function QuizDetailView({
           }
         }}
       />
+
+      {_contextType === "GROUP" && canManageAssignment && quiz?.quizId ? (
+        <AssignmentFormDialog
+          open={assignmentDialogOpen}
+          onOpenChange={setAssignmentDialogOpen}
+          mode="create"
+          workspaceId={_contextId}
+          currentUserId={currentUserId}
+          isDarkMode={isDarkMode}
+          onSubmit={handleCreateAssignment}
+          lockedResource={{ resourceType: "QUIZ", resourceId: quiz.quizId }}
+          defaultTitle={effectiveQuiz?.title || ""}
+        />
+      ) : null}
     </div>
   );
 }

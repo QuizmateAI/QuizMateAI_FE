@@ -210,7 +210,22 @@
     "quizAttemptNotPaused": "Quiz attempt is not paused.",
     "quizAttemptTimeExpired": "Quiz time has expired.",
     "questionNotInQuiz": "Question does not belong to this quiz.",
-    "answerNotBelongToQuestion": "Answer does not belong to this question."
+    "answerNotBelongToQuestion": "Answer does not belong to this question.",
+    "announcementNotFound": "Announcement not found.",
+    "announcementTitleEmpty": "Announcement title cannot be empty.",
+    "announcementContentEmpty": "Announcement content cannot be empty.",
+    "joinRequestNotFound": "Join request not found.",
+    "joinRequestAlreadyPending": "You already have a pending join request for this group.",
+    "joinRequestAlreadyMember": "You are already a member of this group.",
+    "joinRequestPublicGroup": "This group is public — join directly instead of requesting.",
+    "joinRequestInvalidState": "This request has already been processed and cannot be changed.",
+    "assignmentNotFound": "Assignment not found.",
+    "assignmentTitleEmpty": "Assignment title cannot be empty.",
+    "assignmentInvalidResource": "Assignment resource is invalid or has been deleted.",
+    "assignmentResourceNotOwned": "Resource does not belong to this group and cannot be assigned.",
+    "assignmentInvalidAudience": "Recipient list is invalid.",
+    "assignmentDueAtPast": "The due date must be in the future.",
+    "assignmentTargetNotFound": "You are not in the recipient list for this assignment."
   },
   "header": {
     "systemTitle": "QuizMate AI System",
@@ -490,5 +505,26 @@
     "refreshAssessmentQueued": "Refresh Assessment Queued",
     "refreshAssessmentFail": "Refresh Assessment Fail",
     "score": "Score"
+  },
+  "notification": {
+    "title": "Notifications",
+    "close": "Close",
+    "markAllRead": "Mark all as read",
+    "loadMore": "Load more",
+    "loading": "Loading notifications...",
+    "retry": "Retry",
+    "error": "Could not load notifications.",
+    "fallbackTitle": "New notification",
+    "unreadCountLabel": "{{count}} unread notifications",
+    "empty": {
+      "title": "You're all caught up",
+      "body": "New notifications from your groups and the system will appear here."
+    },
+    "relativeTime": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hours ago",
+      "daysAgo": "{{count}} days ago"
+    }
   }
 }

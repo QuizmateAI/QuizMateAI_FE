@@ -29,6 +29,7 @@ import { Switch } from '@/components/ui/switch';
 import { getUserDisplayLabel } from '@/utils/userProfile';
 import UserDisplayName from '@/components/features/users/UserDisplayName';
 import { normalizePendingInvitationSummary } from '../utils/memberSeatLimit';
+import GroupJoinRequestsPanel from '../Components/joinRequests/GroupJoinRequestsPanel';
 
 const normalizeRole = (role) => String(role || 'MEMBER').toUpperCase();
 
@@ -65,6 +66,13 @@ const GROUP_PERMISSION_SECTIONS = [
     id: 'insights',
     items: [
       { code: 'VIEW_MEMBER_DASHBOARD' },
+    ],
+  },
+  {
+    id: 'communication',
+    items: [
+      { code: 'MANAGE_ANNOUNCEMENT' },
+      { code: 'MANAGE_ASSIGNMENT' },
     ],
   },
   {
@@ -828,6 +836,16 @@ function GroupMembersTab({
                   )}
                 </div>
               </section>
+            ) : null}
+
+            {isLeader ? (
+              <div className="mt-5">
+                <GroupJoinRequestsPanel
+                  workspaceId={resolvedWorkspaceId}
+                  isDarkMode={isDarkMode}
+                  canManageMembers={isLeader}
+                />
+              </div>
             ) : null}
 
             <div className="mt-8 flex flex-wrap gap-2">

@@ -229,6 +229,8 @@ export function useWebSocket({
   onWorkspaceWalletUpdate,
   onQuizAttemptGrading,
   onChallengeUpdate,
+  onNotification,
+  onWorkspaceAnnouncement,
   enabled = true,
 } = {}) {
   const stompClientRef = useRef(null);
@@ -247,6 +249,8 @@ export function useWebSocket({
     onWorkspaceWalletUpdate,
     onQuizAttemptGrading,
     onChallengeUpdate,
+    onNotification,
+    onWorkspaceAnnouncement,
   });
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
@@ -259,6 +263,7 @@ export function useWebSocket({
   );
   const needsWalletQueue = Boolean(onWalletUpdate);
   const needsQuizAttemptGradingQueue = Boolean(onQuizAttemptGrading);
+  const needsNotificationQueue = Boolean(onNotification);
   const hasMaterialSubscription = Boolean(
     workspaceId && (onMaterialUploaded || onMaterialDeleted || onMaterialUpdated),
   );
@@ -266,6 +271,7 @@ export function useWebSocket({
   const hasGroupSubscription = Boolean(workspaceId && onGroupUpdate);
   const hasDiscussionSubscription = Boolean(workspaceId && onDiscussionUpdate);
   const hasWorkspaceWalletSubscription = Boolean(workspaceId && onWorkspaceWalletUpdate);
+  const hasAnnouncementSubscription = Boolean(workspaceId && onWorkspaceAnnouncement);
   const hasWorkspaceSubscription = Boolean(
     workspaceId && (
       hasMaterialSubscription
@@ -273,12 +279,14 @@ export function useWebSocket({
       || hasGroupSubscription
       || hasDiscussionSubscription
       || hasWorkspaceWalletSubscription
+      || hasAnnouncementSubscription
     ),
   );
   const shouldConnect = Boolean(enabled) && (
     needsProgressQueue
     || needsWalletQueue
     || needsQuizAttemptGradingQueue
+    || needsNotificationQueue
     || hasWorkspaceSubscription
   );
   const connectionKey = [
@@ -286,11 +294,13 @@ export function useWebSocket({
     needsProgressQueue ? "progress" : null,
     needsWalletQueue ? "wallet" : null,
     needsQuizAttemptGradingQueue ? "quiz-attempt-grading" : null,
+    needsNotificationQueue ? "notification" : null,
     hasMaterialSubscription ? "material" : null,
     hasChallengeSubscription ? "challenge" : null,
     hasGroupSubscription ? "group" : null,
     hasDiscussionSubscription ? "discussion" : null,
     hasWorkspaceWalletSubscription ? "workspace-wallet" : null,
+    hasAnnouncementSubscription ? "announcement" : null,
   ].filter(Boolean).join("|") || null;
 
   useEffect(() => {
@@ -305,6 +315,8 @@ export function useWebSocket({
       onWorkspaceWalletUpdate,
       onQuizAttemptGrading,
       onChallengeUpdate,
+      onNotification,
+      onWorkspaceAnnouncement,
     };
   }, [
     onMaterialUploaded,
@@ -317,6 +329,8 @@ export function useWebSocket({
     onWorkspaceWalletUpdate,
     onQuizAttemptGrading,
     onChallengeUpdate,
+    onNotification,
+    onWorkspaceAnnouncement,
   ]);
 
   // Lấy token từ localStorage
@@ -497,6 +511,22 @@ export function useWebSocket({
           subscriptionsRef.current.push(gradingSubscription);
         }
 
+        if (needsNotificationQueue) {
+          const notificationSubscription = stompClient.subscribe(
+            "/user/queue/notifications",
+            (message) => {
+              try {
+                const response = JSON.parse(message.body);
+                setLastMessage({ type: "notification", data: response, timestamp: Date.now() });
+                callbackRefs.current.onNotification?.(response);
+              } catch (err) {
+                console.error("Failed to parse notification message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(notificationSubscription);
+        }
+
         // Subscribe to workspace material updates
         if (hasMaterialSubscription && workspaceId) {
           const workspaceSubscription = stompClient.subscribe(
@@ -589,6 +619,22 @@ export function useWebSocket({
           );
           subscriptionsRef.current.push(workspaceWalletSubscription);
         }
+
+        if (hasAnnouncementSubscription && workspaceId) {
+          const announcementSubscription = stompClient.subscribe(
+            `/topic/workspace/${workspaceId}/announcement`,
+            (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                setLastMessage({ type: "announcement:update", data, timestamp: Date.now() });
+                callbackRefs.current.onWorkspaceAnnouncement?.(data);
+              } catch (err) {
+                console.error("Failed to parse announcement message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(announcementSubscription);
+        }
       },
 
       onDisconnect: () => {
@@ -653,9 +699,11 @@ export function useWebSocket({
     hasWorkspaceSubscription,
     hasWorkspaceWalletSubscription,
     hasChallengeSubscription,
+    hasAnnouncementSubscription,
     needsProgressQueue,
     needsWalletQueue,
     needsQuizAttemptGradingQueue,
+    needsNotificationQueue,
     shouldConnect,
     workspaceId,
     // Force re-connect khi auth thay đổi (login/logout) để pickup token mới.

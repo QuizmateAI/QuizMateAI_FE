@@ -47,6 +47,7 @@ const LazyGroupMemberStatsTab = React.lazy(loadGroupMemberStatsTab);
 const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
 const LazyChallengeTab = React.lazy(loadChallengeTab);
 const LazyGroupRankingTab = React.lazy(() => import("./Components/GroupRankingTab"));
+const LazyAnnouncementsTab = React.lazy(() => import("./Components/announcements/AnnouncementsTab"));
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
   deleteMaterial,
@@ -142,6 +143,7 @@ const EMPTY_PENDING_INVITATION_SUMMARY = Object.freeze({ count: 0, invitations: 
 const GROUP_WORKSPACE_VALID_SECTIONS = [
   'dashboard',
   'personalDashboard',
+  'announcements',
   'documents',
   'members',
   'memberStats',
@@ -867,6 +869,8 @@ function GroupWorkspacePage() {
     canUploadSource,
     canManageMembers,
     canViewMemberDashboard,
+    canManageAnnouncement,
+    canManageAssignment,
   } = resolveGroupUiPermissions({
     myGroupPermissions,
     fallbackCanCreateContent,
@@ -876,6 +880,8 @@ function GroupWorkspacePage() {
     fallbackCanPublishQuiz: isLeader,
     fallbackCanAssignQuizAudience: isLeader,
     fallbackCanConvertQuizToFlashcard: isLeader,
+    fallbackCanManageAnnouncement: isLeader,
+    fallbackCanManageAssignment: isLeader,
   });
   const pendingInvitationsQueryKey = useMemo(
     () => ['group-pending-invitations', resolvedWorkspaceId],
@@ -2273,6 +2279,17 @@ function GroupWorkspacePage() {
     void queryClient.invalidateQueries({ queryKey: ['challenge-bracket'] });
   }, [isCreating, queryClient, workspaceId]);
 
+  // BE broadcast { type: ANNOUNCEMENT_CREATED|UPDATED|DELETED, announcementId,
+  // workspaceId, timestamp } qua /topic/workspace/{id}/announcement. Lift state
+  // ở đây để chỉ giữ payload mới nhất; AnnouncementsTab effect-on-prop để re-sync.
+  const [wsAnnouncementEvent, setWsAnnouncementEvent] = useState(null);
+  const handleAnnouncementRealtime = useCallback((event) => {
+    if (!event || typeof event !== 'object') return;
+    // Bump sequence để mọi event tạo ref mới — kể cả cùng announcementId (CREATED
+    // rồi UPDATED ngay sau) — buộc useEffect bên consumer rerun.
+    setWsAnnouncementEvent({ ...event, _seq: Date.now() });
+  }, []);
+
   const handleGroupWalletRealtime = useCallback((event = null) => {
     if (isCreating || !resolvedWorkspaceId || !workspaceId || workspaceId === 'new') return;
 
@@ -2315,6 +2332,7 @@ function GroupWorkspacePage() {
     onGroupUpdate: handleGroupRealtime,
     onWorkspaceWalletUpdate: handleGroupWalletRealtime,
     onChallengeUpdate: handleChallengeRealtime,
+    onWorkspaceAnnouncement: handleAnnouncementRealtime,
   });
 
   useEffect(() => {
@@ -3927,6 +3945,7 @@ function GroupWorkspacePage() {
         canCreateRoadmap,
         canPublishQuiz,
         canAssignQuizAudience,
+        canManageAssignment,
         role: currentRoleKey,
         isGroupLeader: isLeader,
         groupWorkspaceCurrentUserId: currentUser?.userID,
@@ -4161,6 +4180,20 @@ function GroupWorkspacePage() {
             currentLang={currentLang}
             t={t}
           />
+        );
+
+      case 'announcements':
+        return (
+          <React.Suspense fallback={renderSectionFallback(320)}>
+            <LazyAnnouncementsTab
+              workspaceId={resolvedWorkspaceId}
+              isDarkMode={isDarkMode}
+              currentUserId={currentUser?.userID}
+              isLeader={isLeader}
+              canManageAnnouncement={canManageAnnouncement}
+              wsAnnouncementEvent={wsAnnouncementEvent}
+            />
+          </React.Suspense>
         );
 
       case 'flashcard':

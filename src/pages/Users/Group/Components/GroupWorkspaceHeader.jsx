@@ -4,6 +4,7 @@ import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/components/features/users/UserProfilePopover";
+import NotificationBell from "@/components/features/users/NotificationBell";
 import WebSocketStatus from "@/components/features/WebSocketStatus";
 
 function GroupWorkspaceHeader({
@@ -47,6 +48,7 @@ function GroupWorkspaceHeader({
         <div className="flex items-center gap-3">
           <WebSocketStatus isConnected={wsConnected} isDarkMode={isDarkMode} compact />
           {settingsMenu}
+          <NotificationBell isDarkMode={isDarkMode} />
           <UserProfilePopover isDarkMode={isDarkMode} />
         </div>
       </div>

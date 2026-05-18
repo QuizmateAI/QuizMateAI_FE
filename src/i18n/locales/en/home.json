@@ -19,7 +19,7 @@
     },
     "search": {
       "workspacePlaceholder": "Search workspaces...",
-      "groupPlaceholder": "Search groups...",
+      "groupPlaceholder": "Search by name or group code (12 chars)...",
       "noResults": "No results found",
       "clear": "Clear search"
     },
@@ -141,6 +141,15 @@
       "full": "Full",
       "joinSuccess": "Joined the group successfully.",
       "joinError": "Unable to join this group.",
+      "requestJoin": "Request to join",
+      "requestPending": "Awaiting approval",
+      "requestSubmitSuccess": "Request sent. Please wait for the leader to review.",
+      "requireApproval": "Approval required",
+      "groupCode": {
+        "label": "Group code",
+        "copyAria": "Copy group code {{code}}",
+        "copied": "Copied"
+      },
       "emptyTitle": "No public groups yet",
       "emptyDescription": "Once public groups are available, you will be able to review them and join directly from here.",
       "emptyCardDescription": "This group has not added a short description yet.",

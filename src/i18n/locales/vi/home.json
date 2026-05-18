@@ -19,7 +19,7 @@
     },
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
-      "groupPlaceholder": "Tìm kiếm nhóm...",
+      "groupPlaceholder": "Tìm theo tên hoặc mã nhóm (12 ký tự)...",
       "noResults": "Không tìm thấy kết quả",
       "clear": "Xóa tìm kiếm"
     },
@@ -141,6 +141,15 @@
       "full": "Hết slot",
       "joinSuccess": "Đã tham gia nhóm thành công.",
       "joinError": "Không thể tham gia nhóm này.",
+      "requestJoin": "Xin tham gia",
+      "requestPending": "Đang chờ duyệt",
+      "requestSubmitSuccess": "Đã gửi yêu cầu tham gia. Vui lòng chờ trưởng nhóm duyệt.",
+      "requireApproval": "Cần duyệt",
+      "groupCode": {
+        "label": "Mã nhóm",
+        "copyAria": "Sao chép mã nhóm {{code}}",
+        "copied": "Đã sao chép"
+      },
       "emptyTitle": "Chưa có nhóm public nào",
       "emptyDescription": "Khi có nhóm mở công khai, bạn sẽ xem được thông tin và tham gia trực tiếp từ đây.",
       "emptyCardDescription": "Nhóm này chưa thêm mô tả ngắn.",
