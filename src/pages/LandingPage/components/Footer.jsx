@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Facebook, Youtube, Linkedin, Mail, MapPin } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { getSupportEmail } from '@/lib/runtimeConfig';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
+
+const SUPPORT_EMAIL = getSupportEmail();
 
 const SOCIAL = [
   { Icon: Facebook, label: 'Facebook', href: 'https://facebook.com' },
@@ -64,7 +67,7 @@ const Footer = () => {
             </p>
             <div className="mt-5 space-y-2 text-sm">
               <a
-                href="mailto:support@quizmateai.io.vn"
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className={`inline-flex items-center gap-2 ${
                   isDarkMode
                     ? 'text-slate-400 hover:text-white'
@@ -72,7 +75,7 @@ const Footer = () => {
                 }`}
               >
                 <Mail className="w-4 h-4" />
-                support@quizmateai.io.vn
+                {SUPPORT_EMAIL}
               </a>
               <p
                 className={`flex items-center gap-2 text-xs ${
@@ -113,7 +116,7 @@ const Footer = () => {
             </h5>
             <ul className="space-y-1 text-sm font-medium">
               <li><a href="/#about" className={linkClass}>{t('landingPage.footer.companyLinks.about')}</a></li>
-              <li><a href="mailto:support@quizmateai.io.vn" className={linkClass}>{t('landingPage.footer.companyLinks.support', 'Support')}</a></li>
+              <li><a href={`mailto:${SUPPORT_EMAIL}`} className={linkClass}>{t('landingPage.footer.companyLinks.support', 'Support')}</a></li>
             </ul>
           </div>
 

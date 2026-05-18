@@ -14,10 +14,7 @@ import {
   setAccessToken,
 } from '@/utils/tokenStorage';
 import { getDeviceId } from '@/utils/deviceId';
-
-function readEnvString(value) {
-  return typeof value === 'string' ? value.trim() : '';
-}
+import { getApiBaseUrl, getWebSocketUrl as resolveWebSocketUrl } from '@/lib/runtimeConfig';
 
 function safeParseUrl(value) {
   try {
@@ -27,13 +24,13 @@ function safeParseUrl(value) {
   }
 }
 
-const configuredBaseUrl = readEnvString(import.meta.env.VITE_API_BASE_URL);
-export const baseURL = import.meta.env.DEV
-  ? '/api'
-  : (configuredBaseUrl || '/api');
+// All env/runtime resolution centralizes in src/lib/runtimeConfig.js (PR7). The values below
+// are derived from there so a single envsubst pass on public/config.js re-points the FE at a
+// different backend without rebuilding the bundle.
+export const baseURL = getApiBaseUrl();
 
 export function getApiOrigin() {
-  const parsedApiUrl = safeParseUrl(configuredBaseUrl);
+  const parsedApiUrl = safeParseUrl(baseURL);
 
   if (parsedApiUrl) {
     return parsedApiUrl.origin;
@@ -46,22 +43,11 @@ export function getApiOrigin() {
   return '';
 }
 
-export function getWebSocketUrl() {
-  const configuredWebSocketUrl = readEnvString(import.meta.env.VITE_WS_URL);
-  if (configuredWebSocketUrl) {
-    return configuredWebSocketUrl;
-  }
+// Re-export so existing call sites (`import { getWebSocketUrl } from '@/api/api'`) keep
+// working without churn while runtimeConfig owns the resolution logic.
+export const getWebSocketUrl = resolveWebSocketUrl;
 
-  const parsedApiUrl = safeParseUrl(configuredBaseUrl);
-  if (parsedApiUrl) {
-    const normalizedPath = parsedApiUrl.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
-    return `${parsedApiUrl.origin}${normalizedPath}/ws-quiz`;
-  }
-
-  return '/ws-quiz';
-}
-
-const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(configuredBaseUrl || baseURL);
+const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(baseURL);
 
 // Tạo instance axios với cấu hình mặc định
 //

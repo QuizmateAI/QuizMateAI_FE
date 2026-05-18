@@ -29,6 +29,15 @@
       window.global = window;
     </script>
 
+    <!--
+      Runtime config: public/config.js exposes window.__APP_CONFIG__ with values that get
+      substituted by envsubst at container start (see Dockerfile entrypoint in PR9). In Vite
+      dev and direct (non-Docker) prod builds the file is served verbatim and src/lib/
+      runtimeConfig.js falls back to import.meta.env.VITE_*, so dev DX is unchanged.
+      MUST load before the main bundle so any module-level config reads see the values.
+    -->
+    <script src="/config.js"></script>
+
     <!-- Favicon theo theme browser -->
     <script>
       (function() {
