@@ -14,7 +14,12 @@
  * regardless of whether public/config.js was processed.
  */
 
-const PLACEHOLDER_PREFIX = "__VITE_";
+// Two placeholder forms get treated as "not substituted, fall through to build-time":
+//   1. __VITE_FOO__   — the raw form public/config.js ships with (before envsubst).
+//   2. ${VITE_FOO}    — what envsubst leaves behind when an env var is unset (PR9).
+function isPlaceholder(v) {
+  return v.startsWith("__VITE_") || /^\$\{VITE_[A-Z0-9_]+\}$/.test(v);
+}
 
 function readRuntime(key) {
   if (typeof window === "undefined") return "";
@@ -22,7 +27,7 @@ function readRuntime(key) {
   if (!cfg) return "";
   const v = cfg[key];
   if (typeof v !== "string") return "";
-  if (v.startsWith(PLACEHOLDER_PREFIX)) return ""; // unsubstituted placeholder
+  if (isPlaceholder(v)) return "";
   return v.trim();
 }
 
