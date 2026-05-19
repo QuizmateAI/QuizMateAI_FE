@@ -1,67 +1,28 @@
+import api from "@/api/api";
 import { clearUserCache } from "@/utils/userCache";
-import { clearPlanPurchaseState } from "@/utils/planPurchaseState";
-import { clearTokens, getAccessToken } from "@/utils/tokenStorage";
+import { getAccessToken } from "@/utils/tokenStorage";
 
-const configuredBaseUrl = typeof import.meta.env.VITE_API_BASE_URL === "string"
-  ? import.meta.env.VITE_API_BASE_URL.trim()
-  : "";
-const baseURL = import.meta.env.DEV ? "/api" : (configuredBaseUrl || "/api");
-const profileEndpoint = `${baseURL.replace(/\/+$/, "")}/user/profile`;
-const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(configuredBaseUrl || baseURL);
-
+// Back-compat passthrough: ProfileAPI.js imports `getStoredToken` from this module. Now that
+// ProfilePreferencesAPI uses the shared axios instance (which reads the token itself via the
+// request interceptor), this passthrough is purely there for those legacy callers and can be
+// replaced with a direct import of getAccessToken when convenient.
 function getStoredToken() {
   return getAccessToken();
 }
 
-function getPreferenceHeaders(token) {
-  return {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    Authorization: `Bearer ${token}`,
-    ...(isNgrokUrl ? { "ngrok-skip-browser-warning": "true" } : {}),
-  };
-}
-
-function handleUnauthorizedPreferenceResponse() {
-  clearTokens();
-  try {
-    localStorage.removeItem("user");
-  } catch {
-    /* storage disabled */
-  }
-  clearUserCache();
-  clearPlanPurchaseState();
-  window.location.href = "/login";
-}
+// PR7: this module previously used raw fetch with its own URL/auth/refresh logic that
+// silently diverged from the shared axios interceptor — eg if the user changed language
+// while a refresh was in flight, the fetch call could 401 against a token the shared
+// instance had already rotated. Now we share `api` so the interceptor handles auth,
+// retry, refresh, rate-limit eventing, etc. uniformly.
 
 async function updateProfilePreference(payload) {
-  const token = getStoredToken();
-  if (!token) return null;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const response = await fetch(profileEndpoint, {
-      method: "PUT",
-      headers: getPreferenceHeaders(token),
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-
-    if (response.status === 401) {
-      handleUnauthorizedPreferenceResponse();
-    }
-
-    if (!response.ok) {
-      throw new Error(`Failed to update profile preference: ${response.status}`);
-    }
-
-    clearUserCache();
-    return payload;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  // The shared axios instance attaches the access token + handles 401 → refresh → retry
+  // automatically. A genuinely-expired refresh redirects to /login, so we just propagate
+  // the error and let the caller decide whether to surface it.
+  const response = await api.put("/user/profile", payload);
+  clearUserCache();
+  return response?.data ?? payload;
 }
 
 async function updateUserPreferredLanguage(language) {

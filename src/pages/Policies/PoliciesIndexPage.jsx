@@ -3,9 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { ShieldAlert, BookOpenCheck, MailQuestion } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { fetchPublicPolicies } from '@/api/PolicyAPI';
+import { getSupportEmail } from '@/lib/runtimeConfig';
 import PolicyHeader from './components/PolicyHeader';
 import PolicyCard from './components/PolicyCard';
 import Footer from '@/pages/LandingPage/components/Footer';
+
+const SUPPORT_EMAIL = getSupportEmail();
 
 export default function PoliciesIndexPage() {
   const { t, i18n } = useTranslation();
@@ -165,12 +168,12 @@ export default function PoliciesIndexPage() {
           </div>
           <h3 className="text-lg font-semibold mb-2">{t('policies.needHelp')}</h3>
           <a
-            href="mailto:support@quizmateai.io.vn"
+            href={`mailto:${SUPPORT_EMAIL}`}
             className={`inline-flex items-center gap-1 text-sm font-medium ${
               isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
             }`}
           >
-            {t('policies.contactUs')} → support@quizmateai.io.vn
+            {t('policies.contactUs')} → {SUPPORT_EMAIL}
           </a>
         </div>
       </section>

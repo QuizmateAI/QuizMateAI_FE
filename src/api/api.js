@@ -14,10 +14,8 @@ import {
   setAccessToken,
 } from '@/utils/tokenStorage';
 import { getDeviceId } from '@/utils/deviceId';
-
-function readEnvString(value) {
-  return typeof value === 'string' ? value.trim() : '';
-}
+import { getApiBaseUrl, getWebSocketUrl as resolveWebSocketUrl } from '@/lib/runtimeConfig';
+import { installV1RewriteInterceptor } from '@/lib/v1Migration';
 
 function safeParseUrl(value) {
   try {
@@ -27,13 +25,13 @@ function safeParseUrl(value) {
   }
 }
 
-const configuredBaseUrl = readEnvString(import.meta.env.VITE_API_BASE_URL);
-export const baseURL = import.meta.env.DEV
-  ? '/api'
-  : (configuredBaseUrl || '/api');
+// All env/runtime resolution centralizes in src/lib/runtimeConfig.js (PR7). The values below
+// are derived from there so a single envsubst pass on public/config.js re-points the FE at a
+// different backend without rebuilding the bundle.
+export const baseURL = getApiBaseUrl();
 
 export function getApiOrigin() {
-  const parsedApiUrl = safeParseUrl(configuredBaseUrl);
+  const parsedApiUrl = safeParseUrl(baseURL);
 
   if (parsedApiUrl) {
     return parsedApiUrl.origin;
@@ -46,22 +44,11 @@ export function getApiOrigin() {
   return '';
 }
 
-export function getWebSocketUrl() {
-  const configuredWebSocketUrl = readEnvString(import.meta.env.VITE_WS_URL);
-  if (configuredWebSocketUrl) {
-    return configuredWebSocketUrl;
-  }
+// Re-export so existing call sites (`import { getWebSocketUrl } from '@/api/api'`) keep
+// working without churn while runtimeConfig owns the resolution logic.
+export const getWebSocketUrl = resolveWebSocketUrl;
 
-  const parsedApiUrl = safeParseUrl(configuredBaseUrl);
-  if (parsedApiUrl) {
-    const normalizedPath = parsedApiUrl.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
-    return `${parsedApiUrl.origin}${normalizedPath}/ws-quiz`;
-  }
-
-  return '/ws-quiz';
-}
-
-const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(configuredBaseUrl || baseURL);
+const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(baseURL);
 
 // Tạo instance axios với cấu hình mặc định
 //
@@ -117,6 +104,14 @@ api.interceptors.request.use(
   }
 );
 
+// PR8: v1 URL rewrite. Registered AFTER the auth interceptor above so axios's REVERSE order
+// makes this run FIRST on outgoing requests — every downstream interceptor (auth, retry,
+// refresh) and the actual HTTP send see the already-rewritten /v1/... URL. The BE serves both
+// the legacy and v1 prefixes during the migration window. Opt-out per request via
+// { skipV1Migration: true } in the axios config; global kill-switch via env
+// VITE_DISABLE_V1_MIGRATION=true.
+installV1RewriteInterceptor(api);
+
 // ===== Refresh-token: gọi /auth/refresh khi access token hết hạn =====
 // The refresh token now lives in an httpOnly cookie set by the BE — JS cannot
 // read it. We just POST /auth/refresh with credentials; the browser attaches
@@ -140,7 +135,11 @@ function refreshAccessToken() {
 
   return axios
     .post(
-      `${baseURL}/auth/refresh`,
+      // PR8: use the v1 mirror. AuthController is dual-mapped (PR5a) so both
+      // /api/auth/refresh and /api/v1/auth/refresh land in the same handler. We target v1
+      // explicitly because the shared `api` instance is in v1-mode and this bare axios call
+      // would otherwise be the one legacy call left in the FE.
+      `${baseURL}/v1/auth/refresh`,
       {},
       {
         headers: {
