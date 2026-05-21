@@ -44,6 +44,15 @@ export const getExtractedText = async (materialId) => {
   return response;
 };
 
+// Lấy danh sách chunk đã index trong vector DB (debug/inspector)
+// Trả về { material_id, total, chunks: [{ chunk_index, section_title, pages, content, ... }] }
+export const getRAGChunks = async (materialId, limit = 500) => {
+  const response = await api.get(`/materials/${materialId}/rag-chunks`, {
+    params: { limit },
+  });
+  return response;
+};
+
 // Lấy material content (URL + transcript) — dùng cho SourceDetailView khi
 // material là media (audio/video) cần render player + script panel.
 // Response shape: { materialId, materialType, url, transcript, isMedia }

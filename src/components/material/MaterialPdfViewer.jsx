@@ -399,6 +399,12 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
   const [scale, setScale] = useState(initialScale);
   const [loadError, setLoadError] = useState(null);
   const [containerWidth, setContainerWidth] = useState(800);
+  // Virtualization: render full <Page> chỉ cho window ±RENDER_WINDOW quanh currentPage.
+  // Mặc định 8 page → ~17 page rendered tổng — đủ cho UX scroll mượt mà tránh OOM với
+  // tài liệu hàng trăm/ngàn trang (react-pdf load text+canvas layer mỗi page tốn ~1-2MB).
+  // Placeholder dùng A4 ratio (~1.414) để giữ scroll position gần đúng.
+  const RENDER_WINDOW = 8;
+  const estimatedPageHeight = Math.max(400, containerWidth * 1.414 * scale);
   const [hoverAnchor, setHoverAnchor] = useState(null);
   const [selectionAnchor, setSelectionAnchor] = useState(null);
   const [draftComposer, setDraftComposer] = useState(null);
@@ -936,6 +942,34 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
                 { length: numPages || 0 },
                 (_, index) => index + 1,
               ).map((pageNum) => {
+                // Virtualization: render placeholder cho các trang ngoài window quanh currentPage.
+                // Threshold: chỉ skip khi tài liệu vượt 2*RENDER_WINDOW+1 trang. Tài liệu nhỏ
+                // (<=17 trang) vẫn render full để giữ behavior cũ. Placeholder vẫn giữ key+ref+
+                // data-attr nên scroll observer + jumpToPage tiếp tục work, chỉ là không có
+                // Page+text+annotation layer (đó là phần ngốn RAM).
+                if (
+                  numPages > RENDER_WINDOW * 2 + 1 &&
+                  Math.abs(pageNum - currentPage) > RENDER_WINDOW
+                ) {
+                  return (
+                    <div
+                      key={pageNum}
+                      ref={(element) => {
+                        if (element) pageRefs.current.set(pageNum, element);
+                        else pageRefs.current.delete(pageNum);
+                      }}
+                      data-pdf-page-number={pageNum}
+                      style={{ width: containerWidth, height: estimatedPageHeight }}
+                      className={`relative flex items-center justify-center shadow-md ${
+                        isDarkMode
+                          ? "bg-slate-800/40 text-slate-500"
+                          : "bg-white/60 text-slate-400"
+                      }`}
+                    >
+                      <span className="text-sm font-medium">Trang {pageNum}</span>
+                    </div>
+                  );
+                }
                 const highlighted = isHighlighted(pageNum);
                 const flashed = flashedPage === pageNum;
                 // NORMAL note (source: floating) hiển thị trong sidebar, không render

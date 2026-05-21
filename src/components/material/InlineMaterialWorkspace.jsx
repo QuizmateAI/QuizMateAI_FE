@@ -55,6 +55,13 @@ import {
   listMaterialNotes,
   updateMaterialNote,
 } from "../../api/MaterialNoteAPI";
+import {
+  getExtractedText,
+  getMaterialContent,
+  getModerationReportDetail,
+  reviewMaterial,
+} from "../../api/MaterialAPI";
+import { MaterialContentRenderer } from "../features/material/MaterialContentRenderer";
 
 // ============================================================================
 // InlineMaterialWorkspace - Variant C redesign:
@@ -371,6 +378,18 @@ export default function InlineMaterialWorkspace({
   const [draftAnnotation, setDraftAnnotation] = useState(null);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
   const [notesError, setNotesError] = useState(null);
+  // Review banner state: status starts từ source nhưng cho phép update local sau khi approve.
+  const [materialStatus, setMaterialStatus] = useState(
+    String(source?.status || "").toUpperCase(),
+  );
+  const [moderationReport, setModerationReport] = useState(null);
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState(null);
+  // Non-PDF content (extracted text cho docx/text, hoặc {url, transcript} cho media).
+  const [extractedContent, setExtractedContent] = useState(null); // { value, script } | null
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentError, setContentError] = useState(false);
   const pdfRef = useRef(null);
 
   const treeOpen = sidebarView !== null;
@@ -411,6 +430,124 @@ export default function InlineMaterialWorkspace({
       cancelled = true;
     };
   }, [materialId]);
+
+  // Sync materialStatus khi source thay đổi (vd user navigate giữa các material).
+  useEffect(() => {
+    setMaterialStatus(String(source?.status || "").toUpperCase());
+    setReviewError(null);
+  }, [source?.id, source?.status]);
+
+  const isWarned = materialStatus === "WARN" || materialStatus === "WARNED";
+
+  // Fetch moderation report khi material WARNED — dùng để hiển thị reason/suggestion trong banner.
+  useEffect(() => {
+    if (!materialId || !isWarned) {
+      setModerationReport(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setModerationLoading(true);
+    getModerationReportDetail(materialId)
+      .then((report) => {
+        if (cancelled) return;
+        setModerationReport(report || null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setModerationReport(null);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setModerationLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [materialId, isWarned]);
+
+  const handleReviewClick = useCallback(
+    async (isApproved) => {
+      if (!materialId || reviewLoading) return;
+      setReviewLoading(true);
+      setReviewError(null);
+      try {
+        await reviewMaterial(materialId, isApproved);
+        // Banner sẽ tự ẩn vì materialStatus đổi sang ACTIVE/REJECTED → isWarned = false.
+        setMaterialStatus(isApproved ? "ACTIVE" : "REJECTED");
+      } catch (error) {
+        setReviewError(
+          error?.response?.data?.message
+            || error?.message
+            || "Không thể duyệt tài liệu lúc này.",
+        );
+      } finally {
+        setReviewLoading(false);
+      }
+    },
+    [materialId, reviewLoading],
+  );
+
+  const moderationReason = moderationReport?.reason || null;
+  const moderationSuggestion = moderationReport?.suggestion || null;
+
+  // Fetch nội dung cho non-PDF: media (image/audio/video) -> {url, transcript},
+  // text/docx -> extracted markdown. Skip cho PDF (đã có viewer riêng).
+  const sourceTypeLower = String(
+    source?.type || source?.materialType || source?.contentType || "",
+  ).toLowerCase();
+  const looksLikeMedia =
+    sourceTypeLower.includes("image") ||
+    sourceTypeLower.includes("audio") ||
+    sourceTypeLower.includes("video") ||
+    sourceTypeLower.includes("youtube") ||
+    sourceTypeLower.includes("vimeo");
+  const needsContentFetch =
+    Boolean(materialId) &&
+    !isPdfMaterial(source) &&
+    materialStatus !== "REJECT" &&
+    materialStatus !== "REJECTED";
+
+  useEffect(() => {
+    if (!needsContentFetch) {
+      setExtractedContent(null);
+      setContentError(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setContentLoading(true);
+    setContentError(false);
+    (async () => {
+      try {
+        if (looksLikeMedia) {
+          // Media: thử /content endpoint trước (trả {url, transcript})
+          try {
+            const res = await getMaterialContent(materialId);
+            const data = res?.data ?? res ?? null;
+            if (!cancelled && data && (data.url || data.transcript)) {
+              setExtractedContent({
+                value: data.url || data.transcript || "",
+                script: data.transcript || null,
+              });
+              return;
+            }
+          } catch {
+            // fallthrough sang /extracted-text
+          }
+        }
+        const res = await getExtractedText(materialId);
+        if (cancelled) return;
+        const text = typeof res === "string" ? res : res?.data ?? "";
+        setExtractedContent({ value: text || "", script: null });
+      } catch {
+        if (!cancelled) setContentError(true);
+      } finally {
+        if (!cancelled) setContentLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [materialId, needsContentFetch, looksLikeMedia]);
 
   const handleLeafSelect = useCallback((selection) => {
     if (!selection) return;
@@ -675,7 +812,9 @@ export default function InlineMaterialWorkspace({
         isDarkMode ? "bg-slate-950" : "bg-white"
       }`}
       style={{
-        gridTemplateRows: "60px 1fr",
+        // Grid rows: top bar (60px) + optional review banner (auto) + main content (1fr).
+        // Khi material không WARNED, hàng review = 0px nên không chiếm chỗ.
+        gridTemplateRows: isWarned ? "60px auto 1fr" : "60px 1fr",
         gridTemplateColumns: treeOpen ? "1fr 440px" : "1fr",
       }}
     >
@@ -840,6 +979,101 @@ export default function InlineMaterialWorkspace({
 
       </div>
 
+      {/* REVIEW BANNER — chỉ hiện khi material status = WARNED, yêu cầu user duyệt/từ chối */}
+      {isWarned && (
+        <div
+          className={`col-span-full border-b px-5 py-3 ${
+            isDarkMode
+              ? "border-amber-700/40 bg-amber-950/30"
+              : "border-amber-200 bg-amber-50"
+          }`}
+        >
+          <div className="flex flex-wrap items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <p
+                className={`text-sm font-semibold ${
+                  isDarkMode ? "text-amber-200" : "text-amber-900"
+                }`}
+              >
+                ⚠️ Tài liệu đang ở trạng thái cảnh báo, cần bạn duyệt.
+              </p>
+              {moderationLoading && !moderationReport && (
+                <p
+                  className={`mt-1 text-xs ${
+                    isDarkMode ? "text-amber-300/80" : "text-amber-700"
+                  }`}
+                >
+                  Đang tải báo cáo kiểm duyệt...
+                </p>
+              )}
+              {moderationReason && (
+                <p
+                  className={`mt-1 text-xs leading-relaxed ${
+                    isDarkMode ? "text-amber-100" : "text-amber-800"
+                  }`}
+                >
+                  <span className="font-semibold">Lý do: </span>
+                  {moderationReason}
+                </p>
+              )}
+              {moderationSuggestion && (
+                <p
+                  className={`mt-0.5 text-xs leading-relaxed ${
+                    isDarkMode ? "text-amber-200/80" : "text-amber-700"
+                  }`}
+                >
+                  <span className="font-semibold">Gợi ý: </span>
+                  {moderationSuggestion}
+                </p>
+              )}
+              {reviewError && (
+                <p
+                  className={`mt-1 text-xs ${
+                    isDarkMode ? "text-red-300" : "text-red-700"
+                  }`}
+                >
+                  {reviewError}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleReviewClick(true)}
+                disabled={reviewLoading}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  reviewLoading
+                    ? isDarkMode
+                      ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                      : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    : isDarkMode
+                      ? "bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700"
+                }`}
+              >
+                Duyệt
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReviewClick(false)}
+                disabled={reviewLoading}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  reviewLoading
+                    ? isDarkMode
+                      ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                      : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    : isDarkMode
+                      ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                      : "bg-red-100 text-red-700 hover:bg-red-200"
+                }`}
+              >
+                Từ chối
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MAIN READING AREA */}
       <section
         className={`flex flex-col overflow-hidden relative ${
@@ -872,7 +1106,8 @@ export default function InlineMaterialWorkspace({
               onAnnotationDelete={handleDeleteAnnotation}
               hideToolbar
             />
-          ) : (
+          ) : isPdfMaterial(source) ? (
+            // PDF nhưng không có URL display — vẫn fallback text
             <div
               className={`flex h-full flex-col items-center justify-center gap-3 p-8 text-center ${
                 isDarkMode ? "text-slate-400" : "text-slate-500"
@@ -880,17 +1115,61 @@ export default function InlineMaterialWorkspace({
             >
               <FileText className="h-12 w-12 opacity-40" />
               <p className="text-sm">
-                {isPdfMaterial(source)
-                  ? "Tài liệu là PDF nhưng không tìm thấy URL hiển thị."
-                  : "Material này không phải PDF, không thể hiển thị inline."}
+                Tài liệu là PDF nhưng không tìm thấy URL hiển thị.
               </p>
-              <p className="text-xs opacity-70">
-                Loáº¡i:{" "}
-                {source?.type ||
-                  source?.materialType ||
-                  source?.contentType ||
-                  "không xác định"}
-              </p>
+            </div>
+          ) : (
+            // Non-PDF: render qua MaterialContentRenderer (image/audio/video player, markdown text)
+            <div
+              className={`h-full overflow-y-auto px-6 py-6 ${
+                isDarkMode ? "text-slate-200" : "text-slate-800"
+              }`}
+            >
+              {contentLoading && (
+                <div className="flex items-center justify-center gap-2 py-12 text-sm opacity-70">
+                  <div
+                    className={`h-4 w-4 animate-spin rounded-full border-2 border-t-transparent ${
+                      isDarkMode ? "border-slate-500" : "border-slate-400"
+                    }`}
+                  />
+                  <span>Đang tải nội dung...</span>
+                </div>
+              )}
+              {!contentLoading && contentError && (
+                <p
+                  className={`text-center py-12 text-sm ${
+                    isDarkMode ? "text-red-300" : "text-red-600"
+                  }`}
+                >
+                  Không tải được nội dung tài liệu.
+                </p>
+              )}
+              {!contentLoading && !contentError && extractedContent && (
+                <MaterialContentRenderer
+                  value={extractedContent.value}
+                  type={source?.type || source?.materialType}
+                  script={extractedContent.script}
+                  scriptLabel="Lời thoại / Transcript"
+                  isDarkMode={isDarkMode}
+                />
+              )}
+              {!contentLoading && !contentError && !extractedContent && (
+                <div
+                  className={`flex h-full flex-col items-center justify-center gap-3 p-8 text-center ${
+                    isDarkMode ? "text-slate-400" : "text-slate-500"
+                  }`}
+                >
+                  <FileText className="h-12 w-12 opacity-40" />
+                  <p className="text-sm">Không có nội dung để hiển thị.</p>
+                  <p className="text-xs opacity-70">
+                    Loại:{" "}
+                    {source?.type ||
+                      source?.materialType ||
+                      source?.contentType ||
+                      "không xác định"}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

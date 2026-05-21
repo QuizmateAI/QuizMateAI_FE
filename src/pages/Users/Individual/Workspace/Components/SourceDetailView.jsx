@@ -589,7 +589,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
       {/* Nội dung chi tiết */}
       <div className="flex-1 min-h-0 overflow-hidden px-6 py-4">
         <div className="flex h-full min-h-0 flex-col gap-4">
-          {(moderationLoading || hasModerationContent || reviewMessage || reviewError) && (
+          {(moderationLoading || hasModerationContent || reviewMessage || reviewError || showWarnReviewActions) && (
             <div
               className={`shrink-0 rounded-xl border px-4 py-3 ${
                 moderationInfo?.type === "REJECT"

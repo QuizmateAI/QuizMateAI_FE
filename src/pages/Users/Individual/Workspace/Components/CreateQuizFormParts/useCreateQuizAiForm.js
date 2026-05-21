@@ -184,7 +184,6 @@ export const useCreateQuizAiForm = ({
   onCreateQuiz,
   quizTitleMaxLength = QUIZ_TITLE_MAX_LENGTH,
   selectedMaterialIds,
-  selectedSubTopicIds = [],
   t,
   existingQuizId = null,
   seedQuizTitle = '',
@@ -1481,7 +1480,6 @@ export const useCreateQuizAiForm = ({
       const payload = {
         title: String(aiName || "").trim(),
         materialIds: selectedMaterialIds,
-        selectedSubTopicIds: Array.isArray(selectedSubTopicIds) ? selectedSubTopicIds : [],
         overallDifficulty: selectedDifficultyId === "CUSTOM"
           ? "CUSTOM"
           : selectedDifficulty?.difficultyName || "MEDIUM",

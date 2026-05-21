@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 import { cn } from "@/lib/utils";
+import GroupChunksDialog from "@/pages/Users/Group/Components/GroupChunksDialog";
 
 // Lazy-load InlineMaterialWorkspace: pulls react-pdf + react-markdown + remark-gfm
 // (~400 kB uncompressed) — only needed once user opens a source detail view.
@@ -22,6 +23,7 @@ import {
   Film,
   Headphones,
   Image,
+  Layers,
   Link2,
   PencilLine,
   Plus,
@@ -401,6 +403,7 @@ function SourcesPanel({
   const [search, setSearch] = useState("");
   const [internalSelectedIds, setInternalSelectedIds] = useState([]);
   const [renameDialog, setRenameDialog] = useState(null);
+  const [chunksSource, setChunksSource] = useState(null);
   const [renameInput, setRenameInput] = useState("");
   const [renameLoading, setRenameLoading] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
@@ -978,6 +981,24 @@ function SourcesPanel({
                       <PencilLine className="h-4 w-4" />
                     </Button>
 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className={iconButtonClass}
+                      onClick={() => setChunksSource(source)}
+                      aria-label={t(
+                        "workspace.sources.viewChunks",
+                        "Xem chunks RAG",
+                      )}
+                      title={t(
+                        "workspace.sources.viewChunks",
+                        "Xem chunks RAG",
+                      )}
+                    >
+                      <Layers className="h-4 w-4" />
+                    </Button>
+
                     {typeof onShareSource === "function" ? (
                       <Button
                         type="button"
@@ -1089,10 +1110,6 @@ function SourcesPanel({
             document.body,
           )
         : null}
-
-      {/* Note: source detail is handled inline at top of component via InlineMaterialWorkspace.
-          SourceDetailView (modal) is no longer used for the main click — but import retained
-          for potential future use (e.g. non-PDF materials may still want detailed extracted-text view). */}
 
       <Dialog
         open={Boolean(renameDialog)}
@@ -1206,6 +1223,14 @@ function SourcesPanel({
           </div>
         </DialogContent>
       </Dialog>
+
+      <GroupChunksDialog
+        open={Boolean(chunksSource)}
+        material={chunksSource}
+        isDarkMode={isDarkMode}
+        onOpenChange={(next) => { if (!next) setChunksSource(null); }}
+        t={t}
+      />
     </section>
   );
 }
