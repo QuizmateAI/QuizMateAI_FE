@@ -9,6 +9,7 @@ import {
   Film,
   FolderOpen,
   Image,
+  Layers,
   Link2,
   RefreshCw,
   Search,
@@ -20,6 +21,7 @@ import {
 
 import i18n from '@/i18n';
 import GroupPendingReviewPanel from '@/pages/Users/Group/group-leader/GroupPendingReviewPanel';
+import GroupChunksDialog from './GroupChunksDialog';
 import GroupDeleteMaterialDialog from './GroupDeleteMaterialDialog';
 import SourceDetailView from './SourceDetailView';
 
@@ -255,6 +257,7 @@ export default function GroupDocumentsTab({
   const [refreshing, setRefreshing] = useState(false);
   const [deletingMaterialId, setDeletingMaterialId] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [chunksMaterial, setChunksMaterial] = useState(null);
 
   const sharedMaterials = useMemo(() => Array.isArray(sources) ? sources : [], [sources]);
   const reviewQueueItems = useMemo(() => Array.isArray(pendingItems) ? pendingItems : [], [pendingItems]);
@@ -665,6 +668,17 @@ export default function GroupDocumentsTab({
                             </div>
                           ) : null}
                         </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setChunksMaterial(material);
+                          }}
+                          className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition ${isDarkMode ? 'bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/15' : 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'}`}
+                          title={t('groupDocumentsTab.viewChunksTitle', 'Xem chunks RAG')}
+                        >
+                          <Layers className="h-4 w-4" />
+                        </button>
                         {typeof onDeleteSource === 'function' ? (
                           <button
                             type="button"
@@ -758,6 +772,14 @@ export default function GroupDocumentsTab({
         isDarkMode={isDarkMode}
         onOpenChange={handleDeleteDialogOpenChange}
         onConfirm={confirmDeleteMaterial}
+        t={t}
+      />
+
+      <GroupChunksDialog
+        open={Boolean(chunksMaterial)}
+        material={chunksMaterial}
+        isDarkMode={isDarkMode}
+        onOpenChange={(next) => { if (!next) setChunksMaterial(null); }}
         t={t}
       />
     </div>
