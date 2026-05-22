@@ -253,16 +253,6 @@ function CohortPanel({ stats, reviewQuestions }) {
   );
 }
 
-/**
- * Extensions cho QuizResultPage khi quiz là MOCK_TEST.
- * Fetch cohort stats (nếu group), render 3-4 panel breakdown.
- *
- * Props:
- * - result: QuizAttemptResultResponse (đã fetch ở QuizResultPage)
- * - quizRaw: response từ getQuizFullForAttempt (sections tree chưa normalize)
- * - reviewQuestions: mảng review item đã build trong QuizResultPage
- * - quizId
- */
 export function MockTestReviewExtensions({ result, reviewQuestions, quizId }) {
   const { t } = useTranslation();
   const [cohortStats, setCohortStats] = useState(null);

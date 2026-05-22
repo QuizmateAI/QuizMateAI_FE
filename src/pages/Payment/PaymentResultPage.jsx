@@ -298,7 +298,6 @@ export default function PaymentResultPage() {
     }
   }, [activePlanEndDate, currentLang]);
 
-  /** Do not show gateway `message` on success (often duplicate / unaccented). */
   const backendRejectedSuccessUrl = Boolean(effectiveOrderId && urlIndicatesSuccess && resultVariant === 'failed');
   const resultDescription = isSuccess
     ? ''

@@ -299,7 +299,6 @@ export default function GroupWalletTab({
     [groupWallet],
   );
 
-  /** Tên gói từ subscription; fallback khi API subscription trễ nhưng ví đã có gói active */
   const displayPlanLabel = useMemo(() => {
     if (currentGroupPlanName) return currentGroupPlanName;
     if (walletSummary.hasActivePlan) {

@@ -75,15 +75,6 @@ function clearPersistedProgressSnapshot(storageKey) {
 	}
 }
 
-/**
- * Hook để quản lý progress percent cho các tasks AI.
- *
- * Lưu trữ percent theo taskId/materialId/phaseId và animate mượt từ giá trị
- * hiện tại đến target mỗi khi BE gửi update (qua Redis → WebSocket).
- *
- * API công khai KHÔNG thay đổi — mọi consumer hiện tại sẽ tự động có
- * smooth animation.
- */
 export function useProgressTracking(options = {}) {
 	const scopeKey = typeof options === 'string' ? options : options?.scopeKey;
 	const storageKey = useMemo(() => {

@@ -1,16 +1,3 @@
-/**
- * Typed event bus cho HTTP 429 (rate-limit) — mirror pattern của planUpgradeBus.
- *
- * Axios response interceptor emit sau khi BE trả 429; bất kỳ React component
- * nào cần phản ứng (vd hiển thị toast) gọi `subscribeRateLimit(listener)` rồi
- * gọi hàm unsub trả về để cleanup.
- *
- *   const off = subscribeRateLimit(({ url, message }) => { ... });
- *   off();
- *
- *   emitRateLimit({ url: '/auth/send-otp', message: 'Too Many Requests' });
- */
-
 const listeners = new Set();
 
 export function subscribeRateLimit(listener) {

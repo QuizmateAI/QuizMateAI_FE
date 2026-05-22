@@ -81,7 +81,6 @@ function PersonalWorkspaceSidebar({
   workspaceTitle = "",
   activeView = "sources",
   onNavigate,
-  /** AI / thủ công / JSON từ sidebar */
   onStudioSubAction,
   onOpenProfile,
   onToggleLanguage,

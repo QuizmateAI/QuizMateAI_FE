@@ -1,11 +1,5 @@
 import api from './api';
 
-/**
- * Plan §6.1 — SubTopic API client.
- * BE endpoints duoc khai bao trong SubTopicController (/api/sub-topics).
- */
-
-// Lay subTopics theo material IDs (filter status COMPLETED). Tra ve { data: [{ subTopicId, title, description, keywords, materialIds }] }
 export const getSubTopicsByMaterials = async (materialIds, workspaceId) => {
   if (!materialIds || materialIds.length === 0) return { data: [] };
   const csv = materialIds.join(',');

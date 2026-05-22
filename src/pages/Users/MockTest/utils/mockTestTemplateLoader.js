@@ -15,14 +15,6 @@ function sanitize(value, allowed, fallback) {
   return allowed.includes(upper) ? upper : fallback;
 }
 
-/**
- * Convert v2 template (structure with ratio-based sections + items) to v1
- * sections shape (concrete quantity counts) used by the form editor.
- *
- * Identical algorithm to useMockTestStructureSuggestion.templateStructureToV1Sections,
- * but exported as a reusable util so other entry points (saved templates panel,
- * "Use this template" actions) can prefill the form without going through the hook.
- */
 export function templateStructureToV1ForForm(template) {
   if (!template || typeof template !== 'object') return [];
   const structure = template.structure;
@@ -109,21 +101,6 @@ function normalizeLanguage(value, fallback = 'vi') {
   return /^[a-z]{2,3}$/.test(normalized) ? normalized : fallback;
 }
 
-/**
- * Convert v1 form sections (concrete quantities) → v2 ratio-based structure jsonb
- * suitable for POST /api/mocktest/my-templates.
- *
- * @param {object} input
- * @param {number} input.workspaceId — BAT BUOC ke tu V2026_05_14 (per-workspace scoping)
- * @param {Array} input.sections — current form sections
- * @param {object} input.scoring — current form scoring
- * @param {number} input.totalQuestions
- * @param {number} input.duration
- * @param {string} input.examName
- * @param {string} input.examLanguage
- * @param {string} input.aiTopNotice
- * @param {object|null} input.matchedTemplate — derived-from template (optional)
- */
 export function buildSavedTemplatePayload({
   workspaceId,
   sections,
@@ -189,14 +166,6 @@ export function buildSavedTemplatePayload({
   };
 }
 
-/**
- * Build payload for saving a *suggested* AI template — we copy the v2 jsonb
- * directly without re-deriving from form state, because the AI already provided
- * canonical structure + scoring with section weights.
- *
- * @param {object} option — AI suggestion object
- * @param {number} workspaceId — BAT BUOC ke tu V2026_05_14 (per-workspace scoping)
- */
 export function buildSavedTemplatePayloadFromSuggestion(option, workspaceId) {
   if (!option) return null;
   const meta = option?.v2Template || {};

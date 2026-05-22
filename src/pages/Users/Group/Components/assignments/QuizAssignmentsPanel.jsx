@@ -192,14 +192,6 @@ function ConfirmDeleteDialog({ open, item, onCancel, onConfirm, submitting, isDa
   );
 }
 
-/**
- * Hiển thị danh sách assignment thuộc về một quiz cụ thể. Dùng trong tab
- * "Bài đã giao" của QuizDetailView (leader-only).
- *
- * Lưu ý: BE chưa có endpoint filter theo resourceId, nên FE phân trang đến hết
- * rồi filter local. Group thường có dưới vài chục assignment nên acceptable;
- * khi scale lớn cần BE bổ sung query param.
- */
 function QuizAssignmentsPanel({
   workspaceId,
   quizId,
@@ -208,9 +200,7 @@ function QuizAssignmentsPanel({
   currentUserId,
   isLeader = false,
   canManageAssignment = false,
-  /** Cho phép parent (QuizDetailView) inject hành động "Giao bài" để mở dialog có lockedResource sẵn. */
   onOpenCreateDialog,
-  /** Bump bởi parent sau khi tạo assignment mới → trigger refetch. */
   refreshKey = 0,
 }) {
   const { t } = useTranslation();

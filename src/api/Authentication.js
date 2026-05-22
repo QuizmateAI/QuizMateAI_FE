@@ -21,16 +21,6 @@ import {
 // than the generic client timeout used for the rest of the app.
 const AUTH_REQUEST_TIMEOUT_MS = 30000;
 
-/**
- * Đăng ký tài khoản mới
- * @param {Object} userData - Thông tin đăng ký
- * @param {string} userData.fullname - Họ tên đầy đủ
- * @param {string} userData.username - Tên đăng nhập
- * @param {string} userData.password - Mật khẩu
- * @param {string} userData.confirmPassword - Xác nhận mật khẩu
- * @param {string} userData.email - Email
- * @returns {Promise} Response từ server
- */
 export const register = async (userData) => {
     const response = await api.post('/auth/register', userData, {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
@@ -38,9 +28,6 @@ export const register = async (userData) => {
     return response;
 };
 
-/**
- * Lưu profile + subscription + groups từ login response vào cache (chuyển tab instant)
- */
 function saveLoginDataToCache(data) {
     clearPlanPurchaseState();
     if (data?.user) {
@@ -78,13 +65,6 @@ function clearAuthState() {
     queryClient.clear();
 }
 
-/**
- * Đăng nhập tài khoản
- * @param {Object} credentials - Thông tin đăng nhập
- * @param {string} credentials.username - Tên đăng nhập
- * @param {string} credentials.password - Mật khẩu
- * @returns {Promise} Response chứa token và thông tin user
- */
 export const login = async (credentials) => {
     const response = await api.post('/auth/login', credentials, {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
@@ -106,31 +86,16 @@ export const login = async (credentials) => {
     return response;
 };
 
-/**
- * Kiểm tra username có khả dụng không
- * @param {string} username - Tên đăng nhập cần kiểm tra
- * @returns {Promise} Response chứa trạng thái khả dụng
- */
 export const checkUsername = async (username) => {
     const response = await api.get(`/auth/check-username?username=${encodeURIComponent(username)}`);
     return response;
 };
 
-/**
- * Kiểm tra email có khả dụng không
- * @param {string} email - Email cần kiểm tra
- * @returns {Promise} Response chứa trạng thái khả dụng
- */
 export const checkEmail = async (email) => {
     const response = await api.get(`/auth/check-email?email=${encodeURIComponent(email)}`);
     return response;
 };
 
-/**
- * Đăng nhập bằng Google
- * @param {string} idToken - Google Credential/Access Token
- * @returns {Promise} Response chứa token và thông tin user
- */
 export const googleLogin = async (idToken) => {
     const response = await api.post('/auth/google-login', { idToken }, {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
@@ -149,11 +114,6 @@ export const googleLogin = async (idToken) => {
     return response;
 };
 
-/**
- * Gửi mã OTP đến email
- * @param {string} email - Email nhận OTP
- * @returns {Promise} Response xác nhận gửi OTP
- */
 export const sendOTP = async (email) => {
     const response = await api.post('/auth/send-otp', { email }, {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
@@ -205,12 +165,6 @@ const isOtpVerifySuccess = (response) => {
     return true;
 };
 
-/**
- * Xác thực mã OTP
- * @param {string} email - Email đã nhận OTP
- * @param {string} otp - Mã OTP để xác thực
- * @returns {Promise} Response xác nhận OTP hợp lệ
- */
 export const verifyOTP = async (email, otp) => {
     const response = await api.post(
         '/auth/verify-otp',
@@ -233,16 +187,6 @@ export const verifyOTP = async (email, otp) => {
     return response;
 };
 
-/**
- * Đổi mật khẩu mới — BE verify OTP atomically trong cùng request.
- * Không được gọi {@link verifyOTP} trước hàm này vì verify sẽ consume OTP
- * → request reset tiếp theo sẽ trả 401 vì OTP đã invalid.
- *
- * @param {string} email - Email tài khoản
- * @param {string} otp - OTP nhận qua email
- * @param {string} newPassword - Mật khẩu mới (min 9 ký tự, chứa chữ + số)
- * @returns {Promise} Response xác nhận đổi mật khẩu thành công
- */
 export const resetPassword = async (email, otp, newPassword) => {
     const response = await api.post(
         '/auth/reset-password',
@@ -254,9 +198,6 @@ export const resetPassword = async (email, otp, newPassword) => {
     return response;
 };
 
-/**
- * Đăng xuất - Xóa token RAM, info user khỏi localStorage, và clear refresh cookie phía BE.
- */
 export const logout = () => {
     const token = getAccessToken();
 
@@ -277,21 +218,10 @@ export const logout = () => {
     }
 };
 
-/**
- * Lấy thông tin user hiện tại từ snapshot client-side.
- * Delegate sang src/lib/currentUser.js để cả app dùng chung 1 nguồn,
- * có guard JSON.parse và subscription trong cùng tab.
- *
- * @returns {Object|null} Thông tin user hoặc null nếu chưa đăng nhập
- */
 export const getCurrentUser = () => {
     return getCurrentUserFromStorage();
 };
 
-/**
- * Kiểm tra user đã đăng nhập chưa (in-memory access token).
- * @returns {boolean} true nếu đã đăng nhập
- */
 export const isAuthenticated = () => {
     return hasAccessToken();
 };

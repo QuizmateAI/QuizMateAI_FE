@@ -8,11 +8,6 @@ function pickFillPalette(ratio, isDarkMode) {
   return isDarkMode ? 'bg-teal-500' : 'bg-teal-500';
 }
 
-/**
- * Horizontal slot/capacity progress bar.
- *  - `used` and `total` are required; if `total` is null/0, renders a "open seats" dot row.
- *  - Use in cards to communicate "how full" the challenge is at a glance.
- */
 export default function ParticipantSlotBar({
   used = 0,
   total = null,

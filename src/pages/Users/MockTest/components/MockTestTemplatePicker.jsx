@@ -15,21 +15,6 @@ function buildMaterialNameMap(workspaceMaterials) {
   return map;
 }
 
-/**
- * Show templates returned by the recommender.
- *
- * Props:
- *   options: list of suggestion objects
- *   selectedTemplateId: id of currently active template
- *   onSelect: callback when user picks a card
- *   onSaveTemplate: optional callback to save the AI-suggested template into user's library
- *   savedTemplateIds: Set<number> of already-saved template ids
- *   savingTemplateId: id currently being saved (to show spinner)
- *   workspaceMaterials: list of {id, name} so card can show "Dua tren: ..."
- *   isDarkMode: theme flag
- *
- * Renders even when only 1 template is returned (so user sees the matched template card).
- */
 export function MockTestTemplatePicker({
   options,
   selectedTemplateId,

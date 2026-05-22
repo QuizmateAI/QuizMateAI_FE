@@ -6,10 +6,6 @@ import { getCurrentUser } from '@/lib/currentUser';
 const getUser = () => getCurrentUser();
 const getToken = () => getAccessToken();
 
-/**
- * Component bảo vệ route theo role
- * @param {Array} allowedRoles - Danh sách các role được phép truy cập (VD: ['ADMIN', 'USER'])
- */
 export const ProtectedRoute = ({ allowedRoles }) => {
     const token = getToken();
     const user = getUser();
@@ -34,10 +30,6 @@ export const ProtectedRoute = ({ allowedRoles }) => {
     return <Outlet />;
 };
 
-/**
- * Component xử lý các route công khai (Login, Register...)
- * Nếu user đã đăng nhập mà cố vào các trang này -> Đẩy về trang chủ
- */
 export const PublicRoute = () => {
     const token = getToken();
     const user = getUser();

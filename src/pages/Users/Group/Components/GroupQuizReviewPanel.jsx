@@ -52,7 +52,6 @@ function GroupQuizReviewPanel({
   workspaceId,
   isLeader = false,
   isReviewer = false,
-  /** Xó đề trong challenge snapshot / reviewer vs quiz nhóm thường */
   challengeSnapshotReviewMode = false,
   onQuestionDeleted,
 }) {

@@ -79,7 +79,6 @@ export const getChallengeBracket = async (workspaceId, eventId) => {
   return await api.get(`/group/${workspaceId}/challenges/${eventId}/bracket`);
 };
 
-/** Leader: người review đề snapshot — không được đăng ký challenge */
 export const listQuizReviewContributors = async (workspaceId, quizId) => {
   return await api.get(`/group/${workspaceId}/quiz-review-contributors/${quizId}`);
 };
@@ -91,13 +90,6 @@ export const addQuizReviewContributor = async (workspaceId, quizId, body) => {
 // BE BatchInviteQuizReviewersRequest: invitations max 2 items.
 export const BATCH_REVIEWER_INVITATIONS_MAX = 2;
 
-/**
- * Gửi đồng loạt lời mời reviewer (tối đa 2 người) → BE gửi email song song.
- * body = { invitations: [{ userId }, ...] }
- *
- * UI ở ChallengeDetailView guard `activeContributorCount >=
- * MAX_SNAPSHOT_REVIEW_INVITES` rồi, slice ở đây chỉ là defensive layer.
- */
 export const batchInviteQuizReviewers = async (workspaceId, quizId, invitations) => {
   const safeInvitations = Array.isArray(invitations)
     ? invitations.slice(0, BATCH_REVIEWER_INVITATIONS_MAX)
@@ -112,25 +104,18 @@ export const removeQuizReviewContributor = async (workspaceId, quizId, userId) =
   return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/${userId}`);
 };
 
-/** Reviewer: gửi phiếu duyệt APPROVED | REJECTED */
 export const submitQuizReviewDecision = async (workspaceId, quizId, decision) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/decision`, { decision });
 };
 
-/** Reviewer: ghi nhận đã mở xem snapshot */
 export const recordQuizReviewView = async (workspaceId, quizId) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-view`);
 };
 
-/** Leader: cho phép xuất bản khi reviewer không phối hợp (lý do ≥ 20 ký tự) */
 export const setLeaderPublishBypass = async (workspaceId, eventId, reason) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/leader-publish-bypass`, { reason });
 };
 
-/**
- * Leader đổi vai trò: tham gia thi (true) ↔ tự review (false).
- * BE chặn nếu leader đã xem snapshot và muốn quay lại tham gia thi.
- */
 export const updateLeaderParticipation = async (workspaceId, eventId, participates) => {
   return await api.put(
     `/group/${workspaceId}/challenges/${eventId}/leader-participation`,
@@ -156,7 +141,6 @@ export const resolveQuizReviewFlag = async (workspaceId, quizId, flagId) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/flags/${flagId}/resolve`);
 };
 
-/** Reviewer: lấy bản ghi review của mình (xác nhận đề ổn, …) */
 export const getMyQuizReviewContributor = async (workspaceId, quizId) => {
   return await api.get(`/group/${workspaceId}/quiz-review-contributors/${quizId}/me`);
 };
@@ -169,12 +153,10 @@ export const declineQuizReviewInvitation = async (workspaceId, quizId) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-invitation/decline`);
 };
 
-/** Reviewer: xác nhận đã xem xong — đề ổn (acknowledged=false để bỏ xác nhận) */
 export const setQuizReviewCompleteOk = async (workspaceId, quizId, acknowledged = true) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-complete-ok`, { acknowledged });
 };
 
-/** Leader/reviewer đã nhận lời: xóa câu hỏi khỏi snapshot quiz trước publish — yêu cầu note ≥ 5 ký tự */
 export const deleteQuestionFromSnapshot = async (workspaceId, quizId, questionId, note) => {
   return await api.delete(
     `/group/${workspaceId}/quiz-review-contributors/${quizId}/questions/${questionId}`,
@@ -182,7 +164,6 @@ export const deleteQuestionFromSnapshot = async (workspaceId, quizId, questionId
   );
 };
 
-/** Reviewer raise concern "đề chưa ổn" — note ≥ 10 ký tự bắt buộc. Leader sẽ thấy report. */
 export const raiseSnapshotConcern = async (workspaceId, quizId, note) => {
   return await api.post(
     `/group/${workspaceId}/quiz-review-contributors/${quizId}/concern`,
@@ -190,18 +171,12 @@ export const raiseSnapshotConcern = async (workspaceId, quizId, note) => {
   );
 };
 
-/** Reviewer rút lại concern của mình (không truyền reviewerUserId), hoặc leader resolve concern của reviewer khác. */
 export const clearSnapshotConcern = async (workspaceId, quizId, reviewerUserId = null) => {
   const path = `/group/${workspaceId}/quiz-review-contributors/${quizId}/concern/clear`;
   const url = reviewerUserId ? `${path}?reviewerUserId=${reviewerUserId}` : path;
   return await api.post(url);
 };
 
-/**
- * Leader xem nhật ký các câu hỏi đã bị xóa khỏi snapshot (có ai xóa, lý do,
- * snippet content). Dùng để audit reviewer khi auto-concern bị bật.
- * Endpoint: GET /api/group/{workspaceId}/quizzes/{quizId}/question-deletions
- */
 export const listSnapshotDeletionAudits = async (workspaceId, quizId) => {
   return await api.get(`/group/${workspaceId}/quizzes/${quizId}/question-deletions`);
 };

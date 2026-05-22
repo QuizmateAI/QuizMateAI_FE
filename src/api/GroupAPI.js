@@ -114,26 +114,22 @@ export const syncGroupMemberPermissions = async (workspaceId, memberId, permissi
   return response;
 };
 
-/** Thống kê tổng hợp nhóm (leader): quiz, tài liệu, phân loại AI */
 export const getGroupDashboardSummary = async (workspaceId) => {
   const response = await api.get(`/group/${workspaceId}/dashboard/summary`);
   return response;
 };
 
-/** Dashboard tóm tắt từng thành viên (leader), phân trang */
 export const getMemberDashboardCards = async (workspaceId, page = 0, size = 20) => {
   const response = await api.get(`/group/${workspaceId}/dashboard/members?page=${page}&size=${size}`);
   return response;
 };
 
-/** Chi tiết dashboard một thành viên theo workspaceMemberId */
 export const getMemberDashboardDetail = async (workspaceId, memberId, attemptMode = 'ALL') => {
   const mode = encodeURIComponent(String(attemptMode || 'ALL').toUpperCase());
   const response = await api.get(`/group/${workspaceId}/dashboard/members/${memberId}?attemptMode=${mode}`);
   return response;
 };
 
-/** Latest learning snapshots của các member trong group */
 export const getGroupLearningSnapshotsLatest = async (
   workspaceId,
   { period = 'DAILY', classification, sort = 'averageScore,desc', page = 0, size = 20 } = {},
@@ -148,7 +144,6 @@ export const getGroupLearningSnapshotsLatest = async (
   return response;
 };
 
-/** Tổng hợp learning snapshot của group */
 export const getGroupLearningSnapshotsSummary = async (
   workspaceId,
   { period = 'DAILY', from, to } = {},
@@ -161,7 +156,6 @@ export const getGroupLearningSnapshotsSummary = async (
   return response;
 };
 
-/** Ranking member theo metric learning snapshot */
 export const getGroupLearningSnapshotsRanking = async (
   workspaceId,
   { period = 'DAILY', date, metric = 'averageScore', direction = 'desc', page = 0, size = 20 } = {},
@@ -177,13 +171,11 @@ export const getGroupLearningSnapshotsRanking = async (
   return response;
 };
 
-/** Generate/rebuild learning snapshots cho cả group */
 export const generateGroupLearningSnapshots = async (workspaceId, data = {}) => {
   const response = await api.post(`/group/${workspaceId}/dashboard/learning-snapshots:generate`, data);
   return response;
 };
 
-/** Latest learning snapshot của một member trong group */
 export const getGroupMemberLearningSnapshotLatest = async (
   workspaceId,
   workspaceMemberId,
@@ -195,7 +187,6 @@ export const getGroupMemberLearningSnapshotLatest = async (
   return response;
 };
 
-/** Lịch sử learning snapshot của một member */
 export const getGroupMemberLearningSnapshots = async (
   workspaceId,
   workspaceMemberId,
@@ -211,7 +202,6 @@ export const getGroupMemberLearningSnapshots = async (
   return response;
 };
 
-/** Trend learning snapshot của một member */
 export const getGroupMemberLearningSnapshotTrend = async (
   workspaceId,
   workspaceMemberId,
@@ -225,7 +215,6 @@ export const getGroupMemberLearningSnapshotTrend = async (
   return response;
 };
 
-/** Compare hai learning snapshot của một member */
 export const compareGroupMemberLearningSnapshots = async (
   workspaceId,
   workspaceMemberId,
@@ -239,7 +228,6 @@ export const compareGroupMemberLearningSnapshots = async (
   return response;
 };
 
-/** Generate/rebuild learning snapshot cho một member */
 export const generateGroupMemberLearningSnapshot = async (workspaceId, workspaceMemberId, data = {}) => {
   const response = await api.post(`/group/${workspaceId}/dashboard/members/${workspaceMemberId}/learning-snapshots:generate`, data);
   return response;
@@ -266,18 +254,12 @@ export const removeMember = async (workspaceId, memberId) => {
   return response;
 };
 
-// Leader bật/tắt visibility (public/private). Độc lập với joinPolicy:
-//   - isPublic=true  → nhóm hiển thị trong danh sách public
-//   - isPublic=false → nhóm private, chỉ invite mới vào
 export const setGroupVisibility = async (workspaceId, isPublic) => {
   if (workspaceId == null) throw new Error('Missing workspaceId');
   const response = await api.put(`/group/${workspaceId}/visibility`, { isPublic: Boolean(isPublic) });
   return response;
 };
 
-// Leader đổi `joinPolicy` cho nhóm public. Độc lập với isPublic:
-//   - FREE              → member click "Tham gia" thì vào ngay
-//   - REQUEST_APPROVAL  → member click "Xin tham gia" → leader duyệt mới được vào
 export const setGroupJoinPolicy = async (workspaceId, joinPolicy) => {
   if (workspaceId == null) throw new Error('Missing workspaceId');
   const normalized = String(joinPolicy || '').toUpperCase();
@@ -288,19 +270,16 @@ export const setGroupJoinPolicy = async (workspaceId, joinPolicy) => {
   return response;
 };
 
-/** Xếp hạng tổng hợp nhóm — aggregate 1 API thay vì N+1 */
 export const getGroupOverallRanking = async (workspaceId) => {
   const response = await api.get(`/group/${workspaceId}/ranking/overall`);
   return response;
 };
 
-/** Chi tiết điểm RP của một thành viên trong bảng xếp hạng nhóm */
 export const getGroupRankingMemberDetail = async (workspaceId, userId) => {
   const response = await api.get(`/group/${workspaceId}/ranking/overall/members/${userId}`);
   return response;
 };
 
-/** Leader xóa nhóm (soft delete). Yêu cầu confirmText = "delete group". */
 export const deleteGroup = async (workspaceId, confirmText) => {
   const response = await api.delete(`/group/${workspaceId}`, {
     data: { confirmText },

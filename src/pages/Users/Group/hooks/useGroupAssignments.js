@@ -47,12 +47,6 @@ function sortByCreatedDesc(items) {
   });
 }
 
-/**
- * Leader-scoped hook: paginated workspace assignments + CRUD.
- *
- * Member dùng `useMyAssignments` thay vì hook này — BE phân quyền nên các endpoint
- * khác nhau.
- */
 export function useGroupAssignments(workspaceId, { enabled = true } = {}) {
   const [items, setItems] = useState([]);
   const [totalElements, setTotalElements] = useState(0);
@@ -185,10 +179,6 @@ export function useGroupAssignments(workspaceId, { enabled = true } = {}) {
   };
 }
 
-/**
- * Member-scoped hook: my assignments across workspaces (BE trả flat list, FE
- * filter theo workspaceId nếu provided). Hỗ trợ submit.
- */
 export function useMyAssignments(workspaceId, { enabled = true } = {}) {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

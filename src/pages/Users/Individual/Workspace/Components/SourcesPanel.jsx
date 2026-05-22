@@ -34,10 +34,6 @@ import {
   X,
 } from "lucide-react";
 
-/**
- * Classify a material type (mime / short label) into a coarse category used by both
- * the badge label and the icon picker. Centralised so labels + icons + colors stay in sync.
- */
 function classifySourceType(type) {
   const lower = String(type || "").toLowerCase();
   if (!lower) return "file";
@@ -138,7 +134,6 @@ function getSourceIcon(type) {
   }
 }
 
-/** Tailwind text/bg color tone per category — used for the badge + icon. */
 function getSourceTypeTone(type, isDarkMode = false) {
   switch (classifySourceType(type)) {
     case "youtube":

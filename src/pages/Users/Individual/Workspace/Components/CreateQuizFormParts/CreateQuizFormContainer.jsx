@@ -52,12 +52,9 @@ function CreateQuizForm({
   selectedSourceIds,
   sources,
   planEntitlements = null,
-  /** Gợi ý từ pending assessment — chỉ hỗ trợ workspace cá nhân; group nên tắt. */
   showInlineRecommendations = true,
-  /** Bật/tắt chọn tài liệu trong card Source materials (đồng bộ với Sources panel). */
   onToggleMaterialSelection,
   readOnly = false,
-  /** Ghi AI vào quiz snapshot challenge (BE existingQuizId). */
   existingQuizId = null,
   seedQuizTitle = '',
   initialMode = null,
@@ -66,7 +63,6 @@ function CreateQuizForm({
   planUpgradeScope = "INDIVIDUAL",
   currentPlanSummaryOverride = null,
   planUpgradeWorkspaceId = null,
-  /** "INDIVIDUAL" | "GROUP" — forward xuống ManualQuizWizard để disable ImportQuestionsPanel cho group. */
   contextType = "INDIVIDUAL",
 }) {
   const { t, i18n } = useTranslation();
@@ -83,7 +79,6 @@ function CreateQuizForm({
     ? normalizedInitialModeValue
     : null;
 
-  /** Khi vào từ sidebar (AI / thủ công / JSON) hoặc chỉnh sửa bản nháp — chỉ hiện một form, không hiện cả bộ tab chuyển chế độ. */
   const showModeSwitcher = !normalizedInitialMode && !hasExistingQuizTarget;
 
   const modeSwitcherMeta = useMemo(

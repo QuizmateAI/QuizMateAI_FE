@@ -97,7 +97,6 @@ export const getSystemOverviewStats = async () => {
   return response;
 };
 
-/** Thống kê mua gói (COMPLETED) + ước lời sau COGS AI theo plan (cùng khoảng lọc). Cần payment:read. */
 export const getPlanPurchaseSummary = async ({ from, to } = {}) => {
   const params = new URLSearchParams();
   if (from) params.append('from', String(from));
@@ -117,14 +116,12 @@ export const getPlanPurchaseBuyers = async (planCatalogId, { from, to, page = 0,
   return response;
 };
 
-/** Lấy toàn bộ version history của 1 plan code (mới → cũ, gồm cả historical). Cần plan:write. */
 export const getPlanVersionHistory = async (code) => {
   if (!code) throw new Error('Plan code is required');
   const response = await api.get(`/plan-catalog/${encodeURIComponent(code)}/history`);
   return response;
 };
 
-/** Thống kê mua credit (USER_CREDIT + WORKSPACE_CREDIT) gom theo credit_package, COMPLETED. Cần payment:read. */
 export const getCreditPurchaseSummary = async ({ from, to } = {}) => {
   const params = new URLSearchParams();
   if (from) params.append('from', String(from));
@@ -134,7 +131,6 @@ export const getCreditPurchaseSummary = async ({ from, to } = {}) => {
   return response;
 };
 
-/** Danh sách người mua của 1 credit package (omit packageId = custom credit). Cần payment:read. */
 export const getCreditPurchaseBuyers = async ({ packageId, from, to, page = 0, size = 20 } = {}) => {
   const params = new URLSearchParams();
   params.append('page', String(page));
@@ -146,7 +142,6 @@ export const getCreditPurchaseBuyers = async ({ packageId, from, to, page = 0, s
   return response;
 };
 
-/** Time-series doanh thu daily/weekly/monthly tách theo PaymentTargetType + growth %. Cần payment:read. */
 export const getRevenueTimeseries = async ({ from, to, bucket = 'DAY' } = {}) => {
   const params = new URLSearchParams();
   if (from) params.append('from', String(from));
@@ -543,13 +538,11 @@ export const updatePlanStatus = async (planId, status) => {
   return response;
 };
 
-/** Lấy gói hiện tại của user đang đăng nhập, bao gồm entitlements */
 export const getCurrentUserPlan = async () => {
   const response = await api.get('/user/current-plan');
   return response;
 };
 
-/** Plans mua được cho user: dùng PlanCatalogController active/user và active/group */
 export const getActiveUserPlans = async () => {
   const response = await api.get('/plan-catalog/active/user');
   return response;

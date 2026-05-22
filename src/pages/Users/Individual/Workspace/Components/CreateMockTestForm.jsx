@@ -53,17 +53,6 @@ function resolveMaterialIdsForMockTest(selectedIds, sources) {
     .filter((id) => Number.isInteger(id) && id > 0);
 }
 
-// Aggregation logic moved to ../../MockTest/utils/mockTestSectionDTOs (shared with other entry points).
-
-/**
- * Form tạo Mock Test bằng AI — flow 3-step:
- * 1. BASIC: nhập exam name, độ khó, số câu, thời lượng, prompt bổ sung, chọn material (optional).
- * 2. STRUCTURE: AI gợi ý sections, user edit qua MockTestStructureEditor.
- * 3. GENERATING: BE async sinh câu hỏi, FE chờ MOCKTEST_COMPLETED qua WebSocket.
- *
- * Mock test là đề thử độc lập ở workspace level, không gắn roadmap nào.
- * Chỉ sinh câu trắc nghiệm một đáp án.
- */
 function CreateMockTestForm({
   isDarkMode = false,
   onCreateMockTest,

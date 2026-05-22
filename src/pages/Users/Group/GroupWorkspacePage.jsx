@@ -48,6 +48,7 @@ const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
 const LazyChallengeTab = React.lazy(loadChallengeTab);
 const LazyGroupRankingTab = React.lazy(() => import("./Components/GroupRankingTab"));
 const LazyAnnouncementsTab = React.lazy(() => import("./Components/announcements/AnnouncementsTab"));
+const LazyGroupShowcaseTab = React.lazy(() => import("./group-leader/GroupShowcaseTab"));
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
   deleteMaterial,
@@ -139,7 +140,6 @@ import {
 const LEARNING_SNAPSHOT_PERIOD = 'DAILY';
 const EMPTY_PENDING_INVITATION_SUMMARY = Object.freeze({ count: 0, invitations: [] });
 
-/** Các tab studio / section hợp lệ trong URL `?section=` — không dùng cho sub-view (createQuiz, ...). */
 const GROUP_WORKSPACE_VALID_SECTIONS = [
   'dashboard',
   'personalDashboard',
@@ -156,6 +156,7 @@ const GROUP_WORKSPACE_VALID_SECTIONS = [
   'ranking',
   'wallet',
   'settings',
+  'showcase',
 ];
 
 const GROUP_SECTIONS_REQUIRE_MATERIALS = new Set([
@@ -207,9 +208,7 @@ function GroupWorkspacePage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
-  /** Lọc danh sách Quiz theo mục con sidebar: ai | manual | paste. Đồng thời gợi ý tab khi mở form tạo quiz từ list. */
   const [groupSidebarQuizCreateMode, setGroupSidebarQuizCreateMode] = useState(null);
-  /** Lọc danh sách Flashcard theo mục con sidebar: ai | manual | paste. */
   const [groupSidebarFlashcardSubFilter, setGroupSidebarFlashcardSubFilter] = useState(null);
 
   // Section navigation via URL
@@ -291,7 +290,6 @@ function GroupWorkspacePage() {
   const [hasCheckedInitialSources, setHasCheckedInitialSources] = useState(false);
   // Sub-views for content sections
   const [activeView, setActiveView] = useState(null);
-  /** Mở từ challenge (viewQuizId): quiz snapshot chỉ để xem/sửa, không phân phối / không làm bài từ đây */
   const [quizDetailFromChallengeReview, setQuizDetailFromChallengeReview] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [selectedFlashcard, setSelectedFlashcard] = useState(null);
@@ -3214,9 +3212,6 @@ function GroupWorkspacePage() {
     setActiveView('quiz');
   }, [bumpQuizListRefreshToken, canCreateQuiz, challengeDraftUiActive, currentLang, refreshActiveTaskSnapshot, showInfo, showSuccess, t, trackQuizGenerationStart]);
 
-  /** Khi user submit AI form từ inline ChallengeAIMatchEditor (mở trong tab Thử thách).
-   * Side-effects giống handleCreateQuiz nhưng KHÔNG đổi activeView/navigate — caller
-   * tự đóng inline editor và ChallengeDetailView refetch để hiện AI progress card. */
   const handleChallengeInlineQuizCreated = useCallback((createdPayload) => {
     trackQuizGenerationStart(createdPayload);
     bumpQuizListRefreshToken();
@@ -4235,6 +4230,22 @@ function GroupWorkspacePage() {
               <LazyGroupRankingTab
                 workspaceId={workspaceId}
                 isDarkMode={isDarkMode}
+              />
+            </React.Suspense>
+          </div>
+        );
+
+      case 'showcase':
+        if (!isLeader) {
+          return renderPersonalDashboard();
+        }
+        return (
+          <div className="h-full p-2 md:p-3 overflow-y-auto">
+            <React.Suspense fallback={renderSectionFallback(360)}>
+              <LazyGroupShowcaseTab
+                isDarkMode={isDarkMode}
+                workspaceId={workspaceId}
+                isLeader={isLeader}
               />
             </React.Suspense>
           </div>

@@ -21,10 +21,6 @@ const TONES = {
   },
 };
 
-/**
- * Compact info tile: icon chip + label + value, used in challenge detail summary grid.
- * Pass `children` to render extra content under the headline (eg: a progress bar).
- */
 export default function InfoTile({ icon: Icon, label, value, tone = 'cyan', isDarkMode, children }) {
   const palette = TONES[tone] || TONES.cyan;
   return (

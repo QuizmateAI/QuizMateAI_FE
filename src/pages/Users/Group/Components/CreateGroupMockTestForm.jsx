@@ -174,15 +174,6 @@ function sectionsToServerDTOs(sections, bloomMap, scoring) {
   });
 }
 
-/**
- * Tạo mock test cho group workspace bằng AI — flow 3 step:
- * 1. BASIC: leader nhập exam name + difficulty + total + duration + custom prompt.
- * 2. STRUCTURE: AI gợi ý sections, leader edit qua MockTestStructureEditor.
- * 3. GENERATING: BE async sinh câu hỏi. Quiz lưu status=DRAFT, leader publish sau.
- *
- * Audience luôn = ALL members (không có picker — design quyết định).
- * Schedule không có (dùng DRAFT/ACTIVE toggle để mở/đóng đề).
- */
 export default function CreateGroupMockTestForm({
   isDarkMode = false,
   // ChatPanel truyền `contextId` + `onCreateMockTest`; giữ alias `workspaceId` + `onCreated` cho backward-compat.

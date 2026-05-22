@@ -189,7 +189,6 @@ function isRoadmapLinkedQuiz(quiz) {
   return false;
 }
 
-/** Quiz nhóm: ALL_MEMBERS vs SELECTED_MEMBERS (mặc định chung nhóm nếu BE chưa gửi). */
 function normalizeGroupAudienceMode(quiz) {
   const m = String(quiz?.groupAudienceMode ?? "").toUpperCase();
   if (m === "SELECTED_MEMBERS") return "SELECTED_MEMBERS";
@@ -298,10 +297,7 @@ function QuizListView({
   progressTracking = null,
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
-  /** Sidebar AI / manual / JSON — lọc danh sách workspace */
   studioSubFilter = null,
-  /** Group only: Map<quizId, {dueAt, assignmentId}> chứa các assignment PENDING của user hiện tại.
-   * Dùng để hiển thị badge "Được giao" trên card quiz. */
   assignedQuizMap = null,
 }) {
   const { t, i18n } = useTranslation();
@@ -394,13 +390,11 @@ function QuizListView({
   const isQuizListServerSearchScope = normalizedListContextType === "WORKSPACE"
     || normalizedListContextType === "GROUP";
 
-  /** Roadmap/group panel khóa intent từ ngoài — ẩn thanh chip trên workspace. */
   const hasParentIntentConstraint = Boolean(
     Array.isArray(intentFilter) && intentFilter.length > 0,
   );
   const showWorkspaceQuizAdvancedFilterChrome = !embedded && isQuizListServerSearchScope && !hasParentIntentConstraint;
 
-  /** Gọi BE `/intent/:intent` khi panel cha truyền đúng một intent (roadmap). Bộ lọc nâng cao không đặt quizIntent. */
   const quizIntentApiParam = useMemo(() => {
     if (!isQuizListServerSearchScope) return undefined;
     if (Array.isArray(intentFilter) && intentFilter.length === 1) {

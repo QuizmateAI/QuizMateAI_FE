@@ -38,11 +38,6 @@ const SIZE_PRESETS = {
   xl: { wrap: 'gap-2.5 px-5 py-2.5', primary: 'text-2xl', secondary: 'text-sm', icon: 'h-5 w-5' },
 };
 
-/**
- * Visual countdown that escalates color from blue (chill) → orange (warm) → red (urgent).
- * Pass `targetTime` (ISO string or Date) and choose `size` based on context:
- *   - sm/md for compact rows, lg/xl for hero cards.
- */
 export default function CountdownBadge({ targetTime, isDarkMode = false, size = 'md', label, className = '' }) {
   const [tick, setTick] = useState(() => Date.now());
 

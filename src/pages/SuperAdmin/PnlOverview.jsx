@@ -38,17 +38,6 @@ import {
 } from './Components/SuperAdminSurface';
 import DateRangeChips from './Components/DateRangeChips';
 
-/**
- * P&L Tổng hợp — net profit view combining:
- *   Lời ròng = Doanh thu (sub + credit + slot)
- *            − Chi phí AI có thu phí (USER_PAID + PLAN_BASED, từ Chi phí AI)
- *            − Chi phí AI hệ thống (SYSTEM, từ Nhật ký AI)
- *
- * Note: AiCost.totalProviderCostVnd covers USER_PAID + PLAN_BASED matched requests;
- * AiAudit.systemCostVnd covers SYSTEM only — không overlap khi cộng lại.
- * AiAudit.planCostVnd dùng để hiển thị breakdown PLAN_BASED riêng (không cộng vào tổng).
- */
-
 const COLOR_REVENUE = '#10b981';
 const COLOR_COST_USER_PAID = '#3b82f6';
 const COLOR_COST_PLAN = '#8b5cf6';

@@ -32,19 +32,6 @@ import { cn } from "@/lib/utils";
 import { validateQuizPasteImportJson } from "@/utils/validateQuizPasteImportJson";
 import { SYSTEM_SETTING_KEYS, useSystemSettingNumber } from "@/hooks/useSystemSettings";
 
-/**
- * Paste-import quiz flow:
- *   1. Hiển thị prompt template (BE trả về theo gói: basic vs advance).
- *   2. User copy → dán sang ChatGPT/NotebookLM/... → AI sinh JSON.
- *   3. User dán JSON vào textarea, FE kiểm tra schema + hiển thị lỗi kèm số dòng (ước lượng).
- *   4. Nhấn "Tạo quiz" → modal disclaimer (nội dung do bên thứ 3 tạo) → confirm → POST.
- *
- * BE vẫn là chốt cuối; FE giảm round-trip và giúp người dùng tìm vị trí sửa nhanh.
- */
-
-// Tokenize a JSON.stringify output into spans for syntax highlighting.
-// Order in the regex matters: try whitespace, then string-with-optional-colon,
-// then punctuation, number, boolean, null. Anything left falls into "text".
 const JSON_TOKEN_REGEX = /(\s+)|("(?:\\.|[^"\\])*")(\s*:)?|([{}[\],])|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(\btrue\b|\bfalse\b)|(\bnull\b)/g;
 
 function tokenizeJson(source) {

@@ -1,26 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Search, UserCircle2 } from 'lucide-react';
 
-/**
- * Searchable dropdown để chọn 1 member trong workspace.
- * Thay thế native `<select>` để có:
- *  - Avatar / fallback initial
- *  - Search inline
- *  - Sub label (email / username) ngay dưới tên
- *  - Empty state rõ ràng
- *  - Per-item disabled + warning (anti-spam reviewer)
- *
- * Props:
- *  - value: string|number — id member đang chọn ('' = chưa chọn)
- *  - onChange: (id: string) => void
- *  - members: Array<{ id, label, subLabel?, avatarUrl?, disabled?, warning? }>
- *      disabled: không cho click (vd: vừa review challenge trước)
- *      warning: text badge nhỏ hiện bên cạnh tên
- *  - placeholder: string
- *  - emptyHint?: string — text khi list rỗng
- *  - disabled?: boolean
- *  - isDarkMode?: boolean
- */
 export default function MemberPickerDropdown({
   value,
   onChange,

@@ -18,10 +18,6 @@ function normalizeCatalog(res) {
   };
 }
 
-/**
- * Fetch single source of truth phan loai feature_key tu BE (AiFeatureCatalog.java).
- * StaleTime dai vi catalog hardcode trong code Java, chi doi khi deploy lai.
- */
 export function useAiFeatureCatalog(options = {}) {
   const { enabled = true } = options;
 

@@ -1,29 +1,3 @@
-/**
- * PR8: transparently rewrites every legacy /<root>/... request URL emitted by the shared axios
- * instance to its /v1/... mirror. The BE serves both prefixes during the migration window
- * (see PR5a-d in docs/api-migration-plan.md in the QuizMateAI root repo), so this rewrite is
- * purely how the FE STARTS using the v1 surface without touching 31 service files.
- *
- * <p>Behavior:
- * <ul>
- *   <li>Leaves absolute URLs (http/https), {@code /v1/...} paths, {@code /actuator/...} paths,
- *       and {@code /ws-quiz} alone — only legacy {@code /<root>/...} request paths get rewritten.</li>
- *   <li>Pluralizes singular roots per the BE dual-mapping table (eg /quiz → /v1/quizzes).</li>
- *   <li>For already-plural roots, just prepends /v1/ (eg /flashcards → /v1/flashcards).</li>
- *   <li>Preserves query string + hash verbatim.</li>
- *   <li>Opt-out per request via axios config flag {@code skipV1Migration: true} for callers that
- *       MUST target a legacy URL (eg health checks, ad-hoc admin tools).</li>
- *   <li>Global kill-switch via the {@code VITE_DISABLE_V1_MIGRATION} env (or
- *       window.__APP_CONFIG__.DISABLE_V1_MIGRATION === "true") so a deploy can roll back without
- *       a redeploy if /api/v1 ever regresses.</li>
- * </ul>
- *
- * <p>This module exports both the rewrite function and an axios interceptor installer so the
- * logic can be unit-tested in isolation.
- */
-
-// Singular → plural mapping per the BE dual-mapping table. Acronyms and gateway names
-// (ai, momo, vnpay, stripe, rbac) deliberately omitted — they keep their legacy spelling at v1.
 const PLURAL_MAP = Object.freeze({
   quiz: "quizzes",
   workspace: "workspaces",
@@ -49,10 +23,6 @@ function isAbsoluteUrl(s) {
   return /^https?:\/\//i.test(s);
 }
 
-/**
- * Rewrites a single relative request path to its v1 form. Returns the input unchanged when no
- * rewrite applies. Pure function — safe to call from any context.
- */
 export function rewriteToV1(path) {
   if (typeof path !== "string" || path.length === 0) return path;
   if (isAbsoluteUrl(path)) return path;
@@ -104,10 +74,6 @@ function readKillSwitch() {
   return false;
 }
 
-/**
- * Installs the v1 rewrite as the FIRST request interceptor on the supplied axios instance so
- * later interceptors see the already-rewritten URL. Returns the eject id so tests can detach.
- */
 export function installV1RewriteInterceptor(api, { isEnabled = () => !readKillSwitch() } = {}) {
   return api.interceptors.request.use((config) => {
     if (!isEnabled()) return config;

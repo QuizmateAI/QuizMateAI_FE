@@ -6,19 +6,6 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-/**
- * HomeButton - A reusable button component to navigate back to home
- * 
- * @param {Object} props
- * @param {string} [props.variant='outline'] - Button variant (outline, ghost, default, etc.)
- * @param {string} [props.size='default'] - Button size (sm, default, lg)
- * @param {string} [props.className] - Additional CSS classes
- * @param {boolean} [props.showIcon=true] - Whether to show the home icon
- * @param {boolean} [props.showText=true] - Whether to show the text label
- * @param {string} [props.label] - Custom label (overrides i18n)
- * @param {Function} [props.onClick] - Custom onClick handler (overrides default navigation)
- * @param {boolean} [props.rounded=false] - Whether to use rounded-full style
- */
 export function HomeButton({
   variant = 'outline',
   size = 'default',
@@ -70,10 +57,6 @@ export function HomeButton({
   );
 }
 
-/**
- * FloatingHomeButton - A floating action button variant for home navigation
- * Positioned fixed at bottom-right of the screen
- */
 export function FloatingHomeButton({
   className = '',
   onClick,

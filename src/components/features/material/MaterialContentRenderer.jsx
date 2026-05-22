@@ -27,7 +27,6 @@ function isAudioHttpUrl(url) {
   return looksLikeUrl(url) && AUDIO_URL_REGEX.test(url.trim());
 }
 
-/** Extract YouTube video ID from common URL shapes. Returns null if not a YouTube URL. */
 function extractYouTubeId(url) {
   if (typeof url !== 'string') return null;
   const trimmed = url.trim();
@@ -43,7 +42,6 @@ function extractYouTubeId(url) {
   return null;
 }
 
-/** Extract Vimeo video ID. */
 function extractVimeoId(url) {
   if (typeof url !== 'string') return null;
   const match = url.trim().match(/^https?:\/\/(?:www\.|player\.)?vimeo\.com\/(?:video\/)?(\d{5,})/i);
@@ -51,16 +49,11 @@ function extractVimeoId(url) {
 }
 
 
-/** True khi text co `## Sheet:` hoac markdown table separator -> delegate ve ReactMarkdown
- * vi format chuan markdown da xu ly day du multi-sheet + pipe table + heading. */
 function hasMarkdownTableStructure(text) {
   if (typeof text !== 'string') return false;
   return MD_TABLE_SEPARATOR_REGEX.test(text) || SHEET_HEADER_REGEX.test(text);
 }
 
-/** Detect a PURE tab-separated tabular body (CSV/TSV exports without markdown).
- * Phai co da so dong chua TAB. KHONG match markdown pipe tables — markdown se duoc
- * delegate xuong ReactMarkdown qua hasMarkdownTableStructure. */
 function isPlainTabularBody(text) {
   if (typeof text !== 'string' || text.length < 30) return false;
   if (hasMarkdownTableStructure(text)) return false;
@@ -70,7 +63,6 @@ function isPlainTabularBody(text) {
   return tabbed / lines.length >= 0.6;
 }
 
-/** Build an HTML table from pure TAB-separated rows. */
 function buildTableRows(text) {
   return text
     .split(/\r?\n/)
@@ -79,46 +71,23 @@ function buildTableRows(text) {
     .map((line) => line.split('\t').map((cell) => cell.trim()));
 }
 
-/**
- * Normalize extracted text from PDF/DOCX so it renders nicely as markdown.
- *
- * PDF extractors (PyMuPDF, pdfminer) thuong tra text bi:
- *   - Toan bo TOC nam tren 1 dong dai vo tan: "1.1 Cai dat .... 3 1.2 Viet ... 6 ..."
- *   - Chapter heading "Chuong 1 Tieu de" la paragraph thuong, khong phai heading
- *   - Leaders ". . . . . . . NUM" (page numbers)
- *   - Roman numeral page indicators "iv", "v" treo lo lung
- *
- * Bien doi:
- *   1. Thay leaders ` . . . . . NUM ` thanh ` ... NUM\n` (bre line sau page num)
- *   2. Tach TOC entries inline: "...3 1.2 X" -> tach line truoc moi 1.X / 2.X
- *   3. Promote "Phan I", "Chuong X", "Muc luc", "Bai N" -> markdown h2
- *   4. Roman numeral don le (i, ii, iii, iv, v) tren dong rieng -> em italic small
- */
 function normalizePdfExtractedText(text) {
   if (typeof text !== 'string' || !text) return text;
   let normalized = text;
 
-  // 1. Collapse TOC leaders (≥2 dots separated by spaces) + capture trailing page number.
-  //    Replace " . . . . . . . . 3" with " … 3"
   normalized = normalized.replace(/\s*(?:[.·][.·\s]{2,}|\.{3,})\s*(\d+)/g, ' … $1');
 
-  // 2. Insert newline AFTER a TOC entry (page num) when followed by another section number
-  //    " … 3 1.2 Viet" -> " … 3\n1.2 Viet"
   normalized = normalized.replace(/(…\s\d+)\s+(\d+\.\d+\s)/g, '$1\n$2');
-  //    Same trick when leader was different shape
+
   normalized = normalized.replace(/(\.\s\d+)\s+(\d+\.\d+\s)/g, '$1\n$2');
-  // 2b. Break after the LAST TOC entry "… NUM" before regular prose (capital letter or
-  //     Vietnamese capitalised diacritic). This separates TOC list from the intro paragraph.
+
   normalized = normalized.replace(
     /(…\s\d+)\s+([A-ZĐÁÀẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÉÈẺẼẸÊẾỀỂỄỆÍÌỈĨỊÓÒỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÚÙỦŨỤƯỨỪỬỮỰÝỲỶỸỴ])/g,
     '$1\n\n$2',
   );
 
-  // 3. Insert newline before chapter / section markers when they appear mid-line.
-  //    Vietnamese: "Chương 1", "Phần I/II/III", "Bài N", "Mục lục", "Mục lục chương"
   normalized = normalized.replace(/([^\n])\s+(Chương\s+\d+|Phần\s+[IVXLCDM]+|Mục\s+lục\s+chương|Mục\s+lục|Bài\s+\d+)\b/g, '$1\n\n$2');
 
-  // 4. Promote leading "Chương N", "Phần X", "Mục lục", "Bài N" lines to markdown h2.
   normalized = normalized
     .split('\n')
     .map((line) => {
@@ -132,7 +101,6 @@ function normalizePdfExtractedText(text) {
     })
     .join('\n');
 
-  // 5. Collapse 3+ blank lines.
   normalized = normalized.replace(/\n{3,}/g, '\n\n');
   return normalized;
 }
@@ -153,24 +121,6 @@ function classifyType(rawType) {
   return 'unknown';
 }
 
-/**
- * Render extracted material content with shape appropriate to file type:
- *   - PDF/DOCX/PPTX/text: Markdown (headings, bold, lists, tables, code, links)
- *   - XLSX/CSV: HTML table when content is tab/pipe-separated rows
- *   - YouTube/Vimeo: iframe embed + optional script panel below
- *   - Audio (mp3/wav/...): native audio player + optional script panel
- *   - Direct video file: native video player + optional script panel
- *   - URL: clickable card
- *   - Image: img tag
- *
- * Props:
- *   value: string — raw extracted text or URL
- *   type: optional file type hint (mime or short)
- *   script: optional transcript / script text shown below media player
- *   scriptLabel: optional label (default "Script / Transcript")
- *   isDarkMode: bool
- *   fontClass: optional className for body text
- */
 export function MaterialContentRenderer({
   value,
   type,
@@ -419,9 +369,6 @@ function PlayerFrame({ children, header, footer, isDarkMode, compact = false }) 
   );
 }
 
-/** Render a "Script / Transcript" panel below a media player.
- * Receives raw transcript text and renders via ReactMarkdown so that
- * timestamped lines, headings, and bullets format correctly. */
 function ScriptPanel({ text, isDarkMode, label }) {
   if (typeof text !== 'string' || !text.trim()) return null;
   const trimmed = text.trim();

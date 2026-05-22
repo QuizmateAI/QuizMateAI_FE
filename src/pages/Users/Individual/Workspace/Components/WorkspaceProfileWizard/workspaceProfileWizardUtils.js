@@ -588,20 +588,6 @@ export function buildRequestFingerprint(payload) {
   return JSON.stringify(normalizeFingerprintValue(payload));
 }
 
-/**
- * sessionStorage cache for the AI knowledge-analysis result so a full page reload
- * (or wizard re-open) restores the previously-shown analysis WITHOUT another AI call.
- *
- * Keyed by normalized knowledge text + UI language so two different knowledge entries
- * — or the same entry asked in different languages — get separate cache entries.
- *
- * Why sessionStorage (not localStorage):
- *   - Per-tab, dies when the tab closes — matches the lifetime of a setup session
- *   - Survives full page reload (the actual bug we're addressing)
- *   - No cross-user pollution on shared machines
- *
- * The TTL guard avoids serving stale results if the user comes back hours later.
- */
 const KNOWLEDGE_ANALYSIS_CACHE_KEY_PREFIX = 'studyProfile:knowledgeAnalysis:v1';
 const KNOWLEDGE_ANALYSIS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
 

@@ -21,21 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSavedMockTestTemplates } from '../hooks/useSavedMockTestTemplates';
 
-// Khớp default của BE (mock_test.max_saved_templates_per_user). Không tune qua UI nữa
-// — nếu cần thay đổi giới hạn, sửa cả ở đây và BE MockTestSavedTemplateService.
 const MAX_SAVED_TEMPLATES = 100;
 
-/**
- * Panel hien thi kho saved templates cua user TRONG workspace.
- *
- * Props:
- *   open: bool — controlled dialog visibility
- *   onClose: () => void
- *   onUseTemplate: (template) => void — user click "Dung template" de mo form Tao Mocktest pre-filled
- *   workspaceId: number — BAT BUOC ke tu BE V2026_05_14 (per-workspace scoping). Khi missing,
- *     panel hien thi empty + warning vi hook khong the fetch.
- *   isDarkMode: bool
- */
 export function SavedMockTestTemplatesPanel({
   open,
   onClose,

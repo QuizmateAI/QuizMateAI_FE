@@ -91,10 +91,6 @@ function formatExchangeRate(value) {
   return Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 6 });
 }
 
-/**
- * BE trả LocalDateTime dạng "yyyy-MM-ddTHH:mm:ss" (không offset) = giờ wall-clock Việt Nam.
- * `new Date(iso)` không có offset bị hiểu theo múi máy → parse thêm +07:00 khi thiếu zone.
- */
 function parseApiDateTime(value) {
   if (value === null || value === undefined || value === '') return new Date(NaN);
   if (typeof value === 'number') return new Date(value);
@@ -108,7 +104,6 @@ function parseApiDateTime(value) {
   return new Date(s);
 }
 
-/** Hiển thị theo giờ Việt Nam (ICT). */
 function formatDateTime(value, locale = 'vi-VN') {
   if (!value) return '-';
   const parsed = parseApiDateTime(value);

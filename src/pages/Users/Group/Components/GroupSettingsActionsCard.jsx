@@ -4,11 +4,6 @@ import { Settings, Trophy, UserCircle2 } from 'lucide-react';
 import GroupProfileSettingsDialog from './GroupProfileSettingsDialog';
 import GroupRankingPointsDialog from './GroupRankingPointsDialog';
 
-/**
- * Settings page action row — replaces the old "tràn ra" inline profile panel
- * with discrete buttons that open scoped dialogs. Owns its own dialog state
- * so the host page stays focused on top-level layout.
- */
 function GroupSettingsActionsCard({
   group,
   isLeader,

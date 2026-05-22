@@ -2,8 +2,6 @@ import { useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import CreateQuizFormGroup from './CreateQuizForm';
 
-/** Inline AI editor cho challenge — render trực tiếp trong tab Thử thách (như ChallengeManualMatchEditor),
- * không navigate sang Bài kiểm tra. */
 export default function ChallengeAIMatchEditor({
   workspaceId,
   quizId,

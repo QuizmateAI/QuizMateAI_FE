@@ -22,7 +22,6 @@ import {
   getBaseAppLanguage,
 } from '@/utils/appSupportedLanguages';
 
-/** Chuẩn hóa plan-catalog API response sang format PlanInfoCard / PaymentSidebar / PlanDetails */
 function mapPlanCatalogToPaymentPlan(raw) {
   if (!raw) return null;
   const e = raw.entitlement ?? {};

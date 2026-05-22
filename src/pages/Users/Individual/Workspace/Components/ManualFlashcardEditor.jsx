@@ -40,18 +40,6 @@ function normalizeLoadedItem(item) {
   };
 }
 
-/**
- * Bulk editor cho draft flashcard — Quizlet-style auto-save.
- *
- * UX:
- *  - User gõ → debounce 1.5s → auto-save bản nháp (silent).
- *  - Indicator "Đang lưu..." / "Đã lưu" ngay cạnh các nút hành động.
- *  - Nút "Lưu bản nháp": flush ngay (không chờ debounce).
- *  - Nút "Tạo flashcard": flush + kích hoạt ACTIVE atomically (BE accept activate=true).
- *  - Rời khỏi trang (Back / tab close): flush pending save trước khi navigate; cảnh báo nếu có thay đổi chưa lưu thành công.
- *
-  * Chỉ áp dụng cho DRAFT (BE enforce trên updateBulk). Bản ACTIVE dùng detail view để học/lật thẻ.
- */
 function ManualFlashcardEditor({
   isDarkMode = false,
   workspaceId,
@@ -63,12 +51,6 @@ function ManualFlashcardEditor({
   onSaved,
   onActivated,
   onBack,
-  /**
-   * Giống Create Quiz: nguồn vào sidebar / workspace.
-   * null — thủ công + khối dán JSON (mặc định).
-   * manual — chỉ nhập tay (ẩn dán JSON).
-   * paste — chỉ màn dán JSON trước, sau khi áp dụng mới xem/sửa thẻ.
-   */
   manualEntryMode = null,
 }) {
   const queryClient = useQueryClient();
@@ -142,7 +124,6 @@ function ManualFlashcardEditor({
     });
   }, [contextId, contextType, queryClient]);
 
-  /** Có ít nhất 1 ký tự đã gõ ở bất kỳ field nào. */
   const hasAnyContent = useCallback(() => {
     if ((setNameRef.current || "").trim().length > 0) return true;
     return (itemsRef.current || []).some(
@@ -151,7 +132,6 @@ function ManualFlashcardEditor({
     );
   }, []);
 
-  /** Items gửi lên BE: chỉ items đã đủ front + back. */
   const buildPayloadItems = useCallback(() => {
     return (itemsRef.current || [])
       .filter((it) => it.frontContent?.trim() && it.backContent?.trim())
@@ -162,10 +142,6 @@ function ManualFlashcardEditor({
       }));
   }, []);
 
-  /**
-   * Core save. activate=true → tạo/cập nhật + kích hoạt nguyên tử (BE check leader + items).
-   * silent=true → không bật saving spinner toàn-view; chỉ update saveState indicator.
-   */
   const performSave = useCallback(async ({ silent = true, activate = false } = {}) => {
     // Chờ in-flight save trước đó.
     if (inflightSaveRef.current) {
@@ -229,7 +205,6 @@ function ManualFlashcardEditor({
     }
   }, [showError, buildPayloadItems, invalidateList, resolvedWorkspaceId, t]);
 
-  /** Hủy debounce timer đang chờ (nếu có). */
   const cancelPendingAutoSave = useCallback(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -237,7 +212,6 @@ function ManualFlashcardEditor({
     }
   }, []);
 
-  /** Schedule auto-save sau X ms im lặng; reset timer nếu gõ tiếp. */
   const scheduleAutoSave = useCallback(() => {
     if (!hasAnyContent()) return;
     cancelPendingAutoSave();
@@ -407,7 +381,6 @@ function ManualFlashcardEditor({
     }
   }, [activating, showError, showSuccess, invalidateList, onActivated, resolvedWorkspaceId, t]);
 
-  /** Manual Save Draft: flush pending, save ngay (với toast). */
   const handleManualSaveDraft = useCallback(async () => {
     cancelPendingAutoSave();
     setSaving(true);
@@ -459,7 +432,6 @@ function ManualFlashcardEditor({
     return null;
   }, [items, setName, t]);
 
-  /** Tạo flashcard (activate). Atomic: BE accept activate=true ở bulk endpoint. */
   const handleActivate = useCallback(async () => {
     if (activateValidationError) {
       showError(activateValidationError);
@@ -489,7 +461,6 @@ function ManualFlashcardEditor({
     }
   }, [activateValidationError, showSuccess, showError, cancelPendingAutoSave, onActivated, performSave, t]);
 
-  /** Back: flush pending trước khi navigate. */
   const handleBack = useCallback(async () => {
     if (saving || activating) return;
     if (debounceTimerRef.current) {

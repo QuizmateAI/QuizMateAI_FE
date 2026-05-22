@@ -1,18 +1,3 @@
-/**
- * Typed event bus for plan-upgrade prompts.
- *
- * Replaces the old `window.dispatchEvent(new CustomEvent('planUpgradeRequired'))`
- * pattern. Kept tiny and focused so consumers don't have to learn a new API:
- *
- *   const off = subscribePlanUpgrade(({ message, code }) => { ... });
- *   off();
- *
- *   emitPlanUpgrade({ message: 'Đã hết quota', code: 1066 });
- *
- * The window event is also re-dispatched for backward-compat with any legacy
- * listener that may still be registered while the migration completes.
- */
-
 const LEGACY_EVENT_NAME = 'planUpgradeRequired';
 
 const listeners = new Set();

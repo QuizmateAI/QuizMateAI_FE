@@ -2,12 +2,6 @@ import React from "react";
 import { Wifi, WifiOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-/**
- * Component hiển thị trạng thái kết nối WebSocket
- * @param {boolean} isConnected - Trạng thái kết nối
- * @param {boolean} isDarkMode - Chế độ tối
- * @param {boolean} compact - Chế độ thu gọn (chỉ hiện icon)
- */
 function WebSocketStatus({ isConnected = false, isDarkMode = false, compact = false }) {
   const { t } = useTranslation();
 

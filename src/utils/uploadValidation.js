@@ -1,15 +1,3 @@
-/**
- * Client-side MIME / size validation cho upload, khớp whitelist BE.
- *
- * BE giờ dùng Tika sniff bytes — gửi `.exe` với header `image/png` sẽ bị
- * reject 400. FE check trước để báo lỗi nhanh, nhưng BE vẫn là chân lý cuối.
- *
- * Tham chiếu BE migration doc (item 11):
- *   - Avatar: image/jpeg|png|webp|gif (KHÔNG có SVG), max 5MB.
- *   - Material: PDF, DOCX, XLSX, PPTX, image/*, audio/*, video/*, text/plain.
- *     OOXML modern formats only — .doc/.xls/.ppt không nằm trong whitelist BE.
- */
-
 export const AVATAR_MIME_WHITELIST = Object.freeze([
   'image/jpeg',
   'image/png',
@@ -66,10 +54,6 @@ export function isAvatarMimeAllowed(mime) {
   return AVATAR_MIME_WHITELIST.includes(m);
 }
 
-/**
- * Trả về { ok: true } hoặc { ok: false, code, message } để caller hiển thị.
- * Reason codes giúp test/i18n; message là string sẵn sàng show toast.
- */
 export function validateAvatarFile(file) {
   if (!file) {
     return { ok: false, code: 'NO_FILE', message: 'Không có file được chọn.' };
@@ -87,10 +71,6 @@ export function validateAvatarFile(file) {
   return { ok: true };
 }
 
-/**
- * Trả về { ok: true } nếu MIME hợp lệ. Nếu `file.type` rỗng (một số browser
- * không set với extension lạ), fallback xét theo phần mở rộng tên file.
- */
 export function validateMaterialFile(file) {
   if (!file) {
     return { ok: false, code: 'NO_FILE', message: 'Không có file được chọn.' };

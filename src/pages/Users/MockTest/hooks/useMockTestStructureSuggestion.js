@@ -15,17 +15,6 @@ function sanitizeEnum(raw, allowed, fallback) {
   return allowed.includes(upper) ? upper : fallback;
 }
 
-/**
- * Convert v2 template.structure (ratio-based) → v1 sections shape (concrete counts).
- * Round-trip with backend is acceptable — BE re-distributes via floor + remainder.
- *
- * v2 input shape:
- *   { sections: [{ name, description, questionRatio, sharedContextRequired,
- *                  items: [{ difficulty, bloomSkill, questionType, quantityRatio }] }] }
- * v1 output shape:
- *   { description, examLanguage, sections: [{ name, description, numQuestions,
- *     structure: [{difficulty, bloomSkill, quantity, questionType}], subConfigs, requiresSharedContext }] }
- */
 function templateStructureToV1Sections(template, totalQuestion) {
   const structure = template?.structure;
   if (!structure || !Array.isArray(structure.sections) || structure.sections.length === 0) {
@@ -154,15 +143,6 @@ function templateToSuggestion(template, recommendation, recData, totalQuestion) 
   };
 }
 
-/**
- * Hook gọi v2 recommend-template + getTemplate để gợi ý cấu trúc mocktest.
- *
- * Output v1-compatible shape: { description, examLanguage, sections: [...] }
- * Caller form không cần đổi — hook đã adapter sẵn.
- *
- * Migration note: thay thế POST /api/ai/mocktest:suggest-structure (deprecated)
- * bằng POST /api/mocktest/recommend-template + GET /api/mocktest/templates/{id}.
- */
 export function useMockTestStructureSuggestion() {
   const [suggestion, setSuggestion] = useState(null);
   const [suggestions, setSuggestions] = useState([]);

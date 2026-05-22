@@ -1,20 +1,3 @@
-/**
- * Regenerate `public/sitemap.xml` with the current set of published policies.
- *
- * Usage:
- *   node scripts/generate-sitemap.mjs
- *   npm run sitemap
- *
- * Environment variables:
- *   SITE_URL          — Public origin of the FE (default: https://quizmateai.io.vn)
- *   POLICIES_API_URL  — Full URL to the BE policies-public endpoint
- *                       (default: https://api.quizmateai.io.vn/api/policies/public)
- *
- * The script writes a sitemap that contains one `<url>` entry per language
- * variant of every public page (landing, policies index, each policy slug)
- * with full hreflang annotations. Node 18+ required for built-in fetch.
- */
-
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,11 +14,6 @@ const POLICIES_API_URL =
 const LANGUAGES = ['vi', 'en', 'ja'];
 const DEFAULT_LANGUAGE = 'vi';
 
-/**
- * Static catalogue of public routes the SPA serves.
- * `path` is the canonical pathname; the language variants are derived
- * automatically (default lang gets a clean URL, others append `?lang=`).
- */
 const STATIC_ROUTES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
   { path: '/policies', changefreq: 'monthly', priority: '0.7' },

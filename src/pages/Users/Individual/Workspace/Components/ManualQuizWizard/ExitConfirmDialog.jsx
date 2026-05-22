@@ -11,20 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/**
- * Custom confirm dialog cho nut "Quay lai" cua ManualQuizWizard.
- * Thay the window.confirm() de UI dong bo theme app, ho tro dark mode + surface.
- *
- * Props:
- *  - open: bool
- *  - title: string
- *  - description: string
- *  - confirmLabel?: string — mac dinh "Roi khoi"
- *  - cancelLabel?: string — mac dinh "Tiep tuc chinh sua"
- *  - onCancel: () => void
- *  - onConfirm: () => void
- *  - surface?: "quiz" | "challenge"
- */
 export function ExitConfirmDialog({
   open,
   title,

@@ -89,7 +89,6 @@ function extractData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
 }
 
-/** BE LocalDateTime không offset = wall-clock VN — parse +07:00 khi thiếu zone (khớp Jackson). */
 function parseApiDateTime(value) {
   if (value === null || value === undefined || value === '') return new Date(NaN);
   if (typeof value === 'number') return new Date(value);
@@ -103,7 +102,6 @@ function parseApiDateTime(value) {
   return new Date(s);
 }
 
-/** Hiển thị theo giờ Việt Nam (ICT). */
 function formatDateTime(value, locale = 'vi-VN') {
   if (!value) return '-';
   const parsed = parseApiDateTime(value);

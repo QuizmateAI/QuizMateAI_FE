@@ -1,16 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as runtimeConfig from '@/lib/runtimeConfig';
 
-/**
- * PR9 smoke-test revealed that envsubst leaves unset env vars as ${VITE_FOO} (not
- * __VITE_FOO__), so the placeholder detector must recognize BOTH forms and fall through to
- * import.meta.env. These tests focus on the runtime → build-time fallthrough contract.
- *
- * import.meta.env can't be easily stubbed in vitest, so we test placeholder detection by
- * checking that runtime placeholder values do NOT win over the hardcoded fallback used by
- * getSupportEmail (the only reader whose fallback isn't environment-dependent).
- */
-
 const ORIGINAL_CONFIG = globalThis.window?.__APP_CONFIG__;
 
 function setConfig(values) {

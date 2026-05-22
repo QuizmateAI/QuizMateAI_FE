@@ -25,9 +25,6 @@ export function countLeafQuestions(sections) {
   }, 0);
 }
 
-/**
- * Count leaf questions of a single section (or sub-section), recursing into subConfigs.
- */
 export function countSectionLeafQuestions(section) {
   if (!section || typeof section !== 'object') return 0;
   const children = Array.isArray(section?.subConfigs) ? section.subConfigs : [];
@@ -71,16 +68,6 @@ export function scorePerQuestion(scoring, sections) {
   return roundScore((Number(scoring?.totalPoints) || 0) / totalQuestions);
 }
 
-/**
- * Build per-section scoring breakdown given current sections + scoring.
- *
- * Strategy:
- *   1. If scoring.sectionScoring contains entries with valid points, use them as authoritative
- *      (AI templates already include real-exam standard weights). Recompute percent from totalPoints.
- *   2. Otherwise, allocate proportionally to leaf-question count of each section, so per-section
- *      points = (sectionLeafCount / totalLeafCount) * totalPoints.
- *   3. Per-question points = sectionPoints / sectionLeafCount when leafCount > 0.
- */
 export function deriveSectionScoring(sections, scoring) {
   const list = Array.isArray(sections) ? sections : [];
   const normalized = normalizeMockTestScoring(scoring);
@@ -126,12 +113,6 @@ export function deriveSectionScoring(sections, scoring) {
   });
 }
 
-/**
- * Build payload-shape sectionScoring array (suitable for POST /generate or
- * POST /my-templates) from sections + current totalPoints.
- *
- * Honors explicit overrides in scoring.sectionScoring; otherwise allocates by leaf count.
- */
 export function buildSectionScoringPayload(sections, scoring) {
   const breakdown = deriveSectionScoring(sections, scoring);
   return breakdown.map((entry) => ({
@@ -144,13 +125,6 @@ export function buildSectionScoringPayload(sections, scoring) {
   }));
 }
 
-/**
- * Adjust section points and propagate change up to totalPoints.
- *
- * - When user changes one section's points, we KEEP other sections unchanged
- *   and recompute totalPoints = sum of all section points.
- * - passingScore percent stays the same; absolute is recomputed on the new total.
- */
 export function applySectionPointChange(scoring, sections, sectionIndex, nextPoints) {
   const breakdown = deriveSectionScoring(sections, scoring);
   const safeNext = Math.max(0, roundScore(Number(nextPoints) || 0));
@@ -178,10 +152,6 @@ export function applySectionPointChange(scoring, sections, sectionIndex, nextPoi
   };
 }
 
-/**
- * Adjust totalPoints, then redistribute section points proportionally so the
- * structure stays consistent.
- */
 export function applyTotalPointsChange(scoring, sections, nextTotal) {
   const breakdown = deriveSectionScoring(sections, scoring);
   const safeNextTotal = Math.max(1, roundScore(Number(nextTotal) || 1));
@@ -211,9 +181,6 @@ export function applyTotalPointsChange(scoring, sections, nextTotal) {
   };
 }
 
-/**
- * Update passingScore (absolute), clamping to [0, totalPoints]. Recomputes percent.
- */
 export function applyPassingScoreChange(scoring, nextPassing) {
   const total = Number(scoring?.totalPoints) || 0;
   const safe = Math.min(total, Math.max(0, roundScore(Number(nextPassing) || 0)));
@@ -223,10 +190,6 @@ export function applyPassingScoreChange(scoring, nextPassing) {
   });
 }
 
-/**
- * Update passingScore via percent input. Percent stored separately so user can
- * type 50% and have absolute compute as totalPoints * 0.5.
- */
 export function applyPassingPercentChange(scoring, nextPercent) {
   const total = Number(scoring?.totalPoints) || 0;
   const safePct = Math.min(100, Math.max(0, Number(nextPercent) || 0));

@@ -1,6 +1,3 @@
-// Helpers thuần xử lý payload quiz từ form / WS event của group workspace.
-
-/** Payload từ CreateQuizForm (manual / AI) — có thể lồng ApiResponse { data }. */
 export function extractGroupCreatedQuizPayload(payload) {
   if (payload == null || typeof payload !== 'object') return null;
   let cur = payload;
@@ -22,7 +19,6 @@ export function extractGroupCreatedQuizPayload(payload) {
   return null;
 }
 
-/** Trả về true nếu payload realtime cho biết quiz đang trong trạng thái xử lý (tương đương UI loading state). */
 export function isRealtimeProcessingQuizPayload(payload) {
   if (payload == null || typeof payload !== 'object') return false;
   let current = payload;

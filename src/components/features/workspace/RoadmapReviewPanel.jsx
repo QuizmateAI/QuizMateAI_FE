@@ -14,9 +14,6 @@ import {
 } from "lucide-react";
 import { getRoadmapReview } from "@/api/RoadmapAPI";
 
-/**
- * Renders a list of chips for a mastery category
- */
 function TopicList({ title, topics, icon: Icon, colorTheme, isDarkMode, fontClass }) {
   if (!topics || topics.length === 0) return null;
   

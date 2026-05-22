@@ -14,15 +14,6 @@ import {
   normalizeMockTestScoring,
 } from '../utils/mockTestScoring';
 
-/**
- * Hierarchical scoring editor:
- *   - Total points + passing score (absolute & %)
- *   - Per-section breakdown: leaf-count, points, %, per-question points, optional section pass
- *   - Linked logic: change total → re-distribute section points; change section → recompute total.
- *
- * `formLanguage` (optional): khi truyền vao thi labels render theo language do
- * thay vi UI locale — dung khi mocktest content sinh boi AI o ngon ngu khac UI.
- */
 export function MockTestScoringEditor({
   sections,
   scoring,

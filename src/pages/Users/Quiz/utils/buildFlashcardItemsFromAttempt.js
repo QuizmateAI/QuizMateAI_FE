@@ -88,14 +88,6 @@ function resolveExplanation(question) {
   return explanation;
 }
 
-/**
- * Build flashcard items từ reviewQuestions của attempt.
- *
- * @param {Array<object>} reviewQuestions - Mảng đã normalize ở QuizResultPage.
- * @param {object} [options]
- * @param {boolean} [options.includeExplanation=true] - Có gắn phần giải thích vào back không.
- * @returns {{ items: Array<{frontContent: string, backContent: string}>, skippedCount: number }}
- */
 export function buildFlashcardItemsFromAttempt(reviewQuestions, options = {}) {
   const { includeExplanation = true } = options;
   const list = Array.isArray(reviewQuestions) ? reviewQuestions : [];

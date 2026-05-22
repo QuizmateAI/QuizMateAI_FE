@@ -1,7 +1,3 @@
-/**
- * Chuẩn hóa quiz.duration (BE) sang số phút để hiển thị trong danh sách.
- * Đồng bộ với logic đã dùng ở QuizListView.
- */
 export function getDurationInMinutes(quiz) {
   const rawDuration = Number(quiz?.duration) || 0;
   if (!rawDuration) return 0;

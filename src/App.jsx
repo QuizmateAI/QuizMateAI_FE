@@ -24,7 +24,6 @@ import './App.css';
 const LaunchingPage = lazy(() => import('./pages/LaunchingPage/LaunchingPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
 const LoginPage = lazy(() => import('./pages/Authentication/LoginPage'));
-const AdminLoginPage = lazy(() => import('./pages/Authentication/AdminLoginPage'));
 const RegisterPage = lazy(() => import('./pages/Authentication/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/Authentication/ForgotPasswordPage'));
 
@@ -48,6 +47,8 @@ const GroupWorkspacePage = lazy(loadGroupWorkspacePage);
 const GroupManagementPage = lazy(() => import('./pages/Users/Group/group-leader/GroupManagementPage'));
 const AcceptInvitationPage = lazy(() => import('./pages/Users/Group/AcceptInvitationPage'));
 const KnowledgeTreePage = lazy(() => import('./pages/Users/Knowledge/KnowledgeTreePage'));
+const GroupShowcasePreviewPage = lazy(() => import('./pages/GroupShowcase/GroupShowcasePreviewPage'));
+const GroupShowcaseTrialPage = lazy(() => import('./pages/GroupShowcase/GroupShowcaseTrialPage'));
 
 // Admin
 const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
@@ -108,11 +109,6 @@ const PoliciesManagement = lazy(() => import('./pages/SuperAdmin/PoliciesManagem
 // 404
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFoundPage'));
 
-/**
- * Payment provider return URLs occasionally land on FE (e.g. user reloads the
- * tab during the redirect). Each route renders a tiny redirect-to-BE shim.
- * Declared once here so MainRoutes and LaunchRoutes stay in sync.
- */
 const PAYMENT_RETURN_ROUTES = [
     { path: '/api/momo/return', Component: MomoReturnRedirect },
     { path: '/api/vnpay/return', Component: VnPayReturnRedirect },
@@ -137,13 +133,15 @@ function MainRoutes() {
             <Route path="/policies" element={<PoliciesIndexPage />} />
             <Route path="/policies/:slug" element={<PolicyDetailPage />} />
             <Route path="/__preview/plan-versions" element={<PlanVersionsPreview />} />
+            <Route path="/group-showcase/:workspaceId" element={<GroupShowcasePreviewPage />} />
+            <Route path="/group-showcase/:workspaceId/trial/:attemptId" element={<GroupShowcaseTrialPage />} />
 
 
             <Route element={<PublicRoute />}>
                 {/* Trên subdomain admin.*, route gốc đi thẳng vào login quản trị —
                     không có landing/register/forgot. User flow giữ nguyên trên domain chính. */}
-                <Route path="/" element={isAdminSubdomain ? <AdminLoginPage /> : <LandingPage />} />
-                <Route path="/login" element={isAdminSubdomain ? <AdminLoginPage /> : <LoginPage />} />
+                <Route path="/" element={isAdminSubdomain ? <LoginPage /> : <LandingPage />} />
+                <Route path="/login" element={isAdminSubdomain ? <LoginPage /> : <LoginPage />} />
                 <Route
                     path="/register"
                     element={isAdminSubdomain ? <Navigate to="/login" replace /> : <RegisterPage />}

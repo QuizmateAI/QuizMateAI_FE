@@ -11,21 +11,6 @@ function unwrap(response) {
   return response?.data?.data ?? response?.data ?? response;
 }
 
-/**
- * Hook quan ly kho saved templates cua user TRONG workspace cu the
- * (visibility=PRIVATE, source=USER, workspace_id = workspaceId param).
- *
- * @param {object} options
- * @param {boolean} [options.enabled=true] — gate fetching (vd dialog dong)
- * @param {number} options.workspaceId — BAT BUOC ke tu BE V2026_05_14. Neu null/undefined,
- *   hook tu disable list/save (khong goi API). Caller phai pass workspaceId hien tai.
- *
- * Provides:
- *   - templates: list of summaries (chi trong workspace + legacy NULL rows)
- *   - savedIds: Set<number> of templateIds user already saved (derivedFromTemplateId)
- *   - savingTemplateId: id of template currently being saved (for spinner state)
- *   - actions: refetch, save, update, remove, fetchDetail
- */
 export function useSavedMockTestTemplates({ enabled = true, workspaceId } = {}) {
   const [templates, setTemplates] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,10 +49,6 @@ export function useSavedMockTestTemplates({ enabled = true, workspaceId } = {}) 
     }
   }, [effectiveEnabled, refetch]);
 
-  /**
-   * Save a template snapshot. If the snapshot is from an AI-suggested template,
-   * pass derivedFromTemplateId so we can mark it as "saved" in the suggestion UI.
-   */
   const save = useCallback(async (payload) => {
     if (!payload?.workspaceId) {
       throw new Error('save() payload must include workspaceId');

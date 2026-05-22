@@ -1,6 +1,3 @@
-/** Wall-clock local schedule helpers for group challenges (đồng bộ BE LocalDateTime). */
-
-export const CHALLENGE_MIN_LEAD_DAYS = 0;
 export const CHALLENGE_MIN_DURATION_HOURS = 3;
 export const CHALLENGE_MIN_DURATION_MINUTES = CHALLENGE_MIN_DURATION_HOURS * 60;
 
@@ -16,7 +13,6 @@ export function toTimeInputValue(d) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-/** Mặc định: hiện tại + 30 phút, làm tròn lên 5 phút. */
 export function defaultStartParts() {
   const d = new Date();
   d.setMinutes(d.getMinutes() + 30, 0, 0);
@@ -25,11 +21,6 @@ export function defaultStartParts() {
   return { dateStr: toDateInputValue(d), timeStr: toTimeInputValue(d) };
 }
 
-/**
- * Đảm bảo start không nằm trong quá khứ.
- * Nếu start hợp lệ (>= now + 5 phút) → giữ nguyên.
- * Nếu start trong quá khứ hoặc invalid → trả về defaultStartParts().
- */
 export function clampStartToFutureParts(dateStr, timeStr) {
   const ms = parseLocalDateTimeToMs(dateStr, timeStr);
   const minMs = Date.now() + 5 * 60 * 1000;
@@ -39,10 +30,6 @@ export function clampStartToFutureParts(dateStr, timeStr) {
   return { dateStr, timeStr };
 }
 
-/**
- * Smart bump: chỉ chỉnh end nếu duration < min (3 tiếng), giữ end của user nếu đã đủ.
- * Nếu end chưa nhập → set end = start + 3h.
- */
 export function bumpEndIfTooClose(startDate, startTime, endDate, endTime) {
   const startMs = parseLocalDateTimeToMs(startDate, startTime);
   if (!Number.isFinite(startMs)) {
@@ -56,7 +43,6 @@ export function bumpEndIfTooClose(startDate, startTime, endDate, endTime) {
   return { dateStr: endDate, timeStr: endTime };
 }
 
-/** Kết thúc = bắt đầu + min duration (3 tiếng). */
 export function defaultEndPartsFromStart(dateStr, timeStr) {
   const ms = parseLocalDateTimeToMs(dateStr, timeStr);
   if (!Number.isFinite(ms)) {
@@ -82,7 +68,6 @@ export function parseLocalDateTimeToMs(dateStr, timeStr) {
   return dt.getTime();
 }
 
-/** Chuỗi gửi API: yyyy-MM-ddTHH:mm:ss */
 export function combineToBackendPayload(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
   const t = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
@@ -102,9 +87,6 @@ export function minDateStringPlusDays(days) {
   return toDateInputValue(d);
 }
 
-/**
- * @returns {string[]} issue keys: endBeforeStart | shortWindow | startTooSoon | pastStart | pastEnd | invalid
- */
 export function getScheduleValidationIssues(startDate, startTime, endDate, endTime) {
   const issues = [];
   const startMs = parseLocalDateTimeToMs(startDate, startTime);

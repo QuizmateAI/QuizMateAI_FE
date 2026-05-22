@@ -195,12 +195,9 @@ function QuizDetailView({
   contextId: _contextId,
   hideEditButton = false,
   isGroupLeader = false,
-  /** Leader: ẩn chính mình khỏi danh sách giao quiz riêng */
   groupAudiencePickerExcludeUserId = null,
   onGroupQuizUpdated,
-  /** Group: mở từ challenge (snapshot) — chỉ xem/sửa đề, không phân phối / không làm bài từ màn này */
   challengeSnapshotReviewMode = false,
-  /** Group: chỉ member có quyền CONVERT_QUIZ_TO_FLASHCARD (hoặc leader mặc định) mới thấy nút chuyển flashcard */
   canConvertQuizToFlashcard = true,
 }) {
   const { t, i18n } = useTranslation();
@@ -281,22 +278,14 @@ function QuizDetailView({
   const hasHistoryCompleted = hasCompletedAttemptHistory(history);
   const hasCurrentUserCompletedQuiz = localQuizCompleted || hasQuizPayloadAttempted || hasHistoryCompleted;
 
-  /** Fair play: leader tham gia thi + quiz ACTIVE → không xem trước đáp án/tab Kiểm tra. */
   const fairPlayRestricts = Boolean(quiz?.challengeFairPlayRestrictsViewer);
 
-  /**
-   * Creator luôn xem được đáp án quiz do mình tạo.
-   * Individual workspace (contextType="WORKSPACE"): viewer luôn là owner — dùng currentUserId > 0
-   * vì BE không nhất quán trả về creatorId trong quiz response.
-   * Các scope khác: match theo creatorId hoặc quizMeta (từ getQuizFull).
-   */
   const isCreator = currentUserId > 0 && (
     _contextType === "WORKSPACE"
     || Number(quiz?.creatorId || 0) === currentUserId
     || Number(quizMeta?.creatorId || 0) === currentUserId
   );
 
-  /** Cá nhân: chỉ xem đáp án sau khi làm xong (hoặc quiz nháp). Nhóm: leader / xem từ challenge cần đủ phương án cho tab Kiểm tra. */
   const canViewAnswers =
     isCreator
     || hasCurrentUserCompletedQuiz
@@ -313,7 +302,6 @@ function QuizDetailView({
     attemptHistoryProbeKeyRef.current = null;
   }, [quiz?.quizId]);
 
-  /** Reviewer challenge: ghi nhận đã mở xem snapshot (phục vụ nhắc mail & nghiệp vụ gỡ reviewer). */
   useEffect(() => {
     if (!challengeSnapshotReviewMode || _contextType !== "GROUP" || !_contextId || !quiz?.quizId) return;
     const ws = Number(_contextId);
@@ -866,7 +854,6 @@ function QuizDetailView({
       .catch(logSwallowed('QuizDetailView.Individual.threadCounts'));
   }, [_contextId, quiz?.quizId, allQuestionsFlat, _contextType]);
 
-  /** Navigate from Discussion tab to a specific question in the Questions tab. */
   const handleNavigateToQuestion = React.useCallback((questionId) => {
     const q = questionsById[String(questionId)];
     if (!q) return;
@@ -947,9 +934,7 @@ function QuizDetailView({
         ? t("workspace.quiz.communityPublic", "Public")
         : t("workspace.quiz.privateShort", "Private")
     );
-  /** Nhóm + leader: tab Kiểm tra. Snapshot challenge (mở từ «Xem quiz»): cả reviewer (member) cũng cần tab Kiểm tra để xem đủ đáp án. */
-  // "Kiểm tra" tab: leader sees it only while quiz is DRAFT (to review before publishing).
-  // Snapshot-reviewers (contributors invited to check) always see it regardless of status.
+
   const showGroupReviewTab =
     _contextType === "GROUP"
     && !fairPlayRestricts
@@ -959,7 +944,6 @@ function QuizDetailView({
     );
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
   const groupMemberCanOpenQuestions = _contextType !== "GROUP" || isGroupLeader || hasCurrentUserCompletedQuiz;
-  /** Quiz nhóm: leader đang nháp chỉ có tab Kiểm tra — ẩn «Câu hỏi» cho đến khi active hoặc member đã làm xong. */
   const hideQuestionsForGroupLeaderDraftQuiz =
     _contextType === "GROUP"
     && isGroupLeader

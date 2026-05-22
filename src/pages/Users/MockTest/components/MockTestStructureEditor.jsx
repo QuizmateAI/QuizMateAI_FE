@@ -422,18 +422,6 @@ function SectionCard({
   );
 }
 
-/**
- * Editor cấu trúc mock test: tree section, mỗi leaf có danh sách tổ hợp
- * {difficulty, questionType, bloomSkill, quantity}.
- * Wrapper section chỉ có subConfigs.
- *
- * Props:
- * - sections: Array<Section>
- * - onChange: (nextSections) => void
- * - targetTotalQuestions?: number — để hiển thị badge "X / Y"
- * - topNotice?: string — thông báo (vd "Đã bỏ phần Listening")
- * - readOnly?: boolean — compact preview without field labels
- */
 export function MockTestStructureEditor({
   sections,
   onChange,
@@ -548,10 +536,6 @@ export function MockTestStructureEditor({
   );
 }
 
-/**
- * Validate toàn bộ structure trước khi submit lên BE.
- * Trả về { isValid, errors: string[] } — errors gom all section's errors.
- */
 export function validateMockTestStructure(sections, targetTotalQuestions, t = ((_, fallback, options) => {
   if (!fallback) return '';
   return Object.entries(options || {}).reduce(

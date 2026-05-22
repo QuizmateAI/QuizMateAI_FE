@@ -12,7 +12,6 @@ const sharedUiFontStack = [
   'sans-serif',
 ];
 
-/** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ["class"],
     content: [
@@ -72,12 +71,6 @@ export default {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
-			/**
-			 * Admin/Super-admin palette theo quy tắc 60-30-10:
-			 *   - slate (Tailwind) = 60% (neutral surface/text) — dùng trực tiếp.
-			 *   - ocean  = 30% (xanh nước biển secondary, hover/nav-active).
-			 *   - glitter = 10% (accent key-metric, CTA nhấn + shimmer kim tuyến).
-			 */
 			ocean: {
 				50:  '#f0f7fb',
 				100: '#d9ecf5',
@@ -106,10 +99,8 @@ export default {
   		}
       ,
       backgroundImage: {
-        /** Gradient kim tuyến cho accent — dùng với animate-shimmer để có chuyển động. */
         'glitter-sheen':
           'linear-gradient(110deg, rgba(255,255,255,0) 20%, rgba(224,242,254,0.55) 45%, rgba(255,255,255,0) 70%)',
-        /** Gradient ocean chủ đạo cho CTA quan trọng. */
         'ocean-cta': 'linear-gradient(135deg, #0ea5e9 0%, #1f77a8 100%)',
       },
       keyframes: {
@@ -121,7 +112,6 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
-        /** Kim tuyến: sheen chạy qua bề mặt. */
         glitterSheen: {
           "0%": { backgroundPosition: "-150% 0" },
           "100%": { backgroundPosition: "250% 0" },

@@ -6,10 +6,6 @@ import { getCurrentUser } from "@/api/Authentication";
 import { normalizeUserProfile } from "@/utils/userProfile";
 import { hasAccessToken } from "@/utils/tokenStorage";
 
-/**
- * Lấy profile user - dùng cache trước, fetch khi hết hạn (5 phút)
- * Lần load thứ 2 ~500ms thay vì gọi API
- */
 async function getUserProfile() {
   const token = getStoredToken();
 
@@ -38,13 +34,6 @@ async function getUserProfile() {
   return profile;
 }
 
-/**
- * Cập nhật thông tin profile người dùng
- * @param {Object} profileData - Dữ liệu profile cần cập nhật
- * @param {string} profileData.fullName - Họ tên đầy đủ
- * @param {string} profileData.birthday - Ngày sinh (YYYY-MM-DD)
- * @param {string} profileData.avatar - URL avatar
- */
 async function updateUserProfile(profileData) {
   const token = getStoredToken();
 
@@ -67,13 +56,6 @@ async function updateUserProfile(profileData) {
   return response?.data || response;
 }
 
-/**
- * Đổi mật khẩu người dùng
- * @param {Object} passwordData - Dữ liệu mật khẩu
- * @param {string} passwordData.oldPassword - Mật khẩu cũ
- * @param {string} passwordData.newPassword - Mật khẩu mới
- * @param {string} passwordData.confirmNewPassword - Xác nhận mật khẩu mới
- */
 async function changePassword(passwordData) {
   const token = getStoredToken();
 
@@ -90,11 +72,6 @@ async function changePassword(passwordData) {
   return response?.data || response;
 }
 
-/**
- * Upload avatar lên Cloudflare R2 và cập nhật vào profile
- * @param {File} file - File hình ảnh avatar
- * @returns {Promise<string>} URL avatar đã upload
- */
 async function uploadAvatar(file) {
   const token = getStoredToken();
 

@@ -1,15 +1,9 @@
-/** @typedef {'ai'|'manual'|'paste'} StudioSubFilter */
-
 const STUDIO_SUB_FILTERS = new Set(["ai", "manual", "paste"]);
 
 export function normalizeStudioCreateVia(value) {
   return String(value || "").toUpperCase();
 }
 
-/**
- * Best-effort: JSON/paste quiz & flashcard hiện có thể vẫn là MANUAL trên BE
- * nếu API chưa trả cờ tách biệt — khi đó nhánh "paste" có thể trống.
- */
 export function recordLooksPasteImported(record) {
   if (!record || typeof record !== "object") return false;
   if (record.pasteImported === true || record.createdFromPaste === true) return true;
@@ -33,7 +27,6 @@ export function recordLooksPasteImported(record) {
   });
 }
 
-/** @param {unknown} quiz @param {string|null|undefined} filter */
 export function quizMatchesStudioSubFilter(quiz, filter) {
   const f = String(filter || "").toLowerCase();
   if (!f || !STUDIO_SUB_FILTERS.has(f)) return true;
@@ -48,7 +41,6 @@ export function quizMatchesStudioSubFilter(quiz, filter) {
   return true;
 }
 
-/** @param {unknown} item @param {string|null|undefined} filter */
 export function flashcardMatchesStudioSubFilter(item, filter) {
   const f = String(filter || "").toLowerCase();
   if (!f || !STUDIO_SUB_FILTERS.has(f)) return true;
