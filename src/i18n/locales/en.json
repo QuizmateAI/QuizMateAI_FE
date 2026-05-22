@@ -1471,9 +1471,7 @@
     "otpRequired": "Please enter the OTP code",
     "passwordMismatch": "Password confirmation does not match",
     "resetPasswordFailed": "Failed to reset password",
-    "loginFailed": "Login failed, please try again",
-    "roleNotAllowedForUserLogin": "Admin accounts cannot sign in here. Please use the management console.",
-    "roleNotAllowedForAdminLogin": "Regular user accounts cannot sign in to the management console."
+    "loginFailed": "Login failed, please try again"
   },
   "validation": {
     "fullnameRequired": "Full name is required",
