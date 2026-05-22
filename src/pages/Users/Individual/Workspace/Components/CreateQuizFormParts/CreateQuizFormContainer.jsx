@@ -159,25 +159,7 @@ function CreateQuizForm({
     t,
   });
 
-  // Topic picker state: selected IDs are prompt focus only, not persisted on quiz/question.
-  const selectedMaterialKey = useMemo(() => selectedMaterialIds.join(","), [selectedMaterialIds]);
-  const [selectedSubTopicState, setSelectedSubTopicState] = useState({
-    ids: [],
-    materialKey: selectedMaterialKey,
-  });
-  const selectedSubTopicIds = selectedSubTopicState.materialKey === selectedMaterialKey
-    ? selectedSubTopicState.ids
-    : [];
-  const handleSelectedSubTopicIdsChange = useCallback((nextIds) => {
-    setSelectedSubTopicState((previous) => {
-      const previousIds = previous.materialKey === selectedMaterialKey ? previous.ids : [];
-      const resolvedIds = typeof nextIds === "function" ? nextIds(previousIds) : nextIds;
-      return {
-        ids: Array.isArray(resolvedIds) ? resolvedIds : [],
-        materialKey: selectedMaterialKey,
-      };
-    });
-  }, [selectedMaterialKey]);
+  // (SubTopic picker removed — feature dropped.)
 
   const {
     aiValidationState,
@@ -199,7 +181,6 @@ function CreateQuizForm({
     onCreateQuiz,
     quizTitleMaxLength,
     selectedMaterialIds,
-    selectedSubTopicIds,
     t,
     existingQuizId,
     seedQuizTitle,
@@ -476,7 +457,6 @@ function CreateQuizForm({
             ...state,
             areAllWorkspaceMaterialsSelected,
             selectedMaterialIds,
-            selectedSubTopicIds,
             workspaceId: defaultContextId,
             selectedQTypes: state.selectedQTypes,
             selectedBloomSkills: state.selectedBloomSkills,
@@ -498,7 +478,6 @@ function CreateQuizForm({
             currentPlanSummaryOverride,
             onSelectAllMaterials: selectAllSources,
             onToggleMaterialSelection: toggleSourceSelection,
-            onSelectedSubTopicIdsChange: handleSelectedSubTopicIdsChange,
             planUpgradeScope,
             planUpgradeWorkspaceId,
             readOnly,

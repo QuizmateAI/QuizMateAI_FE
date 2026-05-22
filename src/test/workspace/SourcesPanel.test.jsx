@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SourcesPanel from '@/pages/Users/Individual/Workspace/Components/SourcesPanel';
@@ -32,7 +32,7 @@ vi.mock('@/components/ui/HomeButton', () => ({
   default: () => <button type="button">Home</button>,
 }));
 
-vi.mock('@/pages/Users/Individual/Workspace/Components/SourceDetailView', () => ({
+vi.mock('@/components/material/InlineMaterialWorkspace', () => ({
   default: () => <div data-testid="source-detail-view">detail-preview</div>,
 }));
 
@@ -68,17 +68,24 @@ describe('SourcesPanel', () => {
   it('opens the source preview dialog through the dedicated preview action', async () => {
     const onDetailViewChange = vi.fn();
 
-    render(
-      <SourcesPanel
-        isDarkMode={false}
-        sources={[
-          { id: 9, name: 'Original Name.pdf', type: 'application/pdf', status: 'ACTIVE' },
-        ]}
-        onAddSource={vi.fn()}
-        onRemoveSource={vi.fn()}
-        onDetailViewChange={onDetailViewChange}
-      />,
-    );
+    function Harness() {
+      const [selectedSourceId, setSelectedSourceId] = useState(null);
+      return (
+        <SourcesPanel
+          isDarkMode={false}
+          sources={[
+            { id: 9, name: 'Original Name.pdf', type: 'application/pdf', status: 'ACTIVE' },
+          ]}
+          onAddSource={vi.fn()}
+          onRemoveSource={vi.fn()}
+          onDetailViewChange={onDetailViewChange}
+          selectedSourceId={selectedSourceId}
+          onViewSource={setSelectedSourceId}
+        />
+      );
+    }
+
+    render(<Harness />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
 
