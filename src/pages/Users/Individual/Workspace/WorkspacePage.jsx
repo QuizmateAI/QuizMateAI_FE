@@ -302,10 +302,8 @@ function WorkspacePage() {
     return "sources";
   });
 
-  /** Tab khởi tạo màn tạo quiz khi mở từ sidebar (AI / thủ công / JSON). */
   const [workspaceSidebarQuizCreateMode, setWorkspaceSidebarQuizCreateMode] =
     useState(null);
-  /** Lọc danh sách flashcard theo mục con sidebar: ai | manual | paste */
   const [
     workspaceSidebarFlashcardSubFilter,
     setWorkspaceSidebarFlashcardSubFilter,

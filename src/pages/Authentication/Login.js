@@ -2,13 +2,6 @@ import { useState } from 'react';
 import { login, googleLogin } from '@/api/Authentication';
 import { preloadGroupWorkspacePage, preloadHomePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 
-/**
- * Hook đăng nhập dùng chung cho LoginPage.
- *
- * @param {Function} navigate - react-router navigate
- * @param {Object} location - react-router location
- * @param {Function} t - i18n translator (or fallback (_, def) => def)
- */
 export const useLogin = (navigate, location, t) => {
   const [loginData, setLoginData] = useState({
     username: '',

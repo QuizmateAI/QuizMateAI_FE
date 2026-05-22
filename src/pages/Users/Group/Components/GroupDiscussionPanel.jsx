@@ -1,13 +1,3 @@
-/**
- * GroupDiscussionPanel — General quiz-level discussion with smart /question tagging.
- *
- * Features:
- *  - Full-width chat UI (no question sidebar — too long for 100+ questions)
- *  - Type "/" to trigger smart question autocomplete (IDE-style)
- *  - Tagged questions render as clickable chips → navigate to that question
- *  - Leader can delete any message; members can delete their own
- */
-
 import React, {
   startTransition,
   useDeferredValue,
@@ -105,12 +95,10 @@ function getProfileAvatar(profile) {
   return profile?.avatarUrl || profile?.avatar || '';
 }
 
-/** Parse message body: split text and [[q:ID:INDEX]] tokens. */
 function parseBody(body) {
   return String(body || '').split(/(\[\[q:\d+:\d+\]\])/);
 }
 
-/** Encode draft tags: replace [[#N]] display markers with [[q:ID:N]] tokens. */
 function encodeDraftTags(draft, draftTags) {
   let encoded = draft;
   for (const [marker, tag] of Object.entries(draftTags)) {
@@ -121,7 +109,6 @@ function encodeDraftTags(draft, draftTags) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** A clickable question chip rendered inside a message. */
 function QuestionChip({ questionId, questionIndex, questionsById, onNavigate, isDarkMode }) {
   const { t } = useTranslation();
   const q = questionsById[String(questionId)];
@@ -148,7 +135,6 @@ function QuestionChip({ questionId, questionIndex, questionsById, onNavigate, is
   );
 }
 
-/** Role badge */
 function RoleBadge({ role, isDarkMode }) {
   if (role === 'LEADER') {
     return (
@@ -200,7 +186,6 @@ function UserAvatar({ src, name, role, userId, sizeClass = 'w-8 h-8', textClass 
   );
 }
 
-/** Single message row. */
 function MessageItem({
   msg,
   canDelete,
@@ -368,7 +353,6 @@ function MessageItem({
   );
 }
 
-/** Empty thread state */
 function EmptyThread({ isDarkMode }) {
   const { t } = useTranslation();
   return (
@@ -458,7 +442,6 @@ function LockedState({ isDarkMode }) {
   );
 }
 
-/** Slash-command suggestion item */
 function SuggestionItem({ question, isActive, onSelect, isDarkMode }) {
   return (
     <button
@@ -486,19 +469,6 @@ function SuggestionItem({ question, isActive, onSelect, isDarkMode }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-/**
- * GroupDiscussionPanel — General (quiz-level) discussion with /question tagging.
- *
- * Props:
- *  isDarkMode          boolean
- *  workspaceId         number
- *  quizId              number
- *  isLeader            boolean
- *  hasAttempted        boolean
- *  allQuestions        Array<{questionId, content, index}> — flat sorted list
- *  questionsById       Record<string, question>
- *  onNavigateToQuestion (questionId: number, questionIndex: number) => void
- */
 export default function GroupDiscussionPanel({
   isDarkMode = false,
   workspaceId,
@@ -518,7 +488,6 @@ export default function GroupDiscussionPanel({
 
   // ── Draft & tag state
   const [draft, setDraft] = useState('');
-  /** Map of display marker → { questionId, index } */
   const [draftTags, setDraftTags] = useState({});
   const [posting, setPosting] = useState(false);
 

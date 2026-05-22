@@ -4,23 +4,6 @@ import { Crown } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { buildPlansPath } from "@/lib/routePaths";
 
-/**
- * Wrapper that locks UI elements behind a plan entitlement.
- *
- * When `allowed` is false:
- *  - The child element is rendered with reduced opacity and pointer events disabled
- *  - A gold Crown badge is overlaid in the top-right corner
- *  - Clicking anywhere on the element opens the PlanUpgradeModal
- *
- * When `allowed` is true, children render normally with no overhead.
- *
- * Props:
- *  - allowed: boolean — whether the feature is available in the current plan
- *  - children: ReactNode
- *  - featureName: optional label shown inside the upgrade modal
- *  - isDarkMode: boolean for modal theming
- *  - className: additional class applied to the outer wrapper when locked
- */
 export default function PlanGatedFeature({
   allowed,
   children,

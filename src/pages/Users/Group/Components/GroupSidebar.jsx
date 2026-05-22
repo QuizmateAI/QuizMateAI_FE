@@ -21,6 +21,7 @@ import {
   Home,
   ChevronsLeft,
   ChevronsRight,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VietnamFlag from '@/assets/Viet_nam.png';
@@ -53,6 +54,7 @@ const NAV_ITEMS = [
   { id: 'members', icon: Users },
   { id: 'memberStats', icon: Brain },
   { id: 'wallet', icon: Wallet },
+  { id: 'showcase', icon: Sparkles },
   { id: 'settings', icon: Settings },
 ];
 
@@ -61,13 +63,9 @@ function GroupSidebar({
   isDarkMode = false,
   activeSection = 'dashboard',
   onSectionChange,
-  /** Khi chọn mục con (AI / thủ công / JSON) trong nhánh Quiz hoặc Flashcard */
   onStudioSubAction,
-  /** activeView từ studio (createQuiz, quiz, …) — để mở rộng đúng nhánh */
   studioActiveView = null,
-  /** Mục con đang được chọn cho nhánh Quiz (ai | manual | paste) — dùng để bôi sáng sub-item. */
   studioQuizSubKey = null,
-  /** Mục con đang được chọn cho nhánh Flashcard (ai | manual | paste) — dùng để bôi sáng sub-item. */
   studioFlashcardSubKey = null,
   groupName = '',
   wsConnected = false,
@@ -101,6 +99,7 @@ function GroupSidebar({
     if (item.id === 'dashboard') return !isMember;
     if (item.id === 'personalDashboard') return isMember;
     if (item.id === 'memberStats') return !isMember;
+    if (item.id === 'showcase') return !isMember;
     return true;
   });
 

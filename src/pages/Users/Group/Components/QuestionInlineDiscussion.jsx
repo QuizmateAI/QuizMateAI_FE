@@ -1,15 +1,3 @@
-/**
- * QuestionInlineDiscussion
- *
- * Always-visible inline chat thread below each question card (Group context).
- *
- * Rules:
- *  - Member must have attempted the quiz to participate (hasAttempted prop)
- *  - Leader always has access regardless of attempt status
- *  - Enter → send · Shift+Enter → new line
- *  - First-time guideline card shown at top
- */
-
 import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -341,16 +329,6 @@ function MessageRow({ msg, canDelete, onDelete, onReply, replyPreview, depth, is
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-/**
- * Props:
- *  questionId      number
- *  questionIndex   number   — 1-based global index
- *  workspaceId     number
- *  quizId          number
- *  isLeader        boolean
- *  hasAttempted    boolean  — member must complete quiz first; leader bypasses
- *  isDarkMode      boolean
- */
 export default function QuestionInlineDiscussion({
   questionId,
   questionIndex,

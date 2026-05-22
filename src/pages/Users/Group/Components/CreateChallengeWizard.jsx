@@ -73,7 +73,6 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const [registrationMode, setRegistrationMode] = useState('PUBLIC_GROUP');
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [memberSearch, setMemberSearch] = useState('');
-  /** Leader tham gia thi — một suất, sau ACTIVE không xem trước đề */
   const [leaderParticipates, setLeaderParticipates] = useState(false);
 
   // Fetch quizzes
@@ -105,7 +104,6 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     return members.filter((m) => Number(m.userId ?? m.groupMemberId) !== uid);
   }, [members, currentUserId]);
 
-  /** Không gửi / không đếm leader trong danh sách mời (đồng bộ với UI đã ẩn bản thân). */
   const sanitizedSelectedUserIds = useMemo(() => {
     const uid = Number(currentUserId);
     if (!Number.isInteger(uid) || uid <= 0) return selectedUserIds;
@@ -194,7 +192,6 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     [quizzes],
   );
 
-  /** Quiz đã chọn có thể không còn hợp lệ khi danh sách quiz đổi — dùng giá trị đã kiểm tra, không cần effect. */
   const validSelectedQuizId = useMemo(() => {
     if (selectedQuizId == null) return null;
     return challengeEligibleQuizzes.some((q) => q.quizId === selectedQuizId)

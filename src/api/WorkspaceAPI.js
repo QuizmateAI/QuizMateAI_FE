@@ -215,7 +215,6 @@ export const markWorkspaceAccess = async (workspaceId) => {
   return response;
 };
 
-/** CurrentPlanResponse — gói hiện tại của group workspace (member/leader có quyền truy cập) */
 export const getWorkspaceCurrentPlan = async (workspaceId) => {
   const response = await api.get(`/workspace/${workspaceId}/current-plan`);
   return response;
@@ -374,10 +373,6 @@ export const getGroupWorkspaceProfile = async (workspaceId) => {
   return response;
 };
 
-/**
- * Atomic create-and-configure: BE chỉ tạo workspace SAU KHI nhận đủ basic + config.
- * Nếu user back ngang giữa wizard, không có workspace nào được tạo.
- */
 export const createGroupWithProfile = async (data) => {
   const payload = {
     groupName: trimToNullSafe(data.groupName),

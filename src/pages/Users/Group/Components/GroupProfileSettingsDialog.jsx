@@ -10,12 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import GroupProfileOverviewPanel from './GroupProfileOverviewPanel';
 
-/**
- * Wraps the existing profile overview panel inside a Radix dialog so the
- * settings page can surface it on demand instead of rendering the whole
- * snapshot inline. Does not change the panel's internal behaviour — leaders
- * still edit profile fields via the same `onOpenProfileConfig` callback.
- */
 function GroupProfileSettingsDialog({
   open,
   onOpenChange,

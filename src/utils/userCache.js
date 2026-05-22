@@ -1,8 +1,3 @@
-/**
- * Client-side cache cho user profile + subscription
- * Lần load thứ 2 dùng cache → ~500ms thay vì fetch lại
- */
-
 const PROFILE_CACHE_KEY = 'quizmate_user_profile';
 const SUBSCRIPTION_CACHE_KEY = 'quizmate_user_subscription';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 phút

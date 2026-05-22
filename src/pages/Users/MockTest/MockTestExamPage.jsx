@@ -39,17 +39,6 @@ import MockTestSectionIntro from './components/MockTestSectionIntro';
 import MockTestSectionTransition from './components/MockTestSectionTransition';
 import MockTestSectionCompletePanel from './components/MockTestSectionCompletePanel';
 
-/**
- * Dedicated MockTest v2 attempt page — section-by-section enforced flow.
- * Mounted at /quizzes/mock-tests/:quizId/exam (route in App.jsx).
- *
- * Differences vs ExamQuizPage (shared Quiz attempt):
- *   - Only ONE section visible at a time (gated by useMockTestSectionFlow phase machine).
- *   - User cannot navigate back to completed sections (one-way progression).
- *   - Submit button hidden until phase=COMPLETE on the LAST section.
- *   - No pagination, no per-question timer, no flag panel — focus on exam realism.
- *   - Same backend APIs (getQuizFullForAttemptInProgress, startQuizAttempt, submitAttempt).
- */
 const NS = 'workspace.quiz.mockTestExam';
 
 export default function MockTestExamPage() {

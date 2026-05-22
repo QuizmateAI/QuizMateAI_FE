@@ -1,8 +1,3 @@
-/**
- * Chuẩn hóa câu hỏi đã load ở màn Quiz detail (sections/questionsMap/answersMap)
- * thành input cho buildFlashcardItemsFromAttempt.
- */
-
 import { QUESTION_TYPE_ID_MAP } from '@/api/QuizAPI';
 import { buildFlashcardItemsFromAttempt } from '@/pages/Users/Quiz/utils/buildFlashcardItemsFromAttempt';
 
@@ -44,11 +39,6 @@ function normalizeMatchingPairs(answers = []) {
     .filter((pair) => pair.leftKey && pair.rightKey);
 }
 
-/**
- * @param {Array<{ sectionId?: number }>} sections
- * @param {Record<string, Array<object>>} questionsMap
- * @param {Record<string, Array<object>>} answersMap
- */
 export function buildFlashcardItemsFromQuizDetail(sections = [], questionsMap = {}, answersMap = {}) {
   const reviewQuestions = [];
 

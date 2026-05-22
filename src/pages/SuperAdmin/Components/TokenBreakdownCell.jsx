@@ -1,14 +1,5 @@
 import { useTranslation } from 'react-i18next';
 
-/**
- * Hien thi token cua 1 row AI call duoi dang 3 card: INPUT / OUTPUT / TOTAL.
- * Dung chung cho ca AI Costs va AI Audit table — tranh duplicate UI.
- *
- * row co the la `ai_usage_log` response (AI Costs) hoac `ai_token_audit_log` response (AI Audit).
- * Ca 2 deu co cac field: promptTokens, thoughtTokens, completionTokens, totalTokens.
- *
- * Output token = completionTokens + thoughtTokens (Gemini tach reasoning thanh thoughtTokens).
- */
 function getTokenTone(isDarkMode) {
   return isDarkMode
     ? {

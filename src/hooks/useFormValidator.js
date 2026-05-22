@@ -1,33 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 
-/**
- * Validator inline siêu nhẹ (không dùng zod/react-hook-form) cho các form admin.
- *
- * Dùng:
- *   const v = useFormValidator({
- *     code:        { required: true, pattern: /^[A-Z0-9_-]+$/, max: 64, message: 'Code không hợp lệ' },
- *     displayName: { required: true, min: 1, max: 200 },
- *     price:       { required: true, min: 0, max: 1_000_000_000, kind: 'number' },
- *   });
- *
- *   <input
- *     value={formData.code}
- *     onChange={(e) => { setFormData({ ...formData, code: e.target.value }); v.change('code', e.target.value); }}
- *     onBlur={() => v.touch('code')}
- *     className={cn('...', v.hasError('code') && 'border-rose-500 focus:ring-rose-500')}
- *   />
- *   {v.errorOf('code') ? <p className="mt-1 text-xs text-rose-600">{v.errorOf('code')}</p> : null}
- *
- *   if (!v.validateAll(formData)) { return; }  // dừng submit nếu sai
- *
- * Rule field:
- *   - required: true — bắt buộc có giá trị
- *   - kind: 'number' — parse thành number trước khi check min/max
- *   - min, max — với string là length; với number là giá trị
- *   - pattern — regex (string hoặc RegExp)
- *   - custom(value, all): string | null — trả về message nếu lỗi, null nếu OK
- *   - message — override message mặc định cho required/pattern
- */
 export function useFormValidator(rules) {
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});

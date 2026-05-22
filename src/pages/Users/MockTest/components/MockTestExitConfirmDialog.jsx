@@ -10,21 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-/**
- * Confirm dialog hien thi khi user thoat khoi form Tao Mocktest ma chua submit.
- *
- * Layout (3 buttons): destructive "Exit without saving" tach ben trai;
- * "Keep editing" (cancel) + "Save & exit" (primary) gom ben phai.
- * Mobile: stacked, primary tren cung -> keep editing -> discard cuoi.
- *
- * Props:
- *   open: bool
- *   onCancel: () => void  — keep editing
- *   onDiscard: () => void — discard draft and exit
- *   onSaveAndExit: () => void — save current AI template to user's library then exit (optional)
- *   canSaveTemplate: bool — true when there is a usable structure to save
- *   message: optional string override
- */
 export function MockTestExitConfirmDialog({
   open,
   onCancel,

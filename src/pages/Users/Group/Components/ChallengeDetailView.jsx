@@ -29,7 +29,6 @@ import ChallengeManualMatchEditor from './ChallengeManualMatchEditor';
 import ChallengeAIMatchEditor from './ChallengeAIMatchEditor';
 import { readChallengeDraftEditorMode } from './createChallengeWizardHelpers';
 
-/** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS): tối đa 2 reviewer. */
 const MAX_SNAPSHOT_REVIEW_INVITES = 2;
 const CHALLENGE_PROGRESS_STEP = 3;
 const CHALLENGE_PROGRESS_TICK_MS = 180;
@@ -262,9 +261,6 @@ export default function ChallengeDetailView({
     refetchInterval: 10000,
   });
 
-  /** BE đôi khi trả `snapshotQuizId = 0/null` ngay sau khi tạo challenge NEW_CHALLENGE_QUIZ
-   * (đang setup snapshot/AI). Trong trạng thái này leader controls sẽ ẩn — refetch nhanh
-   * mỗi 1.5s cho tới khi snapshot ready để leader không bị "mất" UI. */
   const isSnapshotPendingForNewChallenge = Boolean(detail)
     && String(detail?.sourceMode || '').toUpperCase() === 'NEW_CHALLENGE_QUIZ'
     && Number(detail?.snapshotQuizId) <= 0;
@@ -547,7 +543,6 @@ export default function ChallengeDetailView({
     handleAction(() => declineQuizReviewInvitation(workspaceId, qid), 'declineReviewInvite');
   }, [detail?.snapshotQuizId, handleAction, workspaceId]);
 
-  /** Must run before any early return — same hook order every render */
   const snapshotDurationMinutes = useMemo(() => {
     if (!detail || Number(detail.snapshotQuizId) <= 0) return 0;
     return getDurationInMinutes({
@@ -561,9 +556,7 @@ export default function ChallengeDetailView({
   const hasSnapshotQuiz = Number(detail?.snapshotQuizId) > 0;
   const snapshotQuizId = Number(detail?.snapshotQuizId) || 0;
   const snapshotStatusKeyRaw = String(detail?.snapshotQuizStatus || '').toUpperCase();
-  /** Defensive guard: nếu snapshot đã có câu hỏi, coi như AI generation hoàn tất —
-   * bỏ qua status/WS task tracking sticky (BE đôi khi không gửi COMPLETED signal hoặc
-   * không cập nhật snapshotQuizStatus về DRAFT/ACTIVE sau khi Python xong). */
+
   const aiEffectivelyDone = Number(detail?.snapshotQuizTotalQuestion) > 0;
   const realtimeChallengeQuizTaskId = snapshotQuizId > 0
     ? String(quizGenerationTaskByQuizId?.[snapshotQuizId] ?? '').trim()
@@ -797,7 +790,7 @@ export default function ChallengeDetailView({
           || (hasAnyReviewer && reviewerConfirmed)
         )
       ));
-  /** Quiz đã ACTIVE trên server nhưng chưa đủ xác nhận reviewer → không hiển thị «Sẵn sàng» */
+
   const snapshotAwaitingReviewerConfirm =
     detail.status === 'SCHEDULED'
     && detail.sourceMode === 'NEW_CHALLENGE_QUIZ'
@@ -818,7 +811,6 @@ export default function ChallengeDetailView({
       : snapshotStatusKeyRaw;
   const hasSnapshotQuizContent = Number(detail.snapshotQuizTotalQuestion) > 0;
   const effectiveChallengePublishReady = hasBackendRoundQuizPlan ? bracketRoundQuizReady : challengePublishReady;
-  /** Sau khi xuất bản (ACTIVE), chỉ leader có tham gia thi mới bị chặn xem trước đề — reviewer vẫn xem được để góp ý */
   const leaderFairPlayBlind = Boolean(detail.leaderParticipates)
     && snapshotStatusKeyRaw === 'ACTIVE'
     && !snapshotAwaitingReviewerConfirm

@@ -1,15 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
-/**
- * Quick date range presets — click chip de set from/to instantly.
- * Dung chung cho AI Costs + AI Audit filter toolbar.
- *
- * Props:
- *   value: { from: string, to: string } — datetime-local format ("YYYY-MM-DDTHH:mm")
- *   onChange(next) — gọi với { from, to } moi (chuoi datetime-local).
- *   isDarkMode: boolean
- */
 function pad(n) {
   return String(n).padStart(2, '0');
 }

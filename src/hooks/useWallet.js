@@ -25,11 +25,6 @@ function normalizeWalletPayload(res) {
   };
 }
 
-/**
- * Hook đọc ví credit của user hiện tại qua React Query.
- * Các trang (Home, Profile, Plan, Sidebar...) dùng chung một query key →
- * dedupe network, share cache, invalidate tập trung sau khi trừ/cộng credit.
- */
 export function useWallet(options = {}) {
   const { enabled = true, staleTime = 1000 * 60 * 5 } = options;
   const queryClient = useQueryClient();

@@ -2,14 +2,6 @@ import api from './api';
 
 // ==================== QUIZ ====================
 
-/** @typedef {'PRE_LEARNING'|'POST_LEARNING'|'REVIEW'|'MOCK_TEST'} QuizIntent */
-
-/**
- * Append optional `search` (Postgres FTS) — chỉ set khi chuỗi trim không rỗng.
- *
- * @param {string} path
- * @param {string | undefined} search
- */
 function appendOptionalSearchQuery(path, search) {
   const trimmed = typeof search === 'string' ? search.trim() : '';
   if (!trimmed) return path;
@@ -19,10 +11,6 @@ function appendOptionalSearchQuery(path, search) {
   return `${path}${sep}${q.toString()}`;
 }
 
-// Lấy danh sách quiz theo contextType và scopeId.
-// Optional `quizIntent` (vd "MOCK_TEST"): BE — path `/intent/{intent}` hoặc query trên workspace (ưu tiên giữ path tương thích).
-// Optional `search`: FTS title + description (WORKSPACE/GROUP + getByUser).
-// các scope khác (ROADMAP/PHASE/KNOWLEDGE) không gửi search (BE chưa ghi trong API list); FE có thể tự lọc.
 export const getQuizzesByScope = async (contextType, scopeId, { quizIntent, search } = {}) => {
   let url = '';
   // Group workspace dùng cùng endpoint danh sách theo workspaceId
@@ -117,13 +105,11 @@ export const deleteQuiz = async (quizId) => {
   return response;
 };
 
-/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE. */
 export const publishGroupQuiz = async (quizId) => {
   const response = await api.post(`/quiz/${quizId}/group/publish`);
   return response;
 };
 
-/** Leader: cấu hình quiz chung cho nhóm hoặc gán thành viên cụ thể. */
 export const setGroupQuizAudience = async (quizId, body) => {
   const response = await api.put(`/quiz/${quizId}/group/audience`, body);
   return response;
@@ -482,14 +468,6 @@ const DIFFICULTY_MAP = {
   hard: 'HARD',
 };
 
-/**
- * Tạo quiz hoàn chỉnh theo flow multi-step:
- * 1. Tạo Quiz → quizId
- * 2. Tạo Section → sectionId
- * 3. Tạo từng Question → questionId
- * 4. Tạo Answer cho từng Question
- * 5. Cập nhật quiz sang ACTIVE
- */
 export const createFullQuiz = async ({
   workspaceId,
   roadmapId,

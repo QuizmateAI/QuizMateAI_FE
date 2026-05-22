@@ -1,10 +1,3 @@
-/**
- * Map BE error codes to i18n keys.
- * Keep in sync with com.example.quizmateai_be.exception.ErrorCode.
- *
- * Note: codes 1071-1078 overlap between Challenge and QuizAttempt.
- * FE falls back to the original BE message for those codes.
- */
 const ERROR_CODES = {
   // ========== XÁC THỰC / TÀI KHOẢN ==========
   1001: 'error.userNotExisted',

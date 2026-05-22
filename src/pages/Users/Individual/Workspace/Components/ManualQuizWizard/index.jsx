@@ -226,20 +226,6 @@ function buildUpdatePayload(config, questions, editingSectionId, questionTypes, 
   };
 }
 
-/**
- * ManualQuizWizard — supports create, edit, and clone modes.
- *
- * Props:
- *  - workspaceId: number
- *  - contextType?: "INDIVIDUAL" | "GROUP" — mặc định INDIVIDUAL. GROUP disables import panel
- *    (tránh lộ catalog quiz workspace cá nhân của leader vào flow group).
- *  - editingQuizId?: number — if set, loads quiz and edits in-place via update-bulk
- *  - cloneFromQuizId?: number — if set, loads quiz as template and creates new via create-bulk
- *  - onCreateQuiz(quiz): called after successful create (create or clone mode)
- *  - onSaveQuiz(quiz): called after successful update (edit mode)
- *  - onBack(): exit form
- *  - isDarkMode
- */
 function ManualQuizWizard({
   workspaceId,
   contextType = "INDIVIDUAL",

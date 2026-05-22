@@ -166,10 +166,6 @@ const HIDDEN_SETTING_KEYS = new Set([
   'mock_test.max_saved_templates_per_user',
 ]);
 
-/**
- * Trả về title friendly cho 1 setting key. Fallback: humanize key (vd "user.welcome_credit_units"
- * → "User welcome credit units") nếu chưa có mapping. Cập nhật SETTING_TITLES khi thêm key mới.
- */
 function getSettingTitle(key = '') {
   if (SETTING_TITLES[key]) return SETTING_TITLES[key];
   return key

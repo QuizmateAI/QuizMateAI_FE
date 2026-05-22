@@ -18,10 +18,6 @@ const BLOOM_LEVELS = [
   { id: 5, key: "evaluate" },
 ];
 
-/**
- * Form tạo Post-learning — tạo quiz với contextType=PHASE
- * Mỗi phase chỉ được có tối đa 1 post-learning
- */
 function CreatePostLearningForm({
   isDarkMode = false,
   onCreatePostLearning,

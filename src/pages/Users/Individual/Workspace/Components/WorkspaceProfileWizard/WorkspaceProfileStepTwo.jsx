@@ -34,10 +34,6 @@ function mergeUniqueSuggestions(...lists) {
   return merged;
 }
 
-/**
- * Normalize text for comparison: lowercase, trim, collapse whitespace.
- * Used to match exam names from different AI calls that may differ in casing/spacing.
- */
 function normalizeForCompare(value) {
   return (value ?? '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 }

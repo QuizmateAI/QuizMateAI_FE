@@ -54,10 +54,6 @@ function mapBeQuestion(q, sectionId, questionTypes, idx, keepIds) {
   };
 }
 
-/**
- * Maps full quiz BE response → wizard state, keeping IDs for update-bulk.
- * Returns { config, questions, sectionId }.
- */
 export function mapQuizToWizardState(quizFull, questionTypes) {
   const durationSeconds = Number(quizFull?.duration) || 0;
   const durationMinutes = Math.max(1, Math.round(durationSeconds / 60));
@@ -84,9 +80,6 @@ export function mapQuizToWizardState(quizFull, questionTypes) {
   return { config, questions, sectionId };
 }
 
-/**
- * Same as mapQuizToWizardState but strips all IDs — for "Tạo quiz tương tự".
- */
 export function mapQuizToNewWizardState(quizFull, questionTypes) {
   const { config, questions } = mapQuizToWizardState(quizFull, questionTypes);
 

@@ -88,13 +88,6 @@ export function buildPlanEntitlementFlags(entitlements) {
   };
 }
 
-/**
- * Hook that fetches the current user's plan entitlements and exposes
- * flat boolean helpers for feature gating in the UI.
- *
- * All boolean helpers default to false while loading to prevent
- * premature feature unlocking.
- */
 export function usePlanEntitlements({ enabled = true } = {}) {
   const [entitlements, setEntitlements] = useState(() => getCachedEntitlements());
   const [loading, setLoading] = useState(() => enabled && !getCachedEntitlements());

@@ -8,39 +8,6 @@ import {
 
 import { askMaterial } from "@/api/MaterialAPI";
 
-// ============================================================================
-// AskAIPanel — Chat panel nằm TRONG sidebar (không phải floating overlay).
-//
-// Layout: full height + width của parent (sidebar 440px). User vừa đọc PDF
-// (bên trái) vừa thấy AI response (bên phải) để ĐỐI SOÁT.
-//
-// Props:
-//   materialId      — bắt buộc để scope RAG retrieval theo material
-//   materialTitle   — hiển thị trong header panel
-//   workspaceId     — bắt buộc (BE yêu cầu validate access)
-//   currentPage     — page hiện tại của PDF, hiển thị + dùng cho gợi ý câu hỏi
-//   onJumpToPage    — callback (pageNum) → cha jump PDF tới page đó. Wire vào
-//                     mỗi source pill để user đối soát câu trả lời với PDF.
-//   isDarkMode      — theme
-//
-// Đối soát workflow:
-//   1. User gõ câu hỏi → Gửi
-//   2. AI trả lời + list sources (chunks PDF được dùng làm ngữ cảnh)
-//   3. User click vào source pill → PDF bên trái nhảy tới page đó
-//   4. User đối chiếu nội dung AI nói vs nội dung gốc PDF
-// ============================================================================
-
-// ----------------------------------------------------------------------------
-// Citation helper — parse [N], [1, 2], [1][2] patterns trong text node và
-// thay bằng <CitationBadge> clickable component. Mỗi badge link tới
-// sources[N-1].page → click jump PDF page tương ứng.
-//
-// PLUS: extractCitationNumbers walks children tree để collect tất cả [N]
-// → list item / paragraph trở thành clickable button trên DÒNG đó (UX user-
-// friendly hơn là click vào số nhỏ).
-// ----------------------------------------------------------------------------
-
-/** Recursively walk children + extract all citation numbers from text nodes. */
 function extractCitationNumbers(children) {
   const nums = [];
   function walk(node) {
@@ -65,7 +32,6 @@ function extractCitationNumbers(children) {
   return [...new Set(nums)];
 }
 
-/** Lấy source đầu tiên có page từ list citation numbers. */
 function pickJumpTarget(citationNums, sources) {
   for (const n of citationNums) {
     const src = sources[n - 1];
@@ -104,10 +70,6 @@ function CitationBadge({ num, source, isDarkMode, onJumpToPage }) {
   );
 }
 
-/**
- * Replace [N] / [1, 2] / [1][2] patterns trong children text với CitationBadge.
- * children có thể là string, React element, hoặc array. Recursively process.
- */
 function renderWithCitations(children, sources, isDarkMode, onJumpToPage) {
   if (children == null) return children;
 

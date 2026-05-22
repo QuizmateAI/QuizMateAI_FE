@@ -80,24 +80,13 @@ function writeDraftToStorage(key, value) {
   }
 }
 
-/**
- * Luồng dán JSON flashcard — giống quiz: (1) prompt template từ BE / fallback, (2) dán JSON → áp dụng nháp.
- */
 function ManualFlashcardPasteImportPanel({
   isDarkMode = false,
   onApply,
   disabled = false,
   applyButtonLabel,
   applyingLabel,
-  /**
-   * Key sessionStorage để lưu nội dung JSON đang gõ — chống mất khi user thoát
-   * giữa chừng. Truyền null/undefined để tắt persistence (default).
-   */
   draftStorageKey = null,
-  /**
-   * Khi true: hiển thị dialog xác nhận (disclaimer AI) trước khi tạo, giống
-   * luồng quiz. Default false — apply ngay (dùng cho luồng merge vào draft).
-   */
   requireConfirmation = false,
 }) {
   const { t } = useTranslation();

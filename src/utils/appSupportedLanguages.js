@@ -1,4 +1,3 @@
-/** Base language codes with full folders under `src/i18n/locales`. */
 export const APP_SUPPORTED_LANGUAGES = Object.freeze(['vi', 'en', 'ja']);
 
 export function getBaseAppLanguage(language) {
@@ -13,12 +12,10 @@ export function cycleAppLanguage(language) {
   return APP_SUPPORTED_LANGUAGES[(idx + 1) % APP_SUPPORTED_LANGUAGES.length];
 }
 
-/** Uppercase short label for UI badges (VI, EN, JA). */
 export function appLanguageShortLabel(language) {
   return getBaseAppLanguage(language).toUpperCase();
 }
 
-/** Locale for `Intl` / number formatting. */
 export function getAppNumberLocale(language) {
   const base = getBaseAppLanguage(language);
   if (base === 'vi') return 'vi-VN';

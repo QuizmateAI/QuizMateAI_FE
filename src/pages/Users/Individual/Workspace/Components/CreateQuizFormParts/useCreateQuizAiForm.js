@@ -30,7 +30,6 @@ import {
   normalizeListResponse,
 } from "./createQuizForm.utils";
 
-/** Trùng với lib/errorCodes.js — thiếu credit workspace (QMC). */
 const INSUFFICIENT_CREDIT_BUSINESS_CODE = 1129;
 
 function detectInsufficientCreditError(submitError) {
@@ -73,10 +72,6 @@ const normalizeStructureItems = (items) => (
   })
 );
 
-/**
- * BE đôi khi chỉ trả `items` mà không có `structureJson`. Nếu chỉ nhìn `structureJson`
- * rồi gọi lại preview khi Generate, user sẽ thấy luôn chạy "structure preview" thay vì generate.
- */
 function buildStructureJsonPayload(preview, isStructureEditing, editableStructureItems) {
   if (isStructureEditing && Array.isArray(editableStructureItems) && editableStructureItems.length > 0) {
     return JSON.stringify({ items: normalizeStructureItems(editableStructureItems) });

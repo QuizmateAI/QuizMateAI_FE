@@ -41,7 +41,6 @@ export default function PlanCard({
     [plan.planFeature],
   );
 
-  /** Gói mặc định (giá 0): user đã có khi tạo tài khoản, không cần mua */
   const isDefaultPlan = Number(plan.price) === 0;
 
   const ringClass = highlight

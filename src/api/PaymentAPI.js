@@ -2,7 +2,6 @@ import api from './api';
 
 const CLIENT_TYPE = 'WEB';
 
-/** Lấy thông tin plan theo ID (planCatalogId) — dùng cho trang thanh toán */
 export const getPlanById = (planId) => {
   return api.get(`/plan-catalog/${planId}`);
 };
@@ -66,7 +65,6 @@ export const createStripePayment = (planId, workspaceId = null, extraSlotCount =
   return api.post(`/stripe/create/${planId}`, null, { params: { clientType: CLIENT_TYPE } });
 };
 
-/** Lấy thông tin slot của group workspace (dành cho leader) — hiển thị khi chọn mua thêm slot. */
 export const getWorkspaceSlotInfo = (workspaceId) => {
   return api.get(`/payment/workspace/${workspaceId}/slot-info`);
 };

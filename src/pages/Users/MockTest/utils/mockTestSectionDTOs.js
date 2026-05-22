@@ -4,16 +4,6 @@ import {
   scorePerQuestion,
 } from './mockTestScoring';
 
-/**
- * Aggregate a section's structure rows {difficulty, questionType, bloomSkill, quantity}
- * into the SectionConfigDTO shape the BE expects.
- *
- * Rules (mirrored from BE validateMockTestConfig):
- *   - questionUnit=false: difficulty ratios are PERCENT, sum=100.
- *   - bloomUnit=true: bloom ratio is per-skill quantity.
- *   - Difficulty %s rounded then largest bucket adjusted to make sum exactly 100.
- *   - Bloom: group quantity by skill name → array of {bloomId, ratio:count}.
- */
 export function aggregateStructure(structure, bloomMap) {
   const items = Array.isArray(structure) ? structure : [];
   const numQuestions = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
@@ -54,12 +44,6 @@ export function aggregateStructure(structure, bloomMap) {
   return { numQuestions, easyRatio, mediumRatio, hardRatio, questionTypes: [], bloomSkills };
 }
 
-/**
- * Convert form sections (with optional subConfigs) into BE SectionConfigDTO list.
- * Supports per-section scoring overrides — when scoring.sectionScoring contains
- * a section-specific points entry, derive per-question score from that instead
- * of the overall average.
- */
 export function sectionsToServerDTOs(sections, bloomMap, scoring) {
   if (!Array.isArray(sections)) return [];
   const sectionScoring = buildSectionScoringPayload(sections, scoring);

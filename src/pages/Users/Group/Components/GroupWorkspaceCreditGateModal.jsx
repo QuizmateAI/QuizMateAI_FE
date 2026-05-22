@@ -10,10 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-/**
- * Shown when a paid group plan exists but workspace QMC is insufficient.
- * (When there is no paid plan, the app navigates to the group plans page instead.)
- */
 export default function GroupWorkspaceCreditGateModal({
   open,
   onOpenChange,

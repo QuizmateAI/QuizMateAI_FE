@@ -5,7 +5,6 @@ import {
   minDateStringPlusDays,
 } from '@/lib/challengeSchedule';
 
-/** HH:mm cho hiện tại (làm tròn lên 5 phút). */
 function currentTimeStringRoundedUp() {
   const d = new Date();
   d.setMinutes(d.getMinutes() + 5 - (d.getMinutes() % 5 || 5), 0, 0);

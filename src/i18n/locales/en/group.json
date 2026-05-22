@@ -444,7 +444,8 @@
         "members": "Members",
         "memberStats": "Member stats",
         "wallet": "Wallet",
-        "settings": "Settings"
+        "settings": "Settings",
+        "showcase": "Showcase"
       },
       "expandSidebar": "Expand sidebar",
       "collapseSidebar": "Collapse sidebar"

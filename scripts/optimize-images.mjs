@@ -1,7 +1,3 @@
-/**
- * Script to optimize logo images
- * Converts PNG to WebP and creates optimized PNG fallbacks
- */
 import sharp from 'sharp';
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';

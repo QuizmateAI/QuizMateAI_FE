@@ -3,17 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Crown, Sparkles } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-/**
- * Lightweight modal shown when a user tries to access a feature not included
- * in their current plan.
- *
- * Props:
- *  - open / onOpenChange: dialog visibility control
- *  - featureName: optional display name of the locked feature
- *  - isDarkMode: boolean for theme
- *  - upgradePath: optional route used for the upgrade CTA
- *  - upgradeState: optional router state for the upgrade CTA
- */
 export default function PlanUpgradeModal({
   open,
   onOpenChange,

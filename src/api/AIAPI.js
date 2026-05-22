@@ -56,11 +56,6 @@ function sectionConfigsToCustomStructure(sectionConfigs, totalQuestion) {
   };
 }
 
-/**
- * Tạo Mock Test thông qua AI (async, trả về taskId).
- * Migration: gọi v2 POST /api/mocktest/generate, giữ nguyên external interface.
- * Caller form vẫn pass v1 AIMockTestRequest shape — adapter convert sang v2 GenerateMockTestRequest.
- */
 export const generateMockTest = async (data) => {
   const v2Payload = {
     title: data?.title,
@@ -93,10 +88,6 @@ export const generateMockTest = async (data) => {
   return response;
 };
 
-/**
- * @deprecated Use useMockTestStructureSuggestion hook (đã migrate sang v2 recommend + getTemplate).
- * Giữ stub này để không break import cũ — nhưng chỉ throw để dev biết phải migrate sang hook.
- */
 export const suggestMockTestStructure = async () => {
   throw new Error(
     '[DEPRECATED] suggestMockTestStructure() — sử dụng useMockTestStructureSuggestion hook hoặc '

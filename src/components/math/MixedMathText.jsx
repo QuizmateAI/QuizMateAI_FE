@@ -3,12 +3,6 @@ import katex from "katex";
 import "katex/dist/katex.min.css";
 import { tryHeuristicKatexHtml } from "./heuristicMath";
 
-/**
- * Tách chuỗi thành đoạn text và LaTeX theo delimiter chuẩn:
- * - Inline: \( ... \)
- * - Block:  \[ ... \]
- * Nội dung không có delimiter được render như text thường (React escape).
- */
 function parseMixedMath(input) {
   const str = input == null ? "" : String(input);
   if (!str) return [{ type: "text", value: "" }];
@@ -45,12 +39,6 @@ function renderKaTeXHtml(latex, displayMode) {
   }
 }
 
-/**
- * @param {object} props
- * @param {React.ReactNode} props.children - Chuỗi hiển thị (có thể chứa \(latex\) hoặc \[latex\])
- * @param {string} [props.className]
- * @param {keyof JSX.IntrinsicElements | React.ElementType} [props.as] - Thẻ bọc (mặc định span)
- */
 function MixedMathText({ children, className, as: Component = "span", ...rest }) {
   const text = children == null ? "" : String(children);
   const parts = useMemo(() => parseMixedMath(text), [text]);

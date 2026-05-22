@@ -6,12 +6,6 @@ import { TrendingDown, TrendingUp } from 'lucide-react';
 import { getRevenueTimeseries } from '@/api/ManagementSystemAPI';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
-/**
- * Mini growth chart đặt vào header các page money/credit cũ. Pull data từ
- * /api/management/stats/revenue-timeseries với targetTypes = filter cụ thể của page.
- *
- * Default: 30 ngày gần nhất, bucket DAY. Component tự fetch + cache theo react-query.
- */
 const TARGET_TYPE_KEYS = {
   USER_PLAN: 'userPlanVnd',
   WORKSPACE_PLAN: 'workspacePlanVnd',

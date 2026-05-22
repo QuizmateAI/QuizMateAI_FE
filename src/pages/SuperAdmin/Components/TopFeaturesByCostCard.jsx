@@ -32,13 +32,6 @@ function getDayCountLabel(from, to) {
   return diff;
 }
 
-/**
- * Top features by AI cost - dual panel card.
- * Left: vertical bar chart with rank-based colors.
- * Right: numbered ranked list with share percentages and footer total.
- *
- * Shared by AiCostManagement + AiAuditManagement to keep visual parity.
- */
 function TopFeaturesByCostCard({
   topFeatures = [],
   isDarkMode = false,

@@ -1,13 +1,5 @@
 import { useCallback } from "react";
 
-/**
- * Hook quản lý phân bổ thời gian per-question (timerMode=false).
- *
- * Khi user sửa duration một câu:
- *  - Câu đó tự động bị lock.
- *  - Các câu chưa lock còn lại được rebalance để tổng = totalBudgetSeconds.
- *  - Nếu TẤT CẢ câu khác đã lock → confirm với user vì tổng thời gian bài sẽ thay đổi.
- */
 export function useQuestionTimeBalancer({ questions, setQuestions, totalBudgetSeconds }) {
   const toggleLock = useCallback((questionId) => {
     setQuestions((prev) =>
@@ -65,10 +57,6 @@ export function useQuestionTimeBalancer({ questions, setQuestions, totalBudgetSe
     setQuestions((prev) => prev.map((q) => (q.timeLocked ? q : { ...q, duration: secs })));
   }, [setQuestions]);
 
-  /**
-   * Phân bổ đều thủ công: chia totalBudgetSecs cho các câu chưa lock.
-   * @returns {{ ok: boolean, minShare: number }}
-   */
   const distributeEvenly = useCallback((totalBudgetSecs) => {
     const budget = Number(totalBudgetSecs) || 0;
     const lockedSum = questions.reduce(

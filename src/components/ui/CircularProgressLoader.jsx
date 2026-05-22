@@ -1,13 +1,5 @@
 import React from 'react';
 
-/**
- * CircularProgressLoader - Vòng tròn loading hiển thị phần trăm ở giữa
- * @param {number} percent - Phần trăm (0-100)
- * @param {string} size - Kích thước: 'sm' (w-12), 'md' (w-16), 'lg' (w-20)
- * @param {string} color - Màu: 'blue' (default), 'orange', 'purple', 'amber'
- * @param {string} label - Nhãn hiển thị bên dưới (ví dụ: "Loading", "Processing")
- * @param {string} className - Class CSS bổ sung
- */
 export default function CircularProgressLoader({
 	percent = 0,
 	size = 'md',

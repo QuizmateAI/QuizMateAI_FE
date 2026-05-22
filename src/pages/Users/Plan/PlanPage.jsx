@@ -83,7 +83,6 @@ function normalizeWorkspaceId(value) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-/** Map PlanCatalogResponse sang format gọn cho trang plan. */
 function mapPlanCatalogToCard(plan) {
   const e = plan.entitlement ?? {};
   const type = plan.planScope === "USER" ? "INDIVIDUAL" : "GROUP";

@@ -1,14 +1,3 @@
-/**
- * Approximate line numbers in pasted JSON for user-facing error messages.
- * Uses stable field ordering: nth "questionType" ≈ nth question, etc.
- */
-
-/**
- * @param {string} source
- * @param {RegExp} pattern - must match globally across source
- * @param {number} nZeroBased
- * @returns {number | null} 1-based line number
- */
 export function lineOfNthMatch(source, pattern, nZeroBased) {
   if (source == null || nZeroBased < 0) return null;
   const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
@@ -24,11 +13,6 @@ export function lineOfNthMatch(source, pattern, nZeroBased) {
   return null;
 }
 
-/**
- * @param {object} parsed - validated object shape with sections/questions
- * @param {number} sIdx
- * @param {number} qIdx
- */
 export function globalQuestionIndex(parsed, sIdx, qIdx) {
   if (!parsed || !Array.isArray(parsed.sections)) return qIdx;
   let acc = 0;
@@ -44,9 +28,6 @@ export function globalQuestionIndex(parsed, sIdx, qIdx) {
   return acc + qIdx;
 }
 
-/**
- * Count answer objects before sections[sIdx].questions[qIdx] in traversal order.
- */
 export function answerCountBefore(parsed, sIdx, qIdx) {
   if (!parsed || !Array.isArray(parsed.sections)) return 0;
   let n = 0;
@@ -62,22 +43,15 @@ export function answerCountBefore(parsed, sIdx, qIdx) {
   return n;
 }
 
-/**
- * Line of the Nth "questionType" key (0-based n) in the file.
- */
 export function lineForQuestionSlot(source, globalQIdx) {
   return lineOfNthMatch(source, /"questionType"\s*:/g, globalQIdx);
 }
 
-/**
- * Line of the global answer slot (for answer-level errors).
- */
 export function lineForAnswerSlot(source, parsed, sIdx, qIdx, aIdx) {
   const before = answerCountBefore(parsed, sIdx, qIdx);
   return lineOfNthMatch(source, /"isCorrect"\s*:/g, before + aIdx);
 }
 
-/** @param {string} raw */
 export function hintForInvalidQuestionType(raw) {
   if (raw == null || typeof raw !== "string") return "";
   const u = raw.trim().toUpperCase().replace(/\s+/g, "_").replace(/-/g, "_");
@@ -87,9 +61,6 @@ export function hintForInvalidQuestionType(raw) {
   return "";
 }
 
-/**
- * 1-based line of first `"key":` in source (for root fields).
- */
 export function lineOfFirstKey(source, key) {
   if (source == null || source === "" || !key) return null;
   const escaped = String(key).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

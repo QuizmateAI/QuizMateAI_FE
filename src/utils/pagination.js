@@ -1,15 +1,3 @@
-/**
- * Pagination clamp utilities.
- *
- * BE từ chối `size` ngoài [1, 100] và `page < 0` với HTTP 400 (xem
- * SystemRbacController, PaymentController, VnPay/Momo/Stripe, CreditWallet).
- * Trước đây BE silently clamp; giờ phải clamp ở client trước khi gửi.
- *
- * Logic clamp gắn vào axios request interceptor (xem api.js), nên callers
- * không cần làm gì. Có thể opt-out per-request bằng `skipPaginationClamp: true`
- * trong axios config nếu endpoint của bạn dùng nghĩa khác cho `page`/`size`.
- */
-
 export const PAGINATION_SIZE_MIN = 1;
 export const PAGINATION_SIZE_MAX = 100;
 export const PAGINATION_PAGE_MIN = 0;
@@ -77,10 +65,6 @@ function clampUrlQueryString(url) {
   return changed ? `${path}?${search.toString()}` : url;
 }
 
-/**
- * Mutate axios config in-place để clamp `page` và `size` (cả ở params object
- * và URL query string). Trả về config để tiện chain.
- */
 export function applyPaginationBounds(config) {
   if (!config || config.skipPaginationClamp) return config;
   clampParamsObject(config.params);

@@ -14,8 +14,6 @@ export const WORKSPACE_QUIZ_ADV_FILTER_TIMER = {
 
 export const WORKSPACE_QUIZ_ADV_BLOOM_SKILLS = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE"];
 
-/** @typedef {ReturnType<typeof createDefaultWorkspaceQuizAdvFilters>} WorkspaceQuizAdvFilters */
-
 export function createDefaultWorkspaceQuizAdvFilters() {
   return {
     questionMin: "",
@@ -29,12 +27,6 @@ export function createDefaultWorkspaceQuizAdvFilters() {
   };
 }
 
-/**
- * Gộp state cũ (đã bỏ Quiz purpose / Passed / Attempted-not-passed) về shape hiện tại.
- *
- * @param {unknown} filters
- * @returns {ReturnType<typeof createDefaultWorkspaceQuizAdvFilters>}
- */
 export function normalizeWorkspaceQuizAdvFilters(filters) {
   const defaults = createDefaultWorkspaceQuizAdvFilters();
   if (!filters || typeof filters !== "object") return { ...defaults };
@@ -47,12 +39,6 @@ export function normalizeWorkspaceQuizAdvFilters(filters) {
   return next;
 }
 
-/**
- * Parse non-negative bounded int from form string.
- *
- * @param {unknown} raw
- * @param {{ min?: number, max?: number }} [bounds]
- */
 function parseBoundedNonNegInt(raw, bounds = {}) {
   const min = Number.isFinite(bounds.min) ? bounds.min : 0;
   const max = Number.isFinite(bounds.max) ? bounds.max : 1_000_000;
@@ -96,12 +82,6 @@ export function countActiveWorkspaceQuizAdvFilters(filters) {
   return n;
 }
 
-/**
- * Lọc phía client sau khi API trả danh sách workspace/group.
- *
- * @param {object} quiz
- * @param {WorkspaceQuizAdvFilters} filters
- */
 export function quizPassesWorkspaceQuizAdvFilters(quiz, filters) {
   const f = normalizeWorkspaceQuizAdvFilters(filters);
 

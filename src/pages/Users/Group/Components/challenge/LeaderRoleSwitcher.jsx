@@ -1,15 +1,5 @@
 import { Eye, Loader2, Lock, UserPlus } from 'lucide-react';
 
-/**
- * Banner cho phép leader đổi giữa "tham gia thi" và "tự review challenge".
- *
- * Điều kiện hiển thị:
- *  - Chỉ leader, status SCHEDULED, chưa publish.
- *  - Khi leader đang tham gia thi: banner LUÔN hiện để leader có thể chuyển sang tự review.
- *    Message thay đổi theo trạng thái reviewer (chưa có ai / pending / declined / đã confirm).
- *  - Khi leader đang là reviewer: hiện CTA "Quay lại tham gia thi", khoá
- *    không cho bấm khi leader đã từng xem đề (lastViewedAt hoặc reviewCompleteOkAt).
- */
 export default function LeaderRoleSwitcher({
   detail,
   isLeader,

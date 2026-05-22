@@ -6,12 +6,6 @@ import {
   unbanWorkspaceReviewer,
 } from '@/api/WorkspaceReviewBanAPI';
 
-/**
- * Panel quản lý reviewer bị block trong workspace.
- *
- * Hiển thị list active bans (revokedAt IS NULL) — leader có thể "Gỡ block".
- * Block được tạo từ màn review challenge khi leader phát hiện reviewer abuse.
- */
 function WorkspaceReviewBanPanel({ workspaceId, isDarkMode = false }) {
   const { t } = useTranslation();
   const [bans, setBans] = useState([]);

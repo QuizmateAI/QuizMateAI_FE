@@ -1,9 +1,3 @@
-/**
- * Client-side validation for quiz paste-import JSON, aligned with
- * {@code ManualQuizPasteImportRequest} + {@code ManualQuizValidator} (BE).
- * Reduces round-trips; BE remains authoritative.
- */
-
 import {
   globalQuestionIndex,
   hintForInvalidQuestionType,
@@ -156,10 +150,6 @@ function parseMatchingPairsFromAnswer(answer, t) {
   }
 }
 
-/**
- * @param {string} rawJson
- * @param {{ t: (key: string, opts?: object) => string, templateKey?: string | null, maxQuestions?: number }} options
- */
 export function validateQuizPasteImportJson(rawJson, options) {
   const { t, templateKey = null, maxQuestions = 100 } = options || {};
   const safeT = typeof t === "function" ? t : (k, o) => o?.defaultValue || k;

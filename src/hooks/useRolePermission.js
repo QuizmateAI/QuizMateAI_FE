@@ -48,15 +48,6 @@ export function isGroupContributor(groupRole) {
   return matchesRole(groupRole, [GROUP_ROLES.LEADER, GROUP_ROLES.CONTRIBUTOR]);
 }
 
-/**
- * Hook đọc user hiện tại từ client snapshot và trả về tập cờ role tiện dụng.
- * Chỉ là UX gate — không thay thế cho kiểm tra backend.
- *
- * Subscribe qua useSyncExternalStore để cập nhật khi login/logout xảy ra
- * trong cùng tab (notify từ setCurrentUser/clearCurrentUser) hoặc khác tab
- * (storage event). Khắc phục bug useMemo deps=[] khiến flag bị stale sau
- * khi user đổi vai trò.
- */
 function getServerSnapshot() {
   return null;
 }
@@ -79,9 +70,6 @@ export function useRolePermission() {
   );
 }
 
-/**
- * Hook tính quyền trong ngữ cảnh group (truyền groupRole từ props/context).
- */
 export function useGroupRolePermission(groupRole) {
   return useMemo(() => {
     const normalized = normalizeRole(groupRole);

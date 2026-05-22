@@ -215,10 +215,6 @@ function buildAttemptAnswerPayload(questionId, answerValue, questionType = null)
   };
 }
 
-/**
- * Transform API full-quiz response → normalized format for QuestionCard.
- * Flattens all questions from all sections into a single ordered list.
- */
 export function normalizeQuizData(apiQuiz) {
   if (!apiQuiz) return null;
 
@@ -444,10 +440,6 @@ export function getAttemptRemainingSeconds(timeoutAt, fallbackSeconds = 0) {
   return Math.max(0, Math.ceil((timeoutTime - Date.now()) / 1000));
 }
 
-/**
- * Transform local answers map { questionId: [answerId, ...] }
- * → API request format for saveAnswer endpoint
- */
 export function buildSavePayload(answers) {
   return Object.entries(answers)
     .reduce((payload, [questionId, answerValue]) => {
@@ -463,10 +455,6 @@ export function buildSavePayload(answers) {
     }, []);
 }
 
-/**
- * Build submit payload that includes all quiz questions.
- * Unanswered questions are still sent with empty selectedAnswerIds and null textAnswer.
- */
 export function buildSubmitPayload(questions = [], answers = {}) {
   return (questions || []).map((question) => {
     const questionId = Number(question?.id);

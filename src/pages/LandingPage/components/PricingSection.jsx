@@ -143,7 +143,7 @@ const PricingSection = () => {
       setIsLoadingPlans(true);
 
       try {
-        const response = await fetch(`${baseURL}/plan-catalog/active/user?ts=${Date.now()}`, {
+        const response = await fetch(`${baseURL}/v1/plan-catalog/active/user?ts=${Date.now()}`, {
           method: 'GET',
           cache: 'no-store',
           headers: {

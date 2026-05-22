@@ -1,19 +1,3 @@
-/**
- * Auth token storage.
- *
- * Access token: kept in-memory only. Lost on tab close / hard refresh — recovered
- *   via {@link bootstrap} on app start (calls /auth/refresh, which uses the httpOnly
- *   refresh cookie sent by the BE).
- * Refresh token: lives in an httpOnly cookie set by the BE; JavaScript cannot read or
- *   write it. {@link getRefreshToken} therefore returns an empty string and is kept
- *   only so existing call sites compile while we migrate them.
- *
- * Why: putting tokens in localStorage made any XSS into a token theft. In-memory +
- *   httpOnly cookie removes that vector. Cost: a brief refresh round-trip on app load
- *   to recover the access token; if the cookie is missing/expired, the user lands
- *   unauthenticated and we send them to /login.
- */
-
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 const LEGACY_KEYS = ['jwt_token', 'token'];
@@ -22,17 +6,8 @@ let _accessToken = '';
 let _bootstrapPromise = null;
 let _bootstrapped = false;
 let _refreshFn = null;
-// Single-flight refresh is owned by this module so both bootstrap() (called
-// once at app start) and ad-hoc refreshes (driven by the axios 401 interceptor)
-// share the same in-flight promise. Without this, both code paths could fire a
-// duplicate /auth/refresh round-trip on a cold start when queries race the
-// bootstrap.
 let _refreshPromise = null;
 
-/**
- * Inject the function that performs the cookie-based refresh call. Done from api.js
- * so this module stays free of axios imports (avoids a circular dep).
- */
 export function configureRefresh(refreshFn) {
   _refreshFn = typeof refreshFn === 'function' ? refreshFn : null;
 }
@@ -41,10 +16,6 @@ export function getAccessToken() {
   return _accessToken;
 }
 
-/**
- * Always returns ''. Kept so legacy callers compile during migration. The real
- * refresh token lives in an httpOnly cookie that JavaScript cannot read.
- */
 export function getRefreshToken() {
   return '';
 }
@@ -85,11 +56,6 @@ export function hasAccessToken() {
   return Boolean(_accessToken);
 }
 
-/**
- * Single-flight refresh. Multiple concurrent callers (interceptor + bootstrap +
- * other code paths) share one in-flight /auth/refresh request. Resolves with
- * the new access token; rejects if refresh failed.
- */
 export function refresh() {
   if (!_refreshFn) {
     return Promise.reject(new Error('REFRESH_NOT_CONFIGURED'));
@@ -110,14 +76,6 @@ export function refresh() {
   return _refreshPromise;
 }
 
-/**
- * Called once at app start. Tries to recover the access token via the refresh cookie.
- * Resolves whether or not auth succeeded — callers branch on hasAccessToken() after.
- *
- * Idempotent: subsequent calls return the same in-flight promise. Internally
- * shares the {@link refresh} single-flight so a query firing concurrently with
- * bootstrap doesn't trigger a duplicate refresh round-trip.
- */
 export async function bootstrap() {
   if (_bootstrapped) return _accessToken;
   if (_bootstrapPromise) return _bootstrapPromise;
@@ -146,7 +104,6 @@ export function isBootstrapped() {
   return _bootstrapped;
 }
 
-/** Test-only reset. Do not call from production code. */
 export function __resetForTests() {
   _accessToken = '';
   _bootstrapPromise = null;

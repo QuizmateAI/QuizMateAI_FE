@@ -9,15 +9,6 @@ import ListSpinner from "@/components/ui/ListSpinner";
 import PlanCard from "@/pages/Users/Profile/Components/PlanCard";
 import { buildPaymentsPath, withQueryParams } from "@/lib/routePaths";
 
-/**
- * Dialog nâng cấp gói đăng ký, dùng chung cho cả Individual và Group.
- *
- * Props:
- *  - open / onOpenChange: điều khiển dialog
- *  - planType: "INDIVIDUAL" | "GROUP"
- *  - groups: danh sách nhóm mà user là LEADER (chỉ cần khi planType === "GROUP")
- *  - preSelectedWorkspaceId: nếu đã biết workspaceId (từ GroupWorkspace)
- */
 export default function UpgradePlanDialog({
   open,
   onOpenChange,

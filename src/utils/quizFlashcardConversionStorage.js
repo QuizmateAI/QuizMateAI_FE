@@ -1,5 +1,3 @@
-/** Ghi nhận một lần chuyển quiz → flashcard trong quiz detail (đến khi BE trả cờ riêng). */
-
 const STORAGE_PREFIX = 'quizmate:quiz-detail:flashcard-done:';
 
 function key(quizId) {

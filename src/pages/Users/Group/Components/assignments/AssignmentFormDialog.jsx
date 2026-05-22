@@ -44,9 +44,7 @@ function AssignmentFormDialog({
   currentUserId,
   isDarkMode = false,
   onSubmit,
-  /** Khi mở từ trang resource (vd QuizDetailView): khóa resourceType/resourceId và ẩn picker. */
   lockedResource = null,
-  /** Tiêu đề mặc định cho ô title khi create (vd quiz.title). */
   defaultTitle = '',
 }) {
   const { t } = useTranslation();

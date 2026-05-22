@@ -1,11 +1,5 @@
 import api from './api';
 
-/**
- * Append optional `search` (FTS flashcard_set_name + card front/back) — chỉ khi trim không rỗng.
- *
- * @param {string} path
- * @param {string | undefined} search
- */
 function appendOptionalFlashcardSearchQuery(path, search) {
   const trimmed = typeof search === 'string' ? search.trim() : '';
   if (!trimmed) return path;

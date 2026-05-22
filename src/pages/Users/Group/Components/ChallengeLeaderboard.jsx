@@ -22,14 +22,6 @@ function formatScore(score, scoreIsPercent) {
   return scoreIsPercent ? `${formatted}%` : formatted;
 }
 
-/**
- * Tier zones (rank-based):
- *  rank 1     → CHAMPION  (gold crown, glow)
- *  rank 2-3   → PODIUM    (silver/bronze medals)
- *  rank 4-10  → GOLD ZONE (top performers)
- *  rank 11-25 → SILVER ZONE
- *  rank 26+   → BRONZE ZONE
- */
 function resolveRankTier(rank) {
   if (rank == null) return null;
   if (rank === 1) return 'CHAMPION';

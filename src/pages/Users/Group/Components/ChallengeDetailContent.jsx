@@ -40,12 +40,6 @@ const MATCH_MODE_LABELS = {
   SOLO_BRACKET: 'Đấu cúp 1v1',
 };
 
-/**
- * Banner cảnh báo: reviewer raise "đề chưa ổn".
- * - Hiển thị cho leader & các reviewer khác.
- * - Mỗi reviewer có concern hiển thị 1 row với note + nút "Đã xử lý" (chỉ leader).
- * - Khi quá 1 reviewer raise concern → highlight cảnh báo cao hơn (đề thực sự có vấn đề).
- */
 function ReviewerConcernAlerts({ reviewers, quizId, workspaceId, isLeader, isPublished, isDarkMode, t }) {
   const queryClient = useQueryClient();
   const [resolvingUserId, setResolvingUserId] = useState(null);

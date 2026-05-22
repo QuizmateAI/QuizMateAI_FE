@@ -1,22 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-/**
- * Thẻ KPI thống nhất cho admin + super-admin.
- *
- * Quy tắc màu 60-30-10:
- *  - 60% slate (bề mặt + chữ)
- *  - 30% ocean (top-bar gradient, icon bg)
- *  - 10% glitter (reserved cho `highlight`: shimmer kim tuyến)
- *
- * Props:
- *  - label: string
- *  - value: string | number | node
- *  - icon: lucide icon component
- *  - isDarkMode: boolean
- *  - highlight: boolean — khi true, card dùng accent glitter + shimmer (dùng cho KPI quan trọng nhất)
- *  - helper?: string — hiển thị phụ đề nhỏ
- */
 function AdminStatCard({ label, value, icon: Icon, isDarkMode, highlight = false, helper = null }) {
   const topBarCls = highlight
     ? 'bg-ocean-cta animate-glitter-sheen bg-[length:200%_100%]'

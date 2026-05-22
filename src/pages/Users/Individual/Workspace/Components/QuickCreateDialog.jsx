@@ -11,22 +11,10 @@ const TYPE_CONFIG = {
   knowledge: { icon: BookOpen, color: "text-violet-500" },
 };
 
-// BE bound (RoadmapPhaseCreateRequest): title max 255, description max 2000,
-// studyDurationInDay required + > 0. FE pre-check để báo lỗi inline thay vì
-// đợi 400 từ server.
 const TITLE_MAX_LENGTH = 255;
 const DESCRIPTION_MAX_LENGTH = 2000;
 const STUDY_DURATION_MIN_DAY = 1;
 
-/**
- * QuickCreateDialog — popup tạo nhanh Roadmap / Phase / Knowledge
- * @param {boolean} open - Trạng thái hiển thị dialog
- * @param {function} onOpenChange - Callback đóng/mở dialog
- * @param {"roadmap"|"phase"|"knowledge"} type - Loại đối tượng cần tạo
- * @param {boolean} isDarkMode - Chế độ tối
- * @param {function} createFn - Hàm API tạo đối tượng, nhận (data) và trả về response
- * @param {function} onCreated - Callback khi tạo thành công, nhận (newItem)
- */
 function QuickCreateDialog({ open, onOpenChange, type = "roadmap", isDarkMode = false, createFn, onCreated }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";

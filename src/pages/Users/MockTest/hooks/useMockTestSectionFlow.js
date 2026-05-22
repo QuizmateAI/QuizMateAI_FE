@@ -1,31 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 
-/**
- * State machine cho mock test attempt theo che do "section-by-section" enforced.
- *
- * Phase machine:
- *   INTRO --------> IN_PROGRESS ---> COMPLETE ---> TRANSITION --+--> INTRO (next section)
- *                       |                                       |
- *                       +---> (timer expires) -----------------+
- *                                                              +--> FINISHED (last section)
- *
- * Khac biet so voi default ExamQuizPage:
- *   - Chi 1 section visible tai mot thoi diem.
- *   - Khong cho navigate ngươc (quay lai section da xong).
- *   - Submit chi available o phase=COMPLETE cua section cuoi.
- *
- * Usage:
- *   const flow = useMockTestSectionFlow({
- *     sectionGroups: quiz.sectionGroups,
- *     answers,
- *     onFinish: () => handleSubmit(),
- *   });
- *
- *   if (flow.phase === 'INTRO') return <MockTestSectionIntro section={flow.currentSection} ... />;
- *   if (flow.phase === 'TRANSITION') return <MockTestSectionTransition ... />;
- *   if (flow.phase === 'IN_PROGRESS') return <YourQuestionRenderer questions={flow.currentSectionQuestions} ... />;
- *   if (flow.phase === 'COMPLETE') return <ButtonNext onClick={flow.proceedToNextSection} />;
- */
 export function useMockTestSectionFlow({
   sectionGroups,
   answers,

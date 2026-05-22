@@ -114,11 +114,6 @@ function getSavedLanguage() {
   return normalizeLanguage(window.localStorage.getItem('app_language'));
 }
 
-/**
- * Cho phép share link đa ngôn ngữ qua `?lang=` (ví dụ `/policies?lang=ja`).
- * Trả về null nếu không có query hoặc value không hợp lệ — caller fallback
- * sang localStorage / default.
- */
 function getLanguageFromUrl() {
   if (typeof window === 'undefined') return null;
   try {

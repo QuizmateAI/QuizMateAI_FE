@@ -1,21 +1,3 @@
-/**
- * Single source of truth for the lightweight user snapshot kept on the client.
- *
- * Why this module exists:
- *   The user identity blob ({ userID, username, role, email, authProvider })
- *   used to be read directly via localStorage.getItem('user') in 8+ places.
- *   Each call site re-implemented JSON.parse/try-catch and could not react to
- *   changes within the same tab. This helper centralizes read/write, exposes
- *   a subscription model, and keeps backward-compat with the existing
- *   localStorage key so progressive migration is safe.
- *
- * Notes:
- *   - This is NOT the canonical profile (server-authoritative). Use
- *     UserProfileContext + Authentication API for the full profile. This blob
- *     is the minimal identity needed for FE-side role gates and offline UX.
- *   - Role checks based on this blob remain UX-only (workspace AGENTS.md).
- */
-
 const STORAGE_KEY = 'user';
 const subscribers = new Set();
 

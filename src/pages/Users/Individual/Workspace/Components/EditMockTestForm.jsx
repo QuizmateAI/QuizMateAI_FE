@@ -27,10 +27,6 @@ const QUESTION_TYPE_MAP = {
 const DIFFICULTY_MAP = { easy: "EASY", medium: "MEDIUM", hard: "HARD" };
 const REVERSE_DIFFICULTY = { EASY: "easy", MEDIUM: "medium", HARD: "hard" };
 
-/**
- * Form chỉnh sửa Mock Test — giao diện tím (purple) để phân biệt với EditQuizForm (xanh dương)
- * Logic hoàn toàn giống EditQuizForm, chỉ khác màu sắc + icon
- */
 function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextType = "ROADMAP", contextId }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";

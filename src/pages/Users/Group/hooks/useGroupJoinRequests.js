@@ -44,10 +44,6 @@ function sortByCreatedDesc(items) {
   });
 }
 
-/**
- * Leader-scoped hook: workspace pending join requests + approve/reject.
- * Requires MANAGE_MEMBERS on the BE side; FE caller should gate accordingly.
- */
 export function useGroupJoinRequests(workspaceId, { enabled = true } = {}) {
   const [items, setItems] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
@@ -177,11 +173,6 @@ export function useGroupJoinRequests(workspaceId, { enabled = true } = {}) {
   };
 }
 
-/**
- * Member-scoped hook: my join requests across workspaces + submit + cancel.
- * Submit takes a workspaceId (vì 1 user có thể request nhiều nhóm độc lập);
- * cancel cũng dùng workspaceId vì BE chỉ cho 1 PENDING request / workspace.
- */
 export function useMyJoinRequests({ enabled = true } = {}) {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

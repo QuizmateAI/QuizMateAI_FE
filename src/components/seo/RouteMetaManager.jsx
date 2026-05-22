@@ -91,14 +91,6 @@ function replaceOgLocaleAlternates(currentLang) {
   });
 }
 
-/**
- * Build URL cho 1 ngôn ngữ cụ thể:
- * - Ngôn ngữ mặc định (vi) → URL trần (không kèm `?lang=`)
- * - Ngôn ngữ khác → đính kèm `?lang=<code>`
- *
- * Quy ước này giúp canonical mỗi ngôn ngữ tự trỏ về chính nó, tránh việc
- * Google gom các biến thể `?lang=` về 1 URL duy nhất.
- */
 function buildLanguageUrl(canonicalPath, siteUrl, language) {
   const url = new URL(canonicalPath || '/', siteUrl);
   if (language !== DEFAULT_LANGUAGE) {

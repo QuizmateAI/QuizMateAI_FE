@@ -1,6 +1,3 @@
-/**
- * Human-readable group activity text; personalizes quiz assignment for the signed-in member when metadata is present.
- */
 export function formatGroupLogDescription(log, currentUserId, lang = 'vi') {
   const uid = currentUserId != null ? Number(currentUserId) : null;
   const hasUid = uid != null && Number.isFinite(uid);

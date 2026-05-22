@@ -1,9 +1,5 @@
 import ERROR_CODES from '@/lib/errorCodes';
 
-/**
- * Lookup map: numeric BE error code (HTTP trailer style) → category tiêu đề toast.
- * Được dùng khi hiển thị toast có structured title để admin biết lỗi thuộc nhóm nào.
- */
 const CATEGORY_BY_CODE_RANGE = [
   { min: 1001, max: 1007, category: 'Xác thực' },
   { min: 1010, max: 1014, category: 'Workspace' },
@@ -32,16 +28,6 @@ function resolveCategory(code) {
   return match ? match.category : 'Lỗi hệ thống';
 }
 
-/**
- * Resolve the i18n key for a BE error code.
- * Priority: mapped i18n key -> original server message -> default fallback.
- *
- * @param {object} error - Axios-style error object { statusCode, message, data }
- * @returns {{ key: string|null, fallbackMessage: string }} Resolved i18n key and fallback message
- */
-/**
- * BE ApiResponse often puts the business error code in `data.statusCode` (e.g. 1036), not `data.code`.
- */
 function resolveBusinessErrorCode(error) {
   const body = error?.data;
   const fromBody = body?.statusCode;
@@ -63,13 +49,6 @@ export function getErrorInfo(error) {
   return { key, fallbackMessage: serverMessage || 'error.unknown' };
 }
 
-/**
- * Build the error message shown to the user, preferring i18n when available.
- *
- * @param {Function} t - react-i18next t() function
- * @param {object} error - Axios-style error object
- * @returns {string} User-facing error message
- */
 export function getErrorMessage(t, error) {
   const { key, fallbackMessage } = getErrorInfo(error);
   const rawMessage = String(fallbackMessage || '').trim();
@@ -100,19 +79,6 @@ export function getErrorMessage(t, error) {
   return fallbackMessage;
 }
 
-/**
- * Build structured toast payload for admin-facing errors.
- *
- * Output:
- *   {
- *     title:       e.g. "Phân quyền",
- *     description: e.g. "Vai trò đã tồn tại",
- *     meta:        e.g. "Mã lỗi #1051" — giúp admin copy cho support,
- *   }
- *
- * Sử dụng:
- *   showError(buildAdminErrorPayload(t, err, 'Không lưu được gói'))
- */
 export function buildAdminErrorPayload(t, error, fallbackTitle = 'Thao tác thất bại') {
   const code = resolveBusinessErrorCode(error);
   const description = getErrorMessage(t, error);
