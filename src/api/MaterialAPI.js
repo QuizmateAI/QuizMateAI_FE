@@ -53,6 +53,39 @@ export const getRAGChunks = async (materialId, limit = 500) => {
   return response;
 };
 
+// Lấy cây mục lục (document section tree) của material.
+// Response: List<DocumentSectionResponse> — mỗi node có
+// { id, materialId, parentId, title, level, isActive, chunkIds, orderIndex, children }
+export const getDocumentSections = async (materialId) => {
+  const response = await api.get(`/materials/${materialId}/document-sections`);
+  return response;
+};
+
+// Bật/tắt một section (lan truyền state xuống children). Trả về cây section đã cập nhật.
+export const setDocumentSectionActive = async (materialId, sectionId, isActive) => {
+  const response = await api.put(
+    `/materials/${materialId}/document-sections/${sectionId}/active`,
+    null,
+    { params: { isActive } },
+  );
+  return response;
+};
+
+// Lấy danh sách chunkId được phép sử dụng (chunk thuộc section đang active).
+// FE truyền set này khi yêu cầu AI generate quiz/flashcard để giới hạn scope.
+export const getAllowedChunkIds = async (materialId) => {
+  const response = await api.get(`/materials/${materialId}/allowed-chunk-ids`);
+  return response;
+};
+
+// Lấy nội dung 1 chunk theo chunkId (proxy qua AI service).
+// Dùng cho "View source" của question/flashcard có sourceChunkId.
+// Response shape: { chunk_id, content, material_id, chunk_topic, chunk_section_title, chunk_sequence, embedding_model }
+export const getChunkById = async (chunkId) => {
+  const response = await api.get(`/materials/chunks/${encodeURIComponent(chunkId)}`);
+  return response;
+};
+
 // Lấy material content (URL + transcript) — dùng cho SourceDetailView khi
 // material là media (audio/video) cần render player + script panel.
 // Response shape: { materialId, materialType, url, transcript, isMedia }

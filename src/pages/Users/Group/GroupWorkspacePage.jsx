@@ -230,6 +230,14 @@ function GroupWorkspacePage() {
   const querySection = GROUP_WORKSPACE_VALID_SECTIONS.includes(resolvedSection)
     ? resolvedSection
     : null;
+  const sourceTargetMaterialId = useMemo(() => {
+    const materialId = Number(searchParams.get('materialId'));
+    return Number.isInteger(materialId) && materialId > 0 ? materialId : null;
+  }, [searchParams]);
+  const sourceTargetPage = useMemo(() => {
+    const page = Number(searchParams.get('sourcePage'));
+    return Number.isInteger(page) && page > 0 ? page : null;
+  }, [searchParams]);
   const activeSection = memberDetailWorkspaceMemberId != null
     ? 'memberStats'
     : querySection && querySection !== 'roadmap'
@@ -4080,6 +4088,8 @@ function GroupWorkspacePage() {
             onReject={(item) => handleReviewPendingMaterial(item, false)}
             onDeleteSource={handleRemoveSource}
             planEntitlements={planEntitlements}
+            sourceTargetMaterialId={sourceTargetMaterialId}
+            sourceTargetPage={sourceTargetPage}
             />
           </React.Suspense>
         );

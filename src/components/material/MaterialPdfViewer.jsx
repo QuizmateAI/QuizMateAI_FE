@@ -40,6 +40,38 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function normalizePdfSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildPageSearchOrder(totalPages, preferredPage) {
+  const total = Number(totalPages);
+  if (!Number.isInteger(total) || total <= 0) return [];
+  const preferred = Number(preferredPage);
+  const ordered = [];
+  const seen = new Set();
+  const push = (page) => {
+    const normalized = Number(page);
+    if (!Number.isInteger(normalized) || normalized < 1 || normalized > total || seen.has(normalized)) return;
+    seen.add(normalized);
+    ordered.push(normalized);
+  };
+
+  if (Number.isInteger(preferred) && preferred > 0) {
+    for (let delta = 0; delta <= 12; delta += 1) {
+      push(preferred - delta);
+      push(preferred + delta);
+    }
+  }
+  for (let page = 1; page <= total; page += 1) push(page);
+  return ordered;
+}
+
 function createAnnotationId() {
   return `annotation:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -384,6 +416,8 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
     annotations = [],
     selectedAnnotationId = null,
     annotationsEnabled = true,
+    initialPage = null,
+    initialSearchText = "",
     onAnnotationCreate,
     onAnnotationSelect,
     onAnnotationDraftChange,
@@ -414,6 +448,10 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
   const pageRefs = useRef(new Map());
   const flashTimerRef = useRef(null);
   const annotationLayoutFrameRef = useRef(null);
+  const initialPageJumpKeyRef = useRef(null);
+  const sourceTextJumpKeyRef = useRef(null);
+  const pdfDocumentRef = useRef(null);
+  const suppressScrollSyncUntilRef = useRef(0);
 
   const activeAnchor = selectionAnchor || hoverAnchor || draftComposer;
 
@@ -424,14 +462,18 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
   }, []);
 
   const jumpToPage = useCallback(
-    (pageNum) => {
+    (pageNum, options = {}) => {
       const target = Math.max(1, Math.min(numPages || pageNum, pageNum));
+      const behavior = options.behavior || "smooth";
+      suppressScrollSyncUntilRef.current =
+        Date.now() + (behavior === "smooth" ? 900 : 250);
       setCurrentPage(target);
+      onPageChange?.(target);
       const element = pageRefs.current.get(target);
-      element?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      element?.scrollIntoView?.({ behavior, block: "start" });
       flashPage(target);
     },
-    [flashPage, numPages],
+    [flashPage, numPages, onPageChange],
   );
 
   const jumpToAnnotation = useCallback(
@@ -674,6 +716,11 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
     if (!containerRef.current || numPages === 0) return undefined;
     const container = containerRef.current;
     const onScroll = () => {
+      if (Date.now() < suppressScrollSyncUntilRef.current) {
+        scheduleAnnotationLayoutPublish();
+        return;
+      }
+
       const containerRect = container.getBoundingClientRect();
       let bestPage = currentPage;
       let bestDelta = Infinity;
@@ -755,7 +802,9 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
   const fileSpec = useMemo(() => ({ url: fileUrl }), [fileUrl]);
 
   const handleDocLoad = useCallback(
-    ({ numPages: total }) => {
+    (pdfDocument) => {
+      const total = Number(pdfDocument?.numPages) || 0;
+      pdfDocumentRef.current = pdfDocument || null;
       setNumPages(total);
       setLoadError(null);
       onTotalPagesChange?.(total);
@@ -764,8 +813,85 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
   );
 
   const handleDocError = useCallback((error) => {
+    pdfDocumentRef.current = null;
     setLoadError(error?.message || String(error));
   }, []);
+
+  useEffect(() => {
+    const targetPage = Number(initialPage);
+    if (!Number.isInteger(targetPage) || targetPage <= 0 || numPages <= 0) {
+      return undefined;
+    }
+
+    const target = Math.max(1, Math.min(numPages, targetPage));
+    const jumpKey = `${fileUrl || "pdf"}:${target}`;
+    if (initialPageJumpKeyRef.current === jumpKey) {
+      return undefined;
+    }
+    initialPageJumpKeyRef.current = jumpKey;
+
+    const jump = () => jumpToPage(target, { behavior: "auto" });
+
+    const frame = window.requestAnimationFrame(jump);
+    const timers = [120, 450, 900].map((delay) => window.setTimeout(jump, delay));
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [fileUrl, initialPage, jumpToPage, numPages]);
+
+  useEffect(() => {
+    const pdfDocument = pdfDocumentRef.current;
+    const normalizedNeedle = normalizePdfSearchText(initialSearchText);
+    if (!pdfDocument || numPages <= 0 || normalizedNeedle.length < 20) {
+      return undefined;
+    }
+
+    const preferred = Number(initialPage);
+    const jumpKey = `${fileUrl || "pdf"}:${normalizedNeedle.slice(0, 80)}:${preferred || ""}`;
+    if (sourceTextJumpKeyRef.current === jumpKey) {
+      return undefined;
+    }
+    sourceTextJumpKeyRef.current = jumpKey;
+
+    let cancelled = false;
+    const needleVariants = [
+      normalizedNeedle,
+      normalizedNeedle.slice(0, 180).trim(),
+      normalizedNeedle.slice(0, 120).trim(),
+    ].filter(
+      (value, index, array) =>
+        value.length >= 20 && array.indexOf(value) === index,
+    );
+
+    const findSourcePage = async () => {
+      for (const pageNum of buildPageSearchOrder(numPages, preferred)) {
+        if (cancelled) return;
+        try {
+          const page = await pdfDocument.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const haystack = normalizePdfSearchText(
+            (textContent?.items || []).map((item) => item?.str || "").join(" "),
+          );
+          if (needleVariants.some((needle) => haystack.includes(needle))) {
+            if (!cancelled) {
+              jumpToPage(pageNum, { behavior: "auto" });
+            }
+            return;
+          }
+        } catch {
+          // Keep searching; a few PDF pages can fail text extraction.
+        }
+      }
+    };
+
+    findSourcePage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fileUrl, initialPage, initialSearchText, jumpToPage, numPages]);
 
   const isHighlighted = useCallback(
     (pageNum) => {

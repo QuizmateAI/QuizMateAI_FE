@@ -1,11 +1,12 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Star } from 'lucide-react';
+import { AlertTriangle, FileSearch, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { getCorrectMatchingPairs, getCorrectTextAnswers, normalizeMatchingPairs } from '../utils/quizTransform';
 import MatchingDragDrop from './MatchingDragDrop';
 import MixedMathText from '@/components/math/MixedMathText';
+import ChunkSourceDialog from '@/components/material/ChunkSourceDialog';
 import { getQuestionDisplayText, getQuestionImageList } from '@/lib/questionContentMedia';
 import './QuestionCard.css';
 
@@ -125,6 +126,9 @@ const QuestionCard = memo(function QuestionCard({
   isFlagged = false, onToggleFlag = null,
 }) {
   const { t } = useTranslation();
+  const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
+  const sourceChunkId = question?.sourceChunkId || question?.source_chunk_id || null;
+  const sourceSpan = question?.sourceSpan || question?.source_span || '';
   const isMultiple = question.type === 'MULTIPLE_CHOICE';
   const isTextQuestion = question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK';
   const isShortAnswerQuestion = question.type === 'SHORT_ANSWER';
@@ -521,6 +525,39 @@ const QuestionCard = memo(function QuestionCard({
             <MixedMathText>{reviewState?.explanation || question.explanation}</MixedMathText>
           </p>
         </div>
+      )}
+
+      {isReviewRevealed && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {sourceChunkId ? (
+            <button
+              type="button"
+              onClick={() => setSourceDialogOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 dark:border-blue-800/60 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-900/40"
+            >
+              <FileSearch className="h-3.5 w-3.5" />
+              {t('workspace.quiz.viewSource', 'Xem nguồn')}
+            </button>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300"
+              title={t('workspace.quiz.ungroundedHint', 'Câu hỏi không gắn với chunk nguồn — cần kiểm tra.')}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {t('workspace.quiz.ungrounded', 'Cần kiểm tra')}
+            </span>
+          )}
+        </div>
+      )}
+
+      {sourceChunkId && (
+        <ChunkSourceDialog
+          open={sourceDialogOpen}
+          onOpenChange={setSourceDialogOpen}
+          chunkId={sourceChunkId}
+          sourceSpan={sourceSpan}
+          title={t('workspace.quiz.sourceDialogTitle', 'Nguồn của câu hỏi')}
+        />
       )}
     </div>
   );

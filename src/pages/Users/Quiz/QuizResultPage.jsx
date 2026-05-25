@@ -598,6 +598,8 @@ export default function QuizResultPage() {
         type: detailQuestion?.type || attemptQuestion.questionType || 'SINGLE_CHOICE',
         difficulty: detailQuestion?.difficulty || 'MEDIUM',
         explanation: detailQuestion?.explanation || '',
+        sourceChunkId: attemptQuestion.sourceChunkId || attemptQuestion.source_chunk_id || detailQuestion?.sourceChunkId || detailQuestion?.source_chunk_id || null,
+        sourceSpan: attemptQuestion.sourceSpan || attemptQuestion.source_span || detailQuestion?.sourceSpan || detailQuestion?.source_span || null,
         answers: detailQuestion?.answers || [],
         selectedAnswerIds: attemptQuestion.selectedAnswerIds || [],
         textAnswer: attemptQuestion.textAnswer || '',

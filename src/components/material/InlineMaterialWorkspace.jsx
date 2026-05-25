@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Headphones,
   Highlighter,
+  Layers,
   MessageSquareText,
   Network,
   Pencil,
@@ -18,6 +19,7 @@ import MaterialPdfViewer from "./MaterialPdfViewer";
 import EmbeddedKnowledgeTree from "./EmbeddedKnowledgeTree";
 import AskAIPanel from "./AskAIPanel";
 import ListenPlayer from "./ListenPlayer";
+import DocumentSectionsPanel from "./DocumentSectionsPanel";
 
 const HIGHLIGHT_COLORS = [
   {
@@ -364,10 +366,12 @@ export default function InlineMaterialWorkspace({
   source,
   isDarkMode = false,
   onBack,
+  initialPage = null,
+  initialSearchText = "",
 }) {
-  const sidebarTabs = ["tree", "notes", "chat"];
+  const sidebarTabs = ["tree", "sections", "notes", "chat"];
 
-  // sidebarView: "tree" | "chat" | "notes" | null
+  // sidebarView: "tree" | "sections" | "chat" | "notes" | null
   const [sidebarView, setSidebarView] = useState("tree");
   const [highlightPageRange, setHighlightPageRange] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -566,6 +570,15 @@ export default function InlineMaterialWorkspace({
   const handleTotalPagesChange = useCallback((total) => {
     setTotalPages(total);
   }, []);
+
+  useEffect(() => {
+    const targetPage = Number(initialPage);
+    if (!Number.isInteger(targetPage) || targetPage <= 0 || !isPdfMaterial(source)) {
+      return;
+    }
+    setHighlightPageRange([targetPage, targetPage]);
+    setCurrentPage(targetPage);
+  }, [initialPage, sourceTypeLower]);
 
   const handleAnnotationCreate = useCallback(
     async (annotation) => {
@@ -1093,6 +1106,8 @@ export default function InlineMaterialWorkspace({
               fileUrl={pdfUrl}
               highlightPageRange={highlightPageRange}
               isDarkMode={isDarkMode}
+              initialPage={initialPage}
+              initialSearchText={initialSearchText}
               onPageChange={handlePageChange}
               onTotalPagesChange={handleTotalPagesChange}
               annotations={viewerAnnotations}
@@ -1202,25 +1217,29 @@ export default function InlineMaterialWorkspace({
                   : "bg-white/70 backdrop-blur border border-blue-100 shadow-sm"
               }`}
             >
-              {/* Sliding active indicator - tree=ocean blue, notes=orange, chat=green */}
+              {/* Sliding active indicator - tree=ocean blue, sections=cyan, notes=orange, chat=green */}
               <div
                 className="absolute top-1 bottom-1 rounded-lg transition-all duration-300 ease-out"
                 style={{
                   left: "0.25rem",
-                  width: "calc((100% - 0.5rem) / 3)",
+                  width: "calc((100% - 0.5rem) / 4)",
                   transform: `translateX(${sidebarTabIndex * 100}%)`,
                   background:
                     sidebarView === "chat"
                       ? "linear-gradient(135deg, #16A34A, #4ADE80)"
                       : sidebarView === "notes"
                         ? "linear-gradient(135deg, #F97316, #FB923C)"
-                        : "linear-gradient(135deg, #1E3A8A, #2563EB)",
+                        : sidebarView === "sections"
+                          ? "linear-gradient(135deg, #0E7490, #06B6D4)"
+                          : "linear-gradient(135deg, #1E3A8A, #2563EB)",
                   boxShadow:
                     sidebarView === "chat"
                       ? "0 4px 12px -4px rgba(22, 163, 74, 0.55)"
                       : sidebarView === "notes"
                         ? "0 4px 12px -4px rgba(249, 115, 22, 0.55)"
-                        : "0 4px 12px -4px rgba(37, 99, 235, 0.55)",
+                        : sidebarView === "sections"
+                          ? "0 4px 12px -4px rgba(6, 182, 212, 0.55)"
+                          : "0 4px 12px -4px rgba(37, 99, 235, 0.55)",
                 }}
               />
 
@@ -1231,6 +1250,14 @@ export default function InlineMaterialWorkspace({
               >
                 <Network size={13} className="-mt-px" />
                 Cây kiến thức
+              </SegmentBtn>
+              <SegmentBtn
+                active={sidebarView === "sections"}
+                onClick={() => setSidebarView("sections")}
+                isDarkMode={isDarkMode}
+              >
+                <Layers size={13} className="-mt-px" />
+                Mục lục
               </SegmentBtn>
               <SegmentBtn
                 active={sidebarView === "notes"}
@@ -1260,6 +1287,12 @@ export default function InlineMaterialWorkspace({
                 onLeafSelect={handleLeafSelect}
                 totalPdfPages={totalPages}
                 currentPdfPage={currentPage}
+              />
+            )}
+            {sidebarView === "sections" && (
+              <DocumentSectionsPanel
+                materialId={materialId}
+                isDarkMode={isDarkMode}
               />
             )}
             {sidebarView === "chat" && (

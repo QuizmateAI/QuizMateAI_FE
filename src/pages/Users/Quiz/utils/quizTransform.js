@@ -259,6 +259,8 @@ export function normalizeQuizData(apiQuiz) {
       difficulty: q.difficulty || 'MEDIUM',
       score: q.score || 0,
       explanation: q.explanation || '',
+      sourceChunkId: q.sourceChunkId || q.source_chunk_id || null,
+      sourceSpan: q.sourceSpan || q.source_span || null,
       timeLimit: normalizedTimeLimit,
       answers: normalizedAnswers,
       correctMatchingPairs,

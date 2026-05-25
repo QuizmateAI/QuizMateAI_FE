@@ -6,6 +6,7 @@ import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
   Share2, UserPlus, MessageSquare, Eye, Lock, Pencil, Copy, Shuffle,
+  FileSearch, AlertTriangle,
 } from "lucide-react";
 import { getCurrentUser } from "@/api/Authentication";
 import { logSwallowed } from "@/utils/logSwallowed";
@@ -38,6 +39,7 @@ import QuestionDiscussionDialog from "@/pages/Users/Group/Components/QuestionDis
 import QuizToFlashcardDialog from "@/pages/Users/Quiz/components/QuizToFlashcardDialog";
 import CommunityQuizDetailDialog from "@/pages/Users/Quiz/components/CommunityQuizDetailDialog";
 import CommunityQuizFeedbackDialog from "@/pages/Users/Quiz/components/CommunityQuizFeedbackDialog";
+import ChunkSourceDialog from "@/components/material/ChunkSourceDialog";
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/components/math/MixedMathText";
 import { hasQuizCompleted } from "@/utils/quizAttemptTracker";
@@ -259,6 +261,7 @@ function QuizDetailView({
   const [membersLoading, setMembersLoading] = useState(false);
   const [communityDetailOpen, setCommunityDetailOpen] = useState(false);
   const [communityFeedbackOpen, setCommunityFeedbackOpen] = useState(false);
+  const [sourceDialogQuestion, setSourceDialogQuestion] = useState(null);
   const detailRequestRunRef = React.useRef(0);
   const attemptHistoryProbeKeyRef = React.useRef(null);
   const [, setConfirmDuplicateOpen] = useState(false);
@@ -1544,6 +1547,8 @@ function QuizDetailView({
                         const textAnswerLabel = typeName === "shortAnswer"
                           ? t("workspace.quiz.expectedAnswerLabel", "Expected answer")
                           : t("workspace.quiz.correctAnswerLabel", "Correct answer");
+                        const sourceChunkId = question?.sourceChunkId || question?.source_chunk_id || null;
+                        const sourceSpan = question?.sourceSpan || question?.source_span || "";
 
                         return (
                           <div key={question.questionId} data-question-id={question.questionId} className={`px-4 py-3 ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
@@ -1599,6 +1604,29 @@ function QuizDetailView({
                                   {question.duration > 0 && (
                                     <span className="flex items-center gap-1">
                                       <Timer className="w-3 h-3" />{question.duration}s
+                                    </span>
+                                  )}
+                                  {sourceChunkId ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSourceDialogQuestion({ chunkId: sourceChunkId, sourceSpan })}
+                                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold transition-colors ${
+                                        isDarkMode
+                                          ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20"
+                                          : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                      }`}
+                                    >
+                                      <FileSearch className="h-3 w-3" />
+                                      {t("workspace.quiz.viewSource", "Xem nguồn")}
+                                    </button>
+                                  ) : (
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${
+                                      isDarkMode
+                                        ? "bg-amber-500/10 text-amber-300"
+                                        : "bg-amber-50 text-amber-600"
+                                    }`}>
+                                      <AlertTriangle className="h-3 w-3" />
+                                      {t("workspace.quiz.needsReview", "Cần kiểm tra")}
                                     </span>
                                   )}
                                 </div>
@@ -2332,6 +2360,16 @@ function QuizDetailView({
           }}
         />
       ) : null}
+
+      <ChunkSourceDialog
+        open={Boolean(sourceDialogQuestion?.chunkId)}
+        onOpenChange={(open) => {
+          if (!open) setSourceDialogQuestion(null);
+        }}
+        chunkId={sourceDialogQuestion?.chunkId}
+        sourceSpan={sourceDialogQuestion?.sourceSpan || ""}
+        title={t("workspace.quiz.sourceDialogTitle", "Nguồn của câu hỏi")}
+      />
     </div>
   );
 }
