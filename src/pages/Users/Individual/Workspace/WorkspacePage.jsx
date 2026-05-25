@@ -921,6 +921,10 @@ function WorkspacePage() {
     ).test(currentSubPath);
     const isSourceDeepLink = new RegExp(`^sources/\\d+$`).test(currentSubPath);
 
+    if (isSourceDeepLink && activeView !== "sources") {
+      return;
+    }
+
     const isQuizDetailView =
       activeView === "quizDetail" || activeView === "editQuiz";
 

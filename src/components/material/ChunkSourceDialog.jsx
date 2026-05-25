@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, Loader2, RefreshCw } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ExternalLink, FileText, Loader2, RefreshCw } from "lucide-react";
 
-import { getChunkById } from "@/api/MaterialAPI";
+import { getChunkById, getRAGChunks } from "@/api/MaterialAPI";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,44 @@ function HighlightedContent({ content, span }) {
   );
 }
 
+function toPositiveInteger(value) {
+  const normalized = Number(value);
+  return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
+}
+
+function pickFirstPage(value) {
+  if (Array.isArray(value)) {
+    return value.map(toPositiveInteger).find(Boolean) || null;
+  }
+  return toPositiveInteger(value);
+}
+
+function resolveChunkPage(chunk) {
+  if (!chunk || typeof chunk !== "object") return null;
+  return pickFirstPage(chunk.pages)
+    || pickFirstPage(chunk.page)
+    || pickFirstPage(chunk.page_number)
+    || pickFirstPage(chunk.pageNumber)
+    || pickFirstPage(chunk.page_start)
+    || pickFirstPage(chunk.pageStart)
+    || pickFirstPage(chunk.start_page)
+    || pickFirstPage(chunk.startPage)
+    || pickFirstPage(chunk.metadata?.page_start)
+    || pickFirstPage(chunk.metadata?.pageStart)
+    || null;
+}
+
+function normalizeChunkId(value) {
+  return String(value || "").trim();
+}
+
+function extractChunks(payload) {
+  const data = payload?.data ?? payload;
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.chunks)) return data.chunks;
+  return [];
+}
+
 export default function ChunkSourceDialog({
   open,
   onOpenChange,
@@ -65,10 +104,13 @@ export default function ChunkSourceDialog({
   sourceSpan = "",
   title = "Nguồn trích dẫn",
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [chunk, setChunk] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorState, setErrorState] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [openingDocument, setOpeningDocument] = useState(false);
 
   useEffect(() => {
     if (!open || !chunkId) {
@@ -108,7 +150,67 @@ export default function ChunkSourceDialog({
   const sectionTitle = chunk?.chunk_section_title || chunk?.chunkSectionTitle;
   const topic = chunk?.chunk_topic || chunk?.chunkTopic;
   const sequence = chunk?.chunk_sequence ?? chunk?.chunkSequence;
+  const materialId = toPositiveInteger(chunk?.material_id ?? chunk?.materialId);
   const content = chunk?.content || "";
+  const workspaceRouteMatch = String(location.pathname || "").match(/^\/workspaces\/(\d+)/);
+  const groupRouteMatch = String(location.pathname || "").match(/^\/group-workspaces\/(\d+)/);
+  const canOpenDocument = Boolean(materialId && (workspaceRouteMatch || groupRouteMatch));
+
+  const handleOpenDocument = async () => {
+    if (!materialId || openingDocument) return;
+    setOpeningDocument(true);
+    try {
+      let targetPage = resolveChunkPage(chunk);
+      if (!targetPage) {
+        try {
+          const response = await getRAGChunks(materialId, 500);
+          const chunks = extractChunks(response);
+          const normalizedChunkId = normalizeChunkId(chunkId);
+          const matchedChunk = chunks.find((item) => {
+            const itemChunkId = normalizeChunkId(item?.chunk_id ?? item?.chunkId);
+            if (normalizedChunkId && itemChunkId === normalizedChunkId) return true;
+            const itemSequence = Number(item?.chunk_sequence ?? item?.chunkSequence ?? item?.chunk_index ?? item?.chunkIndex);
+            return Number.isFinite(itemSequence) && Number.isFinite(Number(sequence)) && itemSequence === Number(sequence);
+          });
+          targetPage = resolveChunkPage(matchedChunk);
+        } catch {
+          targetPage = null;
+        }
+      }
+
+      const searchParams = new URLSearchParams();
+      searchParams.set("sourceChunkId", normalizeChunkId(chunkId));
+      if (targetPage) searchParams.set("sourcePage", String(targetPage));
+      try {
+        window.sessionStorage.setItem(
+          `quizmateai:source-jump:${normalizeChunkId(chunkId)}`,
+          JSON.stringify({
+            materialId,
+            sourceSpan: String(sourceSpan || "").trim(),
+            targetPage,
+            savedAt: Date.now(),
+          }),
+        );
+      } catch {
+        // Ignore storage failures; the PDF viewer can still use page metadata.
+      }
+
+      if (groupRouteMatch) {
+        searchParams.set("section", "documents");
+        searchParams.set("materialId", String(materialId));
+        onOpenChange?.(false);
+        navigate(`/group-workspaces/${groupRouteMatch[1]}?${searchParams.toString()}`);
+        return;
+      }
+
+      if (workspaceRouteMatch) {
+        onOpenChange?.(false);
+        navigate(`/workspaces/${workspaceRouteMatch[1]}/sources/${materialId}?${searchParams.toString()}`);
+      }
+    } finally {
+      setOpeningDocument(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,9 +279,27 @@ export default function ChunkSourceDialog({
           )}
         </div>
 
-        {!loading && !errorState && sourceSpan && (
-          <div className="border-t border-slate-200 bg-amber-50 px-5 py-3 text-[11px] font-semibold text-amber-800 dark:border-slate-800 dark:bg-amber-950/30 dark:text-amber-200">
-            Đoạn trích được tô vàng là phần AI sử dụng làm bằng chứng.
+        {!loading && !errorState && chunk && (
+          <div className="flex flex-col gap-3 border-t border-slate-200 bg-amber-50 px-5 py-3 text-[11px] font-semibold text-amber-800 dark:border-slate-800 dark:bg-amber-950/30 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {sourceSpan
+                ? "Đoạn trích được tô vàng là phần AI sử dụng làm bằng chứng."
+                : "Mở tài liệu gốc để đối chiếu nội dung chunk này."}
+            </span>
+            <button
+              type="button"
+              onClick={handleOpenDocument}
+              disabled={!canOpenDocument || openingDocument}
+              className={cn(
+                "inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+                canOpenDocument && !openingDocument
+                  ? "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                  : "cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-500",
+              )}
+            >
+              {openingDocument ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
+              Mở tài liệu
+            </button>
           </div>
         )}
       </DialogContent>

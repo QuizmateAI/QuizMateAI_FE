@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -248,6 +248,8 @@ export default function GroupDocumentsTab({
   onApprove,
   onReject,
   onDeleteSource,
+  sourceTargetMaterialId = null,
+  sourceTargetPage: _sourceTargetPage = null,
 }) {
   const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState('');
@@ -273,6 +275,15 @@ export default function GroupDocumentsTab({
     }),
     [reviewQueueItems],
   );
+
+  useEffect(() => {
+    const materialId = Number(sourceTargetMaterialId);
+    if (!Number.isInteger(materialId) || materialId <= 0) return;
+    const material = sharedMaterials.find((item) => Number(item?.materialId ?? item?.id) === materialId);
+    if (!material || !canOpenMaterialDetail(material)) return;
+    setActiveTab('documents');
+    setViewingMaterial(toDetailSource(material));
+  }, [sourceTargetMaterialId, sharedMaterials]);
   const issueQueueItems = useMemo(
     () => reviewQueueItems.filter((item) => isIssueStatus(item?.status)),
     [reviewQueueItems],

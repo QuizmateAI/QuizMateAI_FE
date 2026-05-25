@@ -6,6 +6,7 @@ import {
   getDifficultyDefinitions,
   getQuestionTypes,
 } from "@/api/AIAPI";
+import { getAllowedChunkIds } from "@/api/MaterialAPI";
 import {
   QUIZ_TITLE_MAX_LENGTH,
   normalizeQuizTitleInput,
@@ -169,6 +170,34 @@ const normalizeStructurePreviewResponse = (response) => {
     items,
   };
 };
+
+async function resolveAllowedChunkIdsByMaterials(materialIds) {
+  const normalizedMaterialIds = Array.from(new Set(
+    (Array.isArray(materialIds) ? materialIds : [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0),
+  ));
+
+  if (normalizedMaterialIds.length === 0) {
+    return [];
+  }
+
+  const responses = await Promise.all(
+    normalizedMaterialIds.map((materialId) => getAllowedChunkIds(materialId)),
+  );
+
+  const merged = new Set();
+  responses.forEach((response) => {
+    const ids = response?.data ?? response ?? [];
+    if (!Array.isArray(ids)) return;
+    ids.forEach((id) => {
+      const normalized = String(id || "").trim();
+      if (normalized) merged.add(normalized);
+    });
+  });
+
+  return Array.from(merged);
+}
 
 export const useCreateQuizAiForm = ({
   defaultContextId,
@@ -1472,9 +1501,12 @@ export const useCreateQuizAiForm = ({
           ) || ""
         : "";
 
+      const allowedChunkIds = await resolveAllowedChunkIdsByMaterials(selectedMaterialIds);
+
       const payload = {
         title: String(aiName || "").trim(),
         materialIds: selectedMaterialIds,
+        allowedChunkIds,
         overallDifficulty: selectedDifficultyId === "CUSTOM"
           ? "CUSTOM"
           : selectedDifficulty?.difficultyName || "MEDIUM",

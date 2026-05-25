@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -392,6 +393,7 @@ function SourcesPanel({
   progressTracking = null,
 }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const { showSuccess, showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
@@ -438,6 +440,24 @@ function SourcesPanel({
         .includes(query),
     );
   }, [deferredSearch, sources]);
+  const sourceTargetPage = useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const page = Number(params.get("sourcePage"));
+    return Number.isInteger(page) && page > 0 ? page : null;
+  }, [location.search]);
+  const sourceTargetText = useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const chunkId = String(params.get("sourceChunkId") || "").trim();
+    if (!chunkId) return "";
+    try {
+      const raw = window.sessionStorage.getItem(`quizmateai:source-jump:${chunkId}`);
+      const payload = raw ? JSON.parse(raw) : null;
+      const text = String(payload?.sourceSpan || "").trim();
+      return text.length >= 20 ? text : "";
+    } catch {
+      return "";
+    }
+  }, [location.search]);
 
   const resolvedSelectedSource = useMemo(() => {
     const normalizedSelectedSourceId = Number(selectedSourceId);
@@ -1095,6 +1115,8 @@ function SourcesPanel({
                 <InlineMaterialWorkspace
                   source={renderedSource}
                   isDarkMode={isDarkMode}
+                  initialPage={sourceTargetPage}
+                  initialSearchText={sourceTargetText}
                   onBack={() => {
                     if (isClosingDetail) return;
                     onCloseSourceDetail?.();

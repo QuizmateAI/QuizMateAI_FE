@@ -366,6 +366,8 @@ export default function InlineMaterialWorkspace({
   source,
   isDarkMode = false,
   onBack,
+  initialPage = null,
+  initialSearchText = "",
 }) {
   const sidebarTabs = ["tree", "sections", "notes", "chat"];
 
@@ -568,6 +570,15 @@ export default function InlineMaterialWorkspace({
   const handleTotalPagesChange = useCallback((total) => {
     setTotalPages(total);
   }, []);
+
+  useEffect(() => {
+    const targetPage = Number(initialPage);
+    if (!Number.isInteger(targetPage) || targetPage <= 0 || !isPdfMaterial(source)) {
+      return;
+    }
+    setHighlightPageRange([targetPage, targetPage]);
+    setCurrentPage(targetPage);
+  }, [initialPage, sourceTypeLower]);
 
   const handleAnnotationCreate = useCallback(
     async (annotation) => {
@@ -1095,6 +1106,8 @@ export default function InlineMaterialWorkspace({
               fileUrl={pdfUrl}
               highlightPageRange={highlightPageRange}
               isDarkMode={isDarkMode}
+              initialPage={initialPage}
+              initialSearchText={initialSearchText}
               onPageChange={handlePageChange}
               onTotalPagesChange={handleTotalPagesChange}
               annotations={viewerAnnotations}
