@@ -225,7 +225,6 @@ function QuizAssignmentsPanel({
     }
     // refresh khi mở tab (mount) hoặc khi parent bump refreshKey (sau create).
     // state.refresh ổn định theo workspaceId.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManageAssignment, workspaceId, refreshKey]);
 
   const filteredItems = useMemo(() => {

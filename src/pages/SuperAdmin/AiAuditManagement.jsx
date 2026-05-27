@@ -619,10 +619,6 @@ function AiAuditManagement() {
   );
 
   const totalRequestsForDisplay = metrics.requestCount || pageInfo.totalElements || 0;
-  const totalAverageTokens = totalRequestsForDisplay > 0
-    ? Math.round(metrics.totalTokens / totalRequestsForDisplay)
-    : 0;
-
   const handleDateRangeChipChange = ({ from, to }) => {
     setFilters((prev) => ({ ...prev, from, to }));
     setPage(0);

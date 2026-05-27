@@ -5,7 +5,6 @@ import {
   inferRoadmapSpeedModeFromDays,
   normalizeKnowledgeLoad,
 } from './mockProfileWizardData';
-import { isAbsoluteBeginnerLevel } from './profileWizardBeginnerUtils';
 import {
   STUDY_PROFILE_ANALYSIS_ERROR_CODES,
   getLiveFieldErrorMessage,
@@ -769,7 +768,6 @@ export function validateWorkspaceProfileStep({
     }
   }
   if (targetStep === 2) {
-    const beginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
     const currentLevelError = getLiveFieldErrorMessage('currentLevel', values.currentLevel, t);
     const learningGoalError = getLiveFieldErrorMessage('learningGoal', values.learningGoal, t);
     const strongAreasError = getLiveFieldErrorMessage('strongAreas', values.strongAreas, t);

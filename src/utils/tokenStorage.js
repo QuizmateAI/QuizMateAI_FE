@@ -29,7 +29,6 @@ export function setTokens({ accessToken } = {}) {
 export function setAccessToken(token) {
   if (token) {
     _accessToken = token;
-    console.log('🔐 JWT Token Set:', token);
   }
 }
 

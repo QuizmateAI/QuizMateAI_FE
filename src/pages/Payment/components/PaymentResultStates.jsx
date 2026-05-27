@@ -545,7 +545,7 @@ export function ProcessingScreen({ lang = 'vi', onAction, transaction = {}, plan
   );
 }
 
-export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transaction = {}, validUntil = '', isDarkMode = false }) {
+export function SuccessScreen({ lang = 'vi', planId = 'pro', onAction, transaction = {}, validUntil: _validUntil = '', isDarkMode = false }) {
   const copy = getCopy(lang);
   const planName = displayPlanName(planId, transaction, copy);
   const isCreditPurchase = String(transaction.purchaseType || '').toUpperCase() === 'CREDIT';
