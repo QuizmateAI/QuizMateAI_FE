@@ -51,7 +51,6 @@ function QuizListView({
     if (normalizedContextType === "GROUP" && contextId != null) {
       void assignmentsState.refresh();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalizedContextType, contextId]);
 
   const assignedQuizMap = useMemo(() => {

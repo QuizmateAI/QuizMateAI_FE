@@ -249,8 +249,6 @@ function QuizDetailView({
   const [publishing, setPublishing] = useState(false);
   const [activating, setActivating] = useState(false);
   const [shuffleSaving, setShuffleSaving] = useState(false);
-  // Leader participation dialog (xuất bản → hỏi ranking)
-  const [leaderParticipationOpen, setLeaderParticipationOpen] = useState(false);
   // Per-question discussion popup
   const [discussionOpenQId, setDiscussionOpenQId] = useState(null);
   const [qCommentCounts, setQCommentCounts] = useState({});
@@ -793,10 +791,6 @@ function QuizDetailView({
     }
     // LOCKED_UNTIL_FIRST_ATTEMPT: button is disabled, no action
   }, [editRule, effectiveQuiz, onEdit]);
-
-  const handleMetadataSaved = useCallback((updatedFields) => {
-    setQuizMeta((prev) => ({ ...(prev || effectiveQuiz), ...updatedFields }));
-  }, [effectiveQuiz]);
 
   const shuffleEnabled = Boolean(effectiveQuiz?.shuffleEnabled);
 

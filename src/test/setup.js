@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 
 // Minimal browser API stubs used by UI components in tests.
-if (!window.matchMedia) {
+if (typeof window !== 'undefined' && !window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: (query) => ({

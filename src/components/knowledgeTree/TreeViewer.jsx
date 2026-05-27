@@ -121,7 +121,7 @@ function BranchRow({ branch, leaves, expanded, onToggle, onLeafClick, onBranchCl
   );
 }
 
-export default function TreeViewer({ nodes, onNodeClick, onNodeToggle }) {
+export default function TreeViewer({ nodes, onNodeClick, onNodeToggle: _onNodeToggle }) {
   const [expandedBranches, setExpandedBranches] = useState(() => new Set());
 
   const { branches, leavesByBranch } = useMemo(() => {

@@ -209,8 +209,6 @@ function WorkspaceProfileStepTwo({
   // Strengths/weaknesses are optional for every mode — keep the prop for layout symmetry
   // with other required fields, but always pass false so no asterisk renders.
   const requireStrengthFields = false;
-  const hasStrengthWeaknessContext =
-      values.strongAreas.trim().length > 0 && values.weakAreas.trim().length > 0;
   const beginnerStrongSuggestions = isBeginnerMode
     ? [
       translateStepTwo(
