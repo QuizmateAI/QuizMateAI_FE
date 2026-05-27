@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Headphones,
   Highlighter,
-  Layers,
   MessageSquareText,
   Network,
   Pencil,
@@ -19,7 +18,6 @@ import MaterialPdfViewer from "./MaterialPdfViewer";
 import EmbeddedKnowledgeTree from "./EmbeddedKnowledgeTree";
 import AskAIPanel from "./AskAIPanel";
 import ListenPlayer from "./ListenPlayer";
-import DocumentSectionsPanel from "./DocumentSectionsPanel";
 
 const HIGHLIGHT_COLORS = [
   {
@@ -111,6 +109,67 @@ function isPdfMaterial(source) {
   if (type.includes("pdf")) return true;
   const url = pickPdfUrl(source);
   return typeof url === "string" && url.toLowerCase().includes(".pdf");
+}
+
+function formatMaterialTypeLabel(source) {
+  const rawType = String(
+    source?.type || source?.materialType || source?.contentType || "",
+  ).toLowerCase();
+  const rawName = String(
+    source?.name || source?.title || source?.originalFileName || "",
+  ).toLowerCase();
+  const combined = `${rawType} ${rawName}`;
+
+  if (combined.includes("pdf")) return "PDF";
+  if (
+    combined.includes("wordprocessingml") ||
+    combined.includes("msword") ||
+    /\.(docx?|rtf)\b/.test(combined)
+  ) {
+    return "Tài liệu Word";
+  }
+  if (
+    combined.includes("spreadsheetml") ||
+    combined.includes("excel") ||
+    /\.(xlsx?|csv)\b/.test(combined)
+  ) {
+    return "Bảng tính Excel";
+  }
+  if (
+    combined.includes("presentationml") ||
+    combined.includes("powerpoint") ||
+    /\.(pptx?)\b/.test(combined)
+  ) {
+    return "PowerPoint";
+  }
+  if (combined.includes("image") || /\.(png|jpe?g|webp|gif|svg)\b/.test(combined)) {
+    return "Hình ảnh";
+  }
+  if (combined.includes("video") || /\.(mp4|webm|mov|avi|mkv)\b/.test(combined)) {
+    return "Video";
+  }
+  if (combined.includes("audio") || /\.(mp3|wav|m4a|flac|aac|ogg)\b/.test(combined)) {
+    return "Âm thanh";
+  }
+  if (combined.includes("text") || /\.(txt|md)\b/.test(combined)) {
+    return "Văn bản";
+  }
+  if (combined.includes("url") || combined.includes("link")) return "Liên kết";
+
+  return "Tài liệu";
+}
+
+function estimateNonPdfPageCount(extractedContent) {
+  const text = String(extractedContent?.value || extractedContent?.script || "").trim();
+  if (!text) return 1;
+
+  const sheetCount = (text.match(/^#{1,3}\s*Sheet\s*:/gim) || []).length;
+  if (sheetCount > 0) return sheetCount;
+
+  const headingCount = (text.match(/^#{1,3}\s+\S.+$/gm) || []).length;
+  if (headingCount > 1) return headingCount;
+
+  return Math.max(1, Math.ceil(text.length / 2400));
 }
 
 function getCoverInitial(title) {
@@ -369,9 +428,9 @@ export default function InlineMaterialWorkspace({
   initialPage = null,
   initialSearchText = "",
 }) {
-  const sidebarTabs = ["tree", "sections", "notes", "chat"];
+  const sidebarTabs = ["tree", "notes", "chat"];
 
-  // sidebarView: "tree" | "sections" | "chat" | "notes" | null
+  // sidebarView: "tree" | "chat" | "notes" | null
   const [sidebarView, setSidebarView] = useState("tree");
   const [highlightPageRange, setHighlightPageRange] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -395,6 +454,7 @@ export default function InlineMaterialWorkspace({
   const [contentLoading, setContentLoading] = useState(false);
   const [contentError, setContentError] = useState(false);
   const pdfRef = useRef(null);
+  const nonPdfScrollRef = useRef(null);
 
   const treeOpen = sidebarView !== null;
 
@@ -405,11 +465,15 @@ export default function InlineMaterialWorkspace({
   const sourceTitle = source?.name || source?.title || "Tài liệu";
   const sourceMeta =
     source?.author || source?.uploaderName || source?.originalFileName || "";
-  const pdfTag = (source?.type || source?.materialType || "PDF")
-    .split("/")
-    .pop()
-    .toUpperCase();
+  const materialTypeLabel = formatMaterialTypeLabel(source);
   const coverInitial = getCoverInitial(sourceTitle);
+  const showPdf = isPdfMaterial(source) && pdfUrl;
+  const nonPdfPageCount = useMemo(
+    () => (showPdf ? 0 : estimateNonPdfPageCount(extractedContent)),
+    [extractedContent, showPdf],
+  );
+  const displayTotalPages = showPdf ? totalPages : nonPdfPageCount;
+  const showDocumentTools = showPdf || !isPdfMaterial(source);
 
   useEffect(() => {
     if (!materialId) {
@@ -567,6 +631,21 @@ export default function InlineMaterialWorkspace({
     setCurrentPage(page);
   }, []);
 
+  const jumpToNonPdfPage = useCallback((page) => {
+    const targetPage = Math.max(1, Math.min(nonPdfPageCount || 1, page));
+    setCurrentPage(targetPage);
+
+    const container = nonPdfScrollRef.current;
+    if (!container) return;
+
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    const ratio = nonPdfPageCount > 1 ? (targetPage - 1) / (nonPdfPageCount - 1) : 0;
+    container.scrollTo({
+      top: Math.round(maxScrollTop * ratio),
+      behavior: "smooth",
+    });
+  }, [nonPdfPageCount]);
+
   const handleTotalPagesChange = useCallback((total) => {
     setTotalPages(total);
   }, []);
@@ -579,6 +658,11 @@ export default function InlineMaterialWorkspace({
     setHighlightPageRange([targetPage, targetPage]);
     setCurrentPage(targetPage);
   }, [initialPage, sourceTypeLower]);
+
+  useEffect(() => {
+    if (showPdf) return;
+    setCurrentPage(1);
+  }, [materialId, showPdf]);
 
   const handleAnnotationCreate = useCallback(
     async (annotation) => {
@@ -816,8 +900,6 @@ export default function InlineMaterialWorkspace({
     [annotations, draftAnnotation],
   );
 
-  const showPdf = isPdfMaterial(source) && pdfUrl;
-
   return (
     <div
       onPointerDownCapture={handleWorkspacePointerDown}
@@ -866,7 +948,7 @@ export default function InlineMaterialWorkspace({
               }`}
             >
               {sourceMeta && <>{sourceMeta} · </>}
-              {totalPages > 0 && <>{totalPages} trang</>}
+              {displayTotalPages > 0 && <>{displayTotalPages} trang</>}
               <span
                 className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
                   isDarkMode
@@ -874,7 +956,7 @@ export default function InlineMaterialWorkspace({
                     : "bg-blue-50 text-blue-700"
                 }`}
               >
-                {pdfTag}
+                {materialTypeLabel}
               </span>
             </div>
           </div>
@@ -882,13 +964,13 @@ export default function InlineMaterialWorkspace({
 
         {/* CENTER AREA - inline strip when highlight/listen tool is active */}
         <div className="flex-1 min-w-2 flex items-center justify-center">
-          {showPdf && activeTool === "listen" && (
+          {showDocumentTools && activeTool === "listen" && (
             <ListenPlayer
               isDarkMode={isDarkMode}
               currentPage={currentPage}
             />
           )}
-          {showPdf && activeTool === "highlight" && (
+          {showDocumentTools && activeTool === "highlight" && (
             <div
               className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border ${
                 isDarkMode
@@ -949,7 +1031,7 @@ export default function InlineMaterialWorkspace({
         </div>
 
         {/* TOOL PILLS - moved up from old sub-toolbar */}
-        {showPdf && (
+        {showDocumentTools && (
           <div className="flex items-center gap-1">
             <ToolPill
               icon={Highlighter}
@@ -972,19 +1054,27 @@ export default function InlineMaterialWorkspace({
           </div>
         )}
 
-        {showPdf && (
+        {showDocumentTools && (
           <PageNavigator
             currentPage={currentPage}
-            totalPages={totalPages}
+            totalPages={displayTotalPages}
             onPrev={() => {
               const next = Math.max(1, currentPage - 1);
-              setCurrentPage(next);
-              pdfRef.current?.jumpToPage(next);
+              if (showPdf) {
+                setCurrentPage(next);
+                pdfRef.current?.jumpToPage(next);
+              } else {
+                jumpToNonPdfPage(next);
+              }
             }}
             onNext={() => {
-              const next = Math.min(totalPages || currentPage, currentPage + 1);
-              setCurrentPage(next);
-              pdfRef.current?.jumpToPage(next);
+              const next = Math.min(displayTotalPages || currentPage, currentPage + 1);
+              if (showPdf) {
+                setCurrentPage(next);
+                pdfRef.current?.jumpToPage(next);
+              } else {
+                jumpToNonPdfPage(next);
+              }
             }}
             isDarkMode={isDarkMode}
           />
@@ -1136,6 +1226,7 @@ export default function InlineMaterialWorkspace({
           ) : (
             // Non-PDF: render qua MaterialContentRenderer (image/audio/video player, markdown text)
             <div
+              ref={nonPdfScrollRef}
               className={`h-full overflow-y-auto px-6 py-6 ${
                 isDarkMode ? "text-slate-200" : "text-slate-800"
               }`}
@@ -1177,11 +1268,7 @@ export default function InlineMaterialWorkspace({
                   <FileText className="h-12 w-12 opacity-40" />
                   <p className="text-sm">Không có nội dung để hiển thị.</p>
                   <p className="text-xs opacity-70">
-                    Loại:{" "}
-                    {source?.type ||
-                      source?.materialType ||
-                      source?.contentType ||
-                      "không xác định"}
+                    Loại: {materialTypeLabel}
                   </p>
                 </div>
               )}
@@ -1193,8 +1280,8 @@ export default function InlineMaterialWorkspace({
         </div>
       </section>
 
-      {/* RIGHT SIDEBAR - segmented tabs share the same 440px slot without covering the PDF */}
-      {treeOpen && showPdf && (
+      {/* RIGHT SIDEBAR - segmented tabs share the same 440px slot without covering the document */}
+      {treeOpen && (
         <aside
           className={`flex flex-col overflow-hidden border-l ${
             isDarkMode ? "border-slate-800 bg-slate-900" : "border-blue-100"
@@ -1217,29 +1304,25 @@ export default function InlineMaterialWorkspace({
                   : "bg-white/70 backdrop-blur border border-blue-100 shadow-sm"
               }`}
             >
-              {/* Sliding active indicator - tree=ocean blue, sections=cyan, notes=orange, chat=green */}
+              {/* Sliding active indicator - tree=ocean blue, notes=orange, chat=green */}
               <div
                 className="absolute top-1 bottom-1 rounded-lg transition-all duration-300 ease-out"
                 style={{
                   left: "0.25rem",
-                  width: "calc((100% - 0.5rem) / 4)",
+                  width: "calc((100% - 0.5rem) / 3)",
                   transform: `translateX(${sidebarTabIndex * 100}%)`,
                   background:
                     sidebarView === "chat"
                       ? "linear-gradient(135deg, #16A34A, #4ADE80)"
                       : sidebarView === "notes"
                         ? "linear-gradient(135deg, #F97316, #FB923C)"
-                        : sidebarView === "sections"
-                          ? "linear-gradient(135deg, #0E7490, #06B6D4)"
-                          : "linear-gradient(135deg, #1E3A8A, #2563EB)",
+                        : "linear-gradient(135deg, #1E3A8A, #2563EB)",
                   boxShadow:
                     sidebarView === "chat"
                       ? "0 4px 12px -4px rgba(22, 163, 74, 0.55)"
                       : sidebarView === "notes"
                         ? "0 4px 12px -4px rgba(249, 115, 22, 0.55)"
-                        : sidebarView === "sections"
-                          ? "0 4px 12px -4px rgba(6, 182, 212, 0.55)"
-                          : "0 4px 12px -4px rgba(37, 99, 235, 0.55)",
+                        : "0 4px 12px -4px rgba(37, 99, 235, 0.55)",
                 }}
               />
 
@@ -1250,14 +1333,6 @@ export default function InlineMaterialWorkspace({
               >
                 <Network size={13} className="-mt-px" />
                 Cây kiến thức
-              </SegmentBtn>
-              <SegmentBtn
-                active={sidebarView === "sections"}
-                onClick={() => setSidebarView("sections")}
-                isDarkMode={isDarkMode}
-              >
-                <Layers size={13} className="-mt-px" />
-                Mục lục
               </SegmentBtn>
               <SegmentBtn
                 active={sidebarView === "notes"}
@@ -1287,12 +1362,6 @@ export default function InlineMaterialWorkspace({
                 onLeafSelect={handleLeafSelect}
                 totalPdfPages={totalPages}
                 currentPdfPage={currentPage}
-              />
-            )}
-            {sidebarView === "sections" && (
-              <DocumentSectionsPanel
-                materialId={materialId}
-                isDarkMode={isDarkMode}
               />
             )}
             {sidebarView === "chat" && (
