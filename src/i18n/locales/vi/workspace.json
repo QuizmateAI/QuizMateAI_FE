@@ -2596,6 +2596,10 @@
       "clearSelection": "Xóa chọn",
       "selectedBadge": "Đã chọn",
       "deleteSelected": "Xóa mục đã chọn",
+      "deleteSelectedTitle": "Xóa các nguồn đã chọn",
+      "deleteSelectedHint": "Bạn có chắc muốn xóa {{count}} nguồn đã chọn khỏi workspace này? Hành động này không thể hoàn tác.",
+      "deleteSelectedConfirm": "Xóa",
+      "deleteSelectedDeleting": "Đang xóa...",
       "shareSelected": "Chia sẻ mục đã chọn",
       "shareSource": "Chia sẻ nguồn",
       "selectSource": "Chọn nguồn",
@@ -2793,6 +2797,65 @@
         "by": "By",
         "relatedQuiz": "Related Quiz",
         "unban": "Unban"
+      }
+    },
+    "material": {
+      "pageUnit": "trang",
+      "types": {
+        "document": "Tài liệu",
+        "word": "Tài liệu Word",
+        "excel": "Bảng tính Excel",
+        "image": "Hình ảnh",
+        "audio": "Âm thanh",
+        "text": "Văn bản",
+        "link": "Liên kết"
+      },
+      "highlight": {
+        "colorLabel": "Màu",
+        "hint": "Tô chữ trên PDF để đánh dấu",
+        "action": "Đánh dấu"
+      },
+      "listen": {
+        "action": "Nghe"
+      },
+      "moderation": {
+        "rejectedBanner": "⛔ Tài liệu được đánh dấu không liên quan đến mục tiêu học tập.",
+        "warningBanner": "⚠️ Tài liệu đang ở trạng thái cảnh báo, cần bạn duyệt.",
+        "loading": "Đang tải báo cáo kiểm duyệt...",
+        "reason": "Lý do",
+        "suggestion": "Gợi ý",
+        "approve": "Duyệt",
+        "reject": "Từ chối"
+      },
+      "pdfMissingUrl": "Tài liệu là PDF nhưng không tìm thấy URL hiển thị.",
+      "contentLoadFailed": "Không tải được nội dung tài liệu.",
+      "transcriptLabel": "Lời thoại / Transcript",
+      "noContent": "Không có nội dung để hiển thị.",
+      "tree": {
+        "chunkOnLabel": "Chunk ON",
+        "chunkUnit": "chunk"
+      },
+      "notes": {
+        "tab": "Ghi chú"
+      },
+      "askAi": {
+        "tab": "Hỏi AI",
+        "systemIntro": "Hỏi AI bất kỳ điều gì về tài liệu này",
+        "missingWorkspace": "Thiếu workspaceId",
+        "missingWorkspaceShort": "Thiếu workspaceId",
+        "clearedHistory": "Đã xóa lịch sử chat",
+        "suggestions": "Gợi ý",
+        "inputPlaceholder": "Hỏi về nội dung tài liệu...",
+        "inputHint": "Enter để gửi · Shift+Enter xuống dòng · Click source pill để mở PDF",
+        "send": "Gửi",
+        "openPageForCheck": "Mở trang {{page}} trong PDF để đối soát",
+        "sourceLabel": "Nguồn {{num}}",
+        "openPageLabel": "Mở trang trong PDF để đối soát",
+        "pageLabel": "Trang {{page}}",
+        "extraSources": "Tham khảo từ {{count}} đoạn khác trong tài liệu",
+        "currentPage": "Đang ở trang {{page}}",
+        "clearHistory": "Xóa lịch sử chat",
+        "loading": "AI đang tìm câu trả lời..."
       }
     }
   },

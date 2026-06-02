@@ -10,26 +10,28 @@ export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 const MATERIAL_EXACT_MIMES = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-powerpoint',
   'text/plain',
+  'image/png',
+  'audio/mpeg',
+  'video/mp4',
 ]);
-
-const MATERIAL_PREFIX_MIMES = Object.freeze(['image/', 'audio/', 'video/']);
 
 const MATERIAL_EXT_TO_MIME = Object.freeze({
   '.pdf': 'application/pdf',
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.doc': 'application/msword',
   '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.xls': 'application/vnd.ms-excel',
   '.txt': 'text/plain',
   '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
   '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
   '.mp4': 'video/mp4',
 });
 
@@ -45,8 +47,7 @@ function inferMimeFromName(name) {
 export function isMaterialMimeAllowed(mime) {
   const m = (mime || '').toLowerCase();
   if (!m) return false;
-  if (MATERIAL_EXACT_MIMES.has(m)) return true;
-  return MATERIAL_PREFIX_MIMES.some((p) => m.startsWith(p));
+  return MATERIAL_EXACT_MIMES.has(m);
 }
 
 export function isAvatarMimeAllowed(mime) {
@@ -56,33 +57,46 @@ export function isAvatarMimeAllowed(mime) {
 
 export function validateAvatarFile(file) {
   if (!file) {
-    return { ok: false, code: 'NO_FILE', message: 'Không có file được chọn.' };
+    return { ok: false, code: 'NO_FILE', message: 'Khong co file duoc chon.' };
   }
   if (!isAvatarMimeAllowed(file.type)) {
     return {
       ok: false,
       code: 'INVALID_TYPE',
-      message: 'Avatar phải là ảnh JPEG, PNG, WebP hoặc GIF (không hỗ trợ SVG).',
+      message: 'Avatar phai la anh JPEG, PNG, WebP hoac GIF (khong ho tro SVG).',
     };
   }
   if (Number(file.size) > AVATAR_MAX_BYTES) {
-    return { ok: false, code: 'TOO_LARGE', message: 'Avatar tối đa 5MB.' };
+    return { ok: false, code: 'TOO_LARGE', message: 'Avatar toi da 5MB.' };
   }
   return { ok: true };
 }
 
 export function validateMaterialFile(file) {
   if (!file) {
-    return { ok: false, code: 'NO_FILE', message: 'Không có file được chọn.' };
+    return { ok: false, code: 'NO_FILE', message: 'Khong co file duoc chon.' };
   }
-  const mime = file.type || inferMimeFromName(file.name);
+
+  const inferredMime = inferMimeFromName(file.name);
+  const mime = file.type || inferredMime;
+
+  if (!inferredMime) {
+    const label = file.name || 'unknown';
+    return {
+      ok: false,
+      code: 'INVALID_EXTENSION',
+      message: `Duoi file khong hop le: ${label}. Chi ho tro: pdf, docx, doc, pptx, ppt, xlsx, xls, txt, png, mp3, mp4.`,
+    };
+  }
+
   if (!isMaterialMimeAllowed(mime)) {
     const label = file.type || file.name || 'unknown';
     return {
       ok: false,
       code: 'INVALID_TYPE',
-      message: `Loại file không được hỗ trợ: ${label}`,
+      message: `Loai file khong duoc ho tro: ${label}. Chi ho tro: pdf, docx, doc, pptx, ppt, xlsx, xls, txt, png, mp3, mp4.`,
     };
   }
+
   return { ok: true };
 }

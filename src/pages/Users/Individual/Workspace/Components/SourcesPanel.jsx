@@ -29,6 +29,8 @@ import {
   PencilLine,
   Plus,
   Presentation,
+  AlertTriangle,
+  Ban,
   Search,
   Share2,
   Sparkles,
@@ -295,6 +297,11 @@ function isWarnSource(source) {
   return ["WARN", "WARNED"].includes(status);
 }
 
+function isRejectSource(source) {
+  const status = String(source?.status || "").toUpperCase();
+  return ["REJECT", "REJECTED"].includes(status);
+}
+
 function getSourceStatusTone(status, isDarkMode = false) {
   const normalizedStatus = String(status || "ACTIVE").toUpperCase();
 
@@ -404,6 +411,8 @@ function SourcesPanel({
   const [renameInput, setRenameInput] = useState("");
   const [renameLoading, setRenameLoading] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
+  const [selectedDeleteDialog, setSelectedDeleteDialog] = useState(null);
+  const [selectedDeleteLoading, setSelectedDeleteLoading] = useState(false);
   const [renderedSource, setRenderedSource] = useState(null);
   const [isClosingDetail, setIsClosingDetail] = useState(false);
   const deferredSearch = useDeferredValue(search);
@@ -576,12 +585,24 @@ function SourcesPanel({
 
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return;
-    if (onRemoveMultiple) {
-      await onRemoveMultiple(selectedIds);
-    } else {
-      await Promise.all(selectedIds.map((id) => onRemoveSource?.(id)));
+    setSelectedDeleteDialog({ ids: [...selectedIds] });
+  };
+
+  const handleConfirmDeleteSelected = async () => {
+    const idsToDelete = selectedDeleteDialog?.ids || [];
+    if (idsToDelete.length === 0) return;
+    setSelectedDeleteLoading(true);
+    try {
+      if (onRemoveMultiple) {
+        await onRemoveMultiple(idsToDelete);
+      } else {
+        await Promise.all(idsToDelete.map((id) => onRemoveSource?.(id)));
+      }
+      setSelected(selectedIds.filter((id) => !idsToDelete.includes(id)));
+      setSelectedDeleteDialog(null);
+    } finally {
+      setSelectedDeleteLoading(false);
     }
-    clearSelection();
   };
 
   return (
@@ -972,6 +993,10 @@ function SourcesPanel({
                           ? isDarkMode
                             ? "border-amber-600/70 bg-amber-950/40 text-amber-200 hover:bg-amber-900/40 hover:text-amber-100"
                             : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          : isRejectSource(source)
+                            ? isDarkMode
+                              ? "border-rose-600/70 bg-rose-950/40 text-rose-200 hover:bg-rose-900/40 hover:text-rose-100"
+                              : "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100"
                           : null,
                       )}
                       onClick={() =>
@@ -979,9 +1004,17 @@ function SourcesPanel({
                       }
                       disabled={!canOpenSourceDetail(source)}
                     >
-                      <Sparkles className="mr-2 h-4 w-4" />
+                      {isWarnSource(source) ? (
+                        <AlertTriangle className="mr-2 h-4 w-4" />
+                      ) : isRejectSource(source) ? (
+                        <Ban className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Sparkles className="mr-2 h-4 w-4" />
+                      )}
                       {isWarnSource(source)
                         ? t("workspace.shell.warningSource", "Cảnh báo")
+                        : isRejectSource(source)
+                          ? t("workspace.shell.irrelevantSource", "Không liên quan")
                         : t("workspace.shell.previewSource", "Preview")}
                     </Button>
 
@@ -1235,6 +1268,66 @@ function SourcesPanel({
                 onClick={handleDelete}
               >
                 {t("common.delete", "Delete")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(selectedDeleteDialog)}
+        onOpenChange={(open) => {
+          if (!open && !selectedDeleteLoading) setSelectedDeleteDialog(null);
+        }}
+      >
+        <DialogContent
+          className={
+            isDarkMode
+              ? "border-white/10 bg-slate-950 text-slate-100"
+              : "bg-white"
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <p className={`text-lg font-semibold ${fontClass}`}>
+                {t(
+                  "workspace.shell.deleteSelectedTitle",
+                  "Delete selected sources",
+                )}
+              </p>
+              <p
+                className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}
+              >
+                {t(
+                  "workspace.shell.deleteSelectedHint",
+                  "Remove {{count}} selected sources from this workspace. This action cannot be undone.",
+                  {
+                    count: selectedDeleteDialog?.ids?.length || 0,
+                  },
+                )}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectedDeleteDialog(null)}
+                disabled={selectedDeleteLoading}
+              >
+                {t("common.cancel", "Cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleConfirmDeleteSelected}
+                disabled={selectedDeleteLoading}
+              >
+                {selectedDeleteLoading
+                  ? t(
+                      "workspace.shell.deleteSelectedDeleting",
+                      "Deleting...",
+                    )
+                  : t("workspace.shell.deleteSelectedConfirm", "Delete")}
               </Button>
             </div>
           </div>

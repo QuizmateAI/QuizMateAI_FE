@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   Check,
@@ -22,28 +23,28 @@ import ListenPlayer from "./ListenPlayer";
 const HIGHLIGHT_COLORS = [
   {
     id: "yellow",
-    label: "Vàng",
+    label: "Yellow",
     swatch: "linear-gradient(135deg, #FDE68A, #F59E0B)",
     ring: "#F59E0B",
     paint: "rgba(253, 224, 71, 0.55)",
   },
   {
     id: "blue",
-    label: "Xanh dương",
+    label: "Blue",
     swatch: "linear-gradient(135deg, #BFDBFE, #3B82F6)",
     ring: "#3B82F6",
     paint: "rgba(147, 197, 253, 0.55)",
   },
   {
     id: "pink",
-    label: "Hồng",
+    label: "Pink",
     swatch: "linear-gradient(135deg, #FBCFE8, #EC4899)",
     ring: "#EC4899",
     paint: "rgba(244, 114, 182, 0.5)",
   },
   {
     id: "green",
-    label: "Xanh lá",
+    label: "Green",
     swatch: "linear-gradient(135deg, #BBF7D0, #22C55E)",
     ring: "#22C55E",
     paint: "rgba(134, 239, 172, 0.55)",
@@ -67,7 +68,7 @@ import { MaterialContentRenderer } from "../features/material/MaterialContentRen
 // InlineMaterialWorkspace - Variant C redesign:
 //   - Top bar: book cover + title + tag + page navigator + actions
 //   - Left (main): sub-toolbar (breadcrumb + actions) + PDF + floating CTAs
-//   - Right (440px sidebar): progress card + cây kiến thức chapter cards
+//   - Right (440px sidebar): progress card + cÃ¢y kiáº¿n thá»©c chapter cards
 // ============================================================================
 
 function pickPdfUrl(source) {
@@ -111,7 +112,7 @@ function isPdfMaterial(source) {
   return typeof url === "string" && url.toLowerCase().includes(".pdf");
 }
 
-function formatMaterialTypeLabel(source) {
+function formatMaterialTypeLabel(source, t) {
   const rawType = String(
     source?.type || source?.materialType || source?.contentType || "",
   ).toLowerCase();
@@ -126,14 +127,14 @@ function formatMaterialTypeLabel(source) {
     combined.includes("msword") ||
     /\.(docx?|rtf)\b/.test(combined)
   ) {
-    return "Tài liệu Word";
+    return t("workspace.material.types.word", "Word document");
   }
   if (
     combined.includes("spreadsheetml") ||
     combined.includes("excel") ||
     /\.(xlsx?|csv)\b/.test(combined)
   ) {
-    return "Bảng tính Excel";
+    return t("workspace.material.types.excel", "Excel spreadsheet");
   }
   if (
     combined.includes("presentationml") ||
@@ -143,20 +144,20 @@ function formatMaterialTypeLabel(source) {
     return "PowerPoint";
   }
   if (combined.includes("image") || /\.(png|jpe?g|webp|gif|svg)\b/.test(combined)) {
-    return "Hình ảnh";
+    return t("workspace.material.types.image", "Image");
   }
   if (combined.includes("video") || /\.(mp4|webm|mov|avi|mkv)\b/.test(combined)) {
     return "Video";
   }
   if (combined.includes("audio") || /\.(mp3|wav|m4a|flac|aac|ogg)\b/.test(combined)) {
-    return "Âm thanh";
+    return t("workspace.material.types.audio", "Audio");
   }
   if (combined.includes("text") || /\.(txt|md)\b/.test(combined)) {
-    return "Văn bản";
+    return t("workspace.material.types.text", "Text");
   }
-  if (combined.includes("url") || combined.includes("link")) return "Liên kết";
+  if (combined.includes("url") || combined.includes("link")) return t("workspace.material.types.link", "Link");
 
-  return "Tài liệu";
+  return t("workspace.material.types.document", "Document");
 }
 
 function estimateNonPdfPageCount(extractedContent) {
@@ -172,10 +173,26 @@ function estimateNonPdfPageCount(extractedContent) {
   return Math.max(1, Math.ceil(text.length / 2400));
 }
 
+function extractTextPayload(payload) {
+  if (!payload) return "";
+  if (typeof payload === "string") return payload;
+  if (typeof payload?.data === "string") return payload.data;
+  if (typeof payload?.extractedText === "string") return payload.extractedText;
+  if (typeof payload?.text === "string") return payload.text;
+  if (typeof payload?.content === "string") return payload.content;
+  if (typeof payload?.value === "string") return payload.value;
+  if (typeof payload?.script === "string") return payload.script;
+  if (typeof payload?.data?.extractedText === "string") return payload.data.extractedText;
+  if (typeof payload?.data?.text === "string") return payload.data.text;
+  if (typeof payload?.data?.content === "string") return payload.data.content;
+  if (typeof payload?.data?.value === "string") return payload.data.value;
+  return "";
+}
+
 function getCoverInitial(title) {
   if (!title) return "?";
   const t = title.trim();
-  const match = t.match(/[A-Za-zÀ-ỹ]/);
+  const match = t.match(/[\p{L}\p{N}]/u);
   return (match ? match[0] : t[0] || "?").toUpperCase();
 }
 
@@ -223,8 +240,8 @@ function mapMaterialNoteToAnnotation(note, fallbackPage = 1) {
     kind: "note",
     page,
     excerpt: isHighlight
-      ? note?.highlightedText || "Đoạn đã đánh dấu"
-      : note?.title || "Ghi chú tự do",
+      ? note?.highlightedText || "Äoáº¡n Ä‘Ã£ Ä‘Ã¡nh dáº¥u"
+      : note?.title || "Ghi chÃº tá»± do",
     topRatio,
     source: isHighlight ? "server-highlight" : "floating",
     selectionRects,
@@ -259,7 +276,7 @@ function buildCreateNotePayload(materialId, annotation) {
   return {
     materialId: Number(materialId),
     noteType: "NORMAL",
-    title: annotation.title || "Ghi chú tự do",
+    title: annotation.title || "Ghi chÃº tá»± do",
     content: annotation.content || "",
     pageNumber: Number(annotation.page) || null,
     topRatio:
@@ -377,7 +394,7 @@ function AITutorFab({
         <Sparkles size={14} />
         AI Tutor
         <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">
-          ĐOẠN VỪA HIGHLIGHT
+          ÄOáº N Vá»ªA HIGHLIGHT
         </span>
         <button
           type="button"
@@ -388,7 +405,7 @@ function AITutorFab({
         </button>
       </div>
       <p className="text-sm font-semibold leading-relaxed my-3">
-        Bạn vừa đánh dấu{" "}
+        Báº¡n vá»«a Ä‘Ã¡nh dáº¥u{" "}
         <b>
           "{highlightedText.slice(0, 30)}
           {highlightedText.length > 30 ? "..." : ""}"
@@ -396,8 +413,8 @@ function AITutorFab({
         {currentChapter && (
           <>
             {" "}
-            - khái niệm này quay lại nhiều lần ở chương {currentChapter}. Bạn
-            muốn xem lại nhanh không?
+            - khÃ¡i niá»‡m nÃ y quay láº¡i nhiá»u láº§n á»Ÿ chÆ°Æ¡ng {currentChapter}. Báº¡n
+            muá»‘n xem láº¡i nhanh khÃ´ng?
           </>
         )}
       </p>
@@ -407,14 +424,14 @@ function AITutorFab({
           onClick={onJumpChapter}
           className="flex-1 px-3 py-2 rounded-lg bg-white text-blue-700 text-xs font-extrabold inline-flex items-center justify-center gap-1.5 hover:bg-blue-50 transition"
         >
-          Có, mở chương {currentChapter || ""}
+          CÃ³, má»Ÿ chÆ°Æ¡ng {currentChapter || ""}
         </button>
         <button
           type="button"
           onClick={onAsk}
           className="flex-1 px-3 py-2 rounded-lg bg-white/15 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 hover:bg-white/25 transition"
         >
-          + Hỏi thêm
+          + Há»i thÃªm
         </button>
       </div>
     </div>
@@ -428,6 +445,7 @@ export default function InlineMaterialWorkspace({
   initialPage = null,
   initialSearchText = "",
 }) {
+  const { t } = useTranslation();
   const sidebarTabs = ["tree", "notes", "chat"];
 
   // sidebarView: "tree" | "chat" | "notes" | null
@@ -441,7 +459,7 @@ export default function InlineMaterialWorkspace({
   const [draftAnnotation, setDraftAnnotation] = useState(null);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
   const [notesError, setNotesError] = useState(null);
-  // Review banner state: status starts từ source nhưng cho phép update local sau khi approve.
+  // Review banner state: status starts tá»« source nhÆ°ng cho phÃ©p update local sau khi approve.
   const [materialStatus, setMaterialStatus] = useState(
     String(source?.status || "").toUpperCase(),
   );
@@ -449,7 +467,7 @@ export default function InlineMaterialWorkspace({
   const [moderationLoading, setModerationLoading] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState(null);
-  // Non-PDF content (extracted text cho docx/text, hoặc {url, transcript} cho media).
+  // Non-PDF content (extracted text cho docx/text, hoáº·c {url, transcript} cho media).
   const [extractedContent, setExtractedContent] = useState(null); // { value, script } | null
   const [contentLoading, setContentLoading] = useState(false);
   const [contentError, setContentError] = useState(false);
@@ -462,10 +480,10 @@ export default function InlineMaterialWorkspace({
   const materialId = source?.id || source?.materialId;
   const workspaceId =
     source?.workspaceId || source?.workspaceID || source?.workspace_id;
-  const sourceTitle = source?.name || source?.title || "Tài liệu";
+  const sourceTitle = source?.name || source?.title || t("workspace.material.types.document", "Document");
   const sourceMeta =
     source?.author || source?.uploaderName || source?.originalFileName || "";
-  const materialTypeLabel = formatMaterialTypeLabel(source);
+  const materialTypeLabel = formatMaterialTypeLabel(source, t);
   const coverInitial = getCoverInitial(sourceTitle);
   const showPdf = isPdfMaterial(source) && pdfUrl;
   const nonPdfPageCount = useMemo(
@@ -491,7 +509,7 @@ export default function InlineMaterialWorkspace({
       })
       .catch((error) => {
         if (cancelled) return;
-        setNotesError(error?.message || "Không tải được ghi chú");
+        setNotesError(error?.message || "KhÃ´ng táº£i Ä‘Æ°á»£c ghi chÃº");
       });
 
     return () => {
@@ -499,17 +517,19 @@ export default function InlineMaterialWorkspace({
     };
   }, [materialId]);
 
-  // Sync materialStatus khi source thay đổi (vd user navigate giữa các material).
+  // Sync materialStatus khi source thay Ä‘á»•i (vd user navigate giá»¯a cÃ¡c material).
   useEffect(() => {
     setMaterialStatus(String(source?.status || "").toUpperCase());
     setReviewError(null);
   }, [source?.id, source?.status]);
 
   const isWarned = materialStatus === "WARN" || materialStatus === "WARNED";
+  const isRejected = materialStatus === "REJECT" || materialStatus === "REJECTED";
+  const hasModerationFlag = isWarned || isRejected;
 
-  // Fetch moderation report khi material WARNED — dùng để hiển thị reason/suggestion trong banner.
+  // Fetch moderation report khi material bá»‹ flag (WARN/REJECT) Ä‘á»ƒ hiá»ƒn thá»‹ reason/suggestion trong banner.
   useEffect(() => {
-    if (!materialId || !isWarned) {
+    if (!materialId || !hasModerationFlag) {
       setModerationReport(null);
       return undefined;
     }
@@ -531,7 +551,7 @@ export default function InlineMaterialWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [materialId, isWarned]);
+  }, [materialId, hasModerationFlag]);
 
   const handleReviewClick = useCallback(
     async (isApproved) => {
@@ -540,13 +560,13 @@ export default function InlineMaterialWorkspace({
       setReviewError(null);
       try {
         await reviewMaterial(materialId, isApproved);
-        // Banner sẽ tự ẩn vì materialStatus đổi sang ACTIVE/REJECTED → isWarned = false.
+        // Banner sáº½ tá»± áº©n vÃ¬ materialStatus Ä‘á»•i sang ACTIVE/REJECTED â†’ isWarned = false.
         setMaterialStatus(isApproved ? "ACTIVE" : "REJECTED");
       } catch (error) {
         setReviewError(
           error?.response?.data?.message
             || error?.message
-            || "Không thể duyệt tài liệu lúc này.",
+            || "KhÃ´ng thá»ƒ duyá»‡t tÃ i liá»‡u lÃºc nÃ y.",
         );
       } finally {
         setReviewLoading(false);
@@ -555,11 +575,11 @@ export default function InlineMaterialWorkspace({
     [materialId, reviewLoading],
   );
 
-  const moderationReason = moderationReport?.reason || null;
+  const moderationReason = moderationReport?.reason || source?.moderationSummary || null;
   const moderationSuggestion = moderationReport?.suggestion || null;
 
-  // Fetch nội dung cho non-PDF: media (image/audio/video) -> {url, transcript},
-  // text/docx -> extracted markdown. Skip cho PDF (đã có viewer riêng).
+  // Fetch ná»™i dung cho non-PDF: media (image/audio/video) -> {url, transcript},
+  // text/docx -> extracted markdown. Skip cho PDF (Ä‘Ã£ cÃ³ viewer riÃªng).
   const sourceTypeLower = String(
     source?.type || source?.materialType || source?.contentType || "",
   ).toLowerCase();
@@ -570,10 +590,7 @@ export default function InlineMaterialWorkspace({
     sourceTypeLower.includes("youtube") ||
     sourceTypeLower.includes("vimeo");
   const needsContentFetch =
-    Boolean(materialId) &&
-    !isPdfMaterial(source) &&
-    materialStatus !== "REJECT" &&
-    materialStatus !== "REJECTED";
+    Boolean(materialId) && !isPdfMaterial(source);
 
   useEffect(() => {
     if (!needsContentFetch) {
@@ -587,7 +604,7 @@ export default function InlineMaterialWorkspace({
     (async () => {
       try {
         if (looksLikeMedia) {
-          // Media: thử /content endpoint trước (trả {url, transcript})
+          // Media: thá»­ /content endpoint trÆ°á»›c (tráº£ {url, transcript})
           try {
             const res = await getMaterialContent(materialId);
             const data = res?.data ?? res ?? null;
@@ -604,7 +621,7 @@ export default function InlineMaterialWorkspace({
         }
         const res = await getExtractedText(materialId);
         if (cancelled) return;
-        const text = typeof res === "string" ? res : res?.data ?? "";
+        const text = extractTextPayload(res);
         setExtractedContent({ value: text || "", script: null });
       } catch {
         if (!cancelled) setContentError(true);
@@ -690,7 +707,7 @@ export default function InlineMaterialWorkspace({
         setSelectedAnnotationId(nextAnnotation.id);
         setSidebarView("notes");
       } catch (error) {
-        setNotesError(error?.message || "Không tạo được ghi chú");
+        setNotesError(error?.message || "KhÃ´ng táº¡o Ä‘Æ°á»£c ghi chÃº");
       }
     },
     [materialId],
@@ -758,7 +775,7 @@ export default function InlineMaterialWorkspace({
         typeof payload === "string" ? payload : payload?.content;
       const rawTitle = typeof payload === "string" ? "" : payload?.title;
       const trimmedTitle = String(rawTitle || "").trim();
-      const title = trimmedTitle || "Không có tiêu đề";
+      const title = trimmedTitle || "KhÃ´ng cÃ³ tiÃªu Ä‘á»";
       const annotation = {
         id: createAnnotationId(),
         kind: "note",
@@ -790,7 +807,7 @@ export default function InlineMaterialWorkspace({
         setSelectedAnnotationId(nextAnnotation.id);
         setSidebarView("notes");
       } catch (error) {
-        setNotesError(error?.message || "Không tạo được ghi chú");
+        setNotesError(error?.message || "KhÃ´ng táº¡o Ä‘Æ°á»£c ghi chÃº");
       }
     },
     [currentPage, materialId],
@@ -805,7 +822,7 @@ export default function InlineMaterialWorkspace({
       ? String(payload.title || "").trim()
       : "";
     const nextTitle = titleUpdated
-      ? trimmedTitle || "Không có tiêu đề"
+      ? trimmedTitle || "KhÃ´ng cÃ³ tiÃªu Ä‘á»"
       : null;
     let targetNoteId = null;
 
@@ -829,7 +846,7 @@ export default function InlineMaterialWorkspace({
       const body = { content: nextContent };
       if (titleUpdated) body.title = nextTitle;
       updateMaterialNote(targetNoteId, body).catch((error) => {
-        setNotesError(error?.message || "Không cập nhật được ghi chú");
+        setNotesError(error?.message || "KhÃ´ng cáº­p nháº­t Ä‘Æ°á»£c ghi chÃº");
       });
     }
   }, []);
@@ -856,7 +873,7 @@ export default function InlineMaterialWorkspace({
       if (targetNoteId) {
         setNotesError(null);
         deleteMaterialNote(targetNoteId).catch((error) => {
-          setNotesError(error?.message || "Không xóa được ghi chú");
+          setNotesError(error?.message || "KhÃ´ng xÃ³a Ä‘Æ°á»£c ghi chÃº");
         });
       }
       setSelectedAnnotationId((previous) =>
@@ -874,9 +891,9 @@ export default function InlineMaterialWorkspace({
     [],
   );
 
-  // Sidebar Ghi chú = chỉ NORMAL note (ghi chú tự do). HIGHLIGHT hiện trong
-  // PDF viewer (dưới đoạn đã bôi). Sort theo createdAt giảm dần — note mới
-  // nhất ở trên cùng, không phụ thuộc trang/scroll PDF.
+  // Sidebar Ghi chÃº = chá»‰ NORMAL note (ghi chÃº tá»± do). HIGHLIGHT hiá»‡n trong
+  // PDF viewer (dÆ°á»›i Ä‘oáº¡n Ä‘Ã£ bÃ´i). Sort theo createdAt giáº£m dáº§n â€” note má»›i
+  // nháº¥t á»Ÿ trÃªn cÃ¹ng, khÃ´ng phá»¥ thuá»™c trang/scroll PDF.
   const sidebarNotes = useMemo(
     () =>
       annotations
@@ -908,8 +925,8 @@ export default function InlineMaterialWorkspace({
       }`}
       style={{
         // Grid rows: top bar (60px) + optional review banner (auto) + main content (1fr).
-        // Khi material không WARNED, hàng review = 0px nên không chiếm chỗ.
-        gridTemplateRows: isWarned ? "60px auto 1fr" : "60px 1fr",
+        // Khi material khÃ´ng bá»‹ moderation flag, khÃ´ng táº¡o hÃ ng banner.
+        gridTemplateRows: hasModerationFlag ? "60px auto 1fr" : "60px 1fr",
         gridTemplateColumns: treeOpen ? "1fr 440px" : "1fr",
       }}
     >
@@ -921,7 +938,7 @@ export default function InlineMaterialWorkspace({
             : "border-blue-100 bg-white"
         }`}
       >
-        <IconBtn onClick={onBack} title="Quay lại" isDarkMode={isDarkMode}>
+        <IconBtn onClick={onBack} title={t("common.back", "Back")} isDarkMode={isDarkMode}>
           <ArrowLeft size={16} />
         </IconBtn>
 
@@ -947,8 +964,8 @@ export default function InlineMaterialWorkspace({
                 isDarkMode ? "text-slate-400" : "text-slate-500"
               }`}
             >
-              {sourceMeta && <>{sourceMeta} · </>}
-              {displayTotalPages > 0 && <>{displayTotalPages} trang</>}
+              {sourceMeta && <>{sourceMeta} Â· </>}
+              {displayTotalPages > 0 && <>{displayTotalPages} {t("workspace.material.pageUnit", "pages")}</>}
               <span
                 className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
                   isDarkMode
@@ -983,7 +1000,7 @@ export default function InlineMaterialWorkspace({
                   isDarkMode ? "text-blue-300" : "text-blue-700"
                 }`}
               >
-                Màu
+                {t("workspace.material.highlight.colorLabel", "Color")}
               </span>
               <div className="flex items-center gap-1">
                 {HIGHLIGHT_COLORS.map((color) => {
@@ -1024,7 +1041,7 @@ export default function InlineMaterialWorkspace({
                     : "text-blue-700/80 border-blue-200"
                 }`}
               >
-                Tô chữ trên PDF để đánh dấu
+                {t("workspace.material.highlight.hint", "Highlight text on PDF")}
               </span>
             </div>
           )}
@@ -1035,7 +1052,7 @@ export default function InlineMaterialWorkspace({
           <div className="flex items-center gap-1">
             <ToolPill
               icon={Highlighter}
-              label="Đánh dấu"
+              label={t("workspace.material.highlight.action", "Highlight")}
               active={activeTool === "highlight"}
               onClick={() =>
                 setActiveTool(activeTool === "highlight" ? null : "highlight")
@@ -1044,7 +1061,7 @@ export default function InlineMaterialWorkspace({
             />
             <ToolPill
               icon={Headphones}
-              label="Nghe"
+              label={t("workspace.material.listen.action", "Listen")}
               active={activeTool === "listen"}
               onClick={() =>
                 setActiveTool(activeTool === "listen" ? null : "listen")
@@ -1082,56 +1099,70 @@ export default function InlineMaterialWorkspace({
 
       </div>
 
-      {/* REVIEW BANNER — chỉ hiện khi material status = WARNED, yêu cầu user duyệt/từ chối */}
-      {isWarned && (
+      {/* REVIEW BANNER â€” hiá»‡n khi material bá»‹ moderation flag (WARN/REJECT). */}
+      {hasModerationFlag && (
         <div
-          className={`col-span-full border-b px-5 py-3 ${
-            isDarkMode
-              ? "border-amber-700/40 bg-amber-950/30"
-              : "border-amber-200 bg-amber-50"
+          className={`col-span-full border-b px-5 py-2 ${
+            isRejected
+              ? (isDarkMode
+                  ? "border-red-700/40 bg-red-950/30"
+                  : "border-red-200 bg-red-50")
+              : (isDarkMode
+                  ? "border-amber-700/40 bg-amber-950/30"
+                  : "border-amber-200 bg-amber-50")
           }`}
         >
-          <div className="flex flex-wrap items-start gap-3">
+          <div className="flex w-full flex-wrap items-start gap-2">
             <div className="flex-1 min-w-0">
               <p
-                className={`text-sm font-semibold ${
-                  isDarkMode ? "text-amber-200" : "text-amber-900"
+                className={`text-base font-semibold ${
+                  isRejected
+                    ? (isDarkMode ? "text-red-200" : "text-red-900")
+                    : (isDarkMode ? "text-amber-200" : "text-amber-900")
                 }`}
               >
-                ⚠️ Tài liệu đang ở trạng thái cảnh báo, cần bạn duyệt.
+                {isRejected
+                  ? t("workspace.material.moderation.rejectedBanner", "⛔ This material is marked as not relevant to the learning goal.")
+                  : t("workspace.material.moderation.warningBanner", "⚠️ This material is in warning status and needs your review.")}
               </p>
               {moderationLoading && !moderationReport && (
                 <p
-                  className={`mt-1 text-xs ${
-                    isDarkMode ? "text-amber-300/80" : "text-amber-700"
+                  className={`mt-0.5 text-sm ${
+                    isRejected
+                      ? (isDarkMode ? "text-red-300/80" : "text-red-700")
+                      : (isDarkMode ? "text-amber-300/80" : "text-amber-700")
                   }`}
                 >
-                  Đang tải báo cáo kiểm duyệt...
+                  {t("workspace.material.moderation.loading", "Loading moderation report...")}
                 </p>
               )}
               {moderationReason && (
                 <p
-                  className={`mt-1 text-xs leading-relaxed ${
-                    isDarkMode ? "text-amber-100" : "text-amber-800"
+                  className={`mt-0.5 text-sm leading-relaxed ${
+                    isRejected
+                      ? (isDarkMode ? "text-red-100" : "text-red-800")
+                      : (isDarkMode ? "text-amber-100" : "text-amber-800")
                   }`}
                 >
-                  <span className="font-semibold">Lý do: </span>
+                  <span className="font-semibold">{t("workspace.material.moderation.reason", "Reason")}: </span>
                   {moderationReason}
                 </p>
               )}
               {moderationSuggestion && (
                 <p
-                  className={`mt-0.5 text-xs leading-relaxed ${
-                    isDarkMode ? "text-amber-200/80" : "text-amber-700"
+                  className={`mt-0 text-sm leading-relaxed ${
+                    isRejected
+                      ? (isDarkMode ? "text-red-200/80" : "text-red-700")
+                      : (isDarkMode ? "text-amber-200/80" : "text-amber-700")
                   }`}
                 >
-                  <span className="font-semibold">Gợi ý: </span>
+                  <span className="font-semibold">{t("workspace.material.moderation.suggestion", "Suggestion")}: </span>
                   {moderationSuggestion}
                 </p>
               )}
               {reviewError && (
                 <p
-                  className={`mt-1 text-xs ${
+                  className={`mt-0.5 text-sm ${
                     isDarkMode ? "text-red-300" : "text-red-700"
                   }`}
                 >
@@ -1139,40 +1170,42 @@ export default function InlineMaterialWorkspace({
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => handleReviewClick(true)}
-                disabled={reviewLoading}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  reviewLoading
-                    ? isDarkMode
-                      ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                      : "bg-slate-200 text-slate-500 cursor-not-allowed"
-                    : isDarkMode
-                      ? "bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
-                      : "bg-emerald-600 text-white hover:bg-emerald-700"
-                }`}
-              >
-                Duyệt
-              </button>
-              <button
-                type="button"
-                onClick={() => handleReviewClick(false)}
-                disabled={reviewLoading}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  reviewLoading
-                    ? isDarkMode
-                      ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                      : "bg-slate-200 text-slate-500 cursor-not-allowed"
-                    : isDarkMode
-                      ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-                      : "bg-red-100 text-red-700 hover:bg-red-200"
-                }`}
-              >
-                Từ chối
-              </button>
-            </div>
+            {isWarned && (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleReviewClick(true)}
+                  disabled={reviewLoading}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    reviewLoading
+                      ? isDarkMode
+                        ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                        : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                      : isDarkMode
+                        ? "bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                  } text-sm`}
+                >
+                  {t("workspace.material.moderation.approve", "Approve")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleReviewClick(false)}
+                  disabled={reviewLoading}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    reviewLoading
+                      ? isDarkMode
+                        ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                        : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                      : isDarkMode
+                        ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                        : "bg-red-100 text-red-700 hover:bg-red-200"
+                  } text-sm`}
+                >
+                  {t("workspace.material.moderation.reject", "Reject")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1212,7 +1245,7 @@ export default function InlineMaterialWorkspace({
               hideToolbar
             />
           ) : isPdfMaterial(source) ? (
-            // PDF nhưng không có URL display — vẫn fallback text
+            // PDF nhÆ°ng khÃ´ng cÃ³ URL display â€” váº«n fallback text
             <div
               className={`flex h-full flex-col items-center justify-center gap-3 p-8 text-center ${
                 isDarkMode ? "text-slate-400" : "text-slate-500"
@@ -1220,7 +1253,7 @@ export default function InlineMaterialWorkspace({
             >
               <FileText className="h-12 w-12 opacity-40" />
               <p className="text-sm">
-                Tài liệu là PDF nhưng không tìm thấy URL hiển thị.
+                {t("workspace.material.pdfMissingUrl", "This material is a PDF but no display URL was found.")}
               </p>
             </div>
           ) : (
@@ -1238,7 +1271,7 @@ export default function InlineMaterialWorkspace({
                       isDarkMode ? "border-slate-500" : "border-slate-400"
                     }`}
                   />
-                  <span>Đang tải nội dung...</span>
+                  <span>{t("common.loading", "Loading...")}</span>
                 </div>
               )}
               {!contentLoading && contentError && (
@@ -1247,7 +1280,7 @@ export default function InlineMaterialWorkspace({
                     isDarkMode ? "text-red-300" : "text-red-600"
                   }`}
                 >
-                  Không tải được nội dung tài liệu.
+                  {t("workspace.material.contentLoadFailed", "Could not load material content.")}
                 </p>
               )}
               {!contentLoading && !contentError && extractedContent && (
@@ -1255,7 +1288,7 @@ export default function InlineMaterialWorkspace({
                   value={extractedContent.value}
                   type={source?.type || source?.materialType}
                   script={extractedContent.script}
-                  scriptLabel="Lời thoại / Transcript"
+                  scriptLabel={t("workspace.material.transcriptLabel", "Transcript")}
                   isDarkMode={isDarkMode}
                 />
               )}
@@ -1266,16 +1299,16 @@ export default function InlineMaterialWorkspace({
                   }`}
                 >
                   <FileText className="h-12 w-12 opacity-40" />
-                  <p className="text-sm">Không có nội dung để hiển thị.</p>
+                  <p className="text-sm">{t("workspace.material.noContent", "No content to display.")}</p>
                   <p className="text-xs opacity-70">
-                    Loại: {materialTypeLabel}
+                    Loáº¡i: {materialTypeLabel}
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Floating: AI tutor (chỉ khi có highlight) - placeholder, wire later */}
+          {/* Floating: AI tutor (chá»‰ khi cÃ³ highlight) - placeholder, wire later */}
           {/* <AITutorFab highlightedText="composition" currentChapter={9} /> */}
         </div>
       </section>
@@ -1332,7 +1365,7 @@ export default function InlineMaterialWorkspace({
                 isDarkMode={isDarkMode}
               >
                 <Network size={13} className="-mt-px" />
-                Cây kiến thức
+                {t("workspace.material.tree.title", "Knowledge Tree")}
               </SegmentBtn>
               <SegmentBtn
                 active={sidebarView === "notes"}
@@ -1340,7 +1373,7 @@ export default function InlineMaterialWorkspace({
                 isDarkMode={isDarkMode}
               >
                 <MessageSquareText size={13} className="-mt-px" />
-                Ghi chú
+                {t("workspace.material.notes.tab", "Notes")}
               </SegmentBtn>
               <SegmentBtn
                 active={sidebarView === "chat"}
@@ -1348,7 +1381,7 @@ export default function InlineMaterialWorkspace({
                 isDarkMode={isDarkMode}
               >
                 <Sparkles size={13} className="-mt-px" />
-                Hỏi AI
+                {t("workspace.material.askAi.tab", "Ask AI")}
               </SegmentBtn>
             </div>
           </div>
@@ -1515,8 +1548,8 @@ function NotesPanel({
               const isEditing = editingAnnotationId === annotation.id;
               const isHighlight = annotation.noteType === "HIGHLIGHT";
               const noteTitle = isHighlight
-                ? annotation.title || "Đoạn đã đánh dấu"
-                : annotation.title || "Không có tiêu đề";
+                ? annotation.title || "Äoáº¡n Ä‘Ã£ Ä‘Ã¡nh dáº¥u"
+                : annotation.title || "KhÃ´ng cÃ³ tiÃªu Ä‘á»";
               const highlightedText =
                 annotation.highlightedText || annotation.excerpt || "";
 
@@ -1590,7 +1623,7 @@ function NotesPanel({
                           }`}
                         >
                           <Highlighter size={9} strokeWidth={3} />
-                          Đánh dấu
+                          ÄÃ¡nh dáº¥u
                         </span>
                       )}
                       {isEditing ? (
@@ -1601,7 +1634,7 @@ function NotesPanel({
                           onChange={(event) =>
                             setEditingTitle(event.target.value)
                           }
-                          placeholder="Tên ghi chú (không bắt buộc)"
+                          placeholder="TÃªn ghi chÃº (khÃ´ng báº¯t buá»™c)"
                           className={`w-full rounded-lg border px-2.5 py-1.5 text-sm font-semibold outline-none transition ${
                             isDarkMode
                               ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
@@ -1646,7 +1679,7 @@ function NotesPanel({
                             onChange={(event) =>
                               setEditingContent(event.target.value)
                             }
-                            placeholder="Nội dung ghi chú..."
+                            placeholder="Ná»™i dung ghi chÃº..."
                             className={`mt-3 min-h-[112px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition ${
                               isDarkMode
                                 ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
@@ -1668,7 +1701,7 @@ function NotesPanel({
                                   : "text-slate-500 hover:text-slate-700"
                               }`}
                             >
-                              Hủy
+                              Há»§y
                             </button>
                             <button
                               type="button"
@@ -1690,7 +1723,7 @@ function NotesPanel({
                               }`}
                             >
                               <Check size={13} />
-                              Lưu
+                              LÆ°u
                             </button>
                           </div>
                         </>
@@ -1708,7 +1741,7 @@ function NotesPanel({
                             isDarkMode ? "text-slate-500" : "text-slate-400"
                           }`}
                         >
-                          (Chưa có nội dung)
+                          (ChÆ°a cÃ³ ná»™i dung)
                         </p>
                       )}
                     </div>
@@ -1722,7 +1755,7 @@ function NotesPanel({
                         setEditingAnnotationId(annotation.id);
                         setEditingTitle(
                           annotation.title &&
-                            annotation.title !== "Không có tiêu đề"
+                            annotation.title !== "KhÃ´ng cÃ³ tiÃªu Ä‘á»"
                             ? annotation.title
                             : "",
                         );
@@ -1733,7 +1766,7 @@ function NotesPanel({
                           ? "text-slate-400 hover:bg-slate-800 hover:text-white"
                           : "text-slate-400 hover:bg-slate-100 hover:text-blue-600"
                       }`}
-                      title="Chỉnh sửa ghi chú"
+                      title="Chá»‰nh sá»­a ghi chÃº"
                     >
                       <Pencil size={15} />
                     </button>
@@ -1754,7 +1787,7 @@ function NotesPanel({
                         ? "text-slate-400 hover:bg-slate-800 hover:text-white"
                         : "text-slate-400 hover:bg-slate-100 hover:text-rose-600"
                     }`}
-                    title="Xóa ghi chú"
+                    title="XÃ³a ghi chÃº"
                   >
                     <X size={16} />
                   </button>
@@ -1769,10 +1802,10 @@ function NotesPanel({
             }`}
           >
             <MessageSquareText className="mb-3 h-12 w-12 opacity-35" />
-            <p className="text-base font-semibold">Chưa có ghi chú tự do nào</p>
+            <p className="text-base font-semibold">ChÆ°a cÃ³ ghi chÃº tá»± do nÃ o</p>
             <p className="mt-2 text-sm leading-6">
-              Nhấn nút "+" ở góc phải dưới để tạo ghi chú mới. Ghi chú gắn với
-              đoạn bôi đen sẽ hiện ngay dưới đoạn đó trong tài liệu.
+              Nháº¥n nÃºt "+" á»Ÿ gÃ³c pháº£i dÆ°á»›i Ä‘á»ƒ táº¡o ghi chÃº má»›i. Ghi chÃº gáº¯n vá»›i
+              Ä‘oáº¡n bÃ´i Ä‘en sáº½ hiá»‡n ngay dÆ°á»›i Ä‘oáº¡n Ä‘Ã³ trong tÃ i liá»‡u.
             </p>
           </div>
         )}
@@ -1811,7 +1844,7 @@ function NotesPanel({
             ? "bg-blue-500 text-white hover:bg-blue-400"
             : "bg-blue-600 text-white hover:bg-blue-700"
         }`}
-        title="Tạo ghi chú"
+        title="Táº¡o ghi chÃº"
       >
         <MessageSquareText className="h-5 w-5" />
       </button>
@@ -1848,7 +1881,7 @@ function NotesPanel({
                   ? "text-slate-400 hover:bg-slate-800 hover:text-white"
                   : "text-slate-400 hover:bg-slate-100 hover:text-rose-600"
               }`}
-              title="Đóng"
+              title="ÄÃ³ng"
             >
               <X size={14} />
             </button>
@@ -1863,7 +1896,7 @@ function NotesPanel({
                   : previous,
               )
             }
-            placeholder="Tên ghi chú (không bắt buộc)"
+            placeholder="TÃªn ghi chÃº (khÃ´ng báº¯t buá»™c)"
             className={`flex-shrink-0 px-4 py-2 text-sm font-bold outline-none border-b ${
               isDarkMode
                 ? "bg-slate-900 text-slate-100 border-slate-800 placeholder:text-slate-500"
@@ -1879,7 +1912,7 @@ function NotesPanel({
                   : previous,
               )
             }
-            placeholder="Nhập nội dung ghi chú..."
+            placeholder="Nháº­p ná»™i dung ghi chÃº..."
             className={`min-h-0 flex-1 resize-none px-4 py-3 text-sm outline-none ${
               isDarkMode
                 ? "bg-slate-900 text-slate-100 placeholder:text-slate-500"
@@ -1896,7 +1929,7 @@ function NotesPanel({
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
               }`}
             >
-              Hủy
+              Há»§y
             </button>
             <button
               type="button"
@@ -1914,7 +1947,7 @@ function NotesPanel({
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
-              Lưu
+              LÆ°u
             </button>
           </div>
         </div>
@@ -1922,3 +1955,4 @@ function NotesPanel({
     </div>
   );
 }
+

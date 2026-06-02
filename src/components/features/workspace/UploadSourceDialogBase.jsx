@@ -44,6 +44,9 @@ const MIME_TO_ENTITLEMENT = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "canUploadExcel",
   "application/vnd.ms-excel": "canUploadExcel",
   "text/plain": "canUploadText",
+  "image/png": "canUploadImage",
+  "audio/mpeg": "canUploadAudio",
+  "video/mp4": "canUploadVideo",
 };
 
 // Extension to entitlement key (fallback for MIME prefix checks)
@@ -57,10 +60,7 @@ const EXT_TO_ENTITLEMENT = {
   ".xls": "canUploadExcel",
   ".txt": "canUploadText",
   ".png": "canUploadImage",
-  ".jpg": "canUploadImage",
-  ".jpeg": "canUploadImage",
   ".mp3": "canUploadAudio",
-  ".wav": "canUploadAudio",
   ".mp4": "canUploadVideo",
 };
 
@@ -81,15 +81,15 @@ function getEntitlementKeyForFile(file) {
 // extension cũ để file picker không cho chọn — tránh UX "chọn được nhưng
 // upload xong báo lỗi".
 function buildAcceptString(ent) {
-  if (!ent) return ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp3,.wav,.mp4";
+  if (!ent) return ".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.png,.mp3,.mp4";
   const parts = [];
   if (ent.canUploadPdf) parts.push(".pdf");
-  if (ent.canUploadWord) parts.push(".docx");
-  if (ent.canUploadSlide) parts.push(".pptx");
-  if (ent.canUploadExcel) parts.push(".xlsx");
+  if (ent.canUploadWord) parts.push(".docx", ".doc");
+  if (ent.canUploadSlide) parts.push(".pptx", ".ppt");
+  if (ent.canUploadExcel) parts.push(".xlsx", ".xls");
   if (ent.canUploadText) parts.push(".txt");
-  if (ent.canUploadImage) parts.push(".png", ".jpg", ".jpeg", ".gif", ".webp");
-  if (ent.canUploadAudio) parts.push(".mp3", ".wav");
+  if (ent.canUploadImage) parts.push(".png");
+  if (ent.canUploadAudio) parts.push(".mp3");
   if (ent.canUploadVideo) parts.push(".mp4");
   return parts.join(",") || ".pdf";
 }
@@ -162,6 +162,7 @@ function UploadSourceDialogBase({
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingUploadType, setPendingUploadType] = useState(null);
   const [confirmAcknowledged, setConfirmAcknowledged] = useState(false);
+  const [fileValidationError, setFileValidationError] = useState("");
   const fileInputRef = useRef(null);
   const uploadActionLockRef = useRef(false);
 
@@ -195,7 +196,10 @@ function UploadSourceDialogBase({
       }
     }
     if (invalidMimeMessages.length > 0) {
+      setFileValidationError(invalidMimeMessages[0]);
       showError(invalidMimeMessages[0]);
+    } else {
+      setFileValidationError("");
     }
     if (hadPlanBlocked) {
       setPlanBlockedFeature("Loại tệp này");
@@ -351,7 +355,7 @@ function UploadSourceDialogBase({
       showError(t("workspace.upload.suggestMissingWorkspace"));
       return;
     }
-    if (!hasAnySelectedSources || hasOversizedFiles || uploadActionLockRef.current) return;
+    if (!hasAnySelectedSources || hasOversizedFiles || fileValidationError || uploadActionLockRef.current) return;
 
     const shouldUploadFiles = hasUserSelectedFiles;
     const shouldImportSuggestions = hasSelectedSuggestedResources;
@@ -411,7 +415,7 @@ function UploadSourceDialogBase({
 
   const handleRequestPrimaryConfirm = () => {
     if (uploading || importingSuggestions || processingWebLink) return;
-    if (!hasAnySelectedSources || hasOversizedFiles) return;
+    if (!hasAnySelectedSources || hasOversizedFiles || fileValidationError) return;
     if (!normalizedWorkspaceId && hasSelectedSuggestedResources) {
       showError(t("workspace.upload.suggestMissingWorkspace"));
       return;
@@ -462,6 +466,7 @@ function UploadSourceDialogBase({
       setShowConfirm(false);
       setPendingUploadType(null);
       setConfirmAcknowledged(false);
+      setFileValidationError("");
     }
     onOpenChange(val);
   };
@@ -755,6 +760,9 @@ function UploadSourceDialogBase({
                     {t("workspace.upload.fileTooLarge")}
                   </p>
                 ) : null}
+                {fileValidationError ? (
+                  <p className="mt-2 text-sm font-medium text-red-500">{fileValidationError}</p>
+                ) : null}
 
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-[620px] mx-auto">
                   <Button
@@ -1032,7 +1040,7 @@ function UploadSourceDialogBase({
                 <Button
                   type="button"
                   onClick={handleRequestPrimaryConfirm}
-                  disabled={uploading || importingSuggestions || !hasAnySelectedSources || hasOversizedFiles}
+                  disabled={uploading || importingSuggestions || !hasAnySelectedSources || hasOversizedFiles || Boolean(fileValidationError)}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white"
                 >
                   {uploading || importingSuggestions ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
