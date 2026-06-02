@@ -2595,6 +2595,10 @@
       "clearSelection": "Clear",
       "selectedBadge": "Selected",
       "deleteSelected": "Delete selected",
+      "deleteSelectedTitle": "Delete selected sources",
+      "deleteSelectedHint": "Remove {{count}} selected sources from this workspace. This action cannot be undone.",
+      "deleteSelectedConfirm": "Delete",
+      "deleteSelectedDeleting": "Deleting...",
       "shareSelected": "Share selected",
       "shareSource": "Share source",
       "selectSource": "Select source",
@@ -2792,6 +2796,65 @@
         "by": "By",
         "relatedQuiz": "Related Quiz",
         "unban": "Unban"
+      }
+    },
+    "material": {
+      "pageUnit": "pages",
+      "types": {
+        "document": "Document",
+        "word": "Word document",
+        "excel": "Excel spreadsheet",
+        "image": "Image",
+        "audio": "Audio",
+        "text": "Text",
+        "link": "Link"
+      },
+      "highlight": {
+        "colorLabel": "Color",
+        "hint": "Highlight text on PDF",
+        "action": "Highlight"
+      },
+      "listen": {
+        "action": "Listen"
+      },
+      "moderation": {
+        "rejectedBanner": "⛔ This material is marked as not relevant to the learning goal.",
+        "warningBanner": "⚠️ This material is in warning status and needs your review.",
+        "loading": "Loading moderation report...",
+        "reason": "Reason",
+        "suggestion": "Suggestion",
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "pdfMissingUrl": "This material is a PDF but no display URL was found.",
+      "contentLoadFailed": "Could not load material content.",
+      "transcriptLabel": "Transcript",
+      "noContent": "No content to display.",
+      "tree": {
+        "chunkOnLabel": "Chunk ON",
+        "chunkUnit": "chunk"
+      },
+      "notes": {
+        "tab": "Notes"
+      },
+      "askAi": {
+        "tab": "Ask AI",
+        "systemIntro": "Ask AI anything about this material",
+        "missingWorkspace": "Missing workspaceId",
+        "missingWorkspaceShort": "Missing workspaceId",
+        "clearedHistory": "Chat history cleared",
+        "suggestions": "Suggestions",
+        "inputPlaceholder": "Ask about this material...",
+        "inputHint": "Press Enter to send ? Shift+Enter for new line ? Click source pill to open PDF",
+        "send": "Send",
+        "openPageForCheck": "Open page {{page}} in PDF for verification",
+        "sourceLabel": "Source {{num}}",
+        "openPageLabel": "Open pages in PDF for verification",
+        "pageLabel": "Page {{page}}",
+        "extraSources": "Referenced from {{count}} more chunks in the material",
+        "currentPage": "Currently on page {{page}}",
+        "clearHistory": "Clear chat history",
+        "loading": "AI is finding an answer..."
       }
     }
   },

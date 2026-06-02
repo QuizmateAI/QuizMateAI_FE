@@ -2793,6 +2793,65 @@
         "relatedQuiz": "Related Quiz",
         "unban": "Unban"
       }
+    },
+    "material": {
+      "pageUnit": "ページ",
+      "types": {
+        "document": "資料",
+        "word": "Word資料",
+        "excel": "Excel表計算",
+        "image": "画像",
+        "audio": "音声",
+        "text": "テキスト",
+        "link": "リンク"
+      },
+      "highlight": {
+        "colorLabel": "色",
+        "hint": "PDF上の文字をハイライト",
+        "action": "ハイライト"
+      },
+      "listen": {
+        "action": "音声"
+      },
+      "moderation": {
+        "rejectedBanner": "⛔ この資料は学習目標に関連しないと判定されました。",
+        "warningBanner": "⚠️ この資料は警告状態です。確認してください。",
+        "loading": "モデレーションレポートを読み込み中...",
+        "reason": "理由",
+        "suggestion": "提案",
+        "approve": "承認",
+        "reject": "拒否"
+      },
+      "pdfMissingUrl": "PDF資料ですが表示URLが見つかりません。",
+      "contentLoadFailed": "資料の内容を読み込めませんでした。",
+      "transcriptLabel": "文字起こし / Transcript",
+      "noContent": "表示する内容がありません。",
+      "tree": {
+        "chunkOnLabel": "Chunk ON",
+        "chunkUnit": "chunk"
+      },
+      "notes": {
+        "tab": "ノート"
+      },
+      "askAi": {
+        "tab": "AIに質問",
+        "systemIntro": "この教材についてAIに何でも質問できます",
+        "missingWorkspace": "workspaceId がありません",
+        "missingWorkspaceShort": "workspaceId がありません",
+        "clearedHistory": "チャット履歴を削除しました",
+        "suggestions": "おすすめ",
+        "inputPlaceholder": "教材の内容について質問してください...",
+        "inputHint": "Enter で送信 · Shift+Enter で改行 · source pill をクリックして PDF を開く",
+        "send": "送信",
+        "openPageForCheck": "PDF の {{page}} ページを開いて確認",
+        "sourceLabel": "ソース {{num}}",
+        "openPageLabel": "PDFのページを開いて確認",
+        "pageLabel": "{{page}}ページ",
+        "extraSources": "資料内の他の {{count}} チャンクを参照",
+        "currentPage": "{{page}} ページを表示中",
+        "clearHistory": "チャット履歴を削除",
+        "loading": "AI が回答を探しています..."
+      }
     }
   },
   "quizListView": {

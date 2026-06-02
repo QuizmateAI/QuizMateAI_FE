@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+ import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -41,6 +42,7 @@ function pickJumpTarget(citationNums, sources) {
 }
 
 function CitationBadge({ num, source, isDarkMode, onJumpToPage }) {
+  const { t } = useTranslation();
   const page = source?.page;
   const clickable = Boolean(page && onJumpToPage);
   return (
@@ -53,8 +55,8 @@ function CitationBadge({ num, source, isDarkMode, onJumpToPage }) {
         if (clickable) onJumpToPage(page);
       }}
       title={clickable
-        ? `Đối soát: mở trang ${page} trong PDF`
-        : (source?.text?.slice(0, 100) || `Nguồn ${num}`)}
+        ? t("workspace.material.askAi.openPageForCheck", "Mo trang {{page}} trong PDF de doi soat", { page })
+        : (source?.text?.slice(0, 100) || t("workspace.material.askAi.sourceLabel", "Nguon {{num}}", { num }))}
       className={`inline-flex items-center justify-center align-baseline w-5 h-[18px] mx-[1px] rounded-md text-[10px] font-extrabold leading-none transition ${
         clickable
           ? isDarkMode
@@ -80,12 +82,12 @@ function renderWithCitations(children, sources, isDarkMode, onJumpToPage) {
   }
 
   if (typeof children !== "string") {
-    // React element — preserve, recurse into props.children if exists
+    // React element â€” preserve, recurse into props.children if exists
     return children;
   }
 
   // Pattern: [1], [1, 2], [1][2], [10] etc.
-  // Match toàn bộ block [...] thì split thành các số
+  // Match toÃ n bá»™ block [...] thÃ¬ split thÃ nh cÃ¡c sá»‘
   const regex = /\[([\d,\s]+)\](?:\[([\d,\s]+)\])*/g;
   const parts = [];
   let lastIdx = 0;
@@ -93,17 +95,17 @@ function renderWithCitations(children, sources, isDarkMode, onJumpToPage) {
   let key = 0;
 
   while ((match = regex.exec(children)) !== null) {
-    // Plain text trước match
+    // Plain text trÆ°á»›c match
     if (match.index > lastIdx) {
       parts.push(children.slice(lastIdx, match.index));
     }
 
-    // Parse full matched block, có thể là "[1, 2][3]" → numbers = [1, 2, 3]
+    // Parse full matched block, cÃ³ thá»ƒ lÃ  "[1, 2][3]" â†’ numbers = [1, 2, 3]
     const fullMatch = match[0];
     const numbers = fullMatch.match(/\d+/g)?.map(Number) || [];
 
     numbers.forEach((num) => {
-      const source = sources[num - 1]; // 1-indexed → 0-indexed
+      const source = sources[num - 1]; // 1-indexed â†’ 0-indexed
       parts.push(
         <CitationBadge
           key={`cite-${key++}`}
@@ -126,13 +128,13 @@ function renderWithCitations(children, sources, isDarkMode, onJumpToPage) {
   return parts.length > 0 ? parts : children;
 }
 
-// Markdown renderers — compact + theme-aware. Mỗi text-bearing element wrap
-// trong renderWithCitations để inline [N] hiển thị thành citation badges.
-// li/p: nếu có citation → toàn bộ dòng clickable → jump PDF page.
+// Markdown renderers â€” compact + theme-aware. Má»—i text-bearing element wrap
+// trong renderWithCitations Ä‘á»ƒ inline [N] hiá»ƒn thá»‹ thÃ nh citation badges.
+// li/p: náº¿u cÃ³ citation â†’ toÃ n bá»™ dÃ²ng clickable â†’ jump PDF page.
 const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
   const cite = (children) => renderWithCitations(children, sources, isDarkMode, onJumpToPage);
 
-  // Helper: render block (li/p) với hỗ trợ click toàn dòng nếu có citation
+  // Helper: render block (li/p) vá»›i há»— trá»£ click toÃ n dÃ²ng náº¿u cÃ³ citation
   const renderClickableBlock = (children, BlockTag, baseClass) => {
     const nums = extractCitationNumbers(children);
     const target = pickJumpTarget(nums, sources);
@@ -140,7 +142,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
 
     const handleClick = clickable
       ? (e) => {
-          // Đừng trigger nếu user đang click vào badge nhỏ (badge có handler riêng)
+          // Äá»«ng trigger náº¿u user Ä‘ang click vÃ o badge nhá» (badge cÃ³ handler riÃªng)
           if (e.target.closest("button[data-citation-badge]")) return;
           onJumpToPage(target.page);
         }
@@ -158,7 +160,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
               }`
             : ""
         }`}
-        title={clickable ? `Click để mở trang ${target.page} trong PDF` : undefined}
+        title={clickable ? `Click Ä‘á»ƒ má»Ÿ trang ${target.page} trong PDF` : undefined}
       >
         {cite(children)}
         {clickable && (
@@ -168,7 +170,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
             }`}
             aria-hidden
           >
-            →trang {target.page}
+            â†’trang {target.page}
           </span>
         )}
       </BlockTag>
@@ -215,7 +217,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
                 }`
               : ""
           }`}
-          title={clickable ? `Click để mở trang ${target.page} trong PDF` : undefined}
+          title={clickable ? `Click Ä‘á»ƒ má»Ÿ trang ${target.page} trong PDF` : undefined}
         >
           <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${
             isDarkMode ? "bg-cyan-400" : "bg-blue-500"
@@ -228,7 +230,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
               }`}
               aria-hidden
             >
-              →trang {target.page}
+              â†’trang {target.page}
             </span>
           )}
         </li>
@@ -263,6 +265,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
 };
 
 function MessageBubble({ message, isDarkMode, onJumpToPage }) {
+  const { t } = useTranslation();
   if (message.role === "system") {
     return (
       <div className={`text-center text-[11px] italic px-3 ${
@@ -275,8 +278,8 @@ function MessageBubble({ message, isDarkMode, onJumpToPage }) {
 
   const isUser = message.role === "user";
 
-  // Tách sources có page (clickable cho đối soát) khỏi sources không có page.
-  // Sources không page = chunk metadata bị thiếu, không có ý nghĩa với user → hide details.
+  // TÃ¡ch sources cÃ³ page (clickable cho Ä‘á»‘i soÃ¡t) khá»i sources khÃ´ng cÃ³ page.
+  // Sources khÃ´ng page = chunk metadata bá»‹ thiáº¿u, khÃ´ng cÃ³ Ã½ nghÄ©a vá»›i user â†’ hide details.
   const clickableSources = (message.sources || []).filter((s) => {
     const page = s.page || s.page_start || s.metadata?.page_start;
     return Boolean(page);
@@ -312,7 +315,7 @@ function MessageBubble({ message, isDarkMode, onJumpToPage }) {
           </div>
         )}
 
-        {/* Footer: chỉ hiển thị sources có page (đối soát được). Sources không page → gộp số. */}
+        {/* Footer: chá»‰ hiá»ƒn thá»‹ sources cÃ³ page (Ä‘á»‘i soÃ¡t Ä‘Æ°á»£c). Sources khÃ´ng page â†’ gá»™p sá»‘. */}
         {(clickableSources.length > 0 || hiddenSourceCount > 0) && !isUser && (
           <div className={`mt-2.5 pt-2 border-t ${
             isDarkMode ? "border-slate-700" : "border-slate-200"
@@ -322,7 +325,7 @@ function MessageBubble({ message, isDarkMode, onJumpToPage }) {
                 <div className={`text-[9.5px] font-extrabold uppercase tracking-wider mb-1.5 ${
                   isDarkMode ? "text-slate-400" : "text-slate-500"
                 }`}>
-                  📍 Mở trang trong PDF để đối soát
+                  {t("workspace.material.askAi.openPageLabel", "Open pages in PDF for verification")}
                 </div>
                 <div className="flex flex-wrap gap-1 mb-1">
                   {clickableSources.map((s, i) => {
@@ -332,7 +335,7 @@ function MessageBubble({ message, isDarkMode, onJumpToPage }) {
                         key={i}
                         type="button"
                         onClick={() => onJumpToPage?.(page)}
-                        title={`Mở trang ${page} trong PDF`}
+                        title={t("workspace.material.askAi.openPageForCheck", "Open page {{page}} in PDF for verification", { page })}
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
                           isDarkMode
                             ? "bg-slate-700 text-cyan-200 hover:bg-slate-600 hover:text-cyan-100"
@@ -340,10 +343,10 @@ function MessageBubble({ message, isDarkMode, onJumpToPage }) {
                         }`}
                       >
                         <FileText size={9} />
-                        Trang {page}
+                        {t("workspace.material.askAi.pageLabel", "Page {{page}}", { page })}
                         <span className={`text-[9px] font-extrabold ${
                           isDarkMode ? "text-cyan-400" : "text-blue-500"
-                        }`}>→</span>
+                        }`}>â†’</span>
                       </button>
                     );
                   })}
@@ -354,7 +357,7 @@ function MessageBubble({ message, isDarkMode, onJumpToPage }) {
               <p className={`text-[9.5px] italic ${
                 isDarkMode ? "text-slate-500" : "text-slate-400"
               }`}>
-                Tham khảo từ {hiddenSourceCount} đoạn khác trong tài liệu
+                {t("workspace.material.askAi.extraSources", "Referenced from {{count}} more chunks in the material", { count: hiddenSourceCount })}
               </p>
             )}
           </div>
@@ -366,18 +369,19 @@ function MessageBubble({ message, isDarkMode, onJumpToPage }) {
 
 export default function AskAIPanel({
   materialId,
-  materialTitle = "tài liệu này",
+  materialTitle = "this material",
   workspaceId,
   currentPage = 0,
   isDarkMode = false,
   onJumpToPage,
 }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState([
     {
       role: "system",
       content: workspaceId
-        ? "Hỏi AI bất kỳ điều gì về tài liệu này. AI trả lời kèm nguồn → click để mở trang tương ứng trên PDF."
-        : "Thiếu workspaceId — không thể gọi API. Vui lòng tải lại trang.",
+        ? t("workspace.material.askAi.systemIntro", "Hoi AI bat ky dieu gi ve tai lieu nay")
+        : t("workspace.material.askAi.missingWorkspace", "Thieu workspaceId")
     },
   ]);
   const [input, setInput] = useState("");
@@ -401,9 +405,9 @@ export default function AskAIPanel({
           answer = raw;
         }
       } else if (raw && typeof raw === "object") {
-        answer = raw.answer || raw.message || "(AI không trả về nội dung)";
-        // Chunk_contexts có metadata.page_start, dùng để jump PDF.
-        // Sources cấp cao hơn — material-level. Prefer chunk_contexts cho click.
+        answer = raw.answer || raw.message || "(AI khÃ´ng tráº£ vá» ná»™i dung)";
+        // Chunk_contexts cÃ³ metadata.page_start, dÃ¹ng Ä‘á»ƒ jump PDF.
+        // Sources cáº¥p cao hÆ¡n â€” material-level. Prefer chunk_contexts cho click.
         sources = raw.chunk_contexts?.length > 0
           ? raw.chunk_contexts.map((c) => ({
               chunk_id: c.chunk_id,
@@ -414,7 +418,7 @@ export default function AskAIPanel({
             }))
           : (raw.sources || []);
       } else {
-        answer = "(AI không trả về nội dung)";
+        answer = "(AI khÃ´ng tráº£ vá» ná»™i dung)";
       }
 
       setMessages((prev) => [...prev, {
@@ -427,7 +431,7 @@ export default function AskAIPanel({
       const errMsg = error?.response?.data?.message
         || error?.response?.data
         || error?.message
-        || "Có lỗi xảy ra khi gọi AI";
+        || "CÃ³ lá»—i xáº£y ra khi gá»i AI";
       setMessages((prev) => [...prev, {
         role: "assistant",
         content: typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg),
@@ -436,7 +440,7 @@ export default function AskAIPanel({
     },
   });
 
-  // Auto-scroll khi có message mới
+  // Auto-scroll khi cÃ³ message má»›i
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -459,23 +463,23 @@ export default function AskAIPanel({
   const handleClear = () => {
     setMessages([{
       role: "system",
-      content: "Đã xoá lịch sử. Hỏi AI bất kỳ điều gì về tài liệu này.",
+      content: t("workspace.material.askAi.clearedHistory", "Da xoa lich su chat"),
     }]);
   };
 
   const suggestedQuestions = currentPage > 0
     ? [
-        `Tóm tắt nội dung trang ${currentPage}`,
-        `Giải thích khái niệm chính trang ${currentPage}`,
-        "Tạo 3 câu hỏi trắc nghiệm từ phần này",
+        `TÃ³m táº¯t ná»™i dung trang ${currentPage}`,
+        `Giáº£i thÃ­ch khÃ¡i niá»‡m chÃ­nh trang ${currentPage}`,
+        "Táº¡o 3 cÃ¢u há»i tráº¯c nghiá»‡m tá»« pháº§n nÃ y",
       ]
     : [
-        "Tóm tắt tài liệu này",
-        "Các chương quan trọng nhất là gì?",
-        "Tạo dàn ý ôn tập",
+        "TÃ³m táº¯t tÃ i liá»‡u nÃ y",
+        "CÃ¡c chÆ°Æ¡ng quan trá»ng nháº¥t lÃ  gÃ¬?",
+        "Táº¡o dÃ n Ã½ Ã´n táº­p",
       ];
 
-  // Hiển thị suggestion chỉ khi chưa có user message
+  // Hiá»ƒn thá»‹ suggestion chá»‰ khi chÆ°a cÃ³ user message
   const userMessageCount = messages.filter((m) => m.role === "user").length;
   const showSuggestions = userMessageCount === 0 && !askMutation.isPending;
 
@@ -483,7 +487,7 @@ export default function AskAIPanel({
     <div className={`flex flex-col h-full w-full ${
       isDarkMode ? "bg-slate-900" : ""
     }`}>
-      {/* Context card — gọn, padding lớn cho dễ đọc */}
+      {/* Context card â€” gá»n, padding lá»›n cho dá»… Ä‘á»c */}
       <div className="px-4 pb-2">
         <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${
           isDarkMode
@@ -503,7 +507,7 @@ export default function AskAIPanel({
               <div className={`text-[9.5px] font-bold mt-0.5 ${
                 isDarkMode ? "text-cyan-400" : "text-blue-600"
               }`}>
-                📍 Đang ở trang {currentPage}
+                {t("workspace.material.askAi.currentPage", "Dang o trang {{page}}", { page: currentPage })}
               </div>
             )}
           </div>
@@ -511,7 +515,7 @@ export default function AskAIPanel({
             <button
               type="button"
               onClick={handleClear}
-              title="Xoá lịch sử chat"
+              title={t("workspace.material.askAi.clearHistory", "Xoa lich su chat")}
               className={`w-6 h-6 rounded-md inline-flex items-center justify-center transition shrink-0 ${
                 isDarkMode ? "text-slate-400 hover:bg-slate-700 hover:text-rose-300" : "text-slate-400 hover:bg-rose-50 hover:text-rose-600"
               }`}
@@ -538,7 +542,7 @@ export default function AskAIPanel({
             isDarkMode ? "bg-slate-800 text-slate-300" : "bg-white text-blue-700 border border-blue-100"
           }`}>
             <Loader2 size={13} className="animate-spin" />
-            <span className="text-xs font-bold">AI đang tìm câu trả lời…</span>
+            <span className="text-xs font-bold">{t("workspace.material.askAi.loading", "AI dang tim cau tra loi...")}</span>
             <span className="flex gap-0.5 ml-0.5">
               <span className="w-1 h-1 rounded-full bg-current opacity-50 animate-pulse" style={{ animationDelay: "0ms" }} />
               <span className="w-1 h-1 rounded-full bg-current opacity-50 animate-pulse" style={{ animationDelay: "150ms" }} />
@@ -552,7 +556,7 @@ export default function AskAIPanel({
             <p className={`text-[10px] font-extrabold uppercase tracking-wider mb-1 ${
               isDarkMode ? "text-slate-500" : "text-slate-500"
             }`}>
-              💡 Gợi ý
+              {t("workspace.material.askAi.suggestions", "Goi y")}
             </p>
             {suggestedQuestions.map((q, i) => (
               <button
@@ -591,7 +595,9 @@ export default function AskAIPanel({
                 handleSend();
               }
             }}
-            placeholder={workspaceId ? "Hỏi về nội dung tài liệu…" : "Thiếu workspaceId"}
+            placeholder={workspaceId
+              ? t("workspace.material.askAi.inputPlaceholder", "Hoi ve noi dung tai lieu...")
+              : t("workspace.material.askAi.missingWorkspaceShort", "Thieu workspaceId")}
             rows={1}
             disabled={askMutation.isPending || !workspaceId}
             className={`flex-1 bg-transparent outline-none resize-none text-xs font-medium leading-relaxed max-h-32 ${
@@ -605,7 +611,7 @@ export default function AskAIPanel({
             type="button"
             onClick={() => handleSend()}
             disabled={!input.trim() || askMutation.isPending || !workspaceId}
-            title="Gửi (Enter)"
+            title={`${t("workspace.material.askAi.send", "Gui")} (Enter)`}
             className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition hover:from-blue-500 hover:to-blue-600 hover:-translate-y-0.5 shrink-0"
           >
             {askMutation.isPending
@@ -616,7 +622,7 @@ export default function AskAIPanel({
         <p className={`text-[9.5px] mt-1.5 px-1 ${
           isDarkMode ? "text-slate-600" : "text-slate-400"
         }`}>
-          Enter để gửi · Shift+Enter xuống dòng · Click source pill để mở PDF
+          {t("workspace.material.askAi.inputHint", "Enter de gui · Shift+Enter xuong dong · Click source pill de mo PDF")}
         </p>
       </div>
     </div>

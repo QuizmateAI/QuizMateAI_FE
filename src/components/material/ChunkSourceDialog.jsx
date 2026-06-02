@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ExternalLink, FileText, Loader2, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { getChunkById, getRAGChunks } from "@/api/MaterialAPI";
 import {
@@ -12,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getHighlightedContentSegments } from "@/components/material/sourceHighlight";
 
-function HighlightedContent({ content, span }) {
+function HighlightedContent({ content, span, partialTitle }) {
   const segments = useMemo(
     () => getHighlightedContentSegments(content, span),
     [content, span],
@@ -26,7 +27,7 @@ function HighlightedContent({ content, span }) {
             key={index}
             className="rounded bg-amber-200/80 px-0.5 text-slate-900 dark:bg-amber-500/40 dark:text-amber-50"
             tabIndex={0}
-            title={segment.partial ? "Tìm thấy một phần đoạn bằng chứng do nội dung nguồn khác định dạng." : undefined}
+            title={segment.partial ? partialTitle : undefined}
           >
             {segment.text}
           </mark>
@@ -81,8 +82,9 @@ export default function ChunkSourceDialog({
   onOpenChange,
   chunkId,
   sourceSpan = "",
-  title = "Nguồn trích dẫn",
+  title,
 }) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [chunk, setChunk] = useState(null);
@@ -90,6 +92,12 @@ export default function ChunkSourceDialog({
   const [errorState, setErrorState] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [openingDocument, setOpeningDocument] = useState(false);
+
+  const resolvedTitle = title || t("workspace.quiz.sourceDialogTitle", "Nguồn của câu hỏi");
+  const partialHighlightTitle = t(
+    "workspace.quiz.sourceDialog.partialHighlightHint",
+    "Tìm thấy một phần đoạn bằng chứng do nội dung nguồn khác định dạng.",
+  );
 
   useEffect(() => {
     if (!open || !chunkId) {
@@ -112,10 +120,10 @@ export default function ChunkSourceDialog({
           status,
           message:
             status === 404
-              ? "Không có nguồn cho câu hỏi này."
+              ? t("workspace.quiz.sourceDialog.noSource", "Không có nguồn cho câu hỏi này.")
               : error?.response?.data?.message
                 || error?.message
-                || "Không tải được nội dung nguồn.",
+                || t("workspace.quiz.sourceDialog.loadError", "Không tải được nội dung nguồn."),
         });
       } finally {
         if (!cancelled) setLoading(false);
@@ -124,7 +132,7 @@ export default function ChunkSourceDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, chunkId, reloadKey]);
+  }, [open, chunkId, reloadKey, t]);
 
   const sectionTitle = chunk?.chunk_section_title || chunk?.chunkSectionTitle;
   const topic = chunk?.chunk_topic || chunk?.chunkTopic;
@@ -205,7 +213,7 @@ export default function ChunkSourceDialog({
           </span>
           <div className="flex-1 min-w-0">
             <DialogTitle className="text-base font-bold leading-tight text-slate-900 dark:text-slate-100">
-              {title}
+              {resolvedTitle}
             </DialogTitle>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
               {sectionTitle && <span className="truncate max-w-[260px]">{sectionTitle}</span>}
@@ -228,7 +236,7 @@ export default function ChunkSourceDialog({
           {loading && (
             <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Đang tải nguồn...</span>
+              <span>{t("workspace.quiz.sourceDialog.loading", "Đang tải nguồn...")}</span>
             </div>
           )}
 
@@ -241,19 +249,19 @@ export default function ChunkSourceDialog({
                   onClick={() => setReloadKey((value) => value + 1)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"
                 >
-                  <RefreshCw className="h-3.5 w-3.5" /> Thử lại
+                  <RefreshCw className="h-3.5 w-3.5" /> {t("common.retry", "Thử lại")}
                 </button>
               )}
             </div>
           )}
 
           {!loading && !errorState && chunk && content && (
-            <HighlightedContent content={content} span={sourceSpan} />
+            <HighlightedContent content={content} span={sourceSpan} partialTitle={partialHighlightTitle} />
           )}
 
           {!loading && !errorState && chunk && !content && (
             <p className="py-12 text-center text-sm italic text-slate-500 dark:text-slate-400">
-              Chunk không có nội dung văn bản.
+              {t("workspace.quiz.sourceDialog.emptyChunk", "Chunk không có nội dung văn bản.")}
             </p>
           )}
         </div>
@@ -262,8 +270,14 @@ export default function ChunkSourceDialog({
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-amber-50 px-5 py-3 text-[11px] font-semibold text-amber-800 dark:border-slate-800 dark:bg-amber-950/30 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
             <span>
               {sourceSpan
-                ? "Đoạn trích được tô vàng là phần AI sử dụng làm bằng chứng."
-                : "Mở tài liệu gốc để đối chiếu nội dung chunk này."}
+                ? t(
+                  "workspace.quiz.sourceDialog.highlightHint",
+                  "Đoạn trích được tô vàng là phần AI sử dụng làm đáp án.",
+                )
+                : t(
+                  "workspace.quiz.sourceDialog.openDocumentHint",
+                  "Mở tài liệu gốc để đối chiếu nội dung chunk này.",
+                )}
             </span>
             <button
               type="button"
@@ -277,7 +291,7 @@ export default function ChunkSourceDialog({
               )}
             >
               {openingDocument ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
-              Mở tài liệu
+              {t("workspace.quiz.sourceDialog.openDocument", "Mở tài liệu")}
             </button>
           </div>
         )}
