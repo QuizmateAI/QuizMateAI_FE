@@ -55,8 +55,8 @@ function CitationBadge({ num, source, isDarkMode, onJumpToPage }) {
         if (clickable) onJumpToPage(page);
       }}
       title={clickable
-        ? t("workspace.material.askAi.openPageForCheck", "Mo trang {{page}} trong PDF de doi soat", { page })
-        : (source?.text?.slice(0, 100) || t("workspace.material.askAi.sourceLabel", "Nguon {{num}}", { num }))}
+        ? t("workspace.material.askAi.openPageForCheck", "Open page {{page}} in PDF for verification", { page })
+        : (source?.text?.slice(0, 100) || t("workspace.material.askAi.sourceLabel", "Source {{num}}", { num }))}
       className={`inline-flex items-center justify-center align-baseline w-5 h-[18px] mx-[1px] rounded-md text-[10px] font-extrabold leading-none transition ${
         clickable
           ? isDarkMode
@@ -160,7 +160,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
               }`
             : ""
         }`}
-        title={clickable ? `Click Ä‘á»ƒ má»Ÿ trang ${target.page} trong PDF` : undefined}
+        title={clickable ? `Click to open page ${target.page} in PDF` : undefined}
       >
         {cite(children)}
         {clickable && (
@@ -170,7 +170,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
             }`}
             aria-hidden
           >
-            â†’trang {target.page}
+            ? page {target.page}
           </span>
         )}
       </BlockTag>
@@ -217,7 +217,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
                 }`
               : ""
           }`}
-          title={clickable ? `Click Ä‘á»ƒ má»Ÿ trang ${target.page} trong PDF` : undefined}
+        title={clickable ? `Click to open page ${target.page} in PDF` : undefined}
         >
           <span className={`mt-1.5 w-1 h-1 rounded-full shrink-0 ${
             isDarkMode ? "bg-cyan-400" : "bg-blue-500"
@@ -230,7 +230,7 @@ const makeMarkdownComponents = (isDarkMode, sources, onJumpToPage) => {
               }`}
               aria-hidden
             >
-              â†’trang {target.page}
+              ? page {target.page}
             </span>
           )}
         </li>
@@ -380,8 +380,8 @@ export default function AskAIPanel({
     {
       role: "system",
       content: workspaceId
-        ? t("workspace.material.askAi.systemIntro", "Hoi AI bat ky dieu gi ve tai lieu nay")
-        : t("workspace.material.askAi.missingWorkspace", "Thieu workspaceId")
+        ? t("workspace.material.askAi.systemIntro", "Ask AI anything about this material")
+        : t("workspace.material.askAi.missingWorkspace", "Missing workspaceId")
     },
   ]);
   const [input, setInput] = useState("");
@@ -405,7 +405,7 @@ export default function AskAIPanel({
           answer = raw;
         }
       } else if (raw && typeof raw === "object") {
-        answer = raw.answer || raw.message || "(AI khÃ´ng tráº£ vá» ná»™i dung)";
+        answer = raw.answer || raw.message || t("workspace.material.askAi.emptyAnswer", "AI did not return any content");
         // Chunk_contexts cÃ³ metadata.page_start, dÃ¹ng Ä‘á»ƒ jump PDF.
         // Sources cáº¥p cao hÆ¡n â€” material-level. Prefer chunk_contexts cho click.
         sources = raw.chunk_contexts?.length > 0
@@ -418,7 +418,7 @@ export default function AskAIPanel({
             }))
           : (raw.sources || []);
       } else {
-        answer = "(AI khÃ´ng tráº£ vá» ná»™i dung)";
+        answer = t("workspace.material.askAi.emptyAnswer", "AI did not return any content");
       }
 
       setMessages((prev) => [...prev, {
@@ -431,7 +431,7 @@ export default function AskAIPanel({
       const errMsg = error?.response?.data?.message
         || error?.response?.data
         || error?.message
-        || "CÃ³ lá»—i xáº£y ra khi gá»i AI";
+        || t("workspace.material.askAi.error", "An error occurred while calling AI");
       setMessages((prev) => [...prev, {
         role: "assistant",
         content: typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg),
@@ -463,20 +463,20 @@ export default function AskAIPanel({
   const handleClear = () => {
     setMessages([{
       role: "system",
-      content: t("workspace.material.askAi.clearedHistory", "Da xoa lich su chat"),
+      content: t("workspace.material.askAi.clearedHistory", "Chat history cleared"),
     }]);
   };
 
   const suggestedQuestions = currentPage > 0
     ? [
-        `TÃ³m táº¯t ná»™i dung trang ${currentPage}`,
-        `Giáº£i thÃ­ch khÃ¡i niá»‡m chÃ­nh trang ${currentPage}`,
-        "Táº¡o 3 cÃ¢u há»i tráº¯c nghiá»‡m tá»« pháº§n nÃ y",
+        t("workspace.material.askAi.suggestionsPageSummary", "Summarize page {{page}}", { page: currentPage }),
+        t("workspace.material.askAi.suggestionsPageConcepts", "Explain the key concepts on page {{page}}", { page: currentPage }),
+        t("workspace.material.askAi.suggestionsPageQuiz", "Create 3 multiple-choice questions from this section"),
       ]
     : [
-        "TÃ³m táº¯t tÃ i liá»‡u nÃ y",
-        "CÃ¡c chÆ°Æ¡ng quan trá»ng nháº¥t lÃ  gÃ¬?",
-        "Táº¡o dÃ n Ã½ Ã´n táº­p",
+        t("workspace.material.askAi.suggestionsMaterialSummary", "Summarize this material"),
+        t("workspace.material.askAi.suggestionsImportantChapters", "What are the most important chapters?"),
+        t("workspace.material.askAi.suggestionsReviewOutline", "Create a review outline"),
       ];
 
   // Hiá»ƒn thá»‹ suggestion chá»‰ khi chÆ°a cÃ³ user message
@@ -507,7 +507,7 @@ export default function AskAIPanel({
               <div className={`text-[9.5px] font-bold mt-0.5 ${
                 isDarkMode ? "text-cyan-400" : "text-blue-600"
               }`}>
-                {t("workspace.material.askAi.currentPage", "Dang o trang {{page}}", { page: currentPage })}
+                {t("workspace.material.askAi.currentPage", "Currently on page {{page}}", { page: currentPage })}
               </div>
             )}
           </div>
@@ -515,7 +515,7 @@ export default function AskAIPanel({
             <button
               type="button"
               onClick={handleClear}
-              title={t("workspace.material.askAi.clearHistory", "Xoa lich su chat")}
+              title={t("workspace.material.askAi.clearHistory", "Clear chat history")}
               className={`w-6 h-6 rounded-md inline-flex items-center justify-center transition shrink-0 ${
                 isDarkMode ? "text-slate-400 hover:bg-slate-700 hover:text-rose-300" : "text-slate-400 hover:bg-rose-50 hover:text-rose-600"
               }`}
@@ -542,7 +542,7 @@ export default function AskAIPanel({
             isDarkMode ? "bg-slate-800 text-slate-300" : "bg-white text-blue-700 border border-blue-100"
           }`}>
             <Loader2 size={13} className="animate-spin" />
-            <span className="text-xs font-bold">{t("workspace.material.askAi.loading", "AI dang tim cau tra loi...")}</span>
+            <span className="text-xs font-bold">{t("workspace.material.askAi.loading", "AI is finding an answer...")}</span>
             <span className="flex gap-0.5 ml-0.5">
               <span className="w-1 h-1 rounded-full bg-current opacity-50 animate-pulse" style={{ animationDelay: "0ms" }} />
               <span className="w-1 h-1 rounded-full bg-current opacity-50 animate-pulse" style={{ animationDelay: "150ms" }} />
@@ -556,7 +556,7 @@ export default function AskAIPanel({
             <p className={`text-[10px] font-extrabold uppercase tracking-wider mb-1 ${
               isDarkMode ? "text-slate-500" : "text-slate-500"
             }`}>
-              {t("workspace.material.askAi.suggestions", "Goi y")}
+              {t("workspace.material.askAi.suggestions", "Suggestions")}
             </p>
             {suggestedQuestions.map((q, i) => (
               <button
@@ -596,8 +596,8 @@ export default function AskAIPanel({
               }
             }}
             placeholder={workspaceId
-              ? t("workspace.material.askAi.inputPlaceholder", "Hoi ve noi dung tai lieu...")
-              : t("workspace.material.askAi.missingWorkspaceShort", "Thieu workspaceId")}
+              ? t("workspace.material.askAi.inputPlaceholder", "Ask about this material...")
+              : t("workspace.material.askAi.missingWorkspaceShort", "Missing workspaceId")}
             rows={1}
             disabled={askMutation.isPending || !workspaceId}
             className={`flex-1 bg-transparent outline-none resize-none text-xs font-medium leading-relaxed max-h-32 ${
@@ -611,7 +611,7 @@ export default function AskAIPanel({
             type="button"
             onClick={() => handleSend()}
             disabled={!input.trim() || askMutation.isPending || !workspaceId}
-            title={`${t("workspace.material.askAi.send", "Gui")} (Enter)`}
+            title={`${t("workspace.material.askAi.send", "Send")} (Enter)`}
             className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition hover:from-blue-500 hover:to-blue-600 hover:-translate-y-0.5 shrink-0"
           >
             {askMutation.isPending
@@ -622,7 +622,7 @@ export default function AskAIPanel({
         <p className={`text-[9.5px] mt-1.5 px-1 ${
           isDarkMode ? "text-slate-600" : "text-slate-400"
         }`}>
-          {t("workspace.material.askAi.inputHint", "Enter de gui · Shift+Enter xuong dong · Click source pill de mo PDF")}
+          {t("workspace.material.askAi.inputHint", "Press Enter to send ? Shift+Enter for new line ? Click a source pill to open the PDF")}
         </p>
       </div>
     </div>

@@ -102,7 +102,7 @@ function ProgressCard({
   return (
     <div className="rounded-2xl border border-blue-100 bg-white p-[18px] shadow-[0_2px_8px_-4px_rgba(37,99,235,0.08)]">
       <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-[0.1em] text-slate-500">
-        <span>{t("workspace.material.tree.scope", "Phạm vi học liệu")}</span>
+        <span>{t("workspace.material.tree.scope", "Learning material scope")}</span>
         <span className="inline-flex items-center gap-1 text-orange-700">
           <Flame size={12} /> {t("workspace.material.tree.aiScope", "AI scope")}
         </span>
@@ -113,7 +113,7 @@ function ProgressCard({
         </span>
         <small className="text-sm font-bold text-slate-400">%</small>
         <span className="ml-auto text-xs font-bold text-slate-500">
-          {activeRoots} / {totalRoots} {t("workspace.material.tree.rootOn", "mục ON")}
+          {activeRoots} / {totalRoots} {t("workspace.material.tree.rootOn", "items ON")}
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-blue-100">
@@ -128,7 +128,7 @@ function ProgressCard({
       <div className="mt-3.5 grid grid-cols-3 gap-2">
         <Stat3 value={`${activeChunks}/${totalChunks}`} label={t("workspace.material.tree.chunkOnLabel", "Chunk ON")} />
         <Stat3 value={totalSections} label={t("workspace.material.tree.section", "Section")} />
-        <Stat3 value={totalRoots} label={t("workspace.material.tree.root", "Mục gốc")} />
+        <Stat3 value={totalRoots} label={t("workspace.material.tree.root", "Root items")} />
       </div>
     </div>
   );
@@ -160,8 +160,8 @@ function SectionToggle({ t, isEnabled, isLoading, onClick }) {
       }}
       tabIndex={0}
       title={isEnabled
-        ? t("workspace.material.tree.toggleOnHint", "Đang bật trong phạm vi tạo câu hỏi")
-        : t("workspace.material.tree.toggleOffHint", "Đang tắt khỏi phạm vi tạo câu hỏi")}
+        ? t("workspace.material.tree.toggleOnHint", "Included in AI question-generation scope")
+        : t("workspace.material.tree.toggleOffHint", "Excluded from AI question-generation scope")}
       className={`inline-flex cursor-pointer select-none items-center gap-1 rounded-full border px-1.5 py-1 transition ${
         isEnabled
           ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
@@ -197,8 +197,8 @@ function LeafRow({ t, leaf, isToggling, onToggleActive }) {
         type="button"
         onClick={() => onToggleActive?.(leaf, !active)}
         title={active
-          ? t("workspace.material.tree.disableSection", "Tắt section này")
-          : t("workspace.material.tree.enableSection", "Bật section này")}
+          ? t("workspace.material.tree.disableSection", "Turn this section off")
+          : t("workspace.material.tree.enableSection", "Turn this section on")}
         className={`mt-[2px] flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border transition ${
           active
             ? "border-emerald-500 bg-emerald-500 text-white shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
@@ -221,7 +221,7 @@ function LeafRow({ t, leaf, isToggling, onToggleActive }) {
           }`}
           title={leaf?.title}
         >
-          {leaf?.title || t("workspace.material.tree.untitledSection", "Section không tên")}
+          {leaf?.title || t("workspace.material.tree.untitledSection", "Untitled section")}
         </div>
         <div className="mt-0.5 flex items-center gap-1 text-[10.5px] font-semibold text-slate-500">
           <FileText size={10} />
@@ -281,12 +281,12 @@ function ChapterCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className={`truncate text-sm font-extrabold leading-tight ${active ? "text-slate-900" : "text-slate-500"}`}>
-              {chapter?.title || t("workspace.material.tree.untitledSection", "Section không tên")}
+              {chapter?.title || t("workspace.material.tree.untitledSection", "Untitled section")}
             </div>
             <div className={`mt-0.5 text-[10.5px] font-bold ${active ? "text-slate-500" : "text-slate-400"}`}>
               {active
-                ? `${activeChunks}/${totalChunks} ${t("workspace.material.tree.chunkOn", "chunk đang bật")}`
-                : t("workspace.material.tree.outOfScope", "Đang tắt khỏi phạm vi")}
+                ? `${activeChunks}/${totalChunks} ${t("workspace.material.tree.chunkOn", "chunks ON")}`
+                : t("workspace.material.tree.outOfScope", "Outside AI scope")}
             </div>
           </div>
 
@@ -326,7 +326,7 @@ function ChapterCard({
             <>
               <div className="flex flex-wrap gap-1.5 py-2.5">
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-[3px] text-[10px] font-extrabold text-blue-700">
-                  {leaves.length} {t("workspace.material.tree.childSection", "section con")}
+                  {leaves.length} {t("workspace.material.tree.childSection", "child sections")}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2 py-[3px] text-[10px] font-extrabold text-cyan-700">
                   {totalChunks} {t("workspace.material.tree.chunkUnit", "chunk")}
@@ -346,7 +346,7 @@ function ChapterCard({
             </>
           ) : (
             <div className="py-3 text-center text-[11px] italic text-slate-400">
-              {t("workspace.material.tree.noChildSection", "Section này chưa có mục con.")}
+              {t("workspace.material.tree.noChildSection", "This section has no child items yet.")}
             </div>
           )}
         </div>
@@ -437,7 +437,7 @@ export default function EmbeddedKnowledgeTree({
       {treeQuery.isLoading && (
         <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-xs">{t("workspace.material.tree.loading", "Đang tải cây kiến thức...")}</span>
+          <span className="text-xs">{t("workspace.material.tree.loading", "Loading knowledge tree...")}</span>
         </div>
       )}
 
@@ -446,11 +446,11 @@ export default function EmbeddedKnowledgeTree({
           <Sparkles className="h-10 w-10 text-rose-500" />
           <p className="text-sm font-bold text-slate-800">
             {treeMissing
-              ? t("workspace.material.tree.emptyTitle", "Chưa có cây kiến thức")
-              : t("workspace.material.tree.loadErrorTitle", "Không tải được cây kiến thức")}
+              ? t("workspace.material.tree.emptyTitle", "No knowledge tree yet")
+              : t("workspace.material.tree.loadErrorTitle", "Could not load knowledge tree")}
           </p>
           <p className="text-xs text-slate-500">
-            {t("workspace.material.tree.errorHint", "Cây kiến thức hiển thị dựa trên document sections từ BE.")}
+            {t("workspace.material.tree.errorHint", "The knowledge tree is displayed from backend document sections.")}
           </p>
           <button
             type="button"
@@ -458,7 +458,7 @@ export default function EmbeddedKnowledgeTree({
             className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-xs font-extrabold text-white shadow hover:bg-rose-700"
           >
             <RefreshCw size={12} />
-            {t("common.retry", "Thử lại")}
+            {t("common.retry", "Retry")}
           </button>
         </div>
       )}
@@ -466,9 +466,9 @@ export default function EmbeddedKnowledgeTree({
       {!treeQuery.isLoading && !treeQuery.isError && sections.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-12 text-center">
           <Sparkles className="h-10 w-10 text-amber-500" />
-          <p className="text-sm font-bold text-slate-800">{t("workspace.material.tree.emptyTitle", "Chưa có cây kiến thức")}</p>
+          <p className="text-sm font-bold text-slate-800">{t("workspace.material.tree.emptyTitle", "No knowledge tree yet")}</p>
           <p className="text-xs text-slate-500">
-            {t("workspace.material.tree.emptyHint", "BE chưa trả về document sections cho tài liệu này.")}
+            {t("workspace.material.tree.emptyHint", "The backend has not returned document sections for this material yet.")}
           </p>
           <button
             type="button"
@@ -476,7 +476,7 @@ export default function EmbeddedKnowledgeTree({
             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-xs font-extrabold text-white shadow hover:from-amber-400 hover:to-orange-400"
           >
             <RefreshCw size={12} />
-            {t("common.reload", "Tải lại")}
+            {t("common.reload", "Reload")}
           </button>
         </div>
       )}
@@ -493,21 +493,21 @@ export default function EmbeddedKnowledgeTree({
           />
 
           <div className="mb-3 mt-5 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
-            {t("workspace.material.tree.title", "Cây kiến thức")}
+            {t("workspace.material.tree.title", "Knowledge Tree")}
             <span className="rounded-full bg-blue-100 px-2 py-[2px] text-[10px] font-extrabold text-blue-700">
-              {stats.totalRoots} {t("workspace.material.tree.rootUnit", "mục")}
+              {stats.totalRoots} {t("workspace.material.tree.rootUnit", "items")}
             </span>
             <button
               type="button"
               onClick={handleRefresh}
               disabled={treeQuery.isFetching}
               className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded-full bg-white px-2 py-[3px] text-[10px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-              title={t("workspace.material.tree.reloadTitle", "Tải lại cây kiến thức")}
+              title={t("workspace.material.tree.reloadTitle", "Reload knowledge tree")}
             >
               <RefreshCw size={11} className={treeQuery.isFetching ? "animate-spin" : ""} />
               {treeQuery.isFetching
-                ? t("workspace.material.tree.loadingShort", "Đang tải")
-                : t("common.refresh", "Làm mới")}
+                ? t("workspace.material.tree.loadingShort", "Loading")
+                : t("common.refresh", "Refresh")}
             </button>
           </div>
 
@@ -533,7 +533,7 @@ export default function EmbeddedKnowledgeTree({
           {sections.length === 0 && (
             <div className="rounded-xl border border-dashed border-blue-200 bg-white/50 px-4 py-6 text-center text-xs text-slate-400">
               <MousePointerClick className="mx-auto mb-2 h-6 w-6 opacity-60" />
-              {t("workspace.material.tree.noSection", "Cây kiến thức chưa có section nào.")}
+              {t("workspace.material.tree.noSection", "The knowledge tree has no sections yet.")}
             </div>
           )}
         </>

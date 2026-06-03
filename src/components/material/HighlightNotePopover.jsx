@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Pencil, X } from "lucide-react";
 
 // Popover hiển thị ngay dưới đoạn highlight trong PDF.
@@ -56,6 +57,7 @@ export default function HighlightNotePopover({
   onDelete,
   onClose,
 }) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   // draftContent: chỉ dùng khi đang edit mode (không phải draft). Khởi tạo khi
   // user bấm Sửa; view mode hiển thị annotation.content trực tiếp nên không
@@ -104,7 +106,9 @@ export default function HighlightNotePopover({
               isDarkMode ? "text-amber-300" : "text-amber-700"
             }`}
           >
-            {isDraft ? "Ghi chú mới" : "Ghi chú highlight"}
+            {isDraft
+              ? t("workspace.material.notes.newHighlightNote", "New note")
+              : t("workspace.material.notes.highlightNote", "Highlight note")}
           </span>
           <div className="flex items-center gap-1">
             {!editing ? (
@@ -115,7 +119,7 @@ export default function HighlightNotePopover({
                     setDraftContent(annotation.content || "");
                     setIsEditing(true);
                   }}
-                  title="Chỉnh sửa"
+                  title={t("workspace.material.notes.editTitle", "Edit note")}
                   className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
                     isDarkMode
                       ? "text-slate-400 hover:bg-slate-800 hover:text-white"
@@ -127,7 +131,7 @@ export default function HighlightNotePopover({
                 <button
                   type="button"
                   onClick={() => onDelete?.(annotation.id)}
-                  title="Xóa"
+                  title={t("workspace.material.notes.deleteTitle", "Delete note")}
                   className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
                     isDarkMode
                       ? "text-slate-400 hover:bg-slate-800 hover:text-rose-300"
@@ -140,7 +144,7 @@ export default function HighlightNotePopover({
                   <button
                     type="button"
                     onClick={onClose}
-                    title="Đóng"
+                    title={t("common.close", "Close")}
                     className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
                       isDarkMode
                         ? "text-slate-500 hover:bg-slate-800 hover:text-white"
@@ -190,7 +194,7 @@ export default function HighlightNotePopover({
                     setDraftContent(next);
                   }
                 }}
-                placeholder="Viết ghi chú cho đoạn này..."
+                placeholder={t("workspace.material.notes.highlightPlaceholder", "Write a note for this passage...")}
                 className={`min-h-[88px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition ${
                   isDarkMode
                     ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
@@ -214,7 +218,7 @@ export default function HighlightNotePopover({
                       : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  Hủy
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="button"
@@ -234,7 +238,7 @@ export default function HighlightNotePopover({
                   }`}
                 >
                   <Check size={13} />
-                  Lưu
+                  {t("common.save", "Save")}
                 </button>
               </div>
             </>
@@ -252,7 +256,7 @@ export default function HighlightNotePopover({
                 isDarkMode ? "text-slate-500" : "text-slate-400"
               }`}
             >
-              (Chưa có ghi chú — nhấn để thêm)
+              {t("workspace.material.notes.emptyHighlightContent", "(No note yet — click to add one)")}
             </p>
           )}
         </div>

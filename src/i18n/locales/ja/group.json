@@ -2698,10 +2698,10 @@
   "groupSourcesPanel": {
     "sourceProcessingTooltip": "The source is being processed, please wait.",
     "cannotSelectTooltip": "This source cannot be selected",
-    "sourceIrrelevantTooltip": "This source is not relevant to learning",
+    "sourceIrrelevantTooltip": "この資料は学習内容に関連していません",
     "uploadErrorBadge": "Upload failed",
     "warnContentBadge": "⚠ Content warning",
-    "irrelevantBadge": "Not relevant",
+    "irrelevantBadge": "関連なし",
     "uploadingBadge": "Uploading...",
     "optionsAriaLabel": "Options"
   }
