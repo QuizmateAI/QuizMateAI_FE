@@ -2606,6 +2606,7 @@
       "unselectSource": "Bỏ chọn nguồn",
       "previewSource": "Chi tiết",
       "warningSource": "Cảnh báo",
+      "irrelevantSource": "Không liên quan",
       "uploadTimeLabel": "Thời gian",
       "uploadProgress": {
         "uploading": "Đang tải lên",
@@ -2801,6 +2802,7 @@
     },
     "material": {
       "pageUnit": "trang",
+      "typeLabel": "Loại",
       "types": {
         "document": "Tài liệu",
         "word": "Tài liệu Word",
@@ -2825,7 +2827,8 @@
         "reason": "Lý do",
         "suggestion": "Gợi ý",
         "approve": "Duyệt",
-        "reject": "Từ chối"
+        "reject": "Từ chối",
+        "reviewError": "Không thể duyệt tài liệu lúc này."
       },
       "pdfMissingUrl": "Tài liệu là PDF nhưng không tìm thấy URL hiển thị.",
       "contentLoadFailed": "Không tải được nội dung tài liệu.",
@@ -2833,10 +2836,54 @@
       "noContent": "Không có nội dung để hiển thị.",
       "tree": {
         "chunkOnLabel": "Chunk ON",
-        "chunkUnit": "chunk"
+        "chunkUnit": "chunk",
+        "scope": "Phạm vi học liệu",
+        "aiScope": "Phạm vi AI",
+        "rootOn": "mục ON",
+        "section": "Section",
+        "root": "Mục gốc",
+        "toggleOnHint": "Đang bật trong phạm vi tạo câu hỏi",
+        "toggleOffHint": "Đang tắt khỏi phạm vi tạo câu hỏi",
+        "disableSection": "Tắt section này",
+        "enableSection": "Bật section này",
+        "untitledSection": "Section không tên",
+        "chunkOn": "chunk đang bật",
+        "outOfScope": "Đang tắt khỏi phạm vi",
+        "childSection": "section con",
+        "noChildSection": "Section này chưa có mục con.",
+        "loading": "Đang tải cây kiến thức...",
+        "emptyTitle": "Chưa có cây kiến thức",
+        "loadErrorTitle": "Không tải được cây kiến thức",
+        "errorHint": "Cây kiến thức hiển thị dựa trên document sections từ BE.",
+        "emptyHint": "BE chưa trả về document sections cho tài liệu này.",
+        "title": "Cây kiến thức",
+        "rootUnit": "mục",
+        "reloadTitle": "Tải lại cây kiến thức",
+        "loadingShort": "Đang tải",
+        "noSection": "Cây kiến thức chưa có section nào."
       },
       "notes": {
-        "tab": "Ghi chú"
+        "tab": "Ghi chú",
+        "loadError": "Không tải được ghi chú",
+        "createError": "Không tạo được ghi chú",
+        "updateError": "Không cập nhật được ghi chú",
+        "deleteError": "Không xóa được ghi chú",
+        "highlightedPassage": "Đoạn đã đánh dấu",
+        "highlightBadge": "Đánh dấu",
+        "highlightNote": "Ghi chú highlight",
+        "newHighlightNote": "Ghi chú mới",
+        "highlightPlaceholder": "Viết ghi chú cho đoạn này...",
+        "emptyHighlightContent": "(Chưa có ghi chú — nhấn để thêm)",
+        "untitled": "Không có tiêu đề",
+        "titlePlaceholder": "Tên ghi chú (không bắt buộc)",
+        "contentPlaceholder": "Nội dung ghi chú...",
+        "contentInputPlaceholder": "Nhập nội dung ghi chú...",
+        "emptyContent": "(Chưa có nội dung)",
+        "editTitle": "Chỉnh sửa ghi chú",
+        "deleteTitle": "Xóa ghi chú",
+        "emptyFreeTitle": "Chưa có ghi chú tự do nào",
+        "emptyFreeDescription": "Nhấn nút + ở góc phải dưới để tạo ghi chú mới. Ghi chú gắn với đoạn bôi đen sẽ hiện ngay dưới đoạn đó trong tài liệu.",
+        "createTitle": "Tạo ghi chú"
       },
       "askAi": {
         "tab": "Hỏi AI",
@@ -2855,6 +2902,13 @@
         "extraSources": "Tham khảo từ {{count}} đoạn khác trong tài liệu",
         "currentPage": "Đang ở trang {{page}}",
         "clearHistory": "Xóa lịch sử chat",
+        "emptyAnswer": "AI không trả về nội dung",
+        "suggestionsPageSummary": "Tóm tắt nội dung trang {{page}}",
+        "suggestionsPageConcepts": "Giải thích khái niệm chính trang {{page}}",
+        "suggestionsPageQuiz": "Tạo 3 câu hỏi trắc nghiệm từ phần này",
+        "suggestionsMaterialSummary": "Tóm tắt tài liệu này",
+        "suggestionsImportantChapters": "Các chương quan trọng nhất là gì?",
+        "suggestionsReviewOutline": "Tạo dàn ý ôn tập",
         "loading": "AI đang tìm câu trả lời..."
       }
     }
@@ -3849,7 +3903,7 @@
         "incompleteCount": "{{count}} ch?a xong",
         "all": "T?t c?",
         "incomplete": "Ch?a xong",
-        "error": "L?i",
+        "error": "C? l?i x?y ra khi g?i AI",
         "emptyQuestion": "(Ch?a nh?p)",
         "noQuestions": "Kh?ng c? c?u n?o.",
         "jumpButton": "??n",

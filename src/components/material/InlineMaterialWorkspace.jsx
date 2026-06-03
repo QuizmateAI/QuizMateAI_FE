@@ -5,7 +5,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Headphones,
   Highlighter,
   MessageSquareText,
   Network,
@@ -18,38 +17,6 @@ import {
 import MaterialPdfViewer from "./MaterialPdfViewer";
 import EmbeddedKnowledgeTree from "./EmbeddedKnowledgeTree";
 import AskAIPanel from "./AskAIPanel";
-import ListenPlayer from "./ListenPlayer";
-
-const HIGHLIGHT_COLORS = [
-  {
-    id: "yellow",
-    label: "Yellow",
-    swatch: "linear-gradient(135deg, #FDE68A, #F59E0B)",
-    ring: "#F59E0B",
-    paint: "rgba(253, 224, 71, 0.55)",
-  },
-  {
-    id: "blue",
-    label: "Blue",
-    swatch: "linear-gradient(135deg, #BFDBFE, #3B82F6)",
-    ring: "#3B82F6",
-    paint: "rgba(147, 197, 253, 0.55)",
-  },
-  {
-    id: "pink",
-    label: "Pink",
-    swatch: "linear-gradient(135deg, #FBCFE8, #EC4899)",
-    ring: "#EC4899",
-    paint: "rgba(244, 114, 182, 0.5)",
-  },
-  {
-    id: "green",
-    label: "Green",
-    swatch: "linear-gradient(135deg, #BBF7D0, #22C55E)",
-    ring: "#22C55E",
-    paint: "rgba(134, 239, 172, 0.55)",
-  },
-];
 import {
   createMaterialNote,
   deleteMaterialNote,
@@ -240,8 +207,8 @@ function mapMaterialNoteToAnnotation(note, fallbackPage = 1) {
     kind: "note",
     page,
     excerpt: isHighlight
-      ? note?.highlightedText || "Äoáº¡n Ä‘Ã£ Ä‘Ã¡nh dáº¥u"
-      : note?.title || "Ghi chÃº tá»± do",
+      ? note?.highlightedText || "Highlighted passage"
+      : note?.title || "Free note",
     topRatio,
     source: isHighlight ? "server-highlight" : "floating",
     selectionRects,
@@ -276,7 +243,7 @@ function buildCreateNotePayload(materialId, annotation) {
   return {
     materialId: Number(materialId),
     noteType: "NORMAL",
-    title: annotation.title || "Ghi chÃº tá»± do",
+    title: annotation.title || "Free note",
     content: annotation.content || "",
     pageNumber: Number(annotation.page) || null,
     topRatio:
@@ -355,30 +322,6 @@ function IconBtn({ children, onClick, title, isDarkMode, active = false }) {
   );
 }
 
-function ToolPill({ icon: Icon, label, active, onClick, isDarkMode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
-        active
-          ? "text-white shadow-[0_4px_10px_-4px_rgba(37,99,235,0.55)]"
-          : isDarkMode
-            ? "text-slate-300 hover:bg-slate-800 hover:text-cyan-300"
-            : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
-      }`}
-      style={
-        active
-          ? { background: "linear-gradient(135deg, #1E3A8A 0%, #2563EB 60%, #06B6D4 100%)" }
-          : undefined
-      }
-    >
-      {Icon && <Icon size={13} />}
-      {label}
-    </button>
-  );
-}
-
 // eslint-disable-next-line unused-imports/no-unused-vars
 function AITutorFab({
   highlightedText,
@@ -394,7 +337,7 @@ function AITutorFab({
         <Sparkles size={14} />
         AI Tutor
         <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">
-          ÄOáº N Vá»ªA HIGHLIGHT
+          Highlighted passage
         </span>
         <button
           type="button"
@@ -405,7 +348,7 @@ function AITutorFab({
         </button>
       </div>
       <p className="text-sm font-semibold leading-relaxed my-3">
-        Báº¡n vá»«a Ä‘Ã¡nh dáº¥u{" "}
+        You just highlighted{" "}
         <b>
           "{highlightedText.slice(0, 30)}
           {highlightedText.length > 30 ? "..." : ""}"
@@ -413,8 +356,8 @@ function AITutorFab({
         {currentChapter && (
           <>
             {" "}
-            - khÃ¡i niá»‡m nÃ y quay láº¡i nhiá»u láº§n á»Ÿ chÆ°Æ¡ng {currentChapter}. Báº¡n
-            muá»‘n xem láº¡i nhanh khÃ´ng?
+            ? this concept appears multiple times in chapter {currentChapter}.
+            Do you want to review it quickly?
           </>
         )}
       </p>
@@ -424,14 +367,14 @@ function AITutorFab({
           onClick={onJumpChapter}
           className="flex-1 px-3 py-2 rounded-lg bg-white text-blue-700 text-xs font-extrabold inline-flex items-center justify-center gap-1.5 hover:bg-blue-50 transition"
         >
-          CÃ³, má»Ÿ chÆ°Æ¡ng {currentChapter || ""}
+          Open chapter {currentChapter || ""}
         </button>
         <button
           type="button"
           onClick={onAsk}
           className="flex-1 px-3 py-2 rounded-lg bg-white/15 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 hover:bg-white/25 transition"
         >
-          + Há»i thÃªm
+          + Ask more
         </button>
       </div>
     </div>
@@ -453,8 +396,6 @@ export default function InlineMaterialWorkspace({
   const [highlightPageRange, setHighlightPageRange] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [activeTool, setActiveTool] = useState("highlight");
-  const [highlightColorId, setHighlightColorId] = useState("yellow");
   const [annotations, setAnnotations] = useState([]);
   const [draftAnnotation, setDraftAnnotation] = useState(null);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
@@ -509,7 +450,7 @@ export default function InlineMaterialWorkspace({
       })
       .catch((error) => {
         if (cancelled) return;
-        setNotesError(error?.message || "KhÃ´ng táº£i Ä‘Æ°á»£c ghi chÃº");
+        setNotesError(error?.message || t("workspace.material.notes.loadError", "Could not load notes"));
       });
 
     return () => {
@@ -566,7 +507,7 @@ export default function InlineMaterialWorkspace({
         setReviewError(
           error?.response?.data?.message
             || error?.message
-            || "KhÃ´ng thá»ƒ duyá»‡t tÃ i liá»‡u lÃºc nÃ y.",
+            || t("workspace.material.moderation.reviewError", "Could not review this material right now."),
         );
       } finally {
         setReviewLoading(false);
@@ -707,7 +648,7 @@ export default function InlineMaterialWorkspace({
         setSelectedAnnotationId(nextAnnotation.id);
         setSidebarView("notes");
       } catch (error) {
-        setNotesError(error?.message || "KhÃ´ng táº¡o Ä‘Æ°á»£c ghi chÃº");
+        setNotesError(error?.message || t("workspace.material.notes.createError", "Could not create note"));
       }
     },
     [materialId],
@@ -775,7 +716,7 @@ export default function InlineMaterialWorkspace({
         typeof payload === "string" ? payload : payload?.content;
       const rawTitle = typeof payload === "string" ? "" : payload?.title;
       const trimmedTitle = String(rawTitle || "").trim();
-      const title = trimmedTitle || "KhÃ´ng cÃ³ tiÃªu Ä‘á»";
+      const title = trimmedTitle || t("workspace.material.notes.untitled", "Untitled");
       const annotation = {
         id: createAnnotationId(),
         kind: "note",
@@ -807,10 +748,10 @@ export default function InlineMaterialWorkspace({
         setSelectedAnnotationId(nextAnnotation.id);
         setSidebarView("notes");
       } catch (error) {
-        setNotesError(error?.message || "KhÃ´ng táº¡o Ä‘Æ°á»£c ghi chÃº");
+        setNotesError(error?.message || t("workspace.material.notes.createError", "Could not create note"));
       }
     },
-    [currentPage, materialId],
+    [currentPage, materialId, t],
   );
 
   const handleUpdateAnnotation = useCallback((annotationId, payload) => {
@@ -822,7 +763,7 @@ export default function InlineMaterialWorkspace({
       ? String(payload.title || "").trim()
       : "";
     const nextTitle = titleUpdated
-      ? trimmedTitle || "KhÃ´ng cÃ³ tiÃªu Ä‘á»"
+      ? trimmedTitle || t("workspace.material.notes.untitled", "Untitled")
       : null;
     let targetNoteId = null;
 
@@ -846,7 +787,7 @@ export default function InlineMaterialWorkspace({
       const body = { content: nextContent };
       if (titleUpdated) body.title = nextTitle;
       updateMaterialNote(targetNoteId, body).catch((error) => {
-        setNotesError(error?.message || "KhÃ´ng cáº­p nháº­t Ä‘Æ°á»£c ghi chÃº");
+        setNotesError(error?.message || t("workspace.material.notes.updateError", "Could not update note"));
       });
     }
   }, []);
@@ -873,7 +814,7 @@ export default function InlineMaterialWorkspace({
       if (targetNoteId) {
         setNotesError(null);
         deleteMaterialNote(targetNoteId).catch((error) => {
-          setNotesError(error?.message || "KhÃ´ng xÃ³a Ä‘Æ°á»£c ghi chÃº");
+          setNotesError(error?.message || t("workspace.material.notes.deleteError", "Could not delete note"));
         });
       }
       setSelectedAnnotationId((previous) =>
@@ -964,7 +905,7 @@ export default function InlineMaterialWorkspace({
                 isDarkMode ? "text-slate-400" : "text-slate-500"
               }`}
             >
-              {sourceMeta && <>{sourceMeta} Â· </>}
+              {sourceMeta && <>{sourceMeta} ? </>}
               {displayTotalPages > 0 && <>{displayTotalPages} {t("workspace.material.pageUnit", "pages")}</>}
               <span
                 className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
@@ -979,97 +920,7 @@ export default function InlineMaterialWorkspace({
           </div>
         </div>
 
-        {/* CENTER AREA - inline strip when highlight/listen tool is active */}
-        <div className="flex-1 min-w-2 flex items-center justify-center">
-          {showDocumentTools && activeTool === "listen" && (
-            <ListenPlayer
-              isDarkMode={isDarkMode}
-              currentPage={currentPage}
-            />
-          )}
-          {showDocumentTools && activeTool === "highlight" && (
-            <div
-              className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border ${
-                isDarkMode
-                  ? "bg-blue-500/10 border-blue-500/30"
-                  : "bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200/70 shadow-[0_2px_8px_-2px_rgba(37,99,235,0.25)]"
-              }`}
-            >
-              <span
-                className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                  isDarkMode ? "text-blue-300" : "text-blue-700"
-                }`}
-              >
-                {t("workspace.material.highlight.colorLabel", "Color")}
-              </span>
-              <div className="flex items-center gap-1">
-                {HIGHLIGHT_COLORS.map((color) => {
-                  const isActive = color.id === highlightColorId;
-                  return (
-                    <button
-                      key={color.id}
-                      type="button"
-                      onClick={() => setHighlightColorId(color.id)}
-                      title={color.label}
-                      className={`relative w-6 h-6 rounded-md transition transform ${
-                        isActive ? "scale-110" : "hover:scale-110"
-                      }`}
-                      style={{
-                        background: color.swatch,
-                        outline: isActive ? `2px solid ${color.ring}` : "none",
-                        outlineOffset: isActive ? "1.5px" : "0",
-                      }}
-                    >
-                      {isActive && (
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <Check
-                            size={12}
-                            className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]"
-                            strokeWidth={3}
-                          />
-                        </span>
-                      )}
-                      <span className="sr-only">{color.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <span
-                className={`hidden md:inline-flex items-center text-[10px] font-semibold pl-1.5 border-l ${
-                  isDarkMode
-                    ? "text-blue-200/70 border-blue-500/30"
-                    : "text-blue-700/80 border-blue-200"
-                }`}
-              >
-                {t("workspace.material.highlight.hint", "Highlight text on PDF")}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* TOOL PILLS - moved up from old sub-toolbar */}
-        {showDocumentTools && (
-          <div className="flex items-center gap-1">
-            <ToolPill
-              icon={Highlighter}
-              label={t("workspace.material.highlight.action", "Highlight")}
-              active={activeTool === "highlight"}
-              onClick={() =>
-                setActiveTool(activeTool === "highlight" ? null : "highlight")
-              }
-              isDarkMode={isDarkMode}
-            />
-            <ToolPill
-              icon={Headphones}
-              label={t("workspace.material.listen.action", "Listen")}
-              active={activeTool === "listen"}
-              onClick={() =>
-                setActiveTool(activeTool === "listen" ? null : "listen")
-              }
-              isDarkMode={isDarkMode}
-            />
-          </div>
-        )}
+        <div className="flex-1 min-w-2" />
 
         {showDocumentTools && (
           <PageNavigator
@@ -1301,7 +1152,7 @@ export default function InlineMaterialWorkspace({
                   <FileText className="h-12 w-12 opacity-40" />
                   <p className="text-sm">{t("workspace.material.noContent", "No content to display.")}</p>
                   <p className="text-xs opacity-70">
-                    Loáº¡i: {materialTypeLabel}
+                    {t("workspace.material.typeLabel", "Type")}: {materialTypeLabel}
                   </p>
                 </div>
               )}
@@ -1414,6 +1265,7 @@ export default function InlineMaterialWorkspace({
             )}
             {sidebarView === "notes" && (
               <NotesPanel
+                t={t}
                 isDarkMode={isDarkMode}
                 annotations={sidebarNotes}
                 notesError={notesError}
@@ -1452,6 +1304,7 @@ function SegmentBtn({ active, onClick, isDarkMode, children }) {
 }
 
 function NotesPanel({
+  t,
   isDarkMode,
   annotations,
   notesError,
@@ -1548,8 +1401,8 @@ function NotesPanel({
               const isEditing = editingAnnotationId === annotation.id;
               const isHighlight = annotation.noteType === "HIGHLIGHT";
               const noteTitle = isHighlight
-                ? annotation.title || "Äoáº¡n Ä‘Ã£ Ä‘Ã¡nh dáº¥u"
-                : annotation.title || "KhÃ´ng cÃ³ tiÃªu Ä‘á»";
+                ? annotation.title || t("workspace.material.notes.highlightedPassage", "Highlighted passage")
+                : annotation.title || t("workspace.material.notes.untitled", "Untitled");
               const highlightedText =
                 annotation.highlightedText || annotation.excerpt || "";
 
@@ -1623,7 +1476,7 @@ function NotesPanel({
                           }`}
                         >
                           <Highlighter size={9} strokeWidth={3} />
-                          ÄÃ¡nh dáº¥u
+                          {t("workspace.material.notes.highlightBadge", "Highlight")}
                         </span>
                       )}
                       {isEditing ? (
@@ -1634,7 +1487,7 @@ function NotesPanel({
                           onChange={(event) =>
                             setEditingTitle(event.target.value)
                           }
-                          placeholder="TÃªn ghi chÃº (khÃ´ng báº¯t buá»™c)"
+                          placeholder={t("workspace.material.notes.titlePlaceholder", "Note title (optional)")}
                           className={`w-full rounded-lg border px-2.5 py-1.5 text-sm font-semibold outline-none transition ${
                             isDarkMode
                               ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
@@ -1679,7 +1532,7 @@ function NotesPanel({
                             onChange={(event) =>
                               setEditingContent(event.target.value)
                             }
-                            placeholder="Ná»™i dung ghi chÃº..."
+                            placeholder={t("workspace.material.notes.contentPlaceholder", "Note content...")}
                             className={`mt-3 min-h-[112px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition ${
                               isDarkMode
                                 ? "border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
@@ -1701,7 +1554,7 @@ function NotesPanel({
                                   : "text-slate-500 hover:text-slate-700"
                               }`}
                             >
-                              Há»§y
+                              {t("common.cancel", "Cancel")}
                             </button>
                             <button
                               type="button"
@@ -1723,7 +1576,7 @@ function NotesPanel({
                               }`}
                             >
                               <Check size={13} />
-                              LÆ°u
+                              {t("common.save", "Save")}
                             </button>
                           </div>
                         </>
@@ -1741,7 +1594,7 @@ function NotesPanel({
                             isDarkMode ? "text-slate-500" : "text-slate-400"
                           }`}
                         >
-                          (ChÆ°a cÃ³ ná»™i dung)
+                          {t("workspace.material.notes.emptyContent", "(No content yet)")}
                         </p>
                       )}
                     </div>
@@ -1755,7 +1608,7 @@ function NotesPanel({
                         setEditingAnnotationId(annotation.id);
                         setEditingTitle(
                           annotation.title &&
-                            annotation.title !== "KhÃ´ng cÃ³ tiÃªu Ä‘á»"
+                            annotation.title !== t("workspace.material.notes.untitled", "Untitled")
                             ? annotation.title
                             : "",
                         );
@@ -1766,7 +1619,7 @@ function NotesPanel({
                           ? "text-slate-400 hover:bg-slate-800 hover:text-white"
                           : "text-slate-400 hover:bg-slate-100 hover:text-blue-600"
                       }`}
-                      title="Chá»‰nh sá»­a ghi chÃº"
+                      title={t("workspace.material.notes.editTitle", "Edit note")}
                     >
                       <Pencil size={15} />
                     </button>
@@ -1787,7 +1640,7 @@ function NotesPanel({
                         ? "text-slate-400 hover:bg-slate-800 hover:text-white"
                         : "text-slate-400 hover:bg-slate-100 hover:text-rose-600"
                     }`}
-                    title="XÃ³a ghi chÃº"
+                    title={t("workspace.material.notes.deleteTitle", "Delete note")}
                   >
                     <X size={16} />
                   </button>
@@ -1802,10 +1655,10 @@ function NotesPanel({
             }`}
           >
             <MessageSquareText className="mb-3 h-12 w-12 opacity-35" />
-            <p className="text-base font-semibold">ChÆ°a cÃ³ ghi chÃº tá»± do nÃ o</p>
+            <p className="text-base font-semibold">{t("workspace.material.notes.emptyFreeTitle", "No free notes yet")}</p>
             <p className="mt-2 text-sm leading-6">
-              Nháº¥n nÃºt "+" á»Ÿ gÃ³c pháº£i dÆ°á»›i Ä‘á»ƒ táº¡o ghi chÃº má»›i. Ghi chÃº gáº¯n vá»›i
-              Ä‘oáº¡n bÃ´i Ä‘en sáº½ hiá»‡n ngay dÆ°á»›i Ä‘oáº¡n Ä‘Ã³ trong tÃ i liá»‡u.
+              {t("workspace.material.notes.emptyFreeDescription", "Press the + button in the bottom-right corner to create a new note. Notes attached to highlighted text will appear directly under that passage in the material.")}
+
             </p>
           </div>
         )}
@@ -1844,7 +1697,7 @@ function NotesPanel({
             ? "bg-blue-500 text-white hover:bg-blue-400"
             : "bg-blue-600 text-white hover:bg-blue-700"
         }`}
-        title="Táº¡o ghi chÃº"
+        title={t("workspace.material.notes.createTitle", "Create note")}
       >
         <MessageSquareText className="h-5 w-5" />
       </button>
@@ -1881,7 +1734,7 @@ function NotesPanel({
                   ? "text-slate-400 hover:bg-slate-800 hover:text-white"
                   : "text-slate-400 hover:bg-slate-100 hover:text-rose-600"
               }`}
-              title="ÄÃ³ng"
+              title={t("common.close", "Close")}
             >
               <X size={14} />
             </button>
@@ -1896,7 +1749,7 @@ function NotesPanel({
                   : previous,
               )
             }
-            placeholder="TÃªn ghi chÃº (khÃ´ng báº¯t buá»™c)"
+            placeholder={t("workspace.material.notes.titlePlaceholder", "Note title (optional)")}
             className={`flex-shrink-0 px-4 py-2 text-sm font-bold outline-none border-b ${
               isDarkMode
                 ? "bg-slate-900 text-slate-100 border-slate-800 placeholder:text-slate-500"
@@ -1912,7 +1765,7 @@ function NotesPanel({
                   : previous,
               )
             }
-            placeholder="Nháº­p ná»™i dung ghi chÃº..."
+            placeholder={t("workspace.material.notes.contentInputPlaceholder", "Enter note content...")}
             className={`min-h-0 flex-1 resize-none px-4 py-3 text-sm outline-none ${
               isDarkMode
                 ? "bg-slate-900 text-slate-100 placeholder:text-slate-500"
@@ -1929,7 +1782,7 @@ function NotesPanel({
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
               }`}
             >
-              Há»§y
+              {t("common.cancel", "Cancel")}
             </button>
             <button
               type="button"
@@ -1947,7 +1800,7 @@ function NotesPanel({
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
-              LÆ°u
+              {t("common.save", "Save")}
             </button>
           </div>
         </div>

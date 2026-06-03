@@ -2601,6 +2601,7 @@
       "unselectSource": "ソース選択を解除",
       "previewSource": "詳細",
       "warningSource": "警告",
+      "irrelevantSource": "関連なし",
       "uploadTimeLabel": "時間",
       "uploadProgress": {
         "uploading": "アップロード中",
@@ -2796,6 +2797,7 @@
     },
     "material": {
       "pageUnit": "ページ",
+      "typeLabel": "種類",
       "types": {
         "document": "資料",
         "word": "Word資料",
@@ -2820,7 +2822,8 @@
         "reason": "理由",
         "suggestion": "提案",
         "approve": "承認",
-        "reject": "拒否"
+        "reject": "拒否",
+        "reviewError": "この教材をレビューできませんでした。"
       },
       "pdfMissingUrl": "PDF資料ですが表示URLが見つかりません。",
       "contentLoadFailed": "資料の内容を読み込めませんでした。",
@@ -2828,10 +2831,54 @@
       "noContent": "表示する内容がありません。",
       "tree": {
         "chunkOnLabel": "Chunk ON",
-        "chunkUnit": "chunk"
+        "chunkUnit": "chunk",
+        "scope": "教材範囲",
+        "aiScope": "AI 範囲",
+        "rootOn": "項目 ON",
+        "section": "セクション",
+        "root": "ルート項目",
+        "toggleOnHint": "AI の問題生成範囲に含まれています",
+        "toggleOffHint": "AI の問題生成範囲から除外されています",
+        "disableSection": "このセクションをオフにする",
+        "enableSection": "このセクションをオンにする",
+        "untitledSection": "無題のセクション",
+        "chunkOn": "チャンク ON",
+        "outOfScope": "AI 範囲外",
+        "childSection": "子セクション",
+        "noChildSection": "このセクションにはまだ子項目がありません。",
+        "loading": "ナレッジツリーを読み込み中...",
+        "emptyTitle": "ナレッジツリーはまだありません",
+        "loadErrorTitle": "ナレッジツリーを読み込めませんでした",
+        "errorHint": "ナレッジツリーはバックエンドの document sections から表示されます。",
+        "emptyHint": "バックエンドはこの教材の document sections をまだ返していません。",
+        "title": "ナレッジツリー",
+        "rootUnit": "項目",
+        "reloadTitle": "ナレッジツリーを再読み込み",
+        "loadingShort": "読み込み中",
+        "noSection": "ナレッジツリーにはまだセクションがありません。"
       },
       "notes": {
-        "tab": "ノート"
+        "tab": "ノート",
+        "loadError": "ノートを読み込めませんでした",
+        "createError": "ノートを作成できませんでした",
+        "updateError": "ノートを更新できませんでした",
+        "deleteError": "ノートを削除できませんでした",
+        "highlightedPassage": "ハイライトした箇所",
+        "highlightBadge": "ハイライト",
+        "highlightNote": "ハイライトノート",
+        "newHighlightNote": "新しいノート",
+        "highlightPlaceholder": "この箇所のノートを書く...",
+        "emptyHighlightContent": "(ノートはまだありません — クリックして追加)",
+        "untitled": "無題",
+        "titlePlaceholder": "ノート名（任意）",
+        "contentPlaceholder": "ノート内容...",
+        "contentInputPlaceholder": "ノート内容を入力...",
+        "emptyContent": "(内容はまだありません)",
+        "editTitle": "ノートを編集",
+        "deleteTitle": "ノートを削除",
+        "emptyFreeTitle": "自由ノートはまだありません",
+        "emptyFreeDescription": "右下の + ボタンを押して新しいノートを作成します。ハイライトに紐づくノートは、教材内の該当箇所のすぐ下に表示されます。",
+        "createTitle": "ノートを作成"
       },
       "askAi": {
         "tab": "AIに質問",
@@ -2850,6 +2897,13 @@
         "extraSources": "資料内の他の {{count}} チャンクを参照",
         "currentPage": "{{page}} ページを表示中",
         "clearHistory": "チャット履歴を削除",
+        "emptyAnswer": "AI は内容を返しませんでした",
+        "suggestionsPageSummary": "{{page}} ページを要約",
+        "suggestionsPageConcepts": "{{page}} ページの主要概念を説明",
+        "suggestionsPageQuiz": "このセクションから選択式問題を3問作成",
+        "suggestionsMaterialSummary": "この教材を要約",
+        "suggestionsImportantChapters": "最も重要な章はどれですか？",
+        "suggestionsReviewOutline": "復習アウトラインを作成",
         "loading": "AI が回答を探しています..."
       }
     }
@@ -3844,7 +3898,7 @@
         "incompleteCount": "{{count}} ????",
         "all": "???",
         "incomplete": "???",
-        "error": "???",
+        "error": "AI ?????????????????",
         "emptyQuestion": "(???)",
         "noQuestions": "?????????",
         "jumpButton": "??",

@@ -1014,7 +1014,7 @@ function SourcesPanel({
                       {isWarnSource(source)
                         ? t("workspace.shell.warningSource", "Cảnh báo")
                         : isRejectSource(source)
-                          ? t("workspace.shell.irrelevantSource", "Không liên quan")
+                          ? t("workspace.shell.irrelevantSource", "Not relevant")
                         : t("workspace.shell.previewSource", "Preview")}
                     </Button>
 
