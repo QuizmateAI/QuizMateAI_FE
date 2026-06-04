@@ -611,6 +611,8 @@
     "cardSubtitle": "Cấp tài khoản admin mới và quản lý phân quyền hệ thống."
   },
   "adminPayments": {
+    "tabPayments": "Danh sách giao dịch",
+    "tabLogs": "Lịch sử đồng bộ",
     "desc": "Tra cứu giao dịch theo mã đơn, user, workspace hoặc trạng thái thanh toán.",
     "filterTitle": "Bộ lọc thanh toán",
     "placeholders": {
@@ -660,7 +662,10 @@
       "reasonLabel": "Lý do",
       "reasonPlaceholder": "Giải thích lý do hủy các giao dịch này (ghi vào audit log).",
       "reasonHint": "Bắt buộc. 10–500 ký tự.",
-      "reasonInvalid": "Lý do phải dài 10–500 ký tự."
+      "reasonInvalid": "Lý do phải dài 10–500 ký tự.",
+      "fromCreatedDateLabel": "Từ ngày tạo",
+      "toCreatedDateLabel": "Đến ngày tạo",
+      "dateRangeRequired": "Thời gian bắt đầu và kết thúc là bắt buộc"
     },
     "validation": {
       "positiveInteger": "{{field}} phải là số nguyên dương"
@@ -740,6 +745,55 @@
         "expiresAt": "Hết hạn lúc",
         "payUrl": "Pay URL"
       }
+    },
+    "logs": {
+      "title": "Nhật ký dọn dẹp giao dịch quá hạn",
+      "desc": "Theo dõi các đợt dọn dẹp tự động và thủ công của hệ thống.",
+      "table": {
+        "logId": "Mã đợt",
+        "actorName": "Người thực hiện",
+        "reason": "Lý do dọn dẹp",
+        "totalAffected": "Số lượng bị hủy",
+        "createdAt": "Thời gian chạy"
+      },
+      "detail": {
+        "title": "Chi tiết đợt dọn dẹp #{{id}}",
+        "desc": "Xem chi tiết các giao dịch quá hạn đã bị hủy trong đợt dọn dẹp này.",
+        "metadata": {
+          "actor": "Người thực hiện",
+          "reason": "Lý do",
+          "confirmText": "Chuỗi xác nhận",
+          "totalAffected": "Tổng số giao dịch bị hủy",
+          "createdAt": "Thời gian chạy"
+        },
+        "table": {
+          "paymentId": "Payment ID",
+          "orderId": "Mã đơn hàng",
+          "amount": "Số tiền",
+          "payer": "Người thanh toán",
+          "workspace": "Workspace",
+          "targetType": "Loại gói",
+          "expiresAt": "Thời hạn cũ",
+          "createdAt": "Thời điểm tạo"
+        },
+        "empty": "Không có giao dịch nào bị ảnh hưởng trong đợt này."
+      },
+      "errors": {
+        "loadList": "Không thể tải danh sách lịch sử dọn dẹp",
+        "loadDetail": "Không thể tải chi tiết đợt dọn dẹp"
+      }
+    },
+    "cancelIndividual": {
+      "action": "Hủy đơn hàng này",
+      "title": "Hủy đơn hàng đơn lẻ",
+      "desc": "Bạn có chắc chắn muốn hủy giao dịch {{orderId}} này? Hành động này sẽ cập nhật trạng thái đơn hàng thành CANCELLED và không thể hoàn tác.",
+      "confirm": "Hủy đơn",
+      "success": "Đã hủy đơn hàng {{orderId}} thành công",
+      "failed": "Hủy đơn hàng thất bại",
+      "reasonLabel": "Lý do hủy đơn",
+      "reasonPlaceholder": "Nhập lý do chi tiết hủy đơn hàng này (tối thiểu 10 ký tự)...",
+      "reasonHint": "Bắt buộc. 10 - 500 ký tự.",
+      "reasonInvalid": "Lý do hủy đơn phải từ 10 đến 500 ký tự."
     }
   },
   "topicManagement": {

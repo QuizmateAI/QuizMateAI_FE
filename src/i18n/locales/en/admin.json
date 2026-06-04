@@ -611,6 +611,8 @@
     "cardSubtitle": "Provision admin accounts and manage system privileges."
   },
   "adminPayments": {
+    "tabPayments": "Transaction List",
+    "tabLogs": "Cleanup History",
     "desc": "Look up transactions by order ID, user, workspace, or payment status.",
     "filterTitle": "Payment Filters",
     "placeholders": {
@@ -660,7 +662,10 @@
       "reasonLabel": "Reason",
       "reasonPlaceholder": "Explain why you are expiring these payments (for audit log).",
       "reasonHint": "Required. 10–500 characters.",
-      "reasonInvalid": "Reason must be 10–500 characters."
+      "reasonInvalid": "Reason must be 10–500 characters.",
+      "fromCreatedDateLabel": "From Created Date",
+      "toCreatedDateLabel": "To Created Date",
+      "dateRangeRequired": "Start date and end date are required"
     },
     "validation": {
       "positiveInteger": "{{field}} must be a positive integer"
@@ -707,6 +712,55 @@
         "expiresAt": "Expires At",
         "payUrl": "Pay URL"
       }
+    },
+    "logs": {
+      "title": "Overdue Payments Cleanup Logs",
+      "desc": "Track automated and manual cleanup batches of overdue payments.",
+      "table": {
+        "logId": "Log ID",
+        "actorName": "Performed By",
+        "reason": "Cleanup Reason",
+        "totalAffected": "Affected Count",
+        "createdAt": "Run Time"
+      },
+      "detail": {
+        "title": "Cleanup Batch Detail #{{id}}",
+        "desc": "List of specific overdue payments cancelled in this batch.",
+        "metadata": {
+          "actor": "Admin Actor",
+          "reason": "Reason",
+          "confirmText": "Confirmation Text",
+          "totalAffected": "Total Affected",
+          "createdAt": "Run Time"
+        },
+        "table": {
+          "paymentId": "Payment ID",
+          "orderId": "Order ID",
+          "amount": "Amount",
+          "payer": "Payer User",
+          "workspace": "Workspace",
+          "targetType": "Target Type",
+          "expiresAt": "Old Expiration Date",
+          "createdAt": "Creation Date"
+        },
+        "empty": "No affected payment records details."
+      },
+      "errors": {
+        "loadList": "Unable to load cleanup history list",
+        "loadDetail": "Unable to load cleanup batch detail"
+      }
+    },
+    "cancelIndividual": {
+      "action": "Cancel this order",
+      "title": "Cancel Individual Order",
+      "desc": "Are you sure you want to cancel transaction {{orderId}}? This action will set the status to CANCELLED and cannot be undone.",
+      "confirm": "Cancel Order",
+      "success": "Cancelled order {{orderId}} successfully",
+      "failed": "Failed to cancel order",
+      "reasonLabel": "Cancellation Reason",
+      "reasonPlaceholder": "Enter detailed reason for canceling this order (minimum 10 characters)...",
+      "reasonHint": "Required. 10 - 500 characters.",
+      "reasonInvalid": "Reason must be 10 - 500 characters."
     }
   },
   "topicManagement": {

@@ -633,12 +633,29 @@ export const getAdminPaymentByOrderId = async (orderId) => {
   return response;
 };
 
-export const expireOverduePayments = async ({ confirmText, reason, maxCount } = {}) => {
+export const expireOverduePayments = async ({ confirmText, reason, fromCreatedDate, toCreatedDate } = {}) => {
   const body = { confirmText, reason };
-  if (maxCount != null) body.maxCount = maxCount;
+  if (fromCreatedDate) body.fromCreatedDate = fromCreatedDate;
+  if (toCreatedDate) body.toCreatedDate = toCreatedDate;
   const response = await api.post('/payment/admin/expire-overdue', body);
   return response;
 };
+
+export const cancelIndividualPayment = async ({ orderId, reason }) => {
+  const response = await api.post('/payment/admin/cancel-individual', { orderId, reason });
+  return response;
+};
+
+export const getExpireOverdueLogs = async (page = 0, size = 10) => {
+  const response = await api.get(`/payment/admin/expire-overdue/logs?page=${page}&size=${size}`);
+  return response;
+};
+
+export const getExpireOverdueLogDetail = async (logId) => {
+  const response = await api.get(`/payment/admin/expire-overdue/logs/${logId}`);
+  return response;
+};
+
 
 // System Settings APIs — maps to SystemSettingController (/api/system-settings/...)
 export const getAllSystemSettings = async () => {

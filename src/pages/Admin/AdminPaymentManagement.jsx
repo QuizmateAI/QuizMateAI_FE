@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, RefreshCw, Eye, Banknote, Clock, X, ReceiptText } from 'lucide-react';
+import { Search, RefreshCw, Eye, Banknote, Clock, X, ReceiptText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -27,9 +27,10 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
-import { getAdminPayments, getAdminPaymentByOrderId, expireOverduePayments } from '@/api/ManagementSystemAPI';
+import { getAdminPayments, getAdminPaymentByOrderId, expireOverduePayments, cancelIndividualPayment } from '@/api/ManagementSystemAPI';
 import AdminPaymentDetailFields from './components/AdminPaymentDetailFields';
 import AdminPagination from './components/AdminPagination';
+import AdminPaymentCleanupLogs from './components/AdminPaymentCleanupLogs';
 import {
   SuperAdminPage,
   SuperAdminPageHeader,
@@ -77,6 +78,33 @@ const EMPTY_PAGE_INFO = {
   last: true,
 };
 
+const getDefaultFromDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T00:00`;
+};
+
+const getDefaultToDate = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+};
+
+const formatToLocalDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return '';
+  if (dateTimeStr.length === 16) {
+    return `${dateTimeStr}:00`;
+  }
+  return dateTimeStr;
+};
+
 function AdminPaymentManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
@@ -88,6 +116,7 @@ function AdminPaymentManagement() {
   const canRead = !permLoading && permissions.has('payment:read');
   const canWrite = !permLoading && permissions.has('payment:write');
 
+  const [activeTab, setActiveTab] = useState('payments');
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS);
   const [page, setPage] = useState(0);
@@ -97,13 +126,28 @@ function AdminPaymentManagement() {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [detailError, setDetailError] = useState('');
   const [isExpireOpen, setIsExpireOpen] = useState(false);
-  const [expireForm, setExpireForm] = useState({ confirmText: '', reason: '' });
+  const [expireForm, setExpireForm] = useState({
+    confirmText: '',
+    reason: '',
+    fromCreatedDate: '',
+    toCreatedDate: '',
+  });
+  const [isCancelIndividualOpen, setIsCancelIndividualOpen] = useState(false);
+  const [cancelIndividualForm, setCancelIndividualForm] = useState({ orderId: '', reason: '' });
 
   const confirmTextValid = expireForm.confirmText === 'EXPIRE-OVERDUE';
   const reasonValid = expireForm.reason.trim().length >= 10 && expireForm.reason.trim().length <= 500;
+  const dateRangeValid = expireForm.fromCreatedDate !== '' && expireForm.toCreatedDate !== '';
 
   const openExpireDialog = () => {
-    setExpireForm({ confirmText: '', reason: '' });
+    const fromDate = getDefaultFromDate();
+    const toDate = getDefaultToDate();
+    setExpireForm({
+      confirmText: '',
+      reason: '',
+      fromCreatedDate: fromDate,
+      toCreatedDate: toDate,
+    });
     setIsExpireOpen(true);
   };
 
@@ -284,14 +328,24 @@ function AdminPaymentManagement() {
   };
 
   const expireMutation = useMutation({
-    mutationFn: async ({ confirmText, reason }) => {
-      const res = await expireOverduePayments({ confirmText, reason: reason.trim() });
+    mutationFn: async ({ confirmText, reason, fromCreatedDate, toCreatedDate }) => {
+      const res = await expireOverduePayments({
+        confirmText,
+        reason: reason.trim(),
+        fromCreatedDate: formatToLocalDateTime(fromCreatedDate),
+        toCreatedDate: formatToLocalDateTime(toCreatedDate),
+      });
       return res?.data?.data ?? res?.data ?? 0;
     },
     onSuccess: (count) => {
       showSuccess(t('adminPayments.expireSuccess', { count }));
       setIsExpireOpen(false);
-      setExpireForm({ confirmText: '', reason: '' });
+      setExpireForm({
+        confirmText: '',
+        reason: '',
+        fromCreatedDate: getDefaultFromDate(),
+        toCreatedDate: getDefaultToDate(),
+      });
       invalidatePayments();
     },
     onError: (err) => {
@@ -300,14 +354,50 @@ function AdminPaymentManagement() {
   });
 
   const isExpiring = expireMutation.isPending;
-  const canSubmitExpire = confirmTextValid && reasonValid && !isExpiring;
+  const canSubmitExpire = confirmTextValid && reasonValid && dateRangeValid && !isExpiring;
 
   const handleExpireOverdue = () => {
     if (!canSubmitExpire) return;
     expireMutation.mutate({
       confirmText: expireForm.confirmText,
       reason: expireForm.reason,
+      fromCreatedDate: expireForm.fromCreatedDate,
+      toCreatedDate: expireForm.toCreatedDate,
     });
+  };
+
+  const cancelIndividualMutation = useMutation({
+    mutationFn: async ({ orderId, reason }) => {
+      const res = await cancelIndividualPayment({ orderId, reason: reason.trim() });
+      return res?.data ?? res;
+    },
+    onSuccess: (data) => {
+      showSuccess(t('adminPayments.cancelIndividual.success', { orderId: data.orderId || cancelIndividualForm.orderId }));
+      setIsCancelIndividualOpen(false);
+      setCancelIndividualForm({ orderId: '', reason: '' });
+      setIsDetailOpen(false);
+      invalidatePayments();
+    },
+    onError: (err) => {
+      showError(getFriendlyError(err, t('adminPayments.cancelIndividual.failed')));
+    },
+  });
+
+  const isIndividualCancelling = cancelIndividualMutation.isPending;
+  const cancelIndividualReasonValid = cancelIndividualForm.reason.trim().length >= 10 && cancelIndividualForm.reason.trim().length <= 500;
+  const canSubmitCancelIndividual = cancelIndividualReasonValid && !isIndividualCancelling;
+
+  const handleCancelIndividual = () => {
+    if (!canSubmitCancelIndividual) return;
+    cancelIndividualMutation.mutate({
+      orderId: cancelIndividualForm.orderId,
+      reason: cancelIndividualForm.reason,
+    });
+  };
+
+  const openCancelIndividualDialog = (orderId) => {
+    setCancelIndividualForm({ orderId, reason: '' });
+    setIsCancelIndividualOpen(true);
   };
 
   const renderStatusBadge = (status) => (
@@ -391,7 +481,39 @@ function AdminPaymentManagement() {
         </div>
       )}
 
-      <Card className={`rounded-xl border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+      {/* Premium Tab Selector */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6 gap-6">
+        <button
+          onClick={() => setActiveTab('payments')}
+          className={`pb-3 text-sm font-semibold transition-all relative ${
+            activeTab === 'payments'
+              ? 'text-[#0455BF] dark:text-blue-400 font-bold'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+          }`}
+        >
+          {t('adminPayments.tabPayments')}
+          {activeTab === 'payments' && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0455BF] dark:bg-blue-400 rounded-full" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('logs')}
+          className={`pb-3 text-sm font-semibold transition-all relative ${
+            activeTab === 'logs'
+              ? 'text-[#0455BF] dark:text-blue-400 font-bold'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+          }`}
+        >
+          {t('adminPayments.tabLogs')}
+          {activeTab === 'logs' && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0455BF] dark:bg-blue-400 rounded-full" />
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'payments' ? (
+        <>
+          <Card className={`rounded-xl border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} mb-6`}>
         <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
           <CardTitle className={`flex items-center gap-2 text-lg ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
             <Banknote className="w-5 h-5 text-[#0455BF]" />
@@ -544,6 +666,10 @@ function AdminPaymentManagement() {
           )}
         </CardContent>
       </Card>
+        </>
+      ) : (
+        <AdminPaymentCleanupLogs />
+      )}
 
       {/* Expire Overdue Dialog */}
       <Dialog open={isExpireOpen} onOpenChange={(open) => (open ? openExpireDialog() : closeExpireDialog())}>
@@ -583,6 +709,45 @@ function AdminPaymentManagement() {
                 </p>
               )}
             </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="expire-from-date"
+                  className={`text-sm font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+                >
+                  {t('adminPayments.expireForm.fromCreatedDateLabel')}
+                </label>
+                <Input
+                  id="expire-from-date"
+                  type="datetime-local"
+                  value={expireForm.fromCreatedDate}
+                  onChange={(event) => setExpireForm((prev) => ({ ...prev, fromCreatedDate: event.target.value }))}
+                  disabled={isExpiring}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="expire-to-date"
+                  className={`text-sm font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+                >
+                  {t('adminPayments.expireForm.toCreatedDateLabel')}
+                </label>
+                <Input
+                  id="expire-to-date"
+                  type="datetime-local"
+                  value={expireForm.toCreatedDate}
+                  onChange={(event) => setExpireForm((prev) => ({ ...prev, toCreatedDate: event.target.value }))}
+                  disabled={isExpiring}
+                />
+              </div>
+            </div>
+            {!dateRangeValid && (
+              <p className="text-xs text-rose-500">
+                {t('adminPayments.expireForm.dateRangeRequired')}
+              </p>
+            )}
 
             <div className="space-y-1.5">
               <label
@@ -674,9 +839,92 @@ function AdminPaymentManagement() {
             />
           ) : null}
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
+            {canWrite && selectedPayment?.paymentStatus === 'PENDING' && (
+              <Button
+                variant="destructive"
+                onClick={() => openCancelIndividualDialog(selectedPayment.orderId)}
+                className="bg-rose-600 hover:bg-rose-700 text-white rounded-lg gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                {t('adminPayments.cancelIndividual.action')}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
               {t('common.cancel')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Individual Cancellation Dialog */}
+      <Dialog open={isCancelIndividualOpen} onOpenChange={(open) => !open && setIsCancelIndividualOpen(false)}>
+        <DialogContent className={isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : ''}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-rose-500" />
+              {t('adminPayments.cancelIndividual.title')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('adminPayments.cancelIndividual.desc', { orderId: cancelIndividualForm.orderId })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="cancel-individual-reason"
+                className={`text-sm font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                {t('adminPayments.cancelIndividual.reasonLabel')}
+              </label>
+              <textarea
+                id="cancel-individual-reason"
+                value={cancelIndividualForm.reason}
+                onChange={(event) => setCancelIndividualForm((prev) => ({ ...prev, reason: event.target.value }))}
+                placeholder={t('adminPayments.cancelIndividual.reasonPlaceholder')}
+                rows={3}
+                maxLength={500}
+                disabled={isIndividualCancelling}
+                className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400 ${
+                  isDarkMode
+                    ? 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500'
+                    : 'bg-white border-input text-slate-900 placeholder:text-slate-400'
+                }`}
+              />
+              <div className="flex items-center justify-between">
+                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {t('adminPayments.cancelIndividual.reasonHint')}
+                </p>
+                <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {cancelIndividualForm.reason.trim().length}/500
+                </p>
+              </div>
+              {cancelIndividualForm.reason.length > 0 && !cancelIndividualReasonValid && (
+                <p className="text-xs text-rose-500">
+                  {t('adminPayments.cancelIndividual.reasonInvalid')}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsCancelIndividualOpen(false)}
+              disabled={isIndividualCancelling}
+              className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+            >
+              <X className="w-4 h-4 mr-1" />
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleCancelIndividual}
+              disabled={!canSubmitCancelIndividual}
+              className="bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-60"
+            >
+              <Trash2 className={`w-4 h-4 mr-1 ${isIndividualCancelling ? 'animate-spin' : ''}`} />
+              {isIndividualCancelling ? t('adminPayments.expiring') : t('adminPayments.cancelIndividual.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -602,6 +602,8 @@
     "cardSubtitle": "Card Subtitle"
   },
   "adminPayments": {
+    "tabPayments": "取引一覧",
+    "tabLogs": "クリーンアップ履歴",
     "desc": "注文 ID、ユーザー、ワークスペース、または支払いステータスで取引を検索します。",
     "filterTitle": "支払いフィルター",
     "placeholders": {
@@ -651,7 +653,10 @@
       "reasonLabel": "理由",
       "reasonPlaceholder": "これらの支払いを失効させる理由を説明してください(監査ログ用)。",
       "reasonHint": "必須。10〜500 文字。",
-      "reasonInvalid": "理由は 10〜500 文字にしてください。"
+      "reasonInvalid": "理由は 10〜500 文字にしてください。",
+      "fromCreatedDateLabel": "作成開始日",
+      "toCreatedDateLabel": "作成終了日",
+      "dateRangeRequired": "開始日と終了日は必須です"
     },
     "validation": {
       "positiveInteger": "{{field}} は正の整数である必要があります"
@@ -698,6 +703,55 @@
         "expiresAt": "有効期限",
         "payUrl": "支払い URL"
       }
+    },
+    "logs": {
+      "title": "期限切れ支払いのクリーンアップログ",
+      "desc": "システムの自動および手動クリーンアップバッチを追跡します。",
+      "table": {
+        "logId": "バッチID",
+        "actorName": "実行管理者",
+        "reason": "理由",
+        "totalAffected": "対象件数",
+        "createdAt": "実行時間"
+      },
+      "detail": {
+        "title": "クリーンアップ詳細 #{{id}}",
+        "desc": "このバッチでキャンセルされた具体的な期限切れ支払いのリスト。",
+        "metadata": {
+          "actor": "実行管理者",
+          "reason": "理由",
+          "confirmText": "確認テキスト",
+          "totalAffected": "総影響件数",
+          "createdAt": "実行時間"
+        },
+        "table": {
+          "paymentId": "支払いID",
+          "orderId": "注文ID",
+          "amount": "金額",
+          "payer": "支払い者",
+          "workspace": "ワークスペース",
+          "targetType": "対象タイプ",
+          "expiresAt": "元の有効期限",
+          "createdAt": "作成日時"
+        },
+        "empty": "影響を受けた支払い記録はありません。"
+      },
+      "errors": {
+        "loadList": "クリーンアップ履歴を読み込めません",
+        "loadDetail": "クリーンアップ詳細を読み込めません"
+      }
+    },
+    "cancelIndividual": {
+      "action": "この注文をキャンセル",
+      "title": "個別注文のキャンセル",
+      "desc": "取引 {{orderId}} をキャンセルしてもよろしいですか？この操作により、ステータスが CANCELLED に更新され、元に戻すことはできません。",
+      "confirm": "注文をキャンセル",
+      "success": "注文 {{orderId}} のキャンセルに成功しました",
+      "failed": "注文のキャンセルに失敗しました",
+      "reasonLabel": "キャンセル理由",
+      "reasonPlaceholder": "この注文をキャンセルする詳細な理由を入力してください（最小 10 文字）...",
+      "reasonHint": "必須。10〜500 文字。",
+      "reasonInvalid": "理由は 10〜500 文字にしてください。"
     }
   },
   "topicManagement": {

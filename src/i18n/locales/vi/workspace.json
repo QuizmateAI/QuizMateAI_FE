@@ -1566,11 +1566,11 @@
         "noQuestionsToCheck": "Chưa có câu hỏi để kiểm tra.",
         "publishFailed": "Không thể xuất bản quiz.",
         "readyToPublish": "Trước khi xuất bản",
-        "readyToPublishBody": "Vào tab Kiểm tra để xem lại câu hỏi, cấu hình và đáp án. Sau đó bấm Xuất bản và thiết lập phân phối cho nhóm.",
+        "readyToPublishBody": "Vào tab Kiểm tra để xem lại câu hỏi, cấu hình và đáp án. Sau đó bấm Xuất bản và giao bài cho nhóm.",
         "reviewHint": "Mỗi thẻ hiển thị loại câu, độ khó, mức Bloom và toàn bộ phương án. Đáp án đúng được đánh dấu màu xanh.",
         "stepCheck": "1. Kiểm tra",
         "stepPublish": "2. Xuất bản",
-        "stepDistribute": "3. Phân phối",
+        "stepDistribute": "3. Giao bài",
         "duplicate": {
           "button": "Sao chép để chỉnh sửa",
           "tooltip": "Tạo bản nháp sao chép (không kèm phân phối và lịch sử làm bài) để chỉnh sửa",

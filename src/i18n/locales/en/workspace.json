@@ -1560,9 +1560,9 @@
         "readyToPublish": "Ready to publish?",
         "readyToPublishBody": "Open the Check tab to verify questions, settings, and answers. Then publish and set who can access the quiz.",
         "reviewHint": "Each card shows question type, difficulty, cognitive level, and all answer options. Correct options are highlighted.",
-        "stepCheck": "1 ? Check",
-        "stepPublish": "2 ? Publish",
-        "stepDistribute": "3 ? Distribute",
+        "stepCheck": "1 · Check",
+        "stepPublish": "2 · Publish",
+        "stepDistribute": "3 · Assign",
         "duplicate": {
           "button": "Duplicate to edit",
           "tooltip": "Create a fresh draft copy (without distribution or attempt history) so you can edit it",
