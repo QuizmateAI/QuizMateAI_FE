@@ -198,7 +198,7 @@ function QuizDetailView({
   isGroupLeader = false,
   canEditQuiz = isGroupLeader,
   canPublishQuiz = isGroupLeader,
-  canAssignQuizAudience = isGroupLeader,
+  canAssignQuizAudience: _canAssignQuizAudience = isGroupLeader,
   canManageAssignment = isGroupLeader,
   currentUserId = null,
   groupAudiencePickerExcludeUserId = null,
@@ -600,7 +600,7 @@ function QuizDetailView({
     setExamStartOpen(false);
   }, [location.pathname, location.search, navigate, quiz?.quizId, resolveAttemptPath, resultSourceState]);
 
-  const openAudienceDialog = useCallback(() => {
+  const _openAudienceDialog = useCallback(() => {
     const eq = quizMeta || quiz;
     const excludeUid = Number(groupAudiencePickerExcludeUserId);
     setAudienceMode(eq?.groupAudienceMode === "SELECTED_MEMBERS" ? "SELECTED_MEMBERS" : "ALL_MEMBERS");
