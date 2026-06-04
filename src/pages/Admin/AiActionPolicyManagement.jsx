@@ -497,6 +497,7 @@ export default function AiActionPolicyManagement() {
   return (
     <SuperAdminPage className={`${fontClass} ${dk ? 'text-white' : 'text-gray-900'}`}>
       <SuperAdminPageHeader
+        eyebrow={t('sidebarSections.aiGovernance', 'Điều phối AI')}
         title={t('aiActionPolicy.title')}
         actions={(
           <Button

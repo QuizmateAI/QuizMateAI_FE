@@ -186,8 +186,8 @@ const SORT_OPTIONS = [
   { value: 'purchases_asc', labelKey: 'planPurchases.sort.purchasesAsc', label: 'Lượt mua ↑' },
   { value: 'base_desc', labelKey: 'planPurchases.sort.baseDesc', label: 'Tiền gốc ↓' },
   { value: 'base_asc', labelKey: 'planPurchases.sort.baseAsc', label: 'Tiền gốc ↑' },
-  { value: 'margin_desc', labelKey: 'planPurchases.sort.marginDesc', label: 'Biên ↓' },
-  { value: 'margin_asc', labelKey: 'planPurchases.sort.marginAsc', label: 'Biên ↑' },
+  { value: 'margin_desc', labelKey: 'planPurchases.sort.marginDesc', label: 'Lợi nhuận ↓' },
+  { value: 'margin_asc', labelKey: 'planPurchases.sort.marginAsc', label: 'Lợi nhuận ↑' },
 ];
 
 function comparePlans(a, b, sortKey) {
@@ -506,8 +506,8 @@ export default function PlanPurchaseReportPage() {
   return (
     <SuperAdminPage>
       <SuperAdminPageHeader
-        eyebrow="Commerce"
-        title={t('planPurchases.title', 'Báo cáo gói & biên lợi nhuận')}
+        eyebrow={t('sidebarSections.commerce', 'Quản lý gói')}
+        title={t('planPurchases.title', 'Báo cáo doanh thu gói đăng ký')}
         actions={(
           <div className="flex items-center gap-2">
             <RevenueSparkline

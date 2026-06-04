@@ -1,6 +1,6 @@
 {
   "sidebar": {
-    "dashboard": "Dashboard",
+    "dashboard": "Bảng điều khiển",
     "users": "Người dùng",
     "groups": "Nhóm",
     "moderation": "Kiểm duyệt",
@@ -15,9 +15,9 @@
     "creditPackages": "Gói tín dụng",
     "revenueGrowth": "Doanh thu & Tăng trưởng",
     "aiModels": "Mô hình AI",
-    "systemAnalysisModel": "Model phân tích hệ thống",
+    "systemAnalysisModel": "Mô hình phân tích hệ thống",
     "aiCosts": "Chi phí AI",
-    "aiAudit": "AI Audit",
+    "aiAudit": "Nhật ký AI",
     "payments": "Lịch sử giao dịch",
     "systemSettings": "Cấu hình hệ thống",
     "aiActionPolicies": "Chính sách AI",
@@ -50,7 +50,8 @@
     "accessControl": "Quản trị truy cập",
     "aiGovernance": "Điều phối AI",
     "trustSafety": "Tin cậy",
-    "platformConfig": "Cấu hình nền tảng"
+    "platformConfig": "Cấu hình nền tảng",
+    "aiUsageCommerce": "Hệ thống AI"
   },
   "policiesAdmin": {
     "title": "Quản lý chính sách",
@@ -983,11 +984,11 @@
       "syncRolePermissions": "Không thể đồng bộ quyền cho vai trò.",
       "deleteRole": "Không thể xóa vai trò."
     },
-    "metricRoles": "Metric Roles",
-    "metricPermissions": "Metric Permissions",
-    "metricAudit": "Metric Audit",
-    "metricUsersLabel": "Metric Users Label",
-    "metricUsersHelper": "Metric Users Helper"
+    "metricRoles": "Vai trò",
+    "metricPermissions": "Quyền",
+    "metricAudit": "Nhật ký audit",
+    "metricUsersLabel": "Admin có quyền riêng",
+    "metricUsersHelper": "Số tài khoản có quyền override hoặc quyền gán trực tiếp."
   },
   "subscription": {
     "title": "Quản lý gói",
@@ -1252,7 +1253,7 @@
     "filters": {
       "search": "Tìm kiếm",
       "searchPlaceholder": "Tên hiển thị, mã model, provider...",
-      "provider": "Provider",
+      "provider": "Nhà cung cấp",
       "allProviders": "Tất cả provider",
       "group": "Nhóm capability",
       "allGroups": "Tất cả nhóm",
@@ -1317,13 +1318,13 @@
       "previewVnd": "Quy đổi",
       "openEndedHint": "Để trống nếu version này chưa có mốc kết thúc.",
       "submit": "Lưu phiên bản giá",
-      "dataSources": "Data Sources",
-      "dataSourcesDescription": "Data Sources Description",
-      "officialReady": "Official Ready",
-      "inputUsd": "Input Usd",
-      "outputUsd": "Output Usd",
-      "formAppliedHint": "Form Applied Hint",
-      "formEmptyHint": "Form Empty Hint",
+      "dataSources": "Nguồn dữ liệu",
+      "dataSourcesDescription": "Nguồn giá chính thức dùng để đối chiếu trước khi lưu phiên bản giá.",
+      "officialReady": "Có thể lấy giá chính thức",
+      "inputUsd": "Giá input USD",
+      "outputUsd": "Giá output USD",
+      "formAppliedHint": "Giá chính thức đã được nạp vào form. Bạn có thể chỉnh lại trước khi lưu phiên bản mới.",
+      "formEmptyHint": "Nếu model được hỗ trợ, hãy bấm Lấy giá chính thức để điền nhanh hai ô giá.",
       "rate": "Rate"
     },
     "actions": {
@@ -1345,7 +1346,7 @@
       "deleteDescription": "Bạn có chắc muốn xóa model \"{{name}}\"? Nếu model đã có lịch sử sử dụng, hệ thống sẽ chuyển sang archived thay vì xóa cứng."
     },
     "form": {
-      "provider": "Provider",
+      "provider": "Nhà cung cấp",
       "group": "Nhóm capability",
       "modelCode": "Mã model",
       "displayName": "Tên hiển thị",
@@ -1393,7 +1394,7 @@
       "actorEmail": "Email người dùng",
       "plan": "Gói",
       "allPlans": "Tất cả gói",
-      "provider": "Provider",
+      "provider": "Nhà cung cấp",
       "allProviders": "Tất cả provider",
       "group": "Capability",
       "allGroups": "Tất cả capability",
@@ -1531,7 +1532,7 @@
     }
   },
   "backofficeShell": {
-    "controlPlane": "QuizMate control plane"
+    "controlPlane": "Bảng điều khiển QuizMate"
   },
   "aiAudit": {
     "title": {
@@ -1566,7 +1567,7 @@
       "open": "Bộ lọc",
       "dialogTitle": "Lọc AI audit",
       "dialogDescription": "Chọn các điều kiện để thu gọn danh sách AI audit log.",
-      "provider": "Provider",
+      "provider": "Nhà cung cấp",
       "status": "Trạng thái",
       "category": "Nhóm tính năng",
       "from": "Từ thời điểm",
@@ -1597,7 +1598,7 @@
       "tokens": "Tokens",
       "systemCost": "Chi phí (VND)",
       "model": "Model",
-      "provider": "Provider",
+      "provider": "Nhà cung cấp",
       "status": "Trạng thái request",
       "createdAt": "Thời gian tạo",
       "systemUser": "Người dùng hệ thống",
@@ -1626,7 +1627,7 @@
       "operation": "Thao tác",
       "operationLabel": "Operation:",
       "endpointLabel": "Endpoint:",
-      "error": "Error",
+      "error": "Lỗi",
       "requestPreview": "Input",
       "responsePreview": "Output",
       "noPreview": "Không có dữ liệu",

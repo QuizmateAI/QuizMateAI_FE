@@ -254,7 +254,7 @@ export default function PoliciesManagement() {
   return (
     <SuperAdminPage>
       <SuperAdminPageHeader
-        eyebrow={t('sidebarSections.trustSafety', 'Trust & Safety')}
+        eyebrow={t('sidebarSections.trustSafety', 'Tin cậy')}
         title={t('policiesAdmin.title')}
         description={t('policiesAdmin.subtitle')}
         actions={

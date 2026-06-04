@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
@@ -496,7 +496,7 @@ function AiCostManagement() {
   return (
     <SuperAdminPage className={fontClass}>
       <SuperAdminPageHeader
-        eyebrow={t('sidebarSections.aiUsageCommerce', 'Chi phí & nhật ký AI')}
+        eyebrow={t('sidebarSections.aiSystemLogs', 'Hệ thống AI')}
         title={t('aiCosts.title')}
         actions={(
           <Button

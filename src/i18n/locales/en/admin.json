@@ -50,7 +50,8 @@
     "accessControl": "Access control",
     "aiGovernance": "AI orchestration",
     "trustSafety": "Trust",
-    "platformConfig": "Platform config"
+    "platformConfig": "Platform config",
+    "aiUsageCommerce": "AI system"
   },
   "policiesAdmin": {
     "title": "Manage Policies",
@@ -953,7 +954,7 @@
     "metricRoles": "Metric Roles",
     "metricPermissions": "Metric Permissions",
     "metricAudit": "Metric Audit",
-    "metricUsersLabel": "Metric Users Label",
+    "metricUsersLabel": "Admins with overrides",
     "metricUsersHelper": "Metric Users Helper"
   },
   "subscription": {
@@ -1226,7 +1227,7 @@
       "status": "Status",
       "allStatuses": "All statuses",
       "open": "Open",
-      "dialogTitle": "Dialog Title",
+      "dialogTitle": "Filter AI models",
       "dialogDescription": "Dialog Description",
       "reset": "Reset",
       "searchAction": "Search Action"
@@ -1289,8 +1290,8 @@
       "officialReady": "Official Ready",
       "inputUsd": "Input Usd",
       "outputUsd": "Output Usd",
-      "formAppliedHint": "Form Applied Hint",
-      "formEmptyHint": "Form Empty Hint",
+      "formAppliedHint": "Official pricing has been loaded into the form. You can edit it before saving a new version.",
+      "formEmptyHint": "If this model is supported, use Sync official pricing to fill both price fields quickly.",
       "rate": "Rate"
     },
     "actions": {
@@ -1643,20 +1644,20 @@
       "ROADMAP_REVIEW": "Roadmap review"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
-      "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
-      "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
-      "requests": "Requests"
+      "title": "Top features by AI cost",
+      "subtitle": "Ranks the 8 features with the highest provider cost in the selected range.",
+      "empty": "No data for this range.",
+      "dayUnit": "day",
+      "featureCount": "features",
+      "allRange": "All",
+      "legendTop": "Top features",
+      "legendOther": "Other",
+      "legendUnit": "Unit: VND",
+      "total": "Total AI cost",
+      "columnFeature": "Feature",
+      "columnCost": "AI cost",
+      "columnShare": "Share",
+      "requests": "requests"
     }
   },
   "aiProviders": {
@@ -2026,7 +2027,7 @@
       "creditAmount": "Credit amount",
       "price": "Price (VND)",
       "bonusCredit": "Bonus credits",
-      "bonusCreditHint": "Bonus Credit Hint"
+      "bonusCreditHint": "Automatically adds 10% of the package credits."
     },
     "systemSettings": {
       "title": "Credit purchase settings",
@@ -2378,7 +2379,7 @@
       "untitled": "Untitled",
       "questionCount": "{{count}} questions",
       "shared": "Shared",
-      "unshared": "Unshared"
+      "unshared": "Removed"
     },
     "empty": {
       "title": "No community quizzes",
@@ -2386,7 +2387,7 @@
     },
     "actions": {
       "preview": "Preview",
-      "remove": "Remove"
+      "remove": "Remove from community"
     },
     "preview": {
       "description": "Detailed quiz content"
@@ -2426,7 +2427,7 @@
       "col": {
         "package": "Credit Package",
         "scope": "Scope",
-        "creditsDelivered": "Credits Delivered"
+        "creditsDelivered": "Credits delivered"
       },
       "empty": "No credit package purchases found in the selected range.",
       "totalRevenue": "Total Credit Revenue",
@@ -2487,6 +2488,16 @@
       "creditsOnPage": "Credits on page",
       "creditsReceived": "Credits received",
       "scope": "Scope"
+    },
+    "sort": {
+      "revenueDesc": "Revenue descending",
+      "revenueAsc": "Revenue ascending",
+      "purchasesDesc": "Purchases descending",
+      "purchasesAsc": "Purchases ascending",
+      "baseDesc": "Base revenue descending",
+      "baseAsc": "Base revenue ascending",
+      "marginDesc": "Margin descending",
+      "marginAsc": "Margin ascending"
     }
   },
   "pnl": {

@@ -76,17 +76,17 @@
     "nextPage": "Next Page",
     "pageSize": "Page Size",
     "formHasErrors": "Form Has Errors",
-    "delete": "Delete",
-    "deleting": "Deleting",
+    "delete": "削除",
+    "deleting": "削除中...",
     "showPassword": "Show Password",
     "hidePassword": "Hide Password",
-    "operational": "Operational",
-    "offline": "Offline",
+    "operational": "稼働中",
+    "offline": "オフライン",
     "notifications": "Notifications",
     "changeLanguage": "Change Language",
     "collapse": "Collapse",
     "expand": "Expand",
-    "loading": "Loading",
+    "loading": "読み込み中...",
     "loadFailed": "Load Failed"
   },
   "validation": {
@@ -297,12 +297,12 @@
   },
   "revenue": {
     "sparkline": {
-      "label": "Label",
-      "halfvsHalf": "Halfvs Half",
-      "empty": "Empty"
+      "label": "直近 30 日",
+      "halfvsHalf": "後半と前半の比較",
+      "empty": "データが不足しています"
     },
     "legend": {
-      "total": "Total"
+      "total": "合計"
     },
     "kpi": {
       "vsPrev": "Vs Prev",
@@ -311,14 +311,14 @@
       "credit": "Credit",
       "slot": "Slot"
     },
-    "chartEmpty": "Chart Empty"
+    "chartEmpty": "この期間のデータはありません。"
   },
   "pnl": {
     "range": {
       "allTime": "All Time",
       "now": "Now",
       "tooltip": "Tooltip",
-      "label": "Label"
+      "label": "集計期間"
     },
     "rev": {
       "subscription": "Subscription",
@@ -327,12 +327,12 @@
     },
     "cost": {
       "userPaid": "User Paid",
-      "plan": "Plan",
+      "plan": "サブスクリプションプラン",
       "system": "System"
     },
     "hero": {
-      "label": "Label",
-      "margin": "Margin",
+      "label": "AI コスト後の純利益",
+      "margin": "利益率",
       "formula": "Formula",
       "aiCost": "AI Cost",
       "profit": "Profit",
@@ -340,34 +340,34 @@
       "aiCostRatio": "AI Cost Ratio",
       "ofRevenue": "Of Revenue"
     },
-    "title": "Title",
-    "description": "Description",
+    "title": "P&L 概要",
+    "description": "選択した期間の売上、AI コスト、純利益を比較します。",
     "bucketDay": "Bucket Day",
     "bucketWeek": "Bucket Week",
     "bucketMonth": "Bucket Month",
     "kpi": {
-      "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
+      "revenue": "売上",
+      "revenueHint": "有料プラン + クレジット + グループスロット",
       "aiCharged": "AI Charged",
-      "aiChargedHint": "AI Charged Hint",
+      "aiChargedHint": "照合済みの USER_PAID + PLAN_BASED コスト",
       "aiSystem": "AI System",
-      "aiSystemHint": "AI System Hint",
+      "aiSystemHint": "RAG、OCR、モデレーションなどシステム負担分",
       "net": "Net",
-      "netHint": "Net Hint"
+      "netHint": "売上から AI コスト合計を差し引いた値"
     },
     "chart": {
       "revenueTs": "Revenue Ts",
-      "revenueTsHint": "Revenue Ts Hint",
-      "empty": "Empty",
-      "revenue": "Revenue"
+      "revenueTsHint": "選択期間内の売上推移です。",
+      "empty": "この期間のデータはありません。",
+      "revenue": "売上"
     },
     "pie": {
-      "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
+      "revenue": "売上構成",
+      "revenueHint": "支払い元別です。",
       "cost": "Cost",
-      "costHint": "Cost Hint"
+      "costHint": "ユーザー支払い分は、徴収額からプランコストを差し引いて推定します。"
     },
-    "partialError": "Partial Error"
+    "partialError": "一部データの読み込みに失敗したため、数値が不完全な可能性があります。"
   },
   "challengeDetailView": {
     "leaderRole": {
@@ -388,12 +388,12 @@
       "switchToParticipant": "Switch To Participant"
     },
     "reviewerConcern": {
-      "criticalTitle": "Critical Title",
-      "title": "Title",
-      "leaderCriticalHint": "Leader Critical Hint",
-      "leaderHint": "Leader Hint",
-      "othersHint": "Others Hint",
-      "resolve": "Resolve"
+      "criticalTitle": "???????????????????",
+      "title": "????????????????",
+      "leaderCriticalHint": "??????????????????????????????????????????????????????????????????????",
+      "leaderHint": "????????????????????????????????????????????????????????????????????????",
+      "othersHint": "??????????????????????????????????????",
+      "resolve": "????"
     },
     "participantsLabel": "Participants Label",
     "registrationLabel": "Registration Label",
@@ -477,7 +477,7 @@
   },
   "groupManage": {
     "settings": {
-      "deleteSuccess": "Delete Success"
+      "deleteSuccess": "????????????"
     }
   },
   "groupWalletTab": {

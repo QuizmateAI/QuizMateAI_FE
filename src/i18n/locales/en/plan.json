@@ -103,6 +103,7 @@
     "durationForeverShort": "Forever",
     "upgrade": "Choose plan",
     "currentCta": "Currently using",
+    "lowerTierCta": "Higher plan active",
     "teamCta": "Start team plan",
     "thanhToan": "Payment",
     "defaultPlan": "Default plan",
