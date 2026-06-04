@@ -14,6 +14,7 @@ import {
   setAccessToken,
 } from '@/utils/tokenStorage';
 import { getDeviceId } from '@/utils/deviceId';
+import { getBaseAppLanguage } from '@/utils/appSupportedLanguages';
 import { getApiBaseUrl, getWebSocketUrl as resolveWebSocketUrl } from '@/lib/runtimeConfig';
 import { installV1RewriteInterceptor } from '@/lib/v1Migration';
 
@@ -84,6 +85,20 @@ api.interceptors.request.use(
     // Clamp ở client để tránh user-facing 400 do default state hoặc UI bug.
     // Opt-out per-request bằng `skipPaginationClamp: true` trong config.
     applyPaginationBounds(config);
+
+    // Locale: BE (LocaleResolverService) đọc `?locale=` để chọn ngôn ngữ cho các
+    // response do AI sinh (study-profile knowledge/fields/consistency, ...). Phải gửi
+    // qua query param vì `Accept-Language` là forbidden header — trình duyệt không cho
+    // JS set, nên nếu không gửi gì BE sẽ fallback theo Accept-Language của trình duyệt
+    // (≠ ngôn ngữ giao diện). Lấy theo i18n hiện tại để AI trả đúng vi/en/ja.
+    try {
+      const locale = getBaseAppLanguage(i18n.language);
+      if (locale) {
+        config.params = { ...(config.params || {}), locale };
+      }
+    } catch {
+      /* no-op: thiếu locale chỉ khiến BE fallback theo Accept-Language/hồ sơ */
+    }
 
     if (config.skipAuthHeader) {
       if (config.headers) {

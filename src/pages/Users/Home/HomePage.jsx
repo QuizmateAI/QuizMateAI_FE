@@ -21,6 +21,7 @@ import {
 import { useToast } from '@/context/ToastContext';
 import { useWallet } from '@/hooks/useWallet';
 import CreditIconImage from "@/components/ui/CreditIconImage";
+import PlanUpgradeModal from "@/components/plan/PlanUpgradeModal";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { usePlanEntitlements } from '@/hooks/usePlanEntitlements';
@@ -298,6 +299,22 @@ function HomePage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
+  const [planUpgradeModalOpen, setPlanUpgradeModalOpen] = useState(false);
+
+  // Chặn tạo workspace cá nhân vượt hạn mức của gói. getByUser trả cả group nên
+  // chỉ đếm workspace INDIVIDUAL; bỏ qua khi entitlements chưa tải hoặc gói không
+  // giới hạn (maxWorkspaces = 0) để tránh chặn nhầm — BE vẫn là nguồn enforce thật.
+  const individualWorkspaceCount = workspaces.filter(
+    (ws) => !ws.workspaceKind || ws.workspaceKind === 'INDIVIDUAL'
+  ).length;
+  const maxIndividualWorkspaces = planEntitlements.maxWorkspaces;
+  const reachedWorkspaceLimit =
+    !planEntitlements.loading &&
+    maxIndividualWorkspaces > 0 &&
+    individualWorkspaceCount >= maxIndividualWorkspaces;
+  const workspaceLimitHint = reachedWorkspaceLimit
+    ? t('home.workspace.limitReached', { current: individualWorkspaceCount, max: maxIndividualWorkspaces })
+    : '';
 
 
   const baseLang = getBaseAppLanguage(i18n.language);
@@ -311,6 +328,11 @@ function HomePage() {
   // Nếu user cancel trước khi lưu step 1: đợi BE resolve rồi DELETE fire-and-forget.
   const handleOpenCreate = () => {
     if (quickCreateOpen) return;
+    // Đã đạt hạn mức gói: chặn ngay, không tạo workspace nền — mở modal nâng cấp.
+    if (reachedWorkspaceLimit) {
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
     preloadIndividualWorkspaceCreateFlow();
     quickCreateCompletedRef.current = false;
     // Fire BE create song song — không await ở đây.
@@ -569,6 +591,8 @@ function HomePage() {
           onPageChange={changePage}
           onPageSizeChange={changePageSize}
           onOpenCreate={handleOpenCreate}
+          createLimitReached={reachedWorkspaceLimit}
+          createLimitHint={workspaceLimitHint}
           onOpenEdit={handleOpenEdit}
           onOpenDelete={handleOpenDelete}
           sortMode={sortMode}
@@ -672,6 +696,14 @@ function HomePage() {
             onComplete={handleGroupCreateComplete}
           />
         </Suspense>
+      ) : null}
+      {planUpgradeModalOpen ? (
+        <PlanUpgradeModal
+          open={planUpgradeModalOpen}
+          onOpenChange={setPlanUpgradeModalOpen}
+          featureName={t('home.workspace.limitFeatureName')}
+          isDarkMode={isDarkMode}
+        />
       ) : null}
       <div className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950/90 backdrop-blur-sm' : 'bg-white/90 backdrop-blur-sm'}`}>
       {/* Header - giống NotebookLM */}

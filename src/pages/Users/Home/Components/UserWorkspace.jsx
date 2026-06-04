@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo, useMemo, useCallback } from "react";
-import { ChevronDown, Search, X } from "lucide-react";
+import { ChevronDown, Crown, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Pagination from "./Pagination";
 import ListSpinner from "@/components/ui/ListSpinner";
@@ -432,30 +432,44 @@ const WorkspaceCard = memo(function WorkspaceCard({
   );
 });
 
-function CreateWorkspaceCard({ isDarkMode, onOpenCreate, onPrefetchWorkspace }) {
+function CreateWorkspaceCard({ isDarkMode, onOpenCreate, onPrefetchWorkspace, limitReached = false, limitHint = "" }) {
   const { t } = useTranslation();
+  // Khi đạt hạn mức: vẫn cho click (onOpenCreate mở modal nâng cấp) nhưng đổi sang
+  // dạng "khóa" amber + Crown để báo người dùng cần nâng cấp trước khi bấm.
+  const prefetch = limitReached ? undefined : onPrefetchWorkspace;
 
   return (
     <button
       type="button"
       className={`flex h-56 flex-col items-center justify-center rounded-xl border border-dashed p-5 text-center transition-colors ${
-        isDarkMode
-          ? "border-slate-700 bg-slate-900 text-slate-200 hover:border-blue-500"
-          : "border-gray-300 bg-white text-gray-800 hover:border-blue-500"
+        limitReached
+          ? isDarkMode
+            ? "border-amber-700/60 bg-amber-950/10 text-slate-200 hover:border-amber-500"
+            : "border-amber-300 bg-amber-50/40 text-gray-800 hover:border-amber-400"
+          : isDarkMode
+            ? "border-slate-700 bg-slate-900 text-slate-200 hover:border-blue-500"
+            : "border-gray-300 bg-white text-gray-800 hover:border-blue-500"
       }`}
       onClick={onOpenCreate}
-      onMouseEnter={onPrefetchWorkspace}
-      onFocus={onPrefetchWorkspace}
-      onTouchStart={onPrefetchWorkspace}
+      onMouseEnter={prefetch}
+      onFocus={prefetch}
+      onTouchStart={prefetch}
+      aria-label={limitReached ? limitHint || t("home.actions.createWorkspace") : t("home.actions.createWorkspace")}
     >
       <span className={`mb-5 flex h-16 w-16 items-center justify-center rounded-full border ${
-        isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-300 text-gray-600"
+        limitReached
+          ? isDarkMode ? "border-amber-700/60 text-amber-400" : "border-amber-300 text-amber-500"
+          : isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-300 text-gray-600"
       }`}>
-        <span className="text-3xl leading-none">+</span>
+        {limitReached ? <Crown className="h-7 w-7" /> : <span className="text-3xl leading-none">+</span>}
       </span>
       <span className="text-base font-semibold">{t("home.actions.createWorkspace")}</span>
-      <span className={`mt-3 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-        {t("home.workspace.createHint")}
+      <span className={`mt-3 text-xs ${
+        limitReached
+          ? isDarkMode ? "text-amber-400" : "text-amber-600"
+          : isDarkMode ? "text-slate-400" : "text-gray-500"
+      }`}>
+        {limitReached ? limitHint : t("home.workspace.createHint")}
       </span>
     </button>
   );
@@ -470,6 +484,8 @@ function UserWorkspace({
   onPageChange,
   onPageSizeChange,
   onOpenCreate,
+  createLimitReached = false,
+  createLimitHint = "",
   onOpenEdit,
   onOpenDelete,
   onShareWorkspace,
@@ -638,6 +654,8 @@ function UserWorkspace({
               isDarkMode={isDarkMode}
               onOpenCreate={onOpenCreate}
               onPrefetchWorkspace={handlePrefetchWorkspacePage}
+              limitReached={createLimitReached}
+              limitHint={createLimitHint}
             />
 
             {sorted.map((ws) => (

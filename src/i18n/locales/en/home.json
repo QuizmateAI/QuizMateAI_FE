@@ -94,6 +94,8 @@
       "sortCreated": "Newest",
       "recentHint": "Recent study spaces stay within reach.",
       "createHint": "Start setup to get a fitting name.",
+      "limitReached": "Limit reached ({{current}}/{{max}}). Upgrade to create more.",
+      "limitFeatureName": "Create more workspaces",
       "knowledge": "Knowledge",
       "domain": "Domain",
       "sourceCount": "{{count}} sources",
