@@ -408,7 +408,7 @@ function AiModelsManagement() {
   return (
     <SuperAdminPage className={fontClass}>
       <SuperAdminPageHeader
-        eyebrow="AI Governance"
+        eyebrow={t('sidebarSections.aiGovernance', 'Điều phối AI')}
         title={t('aiModels.title')}
         description={t('aiModels.subtitle')}
         actions={(

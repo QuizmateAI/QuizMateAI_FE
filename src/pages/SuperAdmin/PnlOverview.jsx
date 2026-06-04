@@ -314,7 +314,7 @@ function PnlOverview() {
             >
               {netPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
               {netMarginRatio !== null ? formatPct(netMarginRatio) : '—'}
-              <span className="font-normal opacity-70">· {t('pnl.hero.margin', 'biên lợi nhuận')}</span>
+              <span className="font-normal opacity-70">· {t('pnl.hero.margin', 'tỷ suất lợi nhuận')}</span>
             </span>
             <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {t('pnl.hero.formula', 'Doanh thu')} {formatCompactVnd(revenueTotal)} −{' '}
@@ -347,7 +347,7 @@ function PnlOverview() {
     <SuperAdminPage className={cn(fontClass, 'gap-5 pb-10')}>
       <SuperAdminPageHeader
         eyebrow={t('sidebarSections.revenueReports', 'Báo cáo doanh thu')}
-        title={t('pnl.title', 'P&L Tổng hợp')}
+        title={t('pnl.title', 'Tổng quan lãi lỗ')}
         description={t(
           'pnl.description',
           'Doanh thu thực thu trừ toàn bộ chi phí AI (gồm cả phần hệ thống chịu từ Nhật ký AI).',

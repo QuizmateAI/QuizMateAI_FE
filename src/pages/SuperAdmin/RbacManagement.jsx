@@ -302,7 +302,7 @@ function RbacManagement() {
   return (
     <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
-        eyebrow="Access Control"
+        eyebrow={t('sidebarSections.accessControl', 'Quản trị truy cập')}
         title={t('rbac.title')}
         description={t('rbac.desc')}
       />

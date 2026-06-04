@@ -381,6 +381,7 @@ function AdminPaymentManagement() {
   return (
     <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
+        eyebrow={t('sidebarSections.commerce', 'Quản lý gói')}
         title={t('sidebar.payments')}
       />
 

@@ -357,9 +357,9 @@ function SuperAdminDashboard() {
   return (
     <SuperAdminPage className={cn(fontClass, 'gap-5 pb-10')}>
       <SuperAdminPageHeader
-        title={t('dashboard.overviewTitle', { defaultValue: 'Overview' })}
+        title={t('dashboard.overviewTitle', { defaultValue: 'Tổng quan' })}
         description={t('dashboard.description', {
-          defaultValue: 'Platform health, usage and revenue at a glance.',
+          defaultValue: 'Theo dõi sức khỏe nền tảng, mức sử dụng và doanh thu.',
         })}
         actions={(
           <div
@@ -367,7 +367,7 @@ function SuperAdminDashboard() {
               isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
             }`}
             role="tablist"
-            aria-label="Chart bucket"
+            aria-label={t('dashboard.chartBucketAria', 'Khoảng biểu đồ')}
           >
             {[
               { id: 'DAY', label: t('dashboard.chartDay', 'Theo ngày') },

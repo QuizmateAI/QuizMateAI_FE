@@ -498,7 +498,7 @@ function AiProvidersOverview() {
   return (
     <SuperAdminPage className={fontClass}>
       <SuperAdminPageHeader
-        eyebrow="AI Governance"
+        eyebrow={t('sidebarSections.aiGovernance', 'Điều phối AI')}
         title={t('aiProviders.title', { defaultValue: 'AI Providers' })}
         description={t('aiProviders.subtitle', { defaultValue: 'Overview of provider catalogs, health status, and models grouped by provider.' })}
         actions={(
@@ -632,7 +632,7 @@ function AiProvidersOverview() {
                         />
                         <MetricPill
                           icon={Coins}
-                          label={t('aiProviders.metrics.profit', { defaultValue: 'Profit' })}
+                          label={t('aiProviders.metrics.profit', { defaultValue: 'Lợi nhuận' })}
                           value={formatMoney(activeProviderCard.summary?.totalProfitVnd ?? 0)}
                           isDarkMode={isDarkMode}
                         />

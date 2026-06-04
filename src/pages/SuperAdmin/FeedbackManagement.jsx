@@ -615,7 +615,7 @@ function FeedbackManagement() {
   return (
     <SuperAdminPage className={`${fontClass} ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
       <SuperAdminPageHeader
-        eyebrow="Platform"
+        eyebrow={t('sidebarSections.platformConfig', 'Cấu hình nền tảng')}
         title={t('feedbackManagement.header.title', 'Feedback Management')}
         description={t('feedbackManagement.header.subtitle', 'Manage feedback forms and monitor response KPIs.')}
         actions={(
