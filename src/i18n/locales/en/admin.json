@@ -24,7 +24,20 @@
     "feedback": "Feedback",
     "myPermissions": "My permissions",
     "communityQuizzes": "Community Quizzes",
-    "policies": "Policies"
+    "policies": "Policies",
+    "planPurchases": "Plan Purchases",
+    "pnlOverview": "AI Net Profit",
+    "aiCostSummary": "AI Costs",
+    "aiRequestAudit": "AI Logs",
+    "feedbackSubroutes": {
+      "forms": "Feedback forms",
+      "tickets": "Feedback tickets",
+      "activity": "Response log"
+    },
+    "detail": {
+      "users": "User Detail",
+      "groups": "Group Detail"
+    }
   },
   "sidebarSections": {
     "overview": "Overview",
@@ -483,27 +496,27 @@
     },
     "overviewTitle": "Overview",
     "description": "Platform health, usage and revenue at a glance.",
-    "chartDay": "Chart Day",
-    "chartWeek": "Chart Week",
-    "chartMonth": "Chart Month",
+    "chartDay": "By day",
+    "chartWeek": "By week",
+    "chartMonth": "By month",
     "b": {
       "hero": {
-        "label": "Label"
+        "label": "Total Revenue · Last 30 Days"
       },
       "topPlans": {
-        "title": "Title",
-        "desc": "Desc",
-        "empty": "Empty"
+        "title": "Top Revenue Plans",
+        "desc": "Last 30 days · click to view buyers",
+        "empty": "No plans sold in the last 30 days."
       }
     },
     "detail": {
-      "stacked": "Stacked",
-      "stackedHint": "Stacked Hint",
-      "topBuckets": "Top Buckets",
-      "topBucketsHint": "Top Buckets Hint",
-      "bucketsCount": "Buckets Count",
-      "weekday": "Weekday",
-      "weekdayHint": "Weekday Hint"
+      "stacked": "Revenue Share by Type",
+      "stackedHint": "Proportion of each payment type in total revenue.",
+      "topBuckets": "Top Revenue Periods",
+      "topBucketsHint": "Ranking of periods with the highest revenue.",
+      "bucketsCount": "period",
+      "weekday": "Revenue by Day of Week",
+      "weekdayHint": "Cumulative revenue by day of the week."
     }
   },
   "adminManagement": {
@@ -576,25 +589,25 @@
       "expiresAt": "Expires At",
       "permanent": "Permanent"
     },
-    "deleteSuccess": "Delete Success",
-    "deleteError": "Delete Error",
+    "deleteSuccess": "Admin account deleted successfully.",
+    "deleteError": "Unable to delete admin account.",
     "deleteDialog": {
-      "confirmMismatch": "Confirm Mismatch",
-      "reasonTooShort": "Reason Too Short",
-      "title": "Title",
+      "confirmMismatch": "Confirmation username mismatch.",
+      "reasonTooShort": "Reason too short (minimum 10 characters).",
+      "title": "Delete Admin Account",
       "description": "This action will permanently remove admin account {{username}} ({{email}}).",
-      "warning": "Warning",
-      "confirmLabel": "Confirm Label",
-      "confirmHelp": "Confirm Help",
-      "reasonLabel": "Reason Label",
-      "reasonPlaceholder": "Reason Placeholder",
-      "reasonHelp": "Reason Help"
+      "warning": "Warning: This action cannot be undone!",
+      "confirmLabel": "Type username to confirm",
+      "confirmHelp": "Type exact '{{username}}' below.",
+      "reasonLabel": "Deletion Reason",
+      "reasonPlaceholder": "Enter reason for deleting this account...",
+      "reasonHelp": "This reason will be recorded in the system audit logs."
     },
-    "metricAdmins": "Metric Admins",
-    "metricStatus": "Metric Status",
-    "metricPermissions": "Metric Permissions",
-    "metricRecentActivity": "Metric Recent Activity",
-    "cardSubtitle": "Card Subtitle"
+    "metricAdmins": "Total Admins",
+    "metricStatus": "Active Admins",
+    "metricPermissions": "Permission Slots",
+    "metricRecentActivity": "7d Activity",
+    "cardSubtitle": "Provision admin accounts and manage system privileges."
   },
   "adminPayments": {
     "desc": "Look up transactions by order ID, user, workspace, or payment status.",
@@ -1431,27 +1444,27 @@
       "subCallInput": "Input",
       "subCallOutput": "Output",
       "subCallNoPreview": "No data",
-      "inputUnitUsd": "Input Unit Usd",
-      "outputUnitUsd": "Output Unit Usd",
-      "exchangeRate": "Exchange Rate",
-      "exchangeRateAt": "Exchange Rate At",
-      "inputCostUsd": "Input Cost Usd",
-      "outputCostUsd": "Output Cost Usd"
+      "inputUnitUsd": "Input Price (USD) / 1M tokens",
+      "outputUnitUsd": "Output Price (USD) / 1M tokens",
+      "exchangeRate": "USD/VND Rate",
+      "exchangeRateAt": "Rate Updated At",
+      "inputCostUsd": "Input Cost (USD)",
+      "outputCostUsd": "Output Cost (USD)"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
+      "title": "Top Features by Usage",
+      "subtitle": "Usage costs and counts broken down by feature.",
+      "empty": "No usage data available for this range.",
+      "dayUnit": "days",
+      "featureCount": "Features",
       "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
+      "legendTop": "Top Feature",
+      "legendOther": "Other",
+      "legendUnit": "Unit",
       "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
+      "columnFeature": "Feature",
+      "columnCost": "Cost",
+      "columnShare": "Share",
       "requests": "Requests"
     },
     "tokens": {
@@ -1510,10 +1523,10 @@
       "planCostHint": "Provider cost of plan features. Avg {{avg}} tokens/request",
       "errors": "Errors",
       "errorsHint": "Errored requests matching the current filters",
-      "totalRequestsHelp": "Total Requests Help",
-      "totalTokensHelp": "Total Tokens Help",
-      "systemCostHelp": "System Cost Help",
-      "planCostHelp": "Plan Cost Help"
+      "totalRequestsHelp": "Total system API and automated calls.",
+      "totalTokensHelp": "Total prompt + thought + completion tokens processed.",
+      "systemCostHelp": "Estimated system operation costs from the AI provider.",
+      "planCostHelp": "Estimated plan-based features costs from the AI provider."
     },
     "filters": {
       "title": "AI audit filters",
@@ -1915,31 +1928,31 @@
     "loading": "Loading..."
   },
   "creditPackage": {
-    "add": "Add",
-    "addTitle": "Add Title",
-    "basicInfo": "Basic Info",
-    "confirmDelete": "Confirm Delete",
-    "confirmDeleteDesc": "Confirm Delete Desc",
-    "create": "Create",
-    "createSuccess": "Create Success",
+    "add": "Add package",
+    "addTitle": "Add Credit Package",
+    "basicInfo": "Basic Information",
+    "confirmDelete": "Delete Credit Package",
+    "confirmDeleteDesc": "Are you sure you want to delete this credit package? This action cannot be undone.",
+    "create": "Create Package",
+    "createSuccess": "Credit package created successfully.",
     "delete": "Delete",
-    "deleteSuccess": "Delete Success",
-    "deleting": "Deleting",
-    "desc": "Manage the portfolio of credit packages used within the system.",
+    "deleteSuccess": "Credit package deleted successfully.",
+    "deleting": "Deleting...",
+    "desc": "Manage the portfolio of credit packages used for additional credit purchases within the system.",
     "edit": "Edit",
-    "editTitle": "Edit Title",
-    "empty": "Empty",
+    "editTitle": "Edit Credit Package",
+    "empty": "No packages found.",
     "form": {
-      "bonusCredit": "Bonus Credit",
+      "bonusCredit": "Bonus Credits",
       "creditAmount": "Credit Amount",
       "description": "Description",
-      "descriptionPlaceholder": "Description Placeholder",
+      "descriptionPlaceholder": "Short description of what the package offers...",
       "name": "Name",
-      "namePlaceholder": "Name Placeholder",
+      "namePlaceholder": "e.g. Starter, Pro, Enterprise...",
       "price": "Price"
     },
-    "formDesc": "Form Desc",
-    "nameRequired": "Name Required",
+    "formDesc": "Enter details of the new credit package.",
+    "nameRequired": "Package name is required",
     "save": "Save",
     "search": "Search",
     "stats": {
@@ -1948,7 +1961,7 @@
       "minPrice": "Min Price",
       "total": "Total"
     },
-    "submitting": "Submitting",
+    "submitting": "Saving...",
     "table": {
       "actions": "Actions",
       "bonus": "Bonus",
@@ -1958,10 +1971,10 @@
       "status": "Status"
     },
     "tableTitle": "List of credit packages",
-    "title": "Credit package management",
+    "title": "Credit Package Management",
     "toggleStatus": "Toggle Status",
-    "updateStatusSuccess": "Update Status Success",
-    "updateSuccess": "Update Success"
+    "updateStatusSuccess": "Package status updated successfully.",
+    "updateSuccess": "Package updated successfully."
   },
   "creditPackageManagement": {
     "title": "Credit Packages",
@@ -2332,92 +2345,92 @@
   },
   "communityQuizManagement": {
     "toast": {
-      "unshareSuccess": "Unshare Success"
+      "unshareSuccess": "Unshared community quiz successfully."
     },
     "header": {
-      "eyebrow": "Eyebrow",
-      "title": "Title",
-      "description": "Description",
+      "eyebrow": "Trust & Safety",
+      "title": "Community Quizzes",
+      "description": "Moderate, unshare, and inspect community shared quizzes across the platform.",
       "refresh": "Refresh"
     },
     "metrics": {
       "totalQuizzes": "Total Quizzes",
-      "totalQuizzesHelper": "Total Quizzes Helper",
+      "totalQuizzesHelper": "Quizzes currently shared to the community",
       "totalClones": "Total Clones",
-      "currentPageHelper": "Current Page Helper",
+      "currentPageHelper": "Current page stats",
       "averageRating": "Average Rating",
-      "totalRatingsHelper": "{{count}} lượt đánh giá",
+      "totalRatingsHelper": "{{count}} ratings",
       "totalComments": "Total Comments"
     },
     "filters": {
-      "searchPlaceholder": "Search Placeholder",
+      "searchPlaceholder": "Search by title, creator...",
       "allStatuses": "All Statuses"
     },
     "table": {
-      "title": "Title",
-      "description": "Description",
+      "title": "Community Quizzes",
+      "description": "Manage public quiz sharing and moderation status.",
       "quiz": "Quiz",
       "creator": "Creator",
       "status": "Status",
       "signals": "Signals",
-      "createdAt": "Created At",
+      "createdAt": "Shared At",
       "actions": "Actions",
       "untitled": "Untitled",
-      "questionCount": "{{count}} câu",
+      "questionCount": "{{count}} questions",
       "shared": "Shared",
       "unshared": "Unshared"
     },
     "empty": {
-      "title": "Title",
-      "description": "Description"
+      "title": "No community quizzes",
+      "description": "Publicly shared quizzes by users will show up here."
     },
     "actions": {
       "preview": "Preview",
       "remove": "Remove"
     },
     "preview": {
-      "description": "Description"
+      "description": "Detailed quiz content"
     },
     "removeDialog": {
-      "title": "Title",
-      "description": "Description",
-      "creatorLabel": "Creator Label",
+      "title": "Remove Community Quiz",
+      "description": "This action will unshare the quiz '{{title}}' and revert it to private. Other users will no longer be able to discover or clone it.",
+      "creatorLabel": "Creator",
       "cancel": "Cancel",
-      "confirm": "Confirm"
+      "confirm": "Confirm Removal"
     }
   },
   "planPurchases": {
-    "versionOld": "Version Old",
-    "title": "Title",
-    "sparklineLabel": "Sparkline Label",
+    "versionOld": "old",
+    "title": "Plan Purchases & Margin Report",
+    "sparklineLabel": "Paid Plan Revenue · 30 Days",
     "hideCharts": "Hide Charts",
-    "showCharts": "Show Charts",
+    "showCharts": "Show Chart Analytics",
     "chart": {
-      "versionFilter": "Version Filter",
-      "versionCurrent": "Version Current",
-      "versionAll": "Version All",
-      "versionHint": "Version Hint",
-      "revenueSplit": "Revenue Split",
-      "revenueSplitHint": "Revenue Split Hint",
+      "versionFilter": "Show Version",
+      "versionCurrent": "Active",
+      "versionAll": "All Versions",
+      "versionHint": "Includes older snapshots — table below is always complete.",
+      "revenueSplit": "Revenue Split by Plan",
+      "revenueSplitHint": "Each bar represents a plan, divided into Credit part and Base part.",
       "creditPart": "Credit Part",
       "basePart": "Base Part",
-      "margin": "Margin",
-      "marginHint": "Margin Hint",
-      "marginLabel": "Margin Label"
+      "margin": "Total Profit by Plan",
+      "marginHint": "Revenue minus AI COGS (Base fee + remaining Credit). Red = negative, green = positive.",
+      "marginLabel": "Profit"
     },
     "tab": {
-      "plans": "Plans",
-      "credits": "Credits"
+      "plans": "Subscription Plans",
+      "credits": "Credit Packages"
     },
     "credit": {
       "col": {
-        "package": "Package",
+        "package": "Credit Package",
         "scope": "Scope",
         "creditsDelivered": "Credits Delivered"
       },
-      "empty": "Empty",
-      "totalRevenue": "Total Revenue",
-      "totalCredits": "Total Credits",
+      "empty": "No credit package purchases found in the selected range.",
+      "totalRevenue": "Total Credit Revenue",
+      "totalCredits": "Total Credits Delivered",
       "totalPurchases": "Total Purchases"
     },
     "col": {
@@ -2427,51 +2440,130 @@
       "buyers": "Buyers",
       "plan": "Plan",
       "baseRevenue": "Base Revenue",
-      "aiCogs": "AI Cogs",
-      "margin": "Margin"
+      "creditPool": "Credit Pool",
+      "aiCogs": "AI COGS",
+      "margin": "Profit",
+      "marginPct": "Margin %"
     },
     "buyers": {
-      "totalRecords": "Total Records",
-      "activeOnPage": "Active On Page",
-      "pageRevenue": "Page Revenue",
+      "totalRecords": "Total records",
+      "activeOnPage": "Active on page",
+      "pageRevenue": "Page revenue",
       "email": "Email",
       "amount": "Amount",
       "status": "Status",
       "paidAt": "Paid At",
       "active": "Active",
       "expired": "Expired",
-      "versionMismatchTip": "Version Mismatch Tip",
-      "versionMatchTip": "Version Match Tip",
+      "versionMismatchTip": "User purchased an older version of this plan.",
+      "versionMatchTip": "User purchased the active version.",
       "expiresAt": "Expires At"
     },
     "versionTable": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "subtitleSuffix": "Subtitle Suffix",
-      "searchPlaceholder": "Search Placeholder",
-      "groupLabel": "Group Label",
-      "allOption": "All Option",
-      "statusLabel": "Status Label",
-      "statusCurrent": "Status Current",
-      "statusOld": "Status Old",
-      "sortLabel": "Sort Label",
-      "noMatch": "No Match",
-      "statusCurrentBadge": "Status Current Badge",
-      "totalsLabel": "Totals Label",
-      "versionsUnit": "Versions Unit"
+      "title": "Details by Version",
+      "subtitle": "Each row corresponds to a plan × version. Click ",
+      "subtitleSuffix": " to view the list of buyers.",
+      "searchPlaceholder": "Search by plan name, version...",
+      "groupLabel": "Plan group",
+      "allOption": "All",
+      "statusLabel": "Status",
+      "statusCurrent": "Active",
+      "statusOld": "Old",
+      "sortLabel": "Sort",
+      "noMatch": "No matching plans or versions found.",
+      "statusCurrentBadge": "Active",
+      "totalsLabel": "Totals",
+      "versionsUnit": "versions"
     },
-    "empty": "Empty",
-    "versionCurrentTip": "Version Current Tip",
-    "versionHistoricalTip": "Version Historical Tip",
-    "buyersTitle": "Buyers Title",
-    "buyersHint": "Buyers Hint",
-    "buyersEmpty": "Buyers Empty",
+    "empty": "No plan purchases found in the selected range.",
+    "versionCurrentTip": "Active version currently on sale",
+    "versionHistoricalTip": "Historical version no longer on sale",
+    "buyersTitle": "Plan Buyers",
+    "buyersHint": "Showing up to 50 most recent purchases.",
+    "buyersEmpty": "No one has purchased this plan in the selected range.",
     "creditBuyers": {
-      "title": "Title",
-      "hint": "Hint",
-      "creditsOnPage": "Credits On Page",
-      "creditsReceived": "Credits Received",
+      "title": "Credit Package Buyers",
+      "hint": "Showing up to 50 most recent credit purchases.",
+      "creditsOnPage": "Credits on page",
+      "creditsReceived": "Credits received",
       "scope": "Scope"
     }
+  },
+  "pnl": {
+    "title": "P&L Net Profit",
+    "description": "Total revenue minus all AI operation costs (including system-absorbed AI costs).",
+    "range": {
+      "allTime": "All time",
+      "now": "present",
+      "label": "Time Range",
+      "tooltip": "All numbers below are calculated within this range. Select a custom range to reconcile with AI costs / logs."
+    },
+    "rev": {
+      "subscription": "Subscription",
+      "credit": "Credit Purchase",
+      "slot": "Group Slot"
+    },
+    "cost": {
+      "userPaid": "User Paid AI",
+      "plan": "Plan Included AI",
+      "system": "System Absorbed"
+    },
+    "hero": {
+      "label": "Net Profit (after AI costs)",
+      "margin": "net margin",
+      "formula": "Revenue",
+      "aiCost": "Total AI Cost",
+      "profit": "Profitable",
+      "loss": "Losing",
+      "aiCostRatio": "AI Cost Ratio",
+      "ofRevenue": "of revenue"
+    },
+    "bucketDay": "Day",
+    "bucketWeek": "Week",
+    "bucketMonth": "Month",
+    "kpi": {
+      "revenue": "Revenue",
+      "revenueHint": "Sub + Credit + Slot",
+      "aiCharged": "Charged AI Cost",
+      "aiChargedHint": "USER_PAID + PLAN_BASED (matched)",
+      "aiSystem": "System AI Cost",
+      "aiSystemHint": "Absorbed system tasks (RAG, OCR, moderation…)",
+      "net": "Net Profit",
+      "netHint": "Revenue − Total AI Cost"
+    },
+    "chart": {
+      "revenueTs": "Revenue over time",
+      "revenueTsHint": "Total AI cost is displayed as a horizontal line to compare revenue against accumulated AI costs.",
+      "revenue": "Revenue",
+      "empty": "No data available for this range."
+    },
+    "pie": {
+      "revenue": "Revenue Share",
+      "revenueHint": "By payment channel.",
+      "cost": "AI Cost Share",
+      "costHint": "User Paid portion is estimated."
+    },
+    "flow": {
+      "title": "Cash Flow Map & Business Model",
+      "subtitle": "Visual breakdown of plan profit structure and system net profit.",
+      "revenueInflows": "Revenue Inflows",
+      "aiOutflows": "AI Provider Outflows",
+      "profitCalculations": "Profit Calculations",
+      "planRevenue": "Subscription Revenue",
+      "directCredit": "Direct Credit Top-up",
+      "slotRevenue": "Workspace Slots",
+      "baseRevenue": "Base Portion (Fixed)",
+      "creditPool": "Credit Pool (Allowance)",
+      "userAiCost": "User Plan AI Cost",
+      "systemAiCost": "System AI Cost",
+      "creditProfit": "Credit Profit",
+      "planProfit": "Total Plan Profit",
+      "planProfitDesc": "Base + Credit Profit",
+      "netProfit": "Final Net Profit",
+      "netProfitDesc": "Total Revenue − AI Costs",
+      "unspentCredit": "Unspent Credit (Gain)",
+      "cogsPaid": "COGS Paid to Providers"
+    },
+    "partialError": "Partial data load error, some values may not be complete."
   }
 }

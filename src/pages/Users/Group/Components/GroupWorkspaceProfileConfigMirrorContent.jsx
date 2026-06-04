@@ -92,7 +92,6 @@ const CONFIRM_ITEM_ICON = {
 function GroupWorkspaceProfileConfigMirrorContent({
   LEARNING_MODES: _LEARNING_MODES,
   accentBarClass,
-  accentPanelClass,
   analysisStatus,
   analysisToneClass,
   autoResizeTextarea,
@@ -143,7 +142,6 @@ function GroupWorkspaceProfileConfigMirrorContent({
   rules,
   saveError,
   sectionDividerClass,
-  selectedDomainOption,
   setAnalysisRetryTick,
   setDomain,
   setErrors,
@@ -180,7 +178,7 @@ function GroupWorkspaceProfileConfigMirrorContent({
         hideClose
         onEscapeKeyDown={canClose ? undefined : (event) => event.preventDefault()}
         onInteractOutside={canClose ? undefined : (event) => event.preventDefault()}
-        className={cn('flex max-h-[92vh] max-w-[1180px] flex-col overflow-hidden rounded-2xl border p-0 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.35)]', shellClass, fontClass)}
+        className={cn('grid max-h-[92vh] max-w-[1180px] grid-rows-[auto,1fr,auto] gap-0 overflow-hidden rounded-2xl border p-0 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.35)]', shellClass, fontClass)}
       >
         <DialogHeader className={cn(
           'border-b px-6 py-5 text-left sm:px-7',
@@ -574,13 +572,13 @@ function GroupWorkspaceProfileConfigMirrorContent({
                             <p className="text-sm font-medium leading-6">{knowledgeAnalysis.message}</p>
                           ) : null}
                           {knowledgeAnalysis?.advice ? (
-                            <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'opacity-85' : 'opacity-80')}>
+                            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                               {knowledgeAnalysis.advice}
                             </p>
                           ) : null}
                           {knowledgeAnalysis?.normalizedKnowledge ? (
                             <div className="mt-3">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
                                 {t('groupProfileConfig.stepTwo.analysis.interpretingLabel')}
                               </p>
                               <p className="mt-1 text-sm leading-6">{knowledgeAnalysis.normalizedKnowledge}</p>
@@ -678,21 +676,7 @@ function GroupWorkspaceProfileConfigMirrorContent({
                     </div>
                   ) : null}
 
-                  {domain ? (
-                    <div className="space-y-3">
-                      <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.selectedDomain')} <span className="text-rose-500">*</span></label>
-                      <div className={cn(
-                        'rounded-lg border px-4 py-3',
-                        accentPanelClass
-                      )}>
-                        <p className="text-sm font-semibold">{domain}</p>
-                        <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                          {selectedDomainOption?.reason
-                            || t('groupProfileConfig.stepTwo.selectedDomainHint')}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
+
 
                   {analysisStatus !== 'success' ? <FieldError message={errors.domain} /> : null}
                   </div>
@@ -827,8 +811,8 @@ function GroupWorkspaceProfileConfigMirrorContent({
                             {item.ready ? <CheckCircle2 className="h-4 w-4" /> : <Compass className="h-4 w-4" />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold uppercase tracking-[0.08em] opacity-80">{item.label}</p>
-                            <p className={cn('mt-1 text-sm leading-6', item.ready ? '' : mutedClass)}>{item.value}</p>
+                             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{item.label}</p>
+                             <p className={cn('mt-1 text-sm leading-6', item.ready ? '' : mutedClass)}>{item.value}</p>
                           </div>
                         </div>
                       ))}
@@ -842,10 +826,10 @@ function GroupWorkspaceProfileConfigMirrorContent({
         </div>
 
         <DialogFooter className={cn(
-          'relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t px-6 py-4 backdrop-blur-xl sm:px-7',
+          'relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t px-6 py-4 sm:px-7',
           isDarkMode 
-            ? 'border-slate-800 bg-gradient-to-t from-[#020817] via-[#020817]/95 to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]' 
-            : 'border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.96))] shadow-[0_-8px_28px_-18px_rgba(15,23,42,0.08)]'
+            ? 'border-slate-800 bg-[#020817] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]' 
+            : 'border-slate-200 bg-white shadow-[0_-8px_28px_-18px_rgba(15,23,42,0.08)]'
         )}>
           <div className="space-y-1">
             <div className={cn('text-xs leading-5', showProfileConfirm ? confirmMutedClass : mutedClass)}>

@@ -278,18 +278,20 @@ export function findSuperAdminNavMeta(pathname) {
   };
 }
 
-function getExtraCrumb(pathname) {
+function getExtraCrumb(pathname, t) {
   if (pathname.startsWith('/super-admin/feedbacks/')) {
     const leaf = pathname.split('/').filter(Boolean).at(-1);
-    return FEEDBACK_SUBROUTE_LABELS[leaf] || null;
+    const labelKey = `sidebar.feedbackSubroutes.${leaf}`;
+    const defaultLabel = FEEDBACK_SUBROUTE_LABELS[leaf] || null;
+    return defaultLabel ? t(labelKey, defaultLabel) : null;
   }
 
   if (pathname.startsWith('/super-admin/users/')) {
-    return DETAIL_LABELS.users;
+    return t('sidebar.detail.users', DETAIL_LABELS.users);
   }
 
   if (pathname.startsWith('/super-admin/groups/')) {
-    return DETAIL_LABELS.groups;
+    return t('sidebar.detail.groups', DETAIL_LABELS.groups);
   }
 
   return null;
@@ -299,7 +301,7 @@ export function getSuperAdminPageMeta(pathname, t) {
   const { section, item } = findSuperAdminNavMeta(pathname);
   const sectionLabel = t(section.labelKey, section.defaultLabel);
   const itemLabel = t(item.labelKey, item.defaultLabel);
-  const extraLabel = getExtraCrumb(pathname);
+  const extraLabel = getExtraCrumb(pathname, t);
   const breadcrumbs = ['Super Admin'];
 
   if (section.id !== 'overview') {

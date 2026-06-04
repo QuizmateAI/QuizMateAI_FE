@@ -613,6 +613,16 @@
         "submitFailed": "Could not mark as submitted."
       }
     },
+    "header": {
+      "groupPlan": {
+        "viewOrChange": "View / change group plan",
+        "choose": "Choose group plan",
+        "upgrade": "Upgrade group plan"
+      },
+      "planNames": {
+        "GROUP_BASE": "Basic Group Plan"
+      }
+    },
     "studio": {
       "systemDashboard": "Overview",
       "personalDashboard": "My overview",

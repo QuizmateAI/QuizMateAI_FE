@@ -24,7 +24,20 @@
     "feedback": "Phản hồi",
     "myPermissions": "Quyền của tôi",
     "communityQuizzes": "Quiz cộng đồng",
-    "policies": "Chính sách"
+    "policies": "Chính sách",
+    "planPurchases": "Báo cáo gói trả phí",
+    "pnlOverview": "Lời ròng AI",
+    "aiCostSummary": "Chi phí AI",
+    "aiRequestAudit": "Nhật ký AI",
+    "feedbackSubroutes": {
+      "forms": "Form phản hồi",
+      "tickets": "Ticket phản hồi",
+      "activity": "Nhật ký phản hồi"
+    },
+    "detail": {
+      "users": "Chi tiết người dùng",
+      "groups": "Chi tiết nhóm"
+    }
   },
   "sidebarSections": {
     "overview": "Tổng quan",
@@ -481,29 +494,29 @@
       "creditPackages": "Theo dõi các gói tín dụng đang bán và mặt bằng credit đang cung cấp cho người dùng.",
       "aiAudit": "Xem các lệnh gọi AI, model đang hoạt động và mức tiêu thụ token gần đây."
     },
-    "overviewTitle": "Overview",
-    "description": "Platform health, usage and revenue at a glance.",
-    "chartDay": "Chart Day",
-    "chartWeek": "Chart Week",
-    "chartMonth": "Chart Month",
+    "overviewTitle": "Tổng quan",
+    "description": "Sức khỏe hệ thống, mức độ sử dụng và doanh thu trong nháy mắt.",
+    "chartDay": "Theo ngày",
+    "chartWeek": "Theo tuần",
+    "chartMonth": "Theo tháng",
     "b": {
       "hero": {
-        "label": "Label"
+        "label": "Tổng doanh thu · 30 ngày gần nhất"
       },
       "topPlans": {
-        "title": "Title",
-        "desc": "Desc",
-        "empty": "Empty"
+        "title": "Top gói có doanh thu cao nhất",
+        "desc": "30 ngày gần nhất · click để xem người mua",
+        "empty": "Chưa có gói nào bán được trong 30 ngày."
       }
     },
     "detail": {
-      "stacked": "Stacked",
-      "stackedHint": "Stacked Hint",
-      "topBuckets": "Top Buckets",
-      "topBucketsHint": "Top Buckets Hint",
-      "bucketsCount": "Buckets Count",
-      "weekday": "Weekday",
-      "weekdayHint": "Weekday Hint"
+      "stacked": "Cơ cấu doanh thu theo loại",
+      "stackedHint": "Tỉ trọng từng loại payment trên tổng doanh thu.",
+      "topBuckets": "Top kỳ có doanh thu cao nhất",
+      "topBucketsHint": "Xếp hạng các kỳ có doanh thu lớn nhất.",
+      "bucketsCount": "kỳ",
+      "weekday": "Doanh thu theo ngày trong tuần",
+      "weekdayHint": "Tổng doanh thu cộng dồn theo thứ."
     }
   },
   "adminManagement": {
@@ -569,32 +582,32 @@
       "clearAll": "Bỏ tất cả",
       "grantAll": "Cấp tất cả",
       "syncWarning": "Đồng bộ sẽ biến mọi quyền đang được cấp thành quyền vĩnh viễn (mất expiresAt). Dùng tab Yêu cầu cấp quyền để duyệt quyền có thời hạn.",
-      "expired": "Expired",
-      "remainingDays": "{{count}}d left",
-      "remainingHours": "{{count}}h left",
-      "remainingMinutes": "{{count}}m left",
-      "expiresAt": "Expires At",
-      "permanent": "Permanent"
+      "expired": "Đã hết hạn",
+      "remainingDays": "Còn {{count}} ngày",
+      "remainingHours": "Còn {{count}} giờ",
+      "remainingMinutes": "Còn {{count}} phút",
+      "expiresAt": "Hết hạn lúc",
+      "permanent": "Vĩnh viễn"
     },
-    "deleteSuccess": "Delete Success",
-    "deleteError": "Delete Error",
+    "deleteSuccess": "Xóa tài khoản admin thành công.",
+    "deleteError": "Không thể xóa tài khoản admin.",
     "deleteDialog": {
-      "confirmMismatch": "Confirm Mismatch",
-      "reasonTooShort": "Reason Too Short",
-      "title": "Title",
-      "description": "This action will permanently remove admin account {{username}} ({{email}}).",
-      "warning": "Warning",
-      "confirmLabel": "Confirm Label",
-      "confirmHelp": "Confirm Help",
-      "reasonLabel": "Reason Label",
-      "reasonPlaceholder": "Reason Placeholder",
-      "reasonHelp": "Reason Help"
+      "confirmMismatch": "Chuỗi xác nhận không khớp.",
+      "reasonTooShort": "Lý do quá ngắn (tối thiểu 10 ký tự).",
+      "title": "Xóa tài khoản admin",
+      "description": "Hành động này sẽ xóa vĩnh viễn tài khoản admin {{username}} ({{email}}).",
+      "warning": "Cảnh báo: Hành động này không thể hoàn tác!",
+      "confirmLabel": "Nhập tên đăng nhập để xác nhận",
+      "confirmHelp": "Nhập chính xác '{{username}}' bên dưới.",
+      "reasonLabel": "Lý do xóa",
+      "reasonPlaceholder": "Nhập lý do xóa tài khoản này...",
+      "reasonHelp": "Lý do này sẽ được lưu vào lịch sử hệ thống (audit log)."
     },
-    "metricAdmins": "Metric Admins",
-    "metricStatus": "Metric Status",
-    "metricPermissions": "Metric Permissions",
-    "metricRecentActivity": "Metric Recent Activity",
-    "cardSubtitle": "Card Subtitle"
+    "metricAdmins": "Tổng tài khoản admin",
+    "metricStatus": "Tài khoản hoạt động",
+    "metricPermissions": "Lượt phân quyền",
+    "metricRecentActivity": "Hoạt động trong 7 ngày",
+    "cardSubtitle": "Cấp tài khoản admin mới và quản lý phân quyền hệ thống."
   },
   "adminPayments": {
     "desc": "Tra cứu giao dịch theo mã đơn, user, workspace hoặc trạng thái thanh toán.",
@@ -1245,11 +1258,11 @@
       "allGroups": "Tất cả nhóm",
       "status": "Trạng thái",
       "allStatuses": "Tất cả trạng thái",
-      "open": "Open",
-      "dialogTitle": "Dialog Title",
-      "dialogDescription": "Dialog Description",
-      "reset": "Reset",
-      "searchAction": "Search Action"
+      "open": "Mở bộ lọc",
+      "dialogTitle": "Lọc mô hình AI",
+      "dialogDescription": "Chọn các điều kiện để lọc danh sách mô hình AI.",
+      "reset": "Đặt lại",
+      "searchAction": "Tìm kiếm"
     },
     "exchangeRate": {
       "title": "Tỷ giá USD/VND hiện tại",
@@ -1427,8 +1440,8 @@
       "actualCostTokens": "Token thực tế",
       "tokenBudget": "Ngân sách token tương đương",
       "tokenMargin": "Biên token tương đương",
-      "providerCostUsd": "Provider Cost Usd",
-      "systemSubsidy": "System Subsidy"
+      "providerCostUsd": "Chi phí nhà cung cấp (USD)",
+      "systemSubsidy": "Trợ giá hệ thống"
     },
     "status": {
       "SUCCESS": "Thành công",
@@ -1464,33 +1477,33 @@
       "subCallInput": "Input",
       "subCallOutput": "Output",
       "subCallNoPreview": "Không có dữ liệu",
-      "inputUnitUsd": "Input Unit Usd",
-      "outputUnitUsd": "Output Unit Usd",
-      "exchangeRate": "Exchange Rate",
-      "exchangeRateAt": "Exchange Rate At",
-      "inputCostUsd": "Input Cost Usd",
-      "outputCostUsd": "Output Cost Usd"
+      "inputUnitUsd": "Đơn giá đầu vào (USD)",
+      "outputUnitUsd": "Đơn giá đầu ra (USD)",
+      "exchangeRate": "Tỷ giá USD/VND",
+      "exchangeRateAt": "Thời điểm cập nhật tỷ giá",
+      "inputCostUsd": "Chi phí đầu vào (USD)",
+      "outputCostUsd": "Chi phí đầu ra (USD)"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
-      "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
-      "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
-      "requests": "Requests"
+      "title": "Top tính năng sử dụng nhiều nhất",
+      "subtitle": "Thống kê chi phí theo từng tính năng",
+      "empty": "Không có dữ liệu",
+      "dayUnit": "ngày",
+      "featureCount": "Số tính năng",
+      "allRange": "Tất cả khoảng thời gian",
+      "legendTop": "Top tính năng",
+      "legendOther": "Khác",
+      "legendUnit": "Đơn vị",
+      "total": "Tổng cộng",
+      "columnFeature": "Tính năng",
+      "columnCost": "Chi phí",
+      "columnShare": "Tỷ trọng",
+      "requests": "Lượt yêu cầu"
     },
     "tokens": {
-      "input": "Input",
-      "output": "Output",
-      "total": "Total"
+      "input": "Đầu vào (Input)",
+      "output": "Đầu ra (Output)",
+      "total": "Tổng cộng"
     }
   },
   "adminLayout": {
@@ -1543,10 +1556,10 @@
       "planCostHint": "Provider cost các tính năng trong gói. Trung bình {{avg}} tokens/request",
       "errors": "Lỗi",
       "errorsHint": "Số request lỗi theo bộ lọc hiện tại",
-      "totalRequestsHelp": "Total Requests Help",
-      "totalTokensHelp": "Total Tokens Help",
-      "systemCostHelp": "System Cost Help",
-      "planCostHelp": "Plan Cost Help"
+      "totalRequestsHelp": "Tổng số lượt gọi API của hệ thống (màn hình, phân tích, etc.).",
+      "totalTokensHelp": "Tổng số token (prompt + completion) đã tiêu hao.",
+      "systemCostHelp": "Chi phí ước tính từ nhà cung cấp cho các tác vụ hệ thống.",
+      "planCostHelp": "Chi phí ước tính từ nhà cung cấp cho các tính năng theo gói."
     },
     "filters": {
       "title": "Bộ lọc AI audit",
@@ -1573,7 +1586,7 @@
       "taskId": "Task ID",
       "email": "Email",
       "featureKey": "Feature Key",
-      "clear": "Clear"
+      "clear": "Xóa lọc"
     },
     "table": {
       "title": "Danh sách AI request",
@@ -1609,8 +1622,8 @@
       "inputTokens": "Input",
       "thoughtTokens": "Thought",
       "outputTokens": "Output",
-      "totalTokens": "Total",
-      "operation": "Operation",
+      "totalTokens": "Tổng cộng",
+      "operation": "Thao tác",
       "operationLabel": "Operation:",
       "endpointLabel": "Endpoint:",
       "error": "Error",
@@ -1663,20 +1676,20 @@
       "ROADMAP_REVIEW": "Đánh giá roadmap"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
-      "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
-      "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
-      "requests": "Requests"
+      "title": "Top tính năng sử dụng nhiều nhất",
+      "subtitle": "Thống kê số lượng cuộc gọi và token theo tính năng.",
+      "empty": "Không có dữ liệu",
+      "dayUnit": "ngày",
+      "featureCount": "Số tính năng",
+      "allRange": "Tất cả khoảng thời gian",
+      "legendTop": "Top tính năng",
+      "legendOther": "Khác",
+      "legendUnit": "Đơn vị",
+      "total": "Tổng cộng",
+      "columnFeature": "Tính năng",
+      "columnCost": "Chi phí",
+      "columnShare": "Tỷ trọng",
+      "requests": "Lượt yêu cầu"
     }
   },
   "aiProviders": {
@@ -1780,9 +1793,9 @@
       "createdAt": "Ngày tạo",
       "actions": "Hành động"
     },
-    "untitledGroup": "Untitled group",
-    "noDescription": "No description yet",
-    "unknownLeader": "No leader assigned"
+    "untitledGroup": "Nhóm chưa đặt tên",
+    "noDescription": "Chưa có mô tả",
+    "unknownLeader": "Chưa chỉ định trưởng nhóm"
   },
   "userPage": {
     "title": "Quản lý người dùng",
@@ -1997,7 +2010,7 @@
       "creditAmount": "Số lượng credit",
       "price": "Giá (VND)",
       "bonusCredit": "Credit thưởng",
-      "bonusCreditHint": "Bonus Credit Hint"
+      "bonusCreditHint": "Credit được tặng thêm bên cạnh số credit cơ bản của gói."
     },
     "systemSettings": {
       "title": "Cấu hình mua credit",
@@ -2316,195 +2329,274 @@
   },
   "communityQuizManagement": {
     "toast": {
-      "unshareSuccess": "Unshare Success"
+      "unshareSuccess": "Hủy chia sẻ bài quiz cộng đồng thành công."
     },
     "header": {
-      "eyebrow": "Eyebrow",
-      "title": "Title",
-      "description": "Description",
-      "refresh": "Refresh"
+      "eyebrow": "Tin cậy & An toàn",
+      "title": "Quản lý bài quiz cộng đồng",
+      "description": "Kiểm duyệt, gỡ bỏ hoặc quản lý trạng thái chia sẻ của các bài quiz trong cộng đồng.",
+      "refresh": "Làm mới"
     },
     "metrics": {
-      "totalQuizzes": "Total Quizzes",
-      "totalQuizzesHelper": "Total Quizzes Helper",
-      "totalClones": "Total Clones",
-      "currentPageHelper": "Current Page Helper",
-      "averageRating": "Average Rating",
+      "totalQuizzes": "Tổng số quiz",
+      "totalQuizzesHelper": "Tổng số bài quiz cộng đồng hiện tại",
+      "totalClones": "Tổng lượt chép",
+      "currentPageHelper": "Thống kê của trang hiện tại",
+      "averageRating": "Điểm đánh giá trung bình",
       "totalRatingsHelper": "{{count}} lượt đánh giá",
-      "totalComments": "Total Comments"
+      "totalComments": "Tổng số bình luận"
     },
     "filters": {
-      "searchPlaceholder": "Search Placeholder",
-      "allStatuses": "All Statuses"
+      "searchPlaceholder": "Tìm theo tiêu đề, tác giả...",
+      "allStatuses": "Tất cả trạng thái"
     },
     "table": {
-      "title": "Title",
-      "description": "Description",
-      "quiz": "Quiz",
-      "creator": "Creator",
-      "status": "Status",
-      "signals": "Signals",
-      "createdAt": "Created At",
-      "actions": "Actions",
-      "untitled": "Untitled",
+      "title": "Danh sách bài quiz cộng đồng",
+      "description": "Quản lý quyền chia sẻ công khai và kiểm duyệt.",
+      "quiz": "Bài Quiz",
+      "creator": "Tác giả",
+      "status": "Trạng thái",
+      "signals": "Chỉ số",
+      "createdAt": "Ngày chia sẻ",
+      "actions": "Thao tác",
+      "untitled": "Không có tiêu đề",
       "questionCount": "{{count}} câu",
-      "shared": "Shared",
-      "unshared": "Unshared"
+      "shared": "Đang chia sẻ",
+      "unshared": "Đã hủy chia sẻ"
     },
     "empty": {
-      "title": "Title",
-      "description": "Description"
+      "title": "Chưa có bài quiz cộng đồng nào",
+      "description": "Các bài quiz do người dùng chia sẻ công khai sẽ xuất hiện tại đây."
     },
     "actions": {
-      "preview": "Preview",
-      "remove": "Remove"
+      "preview": "Xem trước",
+      "remove": "Gỡ bỏ"
     },
     "preview": {
-      "description": "Description"
+      "description": "Nội dung chi tiết của bài quiz"
     },
     "removeDialog": {
-      "title": "Title",
-      "description": "Description",
-      "creatorLabel": "Creator Label",
-      "cancel": "Cancel",
-      "confirm": "Confirm"
+      "title": "Gỡ bỏ bài quiz cộng đồng",
+      "description": "Hành động này sẽ hủy chia sẻ công khai bài quiz '{{title}}' và đưa nó về trạng thái riêng tư. Người dùng khác sẽ không thể tìm thấy hoặc sao chép bài quiz này nữa.",
+      "creatorLabel": "Tác giả",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận gỡ bỏ"
     }
   },
   "planPurchases": {
-    "versionOld": "Version Old",
-    "title": "Title",
-    "sparklineLabel": "Sparkline Label",
-    "hideCharts": "Hide Charts",
-    "showCharts": "Show Charts",
+    "versionOld": "cũ",
+    "title": "Báo cáo gói & biên lợi nhuận",
+    "sparklineLabel": "Doanh thu gói trả phí · 30 ngày",
+    "hideCharts": "Ẩn biểu đồ",
+    "showCharts": "Xem biểu đồ thống kê",
     "chart": {
-      "versionFilter": "Version Filter",
-      "versionCurrent": "Version Current",
-      "versionAll": "Version All",
-      "versionHint": "Version Hint",
-      "revenueSplit": "Revenue Split",
-      "revenueSplitHint": "Revenue Split Hint",
-      "creditPart": "Credit Part",
-      "basePart": "Base Part",
-      "margin": "Margin",
-      "marginHint": "Margin Hint",
-      "marginLabel": "Margin Label"
+      "versionFilter": "Phiên bản hiển thị",
+      "versionCurrent": "Đang bán",
+      "versionAll": "Tất cả version",
+      "versionHint": "Bao gồm cả phiên bản cũ — bảng bên dưới luôn hiển thị đầy đủ.",
+      "revenueSplit": "Cơ cấu doanh thu theo gói",
+      "revenueSplitHint": "Mỗi cột biểu thị 1 gói; phân tách theo phần Credit và phần Gốc.",
+      "creditPart": "Tiền credit",
+      "basePart": "Tiền gốc",
+      "margin": "Tổng lợi nhuận theo gói",
+      "marginHint": "Doanh thu trừ chi phí AI (Tiền gốc + phần Credit còn lại). Đỏ = lỗ/âm, xanh = lời/dương.",
+      "marginLabel": "Lợi nhuận"
     },
     "tab": {
-      "plans": "Plans",
-      "credits": "Credits"
+      "plans": "Gói trả phí",
+      "credits": "Mua credit"
     },
     "credit": {
       "col": {
-        "package": "Package",
-        "scope": "Scope",
-        "creditsDelivered": "Credits Delivered"
+        "package": "Gói credit",
+        "scope": "Phạm vi",
+        "creditsDelivered": "Credit đã giao"
       },
-      "empty": "Empty",
-      "totalRevenue": "Total Revenue",
-      "totalCredits": "Total Credits",
-      "totalPurchases": "Total Purchases"
+      "empty": "Không có giao dịch mua credit trong khoảng thời gian đã chọn.",
+      "totalRevenue": "Tổng doanh thu credit",
+      "totalCredits": "Tổng credit đã giao",
+      "totalPurchases": "Tổng lượt mua"
     },
     "col": {
-      "purchases": "Purchases",
-      "payers": "Payers",
-      "revenue": "Revenue",
-      "buyers": "Buyers",
-      "plan": "Plan",
-      "baseRevenue": "Base Revenue",
-      "aiCogs": "AI Cogs",
-      "margin": "Margin"
+      "purchases": "Lượt mua",
+      "payers": "Người mua",
+      "revenue": "Doanh thu",
+      "buyers": "Người mua",
+      "plan": "Gói",
+      "baseRevenue": "Tiền gốc",
+      "creditPool": "Quỹ Credit",
+      "aiCogs": "Phí AI (COGS)",
+      "margin": "Lợi nhuận",
+      "marginPct": "Tỷ suất LN"
     },
     "buyers": {
-      "totalRecords": "Total Records",
-      "activeOnPage": "Active On Page",
-      "pageRevenue": "Page Revenue",
+      "totalRecords": "Tổng số bản ghi",
+      "activeOnPage": "Đang hoạt động trên trang",
+      "pageRevenue": "Doanh thu trang",
       "email": "Email",
-      "amount": "Amount",
-      "status": "Status",
-      "paidAt": "Paid At",
-      "active": "Active",
-      "expired": "Expired",
-      "versionMismatchTip": "Version Mismatch Tip",
-      "versionMatchTip": "Version Match Tip",
-      "expiresAt": "Expires At"
+      "amount": "Số tiền",
+      "status": "Trạng thái",
+      "paidAt": "Ngày thanh toán",
+      "active": "Hoạt động",
+      "expired": "Hết hạn",
+      "versionMismatchTip": "Người dùng đã mua phiên bản cũ của gói này.",
+      "versionMatchTip": "Người dùng mua phiên bản hiện tại đang bán.",
+      "expiresAt": "Hết hạn lúc"
     },
     "versionTable": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "subtitleSuffix": "Subtitle Suffix",
-      "searchPlaceholder": "Search Placeholder",
-      "groupLabel": "Group Label",
-      "allOption": "All Option",
-      "statusLabel": "Status Label",
-      "statusCurrent": "Status Current",
-      "statusOld": "Status Old",
-      "sortLabel": "Sort Label",
-      "noMatch": "No Match",
-      "statusCurrentBadge": "Status Current Badge",
-      "totalsLabel": "Totals Label",
-      "versionsUnit": "Versions Unit"
+      "title": "Chi tiết theo phiên bản",
+      "subtitle": "Mỗi dòng tương ứng với một gói × phiên bản. Bấm ",
+      "subtitleSuffix": " để xem danh sách người dùng đã mua.",
+      "searchPlaceholder": "Tìm theo tên gói, phiên bản...",
+      "groupLabel": "Nhóm gói",
+      "allOption": "Tất cả",
+      "statusLabel": "Trạng thái",
+      "statusCurrent": "Đang bán",
+      "statusOld": "Cũ",
+      "sortLabel": "Sắp xếp",
+      "noMatch": "Không tìm thấy gói/phiên bản nào khớp.",
+      "statusCurrentBadge": "Đang bán",
+      "totalsLabel": "Tổng số",
+      "versionsUnit": "phiên bản"
     },
-    "empty": "Empty",
-    "versionCurrentTip": "Version Current Tip",
-    "versionHistoricalTip": "Version Historical Tip",
-    "buyersTitle": "Buyers Title",
-    "buyersHint": "Buyers Hint",
-    "buyersEmpty": "Buyers Empty",
+    "empty": "Không có dữ liệu mua gói trong khoảng thời gian đã chọn.",
+    "versionCurrentTip": "Phiên bản hiện tại đang bán",
+    "versionHistoricalTip": "Phiên bản cũ đã ngưng bán",
+    "buyersTitle": "Danh sách người mua",
+    "buyersHint": "Hiển thị tối đa 50 giao dịch gần nhất.",
+    "buyersEmpty": "Chưa có ai mua gói này trong khoảng thời gian đã chọn.",
     "creditBuyers": {
-      "title": "Title",
-      "hint": "Hint",
-      "creditsOnPage": "Credits On Page",
-      "creditsReceived": "Credits Received",
-      "scope": "Scope"
+      "title": "Danh sách người mua credit",
+      "hint": "Hiển thị tối đa 50 giao dịch mua credit gần nhất.",
+      "creditsOnPage": "Số credit trên trang",
+      "creditsReceived": "Số credit nhận được",
+      "scope": "Phạm vi"
     }
   },
   "creditPackage": {
-    "add": "Add",
-    "addTitle": "Add Title",
-    "basicInfo": "Basic Info",
-    "confirmDelete": "Confirm Delete",
-    "confirmDeleteDesc": "Confirm Delete Desc",
-    "create": "Create",
-    "createSuccess": "Create Success",
-    "delete": "Delete",
-    "deleteSuccess": "Delete Success",
-    "deleting": "Deleting",
-    "desc": "Manage the portfolio of credit packages used within the system.",
-    "edit": "Edit",
-    "editTitle": "Edit Title",
-    "empty": "Empty",
+    "add": "Thêm gói",
+    "addTitle": "Thêm gói tín dụng",
+    "basicInfo": "Thông tin cơ bản",
+    "confirmDelete": "Xác nhận xóa",
+    "confirmDeleteDesc": "Bạn có chắc chắn muốn xóa gói tín dụng này? Hành động này không thể hoàn tác.",
+    "create": "Tạo mới",
+    "createSuccess": "Tạo gói tín dụng thành công.",
+    "delete": "Xóa",
+    "deleteSuccess": "Xóa gói tín dụng thành công.",
+    "deleting": "Đang xóa...",
+    "desc": "Quản lý các gói tín dụng dùng để mua thêm credit trong hệ thống.",
+    "edit": "Chỉnh sửa",
+    "editTitle": "Chỉnh sửa gói tín dụng",
+    "empty": "Không tìm thấy gói tín dụng nào.",
     "form": {
-      "bonusCredit": "Bonus Credit",
-      "creditAmount": "Credit Amount",
-      "description": "Description",
-      "descriptionPlaceholder": "Description Placeholder",
-      "name": "Name",
-      "namePlaceholder": "Name Placeholder",
-      "price": "Price"
+      "bonusCredit": "Credit thưởng",
+      "creditAmount": "Số lượng credit",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Mô tả ngắn về quyền lợi của gói...",
+      "name": "Tên gói",
+      "namePlaceholder": "VD: Starter, Pro, Enterprise...",
+      "price": "Giá (VND)"
     },
-    "formDesc": "Form Desc",
-    "nameRequired": "Name Required",
-    "save": "Save",
-    "search": "Search",
+    "formDesc": "Nhập thông tin gói tín dụng mới.",
+    "nameRequired": "Tên gói là bắt buộc",
+    "save": "Lưu",
+    "search": "Tìm kiếm",
     "stats": {
-      "active": "Active",
-      "maxCredit": "Max Credit",
-      "minPrice": "Min Price",
-      "total": "Total"
+      "active": "Đang hoạt động",
+      "maxCredit": "Credit cao nhất",
+      "minPrice": "Giá thấp nhất",
+      "total": "Tổng số"
     },
-    "submitting": "Submitting",
+    "submitting": "Đang lưu...",
     "table": {
-      "actions": "Actions",
-      "bonus": "Bonus",
+      "actions": "Hành động",
+      "bonus": "Thưởng",
       "credit": "Credit",
-      "name": "Name",
-      "price": "Price",
-      "status": "Status"
+      "name": "Tên gói",
+      "price": "Giá",
+      "status": "Trạng thái"
     },
-    "tableTitle": "List of credit packages",
-    "title": "Credit package management",
-    "toggleStatus": "Toggle Status",
-    "updateStatusSuccess": "Update Status Success",
-    "updateSuccess": "Update Success"
+    "tableTitle": "Danh sách gói tín dụng",
+    "title": "Quản lý gói tín dụng",
+    "toggleStatus": "Đổi trạng thái",
+    "updateStatusSuccess": "Cập nhật trạng thái thành công.",
+    "updateSuccess": "Cập nhật gói tín dụng thành công."
+  },
+  "pnl": {
+    "title": "P&L Tổng hợp",
+    "description": "Doanh thu thực thu trừ toàn bộ chi phí AI (gồm cả phần hệ thống chịu từ Nhật ký AI).",
+    "range": {
+      "allTime": "Tất cả thời gian",
+      "now": "hiện tại",
+      "label": "Khoảng tính",
+      "tooltip": "Mọi con số dưới đây tính trên đúng khoảng này. Đổi range hoặc preset để đối chiếu với trang Chi phí AI / Nhật ký AI (mặc định all-time)."
+    },
+    "rev": {
+      "subscription": "Gói trả phí",
+      "credit": "Mua credit",
+      "slot": "Slot nhóm"
+    },
+    "cost": {
+      "userPaid": "User trả từng lần",
+      "plan": "Gói thuê bao",
+      "system": "Hệ thống chịu"
+    },
+    "hero": {
+      "label": "Lời ròng (sau chi phí AI)",
+      "margin": "biên lợi nhuận",
+      "formula": "Doanh thu",
+      "aiCost": "Chi phí AI tổng",
+      "profit": "Có lời",
+      "loss": "Đang lỗ",
+      "aiCostRatio": "Chi phí AI",
+      "ofRevenue": "doanh thu"
+    },
+    "bucketDay": "Ngày",
+    "bucketWeek": "Tuần",
+    "bucketMonth": "Tháng",
+    "kpi": {
+      "revenue": "Doanh thu",
+      "revenueHint": "Sub + Credit + Slot",
+      "aiCharged": "Chi phí AI có thu phí",
+      "aiChargedHint": "USER_PAID + PLAN_BASED (matched)",
+      "aiSystem": "Chi phí AI hệ thống",
+      "aiSystemHint": "Phần hệ thống tự chịu (RAG, OCR, moderation…)",
+      "net": "Lời ròng",
+      "netHint": "Doanh thu − tổng chi phí AI"
+    },
+    "chart": {
+      "revenueTs": "Doanh thu theo thời gian",
+      "revenueTsHint": "Chi phí AI tổng được biểu thị bằng đường ngang để bạn so sánh doanh thu mỗi kỳ với chi phí AI cộng dồn.",
+      "revenue": "Doanh thu",
+      "empty": "Không có dữ liệu cho khoảng này."
+    },
+    "pie": {
+      "revenue": "Cơ cấu doanh thu",
+      "revenueHint": "Theo nguồn thanh toán.",
+      "cost": "Cơ cấu chi phí AI",
+      "costHint": "Phần user trả = ước lượng (đã thu − chi phí gói)."
+    },
+    "flow": {
+      "title": "Bản đồ dòng tiền & Mô hình lợi nhuận",
+      "subtitle": "Giải thích trực quan cách tính lợi nhuận từ Gói (Base + Credit) và Lời ròng hệ thống.",
+      "revenueInflows": "Dòng doanh thu (Inflows)",
+      "aiOutflows": "Chi phí AI phát sinh (Outflows)",
+      "profitCalculations": "Tính toán lợi nhuận",
+      "planRevenue": "Doanh thu gói",
+      "directCredit": "Nạp Credit lẻ",
+      "slotRevenue": "Slot nhóm",
+      "baseRevenue": "Tiền gốc cố định",
+      "creditPool": "Quỹ Credit cấp",
+      "userAiCost": "Chi phí AI từ user",
+      "systemAiCost": "Chi phí AI hệ thống",
+      "creditProfit": "Lợi nhuận Credit",
+      "planProfit": "Tổng lợi nhuận Gói",
+      "planProfitDesc": "bằng Tiền gốc + LN Credit",
+      "netProfit": "Lời ròng thực tế",
+      "netProfitDesc": "Doanh thu − tổng chi phí AI",
+      "unspentCredit": "Unspent Credit (Lời)",
+      "cogsPaid": "COGS AI chi trả"
+    },
+    "partialError": "Một phần dữ liệu lỗi tải, các con số có thể chưa đầy đủ."
   }
 }

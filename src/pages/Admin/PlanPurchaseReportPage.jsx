@@ -45,7 +45,7 @@ import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { getCreditPurchaseBuyers, getCreditPurchaseSummary, getPlanPurchaseBuyers, getPlanPurchaseSummary } from '@/api/ManagementSystemAPI';
 import AdminPagination from '@/pages/Admin/components/AdminPagination';
-import DateRangeChips from '@/pages/SuperAdmin/Components/DateRangeChips';
+import DateRangeChips, { formatDateTimeLocal } from '@/pages/SuperAdmin/Components/DateRangeChips';
 import {
   SuperAdminPage,
   SuperAdminPageHeader,
@@ -86,8 +86,11 @@ function getCreditRevenue(row) {
   return revenue - base;
 }
 
+// Lợi nhuận gói thực tế = Doanh thu - Chi phí AI của user
 function getEffectiveMargin(row) {
-  return getCreditRevenue(row) - (Number(row?.aiProviderCostVnd) || 0);
+  const revenue = Number(row?.revenueVnd) || 0;
+  const aiCost = Number(row?.aiProviderCostVnd) || 0;
+  return revenue - aiCost;
 }
 
 function ChartCard({ isDarkMode, title, subtitle, summary, children }) {
@@ -227,8 +230,15 @@ export default function PlanPurchaseReportPage() {
   const { showError } = useToast();
   const queryClient = useQueryClient();
 
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [from, setFrom] = useState(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    return formatDateTimeLocal(start);
+  });
+  const [to, setTo] = useState(() => {
+    const now = new Date();
+    return formatDateTimeLocal(now);
+  });
 
   const [buyerPlanId, setBuyerPlanId] = useState(null);
   const [buyerPlanLabel, setBuyerPlanLabel] = useState('');
@@ -355,9 +365,8 @@ export default function PlanPurchaseReportPage() {
         const revenue = Number(row?.revenueVnd) || 0;
         const cogs = Number(row?.aiProviderCostVnd) || 0;
         const margin = getEffectiveMargin(row);
-        // Tỷ lệ lời chia trên pool credit (không phải tổng doanh thu) vì base là lời cố định.
-        const creditDenominator = getCreditRevenue(row);
-        const marginPct = creditDenominator > 0 ? (margin / creditDenominator) * 100 : 0;
+        // Tỷ suất lợi nhuận = Lợi nhuận thực / Tổng doanh thu
+        const marginPct = revenue > 0 ? (margin / revenue) * 100 : 0;
         const baseName = row?.planCode || row?.planDisplayName || `#${row?.planCatalogId}`;
         // Nếu filter 'current' thì không cần đuôi version (mỗi family chỉ 1 row).
         const showVersionSuffix = chartVersionFilter !== 'current'
@@ -469,7 +478,6 @@ export default function PlanPurchaseReportPage() {
 
   // Biên/credit tổng được derive từ filteredTotals (revenue − base − cogs) để khớp với cell formula.
   const filteredTotalsCredit = filteredTotals.revenueVnd - filteredTotals.baseRevenueVnd;
-  const filteredTotalsMargin = filteredTotalsCredit - filteredTotals.aiProviderCostVnd;
 
   const buyersPageData = buyersQuery.data ?? {};
   const buyers = Array.isArray(buyersPageData.content) ? buyersPageData.content : [];
@@ -539,11 +547,15 @@ export default function PlanPurchaseReportPage() {
         )}
       />
 
-      <div
-        className={`mb-6 flex flex-wrap items-center gap-2 rounded-2xl border p-4 ${
-          isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
-        }`}
-      >
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+        <SuperAdminTabs
+          tabs={[
+            { id: 'plans', label: t('planPurchases.tab.plans', 'Gói trả phí') },
+            { id: 'credits', label: t('planPurchases.tab.credits', 'Mua credit') },
+          ]}
+          active={activeTab}
+          onChange={setActiveTab}
+        />
         <DateRangeChips value={{ from, to }} onChange={handleDateRange} isDarkMode={isDarkMode} />
       </div>
 
@@ -653,10 +665,10 @@ export default function PlanPurchaseReportPage() {
 
               <ChartCard
                 isDarkMode={isDarkMode}
-                title={t('planPurchases.chart.margin', 'Lợi nhuận biên theo gói')}
-                subtitle={t('planPurchases.chart.marginHint', 'Credit trừ COGS AI (lời còn lại từ pool credit). Đỏ = âm, xanh = dương.')}
-                summary={`${formatVnd(chartTotals.margin)} / ${formatVnd(chartTotals.credit)} credit (${
-                  chartTotals.credit > 0 ? ((chartTotals.margin / chartTotals.credit) * 100).toFixed(1) : '0.0'
+                title={t('planPurchases.chart.margin', 'Lợi nhuận theo gói')}
+                subtitle={t('planPurchases.chart.marginHint', 'Doanh thu trừ chi phí AI (Tiền gốc + phần Credit còn lại). Đỏ = âm, xanh = dương.')}
+                summary={`${formatVnd(chartTotals.margin)} / ${formatVnd(chartTotals.revenue)} doanh thu (${
+                  chartTotals.revenue > 0 ? ((chartTotals.margin / chartTotals.revenue) * 100).toFixed(1) : '0.0'
                 }%)`}
               >
                 <ResponsiveContainer width="100%" height={260}>
@@ -686,7 +698,7 @@ export default function PlanPurchaseReportPage() {
                       formatter={(value, name, props) => {
                         if (name === 'margin') {
                           const pct = props?.payload?.marginPct ?? 0;
-                          return [`${formatVnd(value)} (${pct.toFixed(1)}%)`, t('planPurchases.chart.marginLabel', 'Biên')];
+                          return [`${formatVnd(value)} (${pct.toFixed(1)}%)`, t('planPurchases.chart.marginLabel', 'Lợi nhuận')];
                         }
                         return [formatVnd(value), name];
                       }}
@@ -703,17 +715,7 @@ export default function PlanPurchaseReportPage() {
             </div>
           ) : null}
 
-          {/* Tabs: Plans (default) | Credits — Q4 báo cáo gói credit */}
-          <div className="mb-3">
-            <SuperAdminTabs
-              tabs={[
-                { id: 'plans', label: t('planPurchases.tab.plans', 'Gói trả phí') },
-                { id: 'credits', label: t('planPurchases.tab.credits', 'Mua credit') },
-              ]}
-              active={activeTab}
-              onChange={setActiveTab}
-            />
-          </div>
+          {/* Tabs were moved to the top toolbar for a more compact layout */}
 
           {activeTab === 'credits' ? (
             <div
@@ -816,11 +818,11 @@ export default function PlanPurchaseReportPage() {
               isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
             }`}
           >
-            <div className={`flex flex-col gap-1 border-b px-5 py-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+            <div className={`flex flex-col gap-0.5 border-b px-4 py-2.5 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
               <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                 {t('planPurchases.versionTable.title', 'Chi tiết theo phiên bản')}
               </h3>
-              <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+              <p className={`text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
                 {t('planPurchases.versionTable.subtitle', 'Mỗi dòng tương ứng một gói × version. Bấm ')}
                 <strong className={isDarkMode ? 'text-ocean-300' : 'text-ocean-600'}>
                   {t('planPurchases.col.buyers', 'Người mua')}
@@ -829,8 +831,8 @@ export default function PlanPurchaseReportPage() {
               </p>
             </div>
 
-            <div className={`flex flex-wrap items-center gap-2 px-5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/60'}`}>
-              <div className={`flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border px-3 py-2 ${
+            <div className={`flex flex-wrap items-center gap-2 px-4 py-2 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/60'}`}>
+              <div className={`flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border px-3 py-1.5 ${
                 isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
               }`}>
                 <Search className={`h-4 w-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
@@ -845,7 +847,7 @@ export default function PlanPurchaseReportPage() {
                 />
               </div>
 
-              <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 ${
+              <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 ${
                 isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
               }`}>
                 <Layers className={`h-4 w-4 ${isDarkMode ? 'text-ocean-300' : 'text-ocean-500'}`} />
@@ -866,7 +868,7 @@ export default function PlanPurchaseReportPage() {
                 </select>
               </div>
 
-              <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 ${
+              <div className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 ${
                 isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
               }`}>
                 <BadgeCheck className={`h-4 w-4 ${isDarkMode ? 'text-ocean-300' : 'text-ocean-500'}`} />
@@ -886,7 +888,7 @@ export default function PlanPurchaseReportPage() {
                 </select>
               </div>
 
-              <div className={`ml-auto inline-flex items-center gap-2 rounded-xl border px-3 py-2 ${
+              <div className={`ml-auto inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 ${
                 isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'
               }`}>
                 <ArrowUpDown className={`h-4 w-4 ${isDarkMode ? 'text-ocean-300' : 'text-ocean-500'}`} />
@@ -912,20 +914,21 @@ export default function PlanPurchaseReportPage() {
             <Table>
               <TableHeader>
                 <TableRow className={isDarkMode ? 'border-slate-800 hover:bg-slate-900' : ''}>
-                  <TableHead className="w-[28%]">{t('planPurchases.col.plan', 'Gói')}</TableHead>
-                  <TableHead className="text-right">{t('planPurchases.col.purchases', 'Lượt mua')}</TableHead>
-                  <TableHead className="text-right">{t('planPurchases.col.payers', 'Người trả')}</TableHead>
-                  <TableHead className="text-right">{t('planPurchases.col.baseRevenue', 'Tiền gốc')}</TableHead>
-                  <TableHead className="text-right">{t('planPurchases.col.revenue', 'Doanh thu')}</TableHead>
-                  <TableHead className="text-right">{t('planPurchases.col.aiCogs', 'COGS AI')}</TableHead>
-                  <TableHead className="text-right">{t('planPurchases.col.margin', 'Biên ước lượng')}</TableHead>
-                  <TableHead className="w-[120px] text-right">{t('planPurchases.col.buyers', 'Chi tiết')}</TableHead>
+                  <TableHead className="w-[20%]">{t('planPurchases.col.plan', 'Gói')}</TableHead>
+                  <TableHead className="text-right w-[8%]">{t('planPurchases.col.purchases', 'Lượt mua')}</TableHead>
+                  <TableHead className="text-right w-[8%]">{t('planPurchases.col.payers', 'Người trả')}</TableHead>
+                  <TableHead className="text-right w-[11%]">{t('planPurchases.col.revenue', 'Doanh thu')}</TableHead>
+                  <TableHead className="text-right w-[11%]">{t('planPurchases.col.baseRevenue', 'Tiền gốc')}</TableHead>
+                  <TableHead className="text-right w-[11%]">{t('planPurchases.col.creditPool', 'Quỹ Credit')}</TableHead>
+                  <TableHead className="text-right w-[11%]">{t('planPurchases.col.aiCogs', 'Phí AI (COGS)')}</TableHead>
+                  <TableHead className="text-right w-[11%]">{t('planPurchases.col.margin', 'Lợi nhuận')}</TableHead>
+                  <TableHead className="w-[100px] text-right">{t('planPurchases.col.buyers', 'Chi tiết')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pagedPlans.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className={`text-center py-10 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                    <TableCell colSpan={9} className={`text-center py-10 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
                       {plans.length === 0
                         ? t('planPurchases.empty', 'Không có giao dịch gói trong khoảng đã chọn.')
                         : t('planPurchases.versionTable.noMatch', 'Không có gói nào khớp với bộ lọc hiện tại.')}
@@ -936,7 +939,8 @@ export default function PlanPurchaseReportPage() {
                     const margin = getEffectiveMargin(row);
                     const marginNeg = margin < 0;
                     const credit = getCreditRevenue(row);
-                    const marginPct = credit > 0 ? (margin / credit) * 100 : null;
+                    const revenue = Number(row?.revenueVnd) || 0;
+                    const marginPct = revenue > 0 ? (margin / revenue) * 100 : null;
                     const isCurrent = row?.planIsCurrent !== false;
                     const initials = getPlanInitials(row?.planCode, row?.planDisplayName);
                     const accent = getPlanFamilyAccent(row?.planCode);
@@ -945,7 +949,7 @@ export default function PlanPurchaseReportPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-[11px] font-extrabold tracking-wide text-white shadow-sm`}
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${accent} text-[10px] font-extrabold tracking-wide text-white shadow-sm`}
                               aria-hidden
                             >
                               {initials}
@@ -994,8 +998,9 @@ export default function PlanPurchaseReportPage() {
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-medium">{Number(row.purchaseCount || 0).toLocaleString('vi-VN')}</TableCell>
                         <TableCell className="text-right tabular-nums">{Number(row.distinctPayerCount || 0).toLocaleString('vi-VN')}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatVnd(row.baseRevenueVnd)}</TableCell>
                         <TableCell className={`text-right tabular-nums font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{formatVnd(row.revenueVnd)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatVnd(row.baseRevenueVnd)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatVnd(credit)}</TableCell>
                         <TableCell className={`text-right tabular-nums ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>{formatVnd(row.aiProviderCostVnd)}</TableCell>
                         <TableCell className="text-right">
                           <div className={`tabular-nums font-semibold ${
@@ -1034,45 +1039,51 @@ export default function PlanPurchaseReportPage() {
                   })
                 )}
                 {filteredPlans.length > 0 ? (
-                  <TableRow className={`${
-                    isDarkMode ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-50'
-                  } font-semibold`}>
-                    <TableCell>
-                      <div className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
-                        isDarkMode ? 'text-slate-300' : 'text-slate-600'
-                      }`}>
-                        {t('planPurchases.versionTable.totalsLabel', 'Tổng cộng')}
-                        {' — '}
-                        {filteredPlans.length}
-                        {' '}
-                        {t('planPurchases.versionTable.versionsUnit', 'phiên bản')}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{filteredTotals.purchaseCount.toLocaleString('vi-VN')}</TableCell>
-                    <TableCell className="text-right tabular-nums">{filteredTotals.distinctPayerCount.toLocaleString('vi-VN')}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatVnd(filteredTotals.baseRevenueVnd)}</TableCell>
-                    <TableCell className={`text-right tabular-nums font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{formatVnd(filteredTotals.revenueVnd)}</TableCell>
-                    <TableCell className={`text-right tabular-nums ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>{formatVnd(filteredTotals.aiProviderCostVnd)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className={`tabular-nums font-bold ${
-                        filteredTotalsMargin < 0
-                          ? 'text-rose-600 dark:text-rose-400'
-                          : 'text-emerald-700 dark:text-emerald-300'
-                      }`}>
-                        {formatVnd(filteredTotalsMargin)}
-                      </div>
-                      {filteredTotalsCredit > 0 ? (
-                        <div className={`text-[11px] tabular-nums ${
-                          filteredTotalsMargin < 0
-                            ? (isDarkMode ? 'text-rose-400/80' : 'text-rose-500/80')
-                            : (isDarkMode ? 'text-emerald-400/80' : 'text-emerald-600/80')
-                        }`}>
-                          {((filteredTotalsMargin / filteredTotalsCredit) * 100).toFixed(2)}%
-                        </div>
-                      ) : null}
-                    </TableCell>
-                    <TableCell />
-                  </TableRow>
+                  (() => {
+                    const filteredTotalsTotalProfit = filteredTotals.revenueVnd - filteredTotals.aiProviderCostVnd;
+                    return (
+                      <TableRow className={`${
+                        isDarkMode ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-50'
+                      } font-semibold`}>
+                        <TableCell>
+                          <div className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
+                            isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                          }`}>
+                            {t('planPurchases.versionTable.totalsLabel', 'Tổng cộng')}
+                            {' — '}
+                            {filteredPlans.length}
+                            {' '}
+                            {t('planPurchases.versionTable.versionsUnit', 'phiên bản')}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{filteredTotals.purchaseCount.toLocaleString('vi-VN')}</TableCell>
+                        <TableCell className="text-right tabular-nums">{filteredTotals.distinctPayerCount.toLocaleString('vi-VN')}</TableCell>
+                        <TableCell className={`text-right tabular-nums font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{formatVnd(filteredTotals.revenueVnd)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatVnd(filteredTotals.baseRevenueVnd)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatVnd(filteredTotalsCredit)}</TableCell>
+                        <TableCell className={`text-right tabular-nums ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>{formatVnd(filteredTotals.aiProviderCostVnd)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className={`tabular-nums font-bold ${
+                            filteredTotalsTotalProfit < 0
+                              ? 'text-rose-600 dark:text-rose-400'
+                              : 'text-emerald-700 dark:text-emerald-300'
+                          }`}>
+                            {formatVnd(filteredTotalsTotalProfit)}
+                          </div>
+                          {filteredTotals.revenueVnd > 0 ? (
+                            <div className={`text-[11px] tabular-nums ${
+                              filteredTotalsTotalProfit < 0
+                                ? (isDarkMode ? 'text-rose-400/80' : 'text-rose-500/80')
+                                : (isDarkMode ? 'text-emerald-400/80' : 'text-emerald-600/80')
+                            }`}>
+                              {((filteredTotalsTotalProfit / filteredTotals.revenueVnd) * 100).toFixed(2)}%
+                            </div>
+                          ) : null}
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    );
+                  })()
                 ) : null}
               </TableBody>
             </Table>

@@ -139,7 +139,7 @@ function refreshAccessToken() {
       // explicitly because the shared `api` instance is in v1-mode and this bare axios call
       // would otherwise be the one legacy call left in the FE.
       `${baseURL}/v1/auth/refresh`,
-      {},
+      null,
       {
         headers: {
           'Content-Type': 'application/json',

@@ -766,8 +766,8 @@ function IndividualWorkspaceProfileConfigDialog({
 
         <div
           className={cn(
-            'sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t px-5 py-4 backdrop-blur sm:px-7',
-            isDarkMode ? 'border-slate-800 bg-[#020817]/90' : 'border-slate-200 bg-white/90'
+            'sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t px-5 py-4 sm:px-7',
+            isDarkMode ? 'border-slate-800 bg-[#020817] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]' : 'border-slate-200 bg-white shadow-[0_-8px_28px_-18px_rgba(15,23,42,0.08)]'
           )}
         >
           <div className="space-y-1">

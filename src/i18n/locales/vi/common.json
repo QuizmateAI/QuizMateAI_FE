@@ -72,22 +72,22 @@
       "vnpaySuccessMessage": "Thanh toán thành công",
       "vnpayFailedMessage": "Thanh toán thất bại (mã: {{code}})"
     },
-    "previousPage": "Previous Page",
-    "nextPage": "Next Page",
-    "pageSize": "Page Size",
-    "formHasErrors": "Form Has Errors",
-    "delete": "Delete",
-    "deleting": "Deleting",
-    "showPassword": "Show Password",
-    "hidePassword": "Hide Password",
-    "operational": "Operational",
-    "offline": "Offline",
-    "notifications": "Notifications",
-    "changeLanguage": "Change Language",
-    "collapse": "Collapse",
-    "expand": "Expand",
-    "loading": "Loading",
-    "loadFailed": "Load Failed"
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "pageSize": "Kích thước trang",
+    "formHasErrors": "Biểu mẫu có lỗi",
+    "delete": "Xóa",
+    "deleting": "Đang xóa...",
+    "showPassword": "Hiển thị mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "operational": "Hoạt động ổn định",
+    "offline": "Mất kết nối",
+    "notifications": "Thông báo",
+    "changeLanguage": "Thay đổi ngôn ngữ",
+    "collapse": "Thu gọn",
+    "expand": "Mở rộng",
+    "loading": "Đang tải...",
+    "loadFailed": "Tải thất bại"
   },
   "validation": {
     "fullnameRequired": "Họ và tên không được để trống",
@@ -287,87 +287,98 @@
     }
   },
   "passwordStrength": {
-    "weak": "Weak",
-    "medium": "Medium",
-    "good": "Good",
-    "strong": "Strong"
+    "weak": "Yếu",
+    "medium": "Trung bình",
+    "good": "Khá",
+    "strong": "Mạnh"
   },
   "sidebarSections": {
-    "aiUsageCommerce": "AI Usage Commerce"
+    "aiUsageCommerce": "Sử dụng & Thương mại AI"
   },
   "revenue": {
     "sparkline": {
-      "label": "Label",
-      "halfvsHalf": "Halfvs Half",
-      "empty": "Empty"
+      "label": "Nhãn",
+      "halfvsHalf": "Nửa này nửa kia",
+      "empty": "Trống"
     },
     "legend": {
-      "total": "Total"
+      "total": "Tổng",
+      "userPlan": "Gói cá nhân",
+      "workspacePlan": "Gói nhóm",
+      "userCredit": "Credit cá nhân",
+      "workspaceCredit": "Credit nhóm",
+      "workspaceSlot": "Slot nhóm"
     },
     "kpi": {
-      "vsPrev": "Vs Prev",
-      "txCount": "Tx Count",
-      "subscription": "Subscription",
-      "credit": "Credit",
-      "slot": "Slot"
+      "vsPrev": "so với kỳ trước",
+      "txCount": "giao dịch",
+      "subscription": "Gói đăng ký",
+      "credit": "Mua thêm Credit",
+      "slot": "Slot nhóm"
     },
-    "chartEmpty": "Chart Empty"
+    "tab": {
+      "overview": "Tổng quan",
+      "subscription": "Gói đăng ký",
+      "credit": "Ví Credit",
+      "slots": "Slot nhóm"
+    },
+    "chartEmpty": "Không có dữ liệu cho khoảng này."
   },
   "pnl": {
     "range": {
-      "allTime": "All Time",
-      "now": "Now",
-      "tooltip": "Tooltip",
-      "label": "Label"
+      "allTime": "Tất cả thời gian",
+      "now": "Hiện tại",
+      "tooltip": "Chú giải công cụ",
+      "label": "Nhãn"
     },
     "rev": {
-      "subscription": "Subscription",
-      "credit": "Credit",
-      "slot": "Slot"
+      "subscription": "Gói đăng ký",
+      "credit": "Ví Credit",
+      "slot": "Slot nhóm"
     },
     "cost": {
-      "userPaid": "User Paid",
-      "plan": "Plan",
-      "system": "System"
+      "userPaid": "Người dùng trả",
+      "plan": "Theo gói",
+      "system": "Hệ thống chi trả"
     },
     "hero": {
-      "label": "Label",
-      "margin": "Margin",
-      "formula": "Formula",
-      "aiCost": "AI Cost",
-      "profit": "Profit",
-      "loss": "Loss",
-      "aiCostRatio": "AI Cost Ratio",
-      "ofRevenue": "Of Revenue"
+      "label": "Nhãn",
+      "margin": "Biên lợi nhuận",
+      "formula": "Công thức",
+      "aiCost": "Chi phí AI",
+      "profit": "Lợi nhuận ròng",
+      "loss": "Lỗ ròng",
+      "aiCostRatio": "Tỷ lệ chi phí AI",
+      "ofRevenue": "trong doanh thu"
     },
-    "title": "Title",
-    "description": "Description",
-    "bucketDay": "Bucket Day",
-    "bucketWeek": "Bucket Week",
-    "bucketMonth": "Bucket Month",
+    "title": "Tiêu đề",
+    "description": "Mô tả",
+    "bucketDay": "Theo ngày",
+    "bucketWeek": "Theo tuần",
+    "bucketMonth": "Theo tháng",
     "kpi": {
-      "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
-      "aiCharged": "AI Charged",
-      "aiChargedHint": "AI Charged Hint",
-      "aiSystem": "AI System",
-      "aiSystemHint": "AI System Hint",
-      "net": "Net",
-      "netHint": "Net Hint"
+      "revenue": "Doanh thu",
+      "revenueHint": "Tổng doanh thu từ các nguồn gói, nạp credit và slot.",
+      "aiCharged": "Khách trả phí AI",
+      "aiChargedHint": "Chi phí AI thực tế đã trừ vào credit của người dùng/nhóm.",
+      "aiSystem": "Hệ thống bù lỗ",
+      "aiSystemHint": "Chi phí AI hệ thống tự chịu đối với các tác vụ không thu phí.",
+      "net": "Lời ròng",
+      "netHint": "Lợi nhuận ròng sau khi lấy tổng doanh thu trừ đi chi phí AI khách hàng đã dùng."
     },
     "chart": {
-      "revenueTs": "Revenue Ts",
-      "revenueTsHint": "Revenue Ts Hint",
-      "empty": "Empty",
-      "revenue": "Revenue"
+      "revenueTs": "Xu hướng doanh thu & chi phí",
+      "revenueTsHint": "Biểu đồ theo thời gian của doanh thu so với chi phí AI.",
+      "empty": "Không có dữ liệu",
+      "revenue": "Doanh thu"
     },
     "pie": {
-      "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
-      "cost": "Cost",
-      "costHint": "Cost Hint"
+      "revenue": "Phân bổ doanh thu",
+      "revenueHint": "Tỉ trọng các nguồn doanh thu",
+      "cost": "Cơ cấu chi phí AI",
+      "costHint": "Tỉ trọng các khoản chi phí AI hệ thống phải gánh"
     },
-    "partialError": "Partial Error"
+    "partialError": "Lỗi tải một số dữ liệu"
   },
   "challengeDetailView": {
     "leaderRole": {
