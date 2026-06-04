@@ -159,13 +159,7 @@ const GROUP_WORKSPACE_VALID_SECTIONS = [
   'showcase',
 ];
 
-const GROUP_SECTIONS_REQUIRE_MATERIALS = new Set([
-  'roadmap',
-  'quiz',
-  'flashcard',
-  'mockTest',
-  'challenge',
-]);
+
 
 // Query params bound to a sub-view inside a section (quiz detail, challenge detail,
 // challenge draft editor, ...). When the user switches section we must drop them,
@@ -1067,26 +1061,7 @@ function GroupWorkspacePage() {
     : 'bg-[linear-gradient(180deg,#fffaf0_0%,#f4fbf7_46%,#eef6ff_100%)] text-slate-900';
   const resolveUiErrorMessage = useCallback((error) => getErrorMessage(t, error), [t]);
 
-  useEffect(() => {
-    if (isMember) return;
-    const hasEnoughSourceStateToEnforce = hasCheckedInitialSources || hasMaterialsFromProfile;
-    if (!hasEnoughSourceStateToEnforce) return;
-    if (hasUploadedMaterials) return;
-    if (!GROUP_SECTIONS_REQUIRE_MATERIALS.has(activeSection)) return;
 
-    setActiveSection('documents');
-    setActiveView(null);
-    showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
-  }, [
-    activeSection,
-    hasCheckedInitialSources,
-    hasMaterialsFromProfile,
-    hasUploadedMaterials,
-    isMember,
-    setActiveSection,
-    showInfo,
-    t,
-  ]);
 
   const handleGroupBuyCreditPrimary = useCallback(() => {
     setGroupBuyCreditModalOpen(false);
@@ -2835,15 +2810,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (!isMember && GROUP_SECTIONS_REQUIRE_MATERIALS.has(actionKey) && !hasUploadedMaterials) {
-      showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
-      setActiveSection('documents');
-      setActiveView(null);
-      if (canUploadSource) {
-        setUploadDialogOpen(true);
-      }
-      return;
-    }
+
 
     // Plan-gated actions
     if (actionKey === 'questionStats' && !planEntitlements.hasWorkspaceAnalytics) {
@@ -2918,15 +2885,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (!isMember && GROUP_SECTIONS_REQUIRE_MATERIALS.has(parentId) && !hasUploadedMaterials) {
-      showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
-      setActiveSection('documents');
-      setActiveView(null);
-      if (canUploadSource) {
-        setUploadDialogOpen(true);
-      }
-      return;
-    }
+
 
     if (activeSection === 'roadmap' && parentId !== 'roadmap') {
       skipNextRoadmapCanonicalizeRef.current = true;

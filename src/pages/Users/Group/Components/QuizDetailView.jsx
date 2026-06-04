@@ -1026,16 +1026,7 @@ function QuizDetailView({
               <span className="text-sm">{t("workspace.quiz.publish", "Publish")}</span>
             </Button>
           )}
-          {_contextType === "GROUP" && canAssignQuizAudience && String(currentStatus || "").toUpperCase() === "ACTIVE" && !challengeSnapshotReviewMode && !fairPlayRestricts && (
-            <Button
-              variant="outline"
-              className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-600 text-slate-100" : ""}`}
-              onClick={openAudienceDialog}
-            >
-              <Users className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.quiz.distribution", "Distribution")}</span>
-            </Button>
-          )}
+
           {_contextType === "GROUP" && canManageAssignment && String(currentStatus || "").toUpperCase() === "ACTIVE" && !challengeSnapshotReviewMode && !fairPlayRestricts && (
             <Button
               className="rounded-full h-9 px-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
@@ -1112,7 +1103,7 @@ function QuizDetailView({
                           isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
                         }`}
                       >
-                        {t("workspace.quiz.detail.stepDistribute", "3 · Distribute")}
+                        {t("workspace.quiz.detail.stepDistribute", "3 · Assign")}
                       </span>
                     </>
                   )}
