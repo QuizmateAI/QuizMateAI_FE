@@ -480,6 +480,7 @@
         "prelearning": "事前学習",
         "questionStats": "統計"
       },
+      "outputs": "作成された出力",
       "noOutputs": "出力はまだありません。",
       "accessHistory": "アクセス履歴",
       "noHistory": "最近のアクティビティはありません。",
@@ -2595,6 +2596,10 @@
       "clearSelection": "クリア",
       "selectedBadge": "選択済み",
       "deleteSelected": "選択を削除",
+      "deleteSelectedTitle": "選択したソースを削除",
+      "deleteSelectedHint": "選択した {{count}} 件のソースをこのワークスペースから削除します。この操作は取り消せません。",
+      "deleteSelectedConfirm": "削除",
+      "deleteSelectedDeleting": "削除中...",
       "shareSelected": "選択を共有",
       "shareSource": "ソースを共有",
       "selectSource": "ソースを選択",

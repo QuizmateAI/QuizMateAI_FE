@@ -1,13 +1,13 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Bell, ChevronRight, Globe, KeyRound, Moon, Sun } from 'lucide-react';
+import { ChevronRight, Globe, KeyRound, Moon, Sun } from 'lucide-react';
 import SuperAdminSidebar from './Components/SuperAdminSidebar';
 import SuperAdminChangePasswordDialog from './Components/SuperAdminChangePasswordDialog';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 import { getSuperAdminPageMeta } from './Components/superAdminNavigation';
-import { cycleAppLanguage, getBaseAppLanguage } from '@/utils/appSupportedLanguages';
+import { cycleAppLanguage, getBaseAppLanguage, appLanguageShortLabel } from '@/utils/appSupportedLanguages';
 
 function SuperAdminLayoutContent() {
   const location = useLocation();
@@ -75,21 +75,15 @@ function SuperAdminLayoutContent() {
 
               <button
                 type="button"
-                className="sa-pill h-10 w-10 justify-center p-0 transition-colors hover:border-slate-300 hover:text-slate-900 dark:hover:border-slate-600 dark:hover:text-white"
-                title={t('common.notifications', 'Notifications')}
-                aria-label={t('common.notifications', 'Notifications')}
-              >
-                <Bell className="h-4 w-4" />
-              </button>
-
-              <button
-                type="button"
                 onClick={toggleLanguage}
-                className="sa-pill h-10 w-10 justify-center p-0 transition-colors hover:border-slate-300 hover:text-slate-900 dark:hover:border-slate-600 dark:hover:text-white"
+                className="sa-pill h-10 px-3 justify-center gap-1.5 transition-colors hover:border-slate-300 hover:text-slate-900 dark:hover:border-slate-600 dark:hover:text-white"
                 title={t('common.changeLanguage', 'Change language')}
                 aria-label={t('common.changeLanguage', 'Change language')}
               >
                 <Globe className="h-4 w-4" />
+                <span className="font-semibold text-[11px] tracking-wide">
+                  {appLanguageShortLabel(currentLang)}
+                </span>
               </button>
 
               <button

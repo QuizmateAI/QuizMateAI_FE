@@ -36,7 +36,7 @@ import {
   SuperAdminPageHeader,
   SuperAdminPanel,
 } from './Components/SuperAdminSurface';
-import DateRangeChips from './Components/DateRangeChips';
+import DateRangeChips, { formatDateTimeLocal } from './Components/DateRangeChips';
 
 const COLOR_REVENUE = '#10b981';
 const COLOR_COST_USER_PAID = '#3b82f6';
@@ -200,14 +200,241 @@ function PieCard({ title, subtitle, summary, data, isDarkMode, emptyText }) {
   );
 }
 
+function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, t }) {
+  const subscriptionRev = num(revenueTotals?.userPlanVnd) + num(revenueTotals?.workspacePlanVnd);
+  const creditRev = num(revenueTotals?.userCreditVnd) + num(revenueTotals?.workspaceCreditVnd);
+  const slotRev = num(revenueTotals?.workspaceSlotVnd);
+  
+  const revenueTotal = subscriptionRev + creditRev + slotRev;
+  const totalCost = aiCostUserPlan + aiCostSystem;
+  const netVnd = revenueTotal - totalCost;
+  
+  const planProfit = subscriptionRev + creditRev - aiCostUserPlan;
+
+  return (
+    <div
+      className={cn(
+        "rounded-3xl border p-6 shadow-sm transition-all duration-300",
+        isDarkMode 
+          ? "border-slate-800 bg-slate-900/60 backdrop-blur-xl" 
+          : "border-slate-200 bg-white/80 backdrop-blur-xl"
+      )}
+    >
+      <div className="mb-6">
+        <h3 className={cn("text-base font-bold tracking-tight", isDarkMode ? "text-slate-100" : "text-slate-900")}>
+          {t('pnl.flow.title', 'Bản đồ dòng tiền & Mô hình lợi nhuận')}
+        </h3>
+        <p className={cn("text-xs mt-0.5", isDarkMode ? "text-slate-500" : "text-slate-500")}>
+          {t('pnl.flow.subtitle', 'Giải thích trực quan cách tính lợi nhuận từ Gói (Base + Credit) và Lời ròng hệ thống.')}
+        </p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3 relative">
+        {/* Column 1: Inflows */}
+        <div className="flex flex-col gap-4">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            {t('pnl.flow.revenueInflows', '1. Dòng doanh thu (Inflows)')}
+          </div>
+          
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {t('pnl.flow.planRevenue', 'Doanh thu gói')}
+              </div>
+              <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
+                {t('pnl.flow.baseRevenue', 'Bao gồm Tiền gốc & Credit')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-emerald-300" : "text-emerald-600")}>
+              {formatVnd(subscriptionRev)}
+            </div>
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                {t('pnl.flow.directCredit', 'Nạp Credit lẻ')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-amber-500" : "text-amber-600")}>
+              {formatVnd(creditRev)}
+            </div>
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                {t('pnl.flow.slotRevenue', 'Slot nhóm')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-purple-400" : "text-purple-600")}>
+              {formatVnd(slotRev)}
+            </div>
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border-2 border-dashed p-4 flex items-center justify-between",
+            isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-100/60"
+          )}>
+            <div className="text-xs font-bold text-slate-500 uppercase">{t('pnl.kpi.revenue', 'Tổng doanh thu')}</div>
+            <div className={cn("text-lg font-black tabular-nums", isDarkMode ? "text-white" : "text-slate-900")}>
+              {formatVnd(revenueTotal)}
+            </div>
+          </div>
+        </div>
+
+        {/* Column 2: Outflows */}
+        <div className="flex flex-col gap-4">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            {t('pnl.flow.aiOutflows', '2. Chi phí AI phát sinh (Outflows)')}
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                {t('pnl.flow.userAiCost', 'Chi phí AI từ user')}
+              </div>
+              <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
+                {t('pnl.flow.cogsPaid', 'COGS AI trả bên thứ ba')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-blue-300" : "text-blue-600")}>
+              {formatVnd(aiCostUserPlan)}
+            </div>
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+                {t('pnl.flow.systemAiCost', 'AI hệ thống tự chịu')}
+              </div>
+              <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
+                {t('pnl.kpi.aiSystemHint', 'RAG, gợi ý, OCR...')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-orange-300" : "text-orange-600")}>
+              {formatVnd(aiCostSystem)}
+            </div>
+          </div>
+
+          {/* Spacer block to align with Column 1 slots height */}
+          <div className="hidden md:block h-[100px]" />
+
+          <div className={cn(
+            "rounded-2xl border-2 border-dashed p-4 flex items-center justify-between",
+            isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-100/60"
+          )}>
+            <div className="text-xs font-bold text-slate-500 uppercase">{t('pnl.hero.aiCost', 'Tổng chi phí AI')}</div>
+            <div className={cn("text-lg font-black tabular-nums", isDarkMode ? "text-rose-400" : "text-rose-600")}>
+              {formatVnd(totalCost)}
+            </div>
+          </div>
+        </div>
+
+        {/* Column 3: Profits */}
+        <div className="flex flex-col gap-4">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            {t('pnl.flow.profitCalculations', '3. Kết quả Lợi nhuận')}
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] bg-gradient-to-br transition-all hover:scale-[1.02]",
+            isDarkMode 
+              ? "from-slate-950/70 to-slate-900/40 border-indigo-500/20" 
+              : "from-indigo-50/20 to-indigo-100/10 border-indigo-100"
+          )}>
+            <div>
+              <div className="text-[11px] font-bold text-indigo-500 dark:text-indigo-400">
+                {t('pnl.flow.planProfit', 'Tổng lợi nhuận Gói')}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">
+                {t('pnl.flow.planProfitDesc', 'bằng Tiền gốc + LN Credit')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", planProfit >= 0 ? "text-indigo-600 dark:text-indigo-300" : "text-rose-500")}>
+              {formatVnd(planProfit)}
+            </div>
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500">
+                {t('pnl.flow.creditProfit', 'Lợi nhuận Credit')}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
+                Quỹ Credit − Phí AI user
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", (creditRev - aiCostUserPlan) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+              {formatVnd(creditRev - aiCostUserPlan)}
+            </div>
+          </div>
+
+          {/* Spacer block */}
+          <div className="hidden md:block h-[100px]" />
+
+          <div className={cn(
+            "rounded-2xl p-4 flex items-center justify-between shadow-lg bg-gradient-to-br",
+            netVnd >= 0
+              ? "from-emerald-500 to-teal-600 text-white"
+              : "from-rose-500 to-pink-600 text-white"
+          )}>
+            <div>
+              <div className="text-[10px] font-extrabold uppercase tracking-widest opacity-85">
+                {t('pnl.flow.netProfit', 'LỜI RÒNG CUỐI CÙNG')}
+              </div>
+              <div className="text-[9px] opacity-75">
+                {t('pnl.flow.netProfitDesc', 'Doanh thu − tổng chi phí AI')}
+              </div>
+            </div>
+            <div className="text-xl font-black tabular-nums">
+              {formatVnd(netVnd)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PnlOverview() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [bucket, setBucket] = useState('DAY');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [from, setFrom] = useState(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    return formatDateTimeLocal(start);
+  });
+  const [to, setTo] = useState(() => {
+    const now = new Date();
+    return formatDateTimeLocal(now);
+  });
 
   // Empty from/to → undefined → BE coi như all-time, đồng nhất default với
   // trang Chi phí AI và Nhật ký AI (cùng dataset → 4 trang đối chiếu trực tiếp).
@@ -419,6 +646,14 @@ function PnlOverview() {
       ) : (
         <>
           {Hero}
+
+          <CashFlowMap
+            revenueTotals={revenueTotals}
+            aiCostUserPlan={aiCostUserPlan}
+            aiCostSystem={aiCostSystem}
+            isDarkMode={isDarkMode}
+            t={t}
+          />
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard

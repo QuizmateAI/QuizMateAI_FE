@@ -297,21 +297,32 @@
   },
   "revenue": {
     "sparkline": {
-      "label": "Last 30 days",
-      "halfvsHalf": "second half vs first half",
-      "empty": "Not enough data"
+      "label": "Label",
+      "halfvsHalf": "Half vs Half",
+      "empty": "Empty"
     },
     "legend": {
-      "total": "Total"
+      "total": "Total",
+      "userPlan": "Individual Plan",
+      "workspacePlan": "Group Plan",
+      "userCredit": "Individual Credit",
+      "workspaceCredit": "Group Credit",
+      "workspaceSlot": "Group Slot"
     },
     "kpi": {
-      "vsPrev": "Vs Prev",
-      "txCount": "Tx Count",
+      "vsPrev": "vs previous period",
+      "txCount": "transactions",
       "subscription": "Subscription",
       "credit": "Credit",
-      "slot": "Slot"
+      "slot": "Group Slot"
     },
-    "chartEmpty": "No data for this range."
+    "tab": {
+      "overview": "Overview",
+      "subscription": "Subscription",
+      "credit": "Credit",
+      "slots": "Group Slots"
+    },
+    "chartEmpty": "No data for this period."
   },
   "pnl": {
     "range": {

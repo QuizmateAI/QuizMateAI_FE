@@ -72,22 +72,22 @@
       "vnpaySuccessMessage": "Thanh toán thành công",
       "vnpayFailedMessage": "Thanh toán thất bại (mã: {{code}})"
     },
-    "previousPage": "Previous Page",
-    "nextPage": "Next Page",
-    "pageSize": "Page Size",
-    "formHasErrors": "Form Has Errors",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "pageSize": "Kích thước trang",
+    "formHasErrors": "Biểu mẫu có lỗi",
     "delete": "Xóa",
     "deleting": "Đang xóa...",
-    "showPassword": "Show Password",
-    "hidePassword": "Hide Password",
-    "operational": "Đang vận hành",
+    "showPassword": "Hiển thị mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "operational": "Hoạt động ổn định",
     "offline": "Mất kết nối",
-    "notifications": "Notifications",
-    "changeLanguage": "Change Language",
-    "collapse": "Collapse",
-    "expand": "Expand",
+    "notifications": "Thông báo",
+    "changeLanguage": "Thay đổi ngôn ngữ",
+    "collapse": "Thu gọn",
+    "expand": "Mở rộng",
     "loading": "Đang tải...",
-    "loadFailed": "Load Failed"
+    "loadFailed": "Tải thất bại"
   },
   "validation": {
     "fullnameRequired": "Họ và tên không được để trống",
@@ -287,87 +287,98 @@
     }
   },
   "passwordStrength": {
-    "weak": "Weak",
-    "medium": "Medium",
-    "good": "Good",
-    "strong": "Strong"
+    "weak": "Yếu",
+    "medium": "Trung bình",
+    "good": "Khá",
+    "strong": "Mạnh"
   },
   "sidebarSections": {
-    "aiUsageCommerce": "Chi phí và nhật ký AI"
+    "aiUsageCommerce": "Sử dụng & Thương mại AI"
   },
   "revenue": {
     "sparkline": {
-      "label": "30 ngày gần nhất",
-      "halfvsHalf": "nửa sau so với nửa trước",
-      "empty": "Chưa đủ dữ liệu"
+      "label": "Nhãn",
+      "halfvsHalf": "Nửa này nửa kia",
+      "empty": "Trống"
     },
     "legend": {
-      "total": "Tổng"
+      "total": "Tổng",
+      "userPlan": "Gói cá nhân",
+      "workspacePlan": "Gói nhóm",
+      "userCredit": "Credit cá nhân",
+      "workspaceCredit": "Credit nhóm",
+      "workspaceSlot": "Slot nhóm"
     },
     "kpi": {
       "vsPrev": "so với kỳ trước",
       "txCount": "giao dịch",
       "subscription": "Gói đăng ký",
-      "credit": "Mua credit",
+      "credit": "Mua thêm Credit",
       "slot": "Slot nhóm"
+    },
+    "tab": {
+      "overview": "Tổng quan",
+      "subscription": "Gói đăng ký",
+      "credit": "Ví Credit",
+      "slots": "Slot nhóm"
     },
     "chartEmpty": "Không có dữ liệu cho khoảng này."
   },
   "pnl": {
     "range": {
       "allTime": "Tất cả thời gian",
-      "now": "hiện tại",
-      "tooltip": "Mọi con số bên dưới được tính theo đúng khoảng này. Đổi khoảng hoặc preset để đối chiếu với trang Chi phí AI và Nhật ký AI.",
-      "label": "Khoảng tính"
+      "now": "Hiện tại",
+      "tooltip": "Chú giải công cụ",
+      "label": "Nhãn"
     },
     "rev": {
       "subscription": "Gói đăng ký",
-      "credit": "Mua credit",
+      "credit": "Ví Credit",
       "slot": "Slot nhóm"
     },
     "cost": {
-      "userPaid": "Người dùng trả từng lần",
-      "plan": "Gói thuê bao",
-      "system": "Hệ thống chịu"
+      "userPaid": "Người dùng trả",
+      "plan": "Theo gói",
+      "system": "Hệ thống chi trả"
     },
     "hero": {
-      "label": "Lời ròng sau chi phí AI",
-      "margin": "tỷ suất lợi nhuận",
+      "label": "Nhãn",
+      "margin": "Biên lợi nhuận",
       "formula": "Công thức",
       "aiCost": "Chi phí AI",
-      "profit": "Có lời",
-      "loss": "Đang lỗ",
+      "profit": "Lợi nhuận ròng",
+      "loss": "Lỗ ròng",
       "aiCostRatio": "Tỷ lệ chi phí AI",
-      "ofRevenue": "trên doanh thu"
+      "ofRevenue": "trong doanh thu"
     },
-    "title": "Tổng quan lãi lỗ",
-    "description": "Đối chiếu doanh thu, chi phí AI và lợi nhuận ròng theo đúng khoảng thời gian đã chọn.",
+    "title": "Tiêu đề",
+    "description": "Mô tả",
     "bucketDay": "Theo ngày",
     "bucketWeek": "Theo tuần",
     "bucketMonth": "Theo tháng",
     "kpi": {
       "revenue": "Doanh thu",
-      "revenueHint": "Gói trả phí + Credit + Slot nhóm",
-      "aiCharged": "Chi phí AI có thu phí",
-      "aiChargedHint": "USER_PAID + PLAN_BASED đã đối soát",
-      "aiSystem": "Chi phí AI hệ thống",
-      "aiSystemHint": "Phần hệ thống tự chịu như RAG, OCR và moderation",
+      "revenueHint": "Tổng doanh thu từ các nguồn gói, nạp credit và slot.",
+      "aiCharged": "Khách trả phí AI",
+      "aiChargedHint": "Chi phí AI thực tế đã trừ vào credit của người dùng/nhóm.",
+      "aiSystem": "Hệ thống bù lỗ",
+      "aiSystemHint": "Chi phí AI hệ thống tự chịu đối với các tác vụ không thu phí.",
       "net": "Lời ròng",
-      "netHint": "Doanh thu trừ tổng chi phí AI"
+      "netHint": "Lợi nhuận ròng sau khi lấy tổng doanh thu trừ đi chi phí AI khách hàng đã dùng."
     },
     "chart": {
-      "revenueTs": "Doanh thu theo thời gian",
-      "revenueTsHint": "Doanh thu cộng dồn theo từng kỳ trong khoảng đã chọn.",
-      "empty": "Không có dữ liệu cho khoảng này.",
+      "revenueTs": "Xu hướng doanh thu & chi phí",
+      "revenueTsHint": "Biểu đồ theo thời gian của doanh thu so với chi phí AI.",
+      "empty": "Không có dữ liệu",
       "revenue": "Doanh thu"
     },
     "pie": {
-      "revenue": "Cơ cấu doanh thu",
-      "revenueHint": "Theo nguồn thanh toán.",
+      "revenue": "Phân bổ doanh thu",
+      "revenueHint": "Tỉ trọng các nguồn doanh thu",
       "cost": "Cơ cấu chi phí AI",
-      "costHint": "Phần user trả là ước lượng từ số đã thu trừ chi phí gói."
+      "costHint": "Tỉ trọng các khoản chi phí AI hệ thống phải gánh"
     },
-    "partialError": "Một phần dữ liệu tải lỗi, các con số có thể chưa đầy đủ."
+    "partialError": "Lỗi tải một số dữ liệu"
   },
   "challengeDetailView": {
     "leaderRole": {

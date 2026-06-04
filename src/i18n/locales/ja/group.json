@@ -444,13 +444,16 @@
         "members": "メンバー",
         "memberStats": "メンバー統計",
         "wallet": "ウォレット",
-        "settings": "設定"
+        "settings": "設定",
+        "showcase": "ショーケース"
       },
       "expandSidebar": "サイドバーを展開",
       "collapseSidebar": "サイドバーを折りたたみ"
     },
     "announcements": {
       "title": "グループお知らせ",
+      "totalLabel_one": "お知らせ {{count}} 件",
+      "totalLabel_other": "お知らせ {{count}} 件",
       "totalLabel": "お知らせ {{count}} 件",
       "unreadLabel": "未読 {{count}} 件",
       "createButton": "お知らせを作成",
@@ -608,6 +611,16 @@
         "deleteFailed": "課題を削除できませんでした。",
         "submitted": "提出済みにしました。",
         "submitFailed": "提出済みにできませんでした。"
+      }
+    },
+    "header": {
+      "groupPlan": {
+        "viewOrChange": "グループプランの表示/変更",
+        "choose": "グループプランの選択",
+        "upgrade": "グループプランのアップグレード"
+      },
+      "planNames": {
+        "GROUP_BASE": "ベーシックグループプラン"
       }
     },
     "studio": {

@@ -480,6 +480,7 @@
         "prelearning": "Pre-learning",
         "questionStats": "Stats"
       },
+      "outputs": "Generated outputs",
       "noOutputs": "No outputs yet.",
       "accessHistory": "Access History",
       "noHistory": "No recent activity.",
