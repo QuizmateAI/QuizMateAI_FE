@@ -283,6 +283,11 @@ function isMatchingCurrentPlan(plan, currentPlanSummary, planType) {
   return Boolean(summaryName) && currentPlanName === summaryName;
 }
 
+function findCurrentPlanIndex(plans, currentPlanSummary, planType) {
+  if (!Array.isArray(plans) || plans.length === 0) return -1;
+  return plans.findIndex((plan) => isMatchingCurrentPlan(plan, currentPlanSummary, planType));
+}
+
 function PlanTierCard({
   plan,
   index,
@@ -293,6 +298,7 @@ function PlanTierCard({
   locale,
   t,
   isCurrentPlan = false,
+  isLowerTierThanCurrent = false,
   purchaseLocked = false,
   purchaseLockedLabel = "",
   onUpgrade,
@@ -318,8 +324,8 @@ function PlanTierCard({
     : isDarkMode
       ? "bg-white/5 text-white ring-1 ring-white/12 hover:bg-white/10"
       : "bg-slate-950 text-white hover:bg-slate-800";
-  const showCtaRow = !isDefaultPlan || isCurrentPlan;
-  const isActionDisabled = isCurrentPlan || purchaseLocked || (isDefaultPlan && !isCurrentPlan);
+  const showCtaRow = !isDefaultPlan || isCurrentPlan || isLowerTierThanCurrent;
+  const isActionDisabled = isCurrentPlan || isLowerTierThanCurrent || purchaseLocked || (isDefaultPlan && !isCurrentPlan);
 
   const cardPad = compact ? "p-5 sm:p-5" : "p-6 sm:p-7";
   const cardRadius = compact ? "rounded-[22px]" : "rounded-[28px]";
@@ -413,6 +419,8 @@ function PlanTierCard({
               ? t("plan.currentCta")
               : purchaseLocked
                 ? purchaseLockedLabel
+              : isLowerTierThanCurrent
+                ? t("plan.lowerTierCta")
               : plan.type === "GROUP"
                 ? t("plan.teamCta")
                 : t("plan.upgrade")}
@@ -594,6 +602,10 @@ export default function PlanPage() {
   const displayPlans = plans;
 
   const recommendedIndex = useMemo(() => getRecommendedPlanIndex(displayPlans), [displayPlans]);
+  const currentPlanIndex = useMemo(
+    () => findCurrentPlanIndex(displayPlans, currentPlanSummary, planType),
+    [currentPlanSummary, displayPlans, planType],
+  );
 
   const isCompactGroupPlanLayout = isGroupScopedPage && displayPlans.length === 2;
 
@@ -816,6 +828,7 @@ export default function PlanPage() {
                       locale={locale}
                       t={t}
                       isCurrentPlan={isMatchingCurrentPlan(plan, currentPlanSummary, planType)}
+                      isLowerTierThanCurrent={currentPlanIndex > -1 && index < currentPlanIndex}
                       purchaseLocked={groupPurchaseLocked}
                       purchaseLockedLabel={groupPurchaseLockLabel}
                       onUpgrade={handleUpgrade}

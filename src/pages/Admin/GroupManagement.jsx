@@ -161,6 +161,7 @@ function GroupManagement() {
   return (
     <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
+        eyebrow={t('sidebarSections.workspace', 'Người dùng và nhóm')}
         title={t('groupPage.title')}
         actions={(
           <Button

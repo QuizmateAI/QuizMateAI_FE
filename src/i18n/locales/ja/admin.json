@@ -24,7 +24,11 @@
     "feedback": "フィードバック",
     "myPermissions": "マイ権限",
     "communityQuizzes": "コミュニティクイズ",
-    "policies": "ポリシー"
+    "policies": "ポリシー",
+    "planPurchases": "プランと利益率レポート",
+    "pnlOverview": "AI 純利益",
+    "aiCostSummary": "AI コスト",
+    "aiRequestAudit": "AI リクエスト監査"
   },
   "sidebarSections": {
     "overview": "概要",
@@ -37,7 +41,8 @@
     "accessControl": "アクセス制御",
     "aiGovernance": "AI オーケストレーション",
     "trustSafety": "信頼",
-    "platformConfig": "プラットフォーム設定"
+    "platformConfig": "プラットフォーム設定",
+    "aiUsageCommerce": "AI システム"
   },
   "policiesAdmin": {
     "title": "ポリシー管理",
@@ -483,27 +488,27 @@
     },
     "overviewTitle": "Overview",
     "description": "Platform health, usage and revenue at a glance.",
-    "chartDay": "Chart Day",
-    "chartWeek": "Chart Week",
-    "chartMonth": "Chart Month",
+    "chartDay": "日別",
+    "chartWeek": "週別",
+    "chartMonth": "月別",
     "b": {
       "hero": {
-        "label": "Label"
+        "label": "完了済み売上"
       },
       "topPlans": {
-        "title": "Title",
-        "desc": "Desc",
-        "empty": "Empty"
+        "title": "売上上位プラン",
+        "desc": "選択した期間で売上貢献が最も大きいプランです。",
+        "empty": "有料プランの取引はまだありません。"
       }
     },
     "detail": {
       "stacked": "Stacked",
-      "stackedHint": "Stacked Hint",
-      "topBuckets": "Top Buckets",
-      "topBucketsHint": "Top Buckets Hint",
+      "stackedHint": "総売上に占める支払い種別ごとの割合です。",
+      "topBuckets": "売上上位期間",
+      "topBucketsHint": "売上が大きい日、週、月をランキング表示します。",
       "bucketsCount": "Buckets Count",
       "weekday": "Weekday",
-      "weekdayHint": "Weekday Hint"
+      "weekdayHint": "曜日別に集計した売上です。"
     }
   },
   "adminManagement": {
@@ -569,25 +574,25 @@
       "clearAll": "すべてクリア",
       "grantAll": "すべて付与",
       "syncWarning": "同期は現在付与されているすべての権限を恒久的アクセスに変換します(expiresAt は削除されます)。期限付きアクセスを承認するには「権限リクエスト」タブを使用してください。",
-      "expired": "Expired",
+      "expired": "期限切れ",
       "remainingDays": "{{count}}d left",
       "remainingHours": "{{count}}h left",
       "remainingMinutes": "{{count}}m left",
       "expiresAt": "Expires At",
       "permanent": "Permanent"
     },
-    "deleteSuccess": "Delete Success",
-    "deleteError": "Delete Error",
+    "deleteSuccess": "管理者アカウントを削除しました。",
+    "deleteError": "管理者アカウントを削除できませんでした。",
     "deleteDialog": {
       "confirmMismatch": "Confirm Mismatch",
       "reasonTooShort": "Reason Too Short",
-      "title": "Title",
+      "title": "管理者アカウントを削除",
       "description": "This action will permanently remove admin account {{username}} ({{email}}).",
       "warning": "Warning",
-      "confirmLabel": "Confirm Label",
+      "confirmLabel": "確認テキスト",
       "confirmHelp": "Confirm Help",
-      "reasonLabel": "Reason Label",
-      "reasonPlaceholder": "Reason Placeholder",
+      "reasonLabel": "理由",
+      "reasonPlaceholder": "監査用の理由を入力...",
       "reasonHelp": "Reason Help"
     },
     "metricAdmins": "Metric Admins",
@@ -994,7 +999,7 @@
     "metricRoles": "Metric Roles",
     "metricPermissions": "Metric Permissions",
     "metricAudit": "Metric Audit",
-    "metricUsersLabel": "Metric Users Label",
+    "metricUsersLabel": "個別権限のある管理者",
     "metricUsersHelper": "Metric Users Helper"
   },
   "subscription": {
@@ -1267,7 +1272,7 @@
       "status": "ステータス",
       "allStatuses": "すべてのステータス",
       "open": "Open",
-      "dialogTitle": "Dialog Title",
+      "dialogTitle": "AI モデルを絞り込む",
       "dialogDescription": "Dialog Description",
       "reset": "Reset",
       "searchAction": "Search Action"
@@ -1330,8 +1335,8 @@
       "officialReady": "Official Ready",
       "inputUsd": "Input Usd",
       "outputUsd": "Output Usd",
-      "formAppliedHint": "Form Applied Hint",
-      "formEmptyHint": "Form Empty Hint",
+      "formAppliedHint": "公式価格をフォームに反映しました。保存前に編集できます。",
+      "formEmptyHint": "対応モデルの場合、公式価格を取得して 2 つの価格欄をすばやく入力できます。",
       "rate": "Rate"
     },
     "actions": {
@@ -1493,20 +1498,20 @@
       "outputCostUsd": "Output Cost Usd"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
-      "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
-      "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
-      "requests": "Requests"
+      "title": "AI コスト上位機能",
+      "subtitle": "プロバイダーコストが高い上位 8 機能を表示します。",
+      "empty": "この期間のデータはありません。",
+      "dayUnit": "日",
+      "featureCount": "機能",
+      "allRange": "すべて",
+      "legendTop": "上位機能",
+      "legendOther": "その他",
+      "legendUnit": "単位: VND",
+      "total": "AI コスト合計",
+      "columnFeature": "機能",
+      "columnCost": "AI コスト",
+      "columnShare": "割合",
+      "requests": "リクエスト"
     },
     "tokens": {
       "input": "Input",
@@ -1592,9 +1597,9 @@
       "reset": "リセット",
       "apply": "適用",
       "taskId": "Task ID",
-      "email": "Email",
-      "featureKey": "Feature Key",
-      "clear": "Clear"
+      "email": "メール",
+      "featureKey": "機能キー",
+      "clear": "クリア"
     },
     "table": {
       "title": "AI リクエスト一覧",
@@ -1684,20 +1689,20 @@
       "ROADMAP_REVIEW": "ロードマップレビュー"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
-      "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
-      "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
-      "requests": "Requests"
+      "title": "AI コスト上位機能",
+      "subtitle": "選択期間でプロバイダーコストが高い上位 8 機能を表示します。",
+      "empty": "この期間のデータはありません。",
+      "dayUnit": "日",
+      "featureCount": "機能",
+      "allRange": "すべて",
+      "legendTop": "上位機能",
+      "legendOther": "その他",
+      "legendUnit": "単位: VND",
+      "total": "AI コスト合計",
+      "columnFeature": "機能",
+      "columnCost": "AI コスト",
+      "columnShare": "割合",
+      "requests": "リクエスト"
     }
   },
   "aiProviders": {
@@ -2067,7 +2072,7 @@
       "creditAmount": "クレジット数量",
       "price": "価格(VND)",
       "bonusCredit": "ボーナスクレジット",
-      "bonusCreditHint": "Bonus Credit Hint"
+      "bonusCreditHint": "パッケージのクレジット数の 10% を自動追加します。"
     },
     "systemSettings": {
       "title": "クレジット購入設定",
@@ -2386,146 +2391,156 @@
   },
   "communityQuizManagement": {
     "toast": {
-      "unshareSuccess": "Unshare Success"
+      "unshareSuccess": "クイズをコミュニティから削除しました。"
     },
     "header": {
-      "eyebrow": "Eyebrow",
-      "title": "Title",
-      "description": "Description",
-      "refresh": "Refresh"
+      "eyebrow": "コミュニティ",
+      "title": "コミュニティクイズ管理",
+      "description": "公開クイズ、エンゲージメント指標、共有状態を確認します。",
+      "refresh": "更新"
     },
     "metrics": {
-      "totalQuizzes": "Total Quizzes",
-      "totalQuizzesHelper": "Total Quizzes Helper",
-      "totalClones": "Total Clones",
-      "currentPageHelper": "Current Page Helper",
-      "averageRating": "Average Rating",
+      "totalQuizzes": "コミュニティクイズ",
+      "totalQuizzesHelper": "現在のフィルターに一致するクイズ数です。",
+      "totalClones": "クローン数",
+      "currentPageHelper": "現在のページから算出しています。",
+      "averageRating": "平均評価",
       "totalRatingsHelper": "{{count}} lượt đánh giá",
-      "totalComments": "Total Comments"
+      "totalComments": "コメント"
     },
     "filters": {
-      "searchPlaceholder": "Search Placeholder",
-      "allStatuses": "All Statuses"
+      "searchPlaceholder": "クイズ名、説明、作成者で検索...",
+      "allStatuses": "すべてのステータス"
     },
     "table": {
-      "title": "Title",
-      "description": "Description",
-      "quiz": "Quiz",
-      "creator": "Creator",
-      "status": "Status",
-      "signals": "Signals",
-      "createdAt": "Created At",
-      "actions": "Actions",
-      "untitled": "Untitled",
+      "title": "コミュニティクイズ一覧",
+      "description": "公開クイズを監視し、必要に応じてコミュニティから削除します。",
+      "quiz": "クイズ",
+      "creator": "作成者",
+      "status": "ステータス",
+      "signals": "指標",
+      "createdAt": "作成日",
+      "actions": "操作",
+      "untitled": "無題のクイズ",
       "questionCount": "{{count}} câu",
-      "shared": "Shared",
-      "unshared": "Unshared"
+      "shared": "共有中",
+      "unshared": "削除済み"
     },
     "empty": {
-      "title": "Title",
-      "description": "Description"
+      "title": "コミュニティクイズはまだありません",
+      "description": "現在のフィルターに一致するクイズはありません。"
     },
     "actions": {
-      "preview": "Preview",
-      "remove": "Remove"
+      "preview": "プレビュー",
+      "remove": "コミュニティから削除"
     },
     "preview": {
-      "description": "Description"
+      "description": "操作前にクイズ内容を確認します。"
     },
     "removeDialog": {
-      "title": "Title",
-      "description": "Description",
-      "creatorLabel": "Creator Label",
-      "cancel": "Cancel",
-      "confirm": "Confirm"
+      "title": "クイズをコミュニティから削除",
+      "description": "このクイズはコミュニティに表示されなくなります。作成者のワークスペースには元のクイズが残ります。",
+      "creatorLabel": "作成者",
+      "cancel": "キャンセル",
+      "confirm": "コミュニティから削除"
     }
   },
   "planPurchases": {
-    "versionOld": "Version Old",
-    "title": "Title",
-    "sparklineLabel": "Sparkline Label",
-    "hideCharts": "Hide Charts",
-    "showCharts": "Show Charts",
+    "versionOld": "旧",
+    "title": "プランと利益率レポート",
+    "sparklineLabel": "有料プラン売上 - 30 日",
+    "hideCharts": "チャートを隠す",
+    "showCharts": "チャートを表示",
     "chart": {
-      "versionFilter": "Version Filter",
-      "versionCurrent": "Version Current",
-      "versionAll": "Version All",
-      "versionHint": "Version Hint",
-      "revenueSplit": "Revenue Split",
-      "revenueSplitHint": "Revenue Split Hint",
-      "creditPart": "Credit Part",
-      "basePart": "Base Part",
-      "margin": "Margin",
-      "marginHint": "Margin Hint",
-      "marginLabel": "Margin Label"
+      "versionFilter": "表示バージョン",
+      "versionCurrent": "販売中",
+      "versionAll": "すべてのバージョン",
+      "versionHint": "古いスナップショットも含みます。下の表は常に完全に表示されます。",
+      "revenueSplit": "プラン別売上構成",
+      "revenueSplitHint": "各バーは 1 つのプランで、クレジット分と基本分に分かれます。",
+      "creditPart": "クレジット分",
+      "basePart": "基本分",
+      "margin": "プラン利益率",
+      "marginHint": "クレジットから AI COGS を差し引いた値です。赤はマイナス、緑はプラスです。",
+      "marginLabel": "利益率"
     },
     "tab": {
-      "plans": "Plans",
-      "credits": "Credits"
+      "plans": "有料プラン",
+      "credits": "クレジット購入"
     },
     "credit": {
       "col": {
-        "package": "Package",
-        "scope": "Scope",
-        "creditsDelivered": "Credits Delivered"
+        "package": "クレジットパッケージ",
+        "scope": "範囲",
+        "creditsDelivered": "付与クレジット"
       },
-      "empty": "Empty",
-      "totalRevenue": "Total Revenue",
-      "totalCredits": "Total Credits",
-      "totalPurchases": "Total Purchases"
+      "empty": "選択期間にクレジット購入はありません。",
+      "totalRevenue": "クレジット売上合計",
+      "totalCredits": "付与クレジット合計",
+      "totalPurchases": "購入数合計"
     },
     "col": {
-      "purchases": "Purchases",
-      "payers": "Payers",
-      "revenue": "Revenue",
-      "buyers": "Buyers",
-      "plan": "Plan",
-      "baseRevenue": "Base Revenue",
-      "aiCogs": "AI Cogs",
-      "margin": "Margin"
+      "purchases": "購入数",
+      "payers": "支払者",
+      "revenue": "売上",
+      "buyers": "購入者",
+      "plan": "プラン",
+      "baseRevenue": "基本売上",
+      "aiCogs": "AI COGS",
+      "margin": "推定利益率"
     },
     "buyers": {
-      "totalRecords": "Total Records",
-      "activeOnPage": "Active On Page",
-      "pageRevenue": "Page Revenue",
-      "email": "Email",
-      "amount": "Amount",
-      "status": "Status",
-      "paidAt": "Paid At",
-      "active": "Active",
-      "expired": "Expired",
-      "versionMismatchTip": "Version Mismatch Tip",
-      "versionMatchTip": "Version Match Tip",
-      "expiresAt": "Expires At"
+      "totalRecords": "取引合計",
+      "activeOnPage": "このページで有効",
+      "pageRevenue": "このページの売上",
+      "email": "メール",
+      "amount": "金額",
+      "status": "状態",
+      "paidAt": "支払日時",
+      "active": "有効",
+      "expired": "期限切れ",
+      "versionMismatchTip": "新しいバージョンがありますが、旧プランは引き続き有効です。",
+      "versionMatchTip": "これは現在のバージョンです。",
+      "expiresAt": "有効期限"
     },
     "versionTable": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "subtitleSuffix": "Subtitle Suffix",
-      "searchPlaceholder": "Search Placeholder",
-      "groupLabel": "Group Label",
-      "allOption": "All Option",
-      "statusLabel": "Status Label",
-      "statusCurrent": "Status Current",
-      "statusOld": "Status Old",
-      "sortLabel": "Sort Label",
-      "noMatch": "No Match",
-      "statusCurrentBadge": "Status Current Badge",
-      "totalsLabel": "Totals Label",
-      "versionsUnit": "Versions Unit"
+      "title": "バージョン別詳細",
+      "subtitle": "各行は 1 つのプランとバージョンです。",
+      "subtitleSuffix": " をクリックすると購入ユーザーを表示できます。",
+      "searchPlaceholder": "プラン名またはバージョンで検索...",
+      "groupLabel": "プラングループ",
+      "allOption": "すべて",
+      "statusLabel": "ステータス",
+      "statusCurrent": "販売中",
+      "statusOld": "旧",
+      "sortLabel": "並び替え",
+      "noMatch": "現在のフィルターに一致するプランはありません。",
+      "statusCurrentBadge": "販売中",
+      "totalsLabel": "合計",
+      "versionsUnit": "バージョン"
     },
-    "empty": "Empty",
-    "versionCurrentTip": "Version Current Tip",
-    "versionHistoricalTip": "Version Historical Tip",
-    "buyersTitle": "Buyers Title",
-    "buyersHint": "Buyers Hint",
-    "buyersEmpty": "Buyers Empty",
+    "empty": "選択期間にプラン取引はありません。",
+    "versionCurrentTip": "現在販売中のバージョン",
+    "versionHistoricalTip": "新しいバージョンに置き換えられた旧スナップショット",
+    "buyersTitle": "支払者",
+    "buyersHint": "フィルター期間内でこのプランの COMPLETED 取引です。",
+    "buyersEmpty": "レコードはありません。",
     "creditBuyers": {
-      "title": "Title",
-      "hint": "Hint",
-      "creditsOnPage": "Credits On Page",
-      "creditsReceived": "Credits Received",
-      "scope": "Scope"
+      "title": "クレジット購入者",
+      "hint": "フィルター期間内でこのクレジットパッケージの COMPLETED 取引です。",
+      "creditsOnPage": "このページのクレジット",
+      "creditsReceived": "受け取ったクレジット",
+      "scope": "範囲"
+    },
+    "sort": {
+      "revenueDesc": "売上 降順",
+      "revenueAsc": "売上 昇順",
+      "purchasesDesc": "購入数 降順",
+      "purchasesAsc": "購入数 昇順",
+      "baseDesc": "基本売上 降順",
+      "baseAsc": "基本売上 昇順",
+      "marginDesc": "利益率 降順",
+      "marginAsc": "利益率 昇順"
     }
   }
 }

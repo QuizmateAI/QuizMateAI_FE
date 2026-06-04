@@ -225,7 +225,7 @@ export default function MyPermissionsPage() {
   return (
     <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
-        eyebrow="Access"
+        eyebrow={t('sidebarSections.access', 'Truy cập')}
         title="Quyền của tôi"
         description="Xem quyền bạn đang có và gửi yêu cầu xin thêm quyền tới Super Admin."
         actions={(
