@@ -94,6 +94,8 @@
       "sortCreated": "Mới tạo",
       "recentHint": "Ưu tiên những không gian bạn vừa học gần đây.",
       "createHint": "Bắt đầu thiết lập để có tên phù hợp.",
+      "limitReached": "Đã đạt giới hạn ({{current}}/{{max}}). Nâng cấp để tạo thêm.",
+      "limitFeatureName": "Tạo thêm không gian học tập",
       "knowledge": "Kiến thức",
       "domain": "Lĩnh vực",
       "sourceCount": "{{count}} nguồn",

@@ -94,6 +94,8 @@
       "sortCreated": "新着順",
       "recentHint": "最近の学習スペースは手の届く場所に。",
       "createHint": "セットアップを開始すると適切な名前が付けられます。",
+      "limitReached": "上限に達しました（{{current}}/{{max}}）。さらに作成するにはアップグレードしてください。",
+      "limitFeatureName": "学習スペースを追加で作成",
       "knowledge": "知識",
       "domain": "分野",
       "sourceCount": "{{count}} ソース",
