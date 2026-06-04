@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -711,7 +711,7 @@ function AiAuditManagement() {
   return (
     <SuperAdminPage className={`gap-6 animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
-        eyebrow={t('sidebarSections.aiUsageCommerce', 'Chi phí & nhật ký AI')}
+        eyebrow={t('sidebarSections.aiSystemLogs', 'Hệ thống AI')}
         title={t('aiAudit.title.v2', { defaultValue: 'Nhật ký AI hệ thống' })}
         actions={(
           <Button

@@ -297,9 +297,9 @@
   },
   "revenue": {
     "sparkline": {
-      "label": "Label",
-      "halfvsHalf": "Halfvs Half",
-      "empty": "Empty"
+      "label": "Last 30 days",
+      "halfvsHalf": "second half vs first half",
+      "empty": "Not enough data"
     },
     "legend": {
       "total": "Total"
@@ -311,14 +311,14 @@
       "credit": "Credit",
       "slot": "Slot"
     },
-    "chartEmpty": "Chart Empty"
+    "chartEmpty": "No data for this range."
   },
   "pnl": {
     "range": {
       "allTime": "All Time",
       "now": "Now",
       "tooltip": "Tooltip",
-      "label": "Label"
+      "label": "Reporting range"
     },
     "rev": {
       "subscription": "Subscription",
@@ -327,12 +327,12 @@
     },
     "cost": {
       "userPaid": "User Paid",
-      "plan": "Plan",
+      "plan": "Subscription plan",
       "system": "System"
     },
     "hero": {
-      "label": "Label",
-      "margin": "Margin",
+      "label": "Net profit after AI cost",
+      "margin": "margin",
       "formula": "Formula",
       "aiCost": "AI Cost",
       "profit": "Profit",
@@ -340,34 +340,34 @@
       "aiCostRatio": "AI Cost Ratio",
       "ofRevenue": "Of Revenue"
     },
-    "title": "Title",
-    "description": "Description",
+    "title": "P&L overview",
+    "description": "Compare revenue, AI cost, and net profit for the selected reporting range.",
     "bucketDay": "Bucket Day",
     "bucketWeek": "Bucket Week",
     "bucketMonth": "Bucket Month",
     "kpi": {
       "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
+      "revenueHint": "Paid plans + Credits + Group slots",
       "aiCharged": "AI Charged",
-      "aiChargedHint": "AI Charged Hint",
+      "aiChargedHint": "Matched USER_PAID + PLAN_BASED cost",
       "aiSystem": "AI System",
-      "aiSystemHint": "AI System Hint",
+      "aiSystemHint": "System-covered cost such as RAG, OCR, and moderation",
       "net": "Net",
-      "netHint": "Net Hint"
+      "netHint": "Revenue minus total AI cost"
     },
     "chart": {
       "revenueTs": "Revenue Ts",
-      "revenueTsHint": "Revenue Ts Hint",
-      "empty": "Empty",
+      "revenueTsHint": "Revenue over time within the selected range.",
+      "empty": "No data for this range.",
       "revenue": "Revenue"
     },
     "pie": {
-      "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
+      "revenue": "Revenue mix",
+      "revenueHint": "By payment source.",
       "cost": "Cost",
-      "costHint": "Cost Hint"
+      "costHint": "User-paid cost is estimated from collected revenue minus plan cost."
     },
-    "partialError": "Partial Error"
+    "partialError": "Some data failed to load, so the numbers may be incomplete."
   },
   "challengeDetailView": {
     "leaderRole": {

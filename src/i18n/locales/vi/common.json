@@ -76,17 +76,17 @@
     "nextPage": "Next Page",
     "pageSize": "Page Size",
     "formHasErrors": "Form Has Errors",
-    "delete": "Delete",
-    "deleting": "Deleting",
+    "delete": "Xóa",
+    "deleting": "Đang xóa...",
     "showPassword": "Show Password",
     "hidePassword": "Hide Password",
-    "operational": "Operational",
-    "offline": "Offline",
+    "operational": "Đang vận hành",
+    "offline": "Mất kết nối",
     "notifications": "Notifications",
     "changeLanguage": "Change Language",
     "collapse": "Collapse",
     "expand": "Expand",
-    "loading": "Loading",
+    "loading": "Đang tải...",
     "loadFailed": "Load Failed"
   },
   "validation": {
@@ -293,218 +293,218 @@
     "strong": "Strong"
   },
   "sidebarSections": {
-    "aiUsageCommerce": "AI Usage Commerce"
+    "aiUsageCommerce": "Chi phí và nhật ký AI"
   },
   "revenue": {
     "sparkline": {
-      "label": "Label",
-      "halfvsHalf": "Halfvs Half",
-      "empty": "Empty"
+      "label": "30 ngày gần nhất",
+      "halfvsHalf": "nửa sau so với nửa trước",
+      "empty": "Chưa đủ dữ liệu"
     },
     "legend": {
-      "total": "Total"
+      "total": "Tổng"
     },
     "kpi": {
-      "vsPrev": "Vs Prev",
-      "txCount": "Tx Count",
-      "subscription": "Subscription",
-      "credit": "Credit",
-      "slot": "Slot"
+      "vsPrev": "so với kỳ trước",
+      "txCount": "giao dịch",
+      "subscription": "Gói đăng ký",
+      "credit": "Mua credit",
+      "slot": "Slot nhóm"
     },
-    "chartEmpty": "Chart Empty"
+    "chartEmpty": "Không có dữ liệu cho khoảng này."
   },
   "pnl": {
     "range": {
-      "allTime": "All Time",
-      "now": "Now",
-      "tooltip": "Tooltip",
-      "label": "Label"
+      "allTime": "Tất cả thời gian",
+      "now": "hiện tại",
+      "tooltip": "Mọi con số bên dưới được tính theo đúng khoảng này. Đổi khoảng hoặc preset để đối chiếu với trang Chi phí AI và Nhật ký AI.",
+      "label": "Khoảng tính"
     },
     "rev": {
-      "subscription": "Subscription",
-      "credit": "Credit",
-      "slot": "Slot"
+      "subscription": "Gói đăng ký",
+      "credit": "Mua credit",
+      "slot": "Slot nhóm"
     },
     "cost": {
-      "userPaid": "User Paid",
-      "plan": "Plan",
-      "system": "System"
+      "userPaid": "Người dùng trả từng lần",
+      "plan": "Gói thuê bao",
+      "system": "Hệ thống chịu"
     },
     "hero": {
-      "label": "Label",
-      "margin": "Margin",
-      "formula": "Formula",
-      "aiCost": "AI Cost",
-      "profit": "Profit",
-      "loss": "Loss",
-      "aiCostRatio": "AI Cost Ratio",
-      "ofRevenue": "Of Revenue"
+      "label": "Lời ròng sau chi phí AI",
+      "margin": "tỷ suất lợi nhuận",
+      "formula": "Công thức",
+      "aiCost": "Chi phí AI",
+      "profit": "Có lời",
+      "loss": "Đang lỗ",
+      "aiCostRatio": "Tỷ lệ chi phí AI",
+      "ofRevenue": "trên doanh thu"
     },
-    "title": "Title",
-    "description": "Description",
-    "bucketDay": "Bucket Day",
-    "bucketWeek": "Bucket Week",
-    "bucketMonth": "Bucket Month",
+    "title": "Tổng quan lãi lỗ",
+    "description": "Đối chiếu doanh thu, chi phí AI và lợi nhuận ròng theo đúng khoảng thời gian đã chọn.",
+    "bucketDay": "Theo ngày",
+    "bucketWeek": "Theo tuần",
+    "bucketMonth": "Theo tháng",
     "kpi": {
-      "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
-      "aiCharged": "AI Charged",
-      "aiChargedHint": "AI Charged Hint",
-      "aiSystem": "AI System",
-      "aiSystemHint": "AI System Hint",
-      "net": "Net",
-      "netHint": "Net Hint"
+      "revenue": "Doanh thu",
+      "revenueHint": "Gói trả phí + Credit + Slot nhóm",
+      "aiCharged": "Chi phí AI có thu phí",
+      "aiChargedHint": "USER_PAID + PLAN_BASED đã đối soát",
+      "aiSystem": "Chi phí AI hệ thống",
+      "aiSystemHint": "Phần hệ thống tự chịu như RAG, OCR và moderation",
+      "net": "Lời ròng",
+      "netHint": "Doanh thu trừ tổng chi phí AI"
     },
     "chart": {
-      "revenueTs": "Revenue Ts",
-      "revenueTsHint": "Revenue Ts Hint",
-      "empty": "Empty",
-      "revenue": "Revenue"
+      "revenueTs": "Doanh thu theo thời gian",
+      "revenueTsHint": "Doanh thu cộng dồn theo từng kỳ trong khoảng đã chọn.",
+      "empty": "Không có dữ liệu cho khoảng này.",
+      "revenue": "Doanh thu"
     },
     "pie": {
-      "revenue": "Revenue",
-      "revenueHint": "Revenue Hint",
-      "cost": "Cost",
-      "costHint": "Cost Hint"
+      "revenue": "Cơ cấu doanh thu",
+      "revenueHint": "Theo nguồn thanh toán.",
+      "cost": "Cơ cấu chi phí AI",
+      "costHint": "Phần user trả là ước lượng từ số đã thu trừ chi phí gói."
     },
-    "partialError": "Partial Error"
+    "partialError": "Một phần dữ liệu tải lỗi, các con số có thể chưa đầy đủ."
   },
   "challengeDetailView": {
     "leaderRole": {
-      "canSelfReviewTitle": "Can Self Review Title",
-      "canSelfReviewHint": "Can Self Review Hint",
-      "waitingReviewerTitle": "Waiting Reviewer Title",
-      "waitingReviewerHint": "Waiting Reviewer Hint",
-      "declinedTitle": "Declined Title",
-      "switchToReviewerHint": "Switch To Reviewer Hint",
-      "noReviewerTitle": "No Reviewer Title",
-      "noReviewerHint": "No Reviewer Hint",
-      "switchToReviewer": "Switch To Reviewer",
-      "reviewerTitle": "Reviewer Title",
-      "cannotRejoinHint": "Cannot Rejoin Hint",
-      "canRejoinHint": "Can Rejoin Hint",
-      "lockedTitle": "Locked Title",
-      "lockedAction": "Locked Action",
-      "switchToParticipant": "Switch To Participant"
+      "canSelfReviewTitle": "Bạn có thể tự xem lại đề",
+      "canSelfReviewHint": "Bạn có thể tự kiểm tra đề trước khi mở cho mọi người tham gia.",
+      "waitingReviewerTitle": "Đang chờ reviewer",
+      "waitingReviewerHint": "Reviewer đã được mời và cần xác nhận đề trước khi publish.",
+      "declinedTitle": "Reviewer đã từ chối",
+      "switchToReviewerHint": "Chuyển sang vai trò reviewer để kiểm tra đề.",
+      "noReviewerTitle": "Chưa có reviewer",
+      "noReviewerHint": "Mời reviewer hoặc tự xem lại đề nếu hệ thống cho phép.",
+      "switchToReviewer": "Chuyển sang reviewer",
+      "reviewerTitle": "Bạn đang là reviewer",
+      "cannotRejoinHint": "Bạn chưa thể quay lại vai trò người tham gia ở trạng thái hiện tại.",
+      "canRejoinHint": "Bạn có thể quay lại vai trò người tham gia sau khi hoàn tất review.",
+      "lockedTitle": "Đã khóa vai trò",
+      "lockedAction": "Đã khóa",
+      "switchToParticipant": "Chuyển sang người tham gia"
     },
     "reviewerConcern": {
-      "criticalTitle": "Critical Title",
-      "title": "Title",
-      "leaderCriticalHint": "Leader Critical Hint",
-      "leaderHint": "Leader Hint",
-      "othersHint": "Others Hint",
-      "resolve": "Resolve"
+      "criticalTitle": "Nhiều reviewer báo đề chưa ổn",
+      "title": "Reviewer báo đề chưa ổn",
+      "leaderCriticalHint": "Hơn một reviewer cùng báo có vấn đề. Hãy cân nhắc hủy challenge này và tạo lại với đề khác. Khi chưa xử lý, challenge chưa thể publish.",
+      "leaderHint": "Hãy đọc ghi chú bên dưới rồi quyết định: tự xem đề, mời reviewer khác đánh giá, hoặc đánh dấu đã xử lý. Challenge chưa thể publish khi còn concern.",
+      "othersHint": "Một reviewer trong team đang báo đề có vấn đề. Vui lòng đợi leader xử lý.",
+      "resolve": "Đã xử lý"
     },
-    "participantsLabel": "Participants Label",
-    "registrationLabel": "Registration Label",
+    "participantsLabel": "Người tham gia",
+    "registrationLabel": "Đăng ký",
     "reviewerPanel": {
-      "justReviewedBadge": "Just Reviewed Badge",
-      "antiSpamHint": "Anti Spam Hint"
+      "justReviewedBadge": "Vừa đánh giá",
+      "antiSpamHint": "Bạn vừa gửi đánh giá. Vui lòng chờ một chút trước khi gửi lại."
     },
     "editDialog": {
-      "postponeOnlyHint": "Postpone Only Hint"
+      "postponeOnlyHint": "Chỉ có thể dời lịch khi challenge chưa bắt đầu."
     },
-    "openingTitle": "Opening Title",
-    "openingTimeoutHint": "Opening Timeout Hint"
+    "openingTitle": "Đang mở challenge",
+    "openingTimeoutHint": "Nếu quá thời gian mở, hãy tải lại trang hoặc thử lại sau."
   },
   "challengeLeaderboard": {
     "podium": {
-      "champion": "Champion",
-      "silver": "Silver",
-      "bronze": "Bronze"
+      "champion": "Vô địch",
+      "silver": "Hạng nhì",
+      "bronze": "Hạng ba"
     },
-    "podiumTitle": "Podium Title",
-    "pendingTitle": "Pending Title"
+    "podiumTitle": "Bảng vinh danh",
+    "pendingTitle": "Đang chờ kết quả"
   },
   "createChallengeWizard": {
     "schedule": {
-      "personalConfigDesc": "Personal Config Desc",
-      "personalCapacityHint": "Personal Capacity Hint",
-      "ruleDurationTitle": "Rule Duration Title",
-      "ruleDurationDesc": "Rule Duration Desc",
-      "ruleRankingTitle": "Rule Ranking Title",
-      "ruleRankingDesc": "Rule Ranking Desc",
-      "ruleLeaderTitle": "Rule Leader Title",
-      "ruleLeaderDesc": "Rule Leader Desc",
-      "personalTip": "Personal Tip"
+      "personalConfigDesc": "Thiết lập sức chứa và thời gian cho challenge cá nhân.",
+      "personalCapacityHint": "Để trống nếu không muốn giới hạn số người tham gia.",
+      "ruleDurationTitle": "Thời lượng",
+      "ruleDurationDesc": "Người tham gia cần hoàn thành trong khoảng thời gian đã chọn.",
+      "ruleRankingTitle": "Xếp hạng",
+      "ruleRankingDesc": "Bảng xếp hạng ưu tiên điểm số, sau đó đến thời gian hoàn thành.",
+      "ruleLeaderTitle": "Vai trò leader",
+      "ruleLeaderDesc": "Leader có thể quản lý lịch, reviewer và trạng thái publish.",
+      "personalTip": "Kiểm tra lịch mở trước khi publish để tránh trùng thời gian."
     }
   },
   "createGroupMockTestForm": {
     "examName": {
-      "manualTitle": "Manual Title"
+      "manualTitle": "Tự nhập tên đề"
     },
     "structure": {
-      "manualNotice": "Manual Notice",
-      "matchedTemplate": "Matched Template"
+      "manualNotice": "Bạn có thể tự cấu hình cấu trúc đề nếu chưa có mẫu phù hợp.",
+      "matchedTemplate": "Đã tìm thấy mẫu phù hợp"
     },
     "errors": {
-      "materialRequired": "Material Required"
+      "materialRequired": "Vui lòng chọn tài liệu trước khi tạo đề."
     },
     "buttons": {
-      "manualTemplate": "Manual Template"
+      "manualTemplate": "Tạo mẫu thủ công"
     },
     "toast": {
-      "generatedSuccess": "Generated Success"
+      "generatedSuccess": "Đã tạo đề thành công."
     }
   },
-  "No description": "No description",
+  "No description": "Chưa có mô tả",
   "groupDocumentsTab": {
-    "deleteDialogTitle": "Delete Dialog Title",
-    "deleteDialogDescription": "Delete Dialog Description",
-    "deleteDialogWarning": "Delete Dialog Warning",
-    "deleteDialogCancel": "Delete Dialog Cancel",
-    "deleteDialogDeleting": "Delete Dialog Deleting",
-    "deleteDialogConfirm": "Delete Dialog Confirm"
+    "deleteDialogTitle": "Xóa tài liệu",
+    "deleteDialogDescription": "Tài liệu sẽ bị gỡ khỏi không gian nhóm.",
+    "deleteDialogWarning": "Hành động này không thể hoàn tác.",
+    "deleteDialogCancel": "Hủy",
+    "deleteDialogDeleting": "Đang xóa...",
+    "deleteDialogConfirm": "Xóa tài liệu"
   },
   "groupWorkspaceProfileConfigMirror": {
-    "editConfigTitle": "Edit Config Title",
-    "editConfigDescription": "Edit Config Description",
+    "editConfigTitle": "Chỉnh cấu hình học tập",
+    "editConfigDescription": "Cập nhật mục tiêu, lĩnh vực và chế độ học cho nhóm.",
     "confirm": {
-      "updateTitle": "Update Title",
-      "updateDescription": "Update Description",
-      "saveUpdateButton": "Save Update Button"
+      "updateTitle": "Xác nhận cập nhật",
+      "updateDescription": "Cấu hình mới sẽ áp dụng cho các gợi ý học tập tiếp theo.",
+      "saveUpdateButton": "Lưu cập nhật"
     },
-    "finishUpdateButton": "Finish Update Button",
+    "finishUpdateButton": "Hoàn tất cập nhật",
     "messages": {
-      "updated": "Updated"
+      "updated": "Đã cập nhật"
     }
   },
   "quizDetailView": {
     "overview": {
-      "challengeStartModeDefault": "Challenge Start Mode Default",
-      "challengeStartModeLabel": "Challenge Start Mode Label"
+      "challengeStartModeDefault": "Theo lịch đã đặt",
+      "challengeStartModeLabel": "Cách bắt đầu challenge"
     }
   },
   "groupManage": {
     "settings": {
-      "deleteSuccess": "Delete Success"
+      "deleteSuccess": "Đã xóa nhóm thành công."
     }
   },
   "groupWalletTab": {
-    "qmcDescriptionCompact": "Qmc Description Compact",
-    "availableCredits": "Available Credits",
-    "availableCreditsNote": "Available Credits Note",
-    "noWalletUpdateYet": "No Wallet Update Yet",
-    "noPlanCreditExpiry": "No Plan Credit Expiry",
-    "balanceTitle": "Balance Title",
-    "topUpDescriptionCompact": "Top Up Description Compact"
+    "qmcDescriptionCompact": "Credit dùng cho các thao tác AI trong nhóm.",
+    "availableCredits": "Credit khả dụng",
+    "availableCreditsNote": "Số credit có thể dùng ngay.",
+    "noWalletUpdateYet": "Chưa có cập nhật ví.",
+    "noPlanCreditExpiry": "Credit gói hiện chưa có ngày hết hạn.",
+    "balanceTitle": "Số dư nhóm",
+    "topUpDescriptionCompact": "Nạp thêm credit để nhóm tiếp tục dùng AI."
   },
   "challengeManualMatchEditor": {
     "wizard": {
       "exitDialog": {
-        "titleEdit": "Title Edit",
-        "titleCreate": "Title Create"
+        "titleEdit": "Rời khỏi màn chỉnh sửa?",
+        "titleCreate": "Rời khỏi màn tạo trận?"
       }
     }
   },
   "quizResultPage": {
     "toFlashcard": {
-      "workspaceMissing": "Workspace Missing",
-      "workspaceFixedHint": "Workspace Fixed Hint"
+      "workspaceMissing": "Chưa chọn không gian học tập.",
+      "workspaceFixedHint": "Flashcard sẽ được lưu vào không gian hiện tại."
     },
-    "refreshAssessmentQueued": "Refresh Assessment Queued",
-    "refreshAssessmentFail": "Refresh Assessment Fail",
-    "score": "Score"
+    "refreshAssessmentQueued": "Đã đưa yêu cầu cập nhật đánh giá vào hàng đợi.",
+    "refreshAssessmentFail": "Không thể cập nhật đánh giá. Vui lòng thử lại.",
+    "score": "Điểm"
   },
   "notification": {
     "title": "Thông báo",

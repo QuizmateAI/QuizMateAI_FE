@@ -26,7 +26,7 @@ export default function SystemAnalysisModelManagement() {
   return (
     <SuperAdminPage className={fontClass}>
       <SuperAdminPageHeader
-        eyebrow="AI Governance"
+        eyebrow={t('sidebarSections.aiGovernance', 'Điều phối AI')}
         title={t('aiModels.systemAnalysis.title', 'Model AI cho phân tích hệ thống')}
         description={t(
           'aiModels.systemAnalysis.subtitle',

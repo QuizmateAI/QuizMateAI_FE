@@ -128,7 +128,7 @@ export default function PermissionRequestsPage() {
   return (
     <SuperAdminPage className={`animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
-        eyebrow="Access Control"
+        eyebrow={t('sidebarSections.accessControl', 'Quản trị truy cập')}
         title="Yêu cầu cấp quyền"
         description="Duyệt hoặc từ chối yêu cầu xin quyền từ admin. Có thể cấp kèm thời hạn, hệ thống sẽ tự động thu hồi khi hết hạn."
         actions={(

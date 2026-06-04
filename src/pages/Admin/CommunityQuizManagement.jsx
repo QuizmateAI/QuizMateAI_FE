@@ -245,7 +245,7 @@ export default function CommunityQuizManagement() {
   return (
     <SuperAdminPage className={fontClass}>
       <SuperAdminPageHeader
-        eyebrow={t('communityQuizManagement.header.eyebrow', 'Community')}
+        eyebrow={t('sidebarSections.workspace', 'Người dùng và nhóm')}
         title={t('communityQuizManagement.header.title', 'Quản lý quiz cộng đồng')}
         description={t(
           'communityQuizManagement.header.description',

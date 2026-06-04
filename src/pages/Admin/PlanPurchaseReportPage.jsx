@@ -183,8 +183,8 @@ const SORT_OPTIONS = [
   { value: 'purchases_asc', labelKey: 'planPurchases.sort.purchasesAsc', label: 'Lượt mua ↑' },
   { value: 'base_desc', labelKey: 'planPurchases.sort.baseDesc', label: 'Tiền gốc ↓' },
   { value: 'base_asc', labelKey: 'planPurchases.sort.baseAsc', label: 'Tiền gốc ↑' },
-  { value: 'margin_desc', labelKey: 'planPurchases.sort.marginDesc', label: 'Biên ↓' },
-  { value: 'margin_asc', labelKey: 'planPurchases.sort.marginAsc', label: 'Biên ↑' },
+  { value: 'margin_desc', labelKey: 'planPurchases.sort.marginDesc', label: 'Lợi nhuận ↓' },
+  { value: 'margin_asc', labelKey: 'planPurchases.sort.marginAsc', label: 'Lợi nhuận ↑' },
 ];
 
 function comparePlans(a, b, sortKey) {
@@ -498,8 +498,8 @@ export default function PlanPurchaseReportPage() {
   return (
     <SuperAdminPage>
       <SuperAdminPageHeader
-        eyebrow="Commerce"
-        title={t('planPurchases.title', 'Báo cáo gói & biên lợi nhuận')}
+        eyebrow={t('sidebarSections.commerce', 'Quản lý gói')}
+        title={t('planPurchases.title', 'Báo cáo doanh thu gói đăng ký')}
         actions={(
           <div className="flex items-center gap-2">
             <RevenueSparkline
@@ -653,7 +653,7 @@ export default function PlanPurchaseReportPage() {
 
               <ChartCard
                 isDarkMode={isDarkMode}
-                title={t('planPurchases.chart.margin', 'Lợi nhuận biên theo gói')}
+                title={t('planPurchases.chart.margin', 'Lợi nhuận theo gói')}
                 subtitle={t('planPurchases.chart.marginHint', 'Credit trừ COGS AI (lời còn lại từ pool credit). Đỏ = âm, xanh = dương.')}
                 summary={`${formatVnd(chartTotals.margin)} / ${formatVnd(chartTotals.credit)} credit (${
                   chartTotals.credit > 0 ? ((chartTotals.margin / chartTotals.credit) * 100).toFixed(1) : '0.0'
@@ -686,7 +686,7 @@ export default function PlanPurchaseReportPage() {
                       formatter={(value, name, props) => {
                         if (name === 'margin') {
                           const pct = props?.payload?.marginPct ?? 0;
-                          return [`${formatVnd(value)} (${pct.toFixed(1)}%)`, t('planPurchases.chart.marginLabel', 'Biên')];
+                          return [`${formatVnd(value)} (${pct.toFixed(1)}%)`, t('planPurchases.chart.marginLabel', 'Lợi nhuận')];
                         }
                         return [formatVnd(value), name];
                       }}
@@ -918,7 +918,7 @@ export default function PlanPurchaseReportPage() {
                   <TableHead className="text-right">{t('planPurchases.col.baseRevenue', 'Tiền gốc')}</TableHead>
                   <TableHead className="text-right">{t('planPurchases.col.revenue', 'Doanh thu')}</TableHead>
                   <TableHead className="text-right">{t('planPurchases.col.aiCogs', 'COGS AI')}</TableHead>
-                  <TableHead className="text-right">{t('planPurchases.col.margin', 'Biên ước lượng')}</TableHead>
+                  <TableHead className="text-right">{t('planPurchases.col.margin', 'Lợi nhuận ước tính')}</TableHead>
                   <TableHead className="w-[120px] text-right">{t('planPurchases.col.buyers', 'Chi tiết')}</TableHead>
                 </TableRow>
               </TableHeader>

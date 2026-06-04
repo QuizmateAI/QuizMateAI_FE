@@ -24,7 +24,11 @@
     "feedback": "Feedback",
     "myPermissions": "My permissions",
     "communityQuizzes": "Community Quizzes",
-    "policies": "Policies"
+    "policies": "Policies",
+    "planPurchases": "Plan and margin report",
+    "pnlOverview": "AI net profit",
+    "aiCostSummary": "AI costs",
+    "aiRequestAudit": "AI request audit"
   },
   "sidebarSections": {
     "overview": "Overview",
@@ -37,7 +41,8 @@
     "accessControl": "Access control",
     "aiGovernance": "AI orchestration",
     "trustSafety": "Trust",
-    "platformConfig": "Platform config"
+    "platformConfig": "Platform config",
+    "aiUsageCommerce": "AI system"
   },
   "policiesAdmin": {
     "title": "Manage Policies",
@@ -483,27 +488,27 @@
     },
     "overviewTitle": "Overview",
     "description": "Platform health, usage and revenue at a glance.",
-    "chartDay": "Chart Day",
-    "chartWeek": "Chart Week",
-    "chartMonth": "Chart Month",
+    "chartDay": "By day",
+    "chartWeek": "By week",
+    "chartMonth": "By month",
     "b": {
       "hero": {
-        "label": "Label"
+        "label": "Completed revenue"
       },
       "topPlans": {
-        "title": "Title",
-        "desc": "Desc",
-        "empty": "Empty"
+        "title": "Top revenue plans",
+        "desc": "Plans contributing the most revenue in the selected range.",
+        "empty": "No paid plan transactions yet."
       }
     },
     "detail": {
       "stacked": "Stacked",
-      "stackedHint": "Stacked Hint",
-      "topBuckets": "Top Buckets",
-      "topBucketsHint": "Top Buckets Hint",
+      "stackedHint": "Share of each payment type in total revenue.",
+      "topBuckets": "Highest revenue periods",
+      "topBucketsHint": "Ranks the days, weeks, or months with the highest revenue.",
       "bucketsCount": "Buckets Count",
       "weekday": "Weekday",
-      "weekdayHint": "Weekday Hint"
+      "weekdayHint": "Aggregated revenue by weekday."
     }
   },
   "adminManagement": {
@@ -576,18 +581,18 @@
       "expiresAt": "Expires At",
       "permanent": "Permanent"
     },
-    "deleteSuccess": "Delete Success",
-    "deleteError": "Delete Error",
+    "deleteSuccess": "Admin account deleted successfully.",
+    "deleteError": "Could not delete admin account.",
     "deleteDialog": {
       "confirmMismatch": "Confirm Mismatch",
       "reasonTooShort": "Reason Too Short",
-      "title": "Title",
+      "title": "Delete admin account",
       "description": "This action will permanently remove admin account {{username}} ({{email}}).",
       "warning": "Warning",
-      "confirmLabel": "Confirm Label",
+      "confirmLabel": "Confirmation text",
       "confirmHelp": "Confirm Help",
-      "reasonLabel": "Reason Label",
-      "reasonPlaceholder": "Reason Placeholder",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Enter an audit reason...",
       "reasonHelp": "Reason Help"
     },
     "metricAdmins": "Metric Admins",
@@ -940,7 +945,7 @@
     "metricRoles": "Metric Roles",
     "metricPermissions": "Metric Permissions",
     "metricAudit": "Metric Audit",
-    "metricUsersLabel": "Metric Users Label",
+    "metricUsersLabel": "Admins with overrides",
     "metricUsersHelper": "Metric Users Helper"
   },
   "subscription": {
@@ -1213,7 +1218,7 @@
       "status": "Status",
       "allStatuses": "All statuses",
       "open": "Open",
-      "dialogTitle": "Dialog Title",
+      "dialogTitle": "Filter AI models",
       "dialogDescription": "Dialog Description",
       "reset": "Reset",
       "searchAction": "Search Action"
@@ -1276,8 +1281,8 @@
       "officialReady": "Official Ready",
       "inputUsd": "Input Usd",
       "outputUsd": "Output Usd",
-      "formAppliedHint": "Form Applied Hint",
-      "formEmptyHint": "Form Empty Hint",
+      "formAppliedHint": "Official pricing has been loaded into the form. You can edit it before saving a new version.",
+      "formEmptyHint": "If this model is supported, use Sync official pricing to fill both price fields quickly.",
       "rate": "Rate"
     },
     "actions": {
@@ -1439,20 +1444,20 @@
       "outputCostUsd": "Output Cost Usd"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
-      "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
-      "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
-      "requests": "Requests"
+      "title": "Top features by AI cost",
+      "subtitle": "Ranks the 8 features with the highest provider cost.",
+      "empty": "No data for this range.",
+      "dayUnit": "day",
+      "featureCount": "features",
+      "allRange": "All",
+      "legendTop": "Top features",
+      "legendOther": "Other",
+      "legendUnit": "Unit: VND",
+      "total": "Total AI cost",
+      "columnFeature": "Feature",
+      "columnCost": "AI cost",
+      "columnShare": "Share",
+      "requests": "requests"
     },
     "tokens": {
       "input": "Input",
@@ -1630,20 +1635,20 @@
       "ROADMAP_REVIEW": "Roadmap review"
     },
     "topFeatures": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "empty": "Empty",
-      "dayUnit": "Day Unit",
-      "featureCount": "Feature Count",
-      "allRange": "All Range",
-      "legendTop": "Legend Top",
-      "legendOther": "Legend Other",
-      "legendUnit": "Legend Unit",
-      "total": "Total",
-      "columnFeature": "Column Feature",
-      "columnCost": "Column Cost",
-      "columnShare": "Column Share",
-      "requests": "Requests"
+      "title": "Top features by AI cost",
+      "subtitle": "Ranks the 8 features with the highest provider cost in the selected range.",
+      "empty": "No data for this range.",
+      "dayUnit": "day",
+      "featureCount": "features",
+      "allRange": "All",
+      "legendTop": "Top features",
+      "legendOther": "Other",
+      "legendUnit": "Unit: VND",
+      "total": "Total AI cost",
+      "columnFeature": "Feature",
+      "columnCost": "AI cost",
+      "columnShare": "Share",
+      "requests": "requests"
     }
   },
   "aiProviders": {
@@ -1917,7 +1922,7 @@
   "creditPackage": {
     "add": "Add",
     "addTitle": "Add Title",
-    "basicInfo": "Basic Info",
+    "basicInfo": "Basic information",
     "confirmDelete": "Confirm Delete",
     "confirmDeleteDesc": "Confirm Delete Desc",
     "create": "Create",
@@ -1931,11 +1936,11 @@
     "empty": "Empty",
     "form": {
       "bonusCredit": "Bonus Credit",
-      "creditAmount": "Credit Amount",
+      "creditAmount": "Credit amount",
       "description": "Description",
       "descriptionPlaceholder": "Description Placeholder",
       "name": "Name",
-      "namePlaceholder": "Name Placeholder",
+      "namePlaceholder": "Example: Starter, Pro, Enterprise...",
       "price": "Price"
     },
     "formDesc": "Form Desc",
@@ -2013,7 +2018,7 @@
       "creditAmount": "Credit amount",
       "price": "Price (VND)",
       "bonusCredit": "Bonus credits",
-      "bonusCreditHint": "Bonus Credit Hint"
+      "bonusCreditHint": "Automatically adds 10% of the package credits."
     },
     "systemSettings": {
       "title": "Credit purchase settings",
@@ -2332,93 +2337,93 @@
   },
   "communityQuizManagement": {
     "toast": {
-      "unshareSuccess": "Unshare Success"
+      "unshareSuccess": "Quiz removed from community."
     },
     "header": {
-      "eyebrow": "Eyebrow",
-      "title": "Title",
-      "description": "Description",
+      "eyebrow": "Community",
+      "title": "Community quiz management",
+      "description": "Review public quizzes, engagement signals, and sharing status.",
       "refresh": "Refresh"
     },
     "metrics": {
-      "totalQuizzes": "Total Quizzes",
-      "totalQuizzesHelper": "Total Quizzes Helper",
-      "totalClones": "Total Clones",
-      "currentPageHelper": "Current Page Helper",
-      "averageRating": "Average Rating",
+      "totalQuizzes": "Community quizzes",
+      "totalQuizzesHelper": "Total quizzes matching the current filters.",
+      "totalClones": "Clones",
+      "currentPageHelper": "Calculated from the current page.",
+      "averageRating": "Average rating",
       "totalRatingsHelper": "{{count}} lượt đánh giá",
-      "totalComments": "Total Comments"
+      "totalComments": "Comments"
     },
     "filters": {
-      "searchPlaceholder": "Search Placeholder",
-      "allStatuses": "All Statuses"
+      "searchPlaceholder": "Search by quiz title, description, or creator...",
+      "allStatuses": "All statuses"
     },
     "table": {
-      "title": "Title",
-      "description": "Description",
+      "title": "Community quiz list",
+      "description": "Monitor public quizzes and remove them from community when needed.",
       "quiz": "Quiz",
       "creator": "Creator",
       "status": "Status",
       "signals": "Signals",
       "createdAt": "Created At",
       "actions": "Actions",
-      "untitled": "Untitled",
+      "untitled": "Untitled quiz",
       "questionCount": "{{count}} câu",
       "shared": "Shared",
-      "unshared": "Unshared"
+      "unshared": "Removed"
     },
     "empty": {
-      "title": "Title",
-      "description": "Description"
+      "title": "No community quizzes yet",
+      "description": "No quizzes match the current filters."
     },
     "actions": {
       "preview": "Preview",
-      "remove": "Remove"
+      "remove": "Remove from community"
     },
     "preview": {
-      "description": "Description"
+      "description": "Preview quiz content before taking action."
     },
     "removeDialog": {
-      "title": "Title",
-      "description": "Description",
-      "creatorLabel": "Creator Label",
+      "title": "Remove quiz from community",
+      "description": "The quiz will no longer appear in the community area. The creator keeps the original copy in their workspace.",
+      "creatorLabel": "Creator",
       "cancel": "Cancel",
-      "confirm": "Confirm"
+      "confirm": "Remove from community"
     }
   },
   "planPurchases": {
-    "versionOld": "Version Old",
-    "title": "Title",
-    "sparklineLabel": "Sparkline Label",
-    "hideCharts": "Hide Charts",
-    "showCharts": "Show Charts",
+    "versionOld": "old",
+    "title": "Plan and margin report",
+    "sparklineLabel": "Paid plan revenue - 30 days",
+    "hideCharts": "Hide charts",
+    "showCharts": "Show charts",
     "chart": {
-      "versionFilter": "Version Filter",
-      "versionCurrent": "Version Current",
-      "versionAll": "Version All",
-      "versionHint": "Version Hint",
-      "revenueSplit": "Revenue Split",
-      "revenueSplitHint": "Revenue Split Hint",
-      "creditPart": "Credit Part",
-      "basePart": "Base Part",
-      "margin": "Margin",
-      "marginHint": "Margin Hint",
-      "marginLabel": "Margin Label"
+      "versionFilter": "Version filter",
+      "versionCurrent": "Current versions",
+      "versionAll": "All versions",
+      "versionHint": "Includes older snapshots; the table below always remains complete.",
+      "revenueSplit": "Revenue split by plan",
+      "revenueSplitHint": "Each bar is one plan, split by credit and base portions.",
+      "creditPart": "Credit portion",
+      "basePart": "Base portion",
+      "margin": "Plan margin",
+      "marginHint": "Credits minus AI COGS. Red is negative, green is positive.",
+      "marginLabel": "Margin"
     },
     "tab": {
-      "plans": "Plans",
-      "credits": "Credits"
+      "plans": "Paid plans",
+      "credits": "Credit purchases"
     },
     "credit": {
       "col": {
-        "package": "Package",
+        "package": "Credit package",
         "scope": "Scope",
-        "creditsDelivered": "Credits Delivered"
+        "creditsDelivered": "Credits delivered"
       },
-      "empty": "Empty",
-      "totalRevenue": "Total Revenue",
-      "totalCredits": "Total Credits",
-      "totalPurchases": "Total Purchases"
+      "empty": "No credit purchases in the selected range.",
+      "totalRevenue": "Total credit revenue",
+      "totalCredits": "Total delivered credits",
+      "totalPurchases": "Total purchases"
     },
     "col": {
       "purchases": "Purchases",
@@ -2440,38 +2445,48 @@
       "paidAt": "Paid At",
       "active": "Active",
       "expired": "Expired",
-      "versionMismatchTip": "Version Mismatch Tip",
-      "versionMatchTip": "Version Match Tip",
+      "versionMismatchTip": "A newer version exists; the old plan remains valid.",
+      "versionMatchTip": "This is the current version.",
       "expiresAt": "Expires At"
     },
     "versionTable": {
-      "title": "Title",
-      "subtitle": "Subtitle",
-      "subtitleSuffix": "Subtitle Suffix",
-      "searchPlaceholder": "Search Placeholder",
-      "groupLabel": "Group Label",
-      "allOption": "All Option",
-      "statusLabel": "Status Label",
-      "statusCurrent": "Status Current",
-      "statusOld": "Status Old",
-      "sortLabel": "Sort Label",
-      "noMatch": "No Match",
-      "statusCurrentBadge": "Status Current Badge",
-      "totalsLabel": "Totals Label",
-      "versionsUnit": "Versions Unit"
+      "title": "Version details",
+      "subtitle": "Each row represents one plan and version. Click ",
+      "subtitleSuffix": " to view users who purchased it.",
+      "searchPlaceholder": "Search by plan name or version...",
+      "groupLabel": "Plan group",
+      "allOption": "All",
+      "statusLabel": "Status",
+      "statusCurrent": "Current",
+      "statusOld": "Old",
+      "sortLabel": "Sort",
+      "noMatch": "No plans match the current filters.",
+      "statusCurrentBadge": "current",
+      "totalsLabel": "Totals",
+      "versionsUnit": "versions"
     },
-    "empty": "Empty",
-    "versionCurrentTip": "Version Current Tip",
-    "versionHistoricalTip": "Version Historical Tip",
-    "buyersTitle": "Buyers Title",
-    "buyersHint": "Buyers Hint",
-    "buyersEmpty": "Buyers Empty",
+    "empty": "No plan transactions in the selected range.",
+    "versionCurrentTip": "Current version for sale",
+    "versionHistoricalTip": "Old snapshot replaced by a newer version",
+    "buyersTitle": "Payers",
+    "buyersHint": "COMPLETED transactions for this plan in the filtered range.",
+    "buyersEmpty": "No records.",
     "creditBuyers": {
-      "title": "Title",
-      "hint": "Hint",
-      "creditsOnPage": "Credits On Page",
-      "creditsReceived": "Credits Received",
+      "title": "Credit buyers",
+      "hint": "COMPLETED transactions for this credit package in the filtered range.",
+      "creditsOnPage": "Credits on page",
+      "creditsReceived": "Credits received",
       "scope": "Scope"
+    },
+    "sort": {
+      "revenueDesc": "Revenue descending",
+      "revenueAsc": "Revenue ascending",
+      "purchasesDesc": "Purchases descending",
+      "purchasesAsc": "Purchases ascending",
+      "baseDesc": "Base revenue descending",
+      "baseAsc": "Base revenue ascending",
+      "marginDesc": "Margin descending",
+      "marginAsc": "Margin ascending"
     }
   }
 }
