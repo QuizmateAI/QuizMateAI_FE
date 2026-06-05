@@ -1,14 +1,12 @@
 import { GoogleOAuthProvider } from '@react-oauth/google';
-
-const googleClientId = typeof import.meta.env.VITE_GOOGLE_CLIENT_ID === 'string'
-  ? import.meta.env.VITE_GOOGLE_CLIENT_ID.trim()
-  : '';
+import { getGoogleClientId } from '@/lib/runtimeConfig';
 
 export function isGoogleAuthEnabled() {
-  return Boolean(googleClientId);
+  return Boolean(getGoogleClientId());
 }
 
 export default function AuthGoogleProvider({ children }) {
+  const googleClientId = getGoogleClientId();
   if (!googleClientId) {
     return children;
   }
@@ -19,3 +17,4 @@ export default function AuthGoogleProvider({ children }) {
     </GoogleOAuthProvider>
   );
 }
+
