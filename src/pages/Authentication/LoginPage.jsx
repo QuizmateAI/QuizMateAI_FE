@@ -335,15 +335,7 @@ const LoginPageContent = () => {
                     {t('auth.loginButton')} <ArrowRight className="w-4 h-4" />
                   </PrimaryButton>
 
-                  <div className="relative flex items-center py-1">
-                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
-                    <span className="flex-shrink mx-3 text-gray-400 dark:text-slate-500 text-[11px] uppercase tracking-wider">
-                      {t('auth.orLoginWith')}
-                    </span>
-                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
-                  </div>
-
-                  <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
+                  <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium mt-4">
                     {t('auth.noAccount')}{' '}
                     <button
                       type="button"
@@ -353,21 +345,6 @@ const LoginPageContent = () => {
                       {t('auth.signUp')}
                     </button>
                   </p>
-
-                  {isGoogleAuthEnabled() ? (
-                    <div className="flex justify-center w-full">
-                      <GoogleLogin
-                        onSuccess={loginHook.handleGoogleSubmit}
-                        onError={() => loginHook.setError(t('auth.loginGoogleFailed', 'Google login failed. Please try again.'))}
-                        useOneTap
-                        theme="outline"
-                        shape="pill"
-                        width="384"
-                        text="signin_with"
-                        locale={baseLang}
-                      />
-                    </div>
-                  ) : null}
                 </form>
               </div>
             )}
@@ -669,7 +646,7 @@ const LoginPageContent = () => {
                       {t('auth.createAccount')} <ArrowRight className="w-4 h-4" />
                     </PrimaryButton>
 
-                    <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
+                    <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium mt-4">
                       {t('auth.alreadyHaveAccount')}{' '}
                       <button
                         type="button"
@@ -682,29 +659,6 @@ const LoginPageContent = () => {
                         {t('auth.login')}
                       </button>
                     </p>
-
-                    <div className="relative flex items-center py-1">
-                      <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
-                      <span className="flex-shrink mx-3 text-gray-400 dark:text-slate-500 text-[11px] uppercase tracking-wider">
-                        {t('auth.orRegisterWith')}
-                      </span>
-                      <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
-                    </div>
-
-                    {isGoogleAuthEnabled() ? (
-                      <div className="flex justify-center w-full">
-                        <GoogleLogin
-                          onSuccess={loginHook.handleGoogleSubmit}
-                          onError={() => loginHook.setError(t('auth.loginGoogleFailed', 'Google login failed. Please try again.'))}
-                          useOneTap
-                          theme="outline"
-                          shape="pill"
-                          width="384"
-                          text="signin_with"
-                          locale={baseLang}
-                        />
-                      </div>
-                    ) : null}
                   </form>
                 )}
 
@@ -720,6 +674,37 @@ const LoginPageContent = () => {
                     }}
                   />
                 )}
+              </div>
+            )}
+
+            {isGoogleAuthEnabled() && (view === 'login' || (view === 'register' && registerHook.registerStep === 'form')) && (
+              <div className="mt-4 space-y-4">
+                <div className="relative flex items-center py-1">
+                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                  <span className="flex-shrink mx-3 text-gray-400 dark:text-slate-500 text-[11px] uppercase tracking-wider">
+                    {view === 'login' ? t('auth.orLoginWith') : t('auth.orRegisterWith')}
+                  </span>
+                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
+                </div>
+                <div className="flex justify-center w-full">
+                  <GoogleLogin
+                    onSuccess={loginHook.handleGoogleSubmit}
+                    onError={() => {
+                      const errMsg = t('auth.loginGoogleFailed', 'Google login failed. Please try again.');
+                      if (view === 'register') {
+                        registerHook.setError(errMsg);
+                      } else {
+                        loginHook.setError(errMsg);
+                      }
+                    }}
+                    useOneTap={view === 'login'}
+                    theme="outline"
+                    shape="pill"
+                    width="384"
+                    text="signin_with"
+                    locale={baseLang}
+                  />
+                </div>
               </div>
             )}
           </div>
