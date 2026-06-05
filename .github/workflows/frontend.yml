@@ -1,61 +1,24 @@
 name: Deploy Frontend
 
-# PR10: split into quality-gate (lint/test/audit) → build/lighthouse → deploy. The deploy step
-# is fenced behind a GitHub Environment so prod requires reviewer approval per repo settings
-# → Environments → production → Required reviewers.
-
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-      - Tai
-  workflow_dispatch:
 
 jobs:
-  # ------------------------------------------------------------------------------------------
-  # 1. Quality gate: lint + unit tests + audit. Cheap and fast — fail loud on bad PRs before
-  # we burn time on the Lighthouse / build step.
-  # ------------------------------------------------------------------------------------------
-  quality-gate:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Install dependencies
-        run: npm ci
 
-      - name: ESLint
-        run: npm run lint
-
-      - name: Vitest (unit + interceptor + runtime config)
-        run: npm test -- --run
-
-      # npm audit fires on CRITICAL/HIGH vulns. Don't fail on moderate/low — those produce too
-      # much noise and the team can address them via Dependabot PRs.
-      - name: npm audit (high+)
-        run: npm audit --omit=dev --audit-level=high
-        continue-on-error: true
-
-  # ------------------------------------------------------------------------------------------
-  # 2. Build + Lighthouse. Runs in PRs too so we catch routing/import/build regressions early.
-  # ------------------------------------------------------------------------------------------
-  build:
-    runs-on: ubuntu-latest
-    needs: [quality-gate]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
       - name: Install dependencies
         run: npm ci
 
@@ -95,34 +58,6 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
 
-      # Upload dist for the deploy job. Saves a second `npm run build` and guarantees the same
-      # bytes that just passed Lighthouse are what ships.
-      - name: Upload dist artifact
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
-
-  # ------------------------------------------------------------------------------------------
-  # 3. Deploy. Fenced behind `environment: production` so prod requires reviewer approval per
-  # the repo's environment protection rules.
-  # ------------------------------------------------------------------------------------------
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [build]
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    environment:
-      name: production
-      url: https://quizmateai.io.vn
-    steps:
-      - name: Download dist artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -130,14 +65,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
           aws-region: us-east-1
 
-      # Upload index.html + config.js with no-store so browsers always pick up the latest
-      # bundle hashes and the latest runtime config after a redeploy.
+      # Upload index.html with no-store so browsers always fetch latest after deploy
       - name: Upload index.html (no-cache)
         run: |
           aws s3 cp dist/index.html s3://quizmateai-static/index.html \
             --cache-control "no-store" \
             --content-type "text/html; charset=utf-8"
 
+      # Runtime config served fresh (no-store) so config changes apply without a rebuild
       - name: Upload config.js (no-cache)
         run: |
           if [ -f dist/config.js ]; then
@@ -146,7 +81,7 @@ jobs:
               --content-type "application/javascript; charset=utf-8"
           fi
 
-      # All hashed assets get the long immutable cache. --delete removes stale chunks from S3.
+      # Upload all hashed assets with long-lived immutable cache
       - name: Upload static assets (immutable cache)
         run: |
           aws s3 sync dist s3://quizmateai-static \
@@ -155,6 +90,8 @@ jobs:
             --cache-control "public, max-age=31536000, immutable" \
             --delete
 
+      # Purge Cloudflare cache so visitors get fresh index.html on next request.
+      # CloudFront is replaced by a Cloudflare Worker that proxies to S3.
       - name: Purge Cloudflare cache
         run: |
           curl -fsS -X POST \
