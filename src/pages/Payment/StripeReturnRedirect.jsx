@@ -35,7 +35,7 @@ export default function StripeReturnRedirect() {
       return;
     }
 
-    const returnUrl = `${apiOrigin}/api/stripe/return${window.location.search}`;
+    const returnUrl = `${apiOrigin}/api/v1/stripe/return${window.location.search}`;
     window.location.replace(returnUrl);
 
     const timeoutId = setTimeout(() => setShowFallback(true), 4000);

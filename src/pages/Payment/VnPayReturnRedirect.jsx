@@ -38,7 +38,7 @@ export default function VnPayReturnRedirect() {
       return;
     }
 
-    const returnUrl = `${apiOrigin}/api/vnpay/return${window.location.search}`;
+    const returnUrl = `${apiOrigin}/api/v1/vnpay/return${window.location.search}`;
     window.location.replace(returnUrl);
 
     const timeoutId = setTimeout(() => setShowFallback(true), 4000);

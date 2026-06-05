@@ -37,7 +37,7 @@ export default function MomoReturnRedirect() {
       return;
     }
 
-    const returnUrl = `${apiOrigin}/api/momo/return${window.location.search}`;
+    const returnUrl = `${apiOrigin}/api/v1/momo/return${window.location.search}`;
     window.location.replace(returnUrl);
 
     const timeoutId = setTimeout(() => setShowFallback(true), 4000);
