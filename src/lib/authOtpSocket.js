@@ -79,10 +79,11 @@ export function waitForOtpStatus(email, sendOtpRequest, options = {}) {
     };
 
     client.onStompError = (frame) => {
-      const message = frame.headers?.message || 'Kết nối WebSocket gửi OTP gặp lỗi';
-      if (/401|403|unauthorized|forbidden/i.test(message)) {
-        fail(message);
-      }
+      // A STOMP ERROR frame is terminal — the broker closes the connection right after it.
+      // For the pre-auth OTP flow these are deterministic (auth/config), never transient, so
+      // surface the real server message immediately instead of waiting out the full timeout
+      // and showing the misleading "phản hồi chậm" message.
+      fail(frame.headers?.message || 'Kết nối WebSocket gửi OTP gặp lỗi');
     };
 
     client.onWebSocketError = () => {
