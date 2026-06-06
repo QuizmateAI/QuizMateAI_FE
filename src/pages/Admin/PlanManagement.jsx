@@ -163,6 +163,7 @@ function PlanManagement() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const editingPlanRef = useRef(null);
   const stompClientRef = useRef(null);
+  const submitBlockRef = useRef(false);
 
   useEffect(() => {
     editingPlanRef.current = editingPlan;
@@ -301,6 +302,7 @@ function PlanManagement() {
   }, [applyPlanEditabilityPayload]);
 
   const openCreateForm = () => {
+    submitBlockRef.current = false;
     setEditingPlan(null);
     setFormData({ ...EMPTY_FORM });
     setEntitlement({ ...EMPTY_ENTITLEMENT });
@@ -310,6 +312,7 @@ function PlanManagement() {
   };
 
   const populatePlanForm = (plan) => {
+    submitBlockRef.current = false;
     setEditingPlan(plan);
     // Backend returns USER | WORKSPACE; normalize legacy GROUP_WORKSPACE for dropdown
     const planScope = (plan.planScope === 'GROUP_WORKSPACE' || plan.planScope === 'WORKSPACE') ? 'WORKSPACE' : (plan.planScope || 'USER');
@@ -383,6 +386,9 @@ function PlanManagement() {
       }
       showError(msg);
     },
+    onSettled: () => {
+      submitBlockRef.current = false;
+    },
   });
 
   const statusMutation = useMutation({
@@ -417,6 +423,7 @@ function PlanManagement() {
 
   const handleSubmit = (e) => {
     e?.preventDefault?.();
+    if (submitBlockRef.current || isSubmitting) return;
     const isDefaultPlanLevel = String(formData.planLevel ?? '0') === '0';
     if (editingPlan?.editable === false) {
       showError(getPlanEditLockedReason(editingPlan));
@@ -478,6 +485,7 @@ function PlanManagement() {
       aiFunctionAssignments: buildFunctionAssignmentsPayload(functionAssignmentMap),
     };
 
+    submitBlockRef.current = true;
     if (editingPlan) {
       savePlanMutation.mutate({ id: editingPlan.planCatalogId, payload });
     } else {
