@@ -22,6 +22,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Sparkles,
+  Crown,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VietnamFlag from '@/assets/Viet_nam.png';
@@ -71,6 +73,7 @@ function GroupSidebar({
   wsConnected = false,
   memberCount = 0,
   disabledMap = {},
+  lockReasonMap = {},
   hiddenMap = {},
   badgeMap = {},
   collapsed = false,
@@ -104,7 +107,12 @@ function GroupSidebar({
   });
 
   const handleNavigate = (section) => {
-    if (disabledMap?.[section]) return;
+    if (disabledMap?.[section]) {
+      if (lockReasonMap?.[section] === 'plan') {
+        onSectionChange?.(section);
+      }
+      return;
+    }
     onSectionChange?.(section);
     if (isMobile) {
       onCloseMobile?.();
@@ -125,7 +133,12 @@ function GroupSidebar({
   );
 
   const handleChildNavigate = (parentId, childId) => {
-    if (disabledMap?.[parentId]) return;
+    if (disabledMap?.[parentId]) {
+      if (lockReasonMap?.[parentId] === 'plan') {
+        onSectionChange?.(parentId);
+      }
+      return;
+    }
     if (typeof onStudioSubAction === 'function') {
       onStudioSubAction({ parentId, childId });
       if (isMobile) {
@@ -250,22 +263,31 @@ function GroupSidebar({
                   || (item.id === 'quiz' && quizBranchBusy)
                   || (item.id === 'flashcard' && flashcardBranchBusy));
 
+              const lockReason = lockReasonMap?.[item.id];
+              const isPlanLocked = isDisabled && lockReason === 'plan';
+
               if (!hasChildren) {
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleNavigate(item.id)}
-                    disabled={isDisabled}
+                    aria-disabled={isDisabled || undefined}
                     aria-current={isActive ? 'page' : undefined}
-                    title={isCollapsed ? t(`groupWorkspace.shell.nav.${item.id}`) : undefined}
+                    title={
+                      isCollapsed
+                        ? isPlanLocked
+                          ? `${t(`groupWorkspace.shell.nav.${item.id}`)} (VIP)`
+                          : t(`groupWorkspace.shell.nav.${item.id}`)
+                        : undefined
+                    }
                     className={cn(
                       'relative flex w-full items-center gap-2 rounded-[16px] border py-2 text-left transition-[background-color,border-color,color,box-shadow] duration-200 ease-out',
                       isCollapsed ? 'justify-center px-1.5' : 'px-2.5',
                       isDisabled
                         ? isDarkMode
-                          ? 'cursor-not-allowed border-slate-700 bg-slate-800/70 text-slate-500'
-                          : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300'
+                          ? 'cursor-pointer border-slate-700 bg-slate-800/70 text-slate-500 hover:border-slate-600 hover:bg-slate-800'
+                          : 'cursor-pointer border-slate-200 bg-slate-100 text-slate-400 hover:border-slate-300 hover:bg-slate-200/70'
                         : isActive
                           ? 'border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]'
                           : isDarkMode
@@ -278,9 +300,13 @@ function GroupSidebar({
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out',
                         isActive
                           ? 'border-blue-500 bg-blue-500 text-white'
-                          : isDarkMode
-                            ? 'border-slate-700 bg-slate-800 text-slate-300'
-                            : 'border-slate-200 bg-white text-slate-600',
+                          : isDisabled
+                            ? isDarkMode
+                              ? 'border-slate-700 bg-slate-900 text-slate-500'
+                              : 'border-slate-200 bg-white text-slate-400'
+                            : isDarkMode
+                              ? 'border-slate-700 bg-slate-800 text-slate-300'
+                              : 'border-slate-200 bg-white text-slate-600',
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -289,6 +315,20 @@ function GroupSidebar({
                     {!isCollapsed ? (
                       <span className={cn('min-w-0 flex-1 truncate text-[14px] font-semibold', fontClass)}>
                         {t(`groupWorkspace.shell.nav.${item.id}`)}
+                      </span>
+                    ) : null}
+
+                    {isPlanLocked && !isCollapsed ? (
+                      <span
+                        className={cn(
+                          "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                          isDarkMode
+                            ? "bg-amber-500/20 text-amber-300"
+                            : "bg-amber-100 text-amber-600",
+                        )}
+                        title={t("workspace.shell.lockTooltip.plan", "Nâng cấp gói để mở khóa tính năng này")}
+                      >
+                        <Crown className="h-3 w-3" />
                       </span>
                     ) : null}
 
@@ -320,21 +360,35 @@ function GroupSidebar({
                       'w-full rounded-[16px] border transition-[background-color,border-color,color,box-shadow] duration-200 ease-out',
                       isCollapsed ? 'border-transparent' : isActive
                         ? 'border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]'
-                        : isDarkMode
-                          ? 'border-transparent bg-slate-900 text-slate-300'
-                          : 'border-transparent bg-white text-slate-600',
+                        : isDisabled
+                          ? isDarkMode
+                            ? 'border-slate-700 bg-slate-800/70 text-slate-500'
+                            : 'border-slate-200 bg-slate-100 text-slate-400'
+                          : isDarkMode
+                            ? 'border-transparent bg-slate-900 text-slate-300'
+                            : 'border-transparent bg-white text-slate-600',
                     )}
                   >
                     <button
                       type="button"
                       onClick={() => handleNavigate(item.id)}
-                      disabled={isDisabled}
+                      aria-disabled={isDisabled || undefined}
                       aria-current={isActive && String(studioActiveView || '') === item.id ? 'page' : undefined}
-                      title={isCollapsed ? t(`groupWorkspace.shell.nav.${item.id}`) : undefined}
+                      title={
+                        isCollapsed
+                          ? isPlanLocked
+                            ? `${t(`groupWorkspace.shell.nav.${item.id}`)} (VIP)`
+                            : t(`groupWorkspace.shell.nav.${item.id}`)
+                          : undefined
+                      }
                       className={cn(
                         'relative flex min-w-0 flex-1 items-center gap-2 py-2 text-left',
                         isCollapsed ? 'justify-center px-1.5' : 'px-2.5',
-                        isDisabled && 'cursor-not-allowed opacity-60',
+                        isDisabled
+                          ? isDarkMode
+                            ? 'cursor-pointer text-slate-500'
+                            : 'cursor-pointer text-slate-400'
+                          : '',
                       )}
                     >
                       <span
@@ -342,9 +396,13 @@ function GroupSidebar({
                           'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out',
                           isActive
                             ? 'border-blue-500 bg-blue-500 text-white'
-                            : isDarkMode
-                              ? 'border-slate-700 bg-slate-800 text-slate-300'
-                              : 'border-slate-200 bg-white text-slate-600',
+                            : isDisabled
+                              ? isDarkMode
+                                ? 'border-slate-700 bg-slate-900 text-slate-500'
+                                : 'border-slate-200 bg-white text-slate-400'
+                              : isDarkMode
+                                ? 'border-slate-700 bg-slate-800 text-slate-300'
+                                : 'border-slate-200 bg-white text-slate-600',
                         )}
                       >
                         <Icon className="h-4 w-4" />
@@ -352,6 +410,19 @@ function GroupSidebar({
                       {!isCollapsed ? (
                         <span className={cn('min-w-0 flex-1 truncate text-[14px] font-semibold', fontClass)}>
                           {t(`groupWorkspace.shell.nav.${item.id}`)}
+                        </span>
+                      ) : null}
+                      {isPlanLocked && !isCollapsed ? (
+                        <span
+                          className={cn(
+                            "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full mr-1",
+                            isDarkMode
+                              ? "bg-amber-500/20 text-amber-300"
+                              : "bg-amber-100 text-amber-600",
+                          )}
+                          title={t("workspace.shell.lockTooltip.plan", "Nâng cấp gói để mở khóa tính năng này")}
+                        >
+                          <Crown className="h-3 w-3" />
                         </span>
                       ) : null}
                       {badgeValue && !isCollapsed ? (

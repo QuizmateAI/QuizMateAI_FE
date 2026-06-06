@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   useEffect,
   useRef,
   useState,
@@ -2978,7 +2978,7 @@ function WorkspacePage() {
   );
   const personalSidebarDisabledMap = useMemo(
     () => ({
-      roadmap: shouldDisableRoadmapForStudio,
+      roadmap: canCreateRoadmap === false || shouldDisableRoadmapForStudio,
       quiz: shouldDisableQuiz,
       flashcard: shouldDisableFlashcard,
       mockTest: shouldDisableMockTest,
@@ -2986,6 +2986,7 @@ function WorkspacePage() {
       questionStats: !planEntitlements.hasWorkspaceAnalytics,
     }),
     [
+      canCreateRoadmap,
       shouldDisableRoadmapForStudio,
       shouldDisableQuiz,
       shouldDisableFlashcard,
