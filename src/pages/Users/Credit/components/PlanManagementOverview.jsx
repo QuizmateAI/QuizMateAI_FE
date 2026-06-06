@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, AlertCircle, ArrowUpRight, CalendarDays, CreditCard, Plus, ReceiptText, RefreshCw, ShieldCheck, Calculator, Wallet } from "lucide-react";
+import { Activity, AlertCircle, ArrowUpRight, CalendarDays, CreditCard, Plus, ReceiptText, RefreshCw, ShieldCheck, Calculator, Wallet, Crown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -173,6 +173,7 @@ export default function PlanManagementOverview({
   const [paymentError, setPaymentError] = useState("");
   const [confirmPackage, setConfirmPackage] = useState(null);
   const [isCustomCreditDialogOpen, setIsCustomCreditDialogOpen] = useState(false);
+  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
   const [activeHistoryTab, setActiveHistoryTab] = useState("payment");
   const [usageTransactions, setUsageTransactions] = useState([]);
   const [loadingUsage, setLoadingUsage] = useState(false);
@@ -487,11 +488,13 @@ export default function PlanManagementOverview({
               ) : null}
             </div>
 
-            {!canBuyCredit ? (
-              <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+            {!canBuyCredit && (
+              <p className={`text-sm mb-4 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
                 {t("walletPage.buy.cannotBuyCredit", "Your current plan does not support buying extra credits.")}
               </p>
-            ) : loadingCreditPackages ? (
+            )}
+
+            {loadingCreditPackages ? (
               <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                 {t("walletPage.buy.loading", "Loading...")}
               </p>
@@ -521,17 +524,33 @@ export default function PlanManagementOverview({
                     <button
                       key={pkg.creditPackageId ?? `${packageName}-${base}-${bonus}`}
                       type="button"
-                      onClick={() => setConfirmPackage(pkg)}
+                      onClick={() => {
+                        if (!canBuyCredit) {
+                          setIsUpgradePromptOpen(true);
+                        } else {
+                          setConfirmPackage(pkg);
+                        }
+                      }}
                       className={`min-h-[80px] w-full cursor-pointer rounded-xl p-4 text-left ring-1 ring-inset transition-colors ${
-                        isDarkMode
-                          ? "bg-slate-950/60 ring-slate-700 hover:bg-slate-800"
-                          : "bg-white ring-slate-200 hover:bg-slate-100"
+                        !canBuyCredit
+                          ? isDarkMode
+                            ? "bg-slate-950/30 ring-slate-800 opacity-70 grayscale-[20%] hover:ring-slate-700"
+                            : "bg-slate-50/50 ring-slate-200 opacity-75 grayscale-[15%] hover:ring-slate-300"
+                          : isDarkMode
+                            ? "bg-slate-950/60 ring-slate-700 hover:bg-slate-800"
+                            : "bg-white ring-slate-200 hover:bg-slate-100"
                       }`}
                     >
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className={`truncate text-sm font-bold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                          <p className={`truncate text-sm font-bold ${isDarkMode ? "text-slate-100" : "text-slate-900"} flex items-center gap-1.5`}>
                             {packageName}
+                            {!canBuyCredit && (
+                              <Badge className="flex items-center gap-0.5 rounded-full border-0 bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[8px] font-bold text-white shadow-sm">
+                                <Crown className="h-2 w-2 shrink-0" />
+                                VIP
+                              </Badge>
+                            )}
                           </p>
                           <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                             {t("walletPage.buy.baseCredits", "{{count}} base credits", { count: formatNumber(base, locale) })}
@@ -539,7 +558,7 @@ export default function PlanManagementOverview({
                             {t("walletPage.buy.bonusCredits", "+{{count}} bonus credits", { count: formatNumber(bonus, locale) })}
                           </p>
                         </div>
-                        <p className="shrink-0 whitespace-nowrap text-sm font-black tabular-nums sm:text-right">
+                        <p className={`shrink-0 whitespace-nowrap text-sm font-black tabular-nums sm:text-right ${!canBuyCredit ? "text-slate-500" : ""}`}>
                           {formatVnd(pkg?.price ?? 0, locale)}
                         </p>
                       </div>
@@ -671,6 +690,50 @@ export default function PlanManagementOverview({
               isGroupScopedPage={isGroupScopedPage}
               variant="dialog"
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUpgradePromptOpen} onOpenChange={setIsUpgradePromptOpen}>
+        <DialogContent
+          className={`max-w-[460px] overflow-hidden rounded-[28px] p-0 shadow-2xl ${
+            isDarkMode ? "border-slate-700 bg-slate-950 text-slate-50" : "border-slate-200 bg-white text-slate-950"
+          }`}
+        >
+          <DialogHeader className={`border-b px-6 py-5 text-left ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-amber-500">
+              <Crown className="h-5 w-5 text-amber-500" />
+              {t("plan.buyCreditLockTitle", "Yêu cầu nâng cấp gói")}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : "text-slate-500"}>
+              {t("plan.buyCreditLockDesc", "Tính năng nạp thêm credit chỉ áp dụng cho người dùng sở hữu Gói AI học tập trả phí. Vui lòng nâng cấp gói của bạn để mở khóa tính năng này.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 py-5 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900/50">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsUpgradePromptOpen(false)}
+              className="rounded-xl font-semibold"
+            >
+              {t("common.cancel", "Hủy")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setIsUpgradePromptOpen(false);
+                if (onBrowsePlans) {
+                  onBrowsePlans();
+                } else {
+                  navigate("/plans");
+                }
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold flex items-center gap-1.5"
+            >
+              <Crown className="h-4 w-4" />
+              {t("plan.buyCreditLockCta", "Xem các gói học")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

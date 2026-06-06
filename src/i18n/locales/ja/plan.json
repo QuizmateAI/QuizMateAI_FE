@@ -195,7 +195,14 @@
       "creditsDesc": "AI 機能は実際に使用したときのみクレジットを消費するため、支出の管理が容易になります。",
       "refundTitle": "明確な精算フロー",
       "refundDesc": "支払いは保護され、クレジット購入履歴はウォレットで引き続き利用できます。"
-    }
+    },
+    "tabSubscription": "サブスクリプション",
+    "tabCredits": "クレジット購入",
+    "creditsDescription": "AI機能を使用するためのクレジットを追加チャージします。",
+    "durationForever": "無期限（有効期限なし）",
+    "buyCreditLockTitle": "プランのアップグレードが必要",
+    "buyCreditLockDesc": "クレジットの追加購入は、有料プランをご利用中のユーザー様のみ可能です。この機能を利用するには、プランをアップグレードしてください。",
+    "buyCreditLockCta": "プランを見る"
   },
   "subscription": {
     "wizard": {
