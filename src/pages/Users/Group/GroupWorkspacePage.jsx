@@ -239,6 +239,17 @@ function GroupWorkspacePage() {
       : pathSection || querySection || 'dashboard';
 
   const setActiveSection = (section) => {
+    if (section === 'roadmap' && !planEntitlements.canCreateRoadmap) {
+      setPlanUpgradeFeatureName(t('groupWorkspacePage.planUpgrade.createRoadmap', 'Create learning roadmap'));
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
+    if (section === 'memberStats' && !planEntitlements.hasWorkspaceAnalytics) {
+      setPlanUpgradeFeatureName(t('groupWorkspacePage.planUpgrade.workspaceAnalytics', 'Workspace analytics'));
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
+
     if (activeSection === 'roadmap' && section !== 'roadmap') {
       skipNextRoadmapCanonicalizeRef.current = true;
     }
@@ -1014,7 +1025,14 @@ function GroupWorkspacePage() {
     ),
   });
   const personalLearningSnapshot = personalLearningSnapshotQuery.data;
-  const groupSidebarDisabledMap = useMemo(() => ({}), []);
+  const groupSidebarDisabledMap = useMemo(() => ({
+    roadmap: !planEntitlements.canCreateRoadmap,
+    memberStats: !planEntitlements.hasWorkspaceAnalytics,
+  }), [planEntitlements.canCreateRoadmap, planEntitlements.hasWorkspaceAnalytics]);
+  const groupSidebarLockReasonMap = useMemo(() => ({
+    roadmap: !planEntitlements.canCreateRoadmap ? 'plan' : undefined,
+    memberStats: !planEntitlements.hasWorkspaceAnalytics ? 'plan' : undefined,
+  }), [planEntitlements.canCreateRoadmap, planEntitlements.hasWorkspaceAnalytics]);
   const groupSidebarHiddenMap = useMemo(() => ({
     members: !canManageMembers,
     wallet: !isLeader || !canManageGroup,
@@ -4287,6 +4305,7 @@ function GroupWorkspacePage() {
             wsConnected={wsConnected}
             memberCount={members.length}
             disabledMap={groupSidebarDisabledMap}
+            lockReasonMap={groupSidebarLockReasonMap}
             hiddenMap={groupSidebarHiddenMap}
             badgeMap={groupSidebarBadgeMap}
             collapsed={isDesktopSidebarCollapsed}
@@ -4310,6 +4329,7 @@ function GroupWorkspacePage() {
           wsConnected={wsConnected}
           memberCount={members.length}
           disabledMap={groupSidebarDisabledMap}
+          lockReasonMap={groupSidebarLockReasonMap}
           hiddenMap={groupSidebarHiddenMap}
           badgeMap={groupSidebarBadgeMap}
           isMobile
