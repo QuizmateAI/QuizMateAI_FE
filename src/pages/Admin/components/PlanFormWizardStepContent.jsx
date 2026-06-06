@@ -732,7 +732,10 @@ function PlanFormWizardStepContent({
 
         <div className="mt-6 grid gap-4 xl:grid-cols-2">
           {AI_MODEL_GROUP_OPTIONS.map((group) => {
-            const groupModels = availableAiModels.filter((model) => model.modelGroup === group.value);
+            let groupModels = availableAiModels.filter((model) => model.modelGroup === group.value);
+            if (group.value === 'TEXT_GENERATION') {
+              groupModels = groupModels.filter((model) => String(model.provider).toUpperCase() === 'OPENAI');
+            }
             const selectedModelId = aiModelAssignments[group.value] ?? '';
             const selectedModel = getModelById(availableAiModels, selectedModelId);
 
