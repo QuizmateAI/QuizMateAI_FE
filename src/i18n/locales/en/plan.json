@@ -195,7 +195,14 @@
       "creditsDesc": "AI features only consume Credits when you actually use them, so spend stays easier to control.",
       "refundTitle": "Clear checkout flow",
       "refundDesc": "Payments are secured and your Credit purchase history stays available in the wallet."
-    }
+    },
+    "tabSubscription": "AI Subscriptions",
+    "tabCredits": "Buy Credits",
+    "creditsDescription": "Top up QMC credits to keep using AI features without disruption.",
+    "durationForever": "No expiry date",
+    "buyCreditLockTitle": "Subscription Upgrade Required",
+    "buyCreditLockDesc": "Purchasing additional credits is only available for paid subscription plans. Please upgrade your plan to unlock this feature.",
+    "buyCreditLockCta": "View Subscription Plans"
   },
   "subscription": {
     "wizard": {

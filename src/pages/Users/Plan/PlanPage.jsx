@@ -15,6 +15,7 @@ import {
   Settings,
   Sparkles,
   Sun,
+  Crown,
 } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useGroup } from "@/hooks/useGroup";
@@ -27,10 +28,11 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserProfilePopover from "@/components/features/users/UserProfilePopover";
 import NotificationBell from "@/components/features/users/NotificationBell";
 import CreditIconImage from "@/components/ui/CreditIconImage";
-import { getActiveGroupPlan, getActiveUserPlans } from "@/api/ManagementSystemAPI";
+import { getActiveGroupPlan, getActiveUserPlans, getPurchaseableCreditPackages } from "@/api/ManagementSystemAPI";
 import { getWorkspaceCurrentPlan } from "@/api/WorkspaceAPI";
 import { createPlanSummaryFromSubscription, useCurrentSubscription } from "@/hooks/useCurrentSubscription";
-import { buildWalletsPath } from "@/lib/routePaths";
+import { buildPaymentCreditsPath, buildWalletsPath, withQueryParams } from "@/lib/routePaths";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   appLanguageShortLabel,
   cycleAppLanguage,
@@ -511,12 +513,149 @@ function useSettingsMenu({ fontClass, isDarkMode, toggleDarkMode, toggleLanguage
   return { menu };
 }
 
+function getCreditPackageName(pkg, t) {
+  return String(pkg?.displayName || pkg?.code || "").trim()
+    || t("walletPage.buy.packageFallback", "Credit package {{id}}", { id: pkg?.creditPackageId ?? "" }).trim();
+}
+
+function CreditPackageCard({
+  pkg,
+  isDarkMode,
+  locale,
+  t,
+  onPurchase,
+  locked = false,
+}) {
+  const base = Number(pkg?.baseCredit || 0);
+  const bonus = Number(pkg?.bonusCredit || 0);
+  const total = base + bonus;
+  const packageName = getCreditPackageName(pkg, t);
+
+  const surfaceClass = isDarkMode
+    ? locked
+      ? "border-slate-800 bg-slate-950/40 opacity-70 grayscale-[25%]"
+      : "border-white/10 bg-slate-950/72 shadow-[0_18px_56px_rgba(2,6,23,0.36)]"
+    : locked
+      ? "border-slate-200 bg-slate-50/50 opacity-75 grayscale-[20%]"
+      : "border-slate-200 bg-white/88 shadow-[0_18px_48px_rgba(15,23,42,0.08)]";
+
+  const ctaClass = isDarkMode
+    ? "bg-white/5 text-white ring-1 ring-white/12 hover:bg-white/10"
+    : "bg-slate-950 text-white hover:bg-slate-800";
+
+  return (
+    <article
+      onClick={() => onPurchase(pkg)}
+      className={`group relative flex h-full flex-col overflow-hidden rounded-[28px] border p-6 sm:p-7 transition-all duration-300 cursor-pointer ${
+        locked ? "hover:border-slate-300 dark:hover:border-slate-700" : "hover:-translate-y-1"
+      } ${surfaceClass}`}
+    >
+      {locked && (
+        <div className="absolute right-5 top-5 z-10">
+          <Badge className="flex items-center gap-1 rounded-full border-0 bg-gradient-to-r from-amber-500 to-yellow-500 px-2.5 py-1 text-[10px] font-bold tracking-wider text-white shadow-md">
+            <Crown className="h-3 w-3 shrink-0" />
+            VIP
+          </Badge>
+        </div>
+      )}
+
+      <div
+        className={`pointer-events-none absolute inset-x-0 top-0 h-32 opacity-70 blur-3xl ${
+          locked
+            ? isDarkMode ? "bg-slate-850/10" : "bg-slate-200/30"
+            : isDarkMode ? "bg-emerald-500/20" : "bg-emerald-100/60"
+        }`}
+      />
+
+      <div className="relative flex h-full flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div className={locked ? "pr-16" : ""}>
+            <p className={`text-base font-semibold ${isDarkMode ? "text-white" : "text-slate-950"}`}>
+              {packageName}
+            </p>
+            <p className={`mt-2 max-w-[24ch] min-h-[3.5rem] text-sm leading-6 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
+              {t("plan.creditsDescription", "Bổ sung dung lượng QMC để sử dụng các tính năng AI chất lượng cao.")}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 flex items-end gap-2">
+          <span className={`text-4xl font-bold tracking-tight ${locked ? "text-slate-500 dark:text-slate-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+            {formatNumber(total, locale)}
+          </span>
+          <span className={`pb-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+            {t("wallet.creditsUnit", "Credit")}
+          </span>
+        </div>
+
+        <div className={`mt-6 flex-1 border-t pt-6 ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`}>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                isDarkMode ? "bg-white/8 text-slate-200" : "bg-slate-100 text-slate-700"
+              }`}>
+                <Check className="h-3.5 w-3.5" />
+              </span>
+              <span className={`text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-slate-700"}`}>
+                {t("walletPage.buy.baseCredits", "{{count}} base credits", { count: formatNumber(base, locale) })}
+              </span>
+            </li>
+            {bonus > 0 ? (
+              <li className="flex items-start gap-3">
+                <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${locked ? "bg-slate-500/10 text-slate-400" : "bg-emerald-500/15 text-emerald-400"}`}>
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <span className={`text-sm leading-6 ${locked ? "font-semibold text-slate-500 dark:text-slate-400" : "font-semibold text-emerald-600 dark:text-emerald-400"}`}>
+                  {t("walletPage.buy.bonusCredits", "+{{count}} bonus credits", { count: formatNumber(bonus, locale) })}
+                </span>
+              </li>
+            ) : null}
+            <li className="flex items-start gap-3">
+              <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                isDarkMode ? "bg-white/8 text-slate-200" : "bg-slate-100 text-slate-700"
+              }`}>
+                <Check className="h-3.5 w-3.5" />
+              </span>
+              <span className={`text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-slate-700"}`}>
+                {t("plan.durationForever", "Sử dụng vĩnh viễn (không hết hạn)")}
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div className={`mt-6 border-t pt-4 flex items-center justify-between ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`}>
+          <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+            {t("payment.total", "Tổng tiền")}
+          </span>
+          <span className={`text-xl font-black ${isDarkMode ? "text-white" : "text-slate-950"}`}>
+            {formatVnd(pkg?.price ?? 0, locale)}
+          </span>
+        </div>
+
+        <Button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPurchase(pkg);
+          }}
+          className={`mt-6 h-12 rounded-2xl font-semibold cursor-pointer ${ctaClass}`}
+        >
+          {t("plan.upgrade", "Mua ngay")}
+        </Button>
+      </div>
+    </article>
+  );
+}
+
 export default function PlanPage() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState("subscription");
+  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
+
   const currentLang = i18n?.language || "vi";
   const baseLang = getBaseAppLanguage(currentLang);
   const fontClass = baseLang === "en" ? "font-poppins" : "font-sans";
@@ -544,6 +683,18 @@ export default function PlanPage() {
   const loading = plansQuery.isLoading;
   const error = plansQuery.error ? t('plan.loadError') : null;
 
+  const creditPackagesQuery = useQuery({
+    queryKey: ["creditPackages", "purchaseable"],
+    queryFn: async () => {
+      const res = await getPurchaseableCreditPackages();
+      return res?.data?.data ?? res?.data ?? res ?? [];
+    },
+    enabled: activeTab === "credits",
+  });
+  const creditPackages = useMemo(() => creditPackagesQuery.data ?? [], [creditPackagesQuery.data]);
+  const loadingCredits = creditPackagesQuery.isLoading;
+  const creditsError = creditPackagesQuery.error ? t('plan.loadError') : null;
+
   const groupPlanQuery = useQuery({
     queryKey: ['user', 'workspaceCurrentPlan', scopedWorkspaceId],
     queryFn: async () => {
@@ -555,7 +706,7 @@ export default function PlanPage() {
   const groupCurrentPlan = groupPlanQuery.data ?? null;
 
   const { wallet: walletSummary, isLoading: loadingWallet } = useWallet();
-  const { summary: userPlanSummary } = useCurrentSubscription({ enabled: !isGroupScopedPage });
+  const { subscription, summary: userPlanSummary } = useCurrentSubscription({ enabled: !isGroupScopedPage });
   const { groups, loading: loadingGroups } = useGroup({ enabled: isGroupScopedPage });
   const scopedGroup = useMemo(
     () => groups.find((group) => String(group.workspaceId) === String(scopedWorkspaceId)) ?? null,
@@ -566,6 +717,9 @@ export default function PlanPage() {
     () => (isGroupScopedPage ? createPlanSummaryFromSubscription(groupCurrentPlan) : userPlanSummary),
     [groupCurrentPlan, isGroupScopedPage, userPlanSummary],
   );
+
+  const activeSubscription = isGroupScopedPage ? groupCurrentPlan : subscription;
+  const canBuyCredit = (activeSubscription?.plan?.entitlement || activeSubscription?.entitlement)?.canBuyCredit === true;
   const pageTitle = isGroupScopedPage
     ? t("plan.groupScopeTitle", {
         groupName: scopedGroup?.groupName || t("plan.groupFallbackName"),
@@ -597,6 +751,23 @@ export default function PlanPage() {
       navigate(`/payments?planId=${plan.planId}`);
     },
     [navigate, scopedWorkspaceId],
+  );
+
+  const handlePurchaseCredit = useCallback(
+    (pkg) => {
+      if (!canBuyCredit) {
+        setIsUpgradePromptOpen(true);
+        return;
+      }
+      const queryParams = { creditPackageId: pkg.creditPackageId };
+      if (isGroupScopedPage && scopedWorkspaceId != null) {
+        queryParams.workspaceId = scopedWorkspaceId;
+      }
+      navigate(withQueryParams(buildPaymentCreditsPath(), queryParams), {
+        state: { from: "/plans", workspaceId: scopedWorkspaceId },
+      });
+    },
+    [navigate, isGroupScopedPage, scopedWorkspaceId, canBuyCredit],
   );
 
   const displayPlans = plans;
@@ -792,50 +963,107 @@ export default function PlanPage() {
               </p>
             </div>
 
-            <div className={isCompactGroupPlanLayout ? "mt-4" : "mt-10"}>
-              {sectionLoading ? (
-                <ListSpinner variant="section" className={isCompactGroupPlanLayout ? "py-8" : "py-16"} />
-              ) : error ? (
-                <div className="flex flex-col items-center gap-3 py-16">
-                  <AlertCircle className={`h-8 w-8 ${isDarkMode ? "text-red-400" : "text-red-500"}`} />
-                  <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{error}</p>
-                </div>
-              ) : displayPlans.length === 0 ? (
-                <p className={`py-16 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                  {t("plan.noPlans")}
-                </p>
-              ) : (
-                <div
-                  className={`grid ${
-                    displayPlans.length === 1
-                      ? "mx-auto max-w-md gap-5"
-                      : displayPlans.length === 2
-                        ? isGroupScopedPage
-                          ? "mx-auto w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2"
-                          : "mx-auto max-w-5xl gap-5 lg:grid-cols-2"
-                        : "gap-5 xl:grid-cols-3"
+            {/* Tab Bar */}
+            <div className="mt-6 flex justify-center">
+              <div className={`inline-flex rounded-2xl p-1.5 ${
+                isDarkMode ? "bg-slate-900 ring-1 ring-slate-800" : "bg-slate-100 ring-1 ring-slate-200"
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("subscription")}
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2 text-sm font-bold transition-all cursor-pointer ${
+                    activeTab === "subscription"
+                      ? (isDarkMode ? "bg-blue-500/15 text-blue-100 ring-1 ring-blue-400/30" : "bg-white text-blue-700 shadow-sm ring-1 ring-blue-100")
+                      : (isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900")
                   }`}
                 >
-                  {displayPlans.map((plan, index) => (
-                    <PlanTierCard
-                      key={plan.planId}
-                      plan={plan}
-                      index={index}
-                      plans={displayPlans}
-                      totalPlans={displayPlans.length}
-                      recommendedIndex={recommendedIndex}
-                      isDarkMode={isDarkMode}
-                      locale={locale}
-                      t={t}
-                      isCurrentPlan={isMatchingCurrentPlan(plan, currentPlanSummary, planType)}
-                      isLowerTierThanCurrent={currentPlanIndex > -1 && index < currentPlanIndex}
-                      purchaseLocked={groupPurchaseLocked}
-                      purchaseLockedLabel={groupPurchaseLockLabel}
-                      onUpgrade={handleUpgrade}
-                      compact={isCompactGroupPlanLayout}
-                    />
-                  ))}
-                </div>
+                  {t("plan.tabSubscription", "Gói AI học tập")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("credits")}
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2 text-sm font-bold transition-all cursor-pointer ${
+                    activeTab === "credits"
+                      ? (isDarkMode ? "bg-blue-500/15 text-blue-100 ring-1 ring-blue-400/30" : "bg-white text-blue-700 shadow-sm ring-1 ring-blue-100")
+                      : (isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-slate-600 hover:text-slate-900")
+                  }`}
+                >
+                  {t("plan.tabCredits", "Mua thêm Credit")}
+                </button>
+              </div>
+            </div>
+
+            <div className={isCompactGroupPlanLayout ? "mt-4" : "mt-8"}>
+              {activeTab === "subscription" ? (
+                sectionLoading ? (
+                  <ListSpinner variant="section" className={isCompactGroupPlanLayout ? "py-8" : "py-16"} />
+                ) : error ? (
+                  <div className="flex flex-col items-center gap-3 py-16">
+                    <AlertCircle className={`h-8 w-8 ${isDarkMode ? "text-red-400" : "text-red-500"}`} />
+                    <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{error}</p>
+                  </div>
+                ) : displayPlans.length === 0 ? (
+                  <p className={`py-16 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                    {t("plan.noPlans")}
+                  </p>
+                ) : (
+                  <div
+                    className={`grid ${
+                      displayPlans.length === 1
+                        ? "mx-auto max-w-md gap-5"
+                        : displayPlans.length === 2
+                          ? isGroupScopedPage
+                            ? "mx-auto w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2"
+                            : "mx-auto max-w-5xl gap-5 lg:grid-cols-2"
+                          : "gap-5 xl:grid-cols-3"
+                    }`}
+                  >
+                    {displayPlans.map((plan, index) => (
+                      <PlanTierCard
+                        key={plan.planId}
+                        plan={plan}
+                        index={index}
+                        plans={displayPlans}
+                        totalPlans={displayPlans.length}
+                        recommendedIndex={recommendedIndex}
+                        isDarkMode={isDarkMode}
+                        locale={locale}
+                        t={t}
+                        isCurrentPlan={isMatchingCurrentPlan(plan, currentPlanSummary, planType)}
+                        isLowerTierThanCurrent={currentPlanIndex > -1 && index < currentPlanIndex}
+                        purchaseLocked={groupPurchaseLocked}
+                        purchaseLockedLabel={groupPurchaseLockLabel}
+                        onUpgrade={handleUpgrade}
+                        compact={isCompactGroupPlanLayout}
+                      />
+                    ))}
+                  </div>
+                )
+              ) : (
+                loadingCredits ? (
+                  <ListSpinner variant="section" className="py-16" />
+                ) : creditsError ? (
+                  <div className="flex flex-col items-center gap-3 py-16">
+                    <AlertCircle className={`h-8 w-8 ${isDarkMode ? "text-red-400" : "text-red-500"}`} />
+                    <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{creditsError}</p>
+                  </div>
+                ) : (
+                  <div
+                    className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                  >
+                    {creditPackages.map((pkg) => (
+                      <CreditPackageCard
+                        key={pkg.creditPackageId}
+                        pkg={pkg}
+                        isDarkMode={isDarkMode}
+                        locale={locale}
+                        t={t}
+                        locked={!canBuyCredit}
+                        onPurchase={handlePurchaseCredit}
+                      />
+                    ))}
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -902,6 +1130,46 @@ export default function PlanPage() {
           </section>
         )}
       </main>
+
+      <Dialog open={isUpgradePromptOpen} onOpenChange={setIsUpgradePromptOpen}>
+        <DialogContent
+          className={`max-w-[460px] overflow-hidden rounded-[28px] p-0 shadow-2xl ${
+            isDarkMode ? "border-slate-700 bg-slate-950 text-slate-50" : "border-slate-200 bg-white text-slate-950"
+          }`}
+        >
+          <DialogHeader className={`border-b px-6 py-5 text-left ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black text-amber-500">
+              <Crown className="h-5 w-5 text-amber-500" />
+              {t("plan.buyCreditLockTitle", "Yêu cầu nâng cấp gói")}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : "text-slate-500"}>
+              {t("plan.buyCreditLockDesc", "Tính năng nạp thêm credit chỉ áp dụng cho người dùng sở hữu Gói AI học tập trả phí. Vui lòng nâng cấp gói của bạn để mở khóa tính năng này.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 py-5 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900/50">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsUpgradePromptOpen(false)}
+              className="rounded-xl font-semibold"
+            >
+              {t("common.cancel", "Hủy")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setIsUpgradePromptOpen(false);
+                setActiveTab("subscription");
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold flex items-center gap-1.5"
+            >
+              <Crown className="h-4 w-4" />
+              {t("plan.buyCreditLockCta", "Xem các gói học")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

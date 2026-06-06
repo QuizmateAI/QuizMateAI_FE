@@ -195,7 +195,14 @@
       "creditsDesc": "Các tính năng AI chỉ trừ Credit khi bạn thực sự dùng, nên dễ kiểm soát chi phí hơn.",
       "refundTitle": "Thanh toán rõ ràng",
       "refundDesc": "Thanh toán được bảo mật và lịch sử mua Credit luôn có thể xem lại trong ví."
-    }
+    },
+    "tabSubscription": "Gói AI học tập",
+    "tabCredits": "Mua thêm Credit",
+    "creditsDescription": "Bổ sung dung lượng QMC để sử dụng các tính năng AI chất lượng cao.",
+    "durationForever": "Sử dụng vĩnh viễn (không hết hạn)",
+    "buyCreditLockTitle": "Yêu cầu nâng cấp gói",
+    "buyCreditLockDesc": "Tính năng nạp thêm credit chỉ áp dụng cho người dùng sở hữu Gói AI học tập trả phí. Vui lòng nâng cấp gói của bạn để mở khóa tính năng này.",
+    "buyCreditLockCta": "Xem các gói học"
   },
   "subscription": {
     "wizard": {
