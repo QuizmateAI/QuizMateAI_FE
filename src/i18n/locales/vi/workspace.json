@@ -144,6 +144,8 @@
         "knowledgeNudgeDescription": "Hãy mô tả rõ hơn phạm vi, tài liệu hoặc kỹ năng mục tiêu để Quizmate AI gợi ý chính xác hơn.",
         "analyzing": "Quizmate AI đang phân tích kiến thức...",
         "analysisError": "AI phân tích thất bại. Vui lòng thử lại.",
+        "analyzeAction": "Phân tích lĩnh vực",
+        "analyzeHint": "Nhập kiến thức rồi bấm để Quizmate AI gợi ý lĩnh vực phù hợp.",
         "knowledgeBroadHint": "Hãy quay lại ô \"Kiến thức\" và nhập cụ thể hơn về phạm vi, tài liệu hoặc kỹ năng bạn muốn học.",
         "analysisSummaryTitle": "Quizmate AI đang hiểu nội dung này là",
         "analysisHighlightsTitle": "Quizmate AI đã kiểm tra",

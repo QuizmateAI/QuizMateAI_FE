@@ -79,32 +79,30 @@ describe('IndividualWorkspaceProfileConfigDialog step-back preserves AI analysis
     const knowledgeInput = screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput'));
     fireEvent.change(knowledgeInput, { target: { value: 'toán lớp 1' } });
 
-    // Let the 900ms analyzeKnowledge debounce fire and AI resolve.
+    // Manual-trigger model: typing alone must NOT call the AI (cost / spam control).
     await act(async () => {
       vi.advanceTimersByTime(1500);
       await Promise.resolve();
+    });
+    expect(analyzeKnowledge).not.toHaveBeenCalled();
+
+    // User presses the "Phân tích lĩnh vực" button → AI fires exactly once.
+    const analyzeButton = screen.getByRole('button', {
+      name: i18n.t('workspace.profileConfig.stepOne.analyzeAction'),
+    });
+    await act(async () => {
+      fireEvent.click(analyzeButton);
+      await Promise.resolve();
       await Promise.resolve();
     });
-
-    // Sanity: AI was called once after the user typed.
     expect(analyzeKnowledge).toHaveBeenCalledTimes(1);
 
     // Reset call counter so we can assert no FURTHER calls happen on step navigation.
     analyzeKnowledge.mockClear();
 
-    // Note: we don't actually click "Continue" in this test because that requires
-    // a domain selection + complex setup. Instead, we directly verify that the
-    // analyzeKnowledge useEffect's fingerprint guard prevents re-firing when the
-    // knowledge text is unchanged — even after multiple re-renders that simulate
-    // step navigation churn (parent re-renders with stable initialData).
-    //
-    // The fingerprint check is the contract: same knowledge ⇒ same fingerprint ⇒
-    // early return. Step navigation alone must not break that.
-
-    // Force several re-renders that emulate parent state churn during navigation:
-    // changing dialog state, persistStep finishing, etc. The hook's useEffect
-    // dependencies (open, knowledgeInput, t, retryTick, canRequestKnowledgeAnalysis)
-    // do not change — so analyzeKnowledge must NOT be called again.
+    // The contract: once a knowledge text has been analysed its fingerprint is cached,
+    // so re-renders that emulate step-navigation churn (stable open / knowledgeInput / t)
+    // must NOT re-fire analyzeKnowledge — even across the debounce window.
     for (let i = 0; i < 3; i += 1) {
       await act(async () => {
         vi.advanceTimersByTime(1500);
@@ -226,5 +224,63 @@ describe('IndividualWorkspaceProfileConfigDialog step-back preserves AI analysis
     // Total calls must not increase from the rerender — the wasOpenRef guard
     // prevents re-init, so analysisFingerprintRef stays intact.
     expect(analyzeKnowledge.mock.calls.length).toBe(initialCallCount);
+  });
+
+  it('does not auto-show a cached analysis while the user is typing (must press the button)', async () => {
+    // Regression for: "tôi chưa ấn phân tích lĩnh vực thì đã hiện ra lĩnh vực rồi".
+    // A previously-analysed term sits in the sessionStorage cache. Typing it again must NOT
+    // auto-display the result — the user must press the button, which then serves the cache
+    // instantly (no network call).
+    const cached = {
+      redFlag: false,
+      isValid: true,
+      warning: false,
+      domainSuggestions: ['Công nghệ thông tin'],
+      domainSuggestionDetails: [{ label: 'Công nghệ thông tin', reason: 'IT domain' }],
+      normalizedKnowledge: 'Lập trình Java',
+    };
+    window.sessionStorage.setItem(
+      'studyProfile:knowledgeAnalysis:v1:vi:java',
+      JSON.stringify({ result: cached, savedAt: Date.now() }),
+    );
+
+    render(
+      <IndividualWorkspaceProfileConfigDialog
+        open
+        onOpenChange={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onConfirm={vi.fn().mockResolvedValue(undefined)}
+        workspaceId="555"
+        isDarkMode={false}
+        canCreateRoadmap={true}
+        initialData={null}
+        forceStartAtStepOne
+      />
+    );
+
+    const knowledgeInput = screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput'));
+    fireEvent.change(knowledgeInput, { target: { value: 'java' } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+      await Promise.resolve();
+    });
+
+    // Typing a cached term must not call the AI and must not reveal the suggestion yet —
+    // the analyse button is still showing.
+    expect(analyzeKnowledge).not.toHaveBeenCalled();
+    const analyzeButton = screen.getByRole('button', {
+      name: i18n.t('workspace.profileConfig.stepOne.analyzeAction'),
+    });
+
+    // Pressing it serves the cached result instantly: still no network call, button gone.
+    await act(async () => {
+      fireEvent.click(analyzeButton);
+      await Promise.resolve();
+    });
+    expect(analyzeKnowledge).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('button', { name: i18n.t('workspace.profileConfig.stepOne.analyzeAction') }),
+    ).not.toBeInTheDocument();
   });
 });

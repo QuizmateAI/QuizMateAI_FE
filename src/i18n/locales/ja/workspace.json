@@ -145,6 +145,8 @@
         "knowledgeNudgeDescription": "AI が推奨を絞り込めるよう、範囲、教材、目標スキルについて詳細を追加してください。",
         "analyzing": "AI が知識を分析中...",
         "analysisError": "AI 分析に失敗しました。再試行してください。",
+        "analyzeAction": "分野を分析",
+        "analyzeHint": "知識を入力してからクリックすると、Quizmate AI が最適な分野を提案します。",
         "knowledgeBroadHint": "知識フィールドに戻り、学習したい範囲、教材、スキルについてより具体的にしてください。",
         "analysisSummaryTitle": "Quizmate AI は現在これを次のように理解しています",
         "analysisHighlightsTitle": "Quizmate AI が確認した内容",

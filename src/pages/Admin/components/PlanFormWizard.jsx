@@ -463,6 +463,40 @@ function PlanFormWizard({
       const ladderError = getLevelLadderError();
       if (ladderError) return ladderError;
     }
+    if (currentStep === 2 || forSubmit) {
+      if (numericPlanLevel > 0) {
+        if (!aiModelAssignments['TEXT_GENERATION']) {
+          return t(
+            'subscription.wizard.validation.textGenerationRequired',
+            'Vui lòng chọn model mặc định cho capability sinh nội dung văn bản (TEXT_GENERATION).'
+          );
+        }
+
+        const hasDocProcessing =
+          entitlement.canProcessWord ||
+          entitlement.canProcessPdf ||
+          entitlement.canProcessExcel ||
+          entitlement.canProcessSlide ||
+          entitlement.canProcessImage ||
+          entitlement.canProcessText ||
+          entitlement.canProcessVideo ||
+          entitlement.hasAiSummaryAndTextReading;
+
+        if (hasDocProcessing && !aiModelAssignments['DOCUMENT_PROCESSING']) {
+          return t(
+            'subscription.wizard.validation.documentProcessingRequired',
+            'Vui lòng chọn model mặc định cho capability xử lý tài liệu (DOCUMENT_PROCESSING).'
+          );
+        }
+
+        if (entitlement.canProcessAudio && !aiModelAssignments['TRANSCRIPTION']) {
+          return t(
+            'subscription.wizard.validation.transcriptionRequired',
+            'Vui lòng chọn model mặc định cho capability chuyển giọng nói thành văn bản (TRANSCRIPTION).'
+          );
+        }
+      }
+    }
     return null;
   };
 
