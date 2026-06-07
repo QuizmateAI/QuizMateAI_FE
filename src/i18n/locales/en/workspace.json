@@ -145,6 +145,8 @@
         "knowledgeNudgeDescription": "Add more detail about scope, materials, or target skills so the AI can narrow its recommendations.",
         "analyzing": "AI is analyzing your knowledge...",
         "analysisError": "AI analysis failed. Please try again.",
+        "analyzeAction": "Suggest domains",
+        "analyzeHint": "Enter your knowledge, then click to let Quizmate AI suggest matching domains.",
         "knowledgeBroadHint": "Go back to the Knowledge field and be more specific about the scope, materials, or skills you want to learn.",
         "analysisSummaryTitle": "Quizmate AI currently understands this as",
         "analysisHighlightsTitle": "What Quizmate AI checked",

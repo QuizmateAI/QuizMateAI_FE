@@ -416,7 +416,7 @@ function IndividualWorkspaceProfileConfigDialog({
   React.useEffect(() => {
     if (!open || isProfileConfirmView) return;
     const node = stepScrollRef.current;
-    if (node) {
+    if (node && typeof node.scrollTo === 'function') {
       node.scrollTo({ top: 0, behavior: 'auto' });
     }
   }, [wizard.step, open, isProfileConfirmView]);
@@ -509,6 +509,7 @@ function IndividualWorkspaceProfileConfigDialog({
           values={wizard.values}
           errors={wizard.errors}
           analysisStatus={wizard.analysisStatus}
+          analysisErrorMessage={wizard.analysisErrorMessage}
           knowledgeOptions={wizard.knowledgeOptions}
           domainOptions={wizard.domainOptions}
           needsKnowledgeDescription={wizard.needsKnowledgeDescription}
@@ -519,6 +520,7 @@ function IndividualWorkspaceProfileConfigDialog({
           onFieldChange={wizard.updateField}
           onKnowledgeSelect={wizard.selectKnowledgeOption}
           onDomainSelect={wizard.selectInferredDomain}
+          onAnalyzeKnowledge={wizard.triggerKnowledgeAnalysis}
           onRetryAnalysis={wizard.retryKnowledgeAnalysis}
         />
       );

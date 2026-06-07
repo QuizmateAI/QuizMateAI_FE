@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generateTemplateSuggestion, getRecommendedRoadmapDays, getRecommendedRoadmapMinutesPerDay } from './mockProfileWizardData';
 import { analyzeKnowledge, suggestProfileFields, validateProfileConsistency } from '@/api/StudyProfileAPI';
-import { NO_ROADMAP_FLOW_TOTAL_STEPS, ANALYSIS_DEBOUNCE_MS, FIELD_SUGGESTION_DEBOUNCE_MS, CONSISTENCY_DEBOUNCE_MS, ensureString, normalizeWorkspacePurpose, getReadyLiveFieldValue, createInitialValues, getInitialStep, getTotalStepsForValues, syncRoadmapConfigFields, translateOrFallback, extractDomainSuggestionDetails, buildDomainOptionsFromApi, buildKnowledgeOptionsFromApi, localizeDomainOptions, getSelectedKnowledgeForAi, getSelectedDomainForAi, buildFieldSuggestionPayload, buildConsistencyPayload, shouldRunLiveConsistency, buildConsistencyFingerprint, buildPayload, buildRequestFingerprint, buildStepSnapshot, areStepSnapshotsEqual, createSavedStepSnapshots, buildLiveValidationErrors, canFetchFieldSuggestions, getStudyProfileAnalysisErrorType, validateWorkspaceProfileStep, buildWizardStatus, hasCompleteBasicStepData, loadCachedKnowledgeAnalysis, saveCachedKnowledgeAnalysis } from './workspaceProfileWizardUtils';
+import { NO_ROADMAP_FLOW_TOTAL_STEPS, FIELD_SUGGESTION_DEBOUNCE_MS, CONSISTENCY_DEBOUNCE_MS, ensureString, normalizeWorkspacePurpose, getReadyLiveFieldValue, createInitialValues, getInitialStep, getTotalStepsForValues, syncRoadmapConfigFields, translateOrFallback, extractDomainSuggestionDetails, buildDomainOptionsFromApi, buildKnowledgeOptionsFromApi, localizeDomainOptions, getSelectedKnowledgeForAi, getSelectedDomainForAi, buildFieldSuggestionPayload, buildConsistencyPayload, shouldRunLiveConsistency, buildConsistencyFingerprint, buildPayload, buildRequestFingerprint, buildStepSnapshot, areStepSnapshotsEqual, createSavedStepSnapshots, buildLiveValidationErrors, canFetchFieldSuggestions, getStudyProfileAnalysisErrorType, validateWorkspaceProfileStep, buildWizardStatus, hasCompleteBasicStepData, loadCachedKnowledgeAnalysis, saveCachedKnowledgeAnalysis } from './workspaceProfileWizardUtils';
+
+// Minimum gap between real (network) knowledge-analysis calls from one wizard instance.
+// Cache hits don't count — this only throttles repeated network initiations so a single
+// user can't hammer the AI endpoint from the button. The BE enforces the authoritative
+// per-user limit.
+const MIN_ANALYSIS_TRIGGER_INTERVAL_MS = 1500;
+
 export function useWorkspaceProfileWizard({
   open,
   initialData,
@@ -25,7 +32,7 @@ export function useWorkspaceProfileWizard({
   const [templateStatus, setTemplateStatus] = useState('idle');
   const [templatePreview, setTemplatePreview] = useState(null);
   const [examSearch, setExamSearch] = useState('');
-  const [analysisRetryTick, setAnalysisRetryTick] = useState(0);
+  const [analysisErrorMessage, setAnalysisErrorMessage] = useState('');
   // AI analysis state
   const [knowledgeAnalysis, setKnowledgeAnalysis] = useState(null);
   const [fieldSuggestions, setFieldSuggestions] = useState(null);
@@ -45,6 +52,7 @@ export function useWorkspaceProfileWizard({
   const consistencyAbortRef = useRef(null);
   const templateTimerRef = useRef(null);
   const analysisFingerprintRef = useRef('');
+  const lastAnalysisCallAtRef = useRef(0);
   const fieldSuggestionFingerprintRef = useRef('');
   const consistencyFingerprintRef = useRef('');
   const wasOpenRef = useRef(false);
@@ -55,7 +63,6 @@ export function useWorkspaceProfileWizard({
   const userEditedSinceOpenRef = useRef(false);
   const needsKnowledgeDescription =
     analysisStatus === 'success' && knowledgeAnalysis?.tooBroad === true;
-  const canRequestKnowledgeAnalysis = Boolean(getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput));
   const canRequestFieldSuggestion = canFetchFieldSuggestions(values);
   const shouldAwaitOverallReview = step === 2 && shouldRunLiveConsistency(values);
   const currentConsistencyFingerprint = shouldAwaitOverallReview
@@ -86,6 +93,7 @@ export function useWorkspaceProfileWizard({
       prevStepRef.current = null;
       initializedWithProfileDataRef.current = false;
       userEditedSinceOpenRef.current = false;
+      analysisAbortRef.current?.abort();
       return;
     }
     const hasCompleteInitialBasicStep = hasCompleteBasicStepData(initialData);
@@ -131,12 +139,14 @@ export function useWorkspaceProfileWizard({
     analysisFingerprintRef.current = '';
     fieldSuggestionFingerprintRef.current = '';
     consistencyFingerprintRef.current = '';
-    setAnalysisRetryTick(0);
+    setAnalysisErrorMessage('');
     setFieldSuggestions(null);
     setFieldSuggestionStatus('idle');
     setConsistencyResult(null);
     setConsistencyStatus('idle');
-    setAnalysisStatus(getReadyLiveFieldValue('knowledgeInput', nextValues.knowledgeInput) ? 'loading' : 'idle');
+    // Manual-trigger model: never auto-enter 'loading' on open. The analysis effect
+    // below restores a cached result (→ 'success') or leaves it 'idle' (→ show button).
+    setAnalysisStatus('idle');
     setTemplateStatus(nextValues.templatePrompt ? 'success' : 'idle');
     setTemplatePreview(
       nextValues.templatePrompt
@@ -170,152 +180,98 @@ export function useWorkspaceProfileWizard({
     if (!open || !storageKey || typeof window === 'undefined') return;
     window.sessionStorage.setItem(storageKey, String(step));
   }, [open, step, storageKey]);
-  // ─── Real AI Knowledge Analysis (debounced) ───
+  // ─── Knowledge analysis: cache-first restore, manual network trigger ───
+  // Applies an analyzeKnowledge result (fresh OR cached) to the AI-derived UI state.
+  // `updateSelections` is true only for an explicit user-driven analysis — a passive
+  // cache restore must NOT overwrite BE-rehydrated inferredDomain/selectedKnowledge.
+  const applyAnalysisResult = useCallback((result, trimmedKnowledge, { updateSelections = false } = {}) => {
+    const rawDomainOptions = buildDomainOptionsFromApi({
+      domainSuggestions: result?.domainSuggestions || [],
+      domainSuggestionDetails: extractDomainSuggestionDetails(result),
+      domainOptions: result?.domainOptions || [],
+      knowledge: trimmedKnowledge,
+    });
+    const localizedDomainOptions = localizeDomainOptions(rawDomainOptions, t);
+    const rawKnowledgeOptions = buildKnowledgeOptionsFromApi({
+      knowledgeOptions: result?.knowledgeOptions || [],
+      knowledge: trimmedKnowledge,
+      domainOptions: localizedDomainOptions,
+    });
+    setKnowledgeAnalysis(result);
+    setKnowledgeOptions(rawKnowledgeOptions);
+    setDomainOptions(localizedDomainOptions);
+    setAnalysisStatus('success');
+    if (!updateSelections) return;
+    setValues((current) => {
+      const preferredKnowledgeLabel = current.selectedKnowledgeOption || current.knowledgeInput.trim();
+      const preferredDomainLabel = current.inferredDomain;
+      const matchedKnowledgeOption = rawKnowledgeOptions.find((option) => option.label === preferredKnowledgeLabel) || rawKnowledgeOptions[0] || null;
+      const matchedDomainOption = localizedDomainOptions.find((option) => option.label === preferredDomainLabel)
+        || localizedDomainOptions.find((option) => matchedKnowledgeOption?.suggestedDomainOptionIds?.includes(option.id))
+        || localizedDomainOptions[0]
+        || null;
+      return {
+        ...current,
+        analysisId: result?.analysisId || '',
+        selectedKnowledgeOptionId: matchedKnowledgeOption?.id || '',
+        selectedKnowledgeOption: matchedKnowledgeOption?.label || '',
+        inferredDomain: matchedDomainOption?.label || '',
+        selectedDomainOptionId: matchedDomainOption?.id || '',
+      };
+    });
+  }, [t]);
+  // On knowledge change we DO NOT auto-call the AI (cost control + spam guard): we only
+  // restore a cached result instantly, otherwise reset to 'idle' so the user triggers
+  // analysis via the button (triggerKnowledgeAnalysis). Keeping this effect side-effect
+  // light — no abort-on-every-render and no fingerprint short-circuit that leaves status
+  // stuck on 'loading' — is also what fixes the infinite-spinner race.
   useEffect(() => {
     if (!open) return;
-    clearTimeout(analysisTimerRef.current);
-    analysisAbortRef.current?.abort();
     const trimmedKnowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
-    const analysisFingerprint = buildRequestFingerprint({
-      knowledge: trimmedKnowledge,
-      retry: analysisRetryTick,
-    });
-    if (!canRequestKnowledgeAnalysis) {
+    if (!trimmedKnowledge) {
+      analysisAbortRef.current?.abort();
       analysisFingerprintRef.current = '';
       setAnalysisStatus('idle');
+      setAnalysisErrorMessage('');
       setKnowledgeOptions([]);
       setDomainOptions([]);
       setKnowledgeAnalysis(null);
-      // BUG fix (race condition on dialog re-open after page reload):
-      //
-      // Previously this branch wiped user-facing values (inferredDomain,
-      // selectedKnowledgeOption, analysisId, etc.) whenever knowledge wasn't ready.
-      // That destroyed BE-rehydrated state because of this render order:
-      //
-      //   Render N: open just changed to true. values = previous-render snapshot
-      //             (still empty — init useEffect's setValues hasn't committed yet).
-      //             canRequestKnowledgeAnalysis = false → this useEffect fires.
-      //   ↓ React commits queued setValues calls in order:
-      //     1) init's setValues(nextValues) → values.inferredDomain = "情報技術"
-      //     2) wipe's setValues(current => wiped) → overrides inferredDomain = ""
-      //   Render N+1: values.inferredDomain = "" forever (until step-1 AI returns
-      //               domains and re-applies them — and if the AI call fails or is
-      //               slow, step 2's field-suggestion AI never gets to fire).
-      //
-      // A functional-update guard (`if (current.inferredDomain) return`) does NOT
-      // reliably help: depending on React scheduling, `current` inside the wipe's
-      // closure can still be the pre-init snapshot (empty), so the guard fails.
-      //
-      // Cleanest fix: don't reset user-facing values from this effect at all. They're
-      // either (a) BE-rehydrated and must be preserved, or (b) user-confirmed
-      // selections that should persist until knowledge actually changes. The only
-      // state that genuinely needs clearing when knowledge becomes invalid is the
-      // AI-derived result state (knowledgeOptions, domainOptions, knowledgeAnalysis),
-      // which we already cleared above. inferredDomain/selectedKnowledgeOption now
-      // stay until either (i) the next successful analyzeKnowledge overwrites them
-      // via applyResolvedAnalysis, (ii) the user picks a different domain, or
-      // (iii) the wizard fully unmounts (init useEffect's reset path).
+      // Note: user-facing values (inferredDomain, selectedKnowledgeOption, ...) are left
+      // untouched here so BE-rehydrated state survives a dialog re-open; they're cleared
+      // explicitly in updateField when the knowledge text actually changes.
       return;
     }
-    if (analysisFingerprintRef.current === analysisFingerprint) {
+    const fingerprint = buildRequestFingerprint({ knowledge: trimmedKnowledge });
+    // Same text we already analysed / are analysing: leave the current status alone so we
+    // don't clobber a 'loading'/'success'/'error' that triggerKnowledgeAnalysis manages.
+    if (analysisFingerprintRef.current === fingerprint) {
       return;
     }
-    // sessionStorage cache lookup: when the user reloads the page or re-opens the
-    // wizard with the SAME knowledge text + UI language as a previous successful
-    // analysis, restore the result instantly instead of showing a loading spinner
-    // and re-calling the BE/AI. This addresses the "khi từ bước 2 quay lại thì
-    // lại load AI" complaint — even after a hard refresh, the previously analyzed
-    // result reappears without the user waiting again.
+    // Restore a previous successful analysis instantly from the sessionStorage cache (TTL
+    // 30 min) WITHOUT any network call — but ONLY when the knowledge was rehydrated rather
+    // than typed this session (page reload / step-back / re-open). While the user is actively
+    // typing we never auto-show a result, even a cached one: they must press the analyse
+    // button (which still serves the cache instantly). This matches the "nothing appears
+    // until I click" expectation and avoids domains popping up mid-typing.
     const cacheLocale = (typeof t === 'function' && t.lng) || (typeof window !== 'undefined' ? window.localStorage?.getItem?.('app_language') : '') || 'vi';
-    const cachedResult = loadCachedKnowledgeAnalysis(trimmedKnowledge, cacheLocale);
-    analysisFingerprintRef.current = analysisFingerprint;
+    const cachedResult = userEditedSinceOpenRef.current
+      ? null
+      : loadCachedKnowledgeAnalysis(trimmedKnowledge, cacheLocale);
     if (cachedResult) {
-      // Apply the cached result via the same code path as a fresh AI return,
-      // but do it synchronously and skip the network call.
-      const rawDomainOptions = buildDomainOptionsFromApi({
-        domainSuggestions: cachedResult?.domainSuggestions || [],
-        domainSuggestionDetails: extractDomainSuggestionDetails(cachedResult),
-        domainOptions: cachedResult?.domainOptions || [],
-        knowledge: trimmedKnowledge,
-      });
-      const localizedDomainOptions = localizeDomainOptions(rawDomainOptions, t);
-      const rawKnowledgeOptions = buildKnowledgeOptionsFromApi({
-        knowledgeOptions: cachedResult?.knowledgeOptions || [],
-        knowledge: trimmedKnowledge,
-        domainOptions: localizedDomainOptions,
-      });
-      setKnowledgeAnalysis(cachedResult);
-      setKnowledgeOptions(rawKnowledgeOptions);
-      setDomainOptions(localizedDomainOptions);
-      setAnalysisStatus('success');
-      // Don't overwrite values.inferredDomain etc. from the cache — those are
-      // already rehydrated from BE (the canonical source) and may differ from
-      // a stale cache. Cache only restores the AI-derived display state.
+      analysisFingerprintRef.current = fingerprint;
+      setAnalysisErrorMessage('');
+      applyAnalysisResult(cachedResult, trimmedKnowledge, { updateSelections: false });
       return;
     }
-    setAnalysisStatus('loading');
-    analysisTimerRef.current = setTimeout(async () => {
-      const abortController = new AbortController();
-      analysisAbortRef.current = abortController;
-      try {
-        const result = await analyzeKnowledge(trimmedKnowledge, {
-          signal: abortController.signal,
-        });
-        if (abortController.signal.aborted) return;
-        // Persist the successful AI result so a reload / re-open with the same
-        // knowledge text restores it instantly (sessionStorage TTL 30 min).
-        saveCachedKnowledgeAnalysis(trimmedKnowledge, cacheLocale, result);
-        const applyResolvedAnalysis = (result, { preferSelectedKnowledgeLabel = '', preferSelectedDomainLabel = '' } = {}) => {
-          const rawDomainOptions = buildDomainOptionsFromApi({
-            domainSuggestions: result?.domainSuggestions || [],
-            domainSuggestionDetails: extractDomainSuggestionDetails(result),
-            domainOptions: result?.domainOptions || [],
-            knowledge: values.knowledgeInput.trim(),
-          });
-          const localizedDomainOptions = localizeDomainOptions(rawDomainOptions, t);
-          const rawKnowledgeOptions = buildKnowledgeOptionsFromApi({
-            knowledgeOptions: result?.knowledgeOptions || [],
-            knowledge: values.knowledgeInput.trim(),
-            domainOptions: localizedDomainOptions,
-          });
-          setKnowledgeAnalysis(result);
-          setKnowledgeOptions(rawKnowledgeOptions);
-          setDomainOptions(localizedDomainOptions);
-          setAnalysisStatus('success');
-          setValues((current) => {
-            const preferredKnowledgeLabel = preferSelectedKnowledgeLabel || current.selectedKnowledgeOption || current.knowledgeInput.trim();
-            const preferredDomainLabel = preferSelectedDomainLabel || current.inferredDomain;
-            const matchedKnowledgeOption = rawKnowledgeOptions.find((option) => option.label === preferredKnowledgeLabel) || rawKnowledgeOptions[0] || null;
-            const matchedDomainOption = localizedDomainOptions.find((option) => option.label === preferredDomainLabel)
-              || localizedDomainOptions.find((option) => matchedKnowledgeOption?.suggestedDomainOptionIds?.includes(option.id))
-              || localizedDomainOptions[0]
-              || null;
-            return {
-              ...current,
-              analysisId: result?.analysisId || '',
-              selectedKnowledgeOptionId: matchedKnowledgeOption?.id || '',
-              selectedKnowledgeOption: matchedKnowledgeOption?.label || '',
-              inferredDomain: matchedDomainOption?.label || '',
-              selectedDomainOptionId: matchedDomainOption?.id || '',
-            };
-          });
-        };
-        applyResolvedAnalysis(result);
-      } catch (error) {
-        if (abortController.signal.aborted) return;
-        console.error('[StudyProfile] Knowledge analysis failed:', error);
-        analysisFingerprintRef.current = '';
-        setAnalysisStatus('error');
-        setKnowledgeAnalysis(null);
-        setKnowledgeOptions([]);
-        setDomainOptions([]);
-      }
-    }, ANALYSIS_DEBOUNCE_MS);
-    return () => {
-      clearTimeout(analysisTimerRef.current);
-      analysisAbortRef.current?.abort();
-    };
-  }, [open, values.knowledgeInput, analysisRetryTick, t, canRequestKnowledgeAnalysis]);
+    // New / uncached knowledge, or the user is actively typing → wait for the analyse button.
+    analysisAbortRef.current?.abort();
+    analysisFingerprintRef.current = '';
+    setAnalysisStatus('idle');
+    setAnalysisErrorMessage('');
+    setKnowledgeOptions([]);
+    setDomainOptions([]);
+    setKnowledgeAnalysis(null);
+  }, [open, values.knowledgeInput, t, applyAnalysisResult]);
   // ─── Auto-fetch field suggestions when entering Step 2 ───
   const fetchFieldSuggestions = useCallback(
     async (payload) => {
@@ -696,7 +652,7 @@ export function useWorkspaceProfileWizard({
             selectedDomainOptionId: '',
             selectedKnowledgeOption: '',
           }));
-          setAnalysisRetryTick((current) => current + 1);
+          setAnalysisErrorMessage('');
         }
       }
       setSaveError(
@@ -794,9 +750,56 @@ export function useWorkspaceProfileWizard({
       updateField(field, value);
     }
   }
+  // Explicit, user-initiated knowledge analysis (the "Phân tích lĩnh vực" button and the
+  // retry action). Serves from the in-memory fingerprint / sessionStorage cache when it can
+  // and only hits the network when the text is genuinely new — no auto-fire on typing.
+  function triggerKnowledgeAnalysis() {
+    const trimmedKnowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
+    if (!trimmedKnowledge) return;
+    const fingerprint = buildRequestFingerprint({ knowledge: trimmedKnowledge });
+    if (analysisFingerprintRef.current === fingerprint
+      && (analysisStatus === 'loading' || analysisStatus === 'success')) {
+      return;
+    }
+    const cacheLocale = (typeof t === 'function' && t.lng) || (typeof window !== 'undefined' ? window.localStorage?.getItem?.('app_language') : '') || 'vi';
+    const cachedResult = loadCachedKnowledgeAnalysis(trimmedKnowledge, cacheLocale);
+    if (cachedResult) {
+      analysisFingerprintRef.current = fingerprint;
+      setAnalysisErrorMessage('');
+      applyAnalysisResult(cachedResult, trimmedKnowledge, { updateSelections: true });
+      return;
+    }
+    // Throttle real network initiations only (double-clicks / rapid edits). The BE enforces
+    // the authoritative per-user limit; this just trims obviously wasteful repeats.
+    const now = Date.now();
+    if (now - lastAnalysisCallAtRef.current < MIN_ANALYSIS_TRIGGER_INTERVAL_MS) return;
+    lastAnalysisCallAtRef.current = now;
+    analysisAbortRef.current?.abort();
+    const abortController = new AbortController();
+    analysisAbortRef.current = abortController;
+    analysisFingerprintRef.current = fingerprint;
+    setAnalysisErrorMessage('');
+    setAnalysisStatus('loading');
+    analyzeKnowledge(trimmedKnowledge, { signal: abortController.signal })
+      .then((result) => {
+        if (abortController.signal.aborted) return;
+        saveCachedKnowledgeAnalysis(trimmedKnowledge, cacheLocale, result);
+        applyAnalysisResult(result, trimmedKnowledge, { updateSelections: true });
+      })
+      .catch((error) => {
+        if (abortController.signal.aborted) return;
+        console.error('[StudyProfile] Knowledge analysis failed:', error);
+        analysisFingerprintRef.current = '';
+        setKnowledgeAnalysis(null);
+        setKnowledgeOptions([]);
+        setDomainOptions([]);
+        setAnalysisErrorMessage(typeof error?.message === 'string' ? error.message : '');
+        setAnalysisStatus('error');
+      });
+  }
   function retryKnowledgeAnalysis() {
     analysisFingerprintRef.current = '';
-    setAnalysisRetryTick((current) => current + 1);
+    triggerKnowledgeAnalysis();
   }
   const wizardStatus = buildWizardStatus({
     isWaitingForOverallReview,
@@ -821,6 +824,7 @@ export function useWorkspaceProfileWizard({
     isWaitingForOverallReview,
     submitting,
     analysisStatus,
+    analysisErrorMessage,
     knowledgeOptions,
     domainOptions,
     needsKnowledgeDescription,
@@ -852,5 +856,6 @@ export function useWorkspaceProfileWizard({
     showValidationErrors,
     applySuggestion,
     retryKnowledgeAnalysis,
+    triggerKnowledgeAnalysis,
   };
 }

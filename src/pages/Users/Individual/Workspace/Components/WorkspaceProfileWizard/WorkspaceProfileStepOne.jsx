@@ -9,6 +9,7 @@ import {
   Loader2,
   RefreshCw,
   Route,
+  Sparkles,
   Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -92,6 +93,7 @@ function WorkspaceProfileStepOne({
   values,
   errors,
   analysisStatus,
+  analysisErrorMessage,
   domainOptions,
   needsKnowledgeDescription,
   knowledgeAnalysis,
@@ -99,6 +101,7 @@ function WorkspaceProfileStepOne({
   onPurposeChange,
   onFieldChange,
   onDomainSelect,
+  onAnalyzeKnowledge,
   onRetryAnalysis,
   canCreateRoadmap = true,
 }) {
@@ -106,6 +109,9 @@ function WorkspaceProfileStepOne({
     ? 'border-white/10 bg-white/[0.04] text-white'
     : 'border-slate-200 bg-white text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
+  // Mirrors the BE/live-validation minimum (3 meaningful chars) so the analyse button
+  // only enables once the AI actually has something to work with.
+  const knowledgeReady = (values.knowledgeInput || '').trim().length >= 3;
   const roadmapLockedByPlan = canCreateRoadmap === false;
   const {
     requiredPlanName: roadmapRequiredPlanName,
@@ -320,7 +326,7 @@ function WorkspaceProfileStepOne({
         ) : null}
       </section>
 
-      <section className={cn('rounded-[30px] border p-5 sm:p-6', surfaceClass)}>
+      <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
         <div className="flex items-start gap-3">
           <div
             className={cn(
@@ -330,28 +336,56 @@ function WorkspaceProfileStepOne({
           >
             <BookMarked className="h-5 w-5" />
           </div>
-          <div>
-            <h3 className="text-lg font-semibold">{t('workspace.profileConfig.stepOne.knowledgeTitle')}</h3>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold">
+              {t('workspace.profileConfig.stepOne.knowledgeTitle')}
+              <RequiredAsterisk />
+            </h3>
             <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{t('workspace.profileConfig.stepOne.knowledgeDescription')}</p>
           </div>
         </div>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-4 space-y-3">
           <div>
-            <label className="mb-2 block text-sm font-semibold">
-              {t('workspace.profileConfig.fields.knowledgeInput')}
-              <RequiredAsterisk />
-            </label>
             <textarea
-              rows={4}
+              rows={3}
               disabled={disabled}
               value={values.knowledgeInput}
               onChange={(event) => onFieldChange('knowledgeInput', event.target.value)}
               placeholder={t('workspace.profileConfig.placeholders.knowledgeInput')}
+              aria-label={t('workspace.profileConfig.fields.knowledgeInput')}
               className={inputClass}
             />
             {errors.knowledgeInput ? <p className="mt-2 text-sm font-medium text-red-400">{errors.knowledgeInput}</p> : null}
           </div>
+
+          {analysisStatus === 'idle' ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className={cn('text-xs leading-5', mutedClass)}>
+                {translateOrFallback(
+                  t,
+                  'workspace.profileConfig.stepOne.analyzeHint',
+                  'Nhập kiến thức rồi bấm để Quizmate AI gợi ý lĩnh vực phù hợp.'
+                )}
+              </p>
+              <button
+                type="button"
+                disabled={disabled || !knowledgeReady}
+                onClick={onAnalyzeKnowledge}
+                className={cn(
+                  'inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200',
+                  disabled || !knowledgeReady
+                    ? isDarkMode
+                      ? 'cursor-not-allowed bg-slate-800 text-slate-500'
+                      : 'cursor-not-allowed bg-slate-100 text-slate-400'
+                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/40 active:scale-[0.98]'
+                )}
+              >
+                <Sparkles className="h-4 w-4" />
+                {translateOrFallback(t, 'workspace.profileConfig.stepOne.analyzeAction', 'Phân tích lĩnh vực')}
+              </button>
+            </div>
+          ) : null}
 
           {analysisStatus === 'loading' ? (
             <div
@@ -377,7 +411,8 @@ function WorkspaceProfileStepOne({
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span className="text-sm font-medium">
-                  {translateOrFallback(t, 'workspace.profileConfig.stepOne.analysisError', 'AI phân tích thất bại. Vui lòng thử lại.')}
+                  {analysisErrorMessage
+                    || translateOrFallback(t, 'workspace.profileConfig.stepOne.analysisError', 'AI phân tích thất bại. Vui lòng thử lại.')}
                 </span>
               </div>
               <button
