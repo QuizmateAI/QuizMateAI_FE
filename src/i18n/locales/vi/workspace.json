@@ -2,6 +2,12 @@
   "workspace": {
     "wsConnected": "Kết nối realtime",
     "wsDisconnected": "Không kết nối",
+    "aiGeneration": {
+      "contextError": {
+        "noActiveSections": "Không có section tài liệu nào đang bật để AI sử dụng. Vui lòng bật lại ít nhất một section có nội dung trong tài liệu rồi thử lại.",
+        "notEnoughContext": "Tài liệu đã chọn chưa đủ ngữ cảnh để AI tạo nội dung. Vui lòng bật thêm section, giảm số lượng cần tạo hoặc bổ sung thêm tài liệu."
+      }
+    },
     "header": {
       "title": "Không gian Học tập không có tiêu đề",
       "create": "Tạo mới",

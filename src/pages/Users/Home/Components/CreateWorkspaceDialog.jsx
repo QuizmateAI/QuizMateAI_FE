@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, ChevronDown } from 'lucide-react';
+import ToastError from '@/components/system/ToastError';
 
 // Dialog tạo workspace mới với topic/subject selector
 function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFetchTopics, onCreate, isDarkMode }) {
@@ -158,7 +159,7 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
               </select>
               <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
-            {errors.topicId && <p className="text-red-500 text-xs mt-1">{errors.topicId}</p>}
+            <ToastError message={errors.topicId} />
           </div>
 
           {/* Chọn Subject (không bắt buộc) */}
@@ -184,7 +185,7 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
               </select>
               <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
-            {errors.subjectId && <p className="text-red-500 text-xs mt-1">{errors.subjectId}</p>}
+            <ToastError message={errors.subjectId} />
           </div>
 
           <DialogFooter className="pt-2">

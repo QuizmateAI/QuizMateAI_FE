@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SYSTEM_SETTING_KEYS, useSystemSettingNumber } from "@/hooks/useSystemSettings";
+import ToastError from "@/components/system/ToastError";
 
 const INPUT_CLS = (isDark, hasError, surface = "quiz") =>
   `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
@@ -55,8 +56,6 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
     if (validate()) onNext?.();
   };
 
-  const errorCls = "text-xs text-red-500 mt-1";
-
   return (
     <div className="space-y-4 py-5">
       <div>
@@ -91,7 +90,7 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
           onChange={(e) => set("title", e.target.value)}
           className={INPUT_CLS(isDarkMode, !!errors.title, surface)}
         />
-        {errors.title && <p className={errorCls}>{errors.title}</p>}
+        <ToastError message={errors.title} />
       </div>
 
       <div>
@@ -132,7 +131,7 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
             className={INPUT_CLS(isDarkMode, !!errors.questionCount, surface)}
             placeholder={t("workspace.quiz.manualWizard.step1.fields.questionCountPlaceholder", "Ví dụ: 20")}
           />
-          {errors.questionCount && <p className={errorCls}>{errors.questionCount}</p>}
+          <ToastError message={errors.questionCount} />
         </div>
 
         <div>
@@ -148,7 +147,7 @@ function Step1Config({ config, onConfigChange, onNext, isDarkMode = false, surfa
             className={INPUT_CLS(isDarkMode, !!errors.duration, surface)}
             placeholder={t("workspace.quiz.manualWizard.step1.fields.durationPlaceholder", "Ví dụ: 30")}
           />
-          {errors.duration && <p className={errorCls}>{errors.duration}</p>}
+          <ToastError message={errors.duration} />
         </div>
       </div>
 

@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { updateQuiz } from "@/api/QuizAPI";
 import { unwrapApiData } from "@/utils/apiResponse";
+import ToastError from "@/components/system/ToastError";
 
 const INPUT_CLS = (isDark, hasError) =>
   `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
@@ -155,7 +156,7 @@ function QuizMetadataEditModal({ open, onClose, quiz, onSaved, isDarkMode = fals
             />
           </div>
 
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          <ToastError message={error} />
         </div>
 
         <DialogFooter className="gap-2 pt-2">

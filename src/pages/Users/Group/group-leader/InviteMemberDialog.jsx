@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Mail } from 'lucide-react';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import ToastError from '@/components/system/ToastError';
 
 // Dialog mời thành viên bằng email
 function InviteMemberDialog({
@@ -50,15 +51,16 @@ function InviteMemberDialog({
       || (Number.isFinite(normalizedMemberSeatRemaining) && normalizedMemberSeatRemaining <= 0)
     )
   );
+  const memberSeatLimitReachedMessage = t('home.group.memberSeatLimitReached', {
+    used: Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit,
+    limit: normalizedMemberSeatLimit,
+    defaultValue: `Nhóm đã dùng hết ${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit}/${normalizedMemberSeatLimit} slot thành viên. Hãy hủy lời mời chờ hoặc nâng cấp gói trước khi mời thêm.`,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (inviteBlockedBySeatLimit) {
-      setError(t('home.group.memberSeatLimitReached', {
-        used: Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit,
-        limit: normalizedMemberSeatLimit,
-        defaultValue: `Nhóm đã dùng hết ${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit}/${normalizedMemberSeatLimit} slot thành viên.`,
-      }));
+      setError(memberSeatLimitReachedMessage);
       return;
     }
 
@@ -102,19 +104,12 @@ function InviteMemberDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {hasMemberSeatLimit ? (
+          <ToastError message={memberSeatLimitReachedMessage} enabled={inviteBlockedBySeatLimit} />
+          {hasMemberSeatLimit && !inviteBlockedBySeatLimit ? (
             <div className={`rounded-lg border px-3 py-2.5 text-xs leading-5 ${
-              inviteBlockedBySeatLimit
-                ? (isDarkMode ? 'border-red-400/30 bg-red-500/10 text-red-100' : 'border-red-200 bg-red-50 text-red-700')
-                : (isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600')
+              isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'
             }`}>
-              {inviteBlockedBySeatLimit
-                ? t('home.group.memberSeatLimitReached', {
-                  used: Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit,
-                  limit: normalizedMemberSeatLimit,
-                  defaultValue: `Nhóm đã dùng hết ${Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : normalizedMemberSeatLimit}/${normalizedMemberSeatLimit} slot thành viên. Hãy hủy lời mời chờ hoặc nâng cấp gói trước khi mời thêm.`,
-                })
-                : t('home.group.memberSeatLimitRemaining', {
+              {t('home.group.memberSeatLimitRemaining', {
                   remaining: Number.isFinite(normalizedMemberSeatRemaining) ? normalizedMemberSeatRemaining : 0,
                   limit: normalizedMemberSeatLimit,
                   used: Number.isFinite(normalizedMemberSeatUsage) ? normalizedMemberSeatUsage : 0,
@@ -138,7 +133,7 @@ function InviteMemberDialog({
                 autoFocus
               />
             </div>
-            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+            <ToastError message={error} />
           </div>
 
           <DialogFooter className="gap-2 pt-2">

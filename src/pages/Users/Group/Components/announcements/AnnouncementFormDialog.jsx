@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import ToastError from '@/components/system/ToastError';
 
 // Khớp BE validation: title 2–280, content 2–10000. Để Save bị disabled tới khi
 // hai field hợp lệ, tránh round-trip để nhận error VN.
@@ -127,9 +128,8 @@ function AnnouncementFormDialog({
               disabled={submitting}
             />
             <div className="flex items-center justify-between text-xs">
-              <span className={cn(titleError && trimmedTitle ? 'text-red-500' : 'text-transparent')}>
-                {titleError && trimmedTitle ? titleError : '.'}
-              </span>
+              <ToastError message={titleError} enabled={Boolean(titleError && trimmedTitle)} />
+              <span className="text-transparent">.</span>
               <span className={cn(isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
                 {trimmedTitle.length}/{TITLE_MAX}
               </span>
@@ -161,9 +161,8 @@ function AnnouncementFormDialog({
               )}
             />
             <div className="flex items-center justify-between text-xs">
-              <span className={cn(contentError && trimmedContent ? 'text-red-500' : 'text-transparent')}>
-                {contentError && trimmedContent ? contentError : '.'}
-              </span>
+              <ToastError message={contentError} enabled={Boolean(contentError && trimmedContent)} />
+              <span className="text-transparent">.</span>
               <span className={cn(isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
                 {trimmedContent.length}/{CONTENT_MAX}
               </span>
@@ -189,11 +188,7 @@ function AnnouncementFormDialog({
             </span>
           </label>
 
-          {submitError ? (
-            <p className="text-sm text-red-500" role="alert">
-              {submitError}
-            </p>
-          ) : null}
+          <ToastError message={submitError} />
 
           <DialogFooter className="gap-2">
             <Button

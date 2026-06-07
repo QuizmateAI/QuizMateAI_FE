@@ -6,6 +6,7 @@ import { createFullQuiz, getQuizzesByScope } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getPhasesByRoadmap } from "@/api/RoadmapAPI";
 import { Checkbox } from "@/components/ui/checkbox";
 import useWorkspaceMaterialSelection from "./useWorkspaceMaterialSelection";
+import ToastError from "@/components/system/ToastError";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -269,11 +270,7 @@ function CreatePostLearningForm({
             </div>
           )}
 
-          {materialsError && !materialsLoading && (
-            <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/20 text-red-400 border border-red-900/30" : "bg-red-50 text-red-700 border border-red-200"}`}>
-              {materialsError}
-            </div>
-          )}
+          {!materialsLoading ? <ToastError message={materialsError} /> : null}
 
           {normalizedSources.length > 0 && !materialsLoading && (
             <>
@@ -434,11 +431,7 @@ function CreatePostLearningForm({
             </div>
 
             {/* Lỗi */}
-            {error && (
-              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                {error}
-              </div>
-            )}
+            <ToastError message={error} />
 
             {/* Danh sách câu hỏi */}
             <div className="space-y-3">

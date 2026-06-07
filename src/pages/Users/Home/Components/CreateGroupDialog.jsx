@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import ToastError from '@/components/system/ToastError';
 
 // Dialog tạo nhóm mới với topic/subject selector
 function CreateGroupDialog({ open, onOpenChange, topics: _topics, topicsLoading: _topicsLoading, onFetchTopics: _onFetchTopics, onCreate, isDarkMode }) {
@@ -90,7 +91,7 @@ function CreateGroupDialog({ open, onOpenChange, topics: _topics, topicsLoading:
               className={`${inputBase} ${errors.groupName ? 'border-red-500' : ''}`}
               autoFocus
             />
-            {errors.groupName && <p className="text-red-500 text-xs mt-1">{errors.groupName}</p>}
+            <ToastError message={errors.groupName} />
           </div>
 
           <DialogFooter className="gap-2 pt-2">

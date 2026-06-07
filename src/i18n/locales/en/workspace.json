@@ -2,6 +2,12 @@
   "workspace": {
     "wsConnected": "Live updates",
     "wsDisconnected": "Disconnected",
+    "aiGeneration": {
+      "contextError": {
+        "noActiveSections": "No enabled document section is available for AI. Please enable at least one section with content, then try again.",
+        "notEnoughContext": "The selected material does not have enough context for AI generation. Enable more sections, reduce the amount to generate, or add more material."
+      }
+    },
     "header": {
       "title": "Untitled workspace",
       "create": "Create",

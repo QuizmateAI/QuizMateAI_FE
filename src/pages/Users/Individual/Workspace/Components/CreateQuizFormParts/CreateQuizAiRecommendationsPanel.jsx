@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Rocket, Sparkles, X } from "lucide-react";
 import { getBloomSkillLabel, getQuizDifficultyLabel, getQuizQuestionTypeLabel } from "@/lib/quizQuestionTypes";
+import { useToast } from "@/context/ToastContext";
 
 function CreateQuizAiRecommendationsPanel({
   activeRecommendation,
@@ -17,6 +19,7 @@ function CreateQuizAiRecommendationsPanel({
   onToggleRecommendation,
   t,
 }) {
+  const { showError } = useToast();
   const getDifficultyLabel = (difficulty) => getQuizDifficultyLabel(difficulty, t);
   const getQuestionTypeLabel = (questionType) => getQuizQuestionTypeLabel(questionType, t);
   const getBloomLabel = (bloomSkill) => getBloomSkillLabel(bloomSkill, t);
@@ -27,7 +30,12 @@ function CreateQuizAiRecommendationsPanel({
     .map((label) => String(label || "").trim())
     .filter(Boolean);
 
-  if (!inlineRecError && !hasRecommendations) {
+  useEffect(() => {
+    if (!inlineRecError || inlineRecLoading) return;
+    showError(inlineRecError, { duration: 4000 });
+  }, [inlineRecError, inlineRecLoading, showError]);
+
+  if (!hasRecommendations) {
     return null;
   }
 
@@ -54,13 +62,7 @@ function CreateQuizAiRecommendationsPanel({
         </div>
       )}
 
-      {!inlineRecLoading && inlineRecError && (
-        <div className={`rounded-lg px-2.5 py-2 text-xs ${isDarkMode ? "border border-red-900/40 bg-red-950/25 text-red-300" : "border border-red-200 bg-red-50 text-red-600"} ${fontClass}`}>
-          {inlineRecError}
-        </div>
-      )}
-
-      {!inlineRecLoading && !inlineRecError && hasRecommendations && (
+      {!inlineRecLoading && (
         <>
           <div className="flex flex-wrap gap-2">
             {inlineRecommendations.map((recommendation) => {

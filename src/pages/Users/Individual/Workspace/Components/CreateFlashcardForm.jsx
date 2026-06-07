@@ -4,6 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, CheckSquare, CreditCard, Loader2, Lock, Sparkles, Unlock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { generateAIFlashcardSet } from "@/api/FlashcardAPI";
+import { useToast } from "@/context/ToastContext";
+import { getAiGenerationContextErrorMessage } from "@/utils/aiGenerationError";
 import useWorkspaceMaterialSelection from "./useWorkspaceMaterialSelection";
 
 const DEFAULT_DISTRIBUTION = {
@@ -278,6 +280,7 @@ function CreateFlashcardForm({
   onToggleMaterialSelection,
 }) {
   const { t, i18n } = useTranslation();
+  const { showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [submitting, setSubmitting] = useState(false);
@@ -304,6 +307,11 @@ function CreateFlashcardForm({
     sources,
     t,
   });
+
+  useEffect(() => {
+    if (!materialsError || materialsLoading) return;
+    showError(materialsError, { duration: 4000 });
+  }, [materialsError, materialsLoading, showError]);
 
   const selectedSourceItems = useMemo(
     () => normalizedSources.filter((src) => selectedSourceIdSet.has(src.id)),
@@ -450,7 +458,9 @@ function CreateFlashcardForm({
       const res = await generateAIFlashcardSet(payload);
       await onCreateFlashcard?.(res?.data || res);
     } catch (err) {
-      console.error("Loi tao the ghi nho AI:", err);
+      console.error("Failed to create AI flashcard set:", err);
+      const contextErrorMessage = getAiGenerationContextErrorMessage(err, t);
+      showError(contextErrorMessage || err?.message || t("workspace.flashcard.createFailed"), { duration: 5000 });
     } finally {
       setSubmitting(false);
     }
@@ -519,12 +529,6 @@ function CreateFlashcardForm({
             <div className={`mb-2 flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               {t("workspace.quiz.aiConfig.materialsLoading", "Đang tải danh sách tài liệu...")}
-            </div>
-          )}
-
-          {materialsError && !materialsLoading && (
-            <div className={`mb-2 text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/20 text-red-400 border border-red-900/30" : "bg-red-50 text-red-700 border border-red-200"}`}>
-              {materialsError}
             </div>
           )}
 

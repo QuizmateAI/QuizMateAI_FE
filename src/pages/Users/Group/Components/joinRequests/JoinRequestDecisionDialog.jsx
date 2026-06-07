@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import ToastError from '@/components/system/ToastError';
 
 const NOTE_MAX = 500;
 
@@ -130,18 +131,15 @@ function JoinRequestDecisionDialog({
               )}
             />
             <div className="flex items-center justify-between text-xs">
-              <span className={cn(noteError ? 'text-red-500' : 'text-transparent')}>
-                {noteError || '.'}
-              </span>
+              <ToastError message={noteError} />
+              <span className="text-transparent">.</span>
               <span className={cn(isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
                 {trimmedNote.length}/{NOTE_MAX}
               </span>
             </div>
           </div>
 
-          {submitError ? (
-            <p className="text-sm text-red-500" role="alert">{submitError}</p>
-          ) : null}
+          <ToastError message={submitError} />
 
           <DialogFooter className="gap-2">
             <Button

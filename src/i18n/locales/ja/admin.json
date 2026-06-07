@@ -28,7 +28,12 @@
     "planPurchases": "プランと利益率レポート",
     "pnlOverview": "AI 純利益",
     "aiCostSummary": "AI コスト",
-    "aiRequestAudit": "AI リクエスト監査"
+    "aiRequestAudit": "AI リクエスト監査",
+    "feedbackSubroutes": {
+      "forms": "フィードバックフォーム",
+      "tickets": "フィードバックチケット",
+      "activity": "回答ログ"
+    }
   },
   "sidebarSections": {
     "overview": "概要",
@@ -486,8 +491,8 @@
       "creditPackages": "販売中のクレジットパッケージとユーザーに提供されるクレジット供給サーフェスを追跡します。",
       "aiAudit": "AI 呼び出し、アクティブモデル、最近の運用におけるトークン消費を確認します。"
     },
-    "overviewTitle": "Overview",
-    "description": "Platform health, usage and revenue at a glance.",
+    "overviewTitle": "概要",
+    "description": "プラットフォームの稼働状況、利用状況、売上を一目で確認できます。",
     "chartDay": "日別",
     "chartWeek": "週別",
     "chartMonth": "月別",
@@ -502,12 +507,12 @@
       }
     },
     "detail": {
-      "stacked": "Stacked",
+      "stacked": "積み上げ",
       "stackedHint": "総売上に占める支払い種別ごとの割合です。",
       "topBuckets": "売上上位期間",
       "topBucketsHint": "売上が大きい日、週、月をランキング表示します。",
-      "bucketsCount": "Buckets Count",
-      "weekday": "Weekday",
+      "bucketsCount": "期間数",
+      "weekday": "曜日別",
       "weekdayHint": "曜日別に集計した売上です。"
     }
   },
@@ -590,16 +595,16 @@
       "description": "This action will permanently remove admin account {{username}} ({{email}}).",
       "warning": "Warning",
       "confirmLabel": "確認テキスト",
-      "confirmHelp": "Confirm Help",
+      "confirmHelp": "削除を確認するため、指定された確認テキストを入力してください。",
       "reasonLabel": "理由",
       "reasonPlaceholder": "監査用の理由を入力...",
-      "reasonHelp": "Reason Help"
+      "reasonHelp": "監査ログに残すため、削除理由を入力してください。"
     },
-    "metricAdmins": "Metric Admins",
-    "metricStatus": "Metric Status",
-    "metricPermissions": "Metric Permissions",
-    "metricRecentActivity": "Metric Recent Activity",
-    "cardSubtitle": "Card Subtitle"
+    "metricAdmins": "管理者数",
+    "metricStatus": "ステータス別",
+    "metricPermissions": "付与済み権限",
+    "metricRecentActivity": "7日間のアクティビティ",
+    "cardSubtitle": "管理者アカウントと権限の概要"
   },
   "adminPayments": {
     "tabPayments": "取引一覧",
@@ -996,11 +1001,11 @@
       "syncRolePermissions": "ロール権限を同期できません。",
       "deleteRole": "ロールを削除できません。"
     },
-    "metricRoles": "Metric Roles",
-    "metricPermissions": "Metric Permissions",
-    "metricAudit": "Metric Audit",
+    "metricRoles": "ロール数",
+    "metricPermissions": "権限数",
+    "metricAudit": "監査ログ数",
     "metricUsersLabel": "個別権限のある管理者",
-    "metricUsersHelper": "Metric Users Helper"
+    "metricUsersHelper": "ロールとは別に個別権限を持つ管理者数"
   },
   "subscription": {
     "title": "サブスクリプション管理",
@@ -1273,8 +1278,8 @@
       "allStatuses": "すべてのステータス",
       "open": "Open",
       "dialogTitle": "AI モデルを絞り込む",
-      "dialogDescription": "Dialog Description",
-      "reset": "Reset",
+      "dialogDescription": "AI モデル一覧を絞り込む条件を選択します。",
+      "reset": "リセット",
       "searchAction": "Search Action"
     },
     "exchangeRate": {
@@ -1330,9 +1335,9 @@
       "previewVnd": "変換結果",
       "openEndedHint": "この価格バージョンに終了日がない場合は空欄にしてください。",
       "submit": "価格バージョンを保存",
-      "dataSources": "Data Sources",
-      "dataSourcesDescription": "Data Sources Description",
-      "officialReady": "Official Ready",
+      "dataSources": "データソース",
+      "dataSourcesDescription": "公式価格や保存済みバージョンなど、価格情報の取得元です。",
+      "officialReady": "公式価格あり",
       "inputUsd": "Input Usd",
       "outputUsd": "Output Usd",
       "formAppliedHint": "公式価格をフォームに反映しました。保存前に編集できます。",
@@ -1548,7 +1553,7 @@
   },
   "aiAudit": {
     "title": {
-      "v2": "Nhật ký AI hệ thống"
+      "v2": "AI システム監査ログ"
     },
     "description": "AI リクエスト、トークン使用、モデル、ステータスを追跡し、必要に応じて詳細トレースを開きます。",
     "errors": {
@@ -1569,10 +1574,10 @@
       "planCostHint": "プラン機能のプロバイダーコスト。平均 {{avg}} トークン/リクエスト",
       "errors": "エラー",
       "errorsHint": "現在のフィルターに一致するエラーリクエスト",
-      "totalRequestsHelp": "Total Requests Help",
-      "totalTokensHelp": "Total Tokens Help",
-      "systemCostHelp": "System Cost Help",
-      "planCostHelp": "Plan Cost Help"
+      "totalRequestsHelp": "選択した条件に一致する AI リクエスト総数",
+      "totalTokensHelp": "選択したリクエストで消費されたトークン総数",
+      "systemCostHelp": "システム負担の AI 機能にかかったプロバイダーコスト",
+      "planCostHelp": "プランに含まれる AI 機能にかかったプロバイダーコスト"
     },
     "filters": {
       "title": "AI 監査フィルター",
@@ -2542,5 +2547,83 @@
       "marginDesc": "利益率 降順",
       "marginAsc": "利益率 昇順"
     }
+  },
+  "pnl": {
+    "title": "P&L 概要",
+    "description": "選択した期間の売上、AI コスト、純利益を比較します。",
+    "range": {
+      "allTime": "全期間",
+      "now": "現在",
+      "label": "集計期間",
+      "tooltip": "以下の数値はすべて、この期間内で集計されます。範囲を変更して、AI コストやAIログと照合できます。"
+    },
+    "rev": {
+      "subscription": "有料プラン",
+      "credit": "クレジット購入",
+      "slot": "グループスロット"
+    },
+    "cost": {
+      "userPaid": "ユーザー課金AI",
+      "plan": "プラン内AI",
+      "system": "システム負担"
+    },
+    "hero": {
+      "label": "AI コスト後の純利益",
+      "margin": "利益率",
+      "formula": "売上",
+      "aiCost": "AI コスト合計",
+      "profit": "黒字",
+      "loss": "赤字",
+      "aiCostRatio": "AI コスト比率",
+      "ofRevenue": "売上比"
+    },
+    "bucketDay": "日別",
+    "bucketWeek": "週別",
+    "bucketMonth": "月別",
+    "kpi": {
+      "revenue": "売上",
+      "revenueHint": "有料プラン + クレジット + グループスロット",
+      "aiCharged": "課金対象AIコスト",
+      "aiChargedHint": "照合済みの USER_PAID + PLAN_BASED コスト",
+      "aiSystem": "システムAIコスト",
+      "aiSystemHint": "RAG、OCR、モデレーションなどシステム負担分",
+      "net": "純利益",
+      "netHint": "売上から AI コスト合計を差し引いた値"
+    },
+    "chart": {
+      "revenueTs": "売上推移",
+      "revenueTsHint": "選択期間内の売上推移です。",
+      "revenue": "売上",
+      "empty": "この期間のデータはありません。"
+    },
+    "pie": {
+      "revenue": "売上構成",
+      "revenueHint": "支払いチャネル別です。",
+      "cost": "AI コスト構成",
+      "costHint": "ユーザー課金分は推定値です。"
+    },
+    "flow": {
+      "title": "キャッシュフローマップと利益モデル",
+      "subtitle": "プラン収益とAIコストから、システムの純利益を分かりやすく確認できます。",
+      "revenueInflows": "売上の流入",
+      "aiOutflows": "AI プロバイダーへの支出",
+      "profitCalculations": "利益の計算",
+      "planRevenue": "プラン売上",
+      "directCredit": "クレジット単体購入",
+      "slotRevenue": "グループスロット",
+      "baseRevenue": "基本料金と付与クレジットを含む",
+      "creditPool": "付与クレジット枠",
+      "userAiCost": "ユーザー利用分のAIコスト",
+      "systemAiCost": "システム負担AIコスト",
+      "creditProfit": "クレジット利益",
+      "creditProfitDesc": "クレジット売上 − ユーザー利用分AIコスト",
+      "planProfit": "プラン利益合計",
+      "planProfitDesc": "基本料金 + クレジット利益",
+      "netProfit": "最終純利益",
+      "netProfitDesc": "売上 − AI コスト合計",
+      "unspentCredit": "未使用クレジット",
+      "cogsPaid": "外部プロバイダーへ支払うCOGS"
+    },
+    "partialError": "一部データの読み込みに失敗したため、数値が不完全な可能性があります。"
   }
 }

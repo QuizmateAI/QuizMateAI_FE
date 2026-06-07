@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import PlanGatedFeature from '@/components/plan/PlanGatedFeature';
 import { usePlanUpgradeInfo } from '@/hooks/usePlanUpgradeInfo';
+import ToastError from '@/components/system/ToastError';
 
 const PURPOSE_META = {
   STUDY_NEW: {
@@ -318,7 +319,7 @@ function WorkspaceProfileStepOne({
             return <React.Fragment key={purpose}>{purposeButton}</React.Fragment>;
           })}
         </div>
-        {errors.workspacePurpose ? <p className="mt-3 text-sm font-medium text-red-400">{errors.workspacePurpose}</p> : null}
+        <ToastError message={errors.workspacePurpose} />
         {roadmapLockedByPlan ? (
           <p className={cn('mt-3 text-xs leading-5', mutedClass)}>
             {t('workspace.profileConfig.stepOne.studyNewLockedHint')}
@@ -356,7 +357,7 @@ function WorkspaceProfileStepOne({
               aria-label={t('workspace.profileConfig.fields.knowledgeInput')}
               className={inputClass}
             />
-            {errors.knowledgeInput ? <p className="mt-2 text-sm font-medium text-red-400">{errors.knowledgeInput}</p> : null}
+            <ToastError message={errors.knowledgeInput} />
           </div>
 
           {analysisStatus === 'idle' ? (
@@ -623,13 +624,11 @@ function WorkspaceProfileStepOne({
                 </div>
               )}
 
-              {errors.inferredDomain ? <p className="mt-3 text-sm font-medium text-red-400">{errors.inferredDomain}</p> : null}
+              <ToastError message={errors.inferredDomain} />
             </div>
           ) : null}
 
-          {analysisStatus !== 'success' && errors.inferredDomain ? (
-            <p className="text-sm font-medium text-red-400">{errors.inferredDomain}</p>
-          ) : null}
+          {analysisStatus !== 'success' ? <ToastError message={errors.inferredDomain} /> : null}
         </div>
       </section>
 

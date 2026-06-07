@@ -2,6 +2,12 @@
   "workspace": {
     "wsConnected": "ライブ更新",
     "wsDisconnected": "切断",
+    "aiGeneration": {
+      "contextError": {
+        "noActiveSections": "AI が利用できる有効なドキュメントセクションがありません。内容のあるセクションを少なくとも 1 つ有効にしてから、もう一度お試しください。",
+        "notEnoughContext": "選択した教材は AI 生成に必要な文脈が不足しています。セクションを追加で有効にするか、生成数を減らすか、教材を追加してください。"
+      }
+    },
     "header": {
       "title": "無題のワークスペース",
       "create": "作成",
@@ -1605,7 +1611,7 @@
         "nameRequired": "クイズ名は必須です。",
         "durationMin": "時間は少なくとも 1 分必要です。",
         "saveFailed": "クイズの更新中に問題が発生しました。",
-        "title": "????????"
+        "title": "クイズ情報を更新"
       },
       "create": "クイズを作成",
       "createActive": "作成 & 有効化",
@@ -1925,17 +1931,17 @@
         "incorrect": "不正解"
       },
       "reviewBan": {
-        "bannedBadge": "Banned Badge",
-        "noteTooShort": "Note Too Short",
-        "submitFailed": "Submit Failed",
-        "button": "Button",
-        "dialogTitle": "Dialog Title",
-        "dialogDescription": "Dialog Description",
-        "targetLabel": "Target Label",
-        "noteLabel": "Note Label",
-        "notePlaceholder": "Note Placeholder",
-        "cancel": "Cancel",
-        "confirm": "Confirm"
+        "bannedBadge": "レビュー停止中",
+        "noteTooShort": "理由はもう少し詳しく入力してください。",
+        "submitFailed": "送信できませんでした。",
+        "button": "レビューを停止",
+        "dialogTitle": "レビューを停止しますか?",
+        "dialogDescription": "この操作により、対象ユーザーはこのレビューに参加できなくなります。",
+        "targetLabel": "対象",
+        "noteLabel": "理由",
+        "notePlaceholder": "監査用の理由を入力...",
+        "cancel": "キャンセル",
+        "confirm": "確定"
       },
       "planGate": {
         "structureTitleFallback": "Structure Title Fallback",
@@ -1957,20 +1963,20 @@
         "descriptionFallback": "Nhóm loại câu hỏi nâng cao cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng."
       },
       "reviewConcern": {
-        "noteTooShort": "Note Too Short",
-        "submitFailed": "Submit Failed",
-        "autoTitle": "Auto Title",
-        "activeTitle": "Active Title",
-        "autoHint": "Auto Hint",
-        "activeHint": "Active Hint",
-        "withdraw": "Withdraw",
-        "raiseButton": "Raise Button",
-        "dialogTitle": "Dialog Title",
-        "dialogDescription": "Dialog Description",
-        "noteLabel": "Note Label",
-        "notePlaceholder": "Note Placeholder",
-        "cancel": "Cancel",
-        "submit": "Submit"
+        "noteTooShort": "理由はもう少し詳しく入力してください。",
+        "submitFailed": "送信できませんでした。",
+        "autoTitle": "システムが注意点を検出しました",
+        "activeTitle": "レビュー上の懸念があります",
+        "autoHint": "公開前に内容を確認してください。",
+        "activeHint": "懸念が解消されるまで公開できません。",
+        "withdraw": "取り下げ",
+        "raiseButton": "懸念を報告",
+        "dialogTitle": "懸念を報告",
+        "dialogDescription": "問題点を記録して、リーダーが公開前に確認できるようにします。",
+        "noteLabel": "メモ",
+        "notePlaceholder": "確認が必要な点を入力...",
+        "cancel": "キャンセル",
+        "submit": "送信"
       },
       "deletionAuditPanel": {
         "title": "Title",
@@ -3901,17 +3907,17 @@
       "questionNavigator": {
         "jumpTo": "ジャンプ",
         "countLabel": "{{count}}/{{max}} ?",
-        "errorCount": "{{count}} ?????",
-        "incompleteCount": "{{count}} ????",
-        "all": "???",
-        "incomplete": "???",
-        "error": "AI ?????????????????",
-        "emptyQuestion": "(???)",
-        "noQuestions": "?????????",
-        "jumpButton": "??",
-        "scrollTop": "???",
-        "addQuestion": "?????",
-        "importQuestions": "????????????"
+        "errorCount": "{{count}} 件のエラー",
+        "incompleteCount": "{{count}} 件が未完了",
+        "all": "すべて",
+        "incomplete": "未完了",
+        "error": "AI 呼び出し中にエラーが発生しました",
+        "emptyQuestion": "（未入力）",
+        "noQuestions": "質問はありません。",
+        "jumpButton": "移動",
+        "scrollTop": "先頭へ",
+        "addQuestion": "質問を追加",
+        "importQuestions": "別のクイズからインポート"
       }
     },
     "communityDetail": {

@@ -712,7 +712,7 @@ function AiAuditManagement() {
     <SuperAdminPage className={`gap-6 animate-in fade-in duration-500 ${fontClass}`}>
       <SuperAdminPageHeader
         eyebrow={t('sidebarSections.aiSystemLogs', 'Hệ thống AI')}
-        title={t('aiAudit.title.v2', { defaultValue: 'Nhật ký AI hệ thống' })}
+        title={t('aiAudit.title.v2', { defaultValue: 'AI audit logs' })}
         actions={(
           <Button
             type="button"

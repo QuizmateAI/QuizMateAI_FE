@@ -400,8 +400,7 @@ function CreateQuizForm({
           t={t}
         />
 
-        {error && (
-          insufficientCreditError ? (
+        {error && insufficientCreditError ? (
             <div
               ref={insufficientCreditBannerRef}
               id="create-quiz-insufficient-credit"
@@ -434,12 +433,7 @@ function CreateQuizForm({
                 </div>
               </div>
             </div>
-          ) : (
-            <div className={`rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-              {error}
-            </div>
-          )
-        )}
+        ) : null}
 
         <CreateQuizAiFormContent
           classes={{

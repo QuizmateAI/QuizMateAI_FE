@@ -2,6 +2,7 @@ import React from "react";
 import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2 } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
 import PlanGatedFeature from "@/components/plan/PlanGatedFeature";
+import ToastError from "@/components/system/ToastError";
 import {
   QUESTION_TYPE_LABEL_FALLBACKS,
   getBloomSkillLabel,
@@ -159,9 +160,7 @@ function AIQuizTab({
                 setFieldErrors((prev) => ({ ...prev, aiName: "" }));
               }}
             />
-            {fieldErrors.aiName && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.aiName}</p>
-            )}
+            <ToastError message={fieldErrors.aiName} />
           </div>
 
           <div>
@@ -175,9 +174,7 @@ function AIQuizTab({
                 setFieldErrors((prev) => ({ ...prev, aiPrompt: "" }));
               }}
             />
-            {fieldErrors.aiPrompt && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.aiPrompt}</p>
-            )}
+            <ToastError message={fieldErrors.aiPrompt} />
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -269,9 +266,7 @@ function AIQuizTab({
               min={minTotalQuestions}
               max={maxTotalQuestions}
             />
-            {fieldErrors.aiTotalQuestions && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.aiTotalQuestions}</p>
-            )}
+            <ToastError message={fieldErrors.aiTotalQuestions} />
             {!fieldErrors.aiTotalQuestions && (
               <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 {t("workspace.quiz.validation.totalQuestionsRangeHint", {
@@ -297,18 +292,17 @@ function AIQuizTab({
                 onBlur={() => applyMinOnBlur(aiDuration, setAiDuration, 1)}
                 min={1}
               />
-              {fieldErrors.aiDuration ? (
-                <p className="mt-1 text-xs text-red-500">{fieldErrors.aiDuration}</p>
-              ) : hasDurationMinimumMismatch ? (
-                <p className="mt-1 text-xs text-red-500">
-                  {t("workspace.quiz.validation.minimumTimePerQuestion", {
-                    defaultValue: `Mỗi câu cần tối thiểu 30 giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumDurationMinutes} phút.`,
-                    count: Number(aiTotalQuestions) || 0,
-                    minutes: minimumDurationMinutes,
-                    seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
-                  })}
-                </p>
-              ) : null}
+              <ToastError
+                message={fieldErrors.aiDuration
+                  || (hasDurationMinimumMismatch
+                    ? t("workspace.quiz.validation.minimumTimePerQuestion", {
+                        defaultValue: `Mỗi câu cần tối thiểu 30 giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumDurationMinutes} phút.`,
+                        count: Number(aiTotalQuestions) || 0,
+                        minutes: minimumDurationMinutes,
+                        seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
+                      })
+                    : "")}
+              />
               {!fieldErrors.aiDuration && !hasDurationMinimumMismatch && aiDurationSyncNotice && (
                 <div className={durationSyncClass}>
                   <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -411,9 +405,7 @@ function AIQuizTab({
             </div>
           )}
 
-          {fieldErrors.aiDurations && (
-            <p className="mt-2 text-xs text-red-500">{fieldErrors.aiDurations}</p>
-          )}
+          <ToastError message={fieldErrors.aiDurations} />
         </div>
       </div>
 
@@ -467,9 +459,7 @@ function AIQuizTab({
           </label>
         </div>
 
-        {fieldErrors.aiDifficulty && (
-          <p className="mt-2 text-xs text-red-500">{fieldErrors.aiDifficulty}</p>
-        )}
+        <ToastError message={fieldErrors.aiDifficulty} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -536,9 +526,7 @@ function AIQuizTab({
               );
             })}
           </div>
-          {fieldErrors.selectedQTypes && (
-            <p className="mt-3 text-xs text-red-500">{fieldErrors.selectedQTypes}</p>
-          )}
+          <ToastError message={fieldErrors.selectedQTypes} />
         </div>
 
         <div ref={sectionRefs?.bloomSkills} className={getSectionClassName(["selectedBloomSkills"])}>
@@ -589,9 +577,7 @@ function AIQuizTab({
               );
             })}
           </div>
-          {fieldErrors.selectedBloomSkills && (
-            <p className="mt-3 text-xs text-red-500">{fieldErrors.selectedBloomSkills}</p>
-          )}
+          <ToastError message={fieldErrors.selectedBloomSkills} />
         </div>
       </div>
 
@@ -652,11 +638,7 @@ function AIQuizTab({
         </div>
 
         <div className="space-y-3 p-4">
-          {structurePreviewError && (
-            <div className={`rounded-xl border px-3 py-2 text-xs ${isDarkMode ? "border-red-900/40 bg-red-950/25 text-red-300" : "border-red-200 bg-red-50 text-red-700"}`}>
-              {structurePreviewError}
-            </div>
-          )}
+          <ToastError message={structurePreviewError} />
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? "border-cyan-900/40 bg-cyan-950/15" : "border-cyan-100 bg-cyan-50/70"}`}>

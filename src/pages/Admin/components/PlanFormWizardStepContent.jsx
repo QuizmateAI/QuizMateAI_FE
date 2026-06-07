@@ -410,7 +410,7 @@ function PlanFormWizardStepContent({
                       {t('subscription.wizard.entitlement.pricingBlockTitle', { defaultValue: 'Giá bán' })}
                     </p>
                     <p className={cn('text-[11px] mt-0.5', mutedCls)}>
-                      {t('subscription.wizard.entitlement.totalListPrice', { defaultValue: 'Tổng niêm yết (VND)' })}
+                      {t('subscription.wizard.entitlement.totalListPrice', { defaultValue: 'Total list price (VND)' })}
                     </p>
                   </div>
                 </div>
@@ -536,7 +536,7 @@ function PlanFormWizardStepContent({
                 >
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12px] tabular-nums">
                     <span className={cn('font-semibold uppercase tracking-wide text-[10px]', accentTextCls)}>
-                      {t('subscription.wizard.entitlement.floorFormulaLabel', { defaultValue: 'Sàn credit' })}
+                      {t('subscription.wizard.entitlement.floorFormulaLabel', { defaultValue: 'Credit floor' })}
                     </span>
                     <span className={mutedCls}>
                       {t('subscription.wizard.entitlement.floorFormulaBody', {
@@ -851,7 +851,7 @@ function PlanFormWizardStepContent({
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{getScopeLabel(formData.planScope, t)}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>{t('subscription.wizard.review.totalListPrice', { defaultValue: 'Tổng niêm yết' })}</span>
+                <span className={mutedCls}>{t('subscription.wizard.review.totalListPrice', { defaultValue: 'Total list price' })}</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(effectiveTotalPrice, t, locale)}</span>
               </div>
               <div className="flex items-center justify-between gap-3">

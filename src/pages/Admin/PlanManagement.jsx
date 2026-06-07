@@ -641,7 +641,7 @@ function PlanManagement() {
                 <TableHead className="w-[90px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.scope', 'Scope')}</TableHead>
                 <TableHead className="w-[80px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.level', 'Level')}</TableHead>
                 <TableHead className="w-[160px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">
-                  {t('subscription.table.totalPrice', { defaultValue: 'Giá niêm yết' })}
+                  {t('subscription.table.totalPrice', { defaultValue: 'List price' })}
                 </TableHead>
                 <TableHead className="w-[90px] text-center font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.status')}</TableHead>
                 <TableHead className="w-[130px] text-right font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.actions')}</TableHead>

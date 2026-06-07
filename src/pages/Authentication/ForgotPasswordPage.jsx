@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/floating-input";
-import { ChevronLeft, AlertCircle, CheckCircle, Globe, Moon, Sun } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Globe, Moon, Sun } from 'lucide-react';
 import { validateForgotPasswordForm, submitForgotPasswordRequest } from './ForgotPassword';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -14,6 +14,7 @@ import {
   cycleAppLanguage,
   getBaseAppLanguage,
 } from '@/utils/appSupportedLanguages';
+import ToastError from '@/components/system/ToastError';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -159,14 +160,7 @@ const ForgotPasswordPage = () => {
                 </div>
               )}
 
-              {errorMessage && (
-                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-red-800">{errorMessage}</p>
-                  </div>
-                </div>
-              )}
+              <ToastError message={errorMessage} />
 
               <div>
                 <FloatingInput
@@ -178,12 +172,7 @@ const ForgotPasswordPage = () => {
                   disabled={isLoading}
                   error={errors.email}
                 />
-                {errors.email && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                    <p className="text-sm text-red-600">{errors.email}</p>
-                  </div>
-                )}
+                <ToastError message={errors.email} />
               </div>
 
               <Button

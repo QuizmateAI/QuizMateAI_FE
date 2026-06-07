@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { ShieldCheck, AlertTriangle, Loader2 } from 'lucide-react';
+import ToastError from '@/components/system/ToastError';
 
 function formatNumber(value, locale) {
   return new Intl.NumberFormat(locale).format(Number(value) || 0);
@@ -191,11 +192,7 @@ export default function PaymentSidebar({
           )}
         </button>
 
-        {paymentError && (
-          <p className={`mt-3 text-center text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-            {paymentError}
-          </p>
-        )}
+        <ToastError message={paymentError} />
 
         {needGroupSelect && (
           <div className={`mt-4 flex items-center gap-3 rounded-[24px] border px-4 py-4 ${

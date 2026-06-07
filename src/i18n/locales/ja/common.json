@@ -50,6 +50,7 @@
       "last7Days": "7 日間",
       "last30Days": "30 日間",
       "thisMonth": "今月",
+      "thisYear": "今年",
       "custom": "カスタム",
       "clear": "クリア"
     },
@@ -305,58 +306,58 @@
       "total": "合計"
     },
     "kpi": {
-      "vsPrev": "Vs Prev",
-      "txCount": "Tx Count",
-      "subscription": "Subscription",
-      "credit": "Credit",
-      "slot": "Slot"
+      "vsPrev": "前期間比",
+      "txCount": "取引数",
+      "subscription": "サブスクリプション",
+      "credit": "クレジット",
+      "slot": "グループ枠"
     },
     "chartEmpty": "この期間のデータはありません。"
   },
   "pnl": {
     "range": {
-      "allTime": "All Time",
-      "now": "Now",
-      "tooltip": "Tooltip",
+      "allTime": "全期間",
+      "now": "現在",
+      "tooltip": "期間の説明",
       "label": "集計期間"
     },
     "rev": {
-      "subscription": "Subscription",
-      "credit": "Credit",
-      "slot": "Slot"
+      "subscription": "サブスクリプション",
+      "credit": "クレジット",
+      "slot": "グループ枠"
     },
     "cost": {
-      "userPaid": "User Paid",
+      "userPaid": "ユーザー支払い",
       "plan": "サブスクリプションプラン",
-      "system": "System"
+      "system": "システム"
     },
     "hero": {
       "label": "AI コスト後の純利益",
       "margin": "利益率",
-      "formula": "Formula",
-      "aiCost": "AI Cost",
-      "profit": "Profit",
-      "loss": "Loss",
-      "aiCostRatio": "AI Cost Ratio",
-      "ofRevenue": "Of Revenue"
+      "formula": "計算式",
+      "aiCost": "AI コスト",
+      "profit": "黒字",
+      "loss": "赤字",
+      "aiCostRatio": "AI コスト比率",
+      "ofRevenue": "売上比"
     },
     "title": "P&L 概要",
     "description": "選択した期間の売上、AI コスト、純利益を比較します。",
-    "bucketDay": "Bucket Day",
-    "bucketWeek": "Bucket Week",
-    "bucketMonth": "Bucket Month",
+    "bucketDay": "日別",
+    "bucketWeek": "週別",
+    "bucketMonth": "月別",
     "kpi": {
       "revenue": "売上",
       "revenueHint": "有料プラン + クレジット + グループスロット",
-      "aiCharged": "AI Charged",
+      "aiCharged": "課金対象 AI",
       "aiChargedHint": "照合済みの USER_PAID + PLAN_BASED コスト",
-      "aiSystem": "AI System",
+      "aiSystem": "システム AI",
       "aiSystemHint": "RAG、OCR、モデレーションなどシステム負担分",
-      "net": "Net",
+      "net": "純利益",
       "netHint": "売上から AI コスト合計を差し引いた値"
     },
     "chart": {
-      "revenueTs": "Revenue Ts",
+      "revenueTs": "売上推移",
       "revenueTsHint": "選択期間内の売上推移です。",
       "empty": "この期間のデータはありません。",
       "revenue": "売上"
@@ -364,7 +365,7 @@
     "pie": {
       "revenue": "売上構成",
       "revenueHint": "支払い元別です。",
-      "cost": "Cost",
+      "cost": "コスト",
       "costHint": "ユーザー支払い分は、徴収額からプランコストを差し引いて推定します。"
     },
     "partialError": "一部データの読み込みに失敗したため、数値が不完全な可能性があります。"
@@ -388,12 +389,12 @@
       "switchToParticipant": "Switch To Participant"
     },
     "reviewerConcern": {
-      "criticalTitle": "???????????????????",
-      "title": "????????????????",
-      "leaderCriticalHint": "??????????????????????????????????????????????????????????????????????",
-      "leaderHint": "????????????????????????????????????????????????????????????????????????",
-      "othersHint": "??????????????????????????????????????",
-      "resolve": "????"
+      "criticalTitle": "複数のレビュアーが問題を報告しています",
+      "title": "レビュアーが問題を報告しています",
+      "leaderCriticalHint": "複数のレビュアーが同じ問題を報告しています。このチャレンジを中止し、別の問題で作り直すことを検討してください。対応が完了するまで公開できません。",
+      "leaderHint": "下のメモを確認し、問題を自分で確認するか、別のレビュアーに依頼するか、対応済みにしてください。懸念が残っている間は公開できません。",
+      "othersHint": "チーム内のレビュアーが問題を報告しています。リーダーの対応をお待ちください。",
+      "resolve": "対応済み"
     },
     "participantsLabel": "Participants Label",
     "registrationLabel": "Registration Label",
@@ -444,17 +445,17 @@
       "manualTemplate": "Manual Template"
     },
     "toast": {
-      "generatedSuccess": "Generated Success"
+      "generatedSuccess": "生成が完了しました。"
     }
   },
-  "No description": "No description",
+  "No description": "説明はありません",
   "groupDocumentsTab": {
-    "deleteDialogTitle": "Delete Dialog Title",
-    "deleteDialogDescription": "Delete Dialog Description",
-    "deleteDialogWarning": "Delete Dialog Warning",
-    "deleteDialogCancel": "Delete Dialog Cancel",
-    "deleteDialogDeleting": "Delete Dialog Deleting",
-    "deleteDialogConfirm": "Delete Dialog Confirm"
+    "deleteDialogTitle": "教材を削除",
+    "deleteDialogDescription": "この教材はグループワークスペースから削除されます。",
+    "deleteDialogWarning": "この操作は元に戻せません。",
+    "deleteDialogCancel": "キャンセル",
+    "deleteDialogDeleting": "削除中...",
+    "deleteDialogConfirm": "削除"
   },
   "groupWorkspaceProfileConfigMirror": {
     "editConfigTitle": "Edit Config Title",
@@ -477,7 +478,7 @@
   },
   "groupManage": {
     "settings": {
-      "deleteSuccess": "????????????"
+      "deleteSuccess": "グループを削除しました。"
     }
   },
   "groupWalletTab": {

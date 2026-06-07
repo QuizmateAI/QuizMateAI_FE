@@ -23,6 +23,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
 import HighlightNotePopover from "./HighlightNotePopover";
+import ToastError from "@/components/system/ToastError";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -1040,11 +1041,11 @@ const MaterialPdfViewer = forwardRef(function MaterialPdfViewer(
         {loadError ? (
           <div
             className={`flex h-full flex-col items-center justify-center gap-2 ${
-              isDarkMode ? "text-rose-300" : "text-rose-600"
+              isDarkMode ? "text-slate-500" : "text-slate-400"
             }`}
           >
             <FileText className="h-12 w-12 opacity-50" />
-            <p className="text-sm">Không tải được PDF: {loadError}</p>
+            <ToastError message={loadError ? `Không tải được PDF: ${loadError}` : ""} />
           </div>
         ) : (
           <Document

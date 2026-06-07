@@ -33,7 +33,7 @@ const PRESETS = [
   {
     id: 'today',
     labelKey: 'common.dateRange.today',
-    defaultLabel: 'Hôm nay',
+    defaultLabel: 'Today',
     compute: () => {
       const now = new Date();
       return { from: formatDateTimeLocal(startOfDay(now)), to: formatDateTimeLocal(now) };
@@ -42,7 +42,7 @@ const PRESETS = [
   {
     id: '7d',
     labelKey: 'common.dateRange.last7Days',
-    defaultLabel: '7 ngày',
+    defaultLabel: '7 days',
     compute: () => {
       const now = new Date();
       const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -52,7 +52,7 @@ const PRESETS = [
   {
     id: '30d',
     labelKey: 'common.dateRange.last30Days',
-    defaultLabel: '30 ngày',
+    defaultLabel: '30 days',
     compute: () => {
       const now = new Date();
       const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -62,7 +62,7 @@ const PRESETS = [
   {
     id: 'thisMonth',
     labelKey: 'common.dateRange.thisMonth',
-    defaultLabel: 'Tháng này',
+    defaultLabel: 'This month',
     compute: () => {
       const now = new Date();
       return { from: formatDateTimeLocal(startOfMonth(now)), to: formatDateTimeLocal(now) };
@@ -71,7 +71,7 @@ const PRESETS = [
   {
     id: 'thisYear',
     labelKey: 'common.dateRange.thisYear',
-    defaultLabel: 'Năm nay',
+    defaultLabel: 'This year',
     compute: () => {
       const now = new Date();
       return { from: formatDateTimeLocal(startOfYear(now)), to: formatDateTimeLocal(now) };
@@ -126,7 +126,7 @@ export default function DateRangeChips({ value, onChange, isDarkMode = false, cl
       })}
       {hasAnyValue && !anyPresetActive ? (
         <span className={cn(baseChip, isDarkMode ? 'border border-amber-500/30 bg-amber-500/10 text-amber-300' : 'border border-amber-200 bg-amber-50 text-amber-700')}>
-          {t('common.dateRange.custom', 'Tùy chỉnh')}
+          {t('common.dateRange.custom', 'Custom')}
         </span>
       ) : null}
       {hasAnyValue ? (
@@ -135,7 +135,7 @@ export default function DateRangeChips({ value, onChange, isDarkMode = false, cl
           onClick={handleClear}
           className={cn(baseChip, isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900')}
         >
-          {t('common.dateRange.clear', 'Xóa')}
+          {t('common.dateRange.clear', 'Clear')}
         </button>
       ) : null}
     </div>

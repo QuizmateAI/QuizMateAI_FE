@@ -9,13 +9,15 @@ const FEEDBACK_MANAGEMENT_NAV = [
     to: '/super-admin/feedbacks/forms',
     icon: FileText,
     labelEn: 'Forms',
-    labelVi: 'Forms',
+    labelVi: 'Biểu mẫu',
+    labelJa: 'フォーム',
   },
   {
     to: '/super-admin/feedbacks/activity',
     icon: Activity,
     labelEn: 'Activity',
-    labelVi: 'Activity',
+    labelVi: 'Hoạt động',
+    labelJa: 'アクティビティ',
   },
 ];
 
@@ -23,7 +25,11 @@ function FeedbackManagementLayout() {
   const { i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const currentLang = i18n.language || 'vi';
-  const isEnglish = currentLang.startsWith('en');
+  const resolveLabel = (item) => {
+    if (currentLang.startsWith('ja')) return item.labelJa;
+    if (currentLang.startsWith('en')) return item.labelEn;
+    return item.labelVi;
+  };
 
   return (
     <div className="px-5 pb-10">
@@ -50,7 +56,7 @@ function FeedbackManagementLayout() {
                   <item.icon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold">{isEnglish ? item.labelEn : item.labelVi}</p>
+                  <p className="text-sm font-semibold">{resolveLabel(item)}</p>
                 </div>
               </NavLink>
             ))}

@@ -5,6 +5,7 @@ import i18n from "@/i18n";
 import { getExtractedText, getExtractedSummary, getMaterialContent, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
 import { MaterialContentRenderer } from "@/components/features/material/MaterialContentRenderer";
 import KnowledgeTreeButton from "@/components/knowledgeTree/KnowledgeTreeButton";
+import ToastError from "@/components/system/ToastError";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 const IMAGE_URL_REGEX = /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -561,11 +562,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
                   {reviewMessage}
                 </p>
               )}
-              {reviewError && (
-                <p className={`text-xs leading-relaxed mt-2 ${isDarkMode ? "text-red-300" : "text-red-700"} ${fontClass}`}>
-                  {reviewError}
-                </p>
-              )}
+              <ToastError message={reviewError} />
             </div>
           )}
 
@@ -675,9 +672,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated,
                 <span className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}>{t("workspace.sources.loadingContent")}</span>
               </div>
             ) : textError ? (
-              <p className={`text-sm text-center py-16 ${isDarkMode ? "text-red-400" : "text-red-500"} ${fontClass}`}>
-                {t("workspace.sources.loadError")}
-              </p>
+              <ToastError message={t("workspace.sources.loadError")} />
             ) : mediaInfo ? (
               <div className="space-y-4">
                 <MaterialContentRenderer

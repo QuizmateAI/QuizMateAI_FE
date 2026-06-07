@@ -8,6 +8,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import ToastError from "@/components/system/ToastError";
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -348,16 +349,7 @@ export default function ListenPlayer({
         {rate}x
       </button>
 
-      {errorMessage && (
-        <span
-          className={`hidden lg:inline-flex max-w-[140px] truncate text-[10px] font-semibold ${
-            isDarkMode ? "text-rose-300" : "text-rose-600"
-          }`}
-          title={errorMessage}
-        >
-          {errorMessage}
-        </span>
-      )}
+      <ToastError message={errorMessage} />
     </div>
   );
 }

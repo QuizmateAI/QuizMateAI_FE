@@ -17,6 +17,7 @@ import {
 import MaterialPdfViewer from "./MaterialPdfViewer";
 import EmbeddedKnowledgeTree from "./EmbeddedKnowledgeTree";
 import AskAIPanel from "./AskAIPanel";
+import ToastError from "@/components/system/ToastError";
 import {
   createMaterialNote,
   deleteMaterialNote,
@@ -1011,15 +1012,7 @@ export default function InlineMaterialWorkspace({
                   {moderationSuggestion}
                 </p>
               )}
-              {reviewError && (
-                <p
-                  className={`mt-0.5 text-sm ${
-                    isDarkMode ? "text-red-300" : "text-red-700"
-                  }`}
-                >
-                  {reviewError}
-                </p>
-              )}
+              <ToastError message={reviewError} />
             </div>
             {isWarned && (
               <div className="flex items-center gap-2 shrink-0">
@@ -1382,17 +1375,7 @@ function NotesPanel({
 
   return (
     <div ref={panelRef} className="relative flex h-full flex-col">
-      {notesError ? (
-        <div
-          className={`mx-4 mt-2 rounded-2xl border px-3 py-2 text-xs font-medium ${
-            isDarkMode
-              ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-              : "border-rose-200 bg-rose-50 text-rose-600"
-          }`}
-        >
-          {notesError}
-        </div>
-      ) : null}
+      <ToastError message={notesError} />
       <div className="relative flex-1 overflow-y-auto overflow-x-hidden px-4 pb-24 pt-2">
         {hasAnnotations ? (
           <div className="flex flex-col gap-3 pb-4">

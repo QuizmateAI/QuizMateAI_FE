@@ -17,6 +17,7 @@ import {
   syncRoadmapConfigFieldValues,
   validateRoadmapConfigValues,
 } from '@/components/features/workspace/roadmapConfigUtils';
+import ToastError from '@/components/system/ToastError';
 
 function RoadmapConfigEditDialog({
   open,
@@ -293,9 +294,7 @@ function RoadmapConfigEditDialog({
                     </Button>
                   </div>
 
-                  {suggestError ? (
-                    <p className="mt-4 text-sm font-medium text-rose-500">{suggestError}</p>
-                  ) : null}
+                  <ToastError message={suggestError} />
 
                   {suggestionMeta ? (
                     <div className={`mt-4 rounded-[20px] border px-4 py-4 ${
@@ -426,11 +425,7 @@ function RoadmapConfigEditDialog({
             </div>
           </DialogHeader>
 
-          {saveError ? (
-            <div className={`px-6 pt-4 text-sm font-medium ${isDarkMode ? 'text-rose-300' : 'text-rose-600'}`}>
-              {saveError}
-            </div>
-          ) : null}
+          <ToastError message={saveError} />
 
           <DialogFooter className={`gap-3 px-6 py-5 ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
             <Button
