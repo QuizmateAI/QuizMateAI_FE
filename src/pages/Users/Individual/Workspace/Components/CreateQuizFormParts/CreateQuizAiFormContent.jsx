@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BrainCircuit,
   CheckCircle2,
@@ -30,6 +30,8 @@ import { AI_MINIMUM_SECONDS_PER_QUESTION } from "./createQuizForm.constants";
 import PlanGatedFeature from "@/components/plan/PlanGatedFeature";
 import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 import { usePlanUpgradeInfo } from "@/hooks/usePlanUpgradeInfo";
+import { useToast } from "@/context/ToastContext";
+import ToastError from "@/components/system/ToastError";
 
 function CreateQuizAiFormContent({
   classes,
@@ -158,6 +160,7 @@ function CreateQuizAiFormContent({
     setQuestionTypeUnit,
     setQuestionUnit,
   } = handlers;
+  const { showError } = useToast();
   const dragSourceIndexRef = useRef(-1);
   const dragCurrentIndexRef = useRef(-1);
   const [showStructureEditConfirm, setShowStructureEditConfirm] = useState(false);
@@ -189,6 +192,21 @@ function CreateQuizAiFormContent({
     : "h-7 border-gray-200 bg-white px-2.5 text-[11px] text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
   const resolvedQuizTitleMaxLength = Number(quizTitleMaxLength);
   const hasQuizTitleMaxLength = Number.isFinite(resolvedQuizTitleMaxLength) && resolvedQuizTitleMaxLength > 0;
+
+  useEffect(() => {
+    if (!metadataError) return;
+    showError(metadataError, { duration: 4000 });
+  }, [metadataError, showError]);
+
+  useEffect(() => {
+    if (!workspaceMaterialsError || workspaceMaterialsLoading) return;
+    showError(workspaceMaterialsError, { duration: 4000 });
+  }, [workspaceMaterialsError, workspaceMaterialsLoading, showError]);
+
+  useEffect(() => {
+    if (!structurePreviewError) return;
+    showError(structurePreviewError, { duration: 4000 });
+  }, [structurePreviewError, showError]);
 
   const selectableQuestionTypeIds = qTypes
     .filter((item) => hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(item?.questionType))
@@ -391,12 +409,6 @@ function CreateQuizAiFormContent({
         </div>
       )}
 
-      {metadataError && (
-        <div className={`border-b pb-2 text-xs ${isDarkMode ? "border-red-500/30 text-red-400" : "border-red-200 text-red-700"}`}>
-          {metadataError}
-        </div>
-      )}
-
       <div ref={aiGeneralSectionRef} className={getAiSectionCardClass(["aiName"])}>
         <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <FileText className="h-4 w-4 text-blue-500" /> {t("workspace.quiz.aiConfig.generalInfo")}
@@ -410,9 +422,7 @@ function CreateQuizAiFormContent({
             maxLength={hasQuizTitleMaxLength ? resolvedQuizTitleMaxLength : undefined}
             onChange={(event) => handleAiNameChange(event.target.value)}
           />
-          {fieldErrors.aiName && (
-            <p className="mt-1 text-xs text-red-500">{fieldErrors.aiName}</p>
-          )}
+          <ToastError message={fieldErrors.aiName} />
           {hasQuizTitleMaxLength ? (
             <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
               {t("workspace.quiz.validation.nameMaxLengthHint", {
@@ -466,12 +476,6 @@ function CreateQuizAiFormContent({
           <div className={`mb-2 flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {t("workspace.quiz.aiConfig.materialsLoading", "Đang tải danh sách tài liệu...")}
-          </div>
-        )}
-
-        {workspaceMaterialsError && !workspaceMaterialsLoading && (
-          <div className={`mb-2 rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-            {workspaceMaterialsError}
           </div>
         )}
 
@@ -559,9 +563,7 @@ function CreateQuizAiFormContent({
               min={10}
               max={maxQuestionsPerQuiz}
             />
-            {fieldErrors.aiTotalQuestions && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.aiTotalQuestions}</p>
-            )}
+            <ToastError message={fieldErrors.aiTotalQuestions} />
             {!fieldErrors.aiTotalQuestions && (
               <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 {t("workspace.quiz.validation.totalQuestionsRangeHint", {
@@ -583,18 +585,16 @@ function CreateQuizAiFormContent({
                 onBlur={handleAiDurationBlur}
                 min={1}
               />
-              {fieldErrors.aiDuration && (
-                <p className="mt-1 text-xs text-red-500">{fieldErrors.aiDuration}</p>
-              )}
-              {!fieldErrors.aiDuration && hasAiDurationMinimumMismatch && (
-                <p className="mt-1 text-xs text-red-500">
-                  {t("workspace.quiz.validation.minimumTimePerQuestion", {
-                    count: Number(aiTotalQuestions) || 0,
-                    minutes: minimumAiDurationMinutes,
-                    seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
-                  })}
-                </p>
-              )}
+              <ToastError
+                message={fieldErrors.aiDuration
+                  || (hasAiDurationMinimumMismatch
+                    ? t("workspace.quiz.validation.minimumTimePerQuestion", {
+                        count: Number(aiTotalQuestions) || 0,
+                        minutes: minimumAiDurationMinutes,
+                        seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
+                      })
+                    : "")}
+              />
               {!fieldErrors.aiDuration && !hasAiDurationMinimumMismatch && aiDurationSyncNotice && (
                 <div className={aiDurationSyncClass}>
                   <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -681,9 +681,7 @@ function CreateQuizAiFormContent({
             </div>
           )}
 
-          {fieldErrors.aiDurations && (
-            <p className="mt-2 text-xs text-red-500">{fieldErrors.aiDurations}</p>
-          )}
+          <ToastError message={fieldErrors.aiDurations} />
         </div>
       </div>
 
@@ -803,9 +801,7 @@ function CreateQuizAiFormContent({
           </div>
         </div>
 
-        {fieldErrors.aiDifficulty && (
-          <p className="mt-2 text-xs text-red-500">{fieldErrors.aiDifficulty}</p>
-        )}
+        <ToastError message={fieldErrors.aiDifficulty} />
       </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -986,9 +982,7 @@ function CreateQuizAiFormContent({
             </div>
           </div>
 
-          {fieldErrors.selectedQTypes && (
-            <p className="mt-3 text-xs text-red-500">{fieldErrors.selectedQTypes}</p>
-          )}
+          <ToastError message={fieldErrors.selectedQTypes} />
         </div>
 
         <div ref={aiBloomSectionRef} className={getAiSectionCardClass(["selectedBloomSkills"])}>
@@ -1127,9 +1121,7 @@ function CreateQuizAiFormContent({
             </div>
           </div>
 
-          {fieldErrors.selectedBloomSkills && (
-            <p className="mt-3 text-xs text-red-500">{fieldErrors.selectedBloomSkills}</p>
-          )}
+          <ToastError message={fieldErrors.selectedBloomSkills} />
         </div>
       </div>
 
@@ -1145,9 +1137,7 @@ function CreateQuizAiFormContent({
           onChange={(event) => handleAiPromptChange(event.target.value)}
         />
 
-        {fieldErrors.aiPrompt && (
-          <p className="mt-2 text-xs text-red-500">{fieldErrors.aiPrompt}</p>
-        )}
+        <ToastError message={fieldErrors.aiPrompt} />
       </div>
 
       <PlanGatedFeature
@@ -1232,12 +1222,6 @@ function CreateQuizAiFormContent({
         </div>
 
         <div className="space-y-2 p-3">
-          {structurePreviewError && (
-            <div className={`rounded-xl border px-3 py-2 text-xs ${isDarkMode ? "border-red-900/40 bg-red-950/25 text-red-300" : "border-red-200 bg-red-50 text-red-700"}`}>
-              {structurePreviewError}
-            </div>
-          )}
-
           {(Array.isArray(structurePreview?.items) && structurePreview.items.length > 0) && (
             <div className={`grid gap-3 md:grid-cols-2`}>
               <div className={`rounded-xl border px-4 py-3 ${isStructureCountMissing

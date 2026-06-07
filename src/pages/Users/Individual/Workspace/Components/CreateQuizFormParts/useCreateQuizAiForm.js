@@ -19,6 +19,8 @@ import {
   IMAGE_BASED_QUESTION_TYPE,
 } from "./createQuizForm.constants";
 import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
+import { useToast } from "@/context/ToastContext";
+import { getAiGenerationContextErrorMessage } from "@/utils/aiGenerationError";
 import {
   buildAiValidationState,
   clampNumber,
@@ -212,6 +214,7 @@ export const useCreateQuizAiForm = ({
   existingQuizId = null,
   seedQuizTitle = '',
 }) => {
+  const { showError } = useToast();
   const resolvedMaxQuestionsPerQuiz = useMemo(() => {
     const parsed = Number(maxQuestionsPerQuiz);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : AI_MAXIMUM_QUESTION_COUNT;
@@ -803,11 +806,12 @@ export const useCreateQuizAiForm = ({
     setFieldErrors(aiValidationState.fieldErrors);
     setInsufficientCreditError(false);
     setError(aiValidationState.firstErrorMessage);
+    showError(aiValidationState.firstErrorMessage, { duration: 4000 });
 
     if (aiValidationState.firstInvalidSection) {
       scrollToAiSection(aiValidationState.firstInvalidSection);
     }
-  }, [aiValidationState, scrollToAiSection]);
+  }, [aiValidationState, scrollToAiSection, showError]);
 
   const handleAiNameChange = useCallback((value) => {
     setAiName(normalizeQuizTitleInput(value, quizTitleMaxLength));
@@ -1486,6 +1490,7 @@ export const useCreateQuizAiForm = ({
         setFieldErrors(aiValidationState.fieldErrors);
         setInsufficientCreditError(false);
         setError(aiValidationState.firstErrorMessage);
+        showError(aiValidationState.firstErrorMessage, { duration: 4000 });
         if (aiValidationState.firstInvalidSection) {
           scrollToAiSection(aiValidationState.firstInvalidSection);
         }
@@ -1551,8 +1556,11 @@ export const useCreateQuizAiForm = ({
     } catch (submitError) {
       console.error("Failed to create AI quiz:", submitError);
       const creditShortfall = detectInsufficientCreditError(submitError);
+      const contextErrorMessage = getAiGenerationContextErrorMessage(submitError, t);
+      const errorMessage = contextErrorMessage || submitError?.message || t("workspace.quiz.validation.createFailed");
       setInsufficientCreditError(creditShortfall);
-      setError(submitError?.message || t("workspace.quiz.validation.createFailed"));
+      setError(errorMessage);
+      showError(errorMessage, { duration: creditShortfall ? 5000 : 4000 });
     } finally {
       setSubmitting(false);
     }
@@ -1582,6 +1590,7 @@ export const useCreateQuizAiForm = ({
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
+    showError,
     structurePreview,
     isStructureEditing,
     editableStructureItems,

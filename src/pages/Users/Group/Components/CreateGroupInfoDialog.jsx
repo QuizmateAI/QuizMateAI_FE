@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import ToastError from '@/components/system/ToastError';
 
 function CreateGroupInfoDialog({ open, onOpenChange, topics: _topics, topicsLoading: _topicsLoading, onCreate, isDarkMode }) {
   const { t, i18n } = useTranslation();
@@ -85,7 +86,7 @@ function CreateGroupInfoDialog({ open, onOpenChange, topics: _topics, topicsLoad
               className={`${inputBase} ${errors.groupName ? 'border-red-500' : ''}`}
               autoFocus
             />
-            {errors.groupName && <p className="text-red-500 text-xs mt-1">{errors.groupName}</p>}
+            <ToastError message={errors.groupName} />
           </div>
 
           <DialogFooter className="pt-2">

@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ListSpinner from "@/components/ui/ListSpinner";
 import PlanCard from "@/pages/Users/Profile/Components/PlanCard";
 import { buildPaymentsPath, withQueryParams } from "@/lib/routePaths";
+import ToastError from "@/components/system/ToastError";
 
 export default function UpgradePlanDialog({
   open,
@@ -157,7 +158,7 @@ export default function UpgradePlanDialog({
         ) : error ? (
           <div className="flex flex-col items-center py-12 gap-3">
             <AlertCircle className={`w-8 h-8 ${isDarkMode ? "text-red-400" : "text-red-500"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{error}</p>
+            <ToastError message={error} />
           </div>
         ) : plans.length === 0 ? (
           <p className={`text-center py-12 text-sm ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import AssignmentResourcePicker from './AssignmentResourcePicker';
 import AssignmentAudiencePicker from './AssignmentAudiencePicker';
+import ToastError from '@/components/system/ToastError';
 
 const TITLE_MIN = 2;
 const TITLE_MAX = 280;
@@ -203,7 +204,7 @@ function AssignmentFormDialog({
                 isDarkMode={isDarkMode}
                 disabled={submitting}
               />
-              {resourceError ? <p className="text-xs text-red-500">{resourceError}</p> : null}
+              <ToastError message={resourceError} />
             </div>
           ) : null}
 
@@ -230,9 +231,8 @@ function AssignmentFormDialog({
               disabled={submitting}
             />
             <div className="flex items-center justify-between text-xs">
-              <span className={cn(titleError && trimmedTitle ? 'text-red-500' : 'text-transparent')}>
-                {titleError && trimmedTitle ? titleError : '.'}
-              </span>
+              <ToastError message={titleError} enabled={Boolean(titleError && trimmedTitle)} />
+              <span className="text-transparent">.</span>
               <span className={cn(isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
                 {trimmedTitle.length}/{TITLE_MAX}
               </span>
@@ -263,9 +263,8 @@ function AssignmentFormDialog({
               )}
             />
             <div className="flex items-center justify-between text-xs">
-              <span className={cn(descriptionError ? 'text-red-500' : 'text-transparent')}>
-                {descriptionError || '.'}
-              </span>
+              <ToastError message={descriptionError} />
+              <span className="text-transparent">.</span>
               <span className={cn(isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
                 {trimmedDescription.length}/{DESCRIPTION_MAX}
               </span>
@@ -290,8 +289,9 @@ function AssignmentFormDialog({
                 dueAtError ? 'border-red-500 focus-visible:ring-red-500' : '',
               )}
             />
-            <p className={cn('text-xs', dueAtError ? 'text-red-500' : (isDarkMode ? 'text-slate-500' : 'text-gray-500'))}>
-              {dueAtError || t('groupWorkspace.assignments.form.dueAtHint')}
+            <ToastError message={dueAtError} />
+            <p className={cn('text-xs', isDarkMode ? 'text-slate-500' : 'text-gray-500')}>
+              {t('groupWorkspace.assignments.form.dueAtHint')}
             </p>
           </div>
 
@@ -313,13 +313,11 @@ function AssignmentFormDialog({
                 isDarkMode={isDarkMode}
                 disabled={submitting}
               />
-              {audienceError ? <p className="text-xs text-red-500">{audienceError}</p> : null}
+              <ToastError message={audienceError} />
             </div>
           ) : null}
 
-          {submitError ? (
-            <p className="text-sm text-red-500" role="alert">{submitError}</p>
-          ) : null}
+          <ToastError message={submitError} />
 
           <DialogFooter className="gap-2">
             <Button

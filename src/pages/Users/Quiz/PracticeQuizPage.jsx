@@ -302,7 +302,6 @@ export default function PracticeQuizPage() {
   const [answers, setAnswers] = useState({});
   const [questionResults, setQuestionResults] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [actionError, setActionError] = useState('');
   const [confirmStartOpen, setConfirmStartOpen] = useState(() => !shouldAutoStart);
   const autoStartTriggeredRef = useRef(false);
 
@@ -379,7 +378,6 @@ export default function PracticeQuizPage() {
     if (isStarting) return;
 
     setIsStarting(true);
-    setActionError('');
     try {
       let res;
       try {
@@ -411,7 +409,6 @@ export default function PracticeQuizPage() {
     } catch (err) {
       console.error('Failed to start attempt:', err);
       const message = err?.message || t('workspace.quiz.practiceActions.startFailed', 'Could not start practice mode. Please try again.');
-      setActionError(message);
       showError(message);
 
       if (shouldAutoStart) {
@@ -426,7 +423,6 @@ export default function PracticeQuizPage() {
     if (!attemptId || !currentQuestion || !canCheckAnswer) return;
 
     setIsCheckingAnswer(true);
-    setActionError('');
 
     try {
       const payload = buildSingleQuestionPayload(currentQuestion, currentAnswerValue);
@@ -444,7 +440,6 @@ export default function PracticeQuizPage() {
     } catch (err) {
       console.error('Failed to submit practice question:', err);
       const message = err?.message || t('workspace.quiz.practiceActions.checkFailed', 'Failed to check the answer. Please try again.');
-      setActionError(message);
       showError(message);
     } finally {
       setIsCheckingAnswer(false);
@@ -452,17 +447,14 @@ export default function PracticeQuizPage() {
   }, [attemptId, canCheckAnswer, currentAnswerValue, currentQuestion, showError, t]);
 
   const handleNext = useCallback(() => {
-    setActionError('');
     setCurrentIndex((prev) => Math.min(prev + 1, total - 1));
   }, [total]);
 
   const handleBack = useCallback(() => {
-    setActionError('');
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   }, []);
 
   const handleJumpToQuestion = useCallback((index) => {
-    setActionError('');
     setCurrentIndex(index);
   }, []);
 
@@ -470,7 +462,6 @@ export default function PracticeQuizPage() {
     if (!attemptId || isFinishing) return;
 
     setIsFinishing(true);
-    setActionError('');
     try {
       await submitAttempt(attemptId);
       markQuizCompleted(quizId);
@@ -492,7 +483,6 @@ export default function PracticeQuizPage() {
     } catch (err) {
       console.error('Failed to finish practice attempt:', err);
       const message = err?.message || t('workspace.quiz.practiceActions.finishFailed', 'Could not finish practice. Please try again.');
-      setActionError(message);
       showError(message);
       setIsFinishing(false);
     }
@@ -566,11 +556,6 @@ export default function PracticeQuizPage() {
                 </span>
               </DialogDescription>
             </DialogHeader>
-            {actionError && (
-              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-300">
-                {actionError}
-              </p>
-            )}
             <DialogFooter className="gap-2 sm:justify-between">
               <Button variant="outline" onClick={handleCloseStartDialog}>
                 {t('workspace.quiz.header.cancel', 'Cancel')}
@@ -655,12 +640,6 @@ export default function PracticeQuizPage() {
                 disabled={isCheckingAnswer}
               />
             ) : null}
-
-            {actionError && (
-              <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-300">
-                {actionError}
-              </p>
-            )}
 
             <div className="mt-5 flex flex-col gap-3 rounded-[24px] border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800/80">
               <Button

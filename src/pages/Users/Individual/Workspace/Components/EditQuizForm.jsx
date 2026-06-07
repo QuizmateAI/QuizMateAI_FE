@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import ListSpinner from "@/components/ui/ListSpinner";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, Save, X, MapPin, ArrowUp } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, Save, MapPin, ArrowUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion,
@@ -9,6 +9,7 @@ import {
   createQuestion, createAnswer, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
 import { QUIZ_TITLE_MAX_LENGTH, normalizeQuizTitleInput } from "./quizTitleConfig";
+import ToastError from "@/components/system/ToastError";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -393,11 +394,7 @@ function EditQuizForm({
         </div>
 
         {/* Thông báo lỗi/thành công */}
-        {error && (
-          <div className={`text-xs px-3 py-2 rounded-lg flex items-center gap-2 ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-            <X className="w-3.5 h-3.5 shrink-0" />{error}
-          </div>
-        )}
+        <ToastError message={error} />
         {success && (
           <div className={`text-xs px-3 py-2 rounded-lg flex items-center gap-2 ${isDarkMode ? "bg-emerald-950/30 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
             <Save className="w-3.5 h-3.5 shrink-0" />{success}

@@ -31,6 +31,7 @@ import {
   getAppNumberLocale,
   getBaseAppLanguage,
 } from '@/utils/appSupportedLanguages';
+import ToastError from '@/components/system/ToastError';
 
 function formatNumber(value, locale) {
   return new Intl.NumberFormat(locale).format(Number(value) || 0);
@@ -291,7 +292,7 @@ export default function CreditPaymentPage() {
         ) : error || !creditPackage ? (
           <div className="flex flex-col items-center justify-center gap-4 py-32">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
-            <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{error || t('payment.fetchError')}</p>
+            <ToastError message={error || t('payment.fetchError')} />
             <Button
               variant="outline"
               onClick={() => navigate(backTo, { replace: true })}

@@ -1,3 +1,5 @@
+import ToastError from "@/components/system/ToastError";
+
 // ============================================================================
 // ObservabilityPanel — show metadata extraction cho hoi dong:
 //   - AI model dung de extract
@@ -82,11 +84,7 @@ export default function ObservabilityPanel({ tree }) {
         <Stat label="Extract lúc" value={formatDate(tree.extractedAt)} hint={tree.status === 'OUTDATED' ? 'Cần re-extract' : null} />
       </div>
 
-      {tree.errorMessage && (
-        <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-          <strong>Lỗi:</strong> {tree.errorMessage}
-        </div>
-      )}
+      <ToastError message={tree.errorMessage} />
     </div>
   );
 }

@@ -207,21 +207,21 @@
   "subscription": {
     "wizard": {
       "review": {
-        "totalListPrice": "Tổng niêm yết"
+        "totalListPrice": "定価合計"
       },
       "entitlement": {
         "creditPriceLabel": "Giá phần credit",
         "basePriceLabel": "Giá gốc",
         "levelLadderTitle": "Level {{level}} kế thừa từ level thấp hơn",
         "levelLadderBody": "Mọi quyền lợi và giới hạn ở các plan {{sources}} đều phải có ở level này — các giá trị thấp hơn đã được tự nâng và các quyền đã có không thể tắt.",
-        "lowerLevelFloorHint": "Tối thiểu (kế thừa level thấp): {{floor}}",
-        "pricingBlockTitle": "Giá bán",
-        "totalListPrice": "Tổng niêm yết (VND)",
-        "creditPriceAboveFloor": "≥ sàn {{floor}} (+{{premium}} so với sàn)",
-        "creditPriceAtFloor": "Đúng sàn theo {{count}} credit đi kèm",
+        "lowerLevelFloorHint": "最小値(下位レベルから継承): {{floor}}",
+        "pricingBlockTitle": "販売価格",
+        "totalListPrice": "定価合計 (VND)",
+        "creditPriceAboveFloor": "下限 {{floor}} 以上 (下限より +{{premium}})",
+        "creditPriceAtFloor": "{{count}} 付与クレジットの下限価格",
         "lowerLevelPriceFloor": "Tối thiểu (kế thừa level thấp): {{floor}}",
         "basePriceHint": "Base Price Hint",
-        "floorFormulaLabel": "Sàn credit",
+        "floorFormulaLabel": "クレジット下限",
         "floorFormulaBody": "{{credits}} credit × {{unit}}/credit",
         "creditAutoRaiseHint": "Credit Auto Raise Hint",
         "lockedByLowerLevel": "Lv↓",
@@ -237,22 +237,22 @@
         "levelLadderBasePrice": "Giá gốc ở Level {{level}} phải ≥ {{floor}} VND (kế thừa từ level thấp hơn)"
       },
       "sidebar": {
-        "totalListPrice": "Giá niêm yết"
+        "totalListPrice": "定価"
       }
     },
-    "planEditLocked": "Plan Edit Locked",
+    "planEditLocked": "プラン編集中はロックされています",
     "table": {
-      "totalPrice": "Giá niêm yết"
+      "totalPrice": "定価"
     },
-    "versionHistory": "Version History",
-    "versionHistoryTitle": "Version History Title",
-    "versionHistoryDesc": "Version History Desc",
-    "versionHistoryEmpty": "Version History Empty",
-    "versionCurrent": "Version Current",
-    "versionSuperseded": "Version Superseded",
+    "versionHistory": "バージョン履歴",
+    "versionHistoryTitle": "バージョン履歴",
+    "versionHistoryDesc": "このプランの過去バージョンと変更履歴を確認します。",
+    "versionHistoryEmpty": "バージョン履歴はまだありません。",
+    "versionCurrent": "現在のバージョン",
+    "versionSuperseded": "置き換え済み",
     "detail": {
-      "displayName": "Display Name"
+      "displayName": "表示名"
     },
-    "versionPrevious": "Version Previous"
+    "versionPrevious": "前のバージョン"
   }
 }

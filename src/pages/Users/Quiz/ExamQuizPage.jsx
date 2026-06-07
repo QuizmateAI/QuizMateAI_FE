@@ -367,7 +367,9 @@ export default function ExamQuizPage() {
         return false;
       }
     }
-    setSubmitError(t('workspace.quiz.examActions.submitMissingAttempt', 'Cannot submit because attempt is missing.'));
+    const missingAttemptMessage = t('workspace.quiz.examActions.submitMissingAttempt', 'Cannot submit because attempt is missing.');
+    setSubmitError(missingAttemptMessage);
+    showError(missingAttemptMessage);
     submittingRef.current = false;
     setIsSubmitted(false);
     return false;
@@ -898,9 +900,6 @@ export default function ExamQuizPage() {
                 <span className="text-sm font-medium text-slate-500">{t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}</span>
                 <Button variant="outline" disabled={currentPage === totalPages} onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
               </div>
-            )}
-            {submitError && (
-              <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
             )}
           </div>
 

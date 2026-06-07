@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import QuestionCard from './QuestionCard';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
 import { buildSavePayload, hasAnswerValue } from '../utils/quizTransform';
+import ToastError from '@/components/system/ToastError';
 
 function formatTime(s) {
   const m = Math.floor(s / 60);
@@ -383,9 +384,7 @@ export default function ExamPerQuestion({
               : t('workspace.quiz.examActions.nextQuestion', 'Next Question'))}
         </Button>
       </div>
-      {(nextError || submitError) && (
-        <p className="text-sm text-red-600 dark:text-red-400 mt-2 text-right">{nextError || submitError}</p>
-      )}
+      <ToastError message={nextError || submitError} />
 
       <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
         <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-700">
@@ -415,9 +414,6 @@ export default function ExamPerQuestion({
                 {t('workspace.quiz.examActions.allQuestionsCompleted', 'All questions are completed.')}
               </div>
             </div>
-          )}
-          {(nextError || submitError) && (
-            <p className="text-sm text-red-600 dark:text-red-400">{nextError || submitError}</p>
           )}
           <DialogFooter className="gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => setConfirmSubmitOpen(false)} disabled={nextLoading}>

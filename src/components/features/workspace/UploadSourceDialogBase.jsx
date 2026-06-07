@@ -33,6 +33,7 @@ import {
 import { useToast } from "@/context/ToastContext";
 import PlanUpgradeModal from "@/components/plan/PlanUpgradeModal";
 import { validateMaterialFile } from "@/utils/uploadValidation";
+import ToastError from "@/components/system/ToastError";
 
 // Map MIME type prefix/patterns to entitlement keys
 const MIME_TO_ENTITLEMENT = {
@@ -755,14 +756,8 @@ function UploadSourceDialogBase({
                 </div>
                 <p className={`text-base font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{t("workspace.upload.dragDrop")}</p>
                 <p className={`text-xs mt-3 leading-5 ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>{t("workspace.upload.supportedFormats")}</p>
-                {hasOversizedFiles ? (
-                  <p className="mt-3 text-sm font-medium text-red-500">
-                    {t("workspace.upload.fileTooLarge")}
-                  </p>
-                ) : null}
-                {fileValidationError ? (
-                  <p className="mt-2 text-sm font-medium text-red-500">{fileValidationError}</p>
-                ) : null}
+                <ToastError message={hasOversizedFiles ? t("workspace.upload.fileTooLarge") : ""} />
+                <ToastError message={fileValidationError} />
 
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-[620px] mx-auto">
                   <Button

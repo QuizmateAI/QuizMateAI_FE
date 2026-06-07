@@ -55,7 +55,6 @@ export default function MockTestExamPage() {
   const [isStarted, setIsStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState('');
   const [answers, setAnswers] = useState({});
   const [attemptTimeoutAt, setAttemptTimeoutAt] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -93,10 +92,10 @@ export default function MockTestExamPage() {
     if (submittingRef.current) return false;
     submittingRef.current = true;
     setIsSubmitted(true);
-    setSubmitError('');
 
     if (!attemptId) {
-      setSubmitError(t(`${NS}.submitMissingAttempt`, 'Cannot submit: attempt is missing.'));
+      const msg = t(`${NS}.submitMissingAttempt`, 'Cannot submit: attempt is missing.');
+      showError(msg);
       submittingRef.current = false;
       setIsSubmitted(false);
       return false;
@@ -124,7 +123,6 @@ export default function MockTestExamPage() {
       console.error('[MockTestExam] submit failed:', err);
       const msg = err?.message || t(`${NS}.submitFailed`, 'Nộp bài thất bại. Vui lòng thử lại.');
       showError(msg);
-      setSubmitError(msg);
       submittingRef.current = false;
       setIsSubmitted(false);
       return false;
@@ -400,9 +398,6 @@ export default function MockTestExamPage() {
         />
       )}
 
-      {submitError && (
-        <div className="bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</div>
-      )}
     </div>
   );
 }

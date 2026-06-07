@@ -27,10 +27,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import ToastError from '@/components/system/ToastError';
 
 function FieldError({ message }) {
-  if (!message) return null;
-  return <p className="group-profile-field-error mt-2 text-xs font-medium text-rose-500">{message}</p>;
+  return <ToastError message={message} />;
 }
 
 const CONFIRM_SECTION_META = {
@@ -837,7 +837,7 @@ function GroupWorkspaceProfileConfigMirrorContent({
                 ? '\u00A0'
                 : t('groupProfileConfig.common.stepCount', { current: displayStep, total: totalSteps })}
             </div>
-            {saveError ? <p className="text-xs font-medium text-rose-500">{saveError}</p> : null}
+            <ToastError message={saveError} />
             {!saveError && statusNotice ? <p className="text-xs font-medium text-emerald-500">{statusNotice}</p> : null}
           </div>
 

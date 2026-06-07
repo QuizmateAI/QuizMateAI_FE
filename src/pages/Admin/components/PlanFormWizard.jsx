@@ -734,7 +734,7 @@ function PlanFormWizard({
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   {[
-                    { label: t('subscription.wizard.sidebar.totalListPrice', { defaultValue: 'Giá niêm yết' }), value: formatCurrency(effectiveTotalPrice, t, locale), icon: Coins },
+                    { label: t('subscription.wizard.sidebar.totalListPrice', { defaultValue: 'List price' }), value: formatCurrency(effectiveTotalPrice, t, locale), icon: Coins },
                     { label: 'Scope', value: getScopeLabel(formData.planScope, t), icon: formData.planScope === 'WORKSPACE' ? Users : User },
                   ].map((item) => {
                     const Icon = item.icon;

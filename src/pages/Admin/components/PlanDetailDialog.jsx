@@ -64,7 +64,7 @@ export default function PlanDetailDialog({
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {[
                   {
-                    label: t('subscription.wizard.review.totalListPrice', { defaultValue: 'Tổng niêm yết' }),
+                    label: t('subscription.wizard.review.totalListPrice', { defaultValue: 'Total list price' }),
                     value: formatCurrency(plan.price, t, locale),
                     color: dk ? 'text-emerald-400' : 'text-emerald-600',
                   },

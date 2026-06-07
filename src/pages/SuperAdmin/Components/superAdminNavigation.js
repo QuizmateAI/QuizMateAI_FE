@@ -246,9 +246,9 @@ export const SUPER_ADMIN_MENU_SECTIONS = [
 ];
 
 const FEEDBACK_SUBROUTE_LABELS = {
-  forms: 'Forms',
+  forms: 'Feedback forms',
   tickets: 'Tickets',
-  activity: 'Response Activity',
+  activity: 'Response activity',
 };
 
 const DETAIL_LABELS = {

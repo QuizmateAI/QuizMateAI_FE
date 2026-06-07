@@ -30,6 +30,7 @@ import {
   templateStructureToV1ForForm,
 } from "@/pages/Users/MockTest/utils/mockTestTemplateLoader";
 import { useToast } from "@/context/ToastContext";
+import ToastError from "@/components/system/ToastError";
 
 // Map difficulty client → server (server enum: EASY/MEDIUM/HARD)
 function uppercaseDifficulty(value) {
@@ -519,11 +520,7 @@ function CreateMockTestForm({
                 {t("mockTestForms.common.materialsLoading", "Loading materials...")}
               </div>
             )}
-            {materialsError && !materialsLoading && (
-              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/20 text-red-400 border border-red-900/30" : "bg-red-50 text-red-700 border border-red-200"}`}>
-                {materialsError}
-              </div>
-            )}
+            {!materialsLoading ? <ToastError message={materialsError} /> : null}
             {normalizedSources.length > 0 && !materialsLoading && (
               <>
                 <div className="flex flex-wrap items-center gap-2">
@@ -595,11 +592,7 @@ function CreateMockTestForm({
               </p>
             </div>
 
-            {(error || suggestError) && (
-              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                {error || suggestError?.message || t("mockTestForms.common.genericError", "Something went wrong.")}
-              </div>
-            )}
+            <ToastError message={error || suggestError?.message || (suggestError ? t("mockTestForms.common.genericError", "Something went wrong.") : "")} />
           </>
         )}
 
@@ -654,11 +647,7 @@ function CreateMockTestForm({
               targetTotalQuestions={Number(totalQuestions) || undefined}
               topNotice={aiTopNotice}
             />
-            {error && (
-              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                {error}
-              </div>
-            )}
+            <ToastError message={error} />
           </>
         )}
 

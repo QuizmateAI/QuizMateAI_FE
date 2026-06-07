@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import ToastError from "@/components/system/ToastError";
 import { cn } from "@/lib/utils";
 import { getHighlightedContentSegments } from "@/components/material/sourceHighlight";
 
@@ -241,13 +242,13 @@ export default function ChunkSourceDialog({
           )}
 
           {!loading && errorState && (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-center text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300">
-              <p className="font-semibold">{errorState.message}</p>
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+              <ToastError message={errorState.message} />
               {errorState.status !== 404 && (
                 <button
                   type="button"
                   onClick={() => setReloadKey((value) => value + 1)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
                 >
                   <RefreshCw className="h-3.5 w-3.5" /> {t("common.retry", "Thử lại")}
                 </button>

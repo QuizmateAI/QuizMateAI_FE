@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import i18n from '@/i18n';
 import { getApiOrigin } from '@/api/api';
 import { buildPaymentResultsPath } from '@/lib/routePaths';
+import ToastError from '@/components/system/ToastError';
 
 function buildResultUrlFromParams(search) {
   const params = new URLSearchParams(search);
@@ -47,7 +48,7 @@ export default function MomoReturnRedirect() {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-900 text-white p-4">
-        <p className="text-sm text-red-400 text-center">{error}</p>
+        <ToastError message={error} />
         <a href={buildResultUrlFromParams(search)} className="text-blue-400 hover:underline text-sm">
           {t('common.paymentRedirect.backToResults', {
             defaultValue: 'Go to payment results',

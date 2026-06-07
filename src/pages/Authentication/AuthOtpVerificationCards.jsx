@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { ArrowRight, Mail } from 'lucide-react';
+import ToastError from '@/components/system/ToastError';
 
 function OtpInputs({ value, onChange, hasError = false }) {
   const inputRefs = useRef([]);
@@ -137,11 +138,7 @@ export function RegisterOtpVerificationCard({ t, registerHook, onBackToRegisterF
           {registerHook.formData.email}
         </p>
 
-        {registerHook.error && (
-          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {registerHook.error}
-          </div>
-        )}
+        <ToastError message={registerHook.error} />
 
         {registerHook.successMessage && !registerHook.error && (
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
@@ -156,9 +153,7 @@ export function RegisterOtpVerificationCard({ t, registerHook, onBackToRegisterF
             hasError={Boolean(registerHook.fieldErrors?.otp)}
           />
 
-          {registerHook.fieldErrors?.otp && (
-            <p className="text-left text-xs text-red-500">{registerHook.fieldErrors.otp}</p>
-          )}
+          <ToastError message={registerHook.fieldErrors?.otp} />
 
           <PrimaryButton type="submit" loading={registerHook.isLoading}>
             {t('auth.verifyEmailButton', 'Xác thực')} <ArrowRight className="w-4 h-4" />
@@ -217,11 +212,7 @@ export function ForgotPasswordOtpVerificationCard({ t, forgotPasswordHook, onBac
           {forgotPasswordHook.forgotPasswordData.email}
         </p>
 
-        {forgotPasswordHook.error && (
-          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {forgotPasswordHook.error}
-          </div>
-        )}
+        <ToastError message={forgotPasswordHook.error} />
 
         {forgotPasswordHook.successMessage && !forgotPasswordHook.error && (
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
@@ -236,9 +227,7 @@ export function ForgotPasswordOtpVerificationCard({ t, forgotPasswordHook, onBac
             hasError={Boolean(forgotPasswordHook.fieldErrors?.otp)}
           />
 
-          {forgotPasswordHook.fieldErrors?.otp && (
-            <p className="text-left text-xs text-red-500">{forgotPasswordHook.fieldErrors.otp}</p>
-          )}
+          <ToastError message={forgotPasswordHook.fieldErrors?.otp} />
 
           <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
             {t('auth.verifyOTP', 'Xác thực OTP')} <ArrowRight className="w-4 h-4" />

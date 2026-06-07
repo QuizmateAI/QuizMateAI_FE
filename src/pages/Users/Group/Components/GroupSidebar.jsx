@@ -23,7 +23,6 @@ import {
   ChevronsRight,
   Sparkles,
   Crown,
-  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VietnamFlag from '@/assets/Viet_nam.png';

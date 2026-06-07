@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ToastError from '@/components/system/ToastError';
 import {
   ADAPTATION_MODE_OPTIONS,
   getRecommendedRoadmapDays,
@@ -33,7 +34,7 @@ function FieldBlock({
         {required ? <span className="ml-1 text-red-500">*</span> : null}
       </label>
       {children}
-      {error ? <p className="mt-2 text-sm font-medium text-red-400">{error}</p> : null}
+      <ToastError message={error} />
     </div>
   );
 }
@@ -319,9 +320,7 @@ function WorkspaceProfileStepThree({
                 </button>
               </div>
 
-              {suggestError ? (
-                <p className="mt-3 text-sm font-medium text-rose-500">{suggestError}</p>
-              ) : null}
+              <ToastError message={suggestError} />
 
               {suggestionMeta ? (
                 <div className={cn(

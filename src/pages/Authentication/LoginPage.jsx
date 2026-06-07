@@ -17,6 +17,7 @@ import {
   cycleAppLanguage,
   getBaseAppLanguage,
 } from '@/utils/appSupportedLanguages';
+import ToastError from '@/components/system/ToastError';
 
 const DiagonalHeroPanel = lazy(() => import('./DiagonalHeroPanel'));
 const RegisterOtpVerificationCard = lazy(() =>
@@ -277,11 +278,7 @@ const LoginPageContent = () => {
                 </h1>
 
                 <form className="space-y-3.5" onSubmit={loginHook.handleLoginSubmit}>
-                  {loginHook.error && (
-                    <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                      {loginHook.error}
-                    </div>
-                  )}
+                  <ToastError message={loginHook.error} />
 
                   <div>
                     <QMInput
@@ -294,9 +291,7 @@ const LoginPageContent = () => {
                       success={loginHook.loginData.username.length > 2 && !loginHook.fieldErrors?.username}
                       autoComplete="username"
                     />
-                    {loginHook.fieldErrors?.username && (
-                      <p className="text-red-500 text-xs mt-1.5 ml-1">{loginHook.fieldErrors.username}</p>
-                    )}
+                    <ToastError message={loginHook.fieldErrors?.username} />
                   </div>
 
                   <div>
@@ -310,9 +305,7 @@ const LoginPageContent = () => {
                       error={loginHook.fieldErrors?.password}
                       autoComplete="current-password"
                     />
-                    {loginHook.fieldErrors?.password && (
-                      <p className="text-red-500 text-xs mt-1.5 ml-1">{loginHook.fieldErrors.password}</p>
-                    )}
+                    <ToastError message={loginHook.fieldErrors?.password} />
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
@@ -376,11 +369,7 @@ const LoginPageContent = () => {
                   </>
                 )}
 
-                {forgotPasswordHook.error && forgotPasswordHook.forgotPasswordStep !== 'otp' && (
-                  <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                    {forgotPasswordHook.error}
-                  </div>
-                )}
+                <ToastError message={forgotPasswordHook.error} enabled={forgotPasswordHook.forgotPasswordStep !== 'otp'} />
 
                 {forgotPasswordHook.successMessage && forgotPasswordHook.forgotPasswordStep !== 'otp' && (
                   <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
@@ -402,9 +391,7 @@ const LoginPageContent = () => {
                         error={forgotPasswordHook.fieldErrors?.email}
                         autoComplete="email"
                       />
-                      {forgotPasswordHook.fieldErrors?.email && (
-                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.email}</p>
-                      )}
+                      <ToastError message={forgotPasswordHook.fieldErrors?.email} />
                     </div>
 
                     <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
@@ -439,9 +426,7 @@ const LoginPageContent = () => {
                         autoComplete="new-password"
                       />
                       <StrengthMeter value={forgotPasswordHook.forgotPasswordData.newPassword} t={t} />
-                      {forgotPasswordHook.fieldErrors?.newPassword && (
-                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.newPassword}</p>
-                      )}
+                      <ToastError message={forgotPasswordHook.fieldErrors?.newPassword} />
                     </div>
 
                     <div>
@@ -455,9 +440,7 @@ const LoginPageContent = () => {
                         error={forgotPasswordHook.fieldErrors?.confirmNewPassword}
                         autoComplete="new-password"
                       />
-                      {forgotPasswordHook.fieldErrors?.confirmNewPassword && (
-                        <p className="text-red-500 text-xs mt-1.5 ml-1">{forgotPasswordHook.fieldErrors.confirmNewPassword}</p>
-                      )}
+                      <ToastError message={forgotPasswordHook.fieldErrors?.confirmNewPassword} />
                     </div>
 
                     <PrimaryButton type="submit" loading={forgotPasswordHook.isLoading}>
@@ -498,11 +481,7 @@ const LoginPageContent = () => {
                   </>
                 )}
 
-                {registerHook.registerStep === 'form' && registerHook.error && (
-                  <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                    {registerHook.error}
-                  </div>
-                )}
+                <ToastError message={registerHook.error} enabled={registerHook.registerStep === 'form'} />
 
                 {registerHook.registerStep === 'form' && registerHook.successMessage && (
                   <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
@@ -524,9 +503,7 @@ const LoginPageContent = () => {
                           autoComplete="name"
                           compact
                         />
-                        {registerHook.fieldErrors?.fullname && (
-                          <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.fullname}</p>
-                        )}
+                        <ToastError message={registerHook.fieldErrors?.fullname} />
                       </div>
 
                       <div>
@@ -542,19 +519,20 @@ const LoginPageContent = () => {
                           autoComplete="username"
                           compact
                         />
-                        {registerHook.fieldErrors?.username ? (
-                          <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.username}</p>
-                        ) : registerHook.availabilityStatus?.username?.message ? (
+                        <ToastError message={registerHook.fieldErrors?.username} />
+                        {!registerHook.fieldErrors?.username && registerHook.availabilityStatus?.username?.message && registerHook.availabilityStatus.username.available !== false ? (
                           <p className={`text-xs mt-1.5 ml-1 ${
                             registerHook.availabilityStatus.username.available === true
                               ? 'text-green-600 dark:text-green-400'
-                              : registerHook.availabilityStatus.username.available === false
-                                ? 'text-red-500 dark:text-red-400'
-                                : 'text-gray-500 dark:text-slate-400'
+                              : 'text-gray-500 dark:text-slate-400'
                           }`}>
                             {registerHook.availabilityStatus.username.message}
                           </p>
                         ) : null}
+                        <ToastError
+                          message={registerHook.availabilityStatus?.username?.message}
+                          enabled={!registerHook.fieldErrors?.username && registerHook.availabilityStatus?.username?.available === false}
+                        />
                       </div>
                     </div>
 
@@ -572,19 +550,20 @@ const LoginPageContent = () => {
                         autoComplete="email"
                         compact
                       />
-                      {registerHook.fieldErrors?.email ? (
-                        <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.email}</p>
-                      ) : registerHook.availabilityStatus?.email?.message ? (
+                      <ToastError message={registerHook.fieldErrors?.email} />
+                      {!registerHook.fieldErrors?.email && registerHook.availabilityStatus?.email?.message && registerHook.availabilityStatus.email.available !== false ? (
                         <p className={`text-xs mt-1.5 ml-1 ${
                           registerHook.availabilityStatus.email.available === true
                             ? 'text-green-600 dark:text-green-400'
-                            : registerHook.availabilityStatus.email.available === false
-                              ? 'text-red-500 dark:text-red-400'
-                              : 'text-gray-500 dark:text-slate-400'
+                            : 'text-gray-500 dark:text-slate-400'
                         }`}>
                           {registerHook.availabilityStatus.email.message}
                         </p>
                       ) : null}
+                      <ToastError
+                        message={registerHook.availabilityStatus?.email?.message}
+                        enabled={!registerHook.fieldErrors?.email && registerHook.availabilityStatus?.email?.available === false}
+                      />
                     </div>
 
                     <div>
@@ -600,9 +579,7 @@ const LoginPageContent = () => {
                         compact
                       />
                       <StrengthMeter value={registerHook.formData.password} t={t} />
-                      {registerHook.fieldErrors?.password && (
-                        <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.password}</p>
-                      )}
+                      <ToastError message={registerHook.fieldErrors?.password} />
                     </div>
 
                     <div>
@@ -617,9 +594,7 @@ const LoginPageContent = () => {
                         autoComplete="new-password"
                         compact
                       />
-                      {registerHook.fieldErrors?.confirmPassword && (
-                        <p className="text-red-500 text-xs mt-1.5 ml-1">{registerHook.fieldErrors.confirmPassword}</p>
-                      )}
+                      <ToastError message={registerHook.fieldErrors?.confirmPassword} />
                     </div>
 
                     <div className="flex items-start space-x-2">
@@ -634,9 +609,7 @@ const LoginPageContent = () => {
                         {t('auth.agreeToTerms')} <span className="text-[#FF8682]">{t('auth.terms')}</span> {t('auth.and')} <span className="text-[#FF8682]">{t('auth.privacyPolicies')}</span>
                       </label>
                     </div>
-                    {registerHook.fieldErrors?.agreeToTerms && (
-                      <p className="text-red-500 text-xs -mt-2 ml-1">{registerHook.fieldErrors.agreeToTerms}</p>
-                    )}
+                    <ToastError message={registerHook.fieldErrors?.agreeToTerms} />
 
                     <PrimaryButton
                       type="submit"

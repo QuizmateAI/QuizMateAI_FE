@@ -21,6 +21,7 @@ import {
   cycleAppLanguage,
   getBaseAppLanguage,
 } from '@/utils/appSupportedLanguages';
+import ToastError from '@/components/system/ToastError';
 
 function mapPlanCatalogToPaymentPlan(raw) {
   if (!raw) return null;
@@ -296,7 +297,7 @@ export default function PaymentPage() {
         ) : error || !plan ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
-            <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{error || t('payment.fetchError')}</p>
+            <ToastError message={error || t('payment.fetchError')} />
             <Button variant="outline" onClick={() => navigate(backToPlansUrl)}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
               <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}

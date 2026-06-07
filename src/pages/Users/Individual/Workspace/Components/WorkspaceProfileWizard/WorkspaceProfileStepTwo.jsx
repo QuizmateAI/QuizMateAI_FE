@@ -6,6 +6,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ToastError from '@/components/system/ToastError';
 import {
   getBeginnerScopeLabel,
   isAbsoluteBeginnerLevel,
@@ -51,7 +52,7 @@ function FieldBlock({
           {required ? <span className="ml-1 text-red-500">*</span> : null}
         </label>
         {children}
-        {error ? <p className="mt-2 text-sm font-medium text-red-400">{error}</p> : null}
+        <ToastError message={error} />
       </div>
   );
 }

@@ -32,6 +32,7 @@ import {
   saveMockTestDraft,
 } from "@/pages/Users/MockTest/utils/mockTestTemplateDraft";
 import { buildManualMockTestSections } from "@/pages/Users/MockTest/utils/mockTestManualTemplate";
+import ToastError from "@/components/system/ToastError";
 
 function unwrapMaterialList(response) {
   const payload = response?.data?.data ?? response?.data ?? response;
@@ -605,11 +606,7 @@ export default function CreateGroupMockTestForm({
                   {t("createGroupMockTestForm.materials.loading", "Loading materials...")}
                 </div>
               )}
-              {materialsError && !materialsLoading && (
-                <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/20 text-red-400 border border-red-900/30" : "bg-red-50 text-red-700 border border-red-200"}`}>
-                  {materialsError}
-                </div>
-              )}
+              {!materialsLoading ? <ToastError message={materialsError} /> : null}
               {materials.length > 0 && !materialsLoading && (
                 <>
                   <div className="flex flex-wrap items-center gap-2">
@@ -647,11 +644,7 @@ export default function CreateGroupMockTestForm({
               )}
             </div>
 
-            {(error || suggestError) && (
-              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                {error || suggestError?.message || t("createGroupMockTestForm.errors.genericGenerate", "An error occurred while generating the template.")}
-              </div>
-            )}
+            <ToastError message={error || suggestError?.message || (suggestError ? t("createGroupMockTestForm.errors.genericGenerate", "An error occurred while generating the template.") : "")} />
           </>
         )}
 
@@ -702,11 +695,7 @@ export default function CreateGroupMockTestForm({
               targetTotalQuestions={Number(totalQuestions) || undefined}
               topNotice={topNotice}
             />
-            {error && (
-              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                {error}
-              </div>
-            )}
+            <ToastError message={error} />
           </>
         )}
 

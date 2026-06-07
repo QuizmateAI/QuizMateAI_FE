@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/context/ToastContext';
 import { MATERIAL_ACCEPT_ATTR, validateMaterialFile } from '@/utils/uploadValidation';
 import { evaluateMaterialFit } from './mockProfileWizardData';
+import ToastError from '@/components/system/ToastError';
 
 function createCopy(t) {
   return {
@@ -468,7 +469,7 @@ function WorkspaceProfileStepUpload({
           <p className={cn('mt-2 text-xs leading-5', mutedClass)}>{copy.dropDescription}</p>
         </div>
 
-        {errors.materials ? <p className="mt-3 text-sm font-medium text-red-400">{errors.materials}</p> : null}
+        <ToastError message={errors.materials} />
 
         <div className="mt-5">
           <p className="mb-3 text-sm font-semibold">{copy.queueTitle}</p>

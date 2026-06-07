@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Loader2, Map, Layers, BookOpen, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import ToastError from "@/components/system/ToastError";
 
 // Cấu hình icon và màu sắc cho từng loại
 const TYPE_CONFIG = {
@@ -151,11 +152,7 @@ function QuickCreateDialog({ open, onOpenChange, type = "roadmap", isDarkMode = 
           )}
 
           {/* Lỗi */}
-          {error && (
-            <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-              {error}
-            </div>
-          )}
+          <ToastError message={error} />
         </div>
 
         <DialogFooter>

@@ -18,6 +18,7 @@ import {
   submitFeedbackRequest,
 } from '@/api/FeedbackAPI';
 import { useToast } from '@/context/ToastContext';
+import ToastError from '@/components/system/ToastError';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import {
   buildFeedbackSubmissionPayload,
@@ -243,11 +244,7 @@ function FeedbackSubmitDialog({
           ) : null}
         </div>
 
-        {inlineError ? (
-          <div className={isDarkMode ? 'rounded-2xl border border-rose-900 bg-rose-950/40 px-4 py-3 text-sm text-rose-300' : 'rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'}>
-            {inlineError}
-          </div>
-        ) : null}
+        <ToastError message={inlineError} />
 
         <DialogFooter className="gap-2">
           {allowDismiss && isRequestMode ? (

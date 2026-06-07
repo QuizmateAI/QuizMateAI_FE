@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Clock3, Loader2, Star } from 'lucide-react';
 import { countSectionQuestions, getSectionChildren, getSectionSharedContext, getSectionTitle, hasAnswerValue, isQuestionGroupSection, normalizeVisibleSectionGroups } from '../utils/quizTransform';
+import ToastError from '@/components/system/ToastError';
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -216,7 +217,8 @@ export default function QuestionNavPanel({
             ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t?.('workspace.quiz.examActions.saving', 'Saving...') || 'Saving...'}</span>
             : (t?.('workspace.quiz.examActions.saveProgressButton', 'Save Progress') || 'Save Progress')}
         </Button>
-        {saveMessage && (
+        <ToastError message={saveStatus === 'error' ? saveMessage : ''} />
+        {saveMessage && saveStatus !== 'error' && (
           <p className={`text-xs ${saveStatus === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
             {saveMessage}
           </p>
@@ -226,9 +228,7 @@ export default function QuestionNavPanel({
             ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t?.('workspace.quiz.examActions.submitting', 'Submitting...') || 'Submitting...'}</span>
             : (t?.('workspace.quiz.examActions.submitButton', 'Submit Exam') || 'Submit Exam')}
         </Button>
-        {submitError && (
-          <p className="text-xs text-red-600 dark:text-red-400">{submitError}</p>
-        )}
+        <ToastError message={submitError} />
       </div>
     </div>
   );
