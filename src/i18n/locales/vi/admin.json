@@ -2439,6 +2439,45 @@
     }
   },
   "planPurchases": {
+    "metric": {
+      "planRevenue": "Doanh thu từ gói",
+      "planRevenueHelper": "Tổng doanh thu từ các gói đăng ký",
+      "baseRevenue": "Tiền gốc",
+      "baseRevenueHelper": "Doanh thu cố định đã khóa sẵn",
+      "aiCogs": "Phí AI (COGS)",
+      "aiCogsHelper": "Chỉ phí AI gắn với gói — xem dòng đối chiếu bên dưới",
+      "profit": "Lợi nhuận",
+      "profitHelper": "Doanh thu trừ đi chi phí AI",
+      "creditRevenue": "Doanh thu Credit",
+      "creditRevenueHelper": "Tổng doanh thu từ nạp lẻ credit",
+      "creditsDelivered": "Credit đã giao",
+      "creditsDeliveredHelper": "Tổng credit đã cộng cho người dùng",
+      "creditPurchases": "Lượt mua Credit",
+      "creditPurchasesHelper": "Số giao dịch mua credit thành công",
+      "aiPlanUser": "AI user có gói",
+      "aiPlanUserHelper": "Phí AI của user đang có gói trả phí",
+      "aiFreeUser": "AI user free",
+      "aiFreeUserHelper": "Phí AI của user không có gói (free/trial)",
+      "aiTotal": "Tổng phí AI",
+      "aiTotalHelper": "Khớp với tab Chi phí AI"
+    },
+    "aiCostReconcile": {
+      "label": "Đối chiếu phí AI (toàn kỳ):",
+      "attributed": "Gắn với gói",
+      "unattributed": "Chưa gắn gói (free/trial/ngoài kỳ)",
+      "system": "Tổng phí AI hệ thống",
+      "hint": "khớp với tab Chi phí AI"
+    },
+    "aiUsage": {
+      "title": "Phí AI theo loại người dùng",
+      "subtitle": "So sánh phí AI giữa user có gói trả phí và user dùng free. Tổng khớp tab Chi phí AI.",
+      "empty": "Chưa có chi phí AI trong khoảng đã chọn.",
+      "planUser": "User có gói",
+      "planUserHint": "có gói trả phí lúc gọi AI",
+      "freeUser": "User free",
+      "freeUserHint": "không gói: free/trial, hệ thống chịu",
+      "note": "Phân loại theo việc user có gói trả phí đang hoạt động tại thời điểm gọi AI. Phí AI của user free là phần hệ thống tự chịu (chưa thu được tiền)."
+    },
     "versionOld": "cũ",
     "title": "Báo cáo gói & biên lợi nhuận",
     "sparklineLabel": "Doanh thu gói trả phí · 30 ngày",
@@ -2459,7 +2498,8 @@
     },
     "tab": {
       "plans": "Gói trả phí",
-      "credits": "Mua credit"
+      "credits": "Mua credit",
+      "aiUsage": "Chi phí AI"
     },
     "credit": {
       "col": {
@@ -2594,7 +2634,8 @@
     "cost": {
       "userPaid": "User trả từng lần",
       "plan": "Gói thuê bao",
-      "system": "Hệ thống chịu"
+      "system": "Hệ thống chịu",
+      "freeUser": "User free dùng"
     },
     "hero": {
       "label": "Lời ròng (sau chi phí AI)",
@@ -2629,26 +2670,42 @@
       "revenue": "Cơ cấu doanh thu",
       "revenueHint": "Theo nguồn thanh toán.",
       "cost": "Cơ cấu chi phí AI",
-      "costHint": "Phần user trả = ước lượng (đã thu − chi phí gói)."
+      "costHint": "Tách USER_PAID / PLAN_BASED / SYSTEM — số chính xác."
     },
     "flow": {
       "title": "Bản đồ dòng tiền & Mô hình lợi nhuận",
       "subtitle": "Giải thích trực quan cách tính lợi nhuận từ Gói (Base + Credit) và Lời ròng hệ thống.",
       "revenueInflows": "Dòng doanh thu (Inflows)",
       "aiOutflows": "Chi phí AI phát sinh (Outflows)",
+      "userOutflows": "Phí AI tính user",
+      "systemOutflows": "Phí AI hệ thống chịu",
+      "userCostTotal": "Tổng phí tính user",
+      "systemCostTotal": "Tổng phí hệ thống",
       "profitCalculations": "Tính toán lợi nhuận",
       "planRevenue": "Doanh thu gói",
       "directCredit": "Nạp Credit lẻ",
       "slotRevenue": "Slot nhóm",
+      "creditPool": "Quỹ Credit (gói + lẻ)",
+      "creditPoolHint": "Phần credit trong gói + nạp lẻ",
+      "baseFromPlan": "Tiền gốc (gói)",
+      "baseFromPlanHint": "Phần nền tảng đã khóa trong gói",
       "baseRevenue": "Tiền gốc cố định",
-      "creditPool": "Quỹ Credit cấp",
-      "userAiCost": "Chi phí AI từ user",
-      "systemAiCost": "Chi phí AI hệ thống",
-      "creditProfit": "Lợi nhuận Credit",
+      "userAiCost": "Phí AI user trả (USER_PAID)",
+      "userAiCostHint": "Trừ vào Quỹ Credit",
+      "planAiCost": "Phí AI gói (PLAN_BASED)",
+      "planAiCostHint": "Gói bao trọn · trừ vào Tiền gốc",
+      "systemAiCost": "Phí AI hệ thống (SYSTEM)",
+      "systemAiCostHint": "RAG, OCR, moderation · trừ vào Tiền gốc",
+      "freeUserAiCost": "AI user free dùng",
+      "freeUserAiCostHint": "User không gói · hệ thống chịu",
+      "creditProfit": "Lợi nhuận Quỹ Credit",
+      "creditProfitHint": "Quỹ Credit − phí USER_PAID",
+      "baseProfit": "Lợi nhuận Tiền gốc",
+      "baseProfitHint": "Tiền gốc − phí PLAN_BASED & hệ thống",
       "planProfit": "Tổng lợi nhuận Gói",
       "planProfitDesc": "bằng Tiền gốc + LN Credit",
-      "netProfit": "Lời ròng thực tế",
-      "netProfitDesc": "Doanh thu − tổng chi phí AI",
+      "netProfit": "LỜI RÒNG CUỐI CÙNG",
+      "netProfitDesc": "LN Tiền gốc + LN Quỹ Credit",
       "unspentCredit": "Unspent Credit (Lời)",
       "cogsPaid": "COGS AI chi trả"
     },

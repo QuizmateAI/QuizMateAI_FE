@@ -10,12 +10,20 @@ import {
 } from '@/api/AIAPI';
 import { getRoadmapsByWorkspace } from '@/api/RoadmapAPI';
 import { getPendingRecommendations } from '@/api/QuizAPI';
+import { getMaterialsByWorkspace } from '@/api/MaterialAPI';
 
 const mockNavigate = vi.fn();
 let mockLocationState = null;
 
 vi.mock('@/pages/Users/Individual/Workspace/Components/QuickCreateDialog', () => ({
   default: () => null,
+}));
+
+vi.mock('@/hooks/useSystemSettings', () => ({
+  SYSTEM_SETTING_KEYS: {
+    MAX_QUESTIONS_PER_QUIZ: 'MAX_QUESTIONS_PER_QUIZ',
+  },
+  useSystemSettingNumber: vi.fn(() => 50),
 }));
 
 vi.mock('@/api/AIAPI', () => ({
@@ -33,6 +41,10 @@ vi.mock('@/api/RoadmapAPI', () => ({
   createRoadmapForWorkspace: vi.fn(),
   createPhase: vi.fn(),
   createKnowledge: vi.fn(),
+}));
+
+vi.mock('@/api/MaterialAPI', () => ({
+  getMaterialsByWorkspace: vi.fn(),
 }));
 
 vi.mock('@/api/QuizAPI', () => ({
@@ -59,17 +71,19 @@ vi.mock('@/pages/Users/Individual/Workspace/Components/ManualQuizWizard', () => 
   ),
 }));
 
+const stableT = (key, fallbackOrOptions) => {
+  if (typeof fallbackOrOptions === 'string') {
+    return fallbackOrOptions;
+  }
+  if (fallbackOrOptions && typeof fallbackOrOptions === 'object' && typeof fallbackOrOptions.defaultValue === 'string') {
+    return fallbackOrOptions.defaultValue;
+  }
+  return key;
+};
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, fallbackOrOptions) => {
-      if (typeof fallbackOrOptions === 'string') {
-        return fallbackOrOptions;
-      }
-      if (fallbackOrOptions && typeof fallbackOrOptions === 'object' && typeof fallbackOrOptions.defaultValue === 'string') {
-        return fallbackOrOptions.defaultValue;
-      }
-      return key;
-    },
+    t: stableT,
     i18n: { language: 'en' },
   }),
 }));
@@ -96,6 +110,7 @@ describe('CreateQuizForm personalization preset', () => {
 
     getRoadmapsByWorkspace.mockResolvedValue({ data: [] });
     getPendingRecommendations.mockResolvedValue({ data: [] });
+    getMaterialsByWorkspace.mockResolvedValue({ data: [] });
     getQuestionTypes.mockResolvedValue({
       data: [
         { questionTypeId: 1, questionType: 'SINGLE_CHOICE' },
@@ -220,10 +235,14 @@ describe('CreateQuizForm personalization preset', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Review multiplication' }));
+    const button = await screen.findByRole('button', { name: 'Review multiplication' });
+    fireEvent.click(button);
 
-    expect(await screen.findByText('Multiplication facts')).toBeInTheDocument();
-    expect(await screen.findByText('workspace.quiz.aiRecommendations.type')).toBeInTheDocument();
+    const topicText = await screen.findByText('Multiplication facts');
+    expect(topicText).toBeInTheDocument();
+
+    const typeHeader = await screen.findByText('workspace.quiz.aiRecommendations.type');
+    expect(typeHeader).toBeInTheDocument();
   });
 
   it('locks quiz structure preview when the current plan lacks advanced quiz config', async () => {

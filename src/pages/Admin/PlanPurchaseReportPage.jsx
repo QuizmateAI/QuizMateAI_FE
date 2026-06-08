@@ -7,10 +7,17 @@ import {
   BarChart3,
   ChevronDown,
   ChevronUp,
+  Coins,
+  Cpu,
+  CreditCard,
   Layers,
   RefreshCw,
   Search,
+  ShoppingCart,
+  TrendingUp,
   Users,
+  Wallet,
+  Zap,
 } from 'lucide-react';
 import {
   Bar,
@@ -47,6 +54,7 @@ import { getCreditPurchaseBuyers, getCreditPurchaseSummary, getPlanPurchaseBuyer
 import AdminPagination from '@/pages/Admin/components/AdminPagination';
 import DateRangeChips, { formatDateTimeLocal } from '@/pages/SuperAdmin/Components/DateRangeChips';
 import {
+  SuperAdminMetricCard,
   SuperAdminPage,
   SuperAdminPageHeader,
   SuperAdminTabs,
@@ -479,6 +487,11 @@ export default function PlanPurchaseReportPage() {
   // Biên/credit tổng được derive từ filteredTotals (revenue − base − cogs) để khớp với cell formula.
   const filteredTotalsCredit = filteredTotals.revenueVnd - filteredTotals.baseRevenueVnd;
 
+  // Phí AI tách theo loại người dùng (toàn kỳ, từ summary BE) — dùng cho tab "Chi phí AI".
+  const aiSystemCost = Number(summaryQuery.data?.totalSystemAiProviderCostVnd) || 0;
+  const aiPlanUserCost = Number(summaryQuery.data?.planUserAiProviderCostVnd) || 0;
+  const aiFreeUserCost = Number(summaryQuery.data?.freeUserAiProviderCostVnd) || 0;
+
   const buyersPageData = buyersQuery.data ?? {};
   const buyers = Array.isArray(buyersPageData.content) ? buyersPageData.content : [];
 
@@ -552,6 +565,7 @@ export default function PlanPurchaseReportPage() {
           tabs={[
             { id: 'plans', label: t('planPurchases.tab.plans', 'Gói trả phí') },
             { id: 'credits', label: t('planPurchases.tab.credits', 'Mua credit') },
+            { id: 'aiUsage', label: t('planPurchases.tab.aiUsage', 'Chi phí AI') },
           ]}
           active={activeTab}
           onChange={setActiveTab}
@@ -563,6 +577,126 @@ export default function PlanPurchaseReportPage() {
         <ListSpinner />
       ) : (
         <>
+          {/* KPI Summary Cards */}
+          <div className={`mb-6 grid gap-4 sm:grid-cols-2 ${activeTab === 'plans' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+            {activeTab === 'plans' ? (
+              <>
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.planRevenue', 'Doanh thu từ gói')}
+                  value={formatVnd(filteredTotals.revenueVnd)}
+                  helper={t('planPurchases.metric.planRevenueHelper', 'Tổng doanh thu từ các gói đăng ký')}
+                  icon={CreditCard}
+                  tone="blue"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.baseRevenue', 'Tiền gốc')}
+                  value={formatVnd(filteredTotals.baseRevenueVnd)}
+                  helper={t('planPurchases.metric.baseRevenueHelper', 'Doanh thu cố định đã khóa sẵn')}
+                  icon={Wallet}
+                  tone="amber"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.aiCogs', 'Phí AI (COGS)')}
+                  value={formatVnd(filteredTotals.aiProviderCostVnd)}
+                  helper={t('planPurchases.metric.aiCogsHelper', 'Chỉ phí AI gắn với gói — xem dòng đối chiếu bên dưới')}
+                  icon={Cpu}
+                  tone="rose"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.profit', 'Lợi nhuận')}
+                  value={formatVnd(filteredTotals.revenueVnd - filteredTotals.aiProviderCostVnd)}
+                  helper={t('planPurchases.metric.profitHelper', 'Doanh thu trừ đi chi phí AI')}
+                  icon={TrendingUp}
+                  tone="emerald"
+                  isDarkMode={isDarkMode}
+                />
+              </>
+            ) : activeTab === 'credits' ? (
+              <>
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.creditRevenue', 'Doanh thu Credit')}
+                  value={creditQuery.isLoading ? '...' : formatVnd(creditQuery.data?.totalRevenueVnd)}
+                  helper={t('planPurchases.metric.creditRevenueHelper', 'Tổng doanh thu từ nạp lẻ credit')}
+                  icon={Coins}
+                  tone="emerald"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.creditsDelivered', 'Credit đã giao')}
+                  value={creditQuery.isLoading ? '...' : Number(creditQuery.data?.totalCreditsDelivered || 0).toLocaleString('vi-VN')}
+                  helper={t('planPurchases.metric.creditsDeliveredHelper', 'Tổng credit đã cộng cho người dùng')}
+                  icon={Zap}
+                  tone="blue"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.creditPurchases', 'Lượt mua Credit')}
+                  value={creditQuery.isLoading ? '...' : Number(creditQuery.data?.totalPurchaseCount || 0).toLocaleString('vi-VN')}
+                  helper={t('planPurchases.metric.creditPurchasesHelper', 'Số giao dịch mua credit thành công')}
+                  icon={ShoppingCart}
+                  tone="amber"
+                  isDarkMode={isDarkMode}
+                />
+              </>
+            ) : (
+              <>
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.aiPlanUser', 'AI user có gói')}
+                  value={formatVnd(aiPlanUserCost)}
+                  helper={t('planPurchases.metric.aiPlanUserHelper', 'Phí AI của user đang có gói trả phí')}
+                  icon={Cpu}
+                  tone="blue"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.aiFreeUser', 'AI user free')}
+                  value={formatVnd(aiFreeUserCost)}
+                  helper={t('planPurchases.metric.aiFreeUserHelper', 'Phí AI của user không có gói (free/trial)')}
+                  icon={Users}
+                  tone="amber"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.aiTotal', 'Tổng phí AI')}
+                  value={formatVnd(aiSystemCost)}
+                  helper={t('planPurchases.metric.aiTotalHelper', 'Khớp với tab Chi phí AI')}
+                  icon={Coins}
+                  tone="rose"
+                  isDarkMode={isDarkMode}
+                />
+              </>
+            )}
+          </div>
+          {activeTab === 'plans' && summaryQuery.data ? (
+            <div
+              className={`mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border px-4 py-3 text-xs ${
+                isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'
+              }`}
+            >
+              <Cpu className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-rose-300' : 'text-rose-500'}`} />
+              <span className="font-semibold">{t('planPurchases.aiCostReconcile.label', 'Đối chiếu phí AI (toàn kỳ):')}</span>
+              <span>
+                {t('planPurchases.aiCostReconcile.attributed', 'Gắn với gói')}{' '}
+                <strong className="tabular-nums">{formatVnd(summaryQuery.data.totalAiProviderCostVnd)}</strong>
+              </span>
+              <span className="opacity-60">+</span>
+              <span>
+                {t('planPurchases.aiCostReconcile.unattributed', 'Chưa gắn gói (free/trial/ngoài kỳ)')}{' '}
+                <strong className="tabular-nums">{formatVnd(summaryQuery.data.unattributedAiProviderCostVnd)}</strong>
+              </span>
+              <span className="opacity-60">=</span>
+              <span>
+                {t('planPurchases.aiCostReconcile.system', 'Tổng phí AI hệ thống')}{' '}
+                <strong className="tabular-nums">{formatVnd(summaryQuery.data.totalSystemAiProviderCostVnd)}</strong>
+              </span>
+              <span className={`ml-auto ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                {t('planPurchases.aiCostReconcile.hint', 'khớp với tab Chi phí AI')}
+              </span>
+            </div>
+          ) : null}
           {showCharts ? (
             <div
               className={`mb-3 flex flex-wrap items-center gap-2 rounded-2xl border p-3 ${
@@ -811,6 +945,67 @@ export default function PlanPurchaseReportPage() {
                   </span>
                 </div>
               ) : null}
+            </div>
+          ) : activeTab === 'aiUsage' ? (
+            <div
+              className={`overflow-hidden rounded-2xl border p-5 ${
+                isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
+              }`}
+            >
+              <div className="mb-1 flex items-start justify-between gap-3">
+                <div>
+                  <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {t('planPurchases.aiUsage.title', 'Phí AI theo loại người dùng')}
+                  </h3>
+                  <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {t('planPurchases.aiUsage.subtitle', 'So sánh phí AI giữa user có gói trả phí và user dùng free. Tổng khớp tab Chi phí AI.')}
+                  </p>
+                </div>
+                <p className={`text-right text-xs tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {formatVnd(aiSystemCost)}
+                </p>
+              </div>
+              {aiSystemCost <= 0 ? (
+                <p className="py-12 text-center text-sm text-slate-500">
+                  {t('planPurchases.aiUsage.empty', 'Chưa có chi phí AI trong khoảng đã chọn.')}
+                </p>
+              ) : (
+                <>
+                  <div className={`mt-4 flex h-4 w-full overflow-hidden rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <div className="h-full bg-blue-500" style={{ width: `${aiSystemCost > 0 ? (aiPlanUserCost / aiSystemCost) * 100 : 0}%` }} />
+                    <div className="h-full bg-amber-500" style={{ width: `${aiSystemCost > 0 ? (aiFreeUserCost / aiSystemCost) * 100 : 0}%` }} />
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/40' : 'border-slate-100 bg-slate-50/60'}`}>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        {t('planPurchases.aiUsage.planUser', 'User có gói')}
+                      </div>
+                      <div className={`mt-1 text-lg font-black tabular-nums ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+                        {formatVnd(aiPlanUserCost)}
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-slate-400">
+                        {(aiSystemCost > 0 ? (aiPlanUserCost / aiSystemCost) * 100 : 0).toFixed(1)}% · {t('planPurchases.aiUsage.planUserHint', 'có gói trả phí lúc gọi AI')}
+                      </div>
+                    </div>
+                    <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/40' : 'border-slate-100 bg-slate-50/60'}`}>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                        {t('planPurchases.aiUsage.freeUser', 'User free')}
+                      </div>
+                      <div className={`mt-1 text-lg font-black tabular-nums ${isDarkMode ? 'text-amber-500' : 'text-amber-600'}`}>
+                        {formatVnd(aiFreeUserCost)}
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-slate-400">
+                        {(aiSystemCost > 0 ? (aiFreeUserCost / aiSystemCost) * 100 : 0).toFixed(1)}% · {t('planPurchases.aiUsage.freeUserHint', 'không gói: free/trial, hệ thống chịu')}
+                      </div>
+                    </div>
+                  </div>
+                  <p className={`mt-4 text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {t('planPurchases.aiUsage.note', 'Phân loại theo việc user có gói trả phí đang hoạt động tại thời điểm gọi AI. Phí AI của user free là phần hệ thống tự chịu (chưa thu được tiền).')}
+                  </p>
+                </>
+              )}
             </div>
           ) : (
           <div
