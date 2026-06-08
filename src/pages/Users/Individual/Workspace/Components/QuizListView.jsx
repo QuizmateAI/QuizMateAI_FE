@@ -30,7 +30,6 @@ import {
   normalizeWorkspaceQuizAdvFilters,
   quizPassesWorkspaceQuizAdvFilters,
 } from "@/utils/workspaceQuizListAdvancedFilters";
-import { quizMatchesStudioSubFilter } from "@/utils/workspaceStudioListFilters";
 import QuizWorkspaceAdvancedFilterDialog from "@/pages/Users/Individual/Workspace/Components/QuizWorkspaceAdvancedFilterDialog";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
@@ -771,10 +770,7 @@ function QuizListView({
     if (showWorkspaceQuizAdvancedFilterChrome) {
       items = items.filter((q) => quizPassesWorkspaceQuizAdvFilters(q, workspaceAdvFilters));
     }
-    const normalizedStudioSub = String(studioSubFilter || "").toLowerCase();
-    if (normalizedStudioSub === "ai" || normalizedStudioSub === "manual" || normalizedStudioSub === "paste") {
-      items = items.filter((q) => quizMatchesStudioSubFilter(q, normalizedStudioSub));
-    }
+    // No longer filter by studioSubFilter to keep the list unfiltered
     if (isGroupQuizList) {
       if (!canFilterGroupAssignees) {
         items = items.filter((q) => {
@@ -1253,7 +1249,7 @@ function QuizListView({
                         : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
                     }`}
                   >
-                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    <SlidersHorizontal className="h-4 w-4" />
                     <span className="text-sm font-semibold">{t("quizListView.workspaceFilterBar.open", "Filters")}</span>
                     {workspaceAdvFiltersActiveCount > 0 ? (
                       <Badge
@@ -1410,7 +1406,7 @@ function QuizListView({
                     onClick={onOpenCommunityQuiz}
                     className={`h-11 rounded-full border px-4 ${isDarkMode ? "border-blue-500/30 bg-blue-500/15 text-blue-100 hover:bg-blue-500/25" : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"}`}
                   >
-                    <Globe className="mr-2 h-4 w-4" />
+                    <Globe className="h-4 w-4" />
                     <span className="text-sm">{t("quizListView.header.community", "Community Quiz")}</span>
                   </Button>
                 ) : null}
@@ -1420,7 +1416,7 @@ function QuizListView({
                     onClick={onCreateQuiz}
                     className="h-11 rounded-full bg-[#2563EB] px-4 text-white transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     <span className="text-sm">{t("quizListView.header.create", "Create")}</span>
                   </Button>
                 ) : null}
@@ -1482,7 +1478,7 @@ function QuizListView({
                 onClick={onCreateQuiz}
                 className="mt-4 h-10 rounded-full bg-[#2563EB] px-4 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 <span className="text-sm">{t("quizListView.header.createQuiz", "Create quiz")}</span>
               </Button>
             ) : null}
@@ -2009,7 +2005,7 @@ function QuizListView({
               {t("quizListView.confirm.close", "Close")}
             </Button>
             <Button onClick={handleBulkAssign} disabled={bulkAssignSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
-              {bulkAssignSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {bulkAssignSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {t("quizListView.confirm.confirm", "Confirm")}
             </Button>
           </DialogFooter>

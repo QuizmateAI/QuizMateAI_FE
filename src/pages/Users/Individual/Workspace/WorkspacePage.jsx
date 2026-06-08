@@ -2186,7 +2186,7 @@ function WorkspacePage() {
         };
         const mode = modeByChild[childId] ?? null;
         setWorkspaceSidebarQuizCreateMode(mode);
-        setActiveView("quiz");
+        setActiveView("createQuiz");
         addAccessHistory("quiz", "quiz", "quiz");
         return;
       }
@@ -2721,6 +2721,10 @@ function WorkspacePage() {
 
     if (nextView !== "quizCollectionDetail") {
       setSelectedCollection(null);
+    }
+
+    if (nextView === "quiz") {
+      setWorkspaceSidebarQuizCreateMode(null);
     }
 
     setActiveView(nextView);

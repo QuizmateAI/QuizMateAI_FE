@@ -2455,6 +2455,45 @@
     }
   },
   "planPurchases": {
+    "metric": {
+      "planRevenue": "Subscription Revenue",
+      "planRevenueHelper": "Total revenue from subscriptions",
+      "baseRevenue": "Base Portion",
+      "baseRevenueHelper": "Fixed upfront portion of plan price",
+      "aiCogs": "AI Cost (COGS)",
+      "aiCogsHelper": "Only AI cost attributed to plans — see reconciliation below",
+      "profit": "Net Margin",
+      "profitHelper": "Total revenue minus AI costs",
+      "creditRevenue": "Credit Revenue",
+      "creditRevenueHelper": "Total revenue from direct credits",
+      "creditsDelivered": "Credits Delivered",
+      "creditsDeliveredHelper": "Total credits added to user wallets",
+      "creditPurchases": "Credit Purchases",
+      "creditPurchasesHelper": "Total credit purchase transactions",
+      "aiPlanUser": "AI · plan users",
+      "aiPlanUserHelper": "AI cost from users on a paid plan",
+      "aiFreeUser": "AI · free users",
+      "aiFreeUserHelper": "AI cost from users with no plan (free/trial)",
+      "aiTotal": "Total AI cost",
+      "aiTotalHelper": "Matches the AI Cost tab"
+    },
+    "aiCostReconcile": {
+      "label": "AI cost reconciliation (period):",
+      "attributed": "Attributed to plans",
+      "unattributed": "Unattributed (free/trial/out-of-period)",
+      "system": "System-wide AI cost",
+      "hint": "matches the AI Cost tab"
+    },
+    "aiUsage": {
+      "title": "AI cost by user type",
+      "subtitle": "Compare AI cost between paid-plan users and free users. Total matches the AI Cost tab.",
+      "empty": "No AI cost in the selected range.",
+      "planUser": "Plan users",
+      "planUserHint": "had an active paid plan when calling AI",
+      "freeUser": "Free users",
+      "freeUserHint": "no plan: free/trial, system-borne",
+      "note": "Classified by whether the user had an active paid plan at the time of the AI call. Free-user AI cost is borne by the system (not yet monetized)."
+    },
     "versionOld": "old",
     "title": "Plan Purchases & Margin Report",
     "sparklineLabel": "Paid Plan Revenue · 30 Days",
@@ -2475,7 +2514,8 @@
     },
     "tab": {
       "plans": "Subscription Plans",
-      "credits": "Credit Packages"
+      "credits": "Credit Packages",
+      "aiUsage": "AI Cost"
     },
     "credit": {
       "col": {
@@ -2571,7 +2611,8 @@
     "cost": {
       "userPaid": "User Paid AI",
       "plan": "Plan Included AI",
-      "system": "System Absorbed"
+      "system": "System Absorbed",
+      "freeUser": "Free-user AI"
     },
     "hero": {
       "label": "Net Profit (after AI costs)",
@@ -2606,26 +2647,42 @@
       "revenue": "Revenue Share",
       "revenueHint": "By payment channel.",
       "cost": "AI Cost Share",
-      "costHint": "User Paid portion is estimated."
+      "costHint": "Split into USER_PAID / PLAN_BASED / SYSTEM — exact figures."
     },
     "flow": {
       "title": "Cash Flow Map & Business Model",
       "subtitle": "Visual breakdown of plan profit structure and system net profit.",
       "revenueInflows": "Revenue Inflows",
       "aiOutflows": "AI Provider Outflows",
+      "userOutflows": "User-charged AI",
+      "systemOutflows": "System-borne AI",
+      "userCostTotal": "Total user-charged",
+      "systemCostTotal": "Total system-borne",
       "profitCalculations": "Profit Calculations",
       "planRevenue": "Subscription Revenue",
       "directCredit": "Direct Credit Top-up",
       "slotRevenue": "Workspace Slots",
+      "creditPool": "Credit Pool (plan + top-up)",
+      "creditPoolHint": "Credit portion of plans + top-ups",
+      "baseFromPlan": "Base (from plan)",
+      "baseFromPlanHint": "Fixed platform portion locked in plan",
       "baseRevenue": "Base Portion (Fixed)",
-      "creditPool": "Credit Pool (Allowance)",
-      "userAiCost": "User Plan AI Cost",
-      "systemAiCost": "System AI Cost",
-      "creditProfit": "Credit Profit",
+      "userAiCost": "User-paid AI (USER_PAID)",
+      "userAiCostHint": "Deducted from Credit Pool",
+      "planAiCost": "Plan AI (PLAN_BASED)",
+      "planAiCostHint": "Bundled in plan · deducted from Base",
+      "systemAiCost": "System AI (SYSTEM)",
+      "systemAiCostHint": "RAG, OCR, moderation · deducted from Base",
+      "freeUserAiCost": "Free-user AI",
+      "freeUserAiCostHint": "No-plan users · system-borne",
+      "creditProfit": "Credit Pool Profit",
+      "creditProfitHint": "Credit Pool − USER_PAID cost",
+      "baseProfit": "Base Profit",
+      "baseProfitHint": "Base − PLAN_BASED & system cost",
       "planProfit": "Total Plan Profit",
       "planProfitDesc": "Base + Credit Profit",
-      "netProfit": "Final Net Profit",
-      "netProfitDesc": "Total Revenue − AI Costs",
+      "netProfit": "FINAL NET PROFIT",
+      "netProfitDesc": "Base Profit + Credit Pool Profit",
       "unspentCredit": "Unspent Credit (Gain)",
       "cogsPaid": "COGS Paid to Providers"
     },

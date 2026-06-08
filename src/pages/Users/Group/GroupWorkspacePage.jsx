@@ -2934,7 +2934,7 @@ function GroupWorkspacePage() {
       const mode = modeByChild[childId] ?? null;
       setGroupSidebarQuizCreateMode(mode);
       setGroupSidebarFlashcardSubFilter(null);
-      setActiveView('quiz');
+      setActiveView('createQuiz');
     } else if (parentId === 'flashcard') {
       const fcModeByChild = {
         flashcardAi: 'ai',
@@ -3817,6 +3817,9 @@ function GroupWorkspacePage() {
     }
     if (nextView !== 'flashcardDetail') setSelectedFlashcard(null);
     if (nextView !== 'mockTestDetail' && nextView !== 'editMockTest') setSelectedMockTest(null);
+    if (nextView === 'quiz') {
+      setGroupSidebarQuizCreateMode(null);
+    }
     setActiveView(nextView);
   }, [
     activeView,

@@ -42,6 +42,7 @@ const COLOR_REVENUE = '#10b981';
 const COLOR_COST_USER_PAID = '#3b82f6';
 const COLOR_COST_PLAN = '#8b5cf6';
 const COLOR_COST_SYSTEM = '#f59e0b';
+const COLOR_COST_FREE = '#fb7185';
 const COLOR_NET_POS = '#10b981';
 const COLOR_NET_NEG = '#ef4444';
 
@@ -200,16 +201,23 @@ function PieCard({ title, subtitle, summary, data, isDarkMode, emptyText }) {
   );
 }
 
-function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, t }) {
-  const subscriptionRev = num(revenueTotals?.userPlanVnd) + num(revenueTotals?.workspacePlanVnd);
-  const creditRev = num(revenueTotals?.userCreditVnd) + num(revenueTotals?.workspaceCreditVnd);
+function CashFlowMap({ revenueTotals, aiCostUserPaid, aiCostPlan, aiCostSystem, aiCostFreeUser, netVnd, isDarkMode, t }) {
+  // Tách theo bản chất kinh tế (snapshot trên payment), KHÔNG gộp cả giá gói vào "gốc":
+  //   creditFund  = quỹ AI credit (credit gói + nạp lẻ)  → bị trừ bởi phí USER_PAID
+  //   baseRevenue = tiền gốc (base gói + slot)            → gánh phí PLAN_BASED + SYSTEM
+  const baseRevenue = num(revenueTotals?.baseRevenueVnd);
+  const creditFund = num(revenueTotals?.creditFundRevenueVnd);
   const slotRev = num(revenueTotals?.workspaceSlotVnd);
-  
-  const revenueTotal = subscriptionRev + creditRev + slotRev;
-  const totalCost = aiCostUserPlan + aiCostSystem;
-  const netVnd = revenueTotal - totalCost;
-  
-  const planProfit = subscriptionRev + creditRev - aiCostUserPlan;
+  const baseFromPlan = Math.max(0, baseRevenue - slotRev);
+
+  const revenueTotal = baseRevenue + creditFund;
+  // Tách 2 nhóm chi phí AI: user tự trả (USER_PAID) vs hệ thống chịu (PLAN_BASED + SYSTEM + AI user free).
+  const systemCost = aiCostPlan + aiCostSystem + aiCostFreeUser;
+  // Lời theo từng quỹ. creditProfit = quỹ credit − phí USER_PAID; baseProfit = phần còn lại của
+  // net (= tiền gốc − phí PLAN_BASED & hệ thống). Định nghĩa baseProfit theo netVnd để 2 ô luôn
+  // cộng đúng bằng Lời ròng chuẩn từ hero.
+  const creditProfit = creditFund - aiCostUserPaid;
+  const baseProfit = netVnd - creditProfit;
 
   return (
     <div
@@ -229,7 +237,7 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3 relative">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 relative">
         {/* Column 1: Inflows */}
         <div className="flex flex-col gap-4">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -242,15 +250,15 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
           )}>
             <div>
               <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {t('pnl.flow.planRevenue', 'Plan revenue')}
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                {t('pnl.flow.creditPool', 'Quỹ Credit (gói + lẻ)')}
               </div>
               <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
-                {t('pnl.flow.baseRevenue', 'Includes base price and credits')}
+                {t('pnl.flow.creditPoolHint', 'Phần credit trong gói + nạp lẻ')}
               </div>
             </div>
-            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-emerald-300" : "text-emerald-600")}>
-              {formatVnd(subscriptionRev)}
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-amber-400" : "text-amber-600")}>
+              {formatVnd(creditFund)}
             </div>
           </div>
 
@@ -260,12 +268,15 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
           )}>
             <div>
               <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                {t('pnl.flow.directCredit', 'Direct credit top-up')}
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {t('pnl.flow.baseFromPlan', 'Tiền gốc (gói)')}
+              </div>
+              <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
+                {t('pnl.flow.baseFromPlanHint', 'Phần nền tảng đã khóa trong gói')}
               </div>
             </div>
-            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-amber-500" : "text-amber-600")}>
-              {formatVnd(creditRev)}
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-emerald-300" : "text-emerald-600")}>
+              {formatVnd(baseFromPlan)}
             </div>
           </div>
 
@@ -295,10 +306,10 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
           </div>
         </div>
 
-        {/* Column 2: Outflows */}
+        {/* Column 2: User-charged AI cost (USER_PAID) — trừ vào Quỹ Credit */}
         <div className="flex flex-col gap-4">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            {t('pnl.flow.aiOutflows', 'AI provider outflows')}
+            {t('pnl.flow.userOutflows', 'Phí AI tính user')}
           </div>
 
           <div className={cn(
@@ -308,14 +319,52 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
             <div>
               <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                {t('pnl.flow.userAiCost', 'User AI cost')}
+                {t('pnl.flow.userAiCost', 'Phí AI user trả (USER_PAID)')}
               </div>
               <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
-                {t('pnl.flow.cogsPaid', 'COGS paid to providers')}
+                {t('pnl.flow.userAiCostHint', 'User tự trả bằng credit · trừ vào Quỹ Credit')}
               </div>
             </div>
             <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-blue-300" : "text-blue-600")}>
-              {formatVnd(aiCostUserPlan)}
+              {formatVnd(aiCostUserPaid)}
+            </div>
+          </div>
+
+          <div className="hidden md:block h-[100px]" />
+          <div className="hidden md:block h-[100px]" />
+
+          <div className={cn(
+            "rounded-2xl border-2 border-dashed p-4 flex items-center justify-between",
+            isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-100/60"
+          )}>
+            <div className="text-xs font-bold text-slate-500 uppercase">{t('pnl.flow.userCostTotal', 'Tổng phí tính user')}</div>
+            <div className={cn("text-lg font-black tabular-nums", isDarkMode ? "text-blue-300" : "text-blue-600")}>
+              {formatVnd(aiCostUserPaid)}
+            </div>
+          </div>
+        </div>
+
+        {/* Column 3: System-borne AI cost (PLAN_BASED + SYSTEM) — trừ vào Tiền gốc */}
+        <div className="flex flex-col gap-4">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            {t('pnl.flow.systemOutflows', 'Phí AI hệ thống chịu')}
+          </div>
+
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                {t('pnl.flow.planAiCost', 'Phí AI gói (PLAN_BASED)')}
+              </div>
+              <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
+                {t('pnl.flow.planAiCostHint', 'Gói bao trọn · trừ vào Tiền gốc')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-purple-300" : "text-purple-600")}>
+              {formatVnd(aiCostPlan)}
             </div>
           </div>
 
@@ -326,10 +375,10 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
             <div>
               <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
-                {t('pnl.flow.systemAiCost', 'System AI cost')}
+                {t('pnl.flow.systemAiCost', 'Phí AI hệ thống (SYSTEM)')}
               </div>
               <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
-                {t('pnl.kpi.aiSystemHint', 'System-covered cost such as RAG, OCR, and moderation')}
+                {t('pnl.flow.systemAiCostHint', 'RAG, OCR, moderation · trừ vào Tiền gốc')}
               </div>
             </div>
             <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-orange-300" : "text-orange-600")}>
@@ -337,21 +386,36 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
             </div>
           </div>
 
-          {/* Spacer block to align with Column 1 slots height */}
-          <div className="hidden md:block h-[100px]" />
+          <div className={cn(
+            "rounded-2xl border p-4 flex flex-col justify-between h-[100px] transition-transform hover:scale-[1.02]",
+            isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-100 bg-slate-50/50"
+          )}>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                {t('pnl.flow.freeUserAiCost', 'AI user free dùng')}
+              </div>
+              <div className={cn("text-[10px] mt-0.5", isDarkMode ? "text-slate-600" : "text-slate-400")}>
+                {t('pnl.flow.freeUserAiCostHint', 'User không gói · hệ thống chịu')}
+              </div>
+            </div>
+            <div className={cn("text-base font-black tabular-nums", isDarkMode ? "text-rose-300" : "text-rose-600")}>
+              {formatVnd(aiCostFreeUser)}
+            </div>
+          </div>
 
           <div className={cn(
             "rounded-2xl border-2 border-dashed p-4 flex items-center justify-between",
             isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-100/60"
           )}>
-            <div className="text-xs font-bold text-slate-500 uppercase">{t('pnl.hero.aiCost', 'Total AI cost')}</div>
-            <div className={cn("text-lg font-black tabular-nums", isDarkMode ? "text-rose-400" : "text-rose-600")}>
-              {formatVnd(totalCost)}
+            <div className="text-xs font-bold text-slate-500 uppercase">{t('pnl.flow.systemCostTotal', 'Tổng phí hệ thống')}</div>
+            <div className={cn("text-lg font-black tabular-nums", isDarkMode ? "text-orange-300" : "text-orange-600")}>
+              {formatVnd(systemCost)}
             </div>
           </div>
         </div>
 
-        {/* Column 3: Profits */}
+        {/* Column 4: Profits */}
         <div className="flex flex-col gap-4">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
             {t('pnl.flow.profitCalculations', 'Profit calculations')}
@@ -365,14 +429,14 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
           )}>
             <div>
               <div className="text-[11px] font-bold text-indigo-500 dark:text-indigo-400">
-                {t('pnl.flow.planProfit', 'Total plan profit')}
+                {t('pnl.flow.baseProfit', 'Lợi nhuận Tiền gốc')}
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">
-                {t('pnl.flow.planProfitDesc', 'Base price + credit profit')}
+                {t('pnl.flow.baseProfitHint', 'Tiền gốc − phí PLAN_BASED & hệ thống')}
               </div>
             </div>
-            <div className={cn("text-base font-black tabular-nums", planProfit >= 0 ? "text-indigo-600 dark:text-indigo-300" : "text-rose-500")}>
-              {formatVnd(planProfit)}
+            <div className={cn("text-base font-black tabular-nums", baseProfit >= 0 ? "text-indigo-600 dark:text-indigo-300" : "text-rose-500")}>
+              {formatVnd(baseProfit)}
             </div>
           </div>
 
@@ -382,14 +446,14 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
           )}>
             <div>
               <div className="text-[11px] font-semibold text-slate-500">
-                {t('pnl.flow.creditProfit', 'Credit profit')}
+                {t('pnl.flow.creditProfit', 'Lợi nhuận Quỹ Credit')}
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                {t('pnl.flow.creditProfitDesc', 'Credit revenue − user AI cost')}
+                {t('pnl.flow.creditProfitHint', 'Quỹ Credit − phí USER_PAID')}
               </div>
             </div>
-            <div className={cn("text-base font-black tabular-nums", (creditRev - aiCostUserPlan) >= 0 ? "text-emerald-500" : "text-rose-500")}>
-              {formatVnd(creditRev - aiCostUserPlan)}
+            <div className={cn("text-base font-black tabular-nums", creditProfit >= 0 ? "text-emerald-500" : "text-rose-500")}>
+              {formatVnd(creditProfit)}
             </div>
           </div>
 
@@ -407,7 +471,7 @@ function CashFlowMap({ revenueTotals, aiCostUserPlan, aiCostSystem, isDarkMode, 
                 {t('pnl.flow.netProfit', 'Final net profit')}
               </div>
               <div className="text-[9px] opacity-75">
-                {t('pnl.flow.netProfitDesc', 'Revenue − total AI cost')}
+                {t('pnl.flow.netProfitDesc', 'LN Tiền gốc + LN Quỹ Credit')}
               </div>
             </div>
             <div className="text-xl font-black tabular-nums">
@@ -468,15 +532,13 @@ function PnlOverview() {
   const revenuePoints = tsQuery.data?.points ?? [];
   const revenueTotal = num(revenueTotals?.totalVnd);
 
-  // AI cost side
-  // AiCost: USER_PAID + PLAN_BASED matched providerCost
-  // AiAudit: planCost = PLAN_BASED, systemCost = SYSTEM (USER_PAID excluded)
-  const aiCostUserPlan = num(costQuery.data?.totalProviderCostVnd);
-  const aiCostSystem = num(auditQuery.data?.systemCostVnd);
-  const aiCostPlan = num(auditQuery.data?.planCostVnd);
-  // USER_PAID estimate: subtract PLAN_BASED audit cost from AiCost matched cost (clamped ≥ 0).
-  // Có thể lệch vài đồng do chỉ tính matched audit, nhưng đủ tốt cho breakdown UI.
-  const aiCostUserPaidEstimate = Math.max(0, aiCostUserPlan - aiCostPlan);
+  // AI cost side — tách CHÍNH XÁC từ cost summary (cùng đường usage-log với tổng dùng cho net):
+  //   userPaid + planBased = totalProviderCostVnd. SYSTEM lấy từ audit (không nằm trong usage log).
+  const aiCostUserPlan = num(costQuery.data?.totalProviderCostVnd);    // USER_PAID + PLAN_BASED (KPI)
+  const aiCostUserPaid = num(costQuery.data?.userPaidProviderCostVnd); // USER_PAID (chính xác, BE tách)
+  const aiCostPlan = num(costQuery.data?.planBasedProviderCostVnd);    // PLAN_BASED (chính xác, BE tách)
+  const aiCostSystem = num(auditQuery.data?.systemCostVnd);            // SYSTEM (audit)
+  const aiCostFreeUser = num(costQuery.data?.freeUserProviderCostVnd); // FREE_USER (user không gói → hệ thống chịu)
 
   const aiCostTotal = aiCostUserPlan + aiCostSystem;
   const netVnd = revenueTotal - aiCostTotal;
@@ -499,10 +561,11 @@ function PnlOverview() {
 
   // AI cost breakdown
   const costBreakdown = useMemo(() => ([
-    { name: t('pnl.cost.userPaid', 'User-paid AI'), value: aiCostUserPaidEstimate, color: COLOR_COST_USER_PAID },
+    { name: t('pnl.cost.userPaid', 'User-paid AI'), value: aiCostUserPaid, color: COLOR_COST_USER_PAID },
     { name: t('pnl.cost.plan', 'Plan-included AI'), value: aiCostPlan, color: COLOR_COST_PLAN },
     { name: t('pnl.cost.system', 'System-covered AI'), value: aiCostSystem, color: COLOR_COST_SYSTEM },
-  ]), [aiCostUserPaidEstimate, aiCostPlan, aiCostSystem, t]);
+    { name: t('pnl.cost.freeUser', 'Free-user AI'), value: aiCostFreeUser, color: COLOR_COST_FREE },
+  ]), [aiCostUserPaid, aiCostPlan, aiCostSystem, aiCostFreeUser, t]);
 
   const revenueChartData = useMemo(
     () => revenuePoints.map((p) => ({ bucket: p.bucket, totalVnd: num(p.totalVnd) })),
@@ -649,8 +712,11 @@ function PnlOverview() {
 
           <CashFlowMap
             revenueTotals={revenueTotals}
-            aiCostUserPlan={aiCostUserPlan}
+            aiCostUserPaid={aiCostUserPaid}
+            aiCostPlan={aiCostPlan}
             aiCostSystem={aiCostSystem}
+            aiCostFreeUser={aiCostFreeUser}
+            netVnd={netVnd}
             isDarkMode={isDarkMode}
             t={t}
           />
@@ -773,7 +839,7 @@ function PnlOverview() {
             />
             <PieCard
               title={t('pnl.pie.cost', 'AI cost mix')}
-              subtitle={t('pnl.pie.costHint', 'User-paid cost is estimated.')}
+              subtitle={t('pnl.pie.costHint', 'Tách USER_PAID / PLAN_BASED / SYSTEM — số chính xác.')}
               summary={formatVnd(aiCostTotal)}
               data={costBreakdown}
               isDarkMode={isDarkMode}

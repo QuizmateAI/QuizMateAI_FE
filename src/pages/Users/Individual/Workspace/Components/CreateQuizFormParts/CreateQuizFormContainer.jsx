@@ -79,7 +79,7 @@ function CreateQuizForm({
     ? normalizedInitialModeValue
     : null;
 
-  const showModeSwitcher = !normalizedInitialMode && !hasExistingQuizTarget;
+  const showModeSwitcher = !hasExistingQuizTarget;
 
   const modeSwitcherMeta = useMemo(
     () => ({
@@ -90,20 +90,15 @@ function CreateQuizForm({
     [t],
   );
 
-  // Tab: "ai" | "manual" | "paste" — nhớ lựa chọn qua localStorage
+  // Tab: "ai" | "manual" | "paste"
   const [mode, setMode] = useState(() => {
     if (normalizedInitialMode) return normalizedInitialMode;
     if (hasExistingQuizTarget) return "manual";
-    try {
-      const stored = localStorage.getItem("createQuizMode");
-      if (["ai", "manual", "paste"].includes(stored)) return stored;
-      return "ai";
-    } catch { return "ai"; }
+    return "ai";
   });
 
   const handleModeChange = useCallback((next) => {
     setMode(next);
-    try { localStorage.setItem("createQuizMode", next); } catch { /* noop */ }
   }, []);
 
   const {
