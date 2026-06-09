@@ -1,4 +1,6 @@
 import React from "react";
+import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { ChevronDown, FileText, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,9 @@ const LazyEditMockTestForm = React.lazy(() => import("./EditMockTestForm"));
 const LazyPostLearningListView = React.lazy(() => import("./PostLearningListView"));
 const LazyCreatePostLearningForm = React.lazy(() => import("./CreatePostLearningForm"));
 const LazyQuestionStatsView = React.lazy(() => import("./QuestionStatsView"));
+const InlineMaterialWorkspace = React.lazy(
+  () => import("@/components/material/InlineMaterialWorkspace"),
+);
 
 function DeferredPanel({ children }) {
   return (
@@ -169,13 +174,17 @@ function ChatPanel({
   onBackFromCommunityQuiz,
 }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const resolvedView = activeView || "sources";
+  const shouldRenderSourceDetailOverlay = resolvedView !== "sources";
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view2");
   const [roadmapMeta, setRoadmapMeta] = React.useState(null);
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
   const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
+  const [renderedSourceDetail, setRenderedSourceDetail] = React.useState(null);
+  const [isSourceDetailClosing, setIsSourceDetailClosing] = React.useState(false);
   // Saved mocktest template selected by user from the saved-templates panel — used to
   // pre-fill CreateMockTestForm when user clicks "Dùng template".
   const [pendingSavedMockTemplate, setPendingSavedMockTemplate] = React.useState(null);
@@ -207,6 +216,65 @@ function ChatPanel({
     if (resolvedView !== "roadmap") return;
     onRoadmapCanvasViewChange?.(roadmapCanvasView);
   }, [resolvedView, onRoadmapCanvasViewChange, roadmapCanvasView]);
+
+  const selectedSourceForOverlay = React.useMemo(() => {
+    if (!shouldRenderSourceDetailOverlay) return null;
+    const normalizedSelectedSourceId = Number(selectedSourceId);
+    if (!Number.isInteger(normalizedSelectedSourceId) || normalizedSelectedSourceId <= 0) {
+      return null;
+    }
+
+    return sources.find((source) => Number(source?.id ?? source?.materialId) === normalizedSelectedSourceId) || null;
+  }, [selectedSourceId, shouldRenderSourceDetailOverlay, sources]);
+
+  const sourceTargetPage = React.useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const page = Number(params.get("sourcePage"));
+    return Number.isInteger(page) && page > 0 ? page : null;
+  }, [location.search]);
+
+  const sourceTargetText = React.useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const chunkId = String(params.get("sourceChunkId") || "").trim();
+    if (!chunkId) return "";
+    try {
+      const raw = window.sessionStorage.getItem(`quizmateai:source-jump:${chunkId}`);
+      const payload = raw ? JSON.parse(raw) : null;
+      const text = String(payload?.sourceSpan || "").trim();
+      return text.length >= 20 ? text : "";
+    } catch {
+      return "";
+    }
+  }, [location.search]);
+
+  React.useEffect(() => {
+    if (selectedSourceForOverlay) {
+      setRenderedSourceDetail(selectedSourceForOverlay);
+      setIsSourceDetailClosing(false);
+      return undefined;
+    }
+
+    if (!renderedSourceDetail) {
+      setIsSourceDetailClosing(false);
+      return undefined;
+    }
+
+    setIsSourceDetailClosing(true);
+    const closeTimer = window.setTimeout(() => {
+      setRenderedSourceDetail(null);
+      setIsSourceDetailClosing(false);
+    }, 140);
+
+    return () => window.clearTimeout(closeTimer);
+  }, [renderedSourceDetail, selectedSourceForOverlay]);
+
+  const handleCloseSourceDetailOverlay = React.useCallback(() => {
+    if (isSourceDetailClosing) return;
+    setIsSourceDetailClosing(true);
+    window.setTimeout(() => {
+      onCloseSourceDetail?.();
+    }, 140);
+  }, [isSourceDetailClosing, onCloseSourceDetail]);
 
   const roadmapSelectableMaterials = React.useMemo(
     () => sources.filter((source) => String(source?.status || "").toUpperCase() === "ACTIVE"),
@@ -442,6 +510,7 @@ function ChatPanel({
             sources={sources}
             planEntitlements={planEntitlements}
             onToggleMaterialSelection={onToggleMaterialSelection}
+            onViewSource={(sourceId) => onViewSource?.(sourceId, { returnView: "createQuiz" })}
             initialMode={workspaceSidebarQuizCreateMode || undefined}
           />
         );
@@ -518,6 +587,8 @@ function ChatPanel({
             onCreateSimilar={onCreateSimilarQuiz}
             contextType="WORKSPACE"
             contextId={workspaceId}
+            onViewSource={onViewSource}
+            isSourceDetailOverlayOpen={Boolean(renderedSourceDetail)}
           />
         ) : null;
       case "editQuiz": {
@@ -639,6 +710,40 @@ function ChatPanel({
   const shouldHideRoadmapJour = roadmapCanvasView === "overview"
     || !roadmapHasPhases
     || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
+  const sourceDetailOverlay = renderedSourceDetail && shouldRenderSourceDetailOverlay && typeof document !== "undefined"
+    ? createPortal(
+        <div
+          className={`fixed inset-0 z-[260] h-screen w-screen overflow-hidden will-change-transform will-change-opacity ${
+            isDarkMode ? "bg-slate-950" : "bg-white"
+          } ${
+            isSourceDetailClosing
+              ? "workspace-source-detail-zoom-out pointer-events-none"
+              : "workspace-source-detail-zoom-in"
+          }`}
+        >
+          <React.Suspense
+            fallback={
+              <div className="flex h-full w-full items-center justify-center">
+                <div
+                  className={`h-10 w-10 animate-spin rounded-full border-[3px] border-t-transparent ${
+                    isDarkMode ? "border-slate-600" : "border-slate-300"
+                  }`}
+                />
+              </div>
+            }
+          >
+            <InlineMaterialWorkspace
+              source={renderedSourceDetail}
+              isDarkMode={isDarkMode}
+              initialPage={sourceTargetPage}
+              initialSearchText={sourceTargetText}
+              onBack={handleCloseSourceDetailOverlay}
+            />
+          </React.Suspense>
+        </div>,
+        document.body,
+      )
+    : null;
 
   if (resolvedView === "roadmap") {
     const isOverviewMode = roadmapCanvasView === "overview";
@@ -647,16 +752,17 @@ function ChatPanel({
       : t("workspace.roadmap.title", "Lộ trình");
 
     return (
-      <section
-        className={workspaceSurface(
-          `flex h-full min-h-0 flex-col overflow-hidden rounded-[32px] transition-colors duration-300 ${
-            isDarkMode
-              ? "bg-slate-900 border-slate-800"
-              : "bg-white border-slate-200"
-          }`
-        )}
-        style={{ contentVisibility: "auto" }}
-      >
+      <>
+        <section
+          className={workspaceSurface(
+            `flex h-full min-h-0 flex-col overflow-hidden rounded-[32px] transition-colors duration-300 ${
+              isDarkMode
+                ? "bg-slate-900 border-slate-800"
+                : "bg-white border-slate-200"
+            }`
+          )}
+          style={{ contentVisibility: "auto" }}
+        >
         <div className={`px-6 pb-5 pt-6 border-b flex flex-wrap items-center justify-between gap-3 transition-colors duration-200 ${isDarkMode ? "border-slate-700/80" : "border-slate-200"}`}>
           <div className="min-w-0 flex-1">
             <h2 className={`truncate text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
@@ -847,18 +953,23 @@ function ChatPanel({
             </DeferredPanel>
           </div>
         </div>
-      </section>
+        </section>
+        {sourceDetailOverlay}
+      </>
     );
   }
 
   return (
-    <PanelShell
-      fullBleed={isFullBleed}
-      frameless={isFrameless}
-      isDarkMode={isDarkMode}
-    >
-      {renderContent()}
-    </PanelShell>
+    <>
+      <PanelShell
+        fullBleed={isFullBleed}
+        frameless={isFrameless}
+        isDarkMode={isDarkMode}
+      >
+        {renderContent()}
+      </PanelShell>
+      {sourceDetailOverlay}
+    </>
   );
 }
 

@@ -71,12 +71,12 @@ export const login = async (credentials) => {
     });
 
     // Lưu token và thông tin user nếu đăng nhập thành công.
-    // Access token chỉ giữ trong RAM; refresh token được BE set bằng httpOnly cookie
-    // (browser tự handle, JS không đụng được).
+    // Lưu access token để reload trang không làm mất phiên đăng nhập.
+    // Nếu BE set refresh cookie httpOnly thì browser vẫn tự gửi cookie đó khi refresh token.
     if (response.statusCode === 200 || response.statusCode === 0) {
-        const { accessToken, userID, username, role, email, authProvider } = response.data;
+        const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
 
-        setTokens({ accessToken });
+        setTokens({ accessToken, refreshToken });
         setCurrentUser({ userID, username, role, email, authProvider });
         // Cache profile + subscription từ BE (lần load sau chỉ verify token)
         saveLoginDataToCache(response.data);
@@ -101,11 +101,11 @@ export const googleLogin = async (idToken) => {
         timeout: AUTH_REQUEST_TIMEOUT_MS,
     });
 
-    // See login() above — access in RAM, refresh in cookie.
+    // See login() above — keep access token across reloads, cookie refresh still works if available.
     if (response.statusCode === 200 || response.statusCode === 0) {
-        const { accessToken, userID, username, role, email, authProvider } = response.data;
+        const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
 
-        setTokens({ accessToken });
+        setTokens({ accessToken, refreshToken });
         setCurrentUser({ userID, username, role, email, authProvider });
         saveLoginDataToCache(response.data);
         notifyAuthChanged('login');

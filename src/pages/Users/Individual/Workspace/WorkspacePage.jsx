@@ -277,6 +277,7 @@ function WorkspacePage() {
     const { sourceId } = resolveWorkspaceViewFromSubPath(subPath);
     return Number.isInteger(sourceId) && sourceId > 0 ? sourceId : null;
   });
+  const [sourceDetailReturnView, setSourceDetailReturnView] = useState("sources");
   const [accessHistory, setAccessHistory] = useState([]);
   // Upload dialog state. Auto-open only when the first fetch returns no materials.
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -2821,22 +2822,44 @@ function WorkspacePage() {
     );
   }, []);
 
-  const handleViewSource = useCallback((sourceId) => {
+  const handleViewSource = useCallback((sourceId, options = {}) => {
     const normalizedSourceId = Number(sourceId);
     if (!Number.isInteger(normalizedSourceId) || normalizedSourceId <= 0)
       return;
-    setActiveView("sources");
+    const nextReturnView = String(options?.returnView || activeView || "sources");
+    setSourceDetailReturnView(nextReturnView);
+    if (nextReturnView === "sources") {
+      setActiveView("sources");
+    }
     setSelectedSourceId(normalizedSourceId);
-  }, []);
+  }, [activeView]);
 
   const handleCloseSourceDetail = useCallback(() => {
-    setActiveView("sources");
+    const nextView = sourceDetailReturnView || "sources";
+    setActiveView(nextView);
     setSelectedSourceId(null);
+    setSourceDetailReturnView("sources");
 
     if (workspaceId) {
-      navigate(buildWorkspacePath(workspaceId, "sources"), { replace: true });
+      const nextPath = buildWorkspacePathForView(
+        nextView,
+        selectedQuiz,
+        quizBackTarget,
+        selectedMockTest,
+        selectedCollection,
+        null,
+      ) || "sources";
+      navigate(buildWorkspacePath(workspaceId, nextPath), { replace: true });
     }
-  }, [navigate, workspaceId]);
+  }, [
+    navigate,
+    quizBackTarget,
+    selectedCollection,
+    selectedMockTest,
+    selectedQuiz,
+    sourceDetailReturnView,
+    workspaceId,
+  ]);
 
   const activeSourceIds = useMemo(
     () =>

@@ -11,7 +11,7 @@ import {
   configureRefresh,
   getAccessToken,
   refresh as refreshTokenStorage,
-  setAccessToken,
+  setTokens,
 } from '@/utils/tokenStorage';
 import { getDeviceId } from '@/utils/deviceId';
 import { getBaseAppLanguage } from '@/utils/appSupportedLanguages';
@@ -169,10 +169,11 @@ function refreshAccessToken() {
     .then((response) => {
       const payload = response?.data?.data;
       const newAccessToken = payload?.accessToken;
+      const newRefreshToken = payload?.refreshToken;
       if (!newAccessToken) {
         throw new Error('INVALID_REFRESH_RESPONSE');
       }
-      setAccessToken(newAccessToken);
+      setTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken });
       // BE may also rotate the refresh cookie via Set-Cookie — that is handled
       // by the browser. No JS work needed for the refresh token itself.
       return newAccessToken;
