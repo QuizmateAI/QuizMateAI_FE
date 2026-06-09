@@ -193,6 +193,8 @@ function QuizDetailView({
   onBack,
   onEdit,
   onCreateSimilar,
+  onViewSource,
+  isSourceDetailOverlayOpen = false,
   contextType: _contextType = "WORKSPACE",
   contextId: _contextId,
   hideEditButton = false,
@@ -2363,6 +2365,21 @@ function QuizDetailView({
         chunkId={sourceDialogQuestion?.chunkId}
         sourceSpan={sourceDialogQuestion?.sourceSpan || ""}
         title={t("workspace.quiz.sourceDialogTitle", "Nguồn của câu hỏi")}
+        coveredByDocument={isSourceDetailOverlayOpen}
+        onOpenDocument={({ materialId, targetPage, sourceSpan, chunkId }) => {
+          if (typeof onViewSource !== "function") return;
+          const params = new URLSearchParams(location.search || "");
+          if (chunkId) params.set("sourceChunkId", String(chunkId));
+          if (targetPage) params.set("sourcePage", String(targetPage));
+          const nextSearch = params.toString();
+          navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ""}`, { replace: true });
+          onViewSource(materialId, {
+            returnView: "quizDetail",
+            sourcePage: targetPage,
+            sourceChunkId: chunkId,
+            sourceSpan,
+          });
+        }}
       />
     </div>
   );

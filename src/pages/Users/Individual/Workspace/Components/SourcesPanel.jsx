@@ -515,7 +515,7 @@ function SourcesPanel({
     const closeTimer = window.setTimeout(() => {
       setRenderedSource(null);
       setIsClosingDetail(false);
-    }, 220);
+    }, 140);
 
     return () => window.clearTimeout(closeTimer);
   }, [renderedSource, resolvedSelectedSource]);
@@ -1126,7 +1126,7 @@ function SourcesPanel({
         ? createPortal(
             <div
               className={cn(
-                "fixed inset-0 z-[120] h-screen w-screen overflow-hidden will-change-transform will-change-opacity",
+                "fixed inset-0 z-[260] h-screen w-screen overflow-hidden will-change-transform will-change-opacity",
                 isDarkMode ? "bg-slate-950" : "bg-white",
                 isClosingDetail
                   ? "workspace-source-detail-zoom-out pointer-events-none"

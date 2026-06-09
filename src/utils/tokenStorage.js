@@ -8,27 +8,57 @@ let _bootstrapped = false;
 let _refreshFn = null;
 let _refreshPromise = null;
 
+function readStoredToken(key) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key) || '';
+    }
+  } catch {
+    /* ignore storage failures */
+  }
+  return '';
+}
+
+function writeStoredToken(key, token) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      if (token) window.localStorage.setItem(key, token);
+      else window.localStorage.removeItem(key);
+    }
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
 export function configureRefresh(refreshFn) {
   _refreshFn = typeof refreshFn === 'function' ? refreshFn : null;
 }
 
 export function getAccessToken() {
+  if (!_accessToken) {
+    _accessToken = readStoredToken(ACCESS_TOKEN_KEY);
+  }
   return _accessToken;
 }
 
 export function getRefreshToken() {
-  return '';
+  return readStoredToken(REFRESH_TOKEN_KEY);
 }
 
-export function setTokens({ accessToken } = {}) {
+export function setTokens({ accessToken, refreshToken } = {}) {
   if (accessToken) {
     _accessToken = accessToken;
+    writeStoredToken(ACCESS_TOKEN_KEY, accessToken);
+  }
+  if (refreshToken) {
+    writeStoredToken(REFRESH_TOKEN_KEY, refreshToken);
   }
 }
 
 export function setAccessToken(token) {
   if (token) {
     _accessToken = token;
+    writeStoredToken(ACCESS_TOKEN_KEY, token);
   }
 }
 
@@ -52,7 +82,7 @@ export function clearTokens() {
 }
 
 export function hasAccessToken() {
-  return Boolean(_accessToken);
+  return Boolean(getAccessToken());
 }
 
 export function refresh() {
@@ -78,6 +108,12 @@ export function refresh() {
 export async function bootstrap() {
   if (_bootstrapped) return _accessToken;
   if (_bootstrapPromise) return _bootstrapPromise;
+  const storedAccessToken = readStoredToken(ACCESS_TOKEN_KEY);
+  if (storedAccessToken) {
+    _accessToken = storedAccessToken;
+    _bootstrapped = true;
+    return _accessToken;
+  }
   if (!_refreshFn) {
     _bootstrapped = true;
     return '';

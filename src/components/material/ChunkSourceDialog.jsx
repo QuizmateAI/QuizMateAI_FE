@@ -84,6 +84,8 @@ export default function ChunkSourceDialog({
   chunkId,
   sourceSpan = "",
   title,
+  onOpenDocument,
+  coveredByDocument = false,
 }) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -183,6 +185,17 @@ export default function ChunkSourceDialog({
         // Ignore storage failures; the PDF viewer can still use page metadata.
       }
 
+      if (typeof onOpenDocument === "function") {
+        onOpenDocument({
+          materialId,
+          targetPage,
+          sourceSpan: String(sourceSpan || "").trim(),
+          chunkId: normalizeChunkId(chunkId),
+          chunk,
+        });
+        return;
+      }
+
       if (groupRouteMatch) {
         searchParams.set("section", "documents");
         searchParams.set("materialId", String(materialId));
@@ -201,8 +214,9 @@ export default function ChunkSourceDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={!coveredByDocument}>
       <DialogContent
+        hideOverlay={coveredByDocument}
         className={cn(
           "max-w-2xl gap-0 overflow-hidden p-0",
           "bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100",

@@ -3,12 +3,17 @@ import {
   BrainCircuit,
   CheckCircle2,
   CheckSquare,
+  FileSpreadsheet,
   FileText,
+  FileType,
   GripVertical,
+  Headphones,
+  Image,
   Info,
   ListTree,
   Loader2,
   Lock,
+  Presentation,
   Sliders,
   Sparkles,
   Trash2,
@@ -32,6 +37,48 @@ import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 import { usePlanUpgradeInfo } from "@/hooks/usePlanUpgradeInfo";
 import { useToast } from "@/context/ToastContext";
 import ToastError from "@/components/system/ToastError";
+
+function classifySourceType(type) {
+  const lower = String(type || "").toLowerCase();
+  if (lower.includes("pdf")) return "pdf";
+  if (lower.includes("wordprocessingml") || lower.includes("msword") || lower === "doc" || lower === "docx") return "docx";
+  if (lower.includes("spreadsheetml") || lower.includes("excel") || lower === "xls" || lower === "xlsx" || lower.includes("csv")) return "xlsx";
+  if (lower.includes("presentationml") || lower.includes("powerpoint") || lower === "ppt" || lower === "pptx") return "pptx";
+  if (lower.startsWith("image/") || lower.includes("image")) return "image";
+  if (lower.startsWith("audio/") || lower.includes("audio")) return "audio";
+  return "file";
+}
+
+function formatSourceType(type) {
+  switch (classifySourceType(type)) {
+    case "pdf": return "PDF";
+    case "docx": return "DOCX";
+    case "xlsx": return "XLSX";
+    case "pptx": return "PPTX";
+    case "image": return "IMAGE";
+    case "audio": return "AUDIO";
+    default: return "FILE";
+  }
+}
+
+function getSourceIconMeta(type, isDarkMode) {
+  switch (classifySourceType(type)) {
+    case "pdf":
+      return { Icon: FileText, className: isDarkMode ? "text-red-300" : "text-red-500", bg: isDarkMode ? "bg-red-950/35 border-red-800/50" : "bg-red-50 border-red-100" };
+    case "docx":
+      return { Icon: FileType, className: isDarkMode ? "text-blue-300" : "text-blue-600", bg: isDarkMode ? "bg-blue-950/35 border-blue-800/50" : "bg-blue-50 border-blue-100" };
+    case "xlsx":
+      return { Icon: FileSpreadsheet, className: isDarkMode ? "text-emerald-300" : "text-emerald-600", bg: isDarkMode ? "bg-emerald-950/35 border-emerald-800/50" : "bg-emerald-50 border-emerald-100" };
+    case "pptx":
+      return { Icon: Presentation, className: isDarkMode ? "text-orange-300" : "text-orange-500", bg: isDarkMode ? "bg-orange-950/35 border-orange-800/50" : "bg-orange-50 border-orange-100" };
+    case "image":
+      return { Icon: Image, className: isDarkMode ? "text-green-300" : "text-green-500", bg: isDarkMode ? "bg-green-950/35 border-green-800/50" : "bg-green-50 border-green-100" };
+    case "audio":
+      return { Icon: Headphones, className: isDarkMode ? "text-purple-300" : "text-purple-500", bg: isDarkMode ? "bg-purple-950/35 border-purple-800/50" : "bg-purple-50 border-purple-100" };
+    default:
+      return { Icon: FileText, className: isDarkMode ? "text-slate-300" : "text-slate-500", bg: isDarkMode ? "bg-slate-950 border-slate-700" : "bg-slate-50 border-slate-200" };
+  }
+}
 
 function CreateQuizAiFormContent({
   classes,
@@ -70,13 +117,13 @@ function CreateQuizAiFormContent({
     currentPlanSummaryOverride = null,
     planUpgradeWorkspaceId = null,
     onClearSelectedMaterials,
+    onViewSource,
     onSelectAllMaterials,
     onToggleMaterialSelection,
     readOnly = false,
     workspaceMaterialsEmptyMessage: _workspaceMaterialsEmptyMessage,
   } = ui;
   const {
-    areAllWorkspaceMaterialsSelected,
     aiDuration,
     aiDurationSyncNotice,
     aiEasyDuration,
@@ -100,7 +147,6 @@ function CreateQuizAiFormContent({
     hasValidAiTotalQuestions,
     lockedDifficultyLevel,
     metadataError,
-    metadataLoading,
     minimumAiDurationMinutes,
     qTypes,
     questionTypeUnit,
@@ -190,6 +236,9 @@ function CreateQuizAiFormContent({
   const bulkActionButtonClass = isDarkMode
     ? "h-7 border-slate-700 bg-slate-900/60 px-2.5 text-[11px] text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
     : "h-7 border-gray-200 bg-white px-2.5 text-[11px] text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
+  const materialDetailButtonClass = isDarkMode
+    ? "h-10 rounded-full border border-slate-700 bg-slate-900 px-4 text-slate-200 transition-colors duration-200 ease-out hover:bg-slate-800 hover:text-white"
+    : "h-10 rounded-full border border-slate-200 bg-white px-4 text-slate-700 transition-colors duration-200 ease-out hover:bg-slate-50";
   const resolvedQuizTitleMaxLength = Number(quizTitleMaxLength);
   const hasQuizTitleMaxLength = Number.isFinite(resolvedQuizTitleMaxLength) && resolvedQuizTitleMaxLength > 0;
 
@@ -402,13 +451,6 @@ function CreateQuizAiFormContent({
 
   return (
     <div className="space-y-4 pb-2">
-      {metadataLoading && (
-        <div className={`flex items-center gap-2 border-b pb-2 text-xs ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-gray-500"}`}>
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {t("workspace.quiz.aiConfig.loadingMetadata")}
-        </div>
-      )}
-
       <div ref={aiGeneralSectionRef} className={getAiSectionCardClass(["aiName"])}>
         <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <FileText className="h-4 w-4 text-blue-500" /> {t("workspace.quiz.aiConfig.generalInfo")}
@@ -434,7 +476,7 @@ function CreateQuizAiFormContent({
       </div>
 
       <div className={getAiSectionCardClass([])}>
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h3 className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
             <CheckSquare className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} /> {t("workspace.quiz.aiConfig.selectedMaterials")}
           </h3>
@@ -479,65 +521,94 @@ function CreateQuizAiFormContent({
           </div>
         )}
 
-        <div className={`rounded-xl border p-2.5 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-slate-50/50"}`}>
+        <div className={`rounded-xl border p-3 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-slate-50/70"}`}>
           {workspaceSources.length === 0 && !workspaceMaterialsLoading ? (
             <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
               {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
             </p>
           ) : (
             <>
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={readOnly || typeof onSelectAllMaterials !== "function" || areAllWorkspaceMaterialsSelected}
-                  onClick={() => onSelectAllMaterials?.()}
-                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
-                >
-                  {t("workspace.sources.selectAll")}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={readOnly || typeof onClearSelectedMaterials !== "function" || selectedMaterialIds.length === 0}
-                  onClick={() => onClearSelectedMaterials?.()}
-                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
-                >
-                  {t("workspace.sources.deselectAll")}
-                </Button>
-              </div>
-
               <div
-                className={`max-h-48 overflow-y-auto rounded-lg border ${
-                  isDarkMode ? "divide-slate-800 border-slate-700 divide-y bg-slate-950/50" : "divide-slate-100 border-slate-200 divide-y bg-white"
+                className={`max-h-56 overflow-y-auto rounded-lg border p-2 ${
+                  isDarkMode ? "border-slate-700 bg-slate-950/50" : "border-slate-200 bg-white"
                 }`}
               >
                 {workspaceSources.map((item, index) => {
                   const id = item?.id;
                   const isSelected = id != null && selectedMaterialIds.includes(id);
                   const canToggle = typeof onToggleMaterialSelection === "function" && id != null && !readOnly;
+                  const sourceType = item?.type ?? item?.materialType;
+                  const { Icon, className: iconClassName, bg: iconBgClassName } = getSourceIconMeta(sourceType, isDarkMode);
+                  const sourceName = item.name || t("workspace.quiz.aiConfig.materialFallback", { id: id ?? "" });
                   return (
-                    <label
+                    <div
                       key={id != null ? String(id) : `ws-src-${index}`}
-                      className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 text-xs transition-colors ${
-                        isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50/90"
+                      role={canToggle ? "button" : undefined}
+                      tabIndex={canToggle ? 0 : undefined}
+                      onClick={() => {
+                        if (!canToggle || id == null) return;
+                        onToggleMaterialSelection(id, !isSelected);
+                      }}
+                      onKeyDown={(event) => {
+                        if (!canToggle || id == null) return;
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        onToggleMaterialSelection(id, !isSelected);
+                      }}
+                      className={`mb-2 flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-xs transition-colors last:mb-0 ${
+                        isSelected
+                          ? isDarkMode
+                            ? "border-emerald-700/60 bg-emerald-950/20"
+                            : "border-emerald-200 bg-emerald-50/70"
+                          : isDarkMode
+                            ? "border-slate-800 bg-slate-900/40 hover:bg-slate-800/50"
+                            : "border-slate-100 bg-white hover:bg-slate-50"
                       } ${!canToggle ? "cursor-default opacity-80" : ""}`}
                     >
                       <Checkbox
                         checked={isSelected}
                         disabled={!canToggle}
+                        onClick={(event) => event.stopPropagation()}
                         onCheckedChange={(checked) => {
                           if (!canToggle || id == null) return;
                           onToggleMaterialSelection(id, checked === true);
                         }}
-                        className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}`}
+                        className={isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}
                       />
-                      <span className={`min-w-0 flex-1 break-words leading-snug ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                        {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: id ?? "" })}
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${iconBgClassName}`}>
+                        <Icon className={`h-4.5 w-4.5 ${iconClassName}`} />
                       </span>
-                    </label>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block truncate text-sm font-medium leading-snug ${isDarkMode ? "text-slate-100" : "text-slate-800"}`} title={sourceName}>
+                          {sourceName}
+                        </span>
+                        <span className={`mt-1 flex flex-wrap items-center gap-1.5 text-[11px] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
+                          <span className={`rounded-full border px-2 py-0.5 font-semibold ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
+                            {formatSourceType(sourceType)}
+                          </span>
+                          {isSelected ? (
+                            <span className={isDarkMode ? "text-emerald-300" : "text-emerald-700"}>
+                              {t("workspace.shell.selectedBadge", "Selected")}
+                            </span>
+                          ) : null}
+                        </span>
+                      </span>
+                      {typeof onViewSource === "function" && id != null ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={`${materialDetailButtonClass} shrink-0 text-xs font-semibold`}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onViewSource(id);
+                          }}
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          {t("workspace.shell.previewSource", "Details")}
+                        </Button>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
