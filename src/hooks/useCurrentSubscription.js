@@ -4,18 +4,95 @@ import { getCurrentUserPlan } from "@/api/ManagementSystemAPI";
 import { getCachedSubscription, setCachedSubscription } from "@/utils/userCache";
 import { getRecentPlanPurchase } from "@/utils/planPurchaseState";
 
-function resolvePlanType(planScope, fallbackType = "INDIVIDUAL") {
+export function resolvePlanType(planScope, fallbackType = "INDIVIDUAL") {
   const normalizedScope = String(planScope || "").toUpperCase();
 
-  if (normalizedScope === "WORKSPACE" || normalizedScope === "GROUP" || normalizedScope === "GROUP_WORKSPACE") {
+  if (!normalizedScope) {
+    return fallbackType;
+  }
+
+  if (
+    normalizedScope === "WORKSPACE" ||
+    normalizedScope === "GROUP" ||
+    normalizedScope === "GROUP_WORKSPACE" ||
+    normalizedScope.includes("WORKSPACE") ||
+    normalizedScope.includes("GROUP")
+  ) {
     return "GROUP";
   }
 
-  if (normalizedScope === "USER" || normalizedScope === "INDIVIDUAL") {
+  if (
+    normalizedScope === "USER" ||
+    normalizedScope === "INDIVIDUAL" ||
+    normalizedScope.includes("USER") ||
+    normalizedScope.includes("INDIVIDUAL")
+  ) {
     return "INDIVIDUAL";
   }
 
   return fallbackType;
+}
+
+function hasWorkspaceBinding(record) {
+  if (!record || typeof record !== "object") return false;
+
+  const workspaceId = record.workspaceId ?? record.groupWorkspaceId ?? null;
+  return workspaceId != null && String(workspaceId).trim() !== "";
+}
+
+export function resolvePlanTypeFromSubscription(subscription) {
+  if (!subscription || typeof subscription !== "object") {
+    return "INDIVIDUAL";
+  }
+
+  if (hasWorkspaceBinding(subscription)) {
+    return "GROUP";
+  }
+
+  const plan = subscription.plan ?? subscription;
+  if (hasWorkspaceBinding(plan)) {
+    return "GROUP";
+  }
+
+  const scopeCandidates = [
+    plan?.planScope,
+    subscription?.planScope,
+    plan?.scope,
+    subscription?.scope,
+    plan?.type,
+    subscription?.type,
+    plan?.planType,
+    subscription?.planType,
+  ];
+
+  for (const candidate of scopeCandidates) {
+    const resolved = resolvePlanType(candidate, null);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  const entitlement = plan?.entitlement ?? subscription?.entitlement;
+  if (entitlement && Number(entitlement.maxIndividualWorkspace) > 0) {
+    return "INDIVIDUAL";
+  }
+
+  return "INDIVIDUAL";
+}
+
+export function isPersonalPlanPurchase(purchase) {
+  if (!purchase || typeof purchase !== "object") return false;
+
+  const purchaseType = String(purchase.purchaseType || "PLAN").toUpperCase();
+  if (purchaseType === "CREDIT") return false;
+  if (purchase.creditPackageId != null && String(purchase.creditPackageId).trim() !== "") {
+    return false;
+  }
+  if (purchase.workspaceId != null && String(purchase.workspaceId).trim() !== "") {
+    return false;
+  }
+
+  return resolvePlanType(purchase.planType) === "INDIVIDUAL";
 }
 
 function resolvePlanId(plan) {
@@ -36,7 +113,7 @@ export function createPlanSummaryFromSubscription(subscription) {
   return {
     planId: resolvePlanId(plan),
     planName,
-    planType: resolvePlanType(plan?.planScope, "INDIVIDUAL"),
+    planType: resolvePlanTypeFromSubscription(subscription),
     status: String(subscription.status || plan?.status || "ACTIVE").toUpperCase(),
     endDate: subscription.endDate || plan?.endDate || null,
     timestamp: Date.now(),
@@ -59,6 +136,29 @@ export function createPlanSummaryFromPurchase(purchase) {
     timestamp: Number(purchase.timestamp) || Date.now(),
     source: "recent-purchase",
   };
+}
+
+export function resolvePersonalPlanSummary(subscription, recentPurchase = getRecentPlanPurchase()) {
+  const subscriptionSummary = createPlanSummaryFromSubscription(subscription);
+  const personalSubscriptionSummary =
+    subscriptionSummary && subscriptionSummary.planType !== "GROUP"
+      ? subscriptionSummary
+      : null;
+
+  if (recentPurchase && isPersonalPlanPurchase(recentPurchase)) {
+    const purchaseSummary = createPlanSummaryFromPurchase(recentPurchase);
+    if (!purchaseSummary) {
+      return personalSubscriptionSummary;
+    }
+
+    return {
+      ...purchaseSummary,
+      endDate: purchaseSummary.endDate || personalSubscriptionSummary?.endDate || null,
+      status: personalSubscriptionSummary?.status || purchaseSummary.status,
+    };
+  }
+
+  return personalSubscriptionSummary;
 }
 
 function resolveCurrentUserId() {
@@ -148,10 +248,10 @@ export function useCurrentSubscription({ enabled = true } = {}) {
     };
   }, [enabled]);
 
-  const summary = useMemo(() => {
-    const recentPurchaseSummary = createPlanSummaryFromPurchase(getRecentPlanPurchase());
-    return recentPurchaseSummary ?? createPlanSummaryFromSubscription(subscription);
-  }, [subscription]);
+  const summary = useMemo(
+    () => resolvePersonalPlanSummary(subscription),
+    [subscription],
+  );
 
   return {
     subscription,

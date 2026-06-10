@@ -60,6 +60,8 @@ function AssignmentFormDialog({
   const [targetUserIds, setTargetUserIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [audienceDirty, setAudienceDirty] = useState(false);
+  const [resourceDirty, setResourceDirty] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -80,7 +82,21 @@ function AssignmentFormDialog({
     setTargetUserIds(Array.isArray(initialValue?.targetUserIds) ? [...initialValue.targetUserIds] : []);
     setSubmitting(false);
     setSubmitError('');
+    setAudienceDirty(false);
+    setResourceDirty(false);
   }, [open, initialValue, lockedResource, defaultTitle]);
+
+  useEffect(() => {
+    if (targetUserIds.length > 0) {
+      setAudienceDirty(true);
+    }
+  }, [targetUserIds]);
+
+  useEffect(() => {
+    if (resourceId != null) {
+      setResourceDirty(true);
+    }
+  }, [resourceId]);
 
   const trimmedTitle = title.trim();
   const trimmedDescription = description.trim();
@@ -204,7 +220,7 @@ function AssignmentFormDialog({
                 isDarkMode={isDarkMode}
                 disabled={submitting}
               />
-              <ToastError message={resourceError} />
+              <ToastError message={resourceError} enabled={resourceDirty && Boolean(resourceError)} />
             </div>
           ) : null}
 
@@ -313,7 +329,7 @@ function AssignmentFormDialog({
                 isDarkMode={isDarkMode}
                 disabled={submitting}
               />
-              <ToastError message={audienceError} />
+              <ToastError message={audienceError} enabled={audienceDirty && Boolean(audienceError)} />
             </div>
           ) : null}
 

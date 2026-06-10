@@ -233,6 +233,7 @@ export default function PaymentResultPage() {
   const isProcessing = resultVariant === 'processing';
   const shouldLoadCurrentSubscription = isSuccess && !isCreditPurchase && String(pendingPurchase?.planType || '').toUpperCase() !== 'GROUP';
   const { summary: currentPlanSummary } = useCurrentSubscription({ enabled: shouldLoadCurrentSubscription });
+  const { summary: userPlanSummary } = useCurrentSubscription();
 
   const details = useMemo(() => {
     const queryAmount = normalizeAmount(searchParams.get('amount'));
@@ -511,7 +512,7 @@ export default function PaymentResultPage() {
           >
             <CreditCard className="w-4 h-4" />
             <span className="text-sm hidden max-w-[180px] truncate sm:inline">
-              {activePlanSummary?.planName || t('common.plan')}
+              {currentPlanSummary?.planName || userPlanSummary?.planName || t('common.plan')}
             </span>
           </Button>
           <div ref={settingsRef} className="relative">

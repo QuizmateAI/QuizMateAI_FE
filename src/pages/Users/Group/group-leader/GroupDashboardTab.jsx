@@ -435,7 +435,7 @@ function GroupDashboardTab({
     const activityChartSum = activityChartData.reduce((sum, item) => sum + item.count, 0);
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
-        {isLeader && workspaceId && hasWorkspaceAnalytics ? (
+        {isLeader && workspaceId ? (
           <section
             className={cn(
               cardClass,
@@ -490,24 +490,26 @@ function GroupDashboardTab({
                     ) : null}
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={generatingSnapshots}
-                  className={cn(
-                    'rounded-md font-semibold',
-                    isDarkMode
-                      ? 'border-white/10 bg-white/[0.04] text-slate-100 hover:bg-white/[0.08]'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
-                  )}
-                  onClick={handleGenerateSnapshots}
-                >
-                  <RefreshCw className={cn('mr-2 h-4 w-4', generatingSnapshots ? 'animate-spin' : '')} />
-                  {generatingSnapshots
-                    ? t('groupDashboard.snapshots.generating', 'Updating...')
-                    : t('groupDashboard.snapshots.generateDaily', 'Update daily snapshots')}
-                </Button>
+                {hasWorkspaceAnalytics ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={generatingSnapshots}
+                    className={cn(
+                      'rounded-md font-semibold',
+                      isDarkMode
+                        ? 'border-white/10 bg-white/[0.04] text-slate-100 hover:bg-white/[0.08]'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                    )}
+                    onClick={handleGenerateSnapshots}
+                  >
+                    <RefreshCw className={cn('mr-2 h-4 w-4', generatingSnapshots ? 'animate-spin' : '')} />
+                    {generatingSnapshots
+                      ? t('groupDashboard.snapshots.generating', 'Updating...')
+                      : t('groupDashboard.snapshots.generateDaily', 'Update daily snapshots')}
+                  </Button>
+                ) : null}
               </div>
             </div>
 
@@ -518,23 +520,56 @@ function GroupDashboardTab({
                 </p>
               ) : null}
 
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {learningKpis.map((k) => {
-                  const Icon = k.icon;
-                  return (
-                    <div key={k.label} className={cn('rounded-lg border p-4 transition-shadow hover:shadow-md', k.cardTone)}>
-                      <div className="flex items-center gap-2">
-                        <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', k.tone)}>
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${eyebrowClass}`}>{k.label}</p>
+              {hasWorkspaceAnalytics ? (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {learningKpis.map((k) => {
+                    const Icon = k.icon;
+                    return (
+                      <div key={k.label} className={cn('rounded-lg border p-4 transition-shadow hover:shadow-md', k.cardTone)}>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', k.tone)}>
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${eyebrowClass}`}>{k.label}</p>
+                        </div>
+                        <p className={cn('mt-3 text-2xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>{k.value}</p>
+                        <p className={cn('mt-2 text-xs leading-relaxed', subtleTextClass)}>{k.note}</p>
                       </div>
-                      <p className={cn('mt-3 text-2xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>{k.value}</p>
-                      <p className={cn('mt-2 text-xs leading-relaxed', subtleTextClass)}>{k.note}</p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    'flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4',
+                    isDarkMode ? 'border-cyan-500/20 bg-cyan-500/[0.06]' : 'border-cyan-200/70 bg-cyan-50/60',
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-md', isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700')}>
+                      <BarChart3 className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {t('groupDashboard.analyticsUpgrade.title', 'Workspace analytics')}
+                      </p>
+                      <p className={cn('mt-0.5 text-xs leading-relaxed', subtleTextClass)}>
+                        {t('groupDashboard.analyticsUpgrade.description', "Upgrade your plan to unlock the group's AI learning metrics: attempts, passes, average score, and study time.")}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                  {typeof onRequestAnalyticsUpgrade === 'function' ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className={cn('shrink-0 rounded-md font-semibold', isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : '')}
+                      onClick={onRequestAnalyticsUpgrade}
+                    >
+                      {t('groupDashboard.analyticsUpgrade.viewPlans', 'View plans')}
+                    </Button>
+                  ) : null}
+                </div>
+              )}
 
               <div className="grid gap-4">
                 <div className={cn(
@@ -608,36 +643,6 @@ function GroupDashboardTab({
 
               </div>
 
-            </div>
-          </section>
-        ) : isLeader && workspaceId ? (
-          <section className={`${cardClass} p-6`}>
-            <div className="flex flex-wrap items-start gap-4">
-              <span
-                className={cn(
-                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl',
-                  isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700',
-                )}
-              >
-                <BarChart3 className="h-6 w-6" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h3 className={cn('text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                  {t('groupDashboard.analyticsUpgrade.title', 'Workspace analytics')}
-                </h3>
-                <p className={`mt-2 text-sm leading-relaxed ${subtleTextClass}`}>
-                  {t('groupDashboard.analyticsUpgrade.description', 'Group learning dashboards use the same Workspace analytics entitlement as individual stats. Upgrade your plan to unlock member cards, charts, and drill-down views.')}
-                </p>
-                {typeof onRequestAnalyticsUpgrade === 'function' ? (
-                  <Button
-                    type="button"
-                    className={cn('mt-4 rounded-full font-semibold', isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : '')}
-                    onClick={onRequestAnalyticsUpgrade}
-                  >
-                    {t('groupDashboard.analyticsUpgrade.viewPlans', 'View plans')}
-                  </Button>
-                ) : null}
-              </div>
             </div>
           </section>
         ) : null}

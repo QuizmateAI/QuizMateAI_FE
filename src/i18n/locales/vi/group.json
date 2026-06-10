@@ -1542,8 +1542,8 @@
       "noQuizHint": "Chưa có lượt làm quiz hoàn thành để hiển thị chi tiết."
     },
     "analyticsUpgrade": {
-      "title": "Thống kê không gian học tập",
-      "description": "Nâng gói để mở thẻ thành viên, biểu đồ và phần xem chi tiết học tập nhóm.",
+      "title": "Chỉ số học tập AI",
+      "description": "Nâng gói để mở các chỉ số học tập AI của nhóm: lượt làm, số lượt đậu, điểm trung bình và thời gian học.",
       "viewPlans": "Xem gói"
     },
     "detail": {

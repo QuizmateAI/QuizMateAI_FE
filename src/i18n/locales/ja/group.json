@@ -2091,9 +2091,9 @@
       "noQuizHint": "There are no completed quiz attempts to inspect yet."
     },
     "analyticsUpgrade": {
-      "title": "Workspace analytics",
-      "description": "Group learning dashboards use the same Workspace analytics entitlement as individual stats. Upgrade your plan to unlock member cards, charts, and drill-down views.",
-      "viewPlans": "View plans"
+      "title": "AI学習指標",
+      "description": "グループのAI学習指標（受験回数・合格数・平均スコア・学習時間）を解除するにはプランをアップグレードしてください。",
+      "viewPlans": "プランを見る"
     },
     "detail": {
       "loading": "Loading member…",

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, Braces, ChevronDown, Coins, DatabaseZap, Layers, RefreshCw, Search, SlidersHorizontal, Wallet } from 'lucide-react';
@@ -30,7 +30,8 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import AdminPagination from '@/pages/Admin/components/AdminPagination';
-import { getAiAuditLogs, getAiCostRequests, getAiCostSummary, getAllPlans, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
+import { getAiAuditLogs, getAiCostRequests, getAiCostSummary, getAllAiActionPolicies, getAllPlans, getUsdVndExchangeRate } from '@/api/ManagementSystemAPI';
+import { buildAiCreditPolicyBreakdown, resolveCreditPolicySource } from '@/lib/aiCreditPolicyFormula';
 import {
   AI_COST_STATUS_OPTIONS,
   AI_MODEL_GROUP_OPTIONS,
@@ -46,6 +47,11 @@ import {
 import TokenBreakdownCell from './Components/TokenBreakdownCell';
 import DateRangeChips from './Components/DateRangeChips';
 import TopFeaturesByCostCard from './Components/TopFeaturesByCostCard';
+import AiCostSourceBreakdown, {
+  AiCostSourceBadge,
+  getAiCostSourceMetrics,
+  resolveAiCostAudience,
+} from './Components/AiCostSourceBreakdown';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 
@@ -239,11 +245,37 @@ function toAggregateNumber(value) {
 function buildCostAggregatesFromEntries(entries = []) {
   const dailyMap = new Map();
   const featureMap = new Map();
+  const sourceMetrics = {
+    totalProviderCostVnd: 0,
+    totalChargedVnd: 0,
+    totalProfitVnd: 0,
+    freeUserProviderCostVnd: 0,
+    userPlanProviderCostVnd: 0,
+    groupPlanProviderCostVnd: 0,
+    freeUserChargedVnd: 0,
+    userPlanChargedVnd: 0,
+    groupPlanChargedVnd: 0,
+  };
 
   entries.forEach((entry) => {
     const charged = toAggregateNumber(entry?.chargedVnd);
     const cost = toAggregateNumber(entry?.providerCostVnd);
     const profit = toAggregateNumber(entry?.profitVnd);
+    const audience = resolveAiCostAudience(entry);
+
+    sourceMetrics.totalProviderCostVnd += cost;
+    sourceMetrics.totalChargedVnd += charged;
+    sourceMetrics.totalProfitVnd += profit;
+    if (audience === 'freeUser') {
+      sourceMetrics.freeUserProviderCostVnd += cost;
+      sourceMetrics.freeUserChargedVnd += charged;
+    } else if (audience === 'groupPlan') {
+      sourceMetrics.groupPlanProviderCostVnd += cost;
+      sourceMetrics.groupPlanChargedVnd += charged;
+    } else {
+      sourceMetrics.userPlanProviderCostVnd += cost;
+      sourceMetrics.userPlanChargedVnd += charged;
+    }
 
     const bucket = bucketKeyFromTimestamp(entry?.createdAt);
     if (bucket) {
@@ -278,10 +310,11 @@ function buildCostAggregatesFromEntries(entries = []) {
     .sort((a, b) => b.providerCostVnd - a.providerCostVnd)
     .slice(0, 8);
 
-  return { dailyBuckets, topFeatures };
+  return { dailyBuckets, topFeatures, sourceMetrics };
 }
 
 const AI_COST_PLANS_KEY = ['superAdmin', 'aiCostPlans'];
+const AI_COST_POLICIES_KEY = ['superAdmin', 'aiCostPolicies'];
 const AI_COST_RATE_KEY = ['superAdmin', 'aiCostExchangeRate'];
 const AI_COST_DATA_KEY = ['superAdmin', 'aiCostData'];
 const AI_COST_AGGREGATE_KEY = ['superAdmin', 'aiCostAggregate'];
@@ -327,6 +360,22 @@ function AiCostManagement() {
     },
   });
   const plans = plansQuery.data ?? [];
+
+  const policiesQuery = useQuery({
+    queryKey: AI_COST_POLICIES_KEY,
+    queryFn: async () => {
+      const response = await getAllAiActionPolicies();
+      const list = extractData(response);
+      return Array.isArray(list) ? list : [];
+    },
+  });
+  const policiesByActionKey = useMemo(() => {
+    const map = {};
+    (policiesQuery.data ?? []).forEach((policy) => {
+      if (policy?.actionKey) map[policy.actionKey] = policy;
+    });
+    return map;
+  }, [policiesQuery.data]);
 
   const exchangeRateQuery = useQuery({
     queryKey: AI_COST_RATE_KEY,
@@ -393,6 +442,8 @@ function AiCostManagement() {
   });
   const dailyBuckets = aggregateQuery.data?.dailyBuckets ?? [];
   const topFeatures = aggregateQuery.data?.topFeatures ?? [];
+  const sourceSummary = aggregateQuery.data?.sourceMetrics ?? summary;
+  const aiCostSourceMetrics = useMemo(() => getAiCostSourceMetrics(sourceSummary), [sourceSummary]);
 
   useEffect(() => {
     if (costQuery.error) showError(getErrorMessage(t, costQuery.error));
@@ -459,6 +510,11 @@ function AiCostManagement() {
     ? detailSubCalls[detailSubSelectedIndex]
     : null;
   const isDetailProfitPositive = Number(detailRow?.profitVnd || 0) >= 0;
+  const detailCreditBreakdown = useMemo(() => {
+    if (!detailRow) return null;
+    const policy = resolveCreditPolicySource(detailRow, policiesByActionKey);
+    return buildAiCreditPolicyBreakdown({ row: detailRow, policy, t });
+  }, [detailRow, policiesByActionKey, t]);
   const tableStroke = isDarkMode ? 'border-slate-700' : 'border-slate-300';
   const activeFilterCount = Object.values(filters).filter((value) => String(value ?? '').trim() !== '').length;
 
@@ -541,6 +597,12 @@ function AiCostManagement() {
           icon={Coins}
           tone="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
           isDarkMode={isDarkMode}
+          subtext={t('aiCosts.metrics.providerCostBreakdown', {
+            defaultValue: 'Free: {{free}} · User gói: {{user}} · Nhóm: {{group}}',
+            free: formatVnd(aiCostSourceMetrics.freeUserProviderCostVnd),
+            user: formatVnd(aiCostSourceMetrics.userPlanProviderCostVnd),
+            group: formatVnd(aiCostSourceMetrics.groupPlanProviderCostVnd),
+          })}
           sparklinePoints={dailyBuckets}
           sparklineKey="providerCostVnd"
           sparklineColor="#f59e0b"
@@ -551,11 +613,24 @@ function AiCostManagement() {
           icon={ArrowUpRight}
           tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
           isDarkMode={isDarkMode}
+          subtext={t('aiCosts.metrics.profitBreakdown', {
+            defaultValue: 'User gói: {{user}} · Nhóm: {{group}} · Free: {{free}}',
+            user: formatVnd(aiCostSourceMetrics.userPlanMarginVnd),
+            group: formatVnd(aiCostSourceMetrics.groupPlanMarginVnd),
+            free: formatVnd(aiCostSourceMetrics.freeUserProfitImpactVnd),
+          })}
           sparklinePoints={dailyBuckets}
           sparklineKey="profitVnd"
           sparklineColor="#8b5cf6"
         />
       </div>
+
+      <AiCostSourceBreakdown
+        summary={sourceSummary}
+        formatVnd={formatVnd}
+        isDarkMode={isDarkMode}
+        t={t}
+      />
 
       <TopFeaturesByCostCard
         topFeatures={topFeatures}
@@ -777,6 +852,7 @@ function AiCostManagement() {
                 const actualTokenEquivalent = getActualTokenEquivalent(row);
                 const isProfitPositive = Number(row.profitVnd || 0) >= 0;
                 const actorName = row.actorFullName || row.actorUsername || row.actorEmail || t('aiCosts.table.systemUser', { defaultValue: 'System' });
+                const costSource = resolveAiCostAudience(row);
 
                 return (
                   <TableRow
@@ -794,7 +870,12 @@ function AiCostManagement() {
                       <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatDateTime(row.createdAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}</p>
                     </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
-                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.planDisplayName || '-'}</p>
+                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                        {row.planDisplayName || (costSource === 'freeUser' ? t('aiCosts.audience.freePlanName', 'Free') : '-')}
+                      </p>
+                      <div className="mt-2">
+                        <AiCostSourceBadge source={costSource} isDarkMode={isDarkMode} t={t} />
+                      </div>
                     </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
                       <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.provider || '-'}</p>
@@ -869,6 +950,7 @@ function AiCostManagement() {
                 <div className="mt-4 space-y-2 text-sm">
                   <p>{t('aiCosts.detail.action')}: <span className="font-semibold">{getAiActionLabel(detailRow.actionKey, t)}</span></p>
                   <p>{t('aiCosts.detail.plan')}: <span className="font-semibold">{detailRow.planDisplayName || '-'}</span></p>
+                  <p className="flex items-center gap-2">{t('aiCosts.detail.audience')}: <AiCostSourceBadge source={resolveAiCostAudience(detailRow)} isDarkMode={isDarkMode} t={t} /></p>
                   <p>{t('aiCosts.detail.model')}: <span className="font-semibold">{detailRow.provider || '-'} / {detailRow.modelCode || '-'}</span></p>
                   <p>{t('aiCosts.detail.group')}: <span className="font-semibold">{getAiModelGroupLabel(detailRow.modelGroup, t)}</span></p>
                   <p>{t('aiCosts.detail.inputUnitUsd', 'Don gia input')}: <span className="font-semibold">{formatUsd(detailRow.inputPriceUsdPer1M)}</span> / {formatVnd(detailRow.inputPriceVndPer1M)}</p>
@@ -919,6 +1001,222 @@ function AiCostManagement() {
                   <p>{t('aiCosts.detail.explainMargin', {
                     profitVnd: formatVnd(detailRow.profitVnd),
                   })}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Financial Analysis */}
+            <div className={`rounded-2xl border p-5 space-y-5 ${isDarkMode ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60 shadow-sm'}`}>
+              <div className="flex items-center gap-2 border-b pb-2 border-slate-200 dark:border-slate-800">
+                <div className={`rounded-lg p-1.5 ${isDetailProfitPositive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'}`}>
+                  {isDetailProfitPositive ? <ArrowUpRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+                <h3 className={`text-sm font-bold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {t('aiCosts.detail.financialAnalysis', { defaultValue: 'Phân tích tài chính chi tiết' })}
+                </h3>
+              </div>
+
+              {/* Progress Bar / Ratio comparison */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-slate-500 dark:text-slate-400">{t('aiCosts.detail.comparisonTitle', { defaultValue: 'So sánh Doanh thu vs Chi phí thực tế' })}</span>
+                  <span className={isDetailProfitPositive ? 'text-emerald-500' : 'text-rose-500'}>
+                    {isDetailProfitPositive
+                      ? `+${formatVnd(detailRow.profitVnd)}`
+                      : `${formatVnd(detailRow.profitVnd)}`
+                    }
+                  </span>
+                </div>
+                {/* Visual side-by-side comparison bar */}
+                <div className="h-6 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800 flex text-[10px] text-white font-bold leading-6">
+                  {/* Revenue Segment */}
+                  <div
+                    style={{
+                      width: `${Math.min(
+                        Math.max(
+                          (Number(detailRow.chargedVnd || 0) /
+                            (Number(detailRow.chargedVnd || 0) + Number(detailRow.providerCostVnd || 0) || 1)) *
+                            100,
+                          15
+                        ),
+                        85
+                      )}%`,
+                    }}
+                    className="bg-emerald-500 hover:bg-emerald-600 transition-colors flex items-center justify-center px-2 truncate"
+                    title={`${t('aiCosts.detail.userRevenue')}: ${formatVnd(detailRow.chargedVnd)}`}
+                  >
+                    {t('aiCosts.detail.userRevenue')}: {formatVnd(detailRow.chargedVnd)}
+                  </div>
+                  {/* Cost Segment */}
+                  <div
+                    style={{
+                      width: `${100 - Math.min(
+                        Math.max(
+                          (Number(detailRow.chargedVnd || 0) /
+                            (Number(detailRow.chargedVnd || 0) + Number(detailRow.providerCostVnd || 0) || 1)) *
+                            100,
+                          15
+                        ),
+                        85
+                      )}%`,
+                    }}
+                    className="bg-rose-500 hover:bg-rose-600 transition-colors flex items-center justify-center px-2 truncate"
+                    title={`${t('aiCosts.detail.apiProviderCost')}: ${formatVnd(detailRow.providerCostVnd)}`}
+                  >
+                    {t('aiCosts.detail.apiProviderCost')}: {formatVnd(detailRow.providerCostVnd)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Reason and recommendations layout */}
+              <div className="grid gap-4 md:grid-cols-2 text-sm">
+                <div className={`rounded-xl border p-4 space-y-2 ${
+                  isDetailProfitPositive
+                    ? 'border-emerald-100 bg-emerald-50/30 dark:border-emerald-900/30 dark:bg-emerald-950/10'
+                    : 'border-rose-100 bg-rose-50/30 dark:border-rose-900/30 dark:bg-rose-950/10'
+                }`}>
+                  <h4 className="font-bold flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-full ${isDetailProfitPositive ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                    {isDetailProfitPositive
+                      ? t('aiCosts.detail.profitReason', { defaultValue: 'Lý do lãi' })
+                      : t('aiCosts.detail.lossReason', { defaultValue: 'Lý do lỗ' })
+                    }
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-300 text-xs leading-5">
+                    {isDetailProfitPositive
+                      ? t('aiCosts.detail.profitExplanation', {
+                          charged: formatVnd(detailRow.chargedVnd),
+                          cost: formatVnd(detailRow.providerCostVnd),
+                          profit: formatVnd(detailRow.profitVnd),
+                          margin: detailRow.chargedVnd > 0 ? Math.round(Number(detailRow.profitVnd) / Number(detailRow.chargedVnd) * 100) : 0
+                        })
+                      : t('aiCosts.detail.lossExplanation', {
+                          charged: formatVnd(detailRow.chargedVnd),
+                          cost: formatVnd(detailRow.providerCostVnd),
+                          subsidy: formatVnd(detailRow.systemSubsidyVnd)
+                        })
+                    }
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-4 space-y-2">
+                  <h4 className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    💡 {t('aiCosts.detail.recsTitle', { defaultValue: 'Khuyến nghị điều chỉnh' })}
+                  </h4>
+                  <ul className="text-slate-600 dark:text-slate-300 text-xs space-y-1.5 list-disc pl-4 leading-5 text-left">
+                    {!isDetailProfitPositive ? (
+                      <>
+                        <li>
+                          {t('aiCosts.detail.recPricing', {
+                            plan: detailRow.planDisplayName || t('aiCosts.filters.allPlans'),
+                            action: getAiActionLabel(detailRow.actionKey, t)
+                          })}
+                        </li>
+                        <li>
+                          {t('aiCosts.detail.recModel', {
+                            plan: detailRow.planDisplayName || t('aiCosts.filters.allPlans')
+                          })}
+                        </li>
+                      </>
+                    ) : (
+                      <li>{t('aiCosts.detail.recHealthy', { defaultValue: 'Cấu hình hiện tại đang hoạt động hiệu quả, không cần điều chỉnh.' })}</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Math / formula details breakdown */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-4 space-y-3">
+                <h4 className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider text-left">
+                  🔢 {t('aiCosts.detail.calcTitle', { defaultValue: 'Diễn giải công thức tính toán' })}
+                </h4>
+                <div className="space-y-2 text-xs font-mono text-slate-600 dark:text-slate-300 text-left">
+                  <div className="p-2.5 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">
+                      {t('aiCosts.detail.calcCreditTitle', { defaultValue: '1. Credit khấu trừ (chính sách AI)' })}
+                    </p>
+                    {detailCreditBreakdown?.hasPolicy ? (
+                      <div className="mt-2 space-y-1.5 text-[11px] font-sans">
+                        <p>
+                          {t('aiCosts.detail.calcCreditPolicy', {
+                            defaultValue: 'Chính sách: {{action}} • {{costMode}}',
+                            action: detailCreditBreakdown.actionLabel,
+                            costMode: detailCreditBreakdown.costModeLabel,
+                          })}
+                        </p>
+                        {detailCreditBreakdown.calculation?.costMode !== 'FIXED' ? (
+                          <p>
+                            {t('aiCosts.detail.calcCreditMetric', {
+                              defaultValue: 'Chỉ số áp dụng: {{quantity}} {{unit}}',
+                              quantity: formatInteger(detailCreditBreakdown.quantity),
+                              unit: detailCreditBreakdown.unitLabel,
+                            })}
+                          </p>
+                        ) : null}
+                        <p className="font-mono text-slate-700 dark:text-slate-200">
+                          {detailCreditBreakdown.formulaLine}
+                        </p>
+                        {detailCreditBreakdown.detailLines.map((line) => (
+                          <p key={line} className="text-[10px] text-slate-400 dark:text-slate-500 pl-2">
+                            • {line}
+                          </p>
+                        ))}
+                        <p className="font-semibold text-indigo-700 dark:text-indigo-300">
+                          {t('aiCosts.detail.calcCreditResult', {
+                            defaultValue: '→ Khấu trừ {{credit}} credit',
+                            credit: formatInteger(detailCreditBreakdown.chargedCredit),
+                          })}
+                        </p>
+                        {detailCreditBreakdown.policyDrift ? (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-sans leading-5">
+                            {t('aiCosts.detail.calcCreditDrift', {
+                              defaultValue: 'Lưu ý: chính sách hiện tại tính ra {{current}} credit, khác với {{stored}} credit đã ghi nhận lúc giao dịch.',
+                              current: formatInteger(detailCreditBreakdown.calculation.total),
+                              stored: formatInteger(detailCreditBreakdown.chargedCredit),
+                            })}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500 font-sans">
+                        {t('aiCosts.detail.calcCreditFallback', {
+                          defaultValue: 'Khấu trừ {{credit}} credit cho chức năng {{action}} (chưa có dữ liệu chính sách chi tiết).',
+                          credit: formatInteger(detailRow.chargedCredit),
+                          action: getAiActionLabel(detailRow.actionKey, t),
+                        })}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/50">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">
+                      {t('aiCosts.detail.calcRevenue', {
+                        credit: formatInteger(detailRow.chargedCredit),
+                        unitPrice: formatVnd(detailRow.creditUnitPriceVndSnapshot),
+                        total: formatVnd(detailRow.chargedVnd)
+                      })}
+                    </p>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                      {t('aiCosts.detail.calcRevenueHint', {
+                        defaultValue: 'Doanh thu = số credit khấu trừ × đơn giá credit tại thời điểm giao dịch',
+                      })}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/50">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">
+                      {t('aiCosts.detail.calcCost', {
+                        inputCost: formatVnd(detailRow.inputCostVnd),
+                        outputCost: formatVnd(detailRow.outputCostVnd),
+                        total: formatVnd(detailRow.providerCostVnd)
+                      })}
+                    </p>
+                    <div className="mt-1 text-[10px] text-slate-400 dark:text-slate-500 space-y-1">
+                      <p>• Chi phí input: {formatInteger(detailRow.promptTokens)} tokens × {formatUsd(detailRow.inputPriceUsdPer1M)}/1M = {formatUsd(detailRow.inputCostUsd)}</p>
+                      <p>• Chi phí output: ({formatInteger(detailRow.completionTokens)} completion + {formatInteger(detailRow.thoughtTokens)} thought) tokens × {formatUsd(detailRow.outputPriceUsdPer1M)}/1M = {formatUsd(detailRow.outputCostUsd)}</p>
+                      <p>• Tổng USD: {formatUsd(detailRow.providerCostUsd)} × Tỷ giá quy đổi ({formatExchangeRate(detailRow.usdToVndRate)}) = {formatVnd(detailRow.providerCostVnd)}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
