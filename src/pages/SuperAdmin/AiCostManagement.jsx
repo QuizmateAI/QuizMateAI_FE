@@ -56,6 +56,8 @@ import AiCostSourceBreakdown, {
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 
 function createEmptyFilters() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
   return {
     taskId: '',
     actorEmail: '',
@@ -64,8 +66,8 @@ function createEmptyFilters() {
     modelGroup: '',
     actionKey: '',
     status: '',
-    from: '',
-    to: '',
+    from: formatDateTimeLocal(start),
+    to: formatDateTimeLocal(now),
   };
 }
 

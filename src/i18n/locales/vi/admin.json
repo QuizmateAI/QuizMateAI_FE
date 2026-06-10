@@ -2518,8 +2518,12 @@
       "attributed": "Gắn gói có mua trong kỳ",
       "unattributed": "Chưa gắn gói (free/trial/ngoài kỳ)",
       "system": "Tổng phí AI hệ thống",
-      "formula": "Gắn gói + Chưa gắn = Tổng hệ thống",
-      "hint": "khớp với tab Chi phí AI / P&L",
+      "usageLog": "Phí AI usage log",
+      "systemAudit": "AI System (SYSTEM)",
+      "pnlTotal": "Tổng khớp P&L",
+      "formula": "Gắn gói + Chưa gắn = Phí usage log",
+      "formulaPnl": "Phí usage log + SYSTEM = Tổng khớp P&L / tab Chi phí AI",
+      "hint": "COGS trên thẻ ≠ tổng P&L — chỉ gói có mua trong kỳ",
       "filteredNote": "Bảng đang lọc: COGS trên thẻ = tổng các dòng hiển thị; đối chiếu “Gắn gói” dùng cùng phạm vi lọc."
     },
     "aiUsage": {

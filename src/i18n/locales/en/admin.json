@@ -2534,8 +2534,12 @@
       "attributed": "Plans purchased in range",
       "unattributed": "Unattributed (free/trial/out-of-period)",
       "system": "System-wide AI cost",
-      "formula": "Attributed + Unattributed = System total",
-      "hint": "matches AI Cost tab / P&L",
+      "usageLog": "Usage-log AI cost",
+      "systemAudit": "AI System (SYSTEM)",
+      "pnlTotal": "P&L-aligned total",
+      "formula": "Attributed + Unattributed = Usage-log cost",
+      "formulaPnl": "Usage-log cost + SYSTEM = P&L total / AI Cost tab",
+      "hint": "COGS card ≠ P&L total — plans purchased in range only",
       "filteredNote": "Table filtered: COGS card sums visible rows only; attributed line uses the same filter scope."
     },
     "aiUsage": {

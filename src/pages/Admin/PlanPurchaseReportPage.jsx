@@ -289,13 +289,13 @@ export default function PlanPurchaseReportPage() {
   const aiCostQuery = useQuery({
     queryKey: [...QUERY_KEY, 'aiCost', queryParams],
     queryFn: async () => extractData(await getAiCostSummary(queryParams)),
-    enabled: activeTab === 'aiUsage',
+    enabled: activeTab === 'plans' || activeTab === 'aiUsage',
   });
 
   const aiAuditQuery = useQuery({
     queryKey: [...QUERY_KEY, 'aiAudit', queryParams],
     queryFn: async () => extractData(await getAiAuditSummary(queryParams)),
-    enabled: activeTab === 'aiUsage',
+    enabled: activeTab === 'plans' || activeTab === 'aiUsage',
   });
 
   const buyersQuery = useQuery({
@@ -520,6 +520,8 @@ export default function PlanPurchaseReportPage() {
   const fullAttributedCogs = Number(summaryTotals.totalAiProviderCostVnd) || 0;
   const unattributedCogs = Number(summaryTotals.unattributedAiProviderCostVnd) || 0;
   const fullSystemCogs = Number(summaryTotals.totalSystemAiProviderCostVnd) || 0;
+  const usageLogAiTotal = aiUserPaidCost + aiPlanBasedCost + aiFreeUserCost;
+  const pnlAlignedAiTotal = usageLogAiTotal + aiSystemFeatureCost;
   const tableFiltered = Boolean(
     tableSearch.trim()
     || tableGroupFilter !== 'all'
@@ -612,7 +614,13 @@ export default function PlanPurchaseReportPage() {
       ) : (
         <>
           {/* KPI Summary Cards */}
-          <div className={`mb-6 grid gap-4 sm:grid-cols-2 ${activeTab === 'plans' || activeTab === 'aiUsage' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+          <div className={`mb-6 grid gap-4 sm:grid-cols-2 ${
+            activeTab === 'plans'
+              ? 'lg:grid-cols-4'
+              : activeTab === 'aiUsage'
+                ? 'lg:grid-cols-5'
+                : 'lg:grid-cols-3'
+          }`}>
             {activeTab === 'plans' ? (
               <>
                 <SuperAdminMetricCard
@@ -704,6 +712,14 @@ export default function PlanPurchaseReportPage() {
                   isDarkMode={isDarkMode}
                 />
                 <SuperAdminMetricCard
+                  label={t('planPurchases.metric.aiSystemFeature', 'AI System')}
+                  value={formatVnd(aiSystemFeatureCost)}
+                  helper={t('planPurchases.metric.aiSystemFeatureHelper', 'SYSTEM — RAG, OCR, moderation')}
+                  icon={Cpu}
+                  tone="amber"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
                   label={t('planPurchases.metric.aiTotal', 'Tổng phí AI')}
                   value={formatVnd(aiUsageTotalCost)}
                   helper={t('planPurchases.metric.aiTotalHelper', 'USER_PAID + PLAN_BASED + FREE_USER + SYSTEM')}
@@ -714,7 +730,7 @@ export default function PlanPurchaseReportPage() {
               </>
             )}
           </div>
-          {activeTab === 'plans' && fullSystemCogs > 0 ? (
+          {activeTab === 'plans' && (fullSystemCogs > 0 || pnlAlignedAiTotal > 0) ? (
             <div
               className={`mb-6 rounded-2xl border px-4 py-3 text-xs ${
                 isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'
@@ -732,14 +748,23 @@ export default function PlanPurchaseReportPage() {
                 {': '}
                 <strong>{formatVnd(unattributedCogs)}</strong>
                 {' · '}
-                {t('planPurchases.aiCostReconcile.system', 'Tổng phí AI hệ thống')}
+                {t('planPurchases.aiCostReconcile.usageLog', 'Phí AI usage log')}
                 {': '}
-                <strong>{formatVnd(fullSystemCogs)}</strong>
+                <strong>{formatVnd(fullSystemCogs > 0 ? fullSystemCogs : usageLogAiTotal)}</strong>
+              </p>
+              <p className="mt-1 tabular-nums">
+                {t('planPurchases.aiCostReconcile.systemAudit', 'AI System (SYSTEM)')}
+                {': '}
+                <strong>{formatVnd(aiSystemFeatureCost)}</strong>
+                {' · '}
+                {t('planPurchases.aiCostReconcile.pnlTotal', 'Tổng khớp P&L')}
+                {': '}
+                <strong>{formatVnd(pnlAlignedAiTotal)}</strong>
               </p>
               <p className={`mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                {t('planPurchases.aiCostReconcile.formula', 'Gắn gói + Chưa gắn = Tổng hệ thống')}
-                {' — '}
-                {t('planPurchases.aiCostReconcile.hint', 'khớp với tab Chi phí AI / P&L')}
+                {t('planPurchases.aiCostReconcile.formula', 'Gắn gói + Chưa gắn = Phí usage log')}
+                {' · '}
+                {t('planPurchases.aiCostReconcile.formulaPnl', 'Phí usage log + SYSTEM = Tổng khớp P&L / tab Chi phí AI')}
               </p>
               {tableFiltered ? (
                 <p className={`mt-1 ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
