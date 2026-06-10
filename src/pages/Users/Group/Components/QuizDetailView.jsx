@@ -1247,6 +1247,7 @@ function QuizDetailView({
             isLeader={isGroupLeader}
             canManageAssignment={canManageAssignment}
             refreshKey={assignmentsRefreshKey}
+            isActive={activeTab === "assignments"}
             onOpenCreateDialog={() => setAssignmentDialogOpen(true)}
           />
         )}

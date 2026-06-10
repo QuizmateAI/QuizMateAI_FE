@@ -181,6 +181,34 @@ describe('ChallengeDetailView', () => {
     expect(screen.queryByRole('button', { name: 'Xem đề' })).not.toBeInTheDocument();
   });
 
+  it('locks reviewer invites while the challenge quiz is still generating', async () => {
+    getChallengeDetail.mockResolvedValueOnce({
+      data: {
+        ...baseDetail,
+        leaderParticipates: true,
+        snapshotQuizStatus: 'PROCESSING',
+        snapshotQuizTotalQuestion: 10,
+      },
+    });
+    getGroupMembers.mockResolvedValueOnce({
+      data: {
+        content: [
+          { userID: 202, fullName: 'Reviewer One' },
+        ],
+      },
+    });
+
+    renderChallengeDetail({
+      quizGenerationTaskByQuizId: { 901: 'task-901' },
+      quizGenerationProgressByQuizId: { 901: 24 },
+    });
+
+    expect(await screen.findByText('Challenge match is being generated')).toBeInTheDocument();
+    expect(screen.getByText(/wait.*reviewer|đợi hoàn tất/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'I will review myself' })).not.toBeInTheDocument();
+  });
+
   it('shows realtime websocket progress for the challenge quiz without waiting for detail reload', async () => {
     getChallengeDetail.mockResolvedValueOnce({
       data: {
@@ -195,6 +223,7 @@ describe('ChallengeDetailView', () => {
     });
 
     expect(await screen.findByText('Challenge match is being generated')).toBeInTheDocument();
+    expect(screen.getByText('Generation progress')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByText('37%')).toBeInTheDocument();
     }, { timeout: 4000 });

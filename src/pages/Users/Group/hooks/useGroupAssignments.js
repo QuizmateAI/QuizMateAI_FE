@@ -162,6 +162,27 @@ export function useGroupAssignments(workspaceId, { enabled = true } = {}) {
     return page + 1 < totalPages;
   }, [page, totalPages]);
 
+  const patchFromRealtimeEvent = useCallback((event) => {
+    const assignmentId = normalizeId(event?.assignmentId);
+    if (assignmentId === null) return;
+
+    const submittedCount = Number(event?.submittedCount);
+    const totalTargets = Number(event?.totalTargets);
+    const hasSubmittedCount = Number.isFinite(submittedCount) && submittedCount >= 0;
+    const hasTotalTargets = Number.isFinite(totalTargets) && totalTargets >= 0;
+
+    if (!hasSubmittedCount && !hasTotalTargets) return;
+
+    setItems((prev) => prev.map((item) => {
+      if (normalizeId(item?.assignmentId) !== assignmentId) return item;
+      return {
+        ...item,
+        ...(hasSubmittedCount ? { submittedCount } : {}),
+        ...(hasTotalTargets ? { totalTargets } : {}),
+      };
+    }));
+  }, []);
+
   return {
     items,
     totalElements,
@@ -176,6 +197,7 @@ export function useGroupAssignments(workspaceId, { enabled = true } = {}) {
     create,
     update,
     remove,
+    patchFromRealtimeEvent,
   };
 }
 
@@ -260,11 +282,40 @@ export function useMyAssignments(workspaceId, { enabled = true } = {}) {
     }
   }, [items, refresh, workspaceId]);
 
+  const patchFromRealtimeEvent = useCallback((event) => {
+    const assignmentId = normalizeId(event?.assignmentId);
+    if (assignmentId === null) return;
+
+    const submittedCount = Number(event?.submittedCount);
+    const totalTargets = Number(event?.totalTargets);
+    const submittedUserId = normalizeId(event?.submittedUserId);
+    const hasSubmittedCount = Number.isFinite(submittedCount) && submittedCount >= 0;
+    const hasTotalTargets = Number.isFinite(totalTargets) && totalTargets >= 0;
+
+    setItems((prev) => prev.map((item) => {
+      if (normalizeId(item?.assignmentId) !== assignmentId) return item;
+      const nextItem = {
+        ...item,
+        ...(hasSubmittedCount ? { submittedCount } : {}),
+        ...(hasTotalTargets ? { totalTargets } : {}),
+      };
+      if (submittedUserId != null && item?.myTarget) {
+        nextItem.myTarget = {
+          ...item.myTarget,
+          status: 'SUBMITTED',
+          submittedAt: item.myTarget.submittedAt || new Date().toISOString(),
+        };
+      }
+      return nextItem;
+    }));
+  }, []);
+
   return {
     items,
     isLoading,
     error,
     refresh,
     submit,
+    patchFromRealtimeEvent,
   };
 }

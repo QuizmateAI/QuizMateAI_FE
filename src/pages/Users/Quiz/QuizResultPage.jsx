@@ -185,6 +185,65 @@ function SectionDivider({ label, className = '' }) {
   );
 }
 
+function QuizResultLoadingPanel({
+  fontClass,
+  quizFontStyle,
+  retryCount,
+  t,
+  onBack,
+}) {
+  const isWaiting = retryCount > 0;
+
+  return (
+    <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
+      <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-lg p-1.5 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          aria-label={t('quizResultPage.backToQuiz', 'Back to Quiz')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h1 className="truncate text-base font-medium text-slate-800 dark:text-slate-100">
+          {t('quizResultPage.title', 'Result')}
+        </h1>
+      </div>
+      <div className="flex-1 p-4 md:p-8">
+        <div className="mx-auto max-w-3xl">
+          <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-8 text-center shadow-xl dark:border-blue-800 dark:from-blue-950/30 dark:to-cyan-950/30">
+            <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-blue-500 dark:text-blue-400" />
+            <h1 className="mb-2 text-xl font-semibold text-blue-700 dark:text-blue-300">
+              {isWaiting
+                ? t('quizResultPage.waitingForResult', 'Waiting for your result...')
+                : t('quizResultPage.loading', 'Loading result...')}
+            </h1>
+            <p className="mx-auto max-w-md text-sm text-slate-600 dark:text-slate-400">
+              {isWaiting
+                ? t(
+                  'quizResultPage.waitingForResultHint',
+                  'Bài làm vừa nộp — hệ thống đang lưu kết quả. Trang sẽ tự tải khi sẵn sàng.',
+                )
+                : t(
+                  'quizResultPage.loadingHint',
+                  'Đang tổng hợp điểm số và chi tiết từng câu hỏi...',
+                )}
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {['score', 'accuracy', 'correct', 'time'].map((slot) => (
+                <div
+                  key={slot}
+                  className="h-16 rounded-xl bg-white/70 animate-pulse dark:bg-slate-800/60"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function QuizResultPage() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
@@ -1139,16 +1198,13 @@ handleBack,
 
   if (loading) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
-        <div className="flex flex-col items-center gap-3 text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
-            {retryCount > 0
-              ? t('quizResultPage.waitingForResult', 'Waiting for your result...')
-              : t('quizResultPage.loading', 'Loading result...')}
-          </p>
-        </div>
-      </div>
+      <QuizResultLoadingPanel
+        fontClass={fontClass}
+        quizFontStyle={quizFontStyle}
+        retryCount={retryCount}
+        t={t}
+        onBack={handleBack}
+      />
     );
   }
 

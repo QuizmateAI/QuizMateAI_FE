@@ -1124,6 +1124,7 @@
       "types": {
         "multipleChoice": "多肢選択",
         "multipleSelect": "複数選択",
+        "imageBased": "画像ベース問題",
         "trueFalse": "True / False",
         "fillBlank": "空欄補充",
         "shortAnswer": "短答",

@@ -31,6 +31,7 @@ import {
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { useGroupAssignments } from '@/pages/Users/Group/hooks/useGroupAssignments';
+import { useAssignmentRealtimeRefresh } from '@/pages/Users/Group/hooks/useAssignmentRealtimeRefresh';
 import AssignmentFormDialog from './AssignmentFormDialog';
 
 function formatRelativeDue(iso, t) {
@@ -202,11 +203,20 @@ function QuizAssignmentsPanel({
   canManageAssignment = false,
   onOpenCreateDialog,
   refreshKey = 0,
+  isActive = true,
 }) {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
 
   const state = useGroupAssignments(workspaceId, { enabled: canManageAssignment });
+
+  useAssignmentRealtimeRefresh({
+    workspaceId,
+    enabled: canManageAssignment,
+    isActive,
+    onRefresh: state.refresh,
+    onPatch: state.patchFromRealtimeEvent,
+  });
   const [formState, setFormState] = useState({ open: false, mode: 'edit', initial: null });
   const [deleteState, setDeleteState] = useState({ open: false, item: null, submitting: false });
 

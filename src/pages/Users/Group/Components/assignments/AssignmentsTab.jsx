@@ -37,6 +37,7 @@ import {
   useGroupAssignments,
   useMyAssignments,
 } from '@/pages/Users/Group/hooks/useGroupAssignments';
+import { useAssignmentRealtimeRefresh } from '@/pages/Users/Group/hooks/useAssignmentRealtimeRefresh';
 import AssignmentFormDialog from './AssignmentFormDialog';
 
 const RESOURCE_ICON_PREFIX = 'groupWorkspace.assignments.resourceTypes';
@@ -340,6 +341,21 @@ function AssignmentsTab({
 
   const leaderState = useGroupAssignments(workspaceId, { enabled: canManageAssignment });
   const memberState = useMyAssignments(workspaceId, { enabled: true });
+
+  useAssignmentRealtimeRefresh({
+    workspaceId,
+    enabled: Boolean(workspaceId),
+    isActive: true,
+    onRefresh: async () => {
+      const tasks = [memberState.refresh()];
+      if (canManageAssignment) tasks.unshift(leaderState.refresh());
+      await Promise.allSettled(tasks);
+    },
+    onPatch: (event) => {
+      if (canManageAssignment) leaderState.patchFromRealtimeEvent?.(event);
+      memberState.patchFromRealtimeEvent?.(event);
+    },
+  });
 
   const [formState, setFormState] = useState({ open: false, mode: 'create', initial: null });
   const [deleteState, setDeleteState] = useState({ open: false, item: null, submitting: false });
