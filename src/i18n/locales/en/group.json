@@ -1542,8 +1542,8 @@
       "noQuizHint": "There are no completed quiz attempts to inspect yet."
     },
     "analyticsUpgrade": {
-      "title": "Workspace analytics",
-      "description": "Group learning dashboards use the same Workspace analytics entitlement as individual stats. Upgrade your plan to unlock member cards, charts, and drill-down views.",
+      "title": "AI learning metrics",
+      "description": "Upgrade your plan to unlock the group's AI learning metrics: attempts, passes, average score, and study time.",
       "viewPlans": "View plans"
     },
     "detail": {

@@ -50,7 +50,7 @@ import ListSpinner from '@/components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
-import { getCreditPurchaseBuyers, getCreditPurchaseSummary, getPlanPurchaseBuyers, getPlanPurchaseSummary } from '@/api/ManagementSystemAPI';
+import { getAiAuditSummary, getAiCostSummary, getCreditPurchaseBuyers, getCreditPurchaseSummary, getPlanPurchaseBuyers, getPlanPurchaseSummary } from '@/api/ManagementSystemAPI';
 import AdminPagination from '@/pages/Admin/components/AdminPagination';
 import DateRangeChips, { formatDateTimeLocal } from '@/pages/SuperAdmin/Components/DateRangeChips';
 import {
@@ -286,6 +286,18 @@ export default function PlanPurchaseReportPage() {
     enabled: activeTab === 'credits',
   });
 
+  const aiCostQuery = useQuery({
+    queryKey: [...QUERY_KEY, 'aiCost', queryParams],
+    queryFn: async () => extractData(await getAiCostSummary(queryParams)),
+    enabled: activeTab === 'aiUsage',
+  });
+
+  const aiAuditQuery = useQuery({
+    queryKey: [...QUERY_KEY, 'aiAudit', queryParams],
+    queryFn: async () => extractData(await getAiAuditSummary(queryParams)),
+    enabled: activeTab === 'aiUsage',
+  });
+
   const buyersQuery = useQuery({
     queryKey: [...QUERY_KEY, 'buyers', buyerPlanId, buyerPage, queryParams],
     queryFn: async () =>
@@ -327,6 +339,14 @@ export default function PlanPurchaseReportPage() {
     if (creditBuyersQuery.error) showError(getErrorMessage(t, creditBuyersQuery.error));
   }, [creditBuyersQuery.error, t, showError]);
 
+  useEffect(() => {
+    if (aiCostQuery.error) showError(getErrorMessage(t, aiCostQuery.error));
+  }, [aiCostQuery.error, t, showError]);
+
+  useEffect(() => {
+    if (aiAuditQuery.error) showError(getErrorMessage(t, aiAuditQuery.error));
+  }, [aiAuditQuery.error, t, showError]);
+
   const openCreditBuyers = (row) => {
     const targetType = row?.paymentTargetType === 'WORKSPACE_CREDIT' ? 'Nhóm' : 'Cá nhân';
     const baseLabel = row?.creditPackageId == null ? 'Custom credit' : (row?.packageDisplayName || row?.packageCode);
@@ -342,8 +362,10 @@ export default function PlanPurchaseReportPage() {
   };
 
   const plans = useMemo(() => summaryQuery.data?.plans ?? [], [summaryQuery.data?.plans]);
-  const loading = summaryQuery.isLoading;
-  const fetching = summaryQuery.isFetching;
+  const loading = summaryQuery.isLoading
+    || (activeTab === 'credits' && creditQuery.isLoading)
+    || (activeTab === 'aiUsage' && (aiCostQuery.isLoading || aiAuditQuery.isLoading));
+  const fetching = summaryQuery.isFetching || aiCostQuery.isFetching || aiAuditQuery.isFetching;
 
   // Danh sách các plan_code có nhiều hơn 1 version trong dataset — dùng để build dropdown.
   const planFamilies = useMemo(() => {
@@ -487,10 +509,12 @@ export default function PlanPurchaseReportPage() {
   // Biên/credit tổng được derive từ filteredTotals (revenue − base − cogs) để khớp với cell formula.
   const filteredTotalsCredit = filteredTotals.revenueVnd - filteredTotals.baseRevenueVnd;
 
-  // Phí AI tách theo loại người dùng (toàn kỳ, từ summary BE) — dùng cho tab "Chi phí AI".
-  const aiSystemCost = Number(summaryQuery.data?.totalSystemAiProviderCostVnd) || 0;
-  const aiPlanUserCost = Number(summaryQuery.data?.planUserAiProviderCostVnd) || 0;
-  const aiFreeUserCost = Number(summaryQuery.data?.freeUserAiProviderCostVnd) || 0;
+  // Tab "Chi phí AI" — cùng trục USER_PAID / PLAN_BASED / FREE_USER / SYSTEM với P&L.
+  const aiUserPaidCost = Number(aiCostQuery.data?.userPaidProviderCostVnd) || 0;
+  const aiPlanBasedCost = Number(aiCostQuery.data?.planBasedProviderCostVnd) || 0;
+  const aiFreeUserCost = Number(aiCostQuery.data?.freeUserProviderCostVnd) || 0;
+  const aiSystemFeatureCost = Number(aiAuditQuery.data?.systemCostVnd) || 0;
+  const aiUsageTotalCost = aiUserPaidCost + aiPlanBasedCost + aiFreeUserCost + aiSystemFeatureCost;
 
   const buyersPageData = buyersQuery.data ?? {};
   const buyers = Array.isArray(buyersPageData.content) ? buyersPageData.content : [];
@@ -578,7 +602,7 @@ export default function PlanPurchaseReportPage() {
       ) : (
         <>
           {/* KPI Summary Cards */}
-          <div className={`mb-6 grid gap-4 sm:grid-cols-2 ${activeTab === 'plans' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+          <div className={`mb-6 grid gap-4 sm:grid-cols-2 ${activeTab === 'plans' || activeTab === 'aiUsage' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
             {activeTab === 'plans' ? (
               <>
                 <SuperAdminMetricCard
@@ -644,25 +668,33 @@ export default function PlanPurchaseReportPage() {
             ) : (
               <>
                 <SuperAdminMetricCard
-                  label={t('planPurchases.metric.aiPlanUser', 'AI user có gói')}
-                  value={formatVnd(aiPlanUserCost)}
-                  helper={t('planPurchases.metric.aiPlanUserHelper', 'Phí AI của user đang có gói trả phí')}
-                  icon={Cpu}
+                  label={t('planPurchases.metric.aiUserPaid', 'User trừ credit')}
+                  value={formatVnd(aiUserPaidCost)}
+                  helper={t('planPurchases.metric.aiUserPaidHelper', 'USER_PAID — có gói, mỗi lần dùng trừ credit')}
+                  icon={Wallet}
                   tone="blue"
                   isDarkMode={isDarkMode}
                 />
                 <SuperAdminMetricCard
-                  label={t('planPurchases.metric.aiFreeUser', 'AI user free')}
+                  label={t('planPurchases.metric.aiPlanBased', 'Gói bao trọn')}
+                  value={formatVnd(aiPlanBasedCost)}
+                  helper={t('planPurchases.metric.aiPlanBasedHelper', 'PLAN_BASED — có gói, không trừ credit')}
+                  icon={Layers}
+                  tone="rose"
+                  isDarkMode={isDarkMode}
+                />
+                <SuperAdminMetricCard
+                  label={t('planPurchases.metric.aiFreeUser', 'User free')}
                   value={formatVnd(aiFreeUserCost)}
-                  helper={t('planPurchases.metric.aiFreeUserHelper', 'Phí AI của user không có gói (free/trial)')}
+                  helper={t('planPurchases.metric.aiFreeUserHelper', 'FREE_USER — không gói, hệ thống trả')}
                   icon={Users}
                   tone="amber"
                   isDarkMode={isDarkMode}
                 />
                 <SuperAdminMetricCard
                   label={t('planPurchases.metric.aiTotal', 'Tổng phí AI')}
-                  value={formatVnd(aiSystemCost)}
-                  helper={t('planPurchases.metric.aiTotalHelper', 'Khớp với tab Chi phí AI')}
+                  value={formatVnd(aiUsageTotalCost)}
+                  helper={t('planPurchases.metric.aiTotalHelper', 'USER_PAID + PLAN_BASED + FREE_USER + SYSTEM')}
                   icon={Coins}
                   tone="rose"
                   isDarkMode={isDarkMode}
@@ -670,33 +702,6 @@ export default function PlanPurchaseReportPage() {
               </>
             )}
           </div>
-          {activeTab === 'plans' && summaryQuery.data ? (
-            <div
-              className={`mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border px-4 py-3 text-xs ${
-                isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'
-              }`}
-            >
-              <Cpu className={`h-4 w-4 shrink-0 ${isDarkMode ? 'text-rose-300' : 'text-rose-500'}`} />
-              <span className="font-semibold">{t('planPurchases.aiCostReconcile.label', 'Đối chiếu phí AI (toàn kỳ):')}</span>
-              <span>
-                {t('planPurchases.aiCostReconcile.attributed', 'Gắn với gói')}{' '}
-                <strong className="tabular-nums">{formatVnd(summaryQuery.data.totalAiProviderCostVnd)}</strong>
-              </span>
-              <span className="opacity-60">+</span>
-              <span>
-                {t('planPurchases.aiCostReconcile.unattributed', 'Chưa gắn gói (free/trial/ngoài kỳ)')}{' '}
-                <strong className="tabular-nums">{formatVnd(summaryQuery.data.unattributedAiProviderCostVnd)}</strong>
-              </span>
-              <span className="opacity-60">=</span>
-              <span>
-                {t('planPurchases.aiCostReconcile.system', 'Tổng phí AI hệ thống')}{' '}
-                <strong className="tabular-nums">{formatVnd(summaryQuery.data.totalSystemAiProviderCostVnd)}</strong>
-              </span>
-              <span className={`ml-auto ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                {t('planPurchases.aiCostReconcile.hint', 'khớp với tab Chi phí AI')}
-              </span>
-            </div>
-          ) : null}
           {showCharts ? (
             <div
               className={`mb-3 flex flex-wrap items-center gap-2 rounded-2xl border p-3 ${
@@ -955,54 +960,82 @@ export default function PlanPurchaseReportPage() {
               <div className="mb-1 flex items-start justify-between gap-3">
                 <div>
                   <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                    {t('planPurchases.aiUsage.title', 'Phí AI theo loại người dùng')}
+                    {t('planPurchases.aiUsage.title', 'Phí AI theo cách tính tiền')}
                   </h3>
                   <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                    {t('planPurchases.aiUsage.subtitle', 'So sánh phí AI giữa user có gói trả phí và user dùng free. Tổng khớp tab Chi phí AI.')}
+                    {t('planPurchases.aiUsage.subtitle', 'Gói chỉ mở quyền dùng tính năng. USER_PAID vẫn trừ credit; PLAN_BASED không trừ credit.')}
                   </p>
                 </div>
                 <p className={`text-right text-xs tabular-nums ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {formatVnd(aiSystemCost)}
+                  {formatVnd(aiUsageTotalCost)}
                 </p>
               </div>
-              {aiSystemCost <= 0 ? (
+              {aiUsageTotalCost <= 0 ? (
                 <p className="py-12 text-center text-sm text-slate-500">
                   {t('planPurchases.aiUsage.empty', 'Chưa có chi phí AI trong khoảng đã chọn.')}
                 </p>
               ) : (
                 <>
                   <div className={`mt-4 flex h-4 w-full overflow-hidden rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                    <div className="h-full bg-blue-500" style={{ width: `${aiSystemCost > 0 ? (aiPlanUserCost / aiSystemCost) * 100 : 0}%` }} />
-                    <div className="h-full bg-amber-500" style={{ width: `${aiSystemCost > 0 ? (aiFreeUserCost / aiSystemCost) * 100 : 0}%` }} />
+                    <div className="h-full bg-blue-500" style={{ width: `${aiUsageTotalCost > 0 ? (aiUserPaidCost / aiUsageTotalCost) * 100 : 0}%` }} />
+                    <div className="h-full bg-purple-500" style={{ width: `${aiUsageTotalCost > 0 ? (aiPlanBasedCost / aiUsageTotalCost) * 100 : 0}%` }} />
+                    <div className="h-full bg-amber-500" style={{ width: `${aiUsageTotalCost > 0 ? (aiFreeUserCost / aiUsageTotalCost) * 100 : 0}%` }} />
+                    <div className="h-full bg-orange-500" style={{ width: `${aiUsageTotalCost > 0 ? (aiSystemFeatureCost / aiUsageTotalCost) * 100 : 0}%` }} />
                   </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/40' : 'border-slate-100 bg-slate-50/60'}`}>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                        <span className="h-2 w-2 rounded-full bg-blue-500" />
-                        {t('planPurchases.aiUsage.planUser', 'User có gói')}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      {
+                        key: 'userPaid',
+                        label: t('planPurchases.aiUsage.userPaid', 'User trừ credit'),
+                        hint: t('planPurchases.aiUsage.userPaidHint', 'USER_PAID — PDF, quiz, material…'),
+                        value: aiUserPaidCost,
+                        dot: 'bg-blue-500',
+                        text: isDarkMode ? 'text-blue-300' : 'text-blue-600',
+                      },
+                      {
+                        key: 'planBased',
+                        label: t('planPurchases.aiUsage.planBased', 'Gói bao trọn'),
+                        hint: t('planPurchases.aiUsage.planBasedHint', 'PLAN_BASED — companion, roadmap, assessment…'),
+                        value: aiPlanBasedCost,
+                        dot: 'bg-purple-500',
+                        text: isDarkMode ? 'text-purple-300' : 'text-purple-600',
+                      },
+                      {
+                        key: 'freeUser',
+                        label: t('planPurchases.aiUsage.freeUser', 'User free'),
+                        hint: t('planPurchases.aiUsage.freeUserHint', 'FREE_USER — không gói'),
+                        value: aiFreeUserCost,
+                        dot: 'bg-amber-500',
+                        text: isDarkMode ? 'text-amber-500' : 'text-amber-600',
+                      },
+                      {
+                        key: 'system',
+                        label: t('planPurchases.aiUsage.system', 'AI System'),
+                        hint: t('planPurchases.aiUsage.systemHint', 'SYSTEM — tác vụ nền'),
+                        value: aiSystemFeatureCost,
+                        dot: 'bg-orange-500',
+                        text: isDarkMode ? 'text-orange-300' : 'text-orange-600',
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.key}
+                        className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/40' : 'border-slate-100 bg-slate-50/60'}`}
+                      >
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                          <span className={`h-2 w-2 rounded-full ${item.dot}`} />
+                          {item.label}
+                        </div>
+                        <div className={`mt-1 text-lg font-black tabular-nums ${item.text}`}>
+                          {formatVnd(item.value)}
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-slate-400">
+                          {(aiUsageTotalCost > 0 ? (item.value / aiUsageTotalCost) * 100 : 0).toFixed(1)}% · {item.hint}
+                        </div>
                       </div>
-                      <div className={`mt-1 text-lg font-black tabular-nums ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
-                        {formatVnd(aiPlanUserCost)}
-                      </div>
-                      <div className="mt-0.5 text-[11px] text-slate-400">
-                        {(aiSystemCost > 0 ? (aiPlanUserCost / aiSystemCost) * 100 : 0).toFixed(1)}% · {t('planPurchases.aiUsage.planUserHint', 'có gói trả phí lúc gọi AI')}
-                      </div>
-                    </div>
-                    <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/40' : 'border-slate-100 bg-slate-50/60'}`}>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                        <span className="h-2 w-2 rounded-full bg-amber-500" />
-                        {t('planPurchases.aiUsage.freeUser', 'User free')}
-                      </div>
-                      <div className={`mt-1 text-lg font-black tabular-nums ${isDarkMode ? 'text-amber-500' : 'text-amber-600'}`}>
-                        {formatVnd(aiFreeUserCost)}
-                      </div>
-                      <div className="mt-0.5 text-[11px] text-slate-400">
-                        {(aiSystemCost > 0 ? (aiFreeUserCost / aiSystemCost) * 100 : 0).toFixed(1)}% · {t('planPurchases.aiUsage.freeUserHint', 'không gói: free/trial, hệ thống chịu')}
-                      </div>
-                    </div>
+                    ))}
                   </div>
                   <p className={`mt-4 text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {t('planPurchases.aiUsage.note', 'Phân loại theo việc user có gói trả phí đang hoạt động tại thời điểm gọi AI. Phí AI của user free là phần hệ thống tự chịu (chưa thu được tiền).')}
+                    {t('planPurchases.aiUsage.note', 'Màn bật/tắt tính năng theo gói là quyền truy cập. Cột USER_PAID/PLAN_BASED ở đây là cách trừ tiền mỗi lần gọi AI — khớp bản đồ dòng tiền P&L.')}
                   </p>
                 </>
               )}
