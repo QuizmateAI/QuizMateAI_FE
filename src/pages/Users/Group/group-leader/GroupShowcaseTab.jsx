@@ -41,6 +41,30 @@ import {
 import { getQuizzesByScope } from '@/api/QuizAPI';
 import { getMaterialsByWorkspace } from '@/api/MaterialAPI';
 
+const resolveShowcaseItemId = (item) => item?.showcaseItemId ?? item?.id ?? null;
+
+const resolveResourceId = (resource, type) => {
+  if (!resource) return null;
+  if (type === 'QUIZ') return resource.quizId ?? resource.id ?? null;
+  if (type === 'MATERIAL') return resource.materialId ?? resource.id ?? null;
+  return resource.id ?? null;
+};
+
+const buildQuotaSummary = (items, quota) => {
+  const countByType = quota?.countByType ?? {};
+  const limitByType = quota?.limitByType ?? {};
+
+  const quizCount = countByType.QUIZ ?? items.filter((i) => i.resourceType === 'QUIZ').length;
+  const materialCount = countByType.MATERIAL ?? items.filter((i) => i.resourceType === 'MATERIAL').length;
+
+  return {
+    quizCount,
+    quizLimit: limitByType.QUIZ ?? 5,
+    materialCount,
+    materialLimit: limitByType.MATERIAL ?? 5,
+  };
+};
+
 export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
   const { showSuccess, showError } = useToast();
 
@@ -78,7 +102,11 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
         // Handle direct array or nested object structure
         const itemList = Array.isArray(data) ? data : data.showcaseItems || data.items || [];
         setItems(itemList.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
-        setQuota(data.quota || null);
+        setQuota(
+          data?.countByType || data?.limitByType
+            ? { countByType: data.countByType, limitByType: data.limitByType }
+            : data?.quota || null
+        );
       }
       setHasOrderChanged(false);
     } catch (err) {
@@ -95,21 +123,8 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
     }
   }, [workspaceId, fetchShowcaseData]);
 
-  // Quota computations
-  const quotaSummary = useMemo(() => {
-    const quizCount = items.filter((i) => i.resourceType === 'QUIZ').length;
-    const materialCount = items.filter((i) => i.resourceType === 'MATERIAL').length;
-
-    const quizLimit = quota?.quizLimit ?? quota?.quiz?.limit ?? 5;
-    const materialLimit = quota?.materialLimit ?? quota?.material?.limit ?? 10;
-
-    return {
-      quizCount: quota?.quizCount ?? quota?.quiz?.count ?? quizCount,
-      quizLimit,
-      materialCount: quota?.materialCount ?? quota?.material?.count ?? materialCount,
-      materialLimit,
-    };
-  }, [items, quota]);
+  // Quota computations — BE trả countByType/limitByType theo ShowcaseResourceType
+  const quotaSummary = useMemo(() => buildQuotaSummary(items, quota), [items, quota]);
 
   // Move item up / down
   const moveItem = (index, direction) => {
@@ -131,7 +146,7 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
     try {
       setIsSavingOrder(true);
       const payload = items.map((item, idx) => ({
-        showcaseItemId: item.id,
+        showcaseItemId: resolveShowcaseItemId(item),
         displayOrder: idx + 1,
       }));
       await reorderShowcaseItems(workspaceId, payload);
@@ -148,7 +163,7 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
 
   // Headline Edit triggers
   const startEditHeadline = (item) => {
-    setEditingId(item.id);
+    setEditingId(resolveShowcaseItemId(item));
     setEditingHeadline(item.headline || '');
   };
 
@@ -177,7 +192,7 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
     if (!deleteConfirmItem) return;
     try {
       setIsDeleting(true);
-      await deleteShowcaseItem(workspaceId, deleteConfirmItem.id);
+      await deleteShowcaseItem(workspaceId, resolveShowcaseItemId(deleteConfirmItem));
       showSuccess('Đã xóa tài nguyên khỏi Showcase.');
       setDeleteConfirmItem(null);
       fetchShowcaseData();
@@ -225,6 +240,11 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
 
   // Add resource to showcase
   const handleAddResource = async (resourceId, type) => {
+    if (resourceId == null) {
+      showError('Không xác định được tài nguyên. Vui lòng tải lại danh sách và thử lại.');
+      return;
+    }
+
     const limit = type === 'QUIZ' ? quotaSummary.quizLimit : quotaSummary.materialLimit;
     const count = type === 'QUIZ' ? quotaSummary.quizCount : quotaSummary.materialCount;
 
@@ -240,7 +260,11 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
       setIsAddOpen(false);
     } catch (err) {
       console.error(err);
-      const errMsg = err?.response?.data?.message || 'Không thể thêm vào Showcase. Có thể đã trùng lặp hoặc hết quota.';
+      const errMsg =
+        err?.message
+        || err?.response?.data?.message
+        || err?.response?.data?.detail
+        || 'Không thể thêm vào Showcase. Có thể đã trùng lặp hoặc hết quota.';
       showError(errMsg);
     }
   };
@@ -426,11 +450,12 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
                   </Badge>
                 );
 
-                const isEditing = editingId === item.id;
+                const showcaseItemId = resolveShowcaseItemId(item);
+                const isEditing = editingId === showcaseItemId;
 
                 return (
                   <div
-                    key={item.id}
+                    key={showcaseItemId ?? `${item.resourceType}-${item.resourceId}`}
                     className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
                       isDarkMode 
                         ? 'bg-slate-900/80 border-slate-800 hover:bg-slate-900' 
@@ -491,14 +516,14 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
                                 className="h-7 text-xs bg-white dark:bg-slate-950"
                                 autoFocus
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleSaveHeadline(item.id);
+                                  if (e.key === 'Enter') handleSaveHeadline(showcaseItemId);
                                   if (e.key === 'Escape') cancelEditHeadline();
                                 }}
                               />
                               <Button
                                 size="icon"
                                 className="h-7 w-7 bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
-                                onClick={() => handleSaveHeadline(item.id)}
+                                onClick={() => handleSaveHeadline(showcaseItemId)}
                                 disabled={isUpdatingHeadline}
                               >
                                 <Check className="h-3.5 w-3.5" />
@@ -622,13 +647,13 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
               </div>
             ) : (
               filteredResources.map((res) => {
-                const resourceId = res.id;
-                const title = activeDialogTab === 'QUIZ' ? res.title : res.name || res.title;
-                const alreadyShowcased = isShowcased(resourceId, activeDialogTab);
+                const resourceId = resolveResourceId(res, activeDialogTab);
+                const title = activeDialogTab === 'QUIZ' ? res.title : res.title || res.name;
+                const alreadyShowcased = resourceId != null && isShowcased(resourceId, activeDialogTab);
 
                 return (
                   <div
-                    key={resourceId}
+                    key={resourceId ?? `${activeDialogTab}-${title}`}
                     className={`flex items-center justify-between p-2.5 rounded-lg border text-sm ${
                       isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-slate-50/50'
                     }`}
@@ -647,8 +672,8 @@ export default function GroupShowcaseTab({ isDarkMode, workspaceId }) {
                     <Button
                       size="sm"
                       variant={alreadyShowcased ? 'ghost' : 'default'}
-                      disabled={alreadyShowcased}
-                      className={alreadyShowcased ? 'text-slate-400 dark:text-slate-600' : 'bg-blue-600 hover:bg-blue-700 text-white'}
+                      disabled={alreadyShowcased || resourceId == null}
+                      className={alreadyShowcased || resourceId == null ? 'text-slate-400 dark:text-slate-600' : 'bg-blue-600 hover:bg-blue-700 text-white'}
                       onClick={() => handleAddResource(resourceId, activeDialogTab)}
                     >
                       {alreadyShowcased ? 'Đã thêm' : 'Thêm'}
