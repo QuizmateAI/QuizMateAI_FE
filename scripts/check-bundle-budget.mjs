@@ -26,8 +26,9 @@ const budgets = [
   { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 190 * 1024 },
   { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-', 'i18n-vi-group-', 'i18n-vi-grouphome-', 'i18n-vi-wallet-'], maxBytes: 332 * 1024 },
   { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-', 'i18n-en-group-', 'i18n-en-grouphome-', 'i18n-en-wallet-'], maxBytes: 291 * 1024 },
-  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-', 'i18n-vi-wallet-'], maxBytes: 126 * 1024 },
-  { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-', 'i18n-en-wallet-'], maxBytes: 105 * 1024 },
+  // Recalibrated after AI cost source breakdown + plan purchase reconcile labels.
+  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-', 'i18n-vi-wallet-'], maxBytes: 131 * 1024 },
+  { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-', 'i18n-en-wallet-'], maxBytes: 109 * 1024 },
 ];
 
 function formatKb(bytes) {
