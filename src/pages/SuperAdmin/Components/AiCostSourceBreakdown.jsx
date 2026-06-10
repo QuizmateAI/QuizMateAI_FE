@@ -80,25 +80,47 @@ export const resolveAiCostSource = resolveAiCostAudience;
 export function getAiCostSourceMetrics(summary = {}) {
   const totalProviderCostVnd = toMetricNumber(summary?.totalProviderCostVnd);
   const totalChargedVnd = toMetricNumber(summary?.totalChargedVnd);
+  const totalProfitVnd = toMetricNumber(summary?.totalProfitVnd);
   const freeUserProviderCostVnd = toMetricNumber(summary?.freeUserProviderCostVnd);
   const userPlanProviderCostVnd = toMetricNumber(summary?.userPlanProviderCostVnd);
   const groupPlanProviderCostVnd = toMetricNumber(summary?.groupPlanProviderCostVnd);
   const freeUserChargedVnd = toMetricNumber(summary?.freeUserChargedVnd);
   const userPlanChargedVnd = toMetricNumber(summary?.userPlanChargedVnd);
   const groupPlanChargedVnd = toMetricNumber(summary?.groupPlanChargedVnd);
+  const userPlanProfitVnd = toMetricNumber(summary?.userPlanProfitVnd);
+  const groupPlanProfitVnd = toMetricNumber(summary?.groupPlanProfitVnd);
+  const freeUserProfitVnd = toMetricNumber(summary?.freeUserProfitVnd);
+
+  const hasProfitSegments = summary?.userPlanProfitVnd != null
+    || summary?.groupPlanProfitVnd != null
+    || summary?.freeUserProfitVnd != null;
+  const freeUserProfitImpactVnd = hasProfitSegments
+    ? freeUserProfitVnd
+    : -freeUserProviderCostVnd;
+  const userPlanMarginVnd = hasProfitSegments
+    ? userPlanProfitVnd
+    : userPlanChargedVnd - userPlanProviderCostVnd;
+  const groupPlanMarginVnd = hasProfitSegments
+    ? groupPlanProfitVnd
+    : groupPlanChargedVnd - groupPlanProviderCostVnd;
+  const profitSegmentTotalVnd = userPlanMarginVnd + groupPlanMarginVnd + freeUserProfitImpactVnd;
+  const costSegmentTotalVnd = freeUserProviderCostVnd + userPlanProviderCostVnd + groupPlanProviderCostVnd;
 
   return {
     totalProviderCostVnd,
     totalChargedVnd,
+    totalProfitVnd,
     freeUserProviderCostVnd,
     userPlanProviderCostVnd,
     groupPlanProviderCostVnd,
     freeUserChargedVnd,
     userPlanChargedVnd,
     groupPlanChargedVnd,
-    freeUserProfitImpactVnd: -freeUserProviderCostVnd,
-    userPlanMarginVnd: userPlanChargedVnd - userPlanProviderCostVnd,
-    groupPlanMarginVnd: groupPlanChargedVnd - groupPlanProviderCostVnd,
+    freeUserProfitImpactVnd,
+    userPlanMarginVnd,
+    groupPlanMarginVnd,
+    profitSegmentTotalVnd,
+    costSegmentTotalVnd,
   };
 }
 
@@ -177,9 +199,19 @@ function AudienceMetric({ audience, value, percent, formatVnd, isDarkMode, t }) 
   );
 }
 
-export default function AiCostSourceBreakdown({ summary, formatVnd, isDarkMode = false, t }) {
+export default function AiCostSourceBreakdown({
+  summary,
+  headlineProviderCostVnd,
+  formatVnd,
+  isDarkMode = false,
+  t,
+}) {
   const metrics = getAiCostSourceMetrics(summary);
-  const total = metrics.totalProviderCostVnd;
+  const segmentTotal = metrics.costSegmentTotalVnd;
+  const headlineTotal = headlineProviderCostVnd != null
+    ? toMetricNumber(headlineProviderCostVnd)
+    : segmentTotal;
+  const total = headlineTotal > 0 ? headlineTotal : segmentTotal;
   const percent = (value) => `${total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'}%`;
   const audiences = [
     { audience: 'freeUser', value: metrics.freeUserProviderCostVnd },

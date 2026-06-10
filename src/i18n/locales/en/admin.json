@@ -1406,7 +1406,9 @@
       "profit": "QuizMate margin",
       "unmatched": "unmatched requests",
       "providerCostBreakdown": "Free: {{free}} · User plan: {{user}} · Group: {{group}}",
-      "profitBreakdown": "User plan: {{user}} · Group: {{group}} · Free: {{free}}"
+      "providerCostBreakdownWithOther": "Free: {{free}} · User plan: {{user}} · Group: {{group}} · Other: {{other}}",
+      "profitBreakdown": "User plan: {{user}} · Group: {{group}} · Free: {{free}}",
+      "profitBreakdownWithOther": "User plan: {{user}} · Group: {{group}} · Free: {{free}} · Other: {{other}}"
     },
     "filters": {
       "open": "Filters",
@@ -2506,7 +2508,8 @@
       "baseRevenue": "Base Portion",
       "baseRevenueHelper": "Fixed upfront portion of plan price",
       "aiCogs": "AI Cost (COGS)",
-      "aiCogsHelper": "Only AI cost attributed to plans — see reconciliation below",
+      "aiCogsHelper": "AI cost for plans purchased in range — see reconciliation below",
+      "aiCogsFilteredHelper": "COGS for filtered plan rows — see reconciliation below",
       "profit": "Net Margin",
       "profitHelper": "Total revenue minus AI costs",
       "creditRevenue": "Credit Revenue",
@@ -2528,10 +2531,12 @@
     },
     "aiCostReconcile": {
       "label": "AI cost reconciliation (period):",
-      "attributed": "Attributed to plans",
+      "attributed": "Plans purchased in range",
       "unattributed": "Unattributed (free/trial/out-of-period)",
       "system": "System-wide AI cost",
-      "hint": "matches the AI Cost tab"
+      "formula": "Attributed + Unattributed = System total",
+      "hint": "matches AI Cost tab / P&L",
+      "filteredNote": "Table filtered: COGS card sums visible rows only; attributed line uses the same filter scope."
     },
     "aiUsage": {
       "title": "AI cost by billing type",
@@ -2699,6 +2704,7 @@
     "pie": {
       "revenue": "Revenue Share",
       "revenueHint": "By payment channel.",
+      "revenueGapHint": "Channel total + Other {{gap}} = hero revenue",
       "cost": "AI Cost Share",
       "costHint": "Split into USER_PAID / PLAN_BASED / SYSTEM — exact figures."
     },
@@ -2713,6 +2719,8 @@
       "systemOutflows": "Base-deducted AI costs",
       "systemAiOutflows": "System-paid AI cost",
       "systemAiTotal": "Total system-paid AI",
+      "aiCostTotal": "Total AI cost",
+      "aiCostFormula": "User usage {{user}} + System-paid {{system}} = {{total}}",
       "userCostTotal": "Total user-charged",
       "systemCostTotal": "Total base deductions",
       "profitCalculations": "Profit Calculations",
