@@ -45,7 +45,7 @@ import {
   SuperAdminPageHeader,
 } from './Components/SuperAdminSurface';
 import TokenBreakdownCell from './Components/TokenBreakdownCell';
-import DateRangeChips from './Components/DateRangeChips';
+import DateRangeChips, { formatDateTimeLocal } from './Components/DateRangeChips';
 import TopFeaturesByCostCard from './Components/TopFeaturesByCostCard';
 import AiCostSourceBreakdown, {
   AiCostSourceBadge,
