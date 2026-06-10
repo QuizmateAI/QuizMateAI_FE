@@ -461,8 +461,7 @@ function SourcesPanel({
     try {
       const raw = window.sessionStorage.getItem(`quizmateai:source-jump:${chunkId}`);
       const payload = raw ? JSON.parse(raw) : null;
-      const text = String(payload?.sourceSpan || "").trim();
-      return text.length >= 20 ? text : "";
+      return String(payload?.sourceSpan || "").trim();
     } catch {
       return "";
     }
