@@ -1124,6 +1124,7 @@
       "types": {
         "multipleChoice": "Multiple Choice",
         "multipleSelect": "Multiple Select",
+        "imageBased": "Image-based question",
         "trueFalse": "True / False",
         "fillBlank": "Fill in the Blank",
         "shortAnswer": "Short Answer",
@@ -3326,7 +3327,9 @@
     "skipPhaseSuccess": "Current phase has been skipped successfully.",
     "skipPhaseFail": "Could not update skip decision for this phase.",
     "waitingForResult": "Waiting for your result...",
+    "waitingForResultHint": "Your attempt was just submitted. We are saving the result and this page will refresh automatically.",
     "loading": "Loading result...",
+    "loadingHint": "Summarizing your score and question breakdown...",
     "incompleteAttempt": "This quiz attempt is not complete yet. Return to continue or submit before viewing the result.",
     "pendingOrMissing": "This attempt result is not ready yet or no longer exists.",
     "unavailable": "This attempt result is currently unavailable. Please try again.",

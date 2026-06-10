@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -34,6 +35,7 @@ function GroupSettingsTab({
   profileEditLocked = false,
 }) {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
@@ -130,6 +132,7 @@ function GroupSettingsTab({
       const res = await apiSetGroupVisibility(group.workspaceId, nextIsPublic);
       const newValue = res?.data?.data?.isPublic ?? nextIsPublic;
       setIsPublic(newValue);
+      void queryClient.invalidateQueries({ queryKey: ['groups', 'public'] });
       setVisibilityMsg(
         newValue
           ? t('groupSettingsTab.visibilityPublic', 'Group is now Public')
@@ -142,7 +145,7 @@ function GroupSettingsTab({
     } finally {
       setVisibilityLoading(false);
     }
-  }, [group, isPublic, visibilityLoading, t]);
+  }, [group, isPublic, visibilityLoading, queryClient, t]);
 
   // Chỉ update draft state — KHÔNG call BE. User phải bấm Save mới chuyển.
   // KHÔNG block bởi `joinPolicyLoading`: nếu đang chờ BE từ save trước, user

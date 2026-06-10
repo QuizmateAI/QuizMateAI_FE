@@ -197,6 +197,7 @@ function ChallengeDetailContent({
   handleViewRoundQuiz,
   handleViewSnapshotQuiz,
   isBracketChallenge,
+  isChallengeQuizGenerating = false,
   isDarkMode,
   isLeader,
   isPublished,
@@ -596,19 +597,20 @@ function ChallengeDetailContent({
                   <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-sky-100/80' : 'text-sky-900/75'}`}>
                     {t('challengeDetailView.processingQuizHint', 'The system is still generating questions for this challenge. Return here in a moment to continue reviewing or editing the match.')}
                   </p>
-                  {realtimeChallengeQuizPercent > 0 && realtimeChallengeQuizPercent < 100 && (
-                    <div className="mt-3">
-                      <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold">
-                        <span>{displayedRealtimeChallengeQuizPercent}%</span>
-                      </div>
-                      <div className={`h-2 overflow-hidden rounded-full ${isDarkMode ? 'bg-sky-950/60' : 'bg-sky-100'}`}>
-                        <div
-                          className={`h-full rounded-full transition-[width] duration-150 ease-linear ${isDarkMode ? 'bg-sky-300' : 'bg-sky-500'}`}
-                          style={{ width: `${Math.max(8, displayedRealtimeChallengeQuizPercent)}%` }}
-                        />
-                      </div>
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold">
+                      <span>
+                        {t('challengeDetailView.processingQuizProgressLabel', 'Tiến độ tạo đề')}
+                      </span>
+                      <span>{displayedRealtimeChallengeQuizPercent}%</span>
                     </div>
-                  )}
+                    <div className={`h-2 overflow-hidden rounded-full ${isDarkMode ? 'bg-sky-950/60' : 'bg-sky-100'}`}>
+                      <div
+                        className={`h-full rounded-full transition-[width] duration-150 ease-linear ${isDarkMode ? 'bg-sky-300' : 'bg-sky-500'}`}
+                        style={{ width: `${Math.max(8, displayedRealtimeChallengeQuizPercent)}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -703,17 +705,33 @@ function ChallengeDetailContent({
               t={t}
             />
 
-            <LeaderRoleSwitcher
-              detail={detail}
-              isLeader={isLeader}
-              isPublished={isPublished}
-              isDarkMode={isDarkMode}
-              myReviewContributor={myReviewContributorRecord}
-              actionLoading={actionLoading}
-              handleSwitchLeaderToReviewer={handleSwitchLeaderToReviewer}
-              handleSwitchLeaderToParticipant={handleSwitchLeaderToParticipant}
-              t={t}
-            />
+            {isChallengeQuizGenerating ? (
+              <div className={`mt-3 rounded-xl border px-4 py-3 ${
+                isDarkMode ? 'border-amber-500/30 bg-amber-500/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-950'
+              }`}>
+                <div className="flex items-start gap-2">
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p className="text-xs leading-relaxed">
+                    {t(
+                      'challengeDetailView.reviewerPanel.waitQuizGenerationHint',
+                      'Đề challenge đang được tạo. Vui lòng đợi hoàn tất rồi mới mời reviewer hoặc chuyển sang tự review.',
+                    )}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <LeaderRoleSwitcher
+                detail={detail}
+                isLeader={isLeader}
+                isPublished={isPublished}
+                isDarkMode={isDarkMode}
+                myReviewContributor={myReviewContributorRecord}
+                actionLoading={actionLoading}
+                handleSwitchLeaderToReviewer={handleSwitchLeaderToReviewer}
+                handleSwitchLeaderToParticipant={handleSwitchLeaderToParticipant}
+                t={t}
+              />
+            )}
 
             {(detail.reviewContributors || []).length > 0 && (
               <ul className="mt-3 flex flex-col gap-2">
@@ -756,7 +774,7 @@ function ChallengeDetailContent({
                           {getReviewerStatusCopy(c, t)}
                         </div>
                       </div>
-                      {!isPublished && (
+                      {!isPublished && !isChallengeQuizGenerating && (
                         <button
                           type="button"
                           onClick={() => handleRemoveReviewer(c.userId)}
@@ -780,7 +798,7 @@ function ChallengeDetailContent({
                 })}
               </ul>
             )}
-            {!isPublished && (
+            {!isPublished && !isChallengeQuizGenerating && (
               <>
                 <div className="mt-3 flex flex-wrap items-end gap-2">
                   <div className="min-w-[240px] flex-1">

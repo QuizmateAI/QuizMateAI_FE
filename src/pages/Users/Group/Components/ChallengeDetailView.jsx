@@ -557,25 +557,40 @@ export default function ChallengeDetailView({
   const snapshotQuizId = Number(detail?.snapshotQuizId) || 0;
   const snapshotStatusKeyRaw = String(detail?.snapshotQuizStatus || '').toUpperCase();
 
-  const aiEffectivelyDone = Number(detail?.snapshotQuizTotalQuestion) > 0;
   const realtimeChallengeQuizTaskId = snapshotQuizId > 0
     ? String(quizGenerationTaskByQuizId?.[snapshotQuizId] ?? '').trim()
     : '';
+  const directChallengeQuizPercent = clampPercent(
+    detail?.snapshotQuizPercent
+    ?? detail?.snapshotQuizProgressPercent
+    ?? detail?.snapshotQuizProcessingPercent
+    ?? detail?.percent
+    ?? detail?.progressPercent
+    ?? 0,
+  );
   const realtimeChallengeQuizPercent = snapshotQuizId > 0
-    ? clampPercent(quizGenerationProgressByQuizId?.[snapshotQuizId] ?? 0)
-    : 0;
-  const hasRealtimeChallengeQuizActivity = !aiEffectivelyDone
-    && snapshotQuizId > 0 && (
-      (Boolean(realtimeChallengeQuizTaskId) && realtimeChallengeQuizPercent < 100)
-      || (realtimeChallengeQuizPercent > 0 && realtimeChallengeQuizPercent < 100)
-    );
+    ? Math.max(
+      directChallengeQuizPercent,
+      clampPercent(quizGenerationProgressByQuizId?.[snapshotQuizId] ?? 0),
+    )
+    : directChallengeQuizPercent;
+  const hasRealtimeChallengeQuizActivity = snapshotQuizId > 0 && (
+    (Boolean(realtimeChallengeQuizTaskId) && realtimeChallengeQuizPercent < 100)
+    || (realtimeChallengeQuizPercent > 0 && realtimeChallengeQuizPercent < 100)
+  );
   const snapshotStatusOverridesRealtime = snapshotStatusKeyRaw === 'ACTIVE'
     || (snapshotStatusKeyRaw === 'ERROR' && !hasRealtimeChallengeQuizActivity);
   const hasRealtimeChallengeQuizProcessing = !snapshotStatusOverridesRealtime && hasRealtimeChallengeQuizActivity;
   const showChallengeQuizCard = hasSnapshotQuiz || detail?.sourceMode === 'NEW_CHALLENGE_QUIZ';
-  const showChallengeQuizProcessingState = showChallengeQuizCard
-    && !aiEffectivelyDone
-    && (snapshotStatusKeyRaw === 'PROCESSING' || hasRealtimeChallengeQuizProcessing || isSnapshotPendingForNewChallenge);
+  const isChallengeQuizGenerating = showChallengeQuizCard
+    && snapshotStatusKeyRaw !== 'ACTIVE'
+    && (
+      snapshotStatusKeyRaw === 'PROCESSING'
+      || hasRealtimeChallengeQuizProcessing
+      || isSnapshotPendingForNewChallenge
+      || (hasRealtimeChallengeQuizActivity && realtimeChallengeQuizPercent < 100)
+    );
+  const showChallengeQuizProcessingState = isChallengeQuizGenerating;
   const detailTimedOut = isRequestTimeoutError(detailError);
   const isVietnameseLanguage = String(i18n?.language || '').toLowerCase().startsWith('vi');
 
@@ -591,7 +606,7 @@ export default function ChallengeDetailView({
     }
 
     if (realtimeChallengeQuizPercent <= 0) {
-      setDisplayedRealtimeChallengeQuizPercent(0);
+      setDisplayedRealtimeChallengeQuizPercent((current) => (current > 0 ? current : 2));
       return;
     }
 
@@ -608,7 +623,16 @@ export default function ChallengeDetailView({
 
   useEffect(() => {
     if (!showChallengeQuizProcessingState) return undefined;
-    if (realtimeChallengeQuizPercent <= 0 || realtimeChallengeQuizPercent >= 100) return undefined;
+    if (realtimeChallengeQuizPercent >= 100) return undefined;
+
+    if (realtimeChallengeQuizPercent <= 0) {
+      if (displayedRealtimeChallengeQuizPercent >= 8) return undefined;
+      const timerId = globalThis.setTimeout(() => {
+        setDisplayedRealtimeChallengeQuizPercent((current) => Math.min(current + 1, 8));
+      }, CHALLENGE_PROGRESS_TICK_MS * 2);
+      return () => globalThis.clearTimeout(timerId);
+    }
+
     if (displayedRealtimeChallengeQuizPercent >= realtimeChallengeQuizPercent) return undefined;
 
     const timerId = globalThis.setTimeout(() => {
@@ -804,11 +828,9 @@ export default function ChallengeDetailView({
       : t(`groupWorkspace.challenge.quizStatus.${snapshotStatusKeyRaw}`, snapshotStatusKeyRaw))
     : null;
 
-  const snapshotDisplayStatusKeyRaw = aiEffectivelyDone
-    ? snapshotStatusKeyRaw
-    : (hasRealtimeChallengeQuizProcessing || isSnapshotPendingForNewChallenge)
-      ? 'PROCESSING'
-      : snapshotStatusKeyRaw;
+  const snapshotDisplayStatusKeyRaw = snapshotStatusKeyRaw === 'ACTIVE'
+    ? 'ACTIVE'
+    : (isChallengeQuizGenerating ? 'PROCESSING' : snapshotStatusKeyRaw);
   const hasSnapshotQuizContent = Number(detail.snapshotQuizTotalQuestion) > 0;
   const effectiveChallengePublishReady = hasBackendRoundQuizPlan ? bracketRoundQuizReady : challengePublishReady;
   const leaderFairPlayBlind = Boolean(detail.leaderParticipates)
@@ -947,6 +969,7 @@ export default function ChallengeDetailView({
       cardCls={cardCls}
       detail={detail}
       displayedRealtimeChallengeQuizPercent={displayedRealtimeChallengeQuizPercent}
+      isChallengeQuizGenerating={isChallengeQuizGenerating}
       editDescription={editDescription}
       editDialogOpen={editDialogOpen}
       editEndDate={editEndDate}

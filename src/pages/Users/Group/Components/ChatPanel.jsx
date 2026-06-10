@@ -465,7 +465,26 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
         );
       }
       case "quizDetail":
-        return selectedQuiz ? (
+        if (!selectedQuiz) {
+          return (
+            <LazyQuizListView
+              isDarkMode={isDarkMode}
+              onCreateQuiz={() => onChangeView?.("createQuiz")}
+              onViewQuiz={onViewQuiz}
+              contextType="GROUP"
+              contextId={workspaceId}
+              hideCreateButton={!canCreateQuiz}
+              disableCreate={!canCreateQuiz}
+              refreshToken={quizListRefreshToken}
+              groupRole={role}
+              groupCurrentUserId={groupWorkspaceCurrentUserId}
+              quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+              quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
+              studioSubFilter={groupSidebarQuizCreateMode}
+            />
+          );
+        }
+        return (
           <LazyQuizDetailView
             isDarkMode={isDarkMode}
             quiz={selectedQuiz}
@@ -485,7 +504,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             challengeSnapshotReviewMode={challengeSnapshotReviewMode}
             canConvertQuizToFlashcard={canConvertQuizToFlashcard}
           />
-        ) : null;
+        );
       case "editQuiz":
         return selectedQuiz ? (
           <LazyEditQuizForm

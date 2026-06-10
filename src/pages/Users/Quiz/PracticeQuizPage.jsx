@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/utils/quizAttemptTracker';
 import { buildQuizResultPath } from '@/lib/routePaths';
+import { autoSubmitGroupAssignmentAfterQuiz } from '@/pages/Users/Group/utils/autoSubmitGroupAssignmentAfterQuiz';
 
 function normalizeTextValue(value) {
   return String(value || '')
@@ -465,6 +466,11 @@ export default function PracticeQuizPage() {
     try {
       await submitAttempt(attemptId);
       markQuizCompleted(quizId);
+      await autoSubmitGroupAssignmentAfterQuiz({
+        sourceWorkspaceId: location.state?.sourceWorkspaceId,
+        groupAssignmentId: location.state?.groupAssignmentId,
+        attemptId,
+      });
       await new Promise(resolve => setTimeout(resolve, 500));
       navigate(buildQuizResultPath(attemptId), {
         state: {

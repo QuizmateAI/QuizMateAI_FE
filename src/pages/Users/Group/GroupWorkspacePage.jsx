@@ -174,6 +174,25 @@ const SUBVIEW_SCOPED_QUERY_PARAMS = new Set([
   'challengeRound',
 ]);
 
+function buildGroupSectionQueryParams(searchParams, section, extraQuery = {}) {
+  const preservedQuery = {};
+  for (const [key, value] of searchParams.entries()) {
+    if (!key || key === 'section' || SUBVIEW_SCOPED_QUERY_PARAMS.has(key)) continue;
+    preservedQuery[key] = value;
+  }
+  return section ? { section, ...preservedQuery, ...extraQuery } : { ...preservedQuery, ...extraQuery };
+}
+
+function syncGroupSectionSearchParams(setSearchParams, searchParams, section, extraQuery = {}) {
+  const query = buildGroupSectionQueryParams(searchParams, section, extraQuery);
+  const next = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => {
+    if (value == null || value === '') return;
+    next.set(key, String(value));
+  });
+  setSearchParams(next, { replace: true });
+}
+
 function GroupWorkspacePage() {
   const queryClient = useQueryClient();
   const { workspaceId } = useParams();
@@ -1203,6 +1222,8 @@ function GroupWorkspacePage() {
     if (!viewQuizIdParam || isCreating || !resolvedWorkspaceId) return;
     const qid = Number(viewQuizIdParam);
     if (!Number.isInteger(qid) || qid <= 0) return;
+    // User đang ở list/tạo/sửa quiz — không mở lại detail từ viewQuizId còn trên URL.
+    if (['quiz', 'createQuiz', 'editQuiz'].includes(activeView)) return;
     // Đã có quiz đang mở khớp viewQuizId → khỏi load lại; sync effect sẽ giữ URL.
     if (Number(selectedQuiz?.quizId) === qid && activeView === 'quizDetail') return;
 
@@ -1242,8 +1263,7 @@ function GroupWorkspacePage() {
   // load effect kịp setActiveView('quizDetail'). Nếu sync effect tự xóa viewQuizId
   // dựa vào activeView cũ (chưa update kịp), sẽ race và xóa nhầm — gây bug "click
   // Xem đề lại ra UI quiz list/AI panel" (URL mất viewQuizId trước khi load effect đọc).
-  // Khi user back ra list, URL còn viewQuizId vẫn an toàn vì load effect có guard
-  // không reload nếu selectedQuiz đã khớp; nếu họ muốn xóa thì navigate (handler back) tự xóa.
+  // Khi user back ra list, handleBackFromForm xóa viewQuizId khỏi URL.
   useEffect(() => {
     if (activeView !== 'quizDetail') return;
     const qid = Number(selectedQuiz?.quizId);
@@ -2860,9 +2880,19 @@ function GroupWorkspacePage() {
       setGroupSidebarFlashcardSubFilter(null);
     }
 
+    if (['quiz', 'createQuiz', 'editQuiz'].includes(actionKey)) {
+      const section = searchParams.get('section') || activeSection || 'quiz';
+      syncGroupSectionSearchParams(setSearchParams, searchParams, section);
+      if (actionKey === 'quiz') {
+        setSelectedQuiz(null);
+        setQuizDetailFromChallengeReview(false);
+      }
+    }
+
     setActiveView(actionKey);
   }, [
     setActiveSection,
+    activeSection,
     canCreateFlashcard,
     canCreateQuiz,
     currentRoleKey,
@@ -2873,6 +2903,8 @@ function GroupWorkspacePage() {
     hasUploadedMaterials,
     canUploadSource,
     planEntitlements.hasWorkspaceAnalytics,
+    searchParams,
+    setSearchParams,
     t,
   ]);
 
@@ -2893,28 +2925,12 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (parentId === 'quiz' && !canCreateQuiz) {
-      showInfo(t('groupWorkspacePage.toast.memberCannotCreateQuiz', 'Member cannot create quizzes.'));
-      return;
-    }
-
-    if (parentId === 'flashcard' && !canCreateFlashcard) {
-      showInfo(t('groupWorkspacePage.toast.memberCannotCreateFlashcard', 'Member cannot create flashcards.'));
-      return;
-    }
-
-
-
     if (activeSection === 'roadmap' && parentId !== 'roadmap') {
       skipNextRoadmapCanonicalizeRef.current = true;
     }
 
-    const preservedQuery = {};
-    for (const [key, value] of searchParams.entries()) {
-      if (!key || key === 'section' || SUBVIEW_SCOPED_QUERY_PARAMS.has(key)) continue;
-      preservedQuery[key] = value;
-    }
-
+    const preservedQuery = buildGroupSectionQueryParams(searchParams, parentId);
+    syncGroupSectionSearchParams(setSearchParams, searchParams, parentId);
     navigateInstant(buildGroupWorkspaceSectionPath(workspaceId, parentId, preservedQuery), { replace: true });
 
     setSelectedQuiz(null);
@@ -2934,7 +2950,8 @@ function GroupWorkspacePage() {
       const mode = modeByChild[childId] ?? null;
       setGroupSidebarQuizCreateMode(mode);
       setGroupSidebarFlashcardSubFilter(null);
-      setActiveView('createQuiz');
+      // Member không có quyền tạo vẫn dùng submenu để lọc/xem danh sách quiz.
+      setActiveView(canCreateQuiz ? 'createQuiz' : 'quiz');
     } else if (parentId === 'flashcard') {
       const fcModeByChild = {
         flashcardAi: 'ai',
@@ -2958,6 +2975,7 @@ function GroupWorkspacePage() {
     navigateInstant,
     searchParams,
     setActiveSection,
+    setSearchParams,
     showInfo,
     t,
     workspaceId,
@@ -3805,6 +3823,17 @@ function GroupWorkspacePage() {
       formToList.quizDetail = 'roadmap';
     }
     const nextView = formToList[activeView] || null;
+    if (
+      (activeView === 'quizDetail' && nextView !== 'quizDetail' && nextView !== 'editQuiz')
+      || (activeView === 'createQuiz' && nextView === 'quiz')
+    ) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('viewQuizId');
+      next.delete('tab');
+      next.delete('challengeEventId');
+      next.delete('challengeRound');
+      setSearchParams(next, { replace: true });
+    }
     if ((activeView === 'editQuiz' || activeView === 'createQuiz') && searchParams.get('challengeDraft') === '1') {
       const next = new URLSearchParams(searchParams);
       next.delete('challengeDraft');

@@ -18,6 +18,7 @@ import { markQuizAttempted, markQuizCompleted } from '@/utils/quizAttemptTracker
 import { buildQuizResultPath } from '@/lib/routePaths';
 import MixedMathText from '@/components/math/MixedMathText';
 import { markChallengeAttemptFinished } from './utils/challengeAttemptCache';
+import { autoSubmitGroupAssignmentAfterQuiz } from '@/pages/Users/Group/utils/autoSubmitGroupAssignmentAfterQuiz';
 
 export default function ExamQuizPage() {
   const { quizId } = useParams();
@@ -337,10 +338,11 @@ export default function ExamQuizPage() {
         }
         markQuizCompleted(quizId);
         markChallengeAttemptFinished(queryClient, location.state?.challengeContext);
-        // Add delay to ensure backend finishes processing before navigating
-        // Tăng từ 500ms lên 1500ms để backend có đủ thời gian xử lý và đánh dấu attempt thành COMPLETED
-        // Điều này tránh lỗi 400 "Lượt làm quiz chưa hoàn thành"
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await autoSubmitGroupAssignmentAfterQuiz({
+          sourceWorkspaceId: location.state?.sourceWorkspaceId,
+          groupAssignmentId: location.state?.groupAssignmentId,
+          attemptId,
+        });
         navigate(buildQuizResultPath(attemptId), {
           state: {
             quizId,
@@ -611,18 +613,6 @@ export default function ExamQuizPage() {
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
         <h2 className="text-xl text-slate-600 dark:text-slate-300">Quiz not found</h2>
-      </div>
-    );
-  }
-
-  // Show loading state while submitting to prevent white screen (race condition with result page)
-  if (isSubmitted) {
-    return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center flex-col gap-4', fontClass)} style={quizFontStyle}>
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
-          {t('workspace.quiz.examActions.processing', 'Processing your submission...')}
-        </p>
       </div>
     );
   }

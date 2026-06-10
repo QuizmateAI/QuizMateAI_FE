@@ -499,16 +499,18 @@ function QuizListView({
   const handleConfirmExamStart = useCallback(() => {
     const resolvedQuizId = resolveQuizNavigationId(examStartQuiz);
     if (!resolvedQuizId) return;
+    const assignmentMeta = assignedQuizMap?.get?.(Number(resolvedQuizId)) || null;
 
     navigate(buildQuizAttemptPath("exam", resolvedQuizId), {
       state: {
         returnToQuizPath: resolvedReturnToPath,
         autoStart: true,
+        groupAssignmentId: assignmentMeta?.assignmentId ?? null,
         ...quizNavigationSourceState,
       },
     });
     setExamStartQuiz(null);
-  }, [examStartQuiz, navigate, quizNavigationSourceState, resolvedReturnToPath]);
+  }, [assignedQuizMap, examStartQuiz, navigate, quizNavigationSourceState, resolvedReturnToPath]);
 
   // Lấy danh sách quiz từ API theo context hiện tại (workspace/roadmap/phase/knowledge)
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {

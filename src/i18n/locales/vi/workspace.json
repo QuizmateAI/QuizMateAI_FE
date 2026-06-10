@@ -1118,10 +1118,11 @@
       "types": {
         "multipleChoice": "Trắc nghiệm một đáp án",
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
+        "imageBased": "Câu hỏi kèm ảnh",
         "trueFalse": "Đúng / Sai",
         "fillBlank": "Điền chỗ trống",
         "shortAnswer": "Trả lời ngắn",
-        "matching": "Matching"
+        "matching": "Ghép đôi"
       },
       "difficulty": "Độ khó",
       "difficultyLevels": {
@@ -1591,8 +1592,8 @@
         "questionDeletionLogTitle": "Question Deletion Log Title",
         "questionDeletionLogHint": "Question Deletion Log Hint",
         "questionDeletionLogReason": "Lý do: {{note}}",
-        "convertToFlashcardOnceHint": "Convert To Flashcard Once Hint",
-        "convertToFlashcard": "Convert To Flashcard",
+        "convertToFlashcardOnceHint": "Chỉ chuyển được một lần cho mỗi quiz. Ở nhóm, cần quyền «Chuyển quiz sang flashcard» do leader cấp.",
+        "convertToFlashcard": "Chuyển thành flashcard",
         "shuffleUpdateFailed": "Shuffle Update Failed"
       },
       "edit": {
@@ -3326,7 +3327,9 @@
     "skipPhaseSuccess": "Đã bỏ qua phase hiện tại.",
     "skipPhaseFail": "Không thể cập nhật quyết định skip phase.",
     "waitingForResult": "Đang chờ hệ thống trả kết quả bài làm...",
+    "waitingForResultHint": "Bài làm vừa nộp — hệ thống đang lưu kết quả. Trang sẽ tự tải khi sẵn sàng.",
     "loading": "Đang tải kết quả...",
+    "loadingHint": "Đang tổng hợp điểm số và chi tiết từng câu hỏi...",
     "incompleteAttempt": "Lượt làm quiz này chưa hoàn thành. Hãy quay lại để tiếp tục làm bài hoặc nộp bài trước khi xem kết quả.",
     "pendingOrMissing": "Kết quả bài làm này chưa sẵn sàng hoặc không còn tồn tại.",
     "unavailable": "Hiện chưa lấy được kết quả bài làm này. Vui lòng thử lại.",

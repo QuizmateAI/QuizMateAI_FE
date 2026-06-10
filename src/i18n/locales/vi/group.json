@@ -445,7 +445,7 @@
         "memberStats": "Thống kê thành viên",
         "wallet": "Ví",
         "settings": "Cài đặt",
-        "showcase": "Showcase"
+        "showcase": "Trưng bày"
       },
       "expandSidebar": "Mở rộng sidebar",
       "collapseSidebar": "Thu gọn sidebar"
@@ -687,11 +687,15 @@
       "cancel": "Đóng",
       "confirmAssign": "Giao ngay",
       "assigning": "Đang giao...",
-      "snapshotGenerating": "Snapshot Generating",
-      "snapshotMissingMember": "Snapshot Missing Member",
-      "snapshotGenerateSuccess": "Snapshot Generate Success",
-      "snapshotGenerateFailed": "Snapshot Generate Failed",
-      "detailLeaderOnly": "Detail Leader Only"
+      "snapshotGenerating": "Đang cập nhật snapshot...",
+      "snapshotMissingMember": "Không tìm thấy mã snapshot của thành viên.",
+      "snapshotGenerateSuccess": "Đã cập nhật snapshot học tập.",
+      "snapshotGenerateFailed": "Không thể cập nhật snapshot học tập.",
+      "detailLeaderOnly": "Chỉ leader mới có thể mở trang chi tiết thành viên khác.",
+      "actions": {
+        "updateSnapshot": "Cập nhật snapshot",
+        "backToList": "Quay lại danh sách"
+      }
     },
     "forms": {
       "loadingMaterials": "Đang tải tài liệu dùng chung...",
@@ -2147,7 +2151,7 @@
     "leaderSetupFlowHint": "Leader soạn đề, reviewer xác nhận, rồi publish challenge.",
     "processingQuizTitle": "Đề challenge đang được tạo",
     "processingQuizHint": "Hệ thống vẫn đang sinh câu hỏi cho challenge này. Quay lại đây sau ít phút để tiếp tục review hoặc chỉnh sửa đề.",
-    "processingQuizProgressLabel": "Tiến độ WebSocket",
+    "processingQuizProgressLabel": "Tiến độ tạo đề",
     "snapshotPendingTitle": "Đang chuẩn bị đề challenge",
     "snapshotPendingHint": "Hệ thống đang khởi tạo đề challenge. Các tùy chọn quản lý (soạn đề, mời reviewer, xuất bản) sẽ hiện sau khi đề sẵn sàng.",
     "reviewerPanel": {
@@ -2172,7 +2176,8 @@
       "reviewerBadge": "Reviewer",
       "needReviewerWhenLeaderParticipates": "Leader đang tham gia, nên cần mời ít nhất 1 reviewer. Bạn có thể mời tối đa 2 reviewer.",
       "optionalReviewersHint": "Reviewer là tùy chọn. Nếu được mời, họ có thể giúp kiểm tra và dọn nội dung trước khi bạn publish đề challenge.",
-      "publishedLockHint": "Challenge đã publish — danh sách reviewer đã khóa, không thể thêm hoặc gỡ."
+      "publishedLockHint": "Challenge đã publish — danh sách reviewer đã khóa, không thể thêm hoặc gỡ.",
+      "waitQuizGenerationHint": "Đề challenge đang được tạo. Vui lòng đợi hoàn tất rồi mới mời reviewer hoặc chuyển sang tự review."
     },
     "actions": {
       "publish": "Xuất bản challenge",
