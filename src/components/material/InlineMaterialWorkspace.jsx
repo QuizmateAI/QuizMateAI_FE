@@ -1,4 +1,5 @@
  import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 import MaterialPdfViewer from "./MaterialPdfViewer";
+import PaginatedExtractedDocument from "./PaginatedExtractedDocument";
 import EmbeddedKnowledgeTree from "./EmbeddedKnowledgeTree";
 import AskAIPanel from "./AskAIPanel";
 import ToastError from "@/components/system/ToastError";
@@ -25,12 +27,21 @@ import {
   updateMaterialNote,
 } from "../../api/MaterialNoteAPI";
 import {
+  getDocumentSections,
   getExtractedText,
   getMaterialContent,
   getModerationReportDetail,
+  getRAGChunks,
   reviewMaterial,
 } from "../../api/MaterialAPI";
-import { MaterialContentRenderer } from "../features/material/MaterialContentRenderer";
+import { getRenderableDocumentText, MaterialContentRenderer } from "../features/material/MaterialContentRenderer";
+import {
+  extractRagChunks,
+  findPageForSourceSpan,
+  normalizeDocumentSections,
+  paginateDocumentContent,
+} from "@/utils/documentPagination";
+import { pickPdfUrl } from "@/utils/materialFileUrl";
 
 // ============================================================================
 // InlineMaterialWorkspace - Variant C redesign:
@@ -38,37 +49,6 @@ import { MaterialContentRenderer } from "../features/material/MaterialContentRen
 //   - Left (main): sub-toolbar (breadcrumb + actions) + PDF + floating CTAs
 //   - Right (440px sidebar): progress card + cÃ¢y kiáº¿n thá»©c chapter cards
 // ============================================================================
-
-function pickPdfUrl(source) {
-  if (!source) return null;
-  const candidates = [
-    source.storageURL,
-    source.storageUrl,
-    source.storage_url,
-    source.fileURL,
-    source.fileUrl,
-    source.file_url,
-    source.materialUrl,
-    source.material_url,
-    source.downloadURL,
-    source.downloadUrl,
-    source.download_url,
-    source.r2Url,
-    source.r2_url,
-    source.url,
-    source.link,
-    source.contentURL,
-    source.contentUrl,
-    source.content_url,
-  ];
-  for (const c of candidates) {
-    if (typeof c === "string" && c.toLowerCase().includes(".pdf")) return c;
-  }
-  for (const c of candidates) {
-    if (typeof c === "string" && /^https?:\/\//.test(c)) return c;
-  }
-  return null;
-}
 
 function isPdfMaterial(source) {
   if (!source) return false;
@@ -128,17 +108,22 @@ function formatMaterialTypeLabel(source, t) {
   return t("workspace.material.types.document", "Document");
 }
 
-function estimateNonPdfPageCount(extractedContent) {
-  const text = String(extractedContent?.value || extractedContent?.script || "").trim();
-  if (!text) return 1;
-
-  const sheetCount = (text.match(/^#{1,3}\s*Sheet\s*:/gim) || []).length;
-  if (sheetCount > 0) return sheetCount;
-
-  const headingCount = (text.match(/^#{1,3}\s+\S.+$/gm) || []).length;
-  if (headingCount > 1) return headingCount;
-
-  return Math.max(1, Math.ceil(text.length / 2400));
+function isExtractedTextDocument(source) {
+  if (!source || isPdfMaterial(source)) return false;
+  const type = String(
+    source?.type || source?.materialType || source?.contentType || "",
+  ).toLowerCase();
+  const name = String(
+    source?.name || source?.title || source?.originalFileName || "",
+  ).toLowerCase();
+  const combined = `${type} ${name}`;
+  return !(
+    combined.includes("image")
+    || combined.includes("audio")
+    || combined.includes("video")
+    || combined.includes("youtube")
+    || combined.includes("vimeo")
+  );
 }
 
 function extractTextPayload(payload) {
@@ -428,10 +413,58 @@ export default function InlineMaterialWorkspace({
   const materialTypeLabel = formatMaterialTypeLabel(source, t);
   const coverInitial = getCoverInitial(sourceTitle);
   const showPdf = isPdfMaterial(source) && pdfUrl;
-  const nonPdfPageCount = useMemo(
-    () => (showPdf ? 0 : estimateNonPdfPageCount(extractedContent)),
-    [extractedContent, showPdf],
+  const sourceTypeLower = String(
+    source?.type || source?.materialType || source?.contentType || "",
+  ).toLowerCase();
+  const looksLikeMedia =
+    sourceTypeLower.includes("image") ||
+    sourceTypeLower.includes("audio") ||
+    sourceTypeLower.includes("video") ||
+    sourceTypeLower.includes("youtube") ||
+    sourceTypeLower.includes("vimeo");
+  const usePaginatedDocumentView = useMemo(
+    () => isExtractedTextDocument(source) && !looksLikeMedia,
+    [looksLikeMedia, source],
   );
+  const documentSectionsQuery = useQuery({
+    queryKey: ["materialDocumentSections", materialId],
+    queryFn: () => getDocumentSections(materialId),
+    enabled: Boolean(materialId) && usePaginatedDocumentView,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const ragChunksQuery = useQuery({
+    queryKey: ["materialRagChunks", materialId],
+    queryFn: () => getRAGChunks(materialId, 500),
+    enabled: Boolean(materialId) && usePaginatedDocumentView,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const documentSections = useMemo(
+    () => normalizeDocumentSections(documentSectionsQuery.data),
+    [documentSectionsQuery.data],
+  );
+  const ragChunks = useMemo(
+    () => extractRagChunks(ragChunksQuery.data),
+    [ragChunksQuery.data],
+  );
+  const documentPagination = useMemo(() => {
+    if (showPdf || !usePaginatedDocumentView || !extractedContent?.value) {
+      return { pages: [], totalPages: 0 };
+    }
+    const materialType = source?.type || source?.materialType;
+    const renderableText = getRenderableDocumentText(extractedContent.value, materialType);
+    return paginateDocumentContent({
+      fullText: renderableText,
+      sections: documentSections,
+      chunks: ragChunks,
+    });
+  }, [documentSections, extractedContent, ragChunks, showPdf, source, usePaginatedDocumentView]);
+  const nonPdfPageCount = useMemo(() => {
+    if (showPdf) return 0;
+    if (usePaginatedDocumentView) return documentPagination.totalPages || 1;
+    return 1;
+  }, [documentPagination.totalPages, showPdf, usePaginatedDocumentView]);
   const displayTotalPages = showPdf ? totalPages : nonPdfPageCount;
   const showDocumentTools = showPdf || !isPdfMaterial(source);
 
@@ -522,15 +555,6 @@ export default function InlineMaterialWorkspace({
 
   // Fetch ná»™i dung cho non-PDF: media (image/audio/video) -> {url, transcript},
   // text/docx -> extracted markdown. Skip cho PDF (Ä‘Ã£ cÃ³ viewer riÃªng).
-  const sourceTypeLower = String(
-    source?.type || source?.materialType || source?.contentType || "",
-  ).toLowerCase();
-  const looksLikeMedia =
-    sourceTypeLower.includes("image") ||
-    sourceTypeLower.includes("audio") ||
-    sourceTypeLower.includes("video") ||
-    sourceTypeLower.includes("youtube") ||
-    sourceTypeLower.includes("vimeo");
   const needsContentFetch =
     Boolean(materialId) && !isPdfMaterial(source);
 
@@ -576,34 +600,29 @@ export default function InlineMaterialWorkspace({
     };
   }, [materialId, needsContentFetch, looksLikeMedia]);
 
+  const jumpToNonPdfPage = useCallback((page) => {
+    const targetPage = Math.max(1, Math.min(nonPdfPageCount || 1, page));
+    setCurrentPage(targetPage);
+    setHighlightPageRange([targetPage, targetPage]);
+  }, [nonPdfPageCount]);
+
   const handleLeafSelect = useCallback((selection) => {
     if (!selection) return;
     const { pageStart, pageEnd } = selection;
     if (pageStart) {
       setHighlightPageRange([pageStart, pageEnd || pageStart]);
-      pdfRef.current?.jumpToPage(pageStart);
+      if (showPdf) {
+        pdfRef.current?.jumpToPage(pageStart);
+      } else {
+        jumpToNonPdfPage(pageStart);
+      }
       setCurrentPage(pageStart);
     }
-  }, []);
+  }, [jumpToNonPdfPage, showPdf]);
 
   const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
   }, []);
-
-  const jumpToNonPdfPage = useCallback((page) => {
-    const targetPage = Math.max(1, Math.min(nonPdfPageCount || 1, page));
-    setCurrentPage(targetPage);
-
-    const container = nonPdfScrollRef.current;
-    if (!container) return;
-
-    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
-    const ratio = nonPdfPageCount > 1 ? (targetPage - 1) / (nonPdfPageCount - 1) : 0;
-    container.scrollTo({
-      top: Math.round(maxScrollTop * ratio),
-      behavior: "smooth",
-    });
-  }, [nonPdfPageCount]);
 
   const handleTotalPagesChange = useCallback((total) => {
     setTotalPages(total);
@@ -616,12 +635,39 @@ export default function InlineMaterialWorkspace({
     }
     setHighlightPageRange([targetPage, targetPage]);
     setCurrentPage(targetPage);
-  }, [initialPage, sourceTypeLower]);
+  }, [initialPage, source]);
+
+  useEffect(() => {
+    if (showPdf || !usePaginatedDocumentView || !extractedContent?.value) return;
+    const { pages, totalPages } = documentPagination;
+    if (!pages.length) return;
+
+    const targetFromUrl = Number(initialPage);
+    const resolvedPage = initialSearchText
+      ? findPageForSourceSpan(pages, initialSearchText)
+      : Number.isInteger(targetFromUrl) && targetFromUrl > 0
+        ? Math.min(targetFromUrl, totalPages)
+        : 1;
+
+    setHighlightPageRange([resolvedPage, resolvedPage]);
+    setCurrentPage(resolvedPage);
+  }, [
+    documentPagination,
+    extractedContent,
+    initialPage,
+    initialSearchText,
+    showPdf,
+    usePaginatedDocumentView,
+  ]);
 
   useEffect(() => {
     if (showPdf) return;
+    const hasSourceJump = Boolean(initialSearchText)
+      || (Number.isInteger(Number(initialPage)) && Number(initialPage) > 0);
+    if (hasSourceJump) return;
     setCurrentPage(1);
-  }, [materialId, showPdf]);
+    setHighlightPageRange(null);
+  }, [initialPage, initialSearchText, materialId, showPdf]);
 
   const handleAnnotationCreate = useCallback(
     async (annotation) => {
@@ -1127,13 +1173,29 @@ export default function InlineMaterialWorkspace({
                   {t("workspace.material.contentLoadFailed", "Could not load material content.")}
                 </p>
               )}
-              {!contentLoading && !contentError && extractedContent && (
+              {!contentLoading && !contentError && extractedContent && usePaginatedDocumentView && (
+                <PaginatedExtractedDocument
+                  value={extractedContent.value}
+                  type={source?.type || source?.materialType}
+                  script={extractedContent.script}
+                  scriptLabel={t("workspace.material.transcriptLabel", "Transcript")}
+                  isDarkMode={isDarkMode}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
+                  pages={documentPagination.pages}
+                  highlightSpan={initialSearchText}
+                  scrollHighlightIntoView={Boolean(initialSearchText)}
+                  scrollContainerRef={nonPdfScrollRef}
+                />
+              )}
+              {!contentLoading && !contentError && extractedContent && !usePaginatedDocumentView && (
                 <MaterialContentRenderer
                   value={extractedContent.value}
                   type={source?.type || source?.materialType}
                   script={extractedContent.script}
                   scriptLabel={t("workspace.material.transcriptLabel", "Transcript")}
                   isDarkMode={isDarkMode}
+                  highlightSpan={initialSearchText}
                 />
               )}
               {!contentLoading && !contentError && !extractedContent && (
@@ -1251,7 +1313,11 @@ export default function InlineMaterialWorkspace({
                 onJumpToPage={(page) => {
                   if (page == null) return;
                   setHighlightPageRange([page, page]);
-                  pdfRef.current?.jumpToPage(page);
+                  if (showPdf) {
+                    pdfRef.current?.jumpToPage(page);
+                  } else {
+                    jumpToNonPdfPage(page);
+                  }
                   setCurrentPage(page);
                 }}
               />
