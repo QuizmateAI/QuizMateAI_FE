@@ -303,20 +303,29 @@ function QuizDetailView({
     attemptHistoryProbeKeyRef.current = null;
   }, [quiz?.quizId]);
 
+  // Ghi nhận "đã xem đề" CHỈ khi user thực sự mở tab Kiểm tra (review) — nơi câu
+  // hỏi + đáp án hiển thị. Tab Tổng quan chỉ có metadata nên chưa tính là "thấy đề".
+  // Nhờ vậy leader bấm "Xem đề" (mặc định đứng ở Tổng quan) vẫn còn quyền "Quay lại
+  // tham gia thi"; chỉ khi chủ động chuyển sang tab Kiểm tra mới bị khóa.
+  const recordedReviewViewQuizIdRef = React.useRef(null);
   useEffect(() => {
     if (!challengeSnapshotReviewMode || _contextType !== "GROUP" || !_contextId || !quiz?.quizId) return;
+    if (activeTab !== "review") return;
     const ws = Number(_contextId);
     const qid = Number(quiz.quizId);
     if (!Number.isFinite(ws) || !Number.isFinite(qid)) return;
+    if (recordedReviewViewQuizIdRef.current === qid) return;
+    recordedReviewViewQuizIdRef.current = qid;
     void (async () => {
       try {
         await recordQuizReviewView(ws, qid);
         queryClient.invalidateQueries({ queryKey: ["challenge-detail", ws] });
       } catch {
+        recordedReviewViewQuizIdRef.current = null;
         /* Chỉ reviewer mới thành công; lỗi khác không chặn xem đề */
       }
     })();
-  }, [challengeSnapshotReviewMode, _contextType, _contextId, quiz?.quizId, queryClient]);
+  }, [challengeSnapshotReviewMode, _contextType, _contextId, quiz?.quizId, activeTab, queryClient]);
 
   // Lấy toàn bộ dữ liệu quiz chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {

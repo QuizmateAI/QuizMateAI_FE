@@ -1439,7 +1439,9 @@
       "profit": "Lợi nhuận QuizMate",
       "unmatched": "Request chưa đối soát",
       "providerCostBreakdown": "Free: {{free}} · User gói: {{user}} · Nhóm: {{group}}",
-      "profitBreakdown": "User gói: {{user}} · Nhóm: {{group}} · Free: {{free}}"
+      "providerCostBreakdownWithOther": "Free: {{free}} · User gói: {{user}} · Nhóm: {{group}} · Khác: {{other}}",
+      "profitBreakdown": "User gói: {{user}} · Nhóm: {{group}} · Free: {{free}}",
+      "profitBreakdownWithOther": "User gói: {{user}} · Nhóm: {{group}} · Free: {{free}} · Khác: {{other}}"
     },
     "filters": {
       "open": "Bộ lọc",
@@ -2490,7 +2492,8 @@
       "baseRevenue": "Tiền gốc",
       "baseRevenueHelper": "Doanh thu cố định đã khóa sẵn",
       "aiCogs": "Phí AI (COGS)",
-      "aiCogsHelper": "Chỉ phí AI gắn với gói — xem dòng đối chiếu bên dưới",
+      "aiCogsHelper": "Phí AI gắn với gói có mua trong kỳ — xem đối chiếu bên dưới",
+      "aiCogsFilteredHelper": "COGS theo gói đang lọc — xem đối chiếu bên dưới",
       "profit": "Lợi nhuận",
       "profitHelper": "Doanh thu trừ đi chi phí AI",
       "creditRevenue": "Doanh thu Credit",
@@ -2512,10 +2515,12 @@
     },
     "aiCostReconcile": {
       "label": "Đối chiếu phí AI (toàn kỳ):",
-      "attributed": "Gắn với gói",
+      "attributed": "Gắn gói có mua trong kỳ",
       "unattributed": "Chưa gắn gói (free/trial/ngoài kỳ)",
       "system": "Tổng phí AI hệ thống",
-      "hint": "khớp với tab Chi phí AI"
+      "formula": "Gắn gói + Chưa gắn = Tổng hệ thống",
+      "hint": "khớp với tab Chi phí AI / P&L",
+      "filteredNote": "Bảng đang lọc: COGS trên thẻ = tổng các dòng hiển thị; đối chiếu “Gắn gói” dùng cùng phạm vi lọc."
     },
     "aiUsage": {
       "title": "Phí AI theo cách tính tiền",
@@ -2722,6 +2727,7 @@
     "pie": {
       "revenue": "Cơ cấu doanh thu",
       "revenueHint": "Theo nguồn thanh toán.",
+      "revenueGapHint": "Tổng kênh + Khác {{gap}} = doanh thu hero",
       "cost": "Cơ cấu chi phí AI",
       "costHint": "Tách USER_PAID / PLAN_BASED / SYSTEM — số chính xác."
     },
@@ -2736,6 +2742,8 @@
       "systemOutflows": "Phí AI trừ vào Tiền gốc",
       "systemAiOutflows": "Phí AI hệ thống trả",
       "systemAiTotal": "Tổng phí hệ thống trả",
+      "aiCostTotal": "Tổng phí AI",
+      "aiCostFormula": "User sử dụng {{user}} + Hệ thống trả {{system}} = {{total}}",
       "userCostTotal": "Tổng phí tính user",
       "systemCostTotal": "Tổng trừ Tiền gốc",
       "profitCalculations": "Tính toán lợi nhuận",

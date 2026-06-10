@@ -516,6 +516,16 @@ export default function PlanPurchaseReportPage() {
   const aiSystemFeatureCost = Number(aiAuditQuery.data?.systemCostVnd) || 0;
   const aiUsageTotalCost = aiUserPaidCost + aiPlanBasedCost + aiFreeUserCost + aiSystemFeatureCost;
 
+  const summaryTotals = summaryQuery.data ?? {};
+  const fullAttributedCogs = Number(summaryTotals.totalAiProviderCostVnd) || 0;
+  const unattributedCogs = Number(summaryTotals.unattributedAiProviderCostVnd) || 0;
+  const fullSystemCogs = Number(summaryTotals.totalSystemAiProviderCostVnd) || 0;
+  const tableFiltered = Boolean(
+    tableSearch.trim()
+    || tableGroupFilter !== 'all'
+    || tableStatusFilter !== 'all',
+  );
+
   const buyersPageData = buyersQuery.data ?? {};
   const buyers = Array.isArray(buyersPageData.content) ? buyersPageData.content : [];
 
@@ -624,7 +634,9 @@ export default function PlanPurchaseReportPage() {
                 <SuperAdminMetricCard
                   label={t('planPurchases.metric.aiCogs', 'Phí AI (COGS)')}
                   value={formatVnd(filteredTotals.aiProviderCostVnd)}
-                  helper={t('planPurchases.metric.aiCogsHelper', 'Chỉ phí AI gắn với gói — xem dòng đối chiếu bên dưới')}
+                  helper={tableFiltered
+                    ? t('planPurchases.metric.aiCogsFilteredHelper', 'COGS theo gói đang lọc — xem đối chiếu bên dưới')
+                    : t('planPurchases.metric.aiCogsHelper', 'Phí AI gắn với gói có mua trong kỳ — xem đối chiếu bên dưới')}
                   icon={Cpu}
                   tone="rose"
                   isDarkMode={isDarkMode}
@@ -702,6 +714,43 @@ export default function PlanPurchaseReportPage() {
               </>
             )}
           </div>
+          {activeTab === 'plans' && fullSystemCogs > 0 ? (
+            <div
+              className={`mb-6 rounded-2xl border px-4 py-3 text-xs ${
+                isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'
+              }`}
+            >
+              <p className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                {t('planPurchases.aiCostReconcile.label', 'Đối chiếu phí AI (toàn kỳ):')}
+              </p>
+              <p className="mt-1 tabular-nums">
+                {t('planPurchases.aiCostReconcile.attributed', 'Gắn gói có mua trong kỳ')}
+                {': '}
+                <strong>{formatVnd(tableFiltered ? filteredTotals.aiProviderCostVnd : fullAttributedCogs)}</strong>
+                {' · '}
+                {t('planPurchases.aiCostReconcile.unattributed', 'Chưa gắn gói (free/trial/ngoài kỳ)')}
+                {': '}
+                <strong>{formatVnd(unattributedCogs)}</strong>
+                {' · '}
+                {t('planPurchases.aiCostReconcile.system', 'Tổng phí AI hệ thống')}
+                {': '}
+                <strong>{formatVnd(fullSystemCogs)}</strong>
+              </p>
+              <p className={`mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                {t('planPurchases.aiCostReconcile.formula', 'Gắn gói + Chưa gắn = Tổng hệ thống')}
+                {' — '}
+                {t('planPurchases.aiCostReconcile.hint', 'khớp với tab Chi phí AI / P&L')}
+              </p>
+              {tableFiltered ? (
+                <p className={`mt-1 ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
+                  {t(
+                    'planPurchases.aiCostReconcile.filteredNote',
+                    'Bảng đang lọc: COGS trên thẻ = tổng các dòng hiển thị; đối chiếu “Gắn gói” dùng cùng phạm vi lọc.',
+                  )}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {showCharts ? (
             <div
               className={`mb-3 flex flex-wrap items-center gap-2 rounded-2xl border p-3 ${

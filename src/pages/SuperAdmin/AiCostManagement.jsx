@@ -255,6 +255,9 @@ function buildCostAggregatesFromEntries(entries = []) {
     freeUserChargedVnd: 0,
     userPlanChargedVnd: 0,
     groupPlanChargedVnd: 0,
+    userPlanProfitVnd: 0,
+    groupPlanProfitVnd: 0,
+    freeUserProfitVnd: 0,
   };
 
   entries.forEach((entry) => {
@@ -269,12 +272,15 @@ function buildCostAggregatesFromEntries(entries = []) {
     if (audience === 'freeUser') {
       sourceMetrics.freeUserProviderCostVnd += cost;
       sourceMetrics.freeUserChargedVnd += charged;
+      sourceMetrics.freeUserProfitVnd += profit;
     } else if (audience === 'groupPlan') {
       sourceMetrics.groupPlanProviderCostVnd += cost;
       sourceMetrics.groupPlanChargedVnd += charged;
+      sourceMetrics.groupPlanProfitVnd += profit;
     } else {
       sourceMetrics.userPlanProviderCostVnd += cost;
       sourceMetrics.userPlanChargedVnd += charged;
+      sourceMetrics.userPlanProfitVnd += profit;
     }
 
     const bucket = bucketKeyFromTimestamp(entry?.createdAt);
@@ -406,7 +412,6 @@ function AiCostManagement() {
         },
       };
     },
-    placeholderData: (previous) => previous,
   });
   const summary = costQuery.data?.summary ?? null;
   const requests = costQuery.data?.requests ?? [];
@@ -418,32 +423,39 @@ function AiCostManagement() {
     queryKey: [...AI_COST_AGGREGATE_KEY, filters],
     queryFn: async () => {
       const query = buildQuery(filters);
-      const firstResponse = await getAiCostRequests({ ...query, page: 0, size: AI_COST_AGGREGATE_PAGE_SIZE });
-      const firstPage = extractData(firstResponse) || {};
-      const allEntries = Array.isArray(firstPage?.content) ? [...firstPage.content] : [];
-      const totalPages = Number(firstPage?.totalPages || 0);
-      if (totalPages > 1) {
-        const remainingResponses = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, index) => getAiCostRequests({
-            ...query,
-            page: index + 1,
-            size: AI_COST_AGGREGATE_PAGE_SIZE,
-          })),
-        );
-        remainingResponses.forEach((response) => {
-          const pageData = extractData(response) || {};
-          const content = Array.isArray(pageData?.content) ? pageData.content : [];
-          allEntries.push(...content);
+      const allEntries = [];
+      let page = 0;
+      let totalPages = 1;
+      do {
+        const response = await getAiCostRequests({
+          ...query,
+          page,
+          size: AI_COST_AGGREGATE_PAGE_SIZE,
         });
-      }
+        const pageData = extractData(response) || {};
+        const content = Array.isArray(pageData?.content) ? pageData.content : [];
+        allEntries.push(...content);
+        totalPages = Math.max(Number(pageData?.totalPages || 1), 1);
+        page += 1;
+      } while (page < totalPages);
       return buildCostAggregatesFromEntries(allEntries);
     },
-    placeholderData: (previous) => previous,
   });
   const dailyBuckets = aggregateQuery.data?.dailyBuckets ?? [];
   const topFeatures = aggregateQuery.data?.topFeatures ?? [];
-  const sourceSummary = aggregateQuery.data?.sourceMetrics ?? summary;
+  const aggregateMetrics = aggregateQuery.isSuccess ? aggregateQuery.data?.sourceMetrics : null;
+  const sourceSummary = aggregateMetrics ?? summary;
   const aiCostSourceMetrics = useMemo(() => getAiCostSourceMetrics(sourceSummary), [sourceSummary]);
+  const profitBreakdownGapVnd = useMemo(() => {
+    if (!aggregateMetrics || summary?.totalProfitVnd == null) return 0;
+    return toAggregateNumber(summary.totalProfitVnd) - aiCostSourceMetrics.profitSegmentTotalVnd;
+  }, [aggregateMetrics, summary?.totalProfitVnd, aiCostSourceMetrics.profitSegmentTotalVnd]);
+  const showProfitReconcileGap = Math.abs(profitBreakdownGapVnd) >= 1;
+  const providerCostBreakdownGapVnd = useMemo(() => {
+    if (!aggregateMetrics || summary?.totalProviderCostVnd == null) return 0;
+    return toAggregateNumber(summary.totalProviderCostVnd) - aiCostSourceMetrics.costSegmentTotalVnd;
+  }, [aggregateMetrics, summary?.totalProviderCostVnd, aiCostSourceMetrics.costSegmentTotalVnd]);
+  const showProviderCostReconcileGap = Math.abs(providerCostBreakdownGapVnd) >= 1;
 
   useEffect(() => {
     if (costQuery.error) showError(getErrorMessage(t, costQuery.error));
@@ -597,12 +609,20 @@ function AiCostManagement() {
           icon={Coins}
           tone="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
           isDarkMode={isDarkMode}
-          subtext={t('aiCosts.metrics.providerCostBreakdown', {
-            defaultValue: 'Free: {{free}} · User gói: {{user}} · Nhóm: {{group}}',
-            free: formatVnd(aiCostSourceMetrics.freeUserProviderCostVnd),
-            user: formatVnd(aiCostSourceMetrics.userPlanProviderCostVnd),
-            group: formatVnd(aiCostSourceMetrics.groupPlanProviderCostVnd),
-          })}
+          subtext={showProviderCostReconcileGap
+            ? t('aiCosts.metrics.providerCostBreakdownWithOther', {
+              defaultValue: 'Free: {{free}} · User gói: {{user}} · Nhóm: {{group}} · Khác: {{other}}',
+              free: formatVnd(aiCostSourceMetrics.freeUserProviderCostVnd),
+              user: formatVnd(aiCostSourceMetrics.userPlanProviderCostVnd),
+              group: formatVnd(aiCostSourceMetrics.groupPlanProviderCostVnd),
+              other: formatVnd(providerCostBreakdownGapVnd),
+            })
+            : t('aiCosts.metrics.providerCostBreakdown', {
+              defaultValue: 'Free: {{free}} · User gói: {{user}} · Nhóm: {{group}}',
+              free: formatVnd(aiCostSourceMetrics.freeUserProviderCostVnd),
+              user: formatVnd(aiCostSourceMetrics.userPlanProviderCostVnd),
+              group: formatVnd(aiCostSourceMetrics.groupPlanProviderCostVnd),
+            })}
           sparklinePoints={dailyBuckets}
           sparklineKey="providerCostVnd"
           sparklineColor="#f59e0b"
@@ -613,12 +633,20 @@ function AiCostManagement() {
           icon={ArrowUpRight}
           tone="bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
           isDarkMode={isDarkMode}
-          subtext={t('aiCosts.metrics.profitBreakdown', {
-            defaultValue: 'User gói: {{user}} · Nhóm: {{group}} · Free: {{free}}',
-            user: formatVnd(aiCostSourceMetrics.userPlanMarginVnd),
-            group: formatVnd(aiCostSourceMetrics.groupPlanMarginVnd),
-            free: formatVnd(aiCostSourceMetrics.freeUserProfitImpactVnd),
-          })}
+          subtext={showProfitReconcileGap
+            ? t('aiCosts.metrics.profitBreakdownWithOther', {
+              defaultValue: 'User gói: {{user}} · Nhóm: {{group}} · Free: {{free}} · Khác: {{other}}',
+              user: formatVnd(aiCostSourceMetrics.userPlanMarginVnd),
+              group: formatVnd(aiCostSourceMetrics.groupPlanMarginVnd),
+              free: formatVnd(aiCostSourceMetrics.freeUserProfitImpactVnd),
+              other: formatVnd(profitBreakdownGapVnd),
+            })
+            : t('aiCosts.metrics.profitBreakdown', {
+              defaultValue: 'User gói: {{user}} · Nhóm: {{group}} · Free: {{free}}',
+              user: formatVnd(aiCostSourceMetrics.userPlanMarginVnd),
+              group: formatVnd(aiCostSourceMetrics.groupPlanMarginVnd),
+              free: formatVnd(aiCostSourceMetrics.freeUserProfitImpactVnd),
+            })}
           sparklinePoints={dailyBuckets}
           sparklineKey="profitVnd"
           sparklineColor="#8b5cf6"
@@ -627,6 +655,7 @@ function AiCostManagement() {
 
       <AiCostSourceBreakdown
         summary={sourceSummary}
+        headlineProviderCostVnd={summary?.totalProviderCostVnd}
         formatVnd={formatVnd}
         isDarkMode={isDarkMode}
         t={t}

@@ -205,7 +205,16 @@ function PieCard({ title, subtitle, summary, data, isDarkMode, emptyText }) {
   );
 }
 
-function CashFlowMap({ revenueTotals, aiCostUserPaid, aiCostPlan, aiCostSystem, aiCostFreeUser, isDarkMode, t }) {
+function CashFlowMap({
+  revenueTotals,
+  aiCostUserPaid,
+  aiCostPlan,
+  aiCostSystem,
+  aiCostFreeUser,
+  aiCostTotal,
+  isDarkMode,
+  t,
+}) {
   const baseRevenue = num(revenueTotals?.baseRevenueVnd);
   const creditFund = num(revenueTotals?.creditFundRevenueVnd);
   const slotRev = num(revenueTotals?.workspaceSlotVnd);
@@ -213,6 +222,7 @@ function CashFlowMap({ revenueTotals, aiCostUserPaid, aiCostPlan, aiCostSystem, 
   const revenueTotal = baseRevenue + creditFund;
   const userUsageTotal = aiCostFreeUser + aiCostUserPaid;
   const systemAiTotal = aiCostSystem + aiCostPlan;
+  const aiPartsTotal = userUsageTotal + systemAiTotal;
 
   return (
     <div
@@ -332,6 +342,27 @@ function CashFlowMap({ revenueTotals, aiCostUserPaid, aiCostPlan, aiCostSystem, 
           />
         </div>
       </div>
+
+      <div
+        className={cn(
+          'mt-6 rounded-2xl border border-dashed p-4 flex flex-wrap items-center justify-between gap-3',
+          isDarkMode ? 'border-slate-700 bg-slate-900/40' : 'border-slate-200 bg-slate-50/80',
+        )}
+      >
+        <p className={cn('text-xs font-semibold uppercase tracking-wide', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+          {t('pnl.flow.aiCostTotal', 'Tổng phí AI')}
+        </p>
+        <p className={cn('text-lg font-black tabular-nums', isDarkMode ? 'text-orange-300' : 'text-orange-600')}>
+          {formatVnd(aiCostTotal)}
+        </p>
+        <p className={cn('w-full text-[11px] tabular-nums', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
+          {t('pnl.flow.aiCostFormula', 'User sử dụng {{user}} + Hệ thống trả {{system}} = {{total}}', {
+            user: formatVnd(userUsageTotal),
+            system: formatVnd(systemAiTotal),
+            total: formatVnd(aiPartsTotal),
+          })}
+        </p>
+      </div>
     </div>
   );
 }
@@ -419,6 +450,13 @@ function PnlOverview() {
     { name: t('pnl.cost.system', 'System-covered AI'), value: aiCostSystem, color: COLOR_COST_SYSTEM },
     { name: t('pnl.cost.freeUser', 'Free-user AI'), value: aiCostFreeUser, color: COLOR_COST_FREE },
   ]), [aiCostUserPaid, aiCostPlan, aiCostSystem, aiCostFreeUser, t]);
+
+  const revBreakdownTotal = useMemo(
+    () => revBreakdown.reduce((acc, item) => acc + item.value, 0),
+    [revBreakdown],
+  );
+  const revenueBreakdownGapVnd = revenueTotal - revBreakdownTotal;
+  const showRevenueBreakdownGap = Math.abs(revenueBreakdownGapVnd) >= 1;
 
   const revenueChartData = useMemo(
     () => revenuePoints.map((p) => ({ bucket: p.bucket, totalVnd: num(p.totalVnd) })),
@@ -569,6 +607,7 @@ function PnlOverview() {
             aiCostPlan={aiCostPlan}
             aiCostSystem={aiCostSystem}
             aiCostFreeUser={aiCostFreeUser}
+            aiCostTotal={aiCostTotal}
             isDarkMode={isDarkMode}
             t={t}
           />
@@ -645,7 +684,11 @@ function PnlOverview() {
           <div className="grid gap-4 md:grid-cols-2">
             <PieCard
               title={t('pnl.pie.revenue', 'Revenue mix')}
-              subtitle={t('pnl.pie.revenueHint', 'By payment channel.')}
+              subtitle={showRevenueBreakdownGap
+                ? t('pnl.pie.revenueGapHint', 'Tổng kênh + Khác {{gap}} = doanh thu hero', {
+                  gap: formatVnd(revenueBreakdownGapVnd),
+                })
+                : t('pnl.pie.revenueHint', 'By payment channel.')}
               summary={formatVnd(revenueTotal)}
               data={revBreakdown}
               isDarkMode={isDarkMode}
